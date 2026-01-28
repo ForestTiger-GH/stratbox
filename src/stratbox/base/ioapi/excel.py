@@ -29,7 +29,7 @@ def _ext(path: str) -> str:
     # (Если нужно будет иначе — правится централизованно здесь.)
     if "." not in p:
         return ""
-    return "." + p.rsplit(".", 1)[1]
+    return p.rsplit(".", 1)[1]  # без точки
 
 
 def read_df(
