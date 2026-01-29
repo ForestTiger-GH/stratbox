@@ -41,22 +41,22 @@ def read_df(
 ) -> pd.DataFrame:
     ext = _ext(path)
 
-    if ext == "xlsx":
+    if ext == ".xlsx":
         from stratbox.base.ioapi import excel_xlsx
 
         return excel_xlsx.read_df(path, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xlsm":
+    if ext == ".xlsm":
         from stratbox.base.ioapi import excel_xlsm
 
         return excel_xlsm.read_df(path, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xls":
+    if ext == ".xls":
         from stratbox.base.ioapi import excel_xls
 
         return excel_xls.read_df(path, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xlsb":
+    if ext == ".xlsb":
         from stratbox.base.ioapi import excel_xlsb
 
         return excel_xlsb.read_df(path, store=store, auto_install=auto_install, **kwargs)
@@ -77,22 +77,22 @@ def write_df(
 ) -> None:
     ext = _ext(path)
 
-    if ext == "xlsx":
+    if ext == ".xlsx":
         from stratbox.base.ioapi import excel_xlsx
 
         return excel_xlsx.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xlsm":
+    if ext == ".xlsm":
         from stratbox.base.ioapi import excel_xlsm
 
         return excel_xlsm.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xls":
+    if ext == ".xls":
         from stratbox.base.ioapi import excel_xls
 
         return excel_xls.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
 
-    if ext == "xlsb":
+    if ext == ".xlsb":
         from stratbox.base.ioapi import excel_xlsb
 
         return excel_xlsb.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
