@@ -5,13 +5,12 @@ pdf — чтение PDF поверх FileStore.
 - дать простой способ вытащить текст из PDF (для первичного анализа)
 
 Принципы:
-- PDF читается целиком в память (для типичных отчётов этого достаточно)
 - библиотека опциональна: используется pypdf
 - при отсутствии зависимости выдаётся понятная ошибка (или автопип при STRATBOX_AUTO_PIP=1)
 
 Ограничения:
-- извлечение текста из PDF по природе неточно (зависит от того, есть ли текстовый слой)
-- если PDF — скан, потребуется OCR (в этом пакете не делается)
+- извлечение текста из PDF зависит от наличия текстового слоя
+- если PDF — скан, потребуется OCR (здесь не реализовано)
 """
 
 from __future__ import annotations
@@ -23,32 +22,36 @@ from stratbox.base.utils.optional_deps import ensure_import
 
 def read_text(
     path: str,
+    store: FileStore | None = None,
     *,
-    filestore: FileStore | None = None,
+    auto_install: bool | None = None,
     max_pages: int | None = None,
 ) -> str:
-    """Читает текст из PDF и возвращает одной строкой."""
-    pages = read_pages_text(path, filestore=filestore, max_pages=max_pages)
+    pages = read_pages_text(path, store=store, auto_install=auto_install, max_pages=max_pages)
     return "\n\n".join(pages)
 
 
 def read_pages_text(
     path: str,
+    store: FileStore | None = None,
     *,
-    filestore: FileStore | None = None,
+    auto_install: bool | None = None,
     max_pages: int | None = None,
 ) -> list[str]:
-    """Читает PDF и возвращает список текстов по страницам."""
-    fs = filestore or get_filestore()
+    fs = store or get_filestore()
 
     pypdf = ensure_import(
         "pypdf",
         pip_requirement="pypdf",
+        auto_install=auto_install,
         hint="For PDF text extraction, install optional dependency: pypdf",
     )
 
     data = fs.read_bytes(path)
-    reader = pypdf.PdfReader(_io_bytes(data))
+
+    from io import BytesIO
+
+    reader = pypdf.PdfReader(BytesIO(data))
 
     out: list[str] = []
     total = len(reader.pages)
@@ -63,10 +66,3 @@ def read_pages_text(
         out.append(txt)
 
     return out
-
-
-def _io_bytes(data: bytes):
-    """Вспомогательный конструктор BytesIO (ленивый импорт)."""
-    from io import BytesIO
-
-    return BytesIO(data)

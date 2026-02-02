@@ -23,13 +23,34 @@ from stratbox.base.filestore.base import FileStore
 
 
 def _ext(path: str) -> str:
-    p = path.strip().lower()
-    # Убирает возможные "псевдо-суффиксы" типа ".xlsx.txt" — берёт последнее расширение.
-    # Здесь логика простая: нам важно реальное окончание, которое пользователь передал.
-    # (Если нужно будет иначе — правится централизованно здесь.)
-    if "." not in p:
+    """
+    Возвращает расширение в виде ".xlsx" (с точкой) или "".
+
+    Учитывает:
+    - file:///... (копипаста из Windows/Excel)
+    - обратные слэши
+    - query/fragment (на всякий случай)
+    """
+    s = str(path).strip()
+
+    # отрезает query/fragment, если внезапно прилетели
+    for sep in ("?", "#"):
+        if sep in s:
+            s = s.split(sep, 1)[0]
+
+    # нормализует слэши
+    s = s.replace("\\", "/")
+
+    low = s.lower()
+    if low.startswith("file://"):
+        s = s[len("file://") :]
+        s = s.lstrip("/")
+
+    name = s.split("/")[-1]
+    if "." not in name:
         return ""
-    return p.rsplit(".", 1)[1]  # без точки
+
+    return "." + name.rsplit(".", 1)[1].lower()
 
 
 def read_df(

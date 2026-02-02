@@ -1,18 +1,17 @@
 """
-FileStore — универсальный интерфейс транспорта файлов.
+FileStore — универсальный интерфейс транспорта файлов и каталогов.
 
 Принцип:
-- FileStore отвечает за операции с путями/файлами/каталогами (потоки/байты/каталог)
+- FileStore отвечает за операции с путями/файлами/каталогами
 - pandas/openpyxl и прочие форматы живут выше (в ioapi)
 
 Почему интерфейс расширенный:
-- в корпоративной среде часто нужно не только read/write файла,
+- в реальной работе нужно не только read/write файла,
   но и "посмотреть каталог", "обойти дерево", "переименовать", "удалить".
-- доменный код (ноутбуки/скрипты) не должен зависеть от того, локальная это ФС или SMB.
 
 Важно:
-- методы walk/glob/copy имеют дефолтные реализации поверх базовых методов,
-  чтобы бэкенды могли быть проще.
+- walk/glob/copy имеют дефолтные реализации поверх базовых методов,
+  чтобы бэкенды (например, SMB) можно было реализовать минимально.
 """
 
 from __future__ import annotations
@@ -77,7 +76,7 @@ class FileStore(Protocol):
         """Переименовывает/перемещает файл или каталог."""
         ...
 
-    # --- Удобные дефолтные реализации ---
+    # --- Дефолтные "удобные" методы ---
 
     def read_bytes(self, path: str) -> bytes:
         """Читает файл целиком (байтами)."""
@@ -102,7 +101,7 @@ class FileStore(Protocol):
         - filenames: имена файлов
 
         Дефолтная реализация построена поверх listdir/is_dir/is_file.
-        Бэкенд может переопределить для эффективности.
+        Бэкенд может переопределить walk() для эффективности.
         """
 
         def _join(parent: str, name: str) -> str:
@@ -128,7 +127,7 @@ class FileStore(Protocol):
                 elif self.is_file(full):
                     filenames.append(name)
                 else:
-                    # Если бэкенд не умеет точно определять тип, пропускает.
+                    # Если бэкенд не умеет точно определять тип — пропускает.
                     pass
 
             yield dirpath, dirnames, filenames
@@ -145,10 +144,11 @@ class FileStore(Protocol):
         - фильтрует пути через PurePosixPath.match
 
         Замечание:
-        - Используются POSIX-разделители (/). Для LocalFileStore это допустимо.
+        - используются POSIX-разделители (/).
         """
         from pathlib import PurePosixPath
 
+        # Если wildcard нет — вернуть либо [pattern], либо []
         if not any(ch in pattern for ch in ("*", "?", "[")):
             return [pattern] if self.exists(pattern) else []
 
@@ -182,4 +182,5 @@ class FileStore(Protocol):
                 if PurePosixPath(full).match(str(p_pat)):
                     out.append(full)
 
+        # Убирает дубли и сортирует
         return sorted(set(out))

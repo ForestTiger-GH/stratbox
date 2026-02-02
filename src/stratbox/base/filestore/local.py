@@ -2,17 +2,11 @@
 LocalFileStore — реализация FileStore для локальной файловой системы.
 
 Используется вне контура, когда stratbox-plugin не установлен.
-
-Требования:
-- реализовать полный контракт FileStore
-- работать как на Windows, так и на Linux/macOS
-
-Замечание:
-- LocalFileStore принимает POSIX-разделители ('/') в путях — pathlib это допускает.
 """
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from typing import BinaryIO, Iterator, Tuple
@@ -93,18 +87,18 @@ class LocalFileStore(FileStore):
         dst_p.parent.mkdir(parents=True, exist_ok=True)
         src_p.rename(dst_p)
 
-    # --- Оптимизированные реализации ---
+    # --- Оптимизированный walk (быстрее дефолтного) ---
 
     def walk(self, top: str) -> Iterator[Tuple[str, list[str], list[str]]]:
-        """Оптимизированный обход: использует os.walk."""
         top_p = self._abs(top)
         if not top_p.exists() or not top_p.is_dir():
             return
 
-        for dirpath, dirnames, filenames in _os_walk(top_p):
+        for dirpath, dirnames, filenames in os.walk(top_p):
             dp = Path(dirpath)
 
-            # Возвращаем пути в пространстве пользователя: если root задан — делаем относительными.
+            # Возвращаем пути "в координатах пользователя":
+            # если root задан — стараемся сделать относительным к root.
             if self._root:
                 try:
                     dp_rel = dp.relative_to(self._root)
@@ -115,10 +109,3 @@ class LocalFileStore(FileStore):
                 dirpath_out = dp.as_posix()
 
             yield dirpath_out, sorted(list(dirnames)), sorted(list(filenames))
-
-
-def _os_walk(top: Path):
-    """Вспомогательная обёртка, чтобы не тянуть os в основной класс."""
-    import os
-
-    return os.walk(top)
