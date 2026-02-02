@@ -105,10 +105,15 @@ class FileStore(Protocol):
         """
 
         def _join(parent: str, name: str) -> str:
-            parent = parent.rstrip("/")
-            if not parent or parent == ".":
+            # Нормальная склейка для POSIX-путей.
+            # Важно: корректно обрабатывает корень "/" (иначе теряется ведущий слэш).
+            if parent == "/":
+                return f"/{name}"
+            p = parent.rstrip("/")
+            if not p or p == ".":
                 return name
-            return f"{parent}/{name}"
+            return f"{p}/{name}"
+
 
         stack: list[str] = [top]
 
@@ -135,6 +140,7 @@ class FileStore(Protocol):
             for d in reversed(dirnames):
                 stack.append(_join(dirpath, d))
 
+                
     def glob(self, pattern: str) -> list[str]:
         """Возвращает список путей по маске (поддерживает **).
 
@@ -143,17 +149,34 @@ class FileStore(Protocol):
         - делает walk(base)
         - фильтрует пути через PurePosixPath.match
 
-        Замечание:
-        - используются POSIX-разделители (/).
+        Исправление:
+        - корректно поддерживает абсолютные пути ("/...") и Windows drive ("C:/...").
         """
+        import re
         from pathlib import PurePosixPath
 
         # Если wildcard нет — вернуть либо [pattern], либо []
         if not any(ch in pattern for ch in ("*", "?", "[")):
             return [pattern] if self.exists(pattern) else []
 
-        pat = pattern.replace("\\", "/")
-        parts = [p for p in pat.split("/") if p]
+        pat = str(pattern).replace("\\", "/")
+
+        # Сохраняет "абсолютный префикс", чтобы base не терял ведущий / или C:/
+        prefix = ""
+        body = pat
+
+        m_drive = re.match(r"^[A-Za-z]:/", body)
+        if m_drive:
+            prefix = body[:3]  # например "C:/"
+            body = body[3:]
+        elif body.startswith("//"):
+            prefix = "//"
+            body = body[2:]
+        elif body.startswith("/"):
+            prefix = "/"
+            body = body[1:]
+
+        parts = [p for p in body.split("/") if p]
 
         base_parts: list[str] = []
         for seg in parts:
@@ -161,16 +184,22 @@ class FileStore(Protocol):
                 break
             base_parts.append(seg)
 
-        base = "/".join(base_parts) if base_parts else "."
+        if base_parts:
+            base = prefix + "/".join(base_parts)
+        else:
+            # если паттерн типа "/**/*.xlsx", base должен быть "/" (а не ".")
+            base = prefix.rstrip("/") if prefix else "."
 
-        out: list[str] = []
         p_pat = PurePosixPath(pat)
+        out: list[str] = []
 
         def _join(parent: str, name: str) -> str:
-            parent = parent.rstrip("/")
-            if parent in ("", "."):
+            if parent == "/":
+                return f"/{name}"
+            p = parent.rstrip("/")
+            if p in ("", "."):
                 return name
-            return f"{parent}/{name}"
+            return f"{p}/{name}"
 
         for dirpath, dirnames, filenames in self.walk(base):
             for dn in dirnames:
@@ -182,5 +211,4 @@ class FileStore(Protocol):
                 if PurePosixPath(full).match(str(p_pat)):
                     out.append(full)
 
-        # Убирает дубли и сортирует
         return sorted(set(out))

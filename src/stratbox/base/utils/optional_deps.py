@@ -29,7 +29,7 @@ def _auto_pip_enabled(auto_install: bool | None = None) -> bool:
     """
     if auto_install is not None:
         return bool(auto_install)
-    return os.getenv("STRATBOX_AUTO_PIP", "1").strip() in ("1", "true", "True", "yes", "YES")
+    return os.getenv("STRATBOX_AUTO_PIP", "0").strip() in ("1", "true", "True", "yes", "YES")
 
 
 def _pip_install(requirement: str) -> None:
