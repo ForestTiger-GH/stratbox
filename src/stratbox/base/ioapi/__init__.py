@@ -22,6 +22,7 @@ from stratbox.base.ioapi import (
     images,
     zip,
     rar,
+    pdf,
 )
 
 __all__ = [
@@ -41,4 +42,5 @@ __all__ = [
     "docx",
     "pptx",
     "images",
+    "pdf",
 ]
