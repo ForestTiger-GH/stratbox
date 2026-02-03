@@ -1,0 +1,4 @@
+"field name","russian description","english description",format
+Razdel,"section of all-Russian classifier of types of economic activity","Раздел общероссийского классификатора видов экономической деятельности",String
+Code,"Code for all-Russian classifier of types of economic activity","Код по общероссийскому классификатору видов экономической деятельности",String
+Name,"Name for all-Russian classifier of types of economic activity","Наименование по общероссийскому классификатору видов экономической деятельности",String

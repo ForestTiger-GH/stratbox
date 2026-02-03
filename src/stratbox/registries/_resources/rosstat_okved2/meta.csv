@@ -1,0 +1,58 @@
+property,value
+standardversion,http://opendata.gosmonitor.ru/standard/3.0
+identifier,7708234640-okvedva
+title,"Общероссийский классификатор видов экономической деятельности (ОКВЭД2)"
+description,"Общероссийский классификатор видов экономической деятельности ОКВЭД2"
+creator,"Федеральная служба государственной статистики"
+created,20180905
+modified,20251101
+subject,"Классификатор, вид экономической деятельности"
+format,CSV
+provenance,"с учетом изменения 83/2025"
+valid,20251231
+publishername,"Апатова Ирина Петровна"
+publisherphone,"+7 (495) 568-00-42 РґРѕР±. 99732"
+publishermbox,apatovaip@rosstat.gov.ru
+data-20251101T1411-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20251101T1411-structure-20180402T1704.csv
+data-20250801T1008-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20250801T1008-structure-20180402T1704.csv
+data-20250601T1106-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20250601T1106-structure-20180402T1704.csv
+data-20250501T1405-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20250501T1405-structure-20180402T1704.csv
+data-20250303T1603-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20250303T1603-structure-20180402T1704.csv
+data-20250201T1102-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20250201T1102-structure-20180402T1704.csv
+data-20241227T1412-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20241227T1412-structure-20180402T1704.csv
+data-20241203T1712-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20241203T1712-structure-20180402T1704.csv
+data-20241031T1410-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20241031T1410-structure-20180402T1704.csv
+data-20241001T1410-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20241001T1410-structure-20180402T1704.csv
+data-20240901T0009-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20240901T0009-structure-20180402T1704.csv
+data-20240801T0008-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20240801T0008-structure-20180402T1704.csv
+data-20240704T1107-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20240704T1107-structure-20180402T1704.csv
+data-20240503T1405-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20240503T1405-structure-20180402T1704.csv
+data-20240229T1102-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20240229T1102-structure-20180402T1704.csv
+data-20231219T1412-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20231219T1412-structure-20180402T1704.csv
+data-20231201T1412-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20231201T1412-structure-20180402T1704.csv
+data-20231113T1111-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20231113T1111-structure-20180402T1704.csv
+data-20230928T1509-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20230928T1509-structure-20180402T1704.csv
+data-20230803T1108-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20230803T1108-structure-20180402T1704.csv
+data-20230526T1305-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20230526T1305-structure-20180402T1704.csv
+data-20230426T1404-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20230426T1404-structure-20180402T1704.csv
+data-20230228T1502-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20230228T1502-structure-20180402T1704.csv
+data-20220829T2208-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20220829T2208-structure-20180402T1704.csv
+data-20220627T1206-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20220627T1206-structure-20180402T1704.csv
+data-20220201T1502-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20220201T1502-structure-20180402T1704.csv
+data-20220101T1001-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20220101T1001-structure-20180402T1704.csv
+data-20211201T1412-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20211201T1412-structure-20180402T1704.csv
+data-20210831T1008-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210831T1008-structure-20180402T1704.csv
+data-20210801T1408-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210801T1408-structure-20180402T1704.csv
+data-20210701T1307-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210701T1307-structure-20180402T1704.csv
+data-20210604T1406-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210604T1406-structure-20180402T1704.csv
+data-20210401T1004-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210401T1004-structure-20180402T1704.csv
+data-20210301T0103-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210301T0103-structure-20180402T1704.csv
+data-20210201T1002-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20210201T1002-structure-20180402T1704.csv
+data-20201101T1611-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20201101T1611-structure-20180402T1704.csv
+data-20201001T1210-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20201001T1210-structure-20180402T1704.csv
+data-20200301T0003-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20200301T0003-structure-20180402T1704.csv
+data-20200101T1301-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20200101T1301-structure-20180402T1704.csv
+data-20191224T1512-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20191224T1512-structure-20180402T1704.csv
+data-20191206T1012-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20191206T1012-structure-20180402T1704.csv
+data-20180326T1703-structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/data-20180326T1703-structure-20180402T1704.csv
+structure-20180402T1704.csv,https://rosstat.gov.ru/opendata/7708234640-okvedva/structure-20180402T1704.csv
