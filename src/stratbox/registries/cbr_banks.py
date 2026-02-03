@@ -107,6 +107,9 @@ def _load_replacements() -> dict[str, list[str]]:
 def _load_standart_enabled() -> set[str]:
     """
     Возвращает множество банков, у которых enabled=True в cbr_standart.csv.
+
+    Важно: чтобы коллегам не нужно было вручную следить за точным каноном,
+    каждое значение bank прогоняется через normalize_bank_name().
     """
     df = _read_latest_csv(_REL_DIR_STANDART, prefix="cbr_standart")
     if df.empty:
@@ -122,10 +125,18 @@ def _load_standart_enabled() -> set[str]:
 
     tmp = df[[c_enabled, c_bank]].copy()
     tmp[c_enabled] = tmp[c_enabled].astype(str).str.strip().str.lower()
-    tmp[c_bank] = tmp[c_bank].astype(str).str.strip().str.upper()
 
-    enabled = tmp[tmp[c_enabled].isin({"true", "1", "yes", "y"})][c_bank].tolist()
-    return set([b for b in enabled if b and b != "NAN"])
+    # Берём только enabled=True
+    tmp = tmp[tmp[c_enabled].isin({"true", "1", "yes", "y"})].copy()
+
+    # Нормализуем bank через общую функцию (включая финальные replacements)
+    tmp[c_bank] = tmp[c_bank].map(
+        lambda s: normalize_bank_name(s, placement="omit", case_mode="upper", drop_bank="left")
+    )
+
+    banks = tmp[c_bank].astype(str).str.strip().str.upper().tolist()
+    return set([b for b in banks if b and b != "NAN"])
+
 
 
 def _load_legacy_set() -> set[str]:

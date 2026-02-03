@@ -1,17 +1,57 @@
 """
 banks.py — утилиты для работы с названиями банков.
 
-Здесь хранится функция нормализации названий банков, которая:
-- приводит разные варианты юр.формы к тегам (АО/ПАО/ООО/НКО и т.п.)
-- исправляет "традиционные" варианты написания (например, Россельхозбанк -> РСХБ)
-- выдаёт короткое и единообразное имя, удобное для таблиц и графиков
+Цель normalize_bank_name:
+- привести входные "кривые" названия к предсказуемому виду (чистка + OPF + спецкейсы)
+- затем выполнить финальную канонизацию через реестр replacements:
+  _resources/cbr_replacements/cbr_replacements.csv (canon, alias)
 
 Важно:
-- по умолчанию используется CAPS LOCK (case_mode='upper'), как принято внутри компании
-- функция поддерживает строку, list/tuple, а также pandas.Series / pandas.Index
+- по умолчанию внутри компании используется CAPS LOCK (case_mode='upper')
+- "брендовые" и любые "как нам надо" замены НЕ хранятся в коде; они хранятся в CSV
 """
 
 from __future__ import annotations
+
+from functools import lru_cache
+from io import StringIO
+import csv
+import re
+
+
+@lru_cache(maxsize=1)
+def _load_cbr_replacements_alias_to_canon() -> dict[str, str]:
+    """
+    Загружает реестр замен из ресурсов пакета и возвращает словарь:
+      ALIAS (upper) -> CANON (upper)
+
+    Файл:
+      stratbox.registries/_resources/cbr_replacements/cbr_replacements.csv
+
+    Если файла нет или он некорректный — возвращается пустой словарь.
+    """
+    try:
+        from stratbox.registries._loader import pick_latest_by_prefix, read_resource_bytes
+
+        package = "stratbox.registries"
+        rel_dir = "_resources/cbr_replacements"
+
+        rf = pick_latest_by_prefix(package, rel_dir, prefix="cbr_replacements", suffix=".csv")
+        raw = read_resource_bytes(package, rf.path)
+        text = raw.decode("utf-8-sig")
+
+        rdr = csv.DictReader(StringIO(text))
+        out: dict[str, str] = {}
+
+        for row in rdr:
+            canon = (row.get("canon") or "").strip().upper()
+            alias = (row.get("alias") or "").strip().upper()
+            if canon and alias:
+                out[alias] = canon
+
+        return out
+    except Exception:
+        return {}
 
 
 def normalize_bank_name(
@@ -20,8 +60,22 @@ def normalize_bank_name(
     case_mode: str = "upper",    # 'upper' | 'preserve'
     drop_bank: str = "left"      # 'keep' | 'left' | 'right' | 'both'
 ):
-    import re
+    """
+    Нормализует наименование банка.
 
+    Стратегия:
+    1) техническая чистка строки (пробелы/тире/кавычки/мусор)
+    2) приведение полных юр.форм к тегам (ПАО/АО/ООО/НКО/...)
+    3) спец-кейсы (НРД/НРЦ/ПРЦ)
+    4) сборка результата по placement
+    5) (опционально) удаление слова "БАНК" по краям
+    6) финальная канонизация через replacements (alias -> canon)
+
+    Реестр replacements должен содержать "как нам надо видеть" итоговые имена:
+    - например: canon=СБЕР, alias=СБЕРБАНК
+    - canon=ТБАНК, alias=Т-БАНК
+    и т.п.
+    """
     # pandas поддерживается опционально (если установлен)
     try:
         import pandas as pd
@@ -43,7 +97,7 @@ def normalize_bank_name(
     DASHES = r"\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D"
     SPACES = r"\u00A0\u2000-\u200B\u202F\u205F\u3000"
 
-    # --- OPF-замены (неупорядоченный список) ---
+    # --- OPF-замены ---
     OPF = [
         # Специфичные НКО-ЦК
         (r"\bнебанковская\s+кредитная\s+организация\b(?:\s*[-—–]\s*|\s*\(\s*|\s+)\s*центральный\s+контрагент\b\)?", "НКО-ЦК"),
@@ -65,10 +119,10 @@ def normalize_bank_name(
         (r"\bмежбанковское\s+объединение\b", "МБО"),
         (r"\bмеждународный\s+банк\b", "МБ"),
     ]
-    # Авто-приоритизация: длиннее результат → раньше; при равенстве — длиннее шаблон раньше
+    # Приоритизация: длиннее результат → раньше; при равенстве — длиннее шаблон раньше
     OPF = sorted(OPF, key=lambda pr: (len(pr[1]), len(pr[0])), reverse=True)
 
-    # Спец-кейсы
+    # Спец-кейсы (каноническое имя задаётся сразу)
     SPECIAL = [
         (re.compile(r"\b(нац(иональн\w*)?\s+рас[чш]е?тн\w*\s+центр|нрц|нац\s*рц)\b", re.I),
          (["НКО", "АО"], "НАЦИОНАЛЬНЫЙ РАСЧЕТНЫЙ ЦЕНТР")),
@@ -77,21 +131,6 @@ def normalize_bank_name(
         (re.compile(r"\b(петербургск\w*\s+рас[чш]е?тн\w*\s+центр|прц|спб\s*рц)\b", re.I),
          (["НКО", "АО"], "ПЕТЕРБУРГСКИЙ РАСЧЕТНЫЙ ЦЕНТР")),
     ]
-
-    # Пост-нормализационные правки — «традиционные ошибки»
-    ERR_FIX = {
-        "Россельхозбанк": "РСХБ",
-        "Россельхоз банк": "РСХБ",
-        "Тинькофф Банк": "Т-Банк",
-        "Тинькофф-Банк": "Т-Банк",
-        "Т Банк": "Т-Банк",
-        "Тинькофф": "Т-Банк",
-        "ТБанк": "Т-Банк",
-        "Райффайзен банк": "Райффайзенбанк",
-        "Сбербанк России": "Сбербанк",
-        "Сбер": "Сбербанк",
-        "МТС Банк": "МТС-Банк",
-    }
 
     # --- Утилиты ---
     def _std(s: str) -> str:
@@ -105,18 +144,12 @@ def normalize_bank_name(
         s = re.sub(r"[^\w\.\-\s\(\)]", " ", s, flags=re.U)
         return re.sub(r"\s+", " ", s).strip()
 
-    def _apply_err_fix(s: str) -> str:
-        # Самые длинные ключи — первыми, чтобы не срабатывали укороченные варианты раньше
-        for old in sorted(ERR_FIX.keys(), key=len, reverse=True):
-            s = re.sub(rf"(?<!\w){re.escape(old)}(?!\w)", ERR_FIX[old], s, flags=re.I)
-        return s
-
     def _apply_opf(s: str) -> str:
         for p, r in OPF:
             s = re.sub(p, r, s, flags=re.I)
         return s
 
-    # Извлечение тегов без перекрытий: одно общее regex, длинные сначала
+    # Извлечение тегов: одно regex, длинные сначала
     TAG_ALTS = sorted(ORDERED_TAGS, key=len, reverse=True)
     TAG_RE = re.compile(r"\b(?:" + "|".join(map(re.escape, TAG_ALTS)) + r")\b")
 
@@ -136,8 +169,19 @@ def normalize_bank_name(
         out = out.replace("(", " ").replace(")", " ")
         out = re.sub(r"[^\w\.\-\s]", " ", out, flags=re.U)
         out = re.sub(r"\s*-\s*", "-", out)
-        out = re.sub(r"^\s*-\s*", "", out)  # убрать «висячий» дефис
+        out = re.sub(r"^\s*-\s*", "", out)
         return re.sub(r"\s+", " ", out).strip()
+
+    def _final_replace(res: str) -> str:
+        # Финальная канонизация через replacements применяется только в upper-режиме
+        if not res:
+            return res
+        if case_mode != "upper":
+            return res
+
+        rep = _load_cbr_replacements_alias_to_canon()
+        key = res.strip().upper()
+        return rep.get(key, key)
 
     def _one(x):
         if x is None or str(x).strip() == "":
@@ -146,15 +190,12 @@ def normalize_bank_name(
         # 1) Предобработка
         s = _std(x)
 
-        # 2) Сначала традиционные правки (длинные -> короткие)
-        s = _apply_err_fix(s)
-
-        # 3) Затем OPF-замены (НКО-ЦК, АО, ПАО и т.п.)
+        # 2) OPF-замены (НКО-ЦК, АО, ПАО и т.п.)
         s = _apply_opf(s)
 
         up = s.upper()
 
-        # 4) Спец-кейсы или общий путь
+        # 3) Спец-кейсы или общий путь
         tags, rem = None, None
         for pat, (tg, canon) in SPECIAL:
             if pat.search(up):
@@ -166,7 +207,7 @@ def normalize_bank_name(
             tags = _collect_tags_longest_first(up)
             rem = _strip(up if case_mode == "upper" else s, tags, ci=(case_mode != "upper"))
 
-        # 5) Сборка по placement
+        # 4) Сборка по placement
         if placement == "omit":
             res = rem
         elif placement == "right":
@@ -174,19 +215,23 @@ def normalize_bank_name(
         else:  # left
             res = (" ".join([*tags, rem]).strip() if tags and rem else (rem or " ".join(tags).strip()))
 
-        # 6) Удаление ОТДЕЛЬНОГО слова «Банк» на краях (склейки/дефисы не трогаем)
+        # 5) Удаление отдельного слова «Банк» по краям (склейки/дефисы не трогаем)
         if drop_bank in {"left", "both"}:
-            res = re.sub(r"^\s*БАНК\s+(?=\S)", "", res, flags=re.I)
+            res = re.sub(r"^\s*БАНК\s+(?=\S)", "", res or "", flags=re.I)
         if drop_bank in {"right", "both"}:
-            res = re.sub(r"(?<=\S)\s+БАНК\s*$", "", res, flags=re.I)
+            res = re.sub(r"(?<=\S)\s+БАНК\s*$", "", res or "", flags=re.I)
 
         # Страховка от дубликата вида «…-БАНК БАНК»
         res = re.sub(r"(?i)(\b\S+-БАНК)\s+БАНК\b", r"\1", res or "")
 
-        # 7) Финальная чистка
+        # 6) Финальная чистка
         res = re.sub(r"\s*-\s*", "-", res or "")
         res = re.sub(r"\s+", " ", res).strip()
 
+        # 7) Финальная канонизация по replacements
+        res = _final_replace(res)
+
+        # 8) Возврат с учётом case_mode
         return (res.upper() if case_mode == "upper" else res) or None
 
     # Коллекции/pandas
