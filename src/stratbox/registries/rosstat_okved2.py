@@ -42,13 +42,27 @@ def _read_csv_strict(prefix: str) -> pd.DataFrame:
     rf = pick_latest_by_prefix(_PACKAGE, _REL_DIR, prefix=prefix, suffix=".csv")
     raw = read_resource_bytes(_PACKAGE, rf.path)
 
-    df = pd.read_csv(
-        BytesIO(raw),
-        encoding="cp1251",
-        sep=";",
-        dtype=str,
-        engine="python",
-    )
+    if prefix == "data":
+        # В файле data*.csv заголовков нет, первая строка — это данные.
+        df = pd.read_csv(
+            BytesIO(raw),
+            encoding="cp1251",
+            sep=";",
+            dtype=str,
+            engine="python",
+            header=None,
+            names=["Razdel", "Code", "Name"],
+        )
+    else:
+        # meta/structure можно читать как есть (если понадобится)
+        df = pd.read_csv(
+            BytesIO(raw),
+            encoding="cp1251",
+            sep=";",
+            dtype=str,
+            engine="python",
+        )
+
     return df
 
 
@@ -117,6 +131,7 @@ def read() -> pd.DataFrame:
             "name": df[cols["name"]].astype(str).str.strip(),
         }
     )
+    out["code"] = out["code"].astype(str).str.strip().replace({"nan": ""})
 
     # Удаляем строки без кода (в файле есть секционные строки с пустым Code)
     out = out[out["code"].astype(str).str.strip().ne("")]
