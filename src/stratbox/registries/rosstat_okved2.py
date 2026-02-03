@@ -2,19 +2,19 @@
 rosstat_okved2.py — ОКВЭД2 (Росстат), хранится в виде трёх CSV в ресурсах пакета.
 
 Принцип обновления:
-- в папку src/stratbox/registries/_resources/rosstat_okved2/ кладутся 3 файла:
-  - data*.csv       (основной список)
-  - meta*.csv       (метаданные)
-  - structure*.csv  (описание структуры)
+- в папку src/stratbox/registries/_resources/rosstat_okved2/ кладутся файлы:
+  - data*.csv       (основной список)  <-- ЭТО ЕДИНСТВЕННОЕ, ЧТО НУЖНО ДЛЯ РАБОТЫ read()
+  - meta*.csv       (метаданные)       <-- может быть кривым, читается отдельно и мягко
+  - structure*.csv  (описание полей)   <-- может быть кривым, читается отдельно и мягко
 - имена могут быть любыми (как скачались)
-- если файлов несколько — берём самый свежий для каждого типа
+- если файлов несколько — берём самый свежий для каждого типа (по времени изменения)
 
 Важно по формату твоих файлов:
 - encoding = cp1251
 - separator = ';'
-- строки в кавычках
+- строки часто в кавычках
 
-Выход:
+Выход read():
 - DataFrame с каноническими колонками:
   - section (Razdel)
   - code (Code)
@@ -34,9 +34,10 @@ _PACKAGE = "stratbox.registries"
 _REL_DIR = "_resources/rosstat_okved2"
 
 
-def _read_csv(prefix: str) -> pd.DataFrame:
+def _read_csv_strict(prefix: str) -> pd.DataFrame:
     """
-    Читает самый свежий CSV с заданным prefix (meta/structure/data).
+    Строгое чтение CSV (ожидаем корректный формат).
+    Используется для data*.csv, который нам реально нужен.
     """
     rf = pick_latest_by_prefix(_PACKAGE, _REL_DIR, prefix=prefix, suffix=".csv")
     raw = read_resource_bytes(_PACKAGE, rf.path)
@@ -51,26 +52,57 @@ def _read_csv(prefix: str) -> pd.DataFrame:
     return df
 
 
-def read_raw_bundle() -> dict[str, pd.DataFrame]:
+def _read_csv_soft(prefix: str) -> pd.DataFrame:
     """
-    Возвращает "сырой комплект" data/meta/structure (как DataFrame),
-    если вдруг понадобится для диагностики или расширений.
+    Мягкое чтение CSV: предназначено для meta/structure, которые иногда бывают "кривые".
+    Если строгий парсер падает — пробует прочитать максимально терпимо.
     """
-    return {
-        "data": _read_csv("data"),
-        "meta": _read_csv("meta"),
-        "structure": _read_csv("structure"),
-    }
+    rf = pick_latest_by_prefix(_PACKAGE, _REL_DIR, prefix=prefix, suffix=".csv")
+    raw = read_resource_bytes(_PACKAGE, rf.path)
+
+    try:
+        return pd.read_csv(
+            BytesIO(raw),
+            encoding="cp1251",
+            sep=";",
+            dtype=str,
+            engine="python",
+        )
+    except Exception:
+        # fallback: читаем построчно и пропускаем "плохие" строки
+        return pd.read_csv(
+            BytesIO(raw),
+            encoding="cp1251",
+            sep=";",
+            dtype=str,
+            engine="python",
+            on_bad_lines="skip",
+        )
+
+
+def read_meta() -> pd.DataFrame:
+    """
+    Возвращает meta*.csv (если нужно человеку/диагностике).
+    Не используется в основном read().
+    """
+    return _read_csv_soft("meta")
+
+
+def read_structure() -> pd.DataFrame:
+    """
+    Возвращает structure*.csv (если нужно человеку/диагностике).
+    Не используется в основном read().
+    """
+    return _read_csv_soft("structure")
 
 
 def read() -> pd.DataFrame:
     """
     Возвращает нормализованный справочник ОКВЭД2: section/code/name.
     """
-    bundle = read_raw_bundle()
-    df = bundle["data"].copy()
+    df = _read_csv_strict("data").copy()
 
-    # ожидаемые колонки: Razdel, Code, Name (как в твоём файле)
+    # ожидаемые колонки: Razdel, Code, Name
     cols = {c.lower(): c for c in df.columns}
     need = ["razdel", "code", "name"]
     if not all(k in cols for k in need):
@@ -89,7 +121,11 @@ def read() -> pd.DataFrame:
     # Удаляем строки без кода (в файле есть секционные строки с пустым Code)
     out = out[out["code"].astype(str).str.strip().ne("")]
 
-// optional: сброс индекса
+
+    # Правильная фильтрация:
+    out = out[out["code"].astype(str).str.strip().ne("")]
+
+    # Сброс индекса:
     out = out.reset_index(drop=True)
     return out
 
