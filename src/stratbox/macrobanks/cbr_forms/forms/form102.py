@@ -160,7 +160,7 @@ def _pick_102_dbf(ex_dir: Path) -> Path:
     if ("CODE" not in bf) or (("SIM_ITOGO" not in bf) and ("SIM_ITOG" not in bf) and ("SIM_R" not in bf)):
         raise RuntimeError(f"102 DBF structure unexpected. Picked='{best_path.name}', Fields={best_fields}")
 
-    print(f"[INFO] 102 DBF picked: {best_path.name}")
+    # print(f"[INFO] 102 DBF picked: {best_path.name}")
     return best_path
 
 

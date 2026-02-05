@@ -98,7 +98,7 @@ def _run_one_form(
         indicator_col="Показатель",
         value_col="Значение",
     )
-    print(f"[OK] Exported: {out_path.name}")
+    # print(f"[OK] Exported: {out_path.name}")
 
 
 def main() -> None:
@@ -166,7 +166,7 @@ def main() -> None:
         out_path=out_dir / "Сводка 135ф.xlsx",
     )
 
-    print("[OK] All done.")
+    # print("[OK] All done.")
 
 
 if __name__ == "__main__":

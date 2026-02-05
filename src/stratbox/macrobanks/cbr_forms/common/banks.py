@@ -61,5 +61,4 @@ def load_legacy_banks() -> pd.DataFrame:
     out = out[out["regn"] > 0].copy()
     out = out.sort_values("sort").reset_index(drop=True)
 
-    print(f"[INFO] Legacy banks loaded: {len(out)}")
     return out
