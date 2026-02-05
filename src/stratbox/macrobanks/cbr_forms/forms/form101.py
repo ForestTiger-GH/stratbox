@@ -100,13 +100,34 @@ def _to_value_str(v) -> str:
 
 def _read_dbf_full(dbf_path: str) -> pd.DataFrame:
     """
-    Читает DBF целиком (все поля) в DataFrame.
+    Читает DBF 101 не целиком, а только нужные поля.
+    Это критично для скорости (особенно в Colab).
+
+    Нужные поля:
+      - REGN (банк)
+      - NUM_SC (код счета/агрегата)
+      - A_P (1 актив, 2 пассив)
+      - IITG (исходящий итог на отчетную дату)
     """
-    dbf = DBF(dbf_path, parserclass=CBRFieldParser)
-    rows = list(dbf)
-    if not rows:
-        return pd.DataFrame()
+    need = ["REGN", "NUM_SC", "A_P", "IITG"]
+
+    dbf = DBF(dbf_path, parserclass=CBRFieldParser, load=True)
+
+    # В DBF могут быть разные регистры — подстроимся
+    have_u = {f.upper(): f for f in dbf.field_names}
+    fields = [have_u[f] for f in need if f in have_u]
+
+    if not fields:
+        # fallback: если вдруг структура не та — прочитаем всё (но это будет медленно)
+        rows = list(DBF(dbf_path, parserclass=CBRFieldParser))
+        return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+    rows = []
+    for rec in dbf:
+        rows.append({f: rec.get(f) for f in fields})
+
     return pd.DataFrame(rows)
+
 
 
 def _pick_cols_for_101(df: pd.DataFrame) -> tuple[str, str, str]:
@@ -201,7 +222,7 @@ def _resolve_value_101(
     """
     Ищет значение по (REGN, CODE) с учётом extra (например a_p=1/2).
     """
-    df = df_full.copy()
+    df = df_full
     df["__REGN__"] = df[regn_col].map(_norm_regn)
     df["__CODE__"] = df[code_col].map(_norm_code)
 
