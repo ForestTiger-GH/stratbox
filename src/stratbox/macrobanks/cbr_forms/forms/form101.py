@@ -22,6 +22,9 @@ import pandas as pd
 from dbfread import DBF
 from tqdm.auto import trange
 
+import shutil
+import subprocess
+
 from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig, run_dates_to_dbf_df
 from stratbox.macrobanks.cbr_forms.common.dbf import CBRFieldParser
@@ -317,6 +320,24 @@ def build_long(
     print(f"[INFO] 101 long rows: {len(df_long)}")
     return df_long, indicator_order
 
+def _pick_rar_tool() -> str:
+    for c in ["unrar", "7z", "7zz"]:
+        if shutil.which(c):
+            return c
+    raise RuntimeError("No 'unrar' or '7z' found. Install unrar or p7zip.")
+
+def _extract_rar(archive_path: Path, out_dir: Path) -> None:
+    tool = _pick_rar_tool()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if tool == "unrar":
+        cmd = [tool, "x", "-o+", str(archive_path), str(out_dir)]
+    else:
+        cmd = [tool, "x", f"-o{out_dir}", str(archive_path), "-y"]
+
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    if p.returncode != 0:
+        raise RuntimeError("Archive extract failed:\n" + (p.stderr or p.stdout or ""))
 
 def run(
     *,
@@ -355,25 +376,6 @@ def run(
     out_paths: list[tuple[str, str]] = []
 
     try:
-        # локальные функции распаковки (как в runner.py)
-        def _pick_rar_tool() -> str:
-            for c in ["unrar", "7z", "7zz"]:
-                if shutil.which(c):
-                    return c
-            raise RuntimeError("No 'unrar' or '7z' found. Install unrar or p7zip.")
-
-        def _extract_rar(archive_path: Path, out_dir: Path) -> None:
-            tool = _pick_rar_tool()
-            out_dir.mkdir(parents=True, exist_ok=True)
-
-            if tool == "unrar":
-                cmd = [tool, "x", "-o+", str(archive_path), str(out_dir)]
-            else:
-                cmd = [tool, "x", f"-o{out_dir}", str(archive_path), "-y"]
-
-            p = subprocess.run(cmd, capture_output=True, text=True)
-            if p.returncode != 0:
-                raise RuntimeError("Archive extract failed:\n" + (p.stderr or p.stdout or ""))
 
         it = trange(len(dates), desc="CBR 101", leave=False)
         for i in it:
@@ -412,3 +414,77 @@ def run(
             shutil.rmtree(work_dir, ignore_errors=True)
         except Exception:
             pass
+
+def build_long_from_preloaded(
+    date_df_list: list[tuple[str, pd.DataFrame]],
+    banks_df: pd.DataFrame,
+    formulas_df: pd.DataFrame,
+):
+    """
+    Строит df_long, используя уже прочитанные DF по датам (без повторного чтения DBF).
+    Нужна для debug-скрипта.
+    """
+    fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
+    if len(fdf) == 0:
+        raise RuntimeError("No formulas for form 101 in formulas_df.")
+
+    indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+    rows = []
+
+    # ожидаем колонки, которые возвращает read_dbf_to_df(layout):
+    # "REGN", "A", "B" (или другие по layout)
+    # но в 101 layout сейчас настроен на NUM_SC/IITG, поэтому:
+    # A = NUM_SC, B = IITG, REGN = REGN. Плюс есть A_P в df, но layout мог его не взять.
+    # Поэтому: если A_P нет — не фильтруем по a_p.
+    for date_str, df_dbf in date_df_list:
+        if df_dbf is None or len(df_dbf) == 0:
+            continue
+
+        # нормализуем колонки в ожидаемые REGN/A/B
+        df = df_dbf.copy()
+
+        # если read_dbf_to_df вернул уже REGN/A/B — ок
+        if "A" not in df.columns or "B" not in df.columns:
+            # fallback: попробуем распознать поля по документации 101
+            cols_u = {c.upper(): c for c in df.columns}
+            a_col = cols_u.get("NUM_SC") or cols_u.get("A")
+            b_col = cols_u.get("IITG") or cols_u.get("B")
+            reg_col = cols_u.get("REGN")
+            if not (a_col and b_col and reg_col):
+                raise RuntimeError(f"Unexpected columns in preloaded df: {list(df.columns)}")
+            df = df.rename(columns={reg_col: "REGN", a_col: "A", b_col: "B"})
+
+        for _, b in banks_df.iterrows():
+            bank_name = str(b["bank"])
+            regn_bank = str(int(b["regn"]))
+
+            for _, fr in fdf.iterrows():
+                name = fr["name"]
+                expr = fr["expression"]
+                extra = _parse_extra(fr.get("extra", ""))
+
+                tokens = re.findall(r"\d+(?:\.\d+)?|[+]{1}|[-]{1}", str(expr))
+                acc = ""
+
+                for t in tokens:
+                    if t in ["+", "-"]:
+                        acc += t
+                        continue
+
+                    # Фильтр a_p применяем только если колонка есть
+                    # Здесь проще: используем _resolve_value_101, но на "слепом" df_full
+                    # (он сам проверит наличие A_P поля и отфильтрует, если есть)
+                    val = _resolve_value_101(
+                        df, "REGN", "A", "B",
+                        regn_bank=regn_bank,
+                        code=str(t),
+                        extra=extra,
+                    )
+                    val = "0" if (val is None or str(val).strip() == "") else str(val).strip()
+                    acc += val
+
+                rows.append({"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc})
+
+    df_long = pd.DataFrame(rows)
+    print(f"[INFO] 101 long rows: {len(df_long)}")
+    return df_long, indicator_order
