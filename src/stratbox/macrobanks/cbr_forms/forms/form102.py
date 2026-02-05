@@ -26,14 +26,14 @@ from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
 
 
 FORM = "102"
-DEFAULT_PREFER = "102"
+DEFAULT_PREFER = "P1"
 
 DEFAULT_CANDIDATES = LayoutCandidates(
-    regn_candidates=["REGN", "REG", "REG_NUM", "REGN_BNK"],
-    a_candidates=["CODE", "COD", "ROW", "STR", "NUM", "C1", "C_1", "A", "NP", "N", "P"],
-    b_candidates=["VALUE", "VAL", "SUM", "AMT", "C2", "C_2", "C3", "C_3", "B"],
+    regn_candidates=["REGN"],
+    a_candidates=["CODE"],
+    # В документации поле называется SIM_ITOGO (итого)
+    b_candidates=["SIM_ITOGO", "SIM_ITOG", "SIM_R"],
 )
-
 
 def build_url(d: pd.Timestamp) -> str:
     ymd = pd.Timestamp(d).strftime("%Y%m%d")
@@ -85,7 +85,7 @@ def _pick_cols_for_102(df: pd.DataFrame) -> tuple[str, str, str]:
         raise RuntimeError(f"REGN column not found in DBF. Columns={list(df.columns)}")
 
     code_col = None
-    for cand in ["CODE", "COD", "ROW", "STR", "NUM", "NP", "N", "P", "C1", "C_1", "A"]:
+    for cand in ["CODE", "C1", "C_1", "A", "ROW", "STR", "NUM"]:
         if cand in cols_u:
             code_col = cols_u[cand]
             break
@@ -99,7 +99,7 @@ def _pick_cols_for_102(df: pd.DataFrame) -> tuple[str, str, str]:
         raise RuntimeError(f"CODE column not found in DBF. Columns={list(df.columns)}")
 
     val_col = None
-    for cand in ["VALUE", "VAL", "SUM", "AMT", "C2", "C_2", "C3", "C_3", "B"]:
+    for cand in ["SIM_ITOGO", "SIM_ITOG", "SIM_R", "VALUE", "VAL", "SUM", "AMT", "B"]:
         if cand in cols_u:
             val_col = cols_u[cand]
             break

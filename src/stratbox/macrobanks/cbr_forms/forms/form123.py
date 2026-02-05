@@ -26,13 +26,12 @@ FORM = "123"
 
 
 DEFAULT_CANDIDATES = LayoutCandidates(
-    regn_candidates=["REGN", "REG", "REG_NUM", "REGN_BNK"],
-    a_candidates=["C1", "C_1", "NUM_SC", "SC", "SCHET", "ACCOUNT", "NOM_SCH", "NOMER"],
-    b_candidates=["C3", "C_3", "IITG", "SUM", "VALUE", "VAL", "C2", "C_2"],
+    regn_candidates=["REGN"],
+    a_candidates=["C1"],
+    b_candidates=["C3"],
 )
 
-DEFAULT_PREFER = "123"
-
+DEFAULT_PREFER = "123D"
 
 def build_url(d: pd.Timestamp) -> str:
     ymd = pd.Timestamp(d).strftime("%Y%m%d")

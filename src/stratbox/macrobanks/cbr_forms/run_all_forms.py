@@ -72,12 +72,17 @@ def _run_one_form(
     """
     print(f"[INFO] Running form {form_label}...")
 
-    df_long, indicator_order = run_fn(
-        dates=dates,
-        banks_df=banks_df,
-        formulas_df=formulas_df,
-        cfg=cfg,
-    )
+    try:
+        df_long, indicator_order = run_fn(
+            dates=dates,
+            banks_df=banks_df,
+            formulas_df=formulas_df,
+            cfg=cfg,
+        )
+    except Exception as e:
+        print(f"[WARN] Form {form_label} failed: {type(e).__name__}: {e}")
+        return
+
 
     if df_long is None or len(df_long) == 0:
         print(f"[WARN] Form {form_label}: empty df_long, export skipped.")
