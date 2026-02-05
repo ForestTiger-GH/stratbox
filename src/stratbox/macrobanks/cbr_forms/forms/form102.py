@@ -108,7 +108,27 @@ def _pick_102_dbf(ex_dir: Path) -> Path:
 def _build_lookup_from_dbf(dbf_path: Path) -> dict[tuple[str, str], str]:
     lookup: dict[tuple[str, str], str] = {}
 
-    dbf = DBF(str(dbf_path), load=True, ignore_missing_memofile=True)
+    # dbfread: читаем построчно, это быстрее и без лишних pandas-фильтров
+    # DBF ЦБ иногда имеет нестабильные/битые текстовые поля, поэтому:
+    # - задаём типичную для DBF кодировку (cp866 / cp1251)
+    # - ошибки декодирования игнорируем
+    try:
+        dbf = DBF(
+            str(dbf_path),
+            load=True,
+            ignore_missing_memofile=True,
+            encoding="cp866",
+            char_decode_errors="ignore",
+        )
+    except Exception:
+        dbf = DBF(
+            str(dbf_path),
+            load=True,
+            ignore_missing_memofile=True,
+            encoding="cp1251",
+            char_decode_errors="ignore",
+        )
+    
     have_u = {f.upper(): f for f in dbf.field_names}
 
     reg_f = have_u.get("REGN")

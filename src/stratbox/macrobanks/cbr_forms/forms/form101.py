@@ -137,7 +137,25 @@ def _build_lookup_from_dbf(dbf_path: Path) -> tuple[dict[tuple[str, int, str], s
     lookup_nap: dict[tuple[str, str], str] = {}
 
     # dbfread: читаем построчно, это быстрее и без лишних pandas-фильтров
-    dbf = DBF(str(dbf_path), load=True, ignore_missing_memofile=True)
+    # DBF ЦБ иногда имеет нестабильные/битые текстовые поля, поэтому:
+    # - задаём типичную для DBF кодировку (cp866 / cp1251)
+    # - ошибки декодирования игнорируем
+    try:
+        dbf = DBF(
+            str(dbf_path),
+            load=True,
+            ignore_missing_memofile=True,
+            encoding="cp866",
+            char_decode_errors="ignore",
+        )
+    except Exception:
+        dbf = DBF(
+            str(dbf_path),
+            load=True,
+            ignore_missing_memofile=True,
+            encoding="cp1251",
+            char_decode_errors="ignore",
+        )
 
     # подстроимся под регистры
     have_u = {f.upper(): f for f in dbf.field_names}
