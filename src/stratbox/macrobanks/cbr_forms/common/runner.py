@@ -88,8 +88,9 @@ def run_dates_to_dbf_df(
     out: list[tuple[str, pd.DataFrame]] = []
 
     try:
-        for i, d in enumerate(dates):
-            d = pd.Timestamp(d)
+        it = trange(len(dates), desc=progress_desc, leave=False) if show_progress else range(len(dates))
+        for i in it:
+            d = pd.Timestamp(dates[i])
             date_str = d.strftime("%d.%m.%Y")
             url = build_url(d)
 
@@ -111,9 +112,13 @@ def run_dates_to_dbf_df(
             ex_dir = work_dir / f"ex_{ymd}"
             _extract_rar(rar_path, ex_dir)
 
-            dbf_path, layout = pick_dbf_and_layout(ex_dir, candidates=candidates, prefer_stem_contains=prefer_stem_contains)
+            dbf_path, _layout = pick_dbf_and_layout(
+                ex_dir,
+                candidates=candidates,
+                prefer_stem_contains=prefer_stem_contains,
+            )
 
-            df_dbf = read_dbf_to_df(str(dbf_path), layout=layout)
+            df_dbf = read_dbf_to_df(str(dbf_path), _layout)
             out.append((date_str, df_dbf))
 
         print(f"[INFO] DBF dates processed: {len(out)}")
