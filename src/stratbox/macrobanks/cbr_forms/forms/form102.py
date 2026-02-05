@@ -74,6 +74,13 @@ def _norm_code(x: Any) -> str:
     s = "" if x is None else str(x)
     s = s.strip()
     s = re.sub(r"\s+", "", s)
+
+    # если это цифры — убираем ведущие нули, чтобы совпадало с формулами вида 11000
+    if s.isdigit():
+        try:
+            return str(int(s))
+        except Exception:
+            return s
     return s
 
 
@@ -216,7 +223,8 @@ def build_long(
                         if t in ["+", "-"]:
                             acc += t
                         else:
-                            acc += lookup.get((regn, str(t)), "0")
+                            code = _norm_code(t)
+                            acc += lookup.get((regn, code), "0")
                     out_rows.append(
                         {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
                     )
