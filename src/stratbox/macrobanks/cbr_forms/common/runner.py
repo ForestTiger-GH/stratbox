@@ -22,7 +22,7 @@ import pandas as pd
 
 from stratbox.base.filestore import make_workdir
 from stratbox.base.net.http import download_bytes
-from stratbox.macrobanks.cbr_forms.common.dbf import DBFLayout, read_dbf_to_df
+from stratbox.macrobanks.cbr_forms.common.dbf import read_dbf_to_df
 from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates, pick_dbf_and_layout
 
 
