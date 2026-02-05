@@ -139,13 +139,25 @@ def _load_standart_enabled() -> set[str]:
 
 
 
-def _load_legacy_set() -> set[str]:
+def _load_legacy_sort_maps() -> tuple[dict[str, int], dict[str, int]]:
     """
-    Возвращает множество legacy банков по колонке bank из cbr_legacy.csv.
+    Возвращает два словаря с "порядком сортировки" из cbr_legacy.csv:
+
+    1) regn_to_sort:  regn -> sort (int)
+    2) bank_to_sort:  bank_norm -> sort (int)
+
+    Почему два:
+    - regn надёжнее (если в legacy заполнен regn)
+    - bank_norm нужен как fallback (если regn отсутствует/пустой)
+
+    Важно:
+    - bank прогоняется через normalize_bank_name() тем же способом, что и основной реестр.
+    - sort приводится к int (если возможно). Строки вида "1", "002", "10.0" поддерживаются.
+    - при дублях берётся минимальное sort (чтобы не ломать сортировку).
     """
     df = _read_latest_csv(_REL_DIR_LEGACY, prefix="cbr_legacy")
     if df.empty:
-        return set()
+        return {}, {}
 
     cols = {c.lower(): c for c in df.columns}
     need = {"bank", "regn", "sort"}
@@ -153,8 +165,61 @@ def _load_legacy_set() -> set[str]:
         raise ValueError("cbr_legacy.csv must have columns: bank, regn, sort")
 
     c_bank = cols["bank"]
-    banks = df[c_bank].astype(str).str.strip().str.upper().tolist()
-    return set([b for b in banks if b and b != "NAN"])
+    c_regn = cols["regn"]
+    c_sort = cols["sort"]
+
+    tmp = df[[c_bank, c_regn, c_sort]].copy()
+
+    # Нормализация названий (как в основном реестре)
+    tmp[c_bank] = tmp[c_bank].map(
+        lambda s: normalize_bank_name(s, placement="omit", case_mode="upper", drop_bank="left")
+    )
+
+    # regn чистим (если есть)
+    tmp[c_regn] = tmp[c_regn].astype(str).str.replace(".0", "", regex=False).str.strip()
+
+    # sort -> int (максимально мягко)
+    # - убираем пробелы
+    # - поддерживаем "10.0"
+    def _to_int(x) -> int | None:
+        s = str(x).strip()
+        if not s or s.upper() == "NAN":
+            return None
+        try:
+            # "10" -> 10, "10.0" -> 10
+            return int(float(s))
+        except Exception:
+            return None
+
+    tmp[c_sort] = tmp[c_sort].map(_to_int)
+
+    # Убираем строки без sort или без хоть какого-то ключа
+    tmp = tmp[tmp[c_sort].notna()].copy()
+
+    regn_to_sort: dict[str, int] = {}
+    bank_to_sort: dict[str, int] = {}
+
+    # Заполняем словари; при дублях берём минимальный sort
+    for _, row in tmp.iterrows():
+        bank_norm = str(row[c_bank]).strip().upper()
+        regn = str(row[c_regn]).strip()
+        sort_val = row[c_sort]
+        if sort_val is None:
+            continue
+        sort_val = int(sort_val)
+
+        if regn and regn.upper() != "NAN":
+            prev = regn_to_sort.get(regn)
+            if prev is None or sort_val < prev:
+                regn_to_sort[regn] = sort_val
+
+        if bank_norm and bank_norm != "NAN":
+            prev = bank_to_sort.get(bank_norm)
+            if prev is None or sort_val < prev:
+                bank_to_sort[bank_norm] = sort_val
+
+    return regn_to_sort, bank_to_sort
+
 
 
 def read() -> pd.DataFrame:
@@ -209,9 +274,23 @@ def read() -> pd.DataFrame:
     out["replacements_list"] = out["bank_name_norm"].map(_aliases_for)
     out["replacements_json"] = out["replacements_list"].map(lambda x: json.dumps(x, ensure_ascii=False))
 
-    # 3) legacy
-    legacy_set = _load_legacy_set()
-    out["is_legacy"] = out["bank_name_norm"].astype(str).str.strip().str.upper().isin(legacy_set)
+    # 3) legacy: теперь это "sort-ранг" из legacy-реестра или False (если банка нет в legacy)
+    regn_to_sort, bank_to_sort = _load_legacy_sort_maps()
+
+    # Сначала пытаемся матчить по regn (надёжнее), потом по bank_name_norm (fallback)
+    legacy_sort = out["regn"].astype(str).str.strip().map(regn_to_sort)
+
+    # legacy_sort сейчас может быть float/NaN из-за pandas — приводим к object, чтобы спокойно хранить int или False
+    legacy_sort = legacy_sort.astype(object)
+
+    fallback = out["bank_name_norm"].astype(str).str.strip().str.upper().map(bank_to_sort).astype(object)
+
+    # где не нашлось по regn — пробуем по названию
+    legacy_sort = legacy_sort.where(pd.notna(legacy_sort), fallback)
+
+    # где не нашлось вообще — ставим False (как ты и хочешь)
+    out["is_legacy"] = legacy_sort.where(pd.notna(legacy_sort), False)
+
 
     # lic_status, если есть — сохраняем в каноническое поле
     if "lic_status" in cols:
