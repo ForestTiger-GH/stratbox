@@ -1,14 +1,8 @@
 """
-Форма 123: расчёт показателей по формулам из models/formulas.csv.
-
-Особенность:
-- формулы — выражения из кодов (000, 102+105, ...)
-- в DBF: A = ACC (код), B = значение, REGN = банк
-- формирование df_long:
-    Дата | Банк | Показатель | Значение (Excel-формула вида "=...")
-
-Скрипт не привязан к банкам/legacy — banks_df приходит параметром.
-Скрипт не привязан к набору формул — formulas_df приходит параметром.
+Форма 123 (быстрая версия):
+- строится lookup по каждой дате: regn -> {acc:int -> value:str}
+- формулы парсятся один раз
+- дальше только dict.get(), без фильтраций DataFrame в глубоких циклах
 """
 
 from __future__ import annotations
@@ -24,14 +18,13 @@ from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
 
 FORM = "123"
 
-
 DEFAULT_CANDIDATES = LayoutCandidates(
     regn_candidates=["REGN"],
-    a_candidates=["C1"],
-    b_candidates=["C3"],
+    a_candidates=["C1"],   # код строки/показателя
+    b_candidates=["C3"],   # значение
 )
-
 DEFAULT_PREFER = "123D"
+
 
 def build_url(d: pd.Timestamp) -> str:
     ymd = pd.Timestamp(d).strftime("%Y%m%d")
@@ -42,7 +35,7 @@ def _norm_regn(x) -> str:
     return re.sub(r"\D+", "", "" if x is None else str(x))
 
 
-def _norm_acc_to_int(x) -> int:
+def _norm_acc_int(x) -> int:
     s = "" if x is None else str(x)
     s = re.sub(r"\D+", "", s)
     return int(s) if s else -1
@@ -53,7 +46,8 @@ def _value_to_str(v) -> str:
         return "0"
     if isinstance(v, float) and np.isnan(v):
         return "0"
-    return str(v).strip().replace(",", ".")
+    s = str(v).strip().replace(",", ".")
+    return s if s else "0"
 
 
 def build_long(
@@ -62,58 +56,59 @@ def build_long(
     formulas_df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
     """
-    Преобразует (дата, df_dbf) + банки + формулы -> df_long.
-
-    formulas_df должен содержать строки form=123, kind=formula:
-      name, expression
+    (дата, df_dbf) + банки + формулы -> df_long.
     """
     fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
     if len(fdf) == 0:
         raise RuntimeError("No formulas for form 123 in formulas_df.")
 
+    # порядок показателей
     indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+
+    # парсим формулы один раз
+    parsed: list[tuple[str, list[str]]] = []
+    for _, fr in fdf.iterrows():
+        name = str(fr["name"])
+        expr = str(fr["expression"])
+        tokens = re.findall(r"\d+|[+]{1}|[-]{1}", expr)
+        parsed.append((name, tokens))
+
+    # подготовим список банков (быстрее, чем iterrows каждый раз)
+    banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
 
     rows = []
 
     for date_str, df_dbf in date_dbf_list:
-        df = df_dbf.copy()
+        if df_dbf is None or len(df_dbf) == 0:
+            continue
 
-        # df_dbf: REGN/A/B
-        df["REGN_N"] = df["REGN"].map(_norm_regn)
-        df["ACC"] = df["A"].map(_norm_acc_to_int)
-        df["VAL"] = df["B"]
+        # строим lookup: regn -> {acc -> val}
+        d = df_dbf.copy()
+        d["REGN_N"] = d["REGN"].map(_norm_regn)
+        d["ACC"] = d["A"].map(_norm_acc_int)
+        d["VAL"] = d["B"].map(_value_to_str)
 
-        for _, b in banks_df.iterrows():
-            bank_name = str(b["bank"])
-            regn_bank = str(int(b["regn"]))
+        # drop duplicates по (REGN, ACC) — оставляем первый (как и раньше)
+        d = d.dropna(subset=["REGN_N"])
+        d = d.drop_duplicates(subset=["REGN_N", "ACC"], keep="first")
 
-            sub = df[df["REGN_N"] == regn_bank].copy()
+        reg_map: dict[str, dict[int, str]] = {}
+        for regn, sub in d.groupby("REGN_N", sort=False):
+            reg_map[regn] = dict(zip(sub["ACC"].tolist(), sub["VAL"].tolist()))
 
-            for _, fr in fdf.iterrows():
-                name = fr["name"]
-                expr = fr["expression"]
+        # считаем
+        for bank_name, regn_bank in banks:
+            bm = reg_map.get(regn_bank, {})
 
-                # токены: числа и +/-
-                tokens = re.findall(r"\d+|[+]{1}|[-]{1}", str(expr))
-                formula = ""
-
+            for name, tokens in parsed:
+                acc = ""
                 for t in tokens:
                     if t in ["+", "-"]:
-                        formula += t
-                        continue
-
-                    acc = int(t)
-                    m = sub[sub["ACC"] == acc]
-                    val = _value_to_str(m["VAL"].iloc[0]) if len(m) else "0"
-                    formula += val
-
+                        acc += t
+                    else:
+                        acc += bm.get(int(t), "0")
                 rows.append(
-                    {
-                        "Дата": date_str,
-                        "Банк": bank_name,
-                        "Показатель": name,
-                        "Значение": "=" + formula,
-                    }
+                    {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
                 )
 
     df_long = pd.DataFrame(rows)
@@ -129,14 +124,8 @@ def run(
     candidates: LayoutCandidates | None = None,
     prefer_stem_contains: str | None = None,
     cfg: RunnerConfig | None = None,
+    show_progress: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
-    """
-    Универсальный запуск формы 123 в режиме df_long.
-
-    Возвращает:
-      - df_long
-      - indicator_order (для wide-сборки)
-    """
     candidates = candidates or DEFAULT_CANDIDATES
     prefer_stem_contains = prefer_stem_contains or DEFAULT_PREFER
     cfg = cfg or RunnerConfig()
@@ -147,7 +136,7 @@ def run(
         candidates=candidates,
         prefer_stem_contains=prefer_stem_contains,
         cfg=cfg,
-        show_progress=True,
+        show_progress=show_progress,
         progress_desc="CBR 123",
     )
     return build_long(date_dbf_list, banks_df, formulas_df)

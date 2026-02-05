@@ -1,15 +1,7 @@
 """
-Форма 135: показатели H1.0/H1.1/H1.2 из DBF.
-
-В formulas.csv это хранится как kind=metric.
-Сами expression сейчас носят описательный характер, поэтому:
-- используем name (H1.0/H1.1/H1.2) как список показателей
-- правило извлечения по умолчанию: label содержит "1.0"/"1.1"/"1.2"
-  (устойчиво к кодировкам типа "ì1.x")
-
-Скрипт параметризуем:
-- banks_df (любой набор банков)
-- formulas_df (любой набор metric, можно заменить на formulas2)
+Форма 135 (быстрая версия):
+- A = код норматива (C1_3)
+- B = фактическое значение (C2_3)
 """
 
 from __future__ import annotations
@@ -25,15 +17,12 @@ from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
 
 FORM = "135"
 
-
 DEFAULT_CANDIDATES = LayoutCandidates(
     regn_candidates=["REGN"],
     a_candidates=["C1_3"],
     b_candidates=["C2_3"],
 )
-
 DEFAULT_PREFER = "135_3"
-
 
 
 def build_url(d: pd.Timestamp) -> str:
@@ -45,72 +34,72 @@ def _norm_regn(x) -> str:
     return re.sub(r"\D+", "", "" if x is None else str(x))
 
 
-def _to_value_str(v) -> str:
+def _norm_code(x) -> str:
+    s = "" if x is None else str(x)
+    s = s.strip().replace(",", ".")
+    s = re.sub(r"[^0-9.]+", "", s)
+    return s
+
+
+def _value_to_str(v) -> str:
     if v is None:
-        return ""
-    if isinstance(v, str):
-        return v.strip().replace(",", ".")
-    if isinstance(v, (int, float, np.number)):
-        x = float(v)
-        if x.is_integer():
-            return str(int(x))
-        return str(x)
-    return str(v).strip().replace(",", ".")
-
-
-def _default_label_to_hkey(label: str) -> str | None:
-    s = "" if label is None else str(label)
-    if "1.0" in s:
-        return "H1.0"
-    if "1.1" in s:
-        return "H1.1"
-    if "1.2" in s:
-        return "H1.2"
-    return None
+        return "0"
+    if isinstance(v, float) and np.isnan(v):
+        return "0"
+    s = str(v).strip().replace(",", ".")
+    return s if s else "0"
 
 
 def build_long(
     date_dbf_list: list[tuple[str, pd.DataFrame]],
     banks_df: pd.DataFrame,
     formulas_df: pd.DataFrame,
-    *,
-    label_to_key=_default_label_to_hkey,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
-    """
-    label_to_key можно подменять снаружи (если поменяются правила распознавания меток).
-    """
-    mdf = get_formulas_for(formulas_df, form=FORM, kind="metric")
-    if len(mdf) == 0:
-        raise RuntimeError("No metrics for form 135 in formulas_df.")
+    fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
+    if len(fdf) == 0:
+        raise RuntimeError("No formulas for form 135 in formulas_df.")
 
-    metrics = mdf["name"].astype(str).tolist()
-    indicator_order = {m: i for i, m in enumerate(metrics)}
+    indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+
+    parsed: list[tuple[str, list[str]]] = []
+    for _, fr in fdf.iterrows():
+        name = str(fr["name"])
+        expr = str(fr["expression"])
+        tokens = re.findall(r"\d+(?:\.\d+)?|[+]{1}|[-]{1}", expr)
+        parsed.append((name, tokens))
+
+    banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
 
     rows = []
 
     for date_str, df_dbf in date_dbf_list:
-        df = df_dbf.copy()
-        df["REGN_N"] = df["REGN"].map(_norm_regn)
-        df["KEY"] = df["A"].map(label_to_key)
-        df["VAL"] = df["B"]
+        if df_dbf is None or len(df_dbf) == 0:
+            continue
 
-        for _, b in banks_df.iterrows():
-            bank_name = str(b["bank"])
-            regn_bank = str(int(b["regn"]))
+        d = df_dbf.copy()
+        d["REGN_N"] = d["REGN"].map(_norm_regn)
+        d["CODE"] = d["A"].map(_norm_code)
+        d["VAL"] = d["B"].map(_value_to_str)
 
-            sub = df[df["REGN_N"] == regn_bank].copy()
+        d = d.dropna(subset=["REGN_N", "CODE"])
+        d = d.drop_duplicates(subset=["REGN_N", "CODE"], keep="first")
 
-            for key in metrics:
-                m = sub[sub["KEY"] == key]
-                val = _to_value_str(m["VAL"].iloc[0]) if len(m) else ""
+        reg_map: dict[str, dict[str, str]] = {}
+        for regn, sub in d.groupby("REGN_N", sort=False):
+            reg_map[regn] = dict(zip(sub["CODE"].tolist(), sub["VAL"].tolist()))
 
+        for bank_name, regn_bank in banks:
+            bm = reg_map.get(regn_bank, {})
+
+            for name, tokens in parsed:
+                acc = ""
+                for t in tokens:
+                    if t in ["+", "-"]:
+                        acc += t
+                    else:
+                        acc += bm.get(str(t), "0")
                 rows.append(
-                    {
-                        "Дата": date_str,
-                        "Банк": bank_name,
-                        "Показатель": key,
-                        "Значение": val,
-                    }
+                    {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
                 )
 
     df_long = pd.DataFrame(rows)
@@ -126,7 +115,7 @@ def run(
     candidates: LayoutCandidates | None = None,
     prefer_stem_contains: str | None = None,
     cfg: RunnerConfig | None = None,
-    label_to_key=_default_label_to_hkey,
+    show_progress: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
     candidates = candidates or DEFAULT_CANDIDATES
     prefer_stem_contains = prefer_stem_contains or DEFAULT_PREFER
@@ -138,7 +127,7 @@ def run(
         candidates=candidates,
         prefer_stem_contains=prefer_stem_contains,
         cfg=cfg,
-        show_progress=True,
+        show_progress=show_progress,
         progress_desc="CBR 135",
     )
-    return build_long(date_dbf_list, banks_df, formulas_df, label_to_key=label_to_key)
+    return build_long(date_dbf_list, banks_df, formulas_df)
