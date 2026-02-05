@@ -17,6 +17,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+from tqdm.auto import trange
 
 import pandas as pd
 
@@ -70,6 +71,8 @@ def run_dates_to_dbf_df(
     candidates: LayoutCandidates,
     prefer_stem_contains: str | None,
     cfg: RunnerConfig | None = None,
+    show_progress: bool = True,
+    progress_desc: str = "CBR periods",
 ) -> list[tuple[str, pd.DataFrame]]:
     """
     Универсальный шаг: по списку дат качает архивы, распаковывает, выбирает DBF, читает в df.

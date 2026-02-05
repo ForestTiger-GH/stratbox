@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from dbfread import DBF
+from tqdm.auto import trange
 
 from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
@@ -246,7 +247,9 @@ def run(
             if p.returncode != 0:
                 raise RuntimeError("Archive extract failed:\n" + (p.stderr or p.stdout or ""))
 
-        for d in dates:
+        it = trange(len(dates), desc="CBR 102", leave=False)
+        for i in it:
+            d = dates[i]
             d = pd.Timestamp(d)
             date_str = d.strftime("%d.%m.%Y")
             url = build_url(d)

@@ -147,5 +147,7 @@ def run(
         candidates=candidates,
         prefer_stem_contains=prefer_stem_contains,
         cfg=cfg,
+        show_progress=True,
+        progress_desc="CBR 123",
     )
     return build_long(date_dbf_list, banks_df, formulas_df)
