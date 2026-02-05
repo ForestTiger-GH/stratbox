@@ -55,13 +55,28 @@ def _norm_code(x) -> str:
     return s
 
 
-def _value_to_str(v) -> str:
+def _value_to_num(v):
+    """
+    Возвращает число (float) для Excel.
+    Так Excel (в т.ч. русский) корректно распознает значение как число.
+    """
     if v is None:
-        return "0"
+        return 0.0
     if isinstance(v, float) and np.isnan(v):
-        return "0"
+        return 0.0
+
+    # dbfread/парсер может вернуть int/float — это идеально
+    if isinstance(v, (int, float)):
+        return float(v)
+
     s = str(v).strip().replace(",", ".")
-    return s if s else "0"
+    if s == "":
+        return 0.0
+    try:
+        return float(s)
+    except Exception:
+        return 0.0
+
 
 
 def _parse_metric_code(expr: str) -> str:
@@ -108,7 +123,7 @@ def build_long(
         d = df_dbf.copy()
         d["REGN_N"] = d["REGN"].map(_norm_regn)
         d["CODE"] = d["A"].map(_norm_code)   # A=C1_3
-        d["VAL"] = d["B"].map(_value_to_str) # B=C2_3
+        d["VAL"] = d["B"].map(_value_to_num) # B=C2_3
 
         d = d.dropna(subset=["REGN_N", "CODE"])
         d = d.drop_duplicates(subset=["REGN_N", "CODE"], keep="first")
@@ -121,8 +136,8 @@ def build_long(
         for bank_name, regn_bank in banks:
             bm = reg_map.get(regn_bank, {})
             for name, code in metrics:
-                val = bm.get(code, "0")
-                rows.append({"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": val})
+                val = bm.get(code, 0.0)
+                rows.append({"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": float(val)})
 
     df_long = pd.DataFrame(rows)
     print(f"[INFO] 135 long rows: {len(df_long)}")

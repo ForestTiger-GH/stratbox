@@ -34,7 +34,7 @@ from stratbox.base.filestore import make_workdir
 from stratbox.base.net.http import download_bytes
 from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
-
+from stratbox.macrobanks.cbr_forms.common.dbf import CBRFieldParser
 
 FORM = "102"
 DEFAULT_PREFER = "P1"
@@ -119,23 +119,16 @@ def _build_lookup_from_dbf(dbf_path: Path) -> dict[tuple[str, str], str]:
     # DBF ЦБ иногда имеет нестабильные/битые текстовые поля, поэтому:
     # - задаём типичную для DBF кодировку (cp866 / cp1251)
     # - ошибки декодирования игнорируем
-    try:
-        dbf = DBF(
-            str(dbf_path),
-            load=True,
-            ignore_missing_memofile=True,
-            encoding="cp866",
-            char_decode_errors="ignore",
-        )
-    except Exception:
-        dbf = DBF(
-            str(dbf_path),
-            load=True,
-            ignore_missing_memofile=True,
-            encoding="cp1251",
-            char_decode_errors="ignore",
-        )
     
+    # В 102 встречаются числовые поля в бинарном виде (b'1\\x00\\x00\\x00'),
+    # поэтому используем специализированный парсер Банка России.
+    dbf = DBF(
+        str(dbf_path),
+        parserclass=CBRFieldParser,
+        load=True,
+        ignore_missing_memofile=True,
+    )
+
     have_u = {f.upper(): f for f in dbf.field_names}
 
     reg_f = have_u.get("REGN")
