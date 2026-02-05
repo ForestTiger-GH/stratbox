@@ -94,22 +94,75 @@ def _value_to_str(v: Any) -> str:
 
 
 def _pick_102_dbf(ex_dir: Path) -> Path:
-    # предпочитаем dbf, где в имени есть P1
+    """
+    В 102 внутри архива лежат разные DBF, включая справочники (например REGN+NAME_B).
+    Нам нужна таблица с показателями: REGN + CODE + SIM_ITOGO (или аналоги).
+    Поэтому выбираем DBF по структуре (по field_names), а имя файла — вторичный фактор.
+    """
     cands = sorted(ex_dir.rglob("*.dbf"))
     if not cands:
         raise FileNotFoundError(f"No DBF found in extracted dir: {ex_dir}")
 
-    def score(p: Path) -> int:
-        n = p.name.upper()
-        s = 0
-        if "P1" in n:
-            s += 10
-        if n.endswith(".DBF"):
-            s += 1
-        return s
+    best_path = None
+    best_score = -10
+    best_fields = None
 
-    cands = sorted(cands, key=score, reverse=True)
-    return cands[0]
+    for p in cands:
+        try:
+            # load=False: читаем только заголовок (поля), без прогрузки записей
+            dbf = DBF(
+                str(p),
+                parserclass=CBRFieldParser,
+                load=False,
+                ignore_missing_memofile=True,
+            )
+            fields_u = {f.upper() for f in dbf.field_names}
+
+            has_regn = "REGN" in fields_u
+            has_code = "CODE" in fields_u
+            has_val = ("SIM_ITOGO" in fields_u) or ("SIM_ITOG" in fields_u) or ("SIM_R" in fields_u)
+
+            score = 0
+
+            # Структурные признаки важнее имени
+            if has_regn:
+                score += 5
+            if has_code:
+                score += 10
+            if has_val:
+                score += 10
+
+            # Имя файла — только подсказка
+            n = p.name.upper()
+            if "P1" in n:
+                score += 3
+            if "Q" in n:
+                score += 1
+
+            # Если это справочник (REGN+NAME_B) — явно штрафуем
+            if has_regn and ("NAME_B" in fields_u) and not has_code:
+                score -= 20
+
+            if score > best_score:
+                best_score = score
+                best_path = p
+                best_fields = sorted(fields_u)
+
+        except Exception:
+            # если какой-то DBF не читается даже заголовком — просто пропускаем
+            continue
+
+    if best_path is None:
+        raise RuntimeError(f"Could not pick DBF for 102. Candidates={len(cands)}")
+
+    # Жёсткая проверка: выбранная таблица обязана иметь CODE и значение
+    bf = set(best_fields or [])
+    if ("CODE" not in bf) or (("SIM_ITOGO" not in bf) and ("SIM_ITOG" not in bf) and ("SIM_R" not in bf)):
+        raise RuntimeError(f"102 DBF structure unexpected. Picked='{best_path.name}', Fields={best_fields}")
+
+    print(f"[INFO] 102 DBF picked: {best_path.name}")
+    return best_path
+
 
 
 def _build_lookup_from_dbf(dbf_path: Path) -> dict[tuple[str, str], str]:
@@ -119,7 +172,7 @@ def _build_lookup_from_dbf(dbf_path: Path) -> dict[tuple[str, str], str]:
     # DBF ЦБ иногда имеет нестабильные/битые текстовые поля, поэтому:
     # - задаём типичную для DBF кодировку (cp866 / cp1251)
     # - ошибки декодирования игнорируем
-    
+
     # В 102 встречаются числовые поля в бинарном виде (b'1\\x00\\x00\\x00'),
     # поэтому используем специализированный парсер Банка России.
     dbf = DBF(
