@@ -393,3 +393,35 @@ def resolve_style(
         spec.number_decimals = int(decimals)
 
     return spec
+
+def apply_preset(ws: Worksheet, preset: str, *, freeze_panes: str | None = None) -> None:
+    """
+    Совместимость с ioapi/excel_xlsx.py:
+    - preset: строка с именем пресета (case-insensitive)
+    - freeze_panes: если задано, переопределяет freeze_panes напрямую (например "C2")
+    """
+    key = str(preset).strip().upper()
+
+    # Нормализатор “старых” имён
+    if key == "MACROBANKS_TABLE":
+        key = "MACROBANKS_TABLE"
+    elif key == "MACROBANKS_GREEN":
+        key = "MACROBANKS_GREEN"
+    elif key == "MACROBANKS_BLUE":
+        key = "MACROBANKS_BLUE"
+
+    if key not in PRESETS:
+        raise ValueError(f"Unknown excel style preset: {preset}")
+
+    spec = PRESETS[key]
+    # Безопасная копия spec (на случай дальнейших правок)
+    spec = StyleSpec(**spec.__dict__)
+
+    # Если freeze_panes передали строкой (C2 и т.п.) — это явный приоритет пользователя.
+    if freeze_panes:
+        ws.freeze_panes = freeze_panes
+        # Чтобы apply_style не перебил freeze_panes, отключается его расчёт через rows/cols
+        spec.freeze_rows = 0
+        spec.freeze_cols = 0
+
+    apply_style(ws, spec)
