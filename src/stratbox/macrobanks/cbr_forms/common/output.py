@@ -14,7 +14,18 @@ def export_excel(path: str, df: pd.DataFrame) -> None:
     """
     Экспортирует DataFrame в Excel через stratbox ioapi.
     """
-    ia.excel.write_df(path, df)
+    ia.excel.write_df(
+        path,
+        df,
+        sheet_name="data",
+        meta={
+            "creator": "Center for Macroeconomic Analysis and Forecasting (CMAF)",
+            "title": "Strategy Box Table Export",
+            "category": "CMAF DATA",
+        },
+        style_preset="macrobanks_table",
+    )
+
     print(f"[OK] Exported: {path}")
 
 
