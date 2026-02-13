@@ -82,8 +82,9 @@ def run_all_forms_to_xlsx(
             cfg=cfg,
             show_progress=show_progress,  # внутри формы будет trange по датам (leave=False)
         )
-
-        out_path = out_dir_p / f"Сводка {code}ф.xlsx"
+        
+        banks_tag = str(banks_mode).upper()
+        out_path = out_dir_p / f"CBR_0409{code}_{banks_tag}.xlsx"
 
         make_and_export_wide(
             out_path=str(out_path),
