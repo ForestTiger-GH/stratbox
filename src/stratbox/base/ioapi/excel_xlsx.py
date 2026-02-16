@@ -66,6 +66,19 @@ def write_df(
     # ВАЖНО: index контролируем явно, чтобы не получить конфликт kwargs
     if "index" in kwargs:
         kwargs.pop("index")
+    # --- ВАЖНО: pandas/openpyxl в некоторых окружениях не принимает autofilter_range в writer._write_cells.
+    # Поэтому этот параметр надо извлечь и применить вручную через openpyxl уже ПОСЛЕ записи.
+    autofilter_range = None
+
+    if "autofilter_range" in kwargs:
+        autofilter_range = kwargs.pop("autofilter_range")
+
+    engine_kwargs = kwargs.pop("engine_kwargs", None)
+    if isinstance(engine_kwargs, dict) and "autofilter_range" in engine_kwargs:
+        autofilter_range = engine_kwargs.pop("autofilter_range")
+        # Если там остались другие engine_kwargs — можно вернуть их обратно,
+        # но безопаснее сейчас НЕ прокидывать engine_kwargs вовсе (во избежание несовместимостей).
+        # Поэтому engine_kwargs намеренно не возвращается в kwargs.
 
     df.to_excel(bio, index=index, engine="openpyxl", sheet_name=sheet_name, **kwargs)
 
@@ -93,6 +106,24 @@ def write_df(
     if style_preset is not None:
         ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
         apply_preset(ws, style_preset, freeze_panes=freeze_panes)
+        # --- Применение автофильтра (если задано)
+        if autofilter_range:
+            try:
+                ws.auto_filter.ref = str(autofilter_range)
+            except Exception:
+                # Молча пропускается: автофильтр не должен валить экспорт
+                pass
+        if not autofilter_range:
+            try:
+                from openpyxl.utils import get_column_letter
+                # диапазон таблицы: учитывается index, если index=True
+                ncols = int(df.shape[1]) + (1 if index else 0)
+                nrows = int(df.shape[0]) + 1  # +1 строка заголовка
+                if ncols > 0 and nrows > 1:
+                    autofilter_range = f"A1:{get_column_letter(ncols)}{nrows}"
+                    ws.auto_filter.ref = autofilter_range
+            except Exception:
+                pass
 
     out = BytesIO()
     wb.save(out)
