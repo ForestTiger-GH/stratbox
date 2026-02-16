@@ -24,29 +24,33 @@ def _fit_column_widths(
     min_width: float | None,
     max_width: float | None,
     sample_rows: int = 2000,
+    max_cell_chars: int = 60,
 ) -> None:
     """
-    Автонастройка ширины столбцов по содержимому.
+    Индивидуальная авто-настройка ширины КАЖДОГО столбца по собственному содержимому.
 
-    Логика:
-    - берутся видимые значения (строки 1..min(max_row, sample_rows))
-    - ширина оценивается по длине строки (грубая оценка)
-    - применяется clamp: min_width/max_width
+    Важно:
+    - ширина рассчитывается отдельно по каждой колонке
+    - учитываются только первые sample_rows строк (для скорости)
+    - слишком длинные строки обрезаются до max_cell_chars (чтобы не раздувать ширину)
     """
+    import datetime as _dt
     from openpyxl.utils import get_column_letter
 
     max_row = ws.max_row or 1
     max_col = ws.max_column or 1
     last_row = min(max_row, int(sample_rows)) if sample_rows and sample_rows > 0 else max_row
 
-    # Счётчик максимальной длины текста по колонке
-    max_len = {c: 0 for c in range(1, max_col + 1)}
+    # max_len[c] = максимальная длина отображаемого текста в колонке c
+    max_len: dict[int, int] = {c: 0 for c in range(1, max_col + 1)}
 
-    for r in range(1, last_row + 1):
-        for c in range(1, max_col + 1):
+    for c in range(1, max_col + 1):
+        col_max = 0
+
+        for r in range(1, last_row + 1):
             cell = ws.cell(row=r, column=c)
 
-            # merged cells: берём значение только из верхней левой ячейки
+            # merged cells: значение только в верхней-левой; остальные пропускаем
             if cell.coordinate in ws.merged_cells:
                 continue
 
@@ -54,29 +58,37 @@ def _fit_column_widths(
             if v is None:
                 continue
 
-            # Приведение к строке
-            if isinstance(v, (int, float)):
-                s = str(v)
+            # Приведение к "отображаемой" строке
+            if isinstance(v, (_dt.date, _dt.datetime)):
+                s = v.strftime("%Y-%m-%d") if isinstance(v, _dt.date) and not isinstance(v, _dt.datetime) else v.strftime("%Y-%m-%d %H:%M")
+            elif isinstance(v, (int, float)):
+                # ограничиваем float-«простыни»
+                s = f"{v:.15g}"
             else:
                 s = str(v)
 
-            # Убираем переносы строк (они ломают оценку)
             s = s.replace("\n", " ").strip()
             if not s:
                 continue
 
-            ln = len(s)
-            if ln > max_len[c]:
-                max_len[c] = ln
+            # НЕ даём одной ячейке раздувать колонку бесконечно
+            if max_cell_chars and len(s) > int(max_cell_chars):
+                s = s[: int(max_cell_chars)]
 
-    # Перевод "длина строки" -> "ширина Excel"
-    # 1 символ ~ 1 единица ширины, плюс небольшой запас
+            ln = len(s)
+            if ln > col_max:
+                col_max = ln
+
+        max_len[c] = col_max
+
+    # Применяем ширины по каждой колонке отдельно
     for c in range(1, max_col + 1):
         ln = max_len.get(c, 0)
         if ln <= 0:
             continue
 
-        width = float(ln + 2)
+        # Перевод символов в "excel width" (чуть более адекватный коэффициент)
+        width = float(ln * 0.95 + 2)
 
         if min_width is not None:
             width = max(width, float(min_width))
@@ -85,6 +97,7 @@ def _fit_column_widths(
 
         col_letter = get_column_letter(c)
         ws.column_dimensions[col_letter].width = width
+
 
 
 def read_df(
