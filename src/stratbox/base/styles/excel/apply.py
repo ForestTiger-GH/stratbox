@@ -2,17 +2,19 @@
 Применение StyleSpec к openpyxl worksheet.
 
 Комментарии — на русском (внешне, от третьего лица).
+Print/логи — на английском (если появятся).
 """
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Optional
 
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.styles import Font, PatternFill, Border, Side
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 
-from .models import StyleSpec
+from .models import StyleSpec, BlockStyle
 
 
 def _apply_gridlines(ws: Worksheet, hide: bool) -> None:
@@ -34,65 +36,99 @@ def _apply_freeze(ws: Worksheet, freeze_rows: int, freeze_cols: int, freeze_pane
     ws.freeze_panes = f"{get_column_letter(col)}{row}"
 
 
-def _apply_font(ws: Worksheet, spec: StyleSpec) -> None:
-    if not spec.font_theme:
-        return
+def _merge_block(base: BlockStyle, overlay: Optional[BlockStyle]) -> BlockStyle:
+    """
+    Накладывает overlay на base: берёт только те поля, которые не None.
+    """
+    if overlay is None:
+        return base
 
-    theme = spec.font_theme
-    header_font = Font(name=theme.name, size=theme.size, bold=theme.header_bold)
-    body_font = Font(name=theme.name, size=theme.size, bold=False)
-
-    max_row = ws.max_row or 1
-    max_col = ws.max_column or 1
-
-    for r in range(1, max_row + 1):
-        for c in range(1, max_col + 1):
-            cell = ws.cell(row=r, column=c)
-            if r <= spec.header_rows or c <= spec.header_cols:
-                cell.font = header_font
-            else:
-                cell.font = body_font
+    return BlockStyle(
+        fill=overlay.fill if overlay.fill is not None else base.fill,
+        font_color=overlay.font_color if overlay.font_color is not None else base.font_color,
+        bold=overlay.bold if overlay.bold is not None else base.bold,
+        border_color=overlay.border_color if overlay.border_color is not None else base.border_color,
+        align_h=overlay.align_h if overlay.align_h is not None else base.align_h,
+        align_v=overlay.align_v if overlay.align_v is not None else base.align_v,
+        wrap_text=overlay.wrap_text if overlay.wrap_text is not None else base.wrap_text,
+    )
 
 
-def _apply_palette(ws: Worksheet, spec: StyleSpec) -> None:
-    if not spec.palette:
-        return
+def _resolve_cell_block(spec: StyleSpec, r: int, c: int) -> BlockStyle:
+    """
+    Возвращает BlockStyle для конкретной ячейки по правилам 4 кирпичиков.
 
-    pal = spec.palette
+    По умолчанию всё равно values_block (может быть пустым).
+    """
+    values = spec.values_block or BlockStyle()
 
-    fill_main = PatternFill("solid", fgColor=pal.header_fill_main)
-    fill_side = PatternFill("solid", fgColor=pal.header_fill_side)
-    header_font = None
-    if spec.font_theme:
-        header_font = Font(name=spec.font_theme.name, size=spec.font_theme.size, bold=spec.font_theme.header_bold, color=pal.header_font_color)
-    else:
-        header_font = Font(bold=True, color=pal.header_font_color)
+    in_header = spec.header_rows > 0 and r <= spec.header_rows
+    in_first_cols = spec.first_cols > 0 and c <= spec.first_cols
 
-    body_fill = PatternFill("solid", fgColor=pal.data_fill) if pal.data_fill else None
+    # corner: верх-лево
+    if in_header and in_first_cols:
+        return _merge_block(values, spec.corner_block or spec.header_block or spec.first_cols_block)
 
-    max_row = ws.max_row or 1
-    max_col = ws.max_column or 1
+    # header: верх (кроме corner)
+    if in_header:
+        return _merge_block(values, spec.header_block)
 
-    # Заголовки: верхние строки и левые столбцы
-    for r in range(1, max_row + 1):
-        for c in range(1, max_col + 1):
-            cell = ws.cell(row=r, column=c)
+    # first cols: лево (кроме corner)
+    if in_first_cols:
+        return _merge_block(values, spec.first_cols_block)
 
-            is_top_header = r <= spec.header_rows
-            is_left_header = c <= spec.header_cols
+    # values: обычные значения
+    return values
 
-            if is_top_header and is_left_header:
-                cell.fill = fill_main
-                cell.font = header_font
-            elif is_top_header or is_left_header:
-                cell.fill = fill_side
-                cell.font = header_font
-            else:
-                if body_fill:
-                    cell.fill = body_fill
+
+def _make_font(spec: StyleSpec, block: BlockStyle) -> Optional[Font]:
+    """
+    Формирует Font для ячейки.
+    Если font_theme не задан и нет переопределений, то возвращает None (не трогать).
+    """
+    if spec.font_theme is None and block.font_color is None and block.bold is None:
+        return None
+
+    name = spec.font_theme.name if spec.font_theme else None
+    size = spec.font_theme.size if spec.font_theme else None
+
+    # bold: если не задано, по умолчанию False
+    bold = bool(block.bold) if block.bold is not None else False
+
+    # openpyxl: color задаётся строкой ARGB
+    if block.font_color is not None:
+        return Font(name=name, size=size, bold=bold, color=block.font_color)
+    return Font(name=name, size=size, bold=bold)
+
+
+def _make_fill(block: BlockStyle) -> Optional[PatternFill]:
+    if block.fill is None:
+        return None
+    return PatternFill("solid", fgColor=block.fill)
+
+
+def _make_alignment(block: BlockStyle) -> Optional[Alignment]:
+    if block.align_h is None and block.align_v is None and block.wrap_text is None:
+        return None
+    return Alignment(
+        horizontal=block.align_h,
+        vertical=block.align_v,
+        wrap_text=block.wrap_text,
+    )
+
+
+def _make_border(block: BlockStyle) -> Optional[Border]:
+    if block.border_color is None:
+        return None
+    side = Side(style="thin", color=block.border_color)
+    return Border(left=side, right=side, top=side, bottom=side)
 
 
 def _apply_number_format(ws: Worksheet, spec: StyleSpec) -> None:
+    """
+    Числовой формат применяется только к НЕ header-строкам.
+    first_cols не исключаются — они по смыслу равны values.
+    """
     if spec.number_decimals is None:
         return
 
@@ -103,12 +139,11 @@ def _apply_number_format(ws: Worksheet, spec: StyleSpec) -> None:
     max_col = ws.max_column or 1
 
     for r in range(1, max_row + 1):
+        if spec.header_rows > 0 and r <= spec.header_rows:
+            continue
+
         for c in range(1, max_col + 1):
             cell = ws.cell(row=r, column=c)
-            # Не форматировать заголовки
-            if r <= spec.header_rows or c <= spec.header_cols:
-                continue
-
             v = cell.value
             if v is None:
                 continue
@@ -124,17 +159,12 @@ def _apply_number_format(ws: Worksheet, spec: StyleSpec) -> None:
                 cell.number_format = fmt
 
 
-def _apply_borders(ws: Worksheet, spec: StyleSpec) -> None:
-    if not spec.apply_borders:
-        return
-    if not spec.palette:
-        # без палитры неясно какие цвета границ использовать
-        return
-
-    pal = spec.palette
-
-    thin_data = Side(style="thin", color=pal.data_border)
-    thin_header = Side(style="thin", color=pal.header_border)
+def apply_style(ws: Worksheet, spec: StyleSpec, *, freeze_panes: str | None = None) -> None:
+    """
+    Применяет StyleSpec к worksheet.
+    """
+    _apply_gridlines(ws, spec.hide_gridlines)
+    _apply_freeze(ws, spec.freeze_rows, spec.freeze_cols, freeze_panes)
 
     max_row = ws.max_row or 1
     max_col = ws.max_column or 1
@@ -142,23 +172,20 @@ def _apply_borders(ws: Worksheet, spec: StyleSpec) -> None:
     for r in range(1, max_row + 1):
         for c in range(1, max_col + 1):
             cell = ws.cell(row=r, column=c)
-            is_header = (r <= spec.header_rows) or (c <= spec.header_cols)
+            block = _resolve_cell_block(spec, r, c)
 
-            side = thin_header if is_header else thin_data
-            cell.border = Border(left=side, right=side, top=side, bottom=side)
+            font = _make_font(spec, block)
+            fill = _make_fill(block)
+            align = _make_alignment(block)
+            border = _make_border(block)
 
+            if font is not None:
+                cell.font = font
+            if fill is not None:
+                cell.fill = fill
+            if align is not None:
+                cell.alignment = align
+            if border is not None:
+                cell.border = border
 
-def apply_style(ws: Worksheet, spec: StyleSpec, *, freeze_panes: str | None = None) -> None:
-    """
-    Применяет StyleSpec к worksheet.
-
-    freeze_panes:
-    - если задан явно, использует его
-    - иначе рассчитывает из freeze_rows/freeze_cols
-    """
-    _apply_gridlines(ws, spec.hide_gridlines)
-    _apply_freeze(ws, spec.freeze_rows, spec.freeze_cols, freeze_panes)
-    _apply_font(ws, spec)
-    _apply_palette(ws, spec)
     _apply_number_format(ws, spec)
-    _apply_borders(ws, spec)

@@ -2,75 +2,74 @@
 Модели Excel-стилей.
 
 Комментарии — на русском (внешне, от третьего лица).
+Print/логи (если появятся) — на английском.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Literal
+
+
+AlignH = Literal["left", "center", "right", "general"]
+AlignV = Literal["top", "center", "bottom"]
 
 
 @dataclass(frozen=True)
 class FontTheme:
-    """Тема шрифтов."""
+    """Тема шрифта (общая для всей таблицы)."""
     name: str
     size: int
-    header_bold: bool = True
 
 
 @dataclass(frozen=True)
-class ColorPalette:
+class BlockStyle:
     """
-    Палитра цветов (ARGB hex для openpyxl).
+    Опциональное форматирование блока таблицы.
 
-    ARGB: например "FF0B6B3A" (FF = полностью непрозрачный).
+    Принцип:
+    - None => параметр не применяется (не трогает)
+    - значение => применяется
     """
-    name: str
+    fill: Optional[str] = None  # ARGB, например "FF0B6B3A"
+    font_color: Optional[str] = None  # ARGB
+    bold: Optional[bool] = None
 
-    # Заголовки
-    header_fill_main: str
-    header_fill_side: str
-    header_font_color: str
-
-    # Границы
-    data_border: str
-    header_border: str
-
-    # Тело (опционально)
-    data_fill: Optional[str] = None
+    border_color: Optional[str] = None  # ARGB, thin border
+    align_h: Optional[AlignH] = None
+    align_v: Optional[AlignV] = None
+    wrap_text: Optional[bool] = None
 
 
 @dataclass
 class StyleSpec:
     """
-    Полная спецификация стиля.
+    Спецификация стиля Excel-таблицы.
 
-    Принцип:
-    - если параметр None => фича не применяется (не трогает существующее)
-    - если число/значение => применяется
+    Ключевая идея:
+    - values_block задаёт "базу" (по умолчанию это пустой стиль)
+    - header/first_cols/corner — накладываются поверх базы (только заданные поля)
     """
     # базовое
     hide_gridlines: bool = True
 
-    # freeze: сколько закрепить строк/столбцов (0 => не закреплять)
+    # freeze: закрепление строк/столбцов (НЕ связано с форматированием)
     freeze_rows: int = 1
     freeze_cols: int = 2
 
-    # шрифт
+    # параметры разметки блоков
+    header_rows: int = 1          # сколько верхних строк считать "заголовком"
+    first_cols: int = 0           # сколько первых столбцов считать "первой зоной" (НЕ заголовок)
+
+    # шрифт общий
     font_theme: Optional[FontTheme] = None
 
-    # заголовки (верхние строки / левые столбцы)
-    header_rows: int = 1
-    header_cols: int = 2
-
-    # числовой формат:
-    # decimals=None => не применять числовой формат
-    # decimals=0/1/2/3 => применять
+    # числовой формат (опционально)
     number_decimals: Optional[int] = 0
     number_apply_to_formulas: bool = True
 
-    # палитра
-    palette: Optional[ColorPalette] = None
-
-    # применять границы
-    apply_borders: bool = True
+    # блоки (все опциональны)
+    values_block: Optional[BlockStyle] = None
+    header_block: Optional[BlockStyle] = None
+    first_cols_block: Optional[BlockStyle] = None
+    corner_block: Optional[BlockStyle] = None
