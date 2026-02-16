@@ -39,7 +39,7 @@ def write_df(
     *,
     sheet_name: str = "data",
     meta: dict[str, Any] | None = None,
-    style_preset: str | None = None,
+    style_preset: str | None = "DEFAULT",
     freeze_panes: str | None = None,
     auto_install: bool | None = None,
     index: bool = False,
@@ -50,10 +50,16 @@ def write_df(
     - sheet_name
     - метаданные книги (meta)
     - форматирование (style_preset)
+
+    style_preset:
+    - None => стили не применять
+    - "DEFAULT" => применить дефолтный пресет (core или plugin)
+    - либо конкретное имя пресета (core или plugin)
     """
     ensure_import("openpyxl", "openpyxl>=3.1", auto_install=auto_install)
 
     from openpyxl import load_workbook
+    from stratbox.base.styles.excel.main import apply_preset
 
     bio = BytesIO()
 
@@ -84,9 +90,7 @@ def write_df(
             props.description = str(meta["description"])
 
     # 2) стили
-    if style_preset:
-        from stratbox.base.ioapi.excel_styles import apply_preset
-
+    if style_preset is not None:
         ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
         apply_preset(ws, style_preset, freeze_panes=freeze_panes)
 
