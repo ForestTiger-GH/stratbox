@@ -25,14 +25,16 @@ def _fit_column_widths(
     max_width: float | None,
     sample_rows: int = 2000,
     max_cell_chars: int = 60,
+    include_header: bool = False,
+    header_max_chars: int = 22,
 ) -> None:
     """
-    Индивидуальная авто-настройка ширины КАЖДОГО столбца по собственному содержимому.
+    Авто-настройка ширины столбцов по содержимому.
 
-    Важно:
-    - ширина рассчитывается отдельно по каждой колонке
-    - учитываются только первые sample_rows строк (для скорости)
-    - слишком длинные строки обрезаются до max_cell_chars (чтобы не раздувать ширину)
+    Критично для CBR-таблиц:
+    - По умолчанию заголовок (строка 1) НЕ участвует в оценке ширины,
+      иначе длинные подписи столбцов раздувают ширину "в космос".
+    - Каждый столбец рассчитывается индивидуально.
     """
     import datetime as _dt
     from openpyxl.utils import get_column_letter
@@ -41,13 +43,32 @@ def _fit_column_widths(
     max_col = ws.max_column or 1
     last_row = min(max_row, int(sample_rows)) if sample_rows and sample_rows > 0 else max_row
 
+    # Где начинать мерить данные:
+    # если заголовок не учитывается, начинаем со 2-й строки
+    start_row = 1 if include_header else 2
+    if start_row > last_row:
+        start_row = 1  # если лист крошечный
+
     # max_len[c] = максимальная длина отображаемого текста в колонке c
     max_len: dict[int, int] = {c: 0 for c in range(1, max_col + 1)}
 
     for c in range(1, max_col + 1):
         col_max = 0
 
-        for r in range(1, last_row + 1):
+        # 1) Опционально учитываем заголовок (строка 1), но сильно ограничиваем его вклад
+        if include_header and max_row >= 1:
+            cell = ws.cell(row=1, column=c)
+            if cell.coordinate not in ws.merged_cells:
+                v = cell.value
+                if v is not None:
+                    s = str(v).replace("\n", " ").strip()
+                    if s:
+                        if header_max_chars and len(s) > int(header_max_chars):
+                            s = s[: int(header_max_chars)]
+                        col_max = max(col_max, len(s))
+
+        # 2) Основная оценка — по значениям
+        for r in range(start_row, last_row + 1):
             cell = ws.cell(row=r, column=c)
 
             # merged cells: значение только в верхней-левой; остальные пропускаем
@@ -56,6 +77,10 @@ def _fit_column_widths(
 
             v = cell.value
             if v is None:
+                continue
+
+            # Формулы не учитываются (их текст длинный, а отображаемое значение короткое)
+            if isinstance(v, str) and v.startswith("="):
                 continue
 
             # Приведение к "отображаемой" строке
@@ -87,7 +112,7 @@ def _fit_column_widths(
         if ln <= 0:
             continue
 
-        # Перевод символов в "excel width" (чуть более адекватный коэффициент)
+        # Перевод символов в "excel width"
         width = float(ln * 0.95 + 2)
 
         if min_width is not None:
@@ -97,7 +122,6 @@ def _fit_column_widths(
 
         col_letter = get_column_letter(c)
         ws.column_dimensions[col_letter].width = width
-
 
 
 def read_df(
@@ -125,8 +149,10 @@ def write_df(
     freeze_panes: str | None = None,
     auto_col_width: bool = True,
     col_width_min: float | None = 8.0,
-    col_width_max: float | None = 60.0,
+    col_width_max: float | None = 52.0,
     col_width_sample_rows: int = 2000,
+    col_width_include_header: bool = False,
+    col_width_header_max_chars: int = 22,
     auto_install: bool | None = None,
     index: bool = False,
     **kwargs: Any,
@@ -200,6 +226,8 @@ def write_df(
                     min_width=col_width_min,
                     max_width=col_width_max,
                     sample_rows=col_width_sample_rows,
+                    include_header=col_width_include_header,
+                    header_max_chars=col_width_header_max_chars,
                 )
             except Exception:
                 # Авто-ширина не должна ломать экспорт
