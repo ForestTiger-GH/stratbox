@@ -27,6 +27,8 @@ def _fit_column_widths(
     max_cell_chars: int = 60,
     include_header: bool = False,
     header_max_chars: int = 22,
+    padding: float = 2.5,
+    filter_padding: float = 2.0,
 ) -> None:
     """
     Авто-настройка ширины столбцов по содержимому.
@@ -113,7 +115,13 @@ def _fit_column_widths(
             continue
 
         # Перевод символов в "excel width"
-        width = float(ln * 0.95 + 2)
+        width = float(ln * 1.05 + padding)
+        # Если на листе включён автофильтр — Excel добавляет место под стрелку фильтра
+        try:
+            if ws.auto_filter and getattr(ws.auto_filter, "ref", None):
+                width += float(filter_padding)
+        except Exception:
+            pass
 
         if min_width is not None:
             width = max(width, float(min_width))
@@ -153,6 +161,8 @@ def write_df(
     col_width_sample_rows: int = 2000,
     col_width_include_header: bool = False,
     col_width_header_max_chars: int = 22,
+    col_width_padding: float = 2.5,
+    col_width_filter_padding: float = 2.0,
     auto_install: bool | None = None,
     index: bool = False,
     **kwargs: Any,
@@ -228,6 +238,8 @@ def write_df(
                     sample_rows=col_width_sample_rows,
                     include_header=col_width_include_header,
                     header_max_chars=col_width_header_max_chars,
+                    padding=col_width_padding,
+                    filter_padding=col_width_filter_padding,
                 )
             except Exception:
                 # Авто-ширина не должна ломать экспорт
