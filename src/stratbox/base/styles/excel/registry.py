@@ -9,15 +9,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
-from .models import FontTheme, ColorPalette, StyleSpec
-from .builtin import FONT_THEMES, PALETTES, PRESETS, DEFAULT_PRESET_NAME
+from .models import FontTheme, StyleSpec
+from .builtin import FONT_THEMES, PRESETS, DEFAULT_PRESET_NAME
 from .plugin import load_addons_from_plugins
 
 
 @dataclass
 class ExcelStylesRegistry:
     fonts: Dict[str, FontTheme]
-    palettes: Dict[str, ColorPalette]
     presets: Dict[str, StyleSpec]
     default_preset_name: str
     plugin_connected: bool
@@ -41,7 +40,6 @@ def get_registry(force_reload: bool = False) -> ExcelStylesRegistry:
         return _REGISTRY
 
     fonts = {_norm_key(k): v for k, v in FONT_THEMES.items()}
-    palettes = {_norm_key(k): v for k, v in PALETTES.items()}
     presets = {_norm_key(k): v for k, v in PRESETS.items()}
 
     default_name = _norm_key(DEFAULT_PRESET_NAME)
@@ -57,10 +55,6 @@ def get_registry(force_reload: bool = False) -> ExcelStylesRegistry:
             for k, v in addon.fonts.items():
                 fonts[_norm_key(k)] = v
 
-        if addon.palettes:
-            for k, v in addon.palettes.items():
-                palettes[_norm_key(k)] = v
-
         if addon.presets:
             for k, v in addon.presets.items():
                 presets[_norm_key(k)] = v
@@ -70,7 +64,6 @@ def get_registry(force_reload: bool = False) -> ExcelStylesRegistry:
 
     _REGISTRY = ExcelStylesRegistry(
         fonts=fonts,
-        palettes=palettes,
         presets=presets,
         default_preset_name=default_name,
         plugin_connected=plugin_connected,

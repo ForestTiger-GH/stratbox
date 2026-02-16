@@ -5,7 +5,7 @@ stratbox.base.styles.excel
 и публичное API через main.py.
 """
 
-from .models import FontTheme, ColorPalette, StyleSpec  # noqa: F401
+from .models import FontTheme, BlockStyle, StyleSpec  # noqa: F401
 from .main import (  # noqa: F401
     list_available_presets,
     get_default_preset_name,
