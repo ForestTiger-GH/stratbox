@@ -23,7 +23,7 @@ def export_excel(path: str, df: pd.DataFrame) -> None:
             "title": "Strategy Box Table Export",
             "category": "CMAF DATA",
         },
-        style_preset="MACROBANKS_GREEN",
+        style_preset="DEFAULT",
     )
 
     print(f"[OK] Exported: {path}")
