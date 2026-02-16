@@ -39,7 +39,7 @@ class BlockStyle:
     align_h: Optional[AlignH] = None
     align_v: Optional[AlignV] = None
     wrap_text: Optional[bool] = None
-
+    number_format: Optional[str] = None
 
 @dataclass
 class StyleSpec:

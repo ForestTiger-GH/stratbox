@@ -51,6 +51,7 @@ def _merge_block(base: BlockStyle, overlay: Optional[BlockStyle]) -> BlockStyle:
         align_h=overlay.align_h if overlay.align_h is not None else base.align_h,
         align_v=overlay.align_v if overlay.align_v is not None else base.align_v,
         wrap_text=overlay.wrap_text if overlay.wrap_text is not None else base.wrap_text,
+        number_format=overlay.number_format if overlay.number_format is not None else base.number_format,
     )
 
 
@@ -126,37 +127,51 @@ def _make_border(block: BlockStyle) -> Optional[Border]:
 
 def _apply_number_format(ws: Worksheet, spec: StyleSpec) -> None:
     """
-    Числовой формат применяется только к НЕ header-строкам.
-    first_cols не исключаются — они по смыслу равны values.
+    Числовой формат применяется по правилам:
+    1) Если у блока ячейки задан block.number_format => применяется он.
+    2) Иначе, если spec.number_decimals задан => применяется decimals-формат к числам/формулам
+       (по умолчанию только вне header-строк).
     """
-    if spec.number_decimals is None:
-        return
-
-    decimals = int(spec.number_decimals)
-    fmt = "0" if decimals <= 0 else "0." + ("0" * decimals)
-
     max_row = ws.max_row or 1
     max_col = ws.max_column or 1
 
-    for r in range(1, max_row + 1):
-        if spec.header_rows > 0 and r <= spec.header_rows:
-            continue
+    # decimals fallback формат
+    fallback_fmt = None
+    if spec.number_decimals is not None:
+        decimals = int(spec.number_decimals)
+        fallback_fmt = "0" if decimals <= 0 else "0." + ("0" * decimals)
 
+    for r in range(1, max_row + 1):
         for c in range(1, max_col + 1):
             cell = ws.cell(row=r, column=c)
             v = cell.value
+
+            block = _resolve_cell_block(spec, r, c)
+
+            # 1) block-specific format
+            if block.number_format:
+                cell.number_format = str(block.number_format)
+                continue
+
+            # 2) fallback decimals (как раньше)
+            if not fallback_fmt:
+                continue
+
+            # Не форматировать header-строки, как раньше
+            if spec.header_rows > 0 and r <= spec.header_rows:
+                continue
+
             if v is None:
                 continue
 
-            # Формулы: опционально
             if isinstance(v, str) and v.startswith("="):
-                if not spec.number_apply_to_formulas:
-                    continue
-                cell.number_format = fmt
+                if spec.number_apply_to_formulas:
+                    cell.number_format = fallback_fmt
                 continue
 
             if isinstance(v, (int, float)):
-                cell.number_format = fmt
+                cell.number_format = fallback_fmt
+
 
 
 def apply_style(ws: Worksheet, spec: StyleSpec, *, freeze_panes: str | None = None) -> None:
