@@ -1,21 +1,228 @@
 """
 excel_xlsx — чтение/запись XLSX поверх FileStore.
 
-Зависимости:
-- pandas
-- openpyxl (опционально; можно включить автоподкачку через STRATBOX_AUTO_PIP=1)
+Ключевой принцип:
+- pandas пишет DataFrame в xlsx
+- дальше openpyxl применяет стили/фильтр/автоширины
+
+Автоподбор ширины спроектирован так, чтобы ориентироваться на ОТОБРАЖАЕМОЕ
+значение (с учетом number_format), а не на сырое str(value).
 """
 
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
 from stratbox.base.ioapi.bytes import read_bytes, write_bytes
 from stratbox.base.utils.optional_deps import ensure_import
+
+
+# -----------------------------
+# Внутренние утилиты автоширины
+# -----------------------------
+
+def _safe_str(v: Any) -> str:
+    """Безопасное преобразование к строке, без падений."""
+    try:
+        return str(v)
+    except Exception:
+        return ""
+
+
+def _strip_and_flatten_text(s: str) -> str:
+    """Убирает переносы строк и лишние пробелы."""
+    s = s.replace("\r", " ").replace("\n", " ")
+    return " ".join(s.split()).strip()
+
+
+def _is_formula(v: Any) -> bool:
+    return isinstance(v, str) and v.startswith("=")
+
+
+def _parse_autofilter_columns(ws) -> Optional[Tuple[int, int]]:
+    """
+    Возвращает диапазон колонок (min_col, max_col), на который реально
+    навешан автофильтр, или None если фильтра нет/не распарсили.
+
+    Нужно для того, чтобы filter_padding добавлялся ТОЛЬКО тем колонкам,
+    которые попали под фильтр (иначе будет лишняя ширина).
+    """
+    try:
+        ref = getattr(ws.auto_filter, "ref", None)
+        if not ref:
+            return None
+
+        # ref вида "A1:Z200" или "A1:A10"
+        if ":" in ref:
+            left, right = ref.split(":", 1)
+        else:
+            left, right = ref, ref
+
+        from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+
+        col_l, _ = coordinate_from_string(left)
+        col_r, _ = coordinate_from_string(right)
+        min_c = int(column_index_from_string(col_l))
+        max_c = int(column_index_from_string(col_r))
+        if min_c > max_c:
+            min_c, max_c = max_c, min_c
+        return (min_c, max_c)
+    except Exception:
+        return None
+
+
+def _count_decimals_from_format(fmt: str) -> Optional[int]:
+    """
+    Пытается вытащить число знаков после запятой из формата вида:
+    - "0.00"
+    - "#,##0.000"
+    - "0.0%"
+    Возвращает None если не удалось.
+    """
+    try:
+        fmt = fmt.strip()
+        if not fmt:
+            return None
+
+        # убираем экранированные секции и текст в кавычках — упрощенно
+        # (для автоширины достаточно грубой оценки)
+        # оставим только первую секцию до ';'
+        if ";" in fmt:
+            fmt = fmt.split(";", 1)[0]
+
+        # проценты: "0.0%"
+        if "%" in fmt:
+            fmt = fmt.replace("%", "")
+
+        if "." not in fmt:
+            return 0
+
+        after = fmt.split(".", 1)[1]
+        # количество '0' подряд после точки
+        dec = 0
+        for ch in after:
+            if ch == "0":
+                dec += 1
+            else:
+                break
+        return dec
+    except Exception:
+        return None
+
+
+def _looks_like_date_format(fmt: str) -> bool:
+    """
+    Грубая проверка "похоже ли на дату".
+    """
+    fmt = fmt.lower()
+    # Excel date tokens: y, m, d, h, s
+    # Важно: 'm' может быть и minutes, но для ширины не критично.
+    has_y = "y" in fmt
+    has_d = "d" in fmt
+    has_m = "m" in fmt
+    return (has_y and (has_m or has_d)) or (has_d and has_m)
+
+
+def _format_number_for_width(value: float, fmt: str) -> str:
+    """
+    Превращает число в строку примерно так, как Excel будет показывать,
+    чтобы оценить ширину.
+
+    Это НЕ полноценный форматтер Excel, но для автоширины работает стабильно.
+    """
+    try:
+        fmt0 = (fmt or "").strip()
+        # берем первую секцию формата
+        if ";" in fmt0:
+            fmt0 = fmt0.split(";", 1)[0].strip()
+
+        # проценты
+        if "%" in fmt0:
+            dec = _count_decimals_from_format(fmt0)
+            dec = 0 if dec is None else int(dec)
+            v = value * 100.0
+            if dec <= 0:
+                s = f"{v:.0f}%"
+            else:
+                s = f"{v:.{dec}f}%"
+            return s
+
+        # дата-форматы тут не обрабатываем — это отдельная ветка
+        # научная нотация — грубо
+        if "e" in fmt0.lower():
+            return f"{value:.6e}"
+
+        # десятичные
+        dec = _count_decimals_from_format(fmt0)
+        if dec is None:
+            # общий случай
+            return f"{value:.15g}"
+
+        dec = int(dec)
+
+        # разделители тысяч
+        use_thousands = "," in fmt0
+
+        if dec <= 0:
+            if use_thousands:
+                return f"{value:,.0f}"
+            return f"{value:.0f}"
+
+        if use_thousands:
+            return f"{value:,.{dec}f}"
+        return f"{value:.{dec}f}"
+
+    except Exception:
+        return f"{value:.15g}"
+
+
+def _format_cell_for_width(cell) -> str:
+    """
+    Возвращает строку "примерно как отображает Excel" для оценки ширины.
+    """
+    v = cell.value
+    if v is None:
+        return ""
+
+    # Формулы: НЕ используем текст формулы (он длинный и не соответствует видимому значению)
+    # Для автоширины достаточно вернуть пусто (колонку держит min_width) или
+    # можно вернуть небольшой маркер. Пусть будет пусто.
+    if _is_formula(v):
+        return ""
+
+    # Текст
+    if isinstance(v, str):
+        return _strip_and_flatten_text(v)
+
+    # Даты/время
+    import datetime as _dt
+    if isinstance(v, (_dt.date, _dt.datetime)):
+        fmt = _safe_str(getattr(cell, "number_format", "")).lower()
+        # если в формате есть часы/минуты — покажем время
+        if "h" in fmt or "s" in fmt:
+            if isinstance(v, _dt.datetime):
+                return v.strftime("%Y-%m-%d %H:%M")
+            # date без времени
+            return _dt.datetime(v.year, v.month, v.day, 0, 0).strftime("%Y-%m-%d %H:%M")
+        return v.strftime("%Y-%m-%d")
+
+    # Числа
+    if isinstance(v, (int, float)):
+        fmt = _safe_str(getattr(cell, "number_format", ""))
+        if fmt and _looks_like_date_format(fmt):
+            # иногда дата может быть числом (Excel serial) — но тут без конвертера.
+            # для ширины берём как число, но не длинно.
+            return f"{float(v):.15g}"
+
+        # формируем строку по number_format
+        return _format_number_for_width(float(v), fmt)
+
+    # Всё остальное
+    return _strip_and_flatten_text(_safe_str(v))
 
 
 def _fit_column_widths(
@@ -31,51 +238,50 @@ def _fit_column_widths(
     filter_padding: float = 2.0,
 ) -> None:
     """
-    Авто-настройка ширины столбцов по содержимому.
+    Авто-настройка ширины столбцов.
 
-    Критично для CBR-таблиц:
-    - По умолчанию заголовок (строка 1) НЕ участвует в оценке ширины,
-      иначе длинные подписи столбцов раздувают ширину "в космос".
-    - Каждый столбец рассчитывается индивидуально.
-    - Ошибка в одной "кривой" колонке не должна ломать автофит остальных.
+    Правила:
+    - каждая колонка измеряется отдельно
+    - измеряем по "отображаемым строкам" (number_format учитывается)
+    - clamp по min/max обязателен
+    - padding добавляется всегда
+    - filter_padding добавляется только колонкам в диапазоне автофильтра
     """
-    import datetime as _dt
     from openpyxl.utils import get_column_letter
 
     max_row = ws.max_row or 1
     max_col = ws.max_column or 1
     last_row = min(max_row, int(sample_rows)) if sample_rows and sample_rows > 0 else max_row
 
-    # Где начинать мерить данные:
-    # если заголовок не учитывается, начинаем со 2-й строки
+    # Если заголовок не включаем — начинаем с 2 строки (если она есть)
     start_row = 1 if include_header else 2
     if start_row > last_row:
-        start_row = 1  # если лист крошечный
+        start_row = 1
 
-    # Флаг: есть ли автофильтр на листе (если да — добавляем место под стрелку)
-    has_filter = False
-    try:
-        has_filter = bool(ws.auto_filter and getattr(ws.auto_filter, "ref", None))
-    except Exception:
-        has_filter = False
+    # Какие колонки реально под автофильтром
+    filter_cols = _parse_autofilter_columns(ws)
+
+    def _col_has_filter(c: int) -> bool:
+        if not filter_cols:
+            return False
+        return filter_cols[0] <= c <= filter_cols[1]
 
     for c in range(1, max_col + 1):
         try:
-            col_max = 0
+            best = 0  # максимальная длина отображаемой строки в колонке
 
-            # 1) Опционально учитываем заголовок (строка 1), но сильно ограничиваем его вклад
+            # 1) Заголовок (строка 1) — опционально и с сильным ограничением
             if include_header and max_row >= 1:
                 cell = ws.cell(row=1, column=c)
                 if cell.coordinate not in ws.merged_cells:
-                    v = cell.value
-                    if v is not None:
-                        s = str(v).replace("\n", " ").strip()
-                        if s:
-                            if header_max_chars and len(s) > int(header_max_chars):
-                                s = s[: int(header_max_chars)]
-                            col_max = max(col_max, len(s))
+                    s = _format_cell_for_width(cell)
+                    if s:
+                        s = _strip_and_flatten_text(s)
+                        if header_max_chars and len(s) > int(header_max_chars):
+                            s = s[: int(header_max_chars)]
+                        best = max(best, len(s))
 
-            # 2) Основная оценка — по значениям
+            # 2) Значения
             for r in range(start_row, last_row + 1):
                 cell = ws.cell(row=r, column=c)
 
@@ -83,66 +289,56 @@ def _fit_column_widths(
                 if cell.coordinate in ws.merged_cells:
                     continue
 
-                v = cell.value
-                if v is None:
-                    continue
-
-                # Формулы не учитываются (их текст длинный, а отображаемое значение короткое)
-                if isinstance(v, str) and v.startswith("="):
-                    continue
-
-                # Приведение к "отображаемой" строке
-                if isinstance(v, (_dt.date, _dt.datetime)):
-                    s = (
-                        v.strftime("%Y-%m-%d")
-                        if isinstance(v, _dt.date) and not isinstance(v, _dt.datetime)
-                        else v.strftime("%Y-%m-%d %H:%M")
-                    )
-                elif isinstance(v, (int, float)):
-                    # ограничиваем float-«простыни»
-                    s = f"{v:.15g}"
-                else:
-                    s = str(v)
-
-                s = s.replace("\n", " ").strip()
+                s = _format_cell_for_width(cell)
                 if not s:
                     continue
 
-                # НЕ даём одной ячейке раздувать колонку бесконечно
+                s = _strip_and_flatten_text(s)
+                if not s:
+                    continue
+
                 if max_cell_chars and len(s) > int(max_cell_chars):
                     s = s[: int(max_cell_chars)]
 
-                col_max = max(col_max, len(s))
+                best = max(best, len(s))
 
-            # Если колонка пустая — можно оставить min_width
-            if col_max <= 0:
+            # 3) Преобразуем длину -> width units
+            # Основная идея:
+            # - Excel ширина чуть больше, чем длина строки в символах, из-за отступов и ширины букв.
+            # - Мы добавляем стабильный коэффициент и padding.
+            #
+            # Важно: padding и filter_padding трактуются как "width units", а не как символы.
+            if best <= 0:
+                # Пустая колонка: ставим минимум (если задан), иначе не трогаем.
                 if min_width is not None:
                     col_letter = get_column_letter(c)
                     ws.column_dimensions[col_letter].width = float(min_width)
                 continue
 
-            # Перевод символов в "excel width" + небольшой запас.
-            # Коэффициент >1.0 нужен, потому что ширина символов неодинакова,
-            # плюс Excel добавляет внутренние отступы.
-            width = float(col_max * 1.08 + float(padding))
+            # Базовая оценка ширины. Коэффициент подобран так, чтобы ближе быть к Excel autofit.
+            width = (best * 1.15) + float(padding)
 
-            # Если на листе включён автофильтр — Excel добавляет место под стрелку фильтра
-            if has_filter:
+            # Добавка под кнопку автофильтра только для колонок в фильтре
+            if _col_has_filter(c):
                 width += float(filter_padding)
 
+            # Clamp
             if min_width is not None:
                 width = max(width, float(min_width))
             if max_width is not None:
                 width = min(width, float(max_width))
 
             col_letter = get_column_letter(c)
-            ws.column_dimensions[col_letter].width = width
+            ws.column_dimensions[col_letter].width = float(width)
 
         except Exception as e:
-            # Не валить весь лист из-за одной проблемной колонки
             print(f"[WARN] Auto width skipped column {c}: {e}")
             continue
 
+
+# -----------------------------
+# Публичные функции read/write
+# -----------------------------
 
 def read_df(
     path: str,
@@ -194,7 +390,7 @@ def write_df(
 
     Автофильтр:
     - можно передать autofilter_range="A1:Z200" через kwargs или engine_kwargs
-    - если не передан, диапазон будет сгенерирован автоматически
+    - этот параметр НЕ прокидывается в pandas, чтобы не ловить несовместимость версий
     """
     ensure_import("openpyxl", "openpyxl>=3.1", auto_install=auto_install)
 
@@ -207,7 +403,7 @@ def write_df(
     if "index" in kwargs:
         kwargs.pop("index")
 
-    # --- ВАЖНО: pandas/openpyxl в некоторых окружениях не принимает autofilter_range в writer._write_cells.
+    # ВАЖНО: pandas/openpyxl в некоторых окружениях не принимает autofilter_range в writer._write_cells.
     # Поэтому этот параметр надо извлечь и применить вручную через openpyxl уже ПОСЛЕ записи.
     autofilter_range = None
 
@@ -217,41 +413,39 @@ def write_df(
     engine_kwargs = kwargs.pop("engine_kwargs", None)
     if isinstance(engine_kwargs, dict) and "autofilter_range" in engine_kwargs:
         autofilter_range = engine_kwargs.pop("autofilter_range")
-        # Если там остались другие engine_kwargs — безопаснее сейчас НЕ прокидывать их дальше,
-        # чтобы не поймать несовместимость в разных версиях pandas/openpyxl.
+        # Остальные engine_kwargs намеренно не прокидываются, чтобы избежать несовместимостей.
 
+    # 1) pandas запись
     df.to_excel(bio, index=index, engine="openpyxl", sheet_name=sheet_name, **kwargs)
 
-    # пост-обработка через openpyxl
-    bio2 = BytesIO(bio.getvalue())
-    wb = load_workbook(bio2)
+    # 2) пост-обработка через openpyxl
+    wb = load_workbook(BytesIO(bio.getvalue()))
+    ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
 
-    # 1) метаданные
+    # 2.1) метаданные
     if meta:
         props = wb.properties
         if "creator" in meta:
-            props.creator = str(meta["creator"])
+            props.creator = _safe_str(meta["creator"])
         if "title" in meta:
-            props.title = str(meta["title"])
+            props.title = _safe_str(meta["title"])
         if "subject" in meta:
-            props.subject = str(meta["subject"])
+            props.subject = _safe_str(meta["subject"])
         if "category" in meta:
-            props.category = str(meta["category"])
+            props.category = _safe_str(meta["category"])
         if "keywords" in meta:
-            props.keywords = str(meta["keywords"])
+            props.keywords = _safe_str(meta["keywords"])
         if "description" in meta:
-            props.description = str(meta["description"])
+            props.description = _safe_str(meta["description"])
 
-    ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
-
-    # 2) стили (если заданы)
+    # 2.2) стили (если заданы)
     if style_preset is not None:
         apply_preset(ws, style_preset, freeze_panes=freeze_panes)
 
-    # 3) автофильтр — СНАЧАЛА, чтобы автоширина могла учитывать плашку фильтра
+    # 2.3) автофильтр — обязательно ДО автоширины
     if autofilter_range:
         try:
-            ws.auto_filter.ref = str(autofilter_range)
+            ws.auto_filter.ref = _safe_str(autofilter_range)
         except Exception:
             pass
 
@@ -259,16 +453,15 @@ def write_df(
         try:
             from openpyxl.utils import get_column_letter
 
-            # диапазон таблицы: учитывается index, если index=True
             ncols = int(df.shape[1]) + (1 if index else 0)
             nrows = int(df.shape[0]) + 1  # +1 строка заголовка
             if ncols > 0 and nrows > 1:
-                autofilter_range = f"A1:{get_column_letter(ncols)}{nrows}"
-                ws.auto_filter.ref = autofilter_range
+                rng = f"A1:{get_column_letter(ncols)}{nrows}"
+                ws.auto_filter.ref = rng
         except Exception:
             pass
 
-    # 4) авто-настройка ширины столбцов (после автофильтра!)
+    # 2.4) авто-настройка ширины столбцов
     if auto_col_width:
         try:
             _fit_column_widths(
@@ -286,5 +479,4 @@ def write_df(
 
     out = BytesIO()
     wb.save(out)
-
     write_bytes(path, out.getvalue(), store=store)
