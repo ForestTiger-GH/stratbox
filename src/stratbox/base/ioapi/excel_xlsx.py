@@ -27,7 +27,7 @@ def _fit_column_widths(
     max_cell_chars: int = 60,
     include_header: bool = False,
     header_max_chars: int = 22,
-    padding: float = 2.5,
+    padding: float = 12.5,
     filter_padding: float = 4.0,
 ) -> None:
     """
@@ -161,7 +161,7 @@ def write_df(
     col_width_sample_rows: int = 2000,
     col_width_include_header: bool = False,
     col_width_header_max_chars: int = 22,
-    col_width_padding: float = 2.5,
+    col_width_padding: float = 12.5,
     col_width_filter_padding: float = 4.0,
     auto_install: bool | None = None,
     index: bool = False,
