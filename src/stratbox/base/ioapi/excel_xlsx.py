@@ -191,8 +191,32 @@ def _format_cell_for_width(cell) -> str:
     # Формулы: НЕ используем текст формулы (он длинный и не соответствует видимому значению)
     # Для автоширины достаточно вернуть пусто (колонку держит min_width) или
     # можно вернуть небольшой маркер. Пусть будет пусто.
+    # Формулы: openpyxl НЕ вычисляет их как Excel.
+    # Но в наших выгрузках часто встречаются "формулы-литералы" вида "=12345" или "=\"text\"".
+    # Их можно безопасно распарсить и использовать для оценки ширины.
     if _is_formula(v):
+        f = _safe_str(v).strip()
+
+        # 1) числовой литерал: "=123", "=-123", "=123.45"
+        import re
+        m_num = re.fullmatch(r"=\s*([+-]?\d+(?:\.\d+)?)\s*", f)
+        if m_num:
+            try:
+                num = float(m_num.group(1))
+                fmt = _safe_str(getattr(cell, "number_format", ""))
+                return _format_number_for_width(num, fmt)
+            except Exception:
+                # если что-то пошло не так — просто используем текст числа
+                return m_num.group(1)
+
+        # 2) строковый литерал: ="ABC" или ="ABC DEF"
+        m_txt = re.fullmatch(r'=\s*"([^"]*)"\s*', f)
+        if m_txt:
+            return _strip_and_flatten_text(m_txt.group(1))
+
+        # 3) прочие формулы (SUM/VLOOKUP/…) не учитываем
         return ""
+
 
     # Текст
     if isinstance(v, str):
