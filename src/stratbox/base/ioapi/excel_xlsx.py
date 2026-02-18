@@ -28,7 +28,7 @@ def _fit_column_widths(
     include_header: bool = False,
     header_max_chars: int = 22,
     padding: float = 2.5,
-    filter_padding: float = 2.0,
+    filter_padding: float = 4.0,
 ) -> None:
     """
     Авто-настройка ширины столбцов по содержимому.
@@ -162,7 +162,7 @@ def write_df(
     col_width_include_header: bool = False,
     col_width_header_max_chars: int = 22,
     col_width_padding: float = 2.5,
-    col_width_filter_padding: float = 2.0,
+    col_width_filter_padding: float = 4.0,
     auto_install: bool | None = None,
     index: bool = False,
     **kwargs: Any,
