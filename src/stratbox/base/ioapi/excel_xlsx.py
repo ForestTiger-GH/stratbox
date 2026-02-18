@@ -188,9 +188,6 @@ def _format_cell_for_width(cell) -> str:
     if v is None:
         return ""
 
-    # Формулы: НЕ используем текст формулы (он длинный и не соответствует видимому значению)
-    # Для автоширины достаточно вернуть пусто (колонку держит min_width) или
-    # можно вернуть небольшой маркер. Пусть будет пусто.
     # Формулы: openpyxl НЕ вычисляет их как Excel.
     # Но в наших выгрузках часто встречаются "формулы-литералы" вида "=12345" или "=\"text\"".
     # Их можно безопасно распарсить и использовать для оценки ширины.
@@ -391,7 +388,7 @@ def write_df(
     col_width_min: float | None = 6.0,
     col_width_max: float | None = 60.0,
     col_width_sample_rows: int = 2000,
-    col_width_include_header: bool = False,
+    col_width_include_header: bool = True,
     col_width_header_max_chars: int = 22,
     col_width_padding: float = 2.8,
     col_width_filter_padding: float = 2.0,
