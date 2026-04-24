@@ -24,3 +24,4 @@ form,kind,name,expression,extra
 135,metric,H1.0,"C1_3 == ""Н1.0"" -> C2_3",source=DBF
 135,metric,H1.1,"C1_3 == ""Н1.1"" -> C2_3",source=DBF
 135,metric,H1.2,"C1_3 == ""Н1.2"" -> C2_3",source=DBF
+135,metric,H20.0,"C1_3 == ""Н20.0"" -> C2_3",source=DBF
