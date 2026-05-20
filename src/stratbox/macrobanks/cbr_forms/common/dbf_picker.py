@@ -75,10 +75,11 @@ def pick_dbf_and_layout(
         if prefer_stem_contains and prefer_stem_contains.lower() in p.stem.lower():
             score += 10
 
-        # бонус “классическим” именам
-        if a_real.upper() in ("C1", "C_1", "C1_3"):
+        # Бонус типовым именам полей. Функция учитывает как расчетные формы
+        # (C1/C3), так и метрические формы нормативов (C1_3/C2_3, NAME_NORM/FAKT_ZN).
+        if a_real.upper() in ("C1", "C_1", "C1_3", "NAME_NORM", "CODE"):
             score += 3
-        if b_real.upper() in ("C3", "C_3", "C2_3"):
+        if b_real.upper() in ("C3", "C_3", "C2_3", "FAKT_ZN", "SIM_ITOGO", "SIM_ITOG", "SIM_R"):
             score += 3
 
         cand = (score, p, DBFLayout(regn=regn_real, a=a_real, b=b_real))
