@@ -136,10 +136,12 @@ def _apply_number_format(ws: Worksheet, spec: StyleSpec) -> None:
     max_col = ws.max_column or 1
 
     # decimals fallback формат
+    # Для чисел по умолчанию используется разделитель тысячных разрядов,
+    # чтобы крупные значения в Excel читались заметно лучше.
     fallback_fmt = None
     if spec.number_decimals is not None:
         decimals = int(spec.number_decimals)
-        fallback_fmt = "0" if decimals <= 0 else "0." + ("0" * decimals)
+        fallback_fmt = "#,##0" if decimals <= 0 else "#,##0." + ("0" * decimals)
 
     for r in range(1, max_row + 1):
         for c in range(1, max_col + 1):
