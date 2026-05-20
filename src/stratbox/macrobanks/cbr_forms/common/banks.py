@@ -6,6 +6,8 @@
 - используется колонка is_legacy:
     * число (порядковый номер для сортировки legacy)
     * False, если банк не в legacy
+- для выгрузок по умолчанию используется нормализованное краткое имя банка,
+  если в реестре доступна колонка bank_name_norm
 """
 
 from __future__ import annotations
@@ -15,15 +17,50 @@ import pandas as pd
 from stratbox.registries import cbr_banks
 
 
+def _pick_display_name(df: pd.DataFrame) -> pd.Series:
+    """
+    Возвращает Series с отображаемым именем банка для CBR forms.
+
+    Приоритет выбора имени:
+    1) bank_name_norm — краткое нормализованное имя (по умолчанию для выгрузок)
+    2) bank
+    3) name
+    4) bank_name
+
+    Если приоритетная колонка существует, но значение пустое / NAN,
+    используется следующий доступный вариант.
+    """
+    candidate_cols = ["bank_name_norm", "bank", "name", "bank_name"]
+    available_cols = [col for col in candidate_cols if col in df.columns]
+    if not available_cols:
+        raise RuntimeError(
+            f"Cannot find bank name column in cbr_banks.read(): {list(df.columns)}"
+        )
+
+    result = pd.Series(index=df.index, dtype="object")
+
+    for col in available_cols:
+        values = df[col].astype(str).str.strip()
+        values = values.mask(values.eq(""), pd.NA)
+        values = values.mask(values.str.upper().isin(["NAN", "NONE", "NULL"]), pd.NA)
+        if result.isna().all():
+            result = values
+        else:
+            result = result.fillna(values)
+
+    return result.fillna("").astype(str)
+
+
 def load_legacy_banks() -> pd.DataFrame:
     """
     Возвращает DataFrame для legacy-банков:
-      - bank (str)  : имя банка
+      - bank (str)  : имя банка для выгрузки
       - regn (int)  : регистрационный номер
       - sort (int)  : порядок (из is_legacy)
 
     Примечание:
     - Если is_legacy=False — банк исключается.
+    - По умолчанию для bank используется bank_name_norm, если колонка есть.
     """
     df = cbr_banks.read().copy()
 
@@ -39,20 +76,14 @@ def load_legacy_banks() -> pd.DataFrame:
     df = df[df["sort"].notna()].copy()
     df["sort"] = df["sort"].astype(int)
 
-    # Имена в реестре могут называться по-разному; поддержим оба варианта
-    name_col = "bank" if "bank" in df.columns else ("name" if "name" in df.columns else None)
-    if name_col is None:
-        # fallback: частый вариант в cbr_banks — "bank_name"
-        name_col = "bank_name" if "bank_name" in df.columns else None
-    if name_col is None:
-        raise RuntimeError(f"Cannot find bank name column in cbr_banks.read(): {list(df.columns)}")
-
     if "regn" not in df.columns:
         raise RuntimeError(f"Cannot find 'regn' column in cbr_banks.read(): {list(df.columns)}")
 
+    display_name = _pick_display_name(df)
+
     out = pd.DataFrame(
         {
-            "bank": df[name_col].astype(str),
+            "bank": display_name,
             "regn": pd.to_numeric(df["regn"], errors="coerce").fillna(-1).astype(int),
             "sort": df["sort"].astype(int),
         }
