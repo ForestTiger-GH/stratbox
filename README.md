@@ -155,6 +155,31 @@ print(out)
 
 ---
 
+
+## Frank RG
+
+В `stratbox.macrobanks.frank_rg` реализован первый этап обработки файлов Frank RG:
+
+- сканирование каталога;
+- распознавание семейства файла по имени;
+- выбор наиболее свежего файла по каждому семейству;
+- диспетчеризация в заглушки будущих парсеров.
+
+Основной публичный вызов:
+
+```python
+from stratbox.macrobanks.frank_rg import run_frank_rg_stage1
+
+result = run_frank_rg_stage1("/path/to/frank_rg")
+catalog_df = result["catalog"]
+latest_df = result["latest"]
+dispatch_df = result["dispatch"]
+```
+
+Подробности: `docs/frank_rg_stage1.md`.
+
+---
+
 ## Установка
 
 ### Вне контура (локально)

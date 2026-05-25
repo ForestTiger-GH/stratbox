@@ -28,6 +28,7 @@ form,kind,name,expression,extra
 135,metric,H2,"C1_3 == ""Н2"" -> C2_3",source=DBF
 135,metric,H3,"C1_3 == ""Н3"" -> C2_3",source=DBF
 135,metric,H4,"C1_3 == ""Н4"" -> C2_3",source=DBF
+135,metric,H4,"C1_3 == ""Н6"" -> C2_3",source=DBF
 135,metric,H7,"C1_3 == ""Н7"" -> C2_3",source=DBF
 135,metric,H12,"C1_3 == ""Н12"" -> C2_3",source=DBF
 135,metric,H18,"C1_3 == ""Н18"" -> C2_3",source=DBF

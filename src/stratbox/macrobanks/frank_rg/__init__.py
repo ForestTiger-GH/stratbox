@@ -1,6 +1,6 @@
-"""Доменный слой для банковских и макроэкономических задач."""
+"""Публичный вход в первый этап работы с файлами Frank RG."""
 
-from stratbox.macrobanks.frank_rg import (
+from stratbox.macrobanks.frank_rg.api import (
     build_frank_rg_catalog,
     run_frank_rg_stage1,
     select_latest_frank_rg_files,
