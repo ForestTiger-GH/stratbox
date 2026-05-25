@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 
+
 def _stub_payload(*, family_code: str, file_path: str, parser_key: str) -> dict[str, object]:
     """Формирует единый ответ заглушки парсера."""
     return {
@@ -16,16 +17,23 @@ def _stub_payload(*, family_code: str, file_path: str, parser_key: str) -> dict[
     }
 
 
+
 def parse_rbm_volumes_q_stub(*, family_code: str, file_path: str) -> dict[str, object]:
-    """Заглушка парсера квартальных объемов Retail Banking Market."""
+    """Заглушка парсера квартальных выдач блока Retail Banking Market."""
     return _stub_payload(family_code=family_code, file_path=file_path, parser_key="rbm_volumes_q_stub")
 
 
+
 def parse_rbm_portfolios_q_stub(*, family_code: str, file_path: str) -> dict[str, object]:
-    """Заглушка парсера квартальных портфелей Retail Banking Market."""
+    """Заглушка парсера квартальных портфелей блока Retail Banking Market."""
     return _stub_payload(family_code=family_code, file_path=file_path, parser_key="rbm_portfolios_q_stub")
 
 
-def parse_cards_volumes_q_stub(*, family_code: str, file_path: str) -> dict[str, object]:
-    """Заглушка парсера квартальных объемов по картам."""
-    return _stub_payload(family_code=family_code, file_path=file_path, parser_key="cards_volumes_q_stub")
+
+def parse_volumes_cards_q_stub(*, family_code: str, file_path: str) -> dict[str, object]:
+    """Заглушка парсера квартальных выдач по картам."""
+    return _stub_payload(family_code=family_code, file_path=file_path, parser_key="volumes_cards_q_stub")
+
+
+# Алиас сохранен для мягкой совместимости внутреннего слоя.
+parse_cards_volumes_q_stub = parse_volumes_cards_q_stub

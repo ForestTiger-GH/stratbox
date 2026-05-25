@@ -17,39 +17,51 @@ from stratbox.macrobanks.frank_rg.models import FrankFamilyRule
 from stratbox.macrobanks.frank_rg.registry import get_family_rules
 
 
-_DATE_RE = re.compile(r"(?P<year>20\d{2})[.-](?P<month>\d{2})[.-](?P<day>\d{2})")
-_WEEK_RE = re.compile(
-    r"(?P<month>январ[ья]|феврал[ья]|март[а]?|апрел[ья]|ма[йя]|июн[ья]|июл[ья]|"
-    r"август[а]?|сентябр[ья]|октябр[ья]|ноябр[ья]|декабр[ья])\s+"
-    r"(?P<year>20\d{2})\s+(?P<week>\d+)\s+недел",
-    flags=re.IGNORECASE,
+_DATE_RE = re.compile(
+    r"(?<!\d)(?P<year>20\d{2})[\s._/-]+(?P<month>\d{1,2})[\s._/-]+(?P<day>\d{1,2})(?!\d)"
+)
+_WEEK_PATTERNS = (
+    re.compile(
+        r"(?P<month>январ[ья]|феврал[ья]|март[а]?|апрел[ья]|ма[йя]|июн[ья]|июл[ья]|"
+        r"август[а]?|сентябр[ья]|октябр[ья]|ноябр[ья]|декабр[ья])[\s._-]+"
+        r"(?P<year>20\d{2})[\s._-]+(?P<week>\d+)[\s._-]+недел[ьяи]*",
+        flags=re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?P<year>20\d{2})[\s._-]+"
+        r"(?P<month>январ[ья]|феврал[ья]|март[а]?|апрел[ья]|ма[йя]|июн[ья]|июл[ья]|"
+        r"август[а]?|сентябр[ья]|октябр[ья]|ноябр[ья]|декабр[ья])[\s._-]+"
+        r"(?P<week>\d+)[\s._-]+недел[ьяи]*",
+        flags=re.IGNORECASE,
+    ),
 )
 _MONTHS = {
-    "январь": 1,
-    "января": 1,
-    "февраль": 2,
-    "февраля": 2,
-    "март": 3,
-    "марта": 3,
-    "апрель": 4,
-    "апреля": 4,
-    "май": 5,
-    "мая": 5,
-    "июнь": 6,
-    "июня": 6,
-    "июль": 7,
-    "июля": 7,
-    "август": 8,
-    "августа": 8,
-    "сентябрь": 9,
-    "сентября": 9,
-    "октябрь": 10,
-    "октября": 10,
-    "ноябрь": 11,
-    "ноября": 11,
-    "декабрь": 12,
-    "декабря": 12,
+    "январь": (1, "Январь"),
+    "января": (1, "Январь"),
+    "февраль": (2, "Февраль"),
+    "февраля": (2, "Февраль"),
+    "март": (3, "Март"),
+    "марта": (3, "Март"),
+    "апрель": (4, "Апрель"),
+    "апреля": (4, "Апрель"),
+    "май": (5, "Май"),
+    "мая": (5, "Май"),
+    "июнь": (6, "Июнь"),
+    "июня": (6, "Июнь"),
+    "июль": (7, "Июль"),
+    "июля": (7, "Июль"),
+    "август": (8, "Август"),
+    "августа": (8, "Август"),
+    "сентябрь": (9, "Сентябрь"),
+    "сентября": (9, "Сентябрь"),
+    "октябрь": (10, "Октябрь"),
+    "октября": (10, "Октябрь"),
+    "ноябрь": (11, "Ноябрь"),
+    "ноября": (11, "Ноябрь"),
+    "декабрь": (12, "Декабрь"),
+    "декабря": (12, "Декабрь"),
 }
+_Q_MARKER_RE = re.compile(r"(?<![a-zа-я])q(?![a-zа-я])", flags=re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,12 +84,16 @@ def _basename(path: str) -> str:
     return str(path).replace("\\", "/").rstrip("/").split("/")[-1]
 
 
+
 def normalize_file_name(file_name: str) -> str:
     """Приводит имя файла к единому виду для распознавания."""
     text = str(file_name).strip().lower().replace("ё", "е")
     text = text.replace("—", "-").replace("–", "-")
+    text = text.replace("_", " ")
+    text = text.replace(",", " ")
     text = re.sub(r"\s+", " ", text)
     return text
+
 
 
 def extract_extension(file_name: str) -> str:
@@ -89,8 +105,21 @@ def extract_extension(file_name: str) -> str:
     return ""
 
 
+
+def _format_date_text(period_date: date) -> str:
+    """Формирует стандартный текст календарного периода."""
+    return period_date.isoformat()
+
+
+
+def _format_week_text(*, year: int, month_title: str, week_no: int) -> str:
+    """Формирует стандартный текст недельного периода."""
+    return f"{year:04d} {month_title} {week_no} неделя"
+
+
+
 def extract_date_period(normalized_name: str) -> tuple[date | None, str | None]:
-    """Пытается извлечь календарную дату периода из имени файла."""
+    """Пытается извлечь календарную дату периода из имени."""
     match = _DATE_RE.search(normalized_name)
     if not match:
         return None, None
@@ -103,27 +132,35 @@ def extract_date_period(normalized_name: str) -> tuple[date | None, str | None]:
         )
     except ValueError:
         return None, None
-    return period_date, match.group(0)
+    return period_date, _format_date_text(period_date)
+
 
 
 def extract_week_period(normalized_name: str) -> tuple[date | None, str | None, int | None]:
-    """Пытается извлечь текстовый период вида 'Май 2026 2 недели'."""
-    match = _WEEK_RE.search(normalized_name)
-    if not match:
-        return None, None, None
+    """Пытается извлечь недельный период и нормализует его текст."""
+    for pattern in _WEEK_PATTERNS:
+        match = pattern.search(normalized_name)
+        if not match:
+            continue
 
-    month_token = match.group("month").lower()
-    month_no = _MONTHS.get(month_token)
-    if month_no is None:
-        return None, None, None
+        month_token = match.group("month").lower()
+        month_info = _MONTHS.get(month_token)
+        if month_info is None:
+            return None, None, None
 
-    try:
-        period_date = date(int(match.group("year")), month_no, 1)
-        week_no = int(match.group("week"))
-    except ValueError:
-        return None, None, None
+        month_no, month_title = month_info
 
-    return period_date, match.group(0), week_no
+        try:
+            period_year = int(match.group("year"))
+            week_no = int(match.group("week"))
+            period_date = date(period_year, month_no, 1)
+        except ValueError:
+            return None, None, None
+
+        return period_date, _format_week_text(year=period_year, month_title=month_title, week_no=week_no), week_no
+
+    return None, None, None
+
 
 
 def _matches_rule(
@@ -151,6 +188,7 @@ def _matches_rule(
     return True
 
 
+
 def resolve_family_rule(
     normalized_name: str,
     *,
@@ -169,6 +207,7 @@ def resolve_family_rule(
     return None
 
 
+
 def parse_file_name(file_path: str) -> ParsedName:
     """Разбирает имя файла и возвращает классификацию первого этапа."""
     file_name = _basename(file_path)
@@ -179,7 +218,7 @@ def parse_file_name(file_path: str) -> ParsedName:
     date_period, date_text = extract_date_period(normalized_name)
 
     has_week_marker = "недел" in normalized_name
-    has_q_marker = "(q)" in normalized_name or normalized_name.endswith(" q") or " q " in normalized_name
+    has_q_marker = bool(_Q_MARKER_RE.search(normalized_name))
 
     family_rule = resolve_family_rule(
         normalized_name,
