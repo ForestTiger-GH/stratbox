@@ -74,7 +74,10 @@ def _should_delete_row(row: dict[str, Any], latest_paths: set[str]) -> bool:
     if is_valid:
         return True
 
-    return validity_reason == "period_older_than_family_min_date"
+    return validity_reason in {
+        "period_older_than_family_min_date",
+        "superseded_by_newer_week_in_same_month",
+    }
 
 
 def build_frank_rg_cleanup_plan(

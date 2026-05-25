@@ -126,6 +126,36 @@ def _build_record(
     )
 
 
+def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
+    """Помечает устаревшие недельные файлы внутри одного месяца как неактуальные."""
+    if df.empty:
+        return df
+
+    result = df.copy()
+    weekly_mask = (
+        result["period_mode"].eq("weekly")
+        & result["family_code"].notna()
+        & result["period_date"].notna()
+        & result["week_no"].notna()
+    )
+
+    if not weekly_mask.any():
+        return result
+
+    weekly_df = result.loc[weekly_mask, ["family_code", "period_date", "week_no"]].copy()
+    weekly_df["week_no"] = weekly_df["week_no"].astype(int)
+    weekly_df["period_month"] = weekly_df["period_date"].dt.to_period("M")
+    max_week_by_month = weekly_df.groupby(["family_code", "period_month"])["week_no"].transform("max")
+    superseded_index = weekly_df.index[weekly_df["week_no"] < max_week_by_month]
+
+    if len(superseded_index) == 0:
+        return result
+
+    result.loc[superseded_index, "is_valid"] = False
+    result.loc[superseded_index, "validity_reason"] = "superseded_by_newer_week_in_same_month"
+    return result
+
+
 def build_frank_rg_catalog(
     root_dir: str,
     *,
@@ -179,6 +209,7 @@ def build_frank_rg_catalog(
 
     df = pd.DataFrame([record.to_dict() for record in records])
     df["period_date"] = pd.to_datetime(df["period_date"], errors="coerce")
+    df = _mark_superseded_weekly_files(df)
     df = df.sort_values(
         by=["is_valid", "family_code", "period_date", "week_no", "file_name"],
         ascending=[False, True, True, True, True],
