@@ -112,9 +112,9 @@ def _format_date_text(period_date: date) -> str:
 
 
 
-def _format_week_text(*, year: int, month_title: str, week_no: int) -> str:
+def _format_week_text(*, year: int, month_no: int, week_no: int) -> str:
     """Формирует стандартный текст недельного периода."""
-    return f"{year:04d} {month_title} {week_no} неделя"
+    return f"{year:04d}-{month_no:02d} week {week_no}"
 
 
 
@@ -148,7 +148,7 @@ def extract_week_period(normalized_name: str) -> tuple[date | None, str | None, 
         if month_info is None:
             return None, None, None
 
-        month_no, month_title = month_info
+        month_no, _month_title = month_info
 
         try:
             period_year = int(match.group("year"))
@@ -157,7 +157,7 @@ def extract_week_period(normalized_name: str) -> tuple[date | None, str | None, 
         except ValueError:
             return None, None, None
 
-        return period_date, _format_week_text(year=period_year, month_title=month_title, week_no=week_no), week_no
+        return period_date, _format_week_text(year=period_year, month_no=month_no, week_no=week_no), week_no
 
     return None, None, None
 
