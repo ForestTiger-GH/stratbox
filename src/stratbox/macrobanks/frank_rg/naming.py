@@ -4,7 +4,9 @@
 Задачи модуля:
 - нормализовать имя файла;
 - извлечь период из имени;
-- определить семейство файла по реестру.
+- определить семейство файла по реестру;
+- поддержать как исходные имена Frank RG, так и внутренние имена,
+  которые уже создала сама библиотека.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
+from stratbox.macrobanks.frank_rg.filename_scheme import get_active_internal_name_scheme
 from stratbox.macrobanks.frank_rg.models import FrankFamilyRule
 from stratbox.macrobanks.frank_rg.registry import get_family_rules
 
@@ -34,6 +37,11 @@ _WEEK_PATTERNS = (
         r"(?P<week>\d+)[\s._-]+недел[ьяи]*",
         flags=re.IGNORECASE,
     ),
+)
+_INTERNAL_DATE_PREFIX_RE = re.compile(r"^(?P<period>20\d{2}-\d{2}-\d{2})_(?P<label>.+)$")
+_INTERNAL_WEEK_PREFIX_RE = re.compile(
+    r"^(?P<year>20\d{2})-(?P<month>\d{2}) week (?P<week>\d+)_(?P<label>.+)$",
+    flags=re.IGNORECASE,
 )
 _MONTHS = {
     "январь": (1, "Январь"),
@@ -71,12 +79,33 @@ class ParsedName:
     file_name: str
     extension: str
     normalized_name: str
+    name_origin: str
+    name_priority: int
     family_rule: FrankFamilyRule | None
     period_date: date | None
     period_date_text: str | None
     week_no: int | None
     has_week_marker: bool
     has_q_marker: bool
+
+
+@dataclass(frozen=True, slots=True)
+class InternalNameParseResult:
+    """Результат распознавания внутреннего имени файла."""
+
+    family_rule: FrankFamilyRule
+    period_date: date
+    period_date_text: str
+    week_no: int | None
+    has_week_marker: bool
+    has_q_marker: bool
+
+
+_NAME_ORIGIN_PRIORITY = {
+    "unrecognized": 0,
+    "source_raw": 10,
+    "internal_standard": 20,
+}
 
 
 def _basename(path: str) -> str:
@@ -96,6 +125,19 @@ def normalize_file_name(file_name: str) -> str:
 
 
 
+def normalize_label_text(text: str) -> str:
+    """Нормализует подпись семейства для сравнения внутренних имён."""
+    value = str(text).strip().lower().replace("ё", "е")
+    value = value.replace("—", "-").replace("–", "-")
+    value = value.replace("_", " ")
+    value = value.replace(".", " ")
+    value = value.replace(",", " ")
+    value = re.sub(r"\s*\-\s*", " - ", value)
+    value = re.sub(r"\s+", " ", value)
+    return value.strip()
+
+
+
 def extract_extension(file_name: str) -> str:
     """Извлекает расширение файла в нижнем регистре."""
     base = _basename(file_name)
@@ -103,6 +145,16 @@ def extract_extension(file_name: str) -> str:
     if len(parts) == 2:
         return f".{parts[1].lower()}"
     return ""
+
+
+
+def _stem_without_extension(file_name: str) -> str:
+    """Возвращает имя файла без расширения."""
+    base = _basename(file_name)
+    extension = extract_extension(base)
+    if extension:
+        return base[: -len(extension)]
+    return base
 
 
 
@@ -208,11 +260,107 @@ def resolve_family_rule(
 
 
 
+def _strip_internal_prefix(stem: str) -> str | None:
+    """Убирает активный внутренний префикс, если он используется."""
+    active_scheme = get_active_internal_name_scheme()
+    prefix = active_scheme.prefix.strip()
+    separator = active_scheme.separator
+
+    if not prefix:
+        return stem
+
+    prefix_with_separator = f"{prefix}{separator}"
+    if stem.startswith(prefix_with_separator):
+        return stem[len(prefix_with_separator) :]
+    return None
+
+
+
+def _resolve_family_rule_by_file_label(label_text: str) -> FrankFamilyRule | None:
+    """Подбирает семейство по точному совпадению внутренней файловой подписи."""
+    normalized_label = normalize_label_text(label_text)
+    for rule in get_family_rules():
+        if normalize_label_text(rule.file_label) == normalized_label:
+            return rule
+    return None
+
+
+
+def parse_internal_standard_name(file_name: str) -> InternalNameParseResult | None:
+    """Пытается распознать имя, которое уже создала сама библиотека."""
+    stem = _stem_without_extension(file_name)
+    stem_wo_prefix = _strip_internal_prefix(stem)
+    if stem_wo_prefix is None:
+        return None
+
+    match = _INTERNAL_DATE_PREFIX_RE.match(stem_wo_prefix)
+    if match:
+        try:
+            period_date = date.fromisoformat(match.group("period"))
+        except ValueError:
+            return None
+
+        family_rule = _resolve_family_rule_by_file_label(match.group("label"))
+        if family_rule is None or family_rule.period_mode != "date":
+            return None
+
+        return InternalNameParseResult(
+            family_rule=family_rule,
+            period_date=period_date,
+            period_date_text=_format_date_text(period_date),
+            week_no=None,
+            has_week_marker=False,
+            has_q_marker=family_rule.requires_q_marker,
+        )
+
+    match = _INTERNAL_WEEK_PREFIX_RE.match(stem_wo_prefix)
+    if match:
+        try:
+            period_year = int(match.group("year"))
+            month_no = int(match.group("month"))
+            week_no = int(match.group("week"))
+            period_date = date(period_year, month_no, 1)
+        except ValueError:
+            return None
+
+        family_rule = _resolve_family_rule_by_file_label(match.group("label"))
+        if family_rule is None or family_rule.period_mode != "weekly":
+            return None
+
+        return InternalNameParseResult(
+            family_rule=family_rule,
+            period_date=period_date,
+            period_date_text=_format_week_text(year=period_year, month_no=month_no, week_no=week_no),
+            week_no=week_no,
+            has_week_marker=True,
+            has_q_marker=family_rule.requires_q_marker,
+        )
+
+    return None
+
+
+
 def parse_file_name(file_path: str) -> ParsedName:
     """Разбирает имя файла и возвращает классификацию первого этапа."""
     file_name = _basename(file_path)
     normalized_name = normalize_file_name(file_name)
     extension = extract_extension(file_name)
+
+    internal_result = parse_internal_standard_name(file_name)
+    if internal_result is not None:
+        return ParsedName(
+            file_name=file_name,
+            extension=extension,
+            normalized_name=normalized_name,
+            name_origin="internal_standard",
+            name_priority=_NAME_ORIGIN_PRIORITY["internal_standard"],
+            family_rule=internal_result.family_rule,
+            period_date=internal_result.period_date,
+            period_date_text=internal_result.period_date_text,
+            week_no=internal_result.week_no,
+            has_week_marker=internal_result.has_week_marker,
+            has_q_marker=internal_result.has_q_marker,
+        )
 
     weekly_date, weekly_text, week_no = extract_week_period(normalized_name)
     date_period, date_text = extract_date_period(normalized_name)
@@ -233,10 +381,14 @@ def parse_file_name(file_path: str) -> ParsedName:
         period_date = date_period
         period_text = date_text
 
+    name_origin = "source_raw" if family_rule is not None else "unrecognized"
+
     return ParsedName(
         file_name=file_name,
         extension=extension,
         normalized_name=normalized_name,
+        name_origin=name_origin,
+        name_priority=_NAME_ORIGIN_PRIORITY[name_origin],
         family_rule=family_rule,
         period_date=period_date,
         period_date_text=period_text,

@@ -4,6 +4,7 @@
 На первом этапе модуль:
 - обходит каталог с файлами;
 - определяет семейство по имени файла;
+- поддерживает как исходные, так и внутренние переименованные имена;
 - формирует стабильную таблицу-каталог.
 """
 
@@ -34,6 +35,7 @@ def _join_path(parent: str, name: str) -> str:
     return f"{left}/{right}"
 
 
+
 def _iter_paths(
     root_dir: str,
     *,
@@ -53,6 +55,7 @@ def _iter_paths(
     return sorted(paths)
 
 
+
 def _safe_stat(path: str, *, filestore: FileStore) -> tuple[int | None, float | None, str | None]:
     """Безопасно читает метаданные файла, не роняя сканирование каталога."""
     try:
@@ -67,6 +70,7 @@ def _safe_stat(path: str, *, filestore: FileStore) -> tuple[int | None, float | 
         except Exception:
             mtime_iso = None
     return stat.size, stat.mtime, mtime_iso
+
 
 
 def _build_record(
@@ -105,8 +109,11 @@ def _build_record(
         file_name=parsed.file_name,
         extension=parsed.extension,
         normalized_name=parsed.normalized_name,
+        name_origin=parsed.name_origin,
+        name_priority=parsed.name_priority,
         family_code=family_rule.code if family_rule else None,
         family_name=family_rule.title if family_rule else None,
+        file_label=family_rule.file_label if family_rule else None,
         parser_group=family_rule.parser_group if family_rule else None,
         parser_key=family_rule.parser_key if family_rule else None,
         period_mode=family_rule.period_mode if family_rule else None,
@@ -126,6 +133,7 @@ def _build_record(
     )
 
 
+
 def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
     """Помечает устаревшие недельные файлы внутри одного месяца как неактуальные."""
     if df.empty:
@@ -133,7 +141,8 @@ def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
 
     result = df.copy()
     weekly_mask = (
-        result["period_mode"].eq("weekly")
+        result["is_valid"].eq(True)
+        & result["period_mode"].eq("weekly")
         & result["family_code"].notna()
         & result["period_date"].notna()
         & result["week_no"].notna()
@@ -143,7 +152,7 @@ def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
         return result
 
     weekly_df = result.loc[weekly_mask, ["family_code", "period_date", "week_no"]].copy()
-    weekly_df["week_no"] = weekly_df["week_no"].astype(int)
+    weekly_df["week_no"] = pd.to_numeric(weekly_df["week_no"], errors="coerce").fillna(0).astype(int)
     weekly_df["period_month"] = weekly_df["period_date"].dt.to_period("M")
     max_week_by_month = weekly_df.groupby(["family_code", "period_month"])["week_no"].transform("max")
     superseded_index = weekly_df.index[weekly_df["week_no"] < max_week_by_month]
@@ -154,6 +163,7 @@ def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
     result.loc[superseded_index, "is_valid"] = False
     result.loc[superseded_index, "validity_reason"] = "superseded_by_newer_week_in_same_month"
     return result
+
 
 
 def build_frank_rg_catalog(
@@ -186,8 +196,11 @@ def build_frank_rg_catalog(
                 "file_name",
                 "extension",
                 "normalized_name",
+                "name_origin",
+                "name_priority",
                 "family_code",
                 "family_name",
+                "file_label",
                 "parser_group",
                 "parser_key",
                 "period_mode",
@@ -211,8 +224,8 @@ def build_frank_rg_catalog(
     df["period_date"] = pd.to_datetime(df["period_date"], errors="coerce")
     df = _mark_superseded_weekly_files(df)
     df = df.sort_values(
-        by=["is_valid", "family_code", "period_date", "week_no", "file_name"],
-        ascending=[False, True, True, True, True],
+        by=["is_valid", "family_code", "period_date", "week_no", "name_priority", "file_name"],
+        ascending=[False, True, True, True, False, True],
         na_position="last",
     ).reset_index(drop=True)
     return df

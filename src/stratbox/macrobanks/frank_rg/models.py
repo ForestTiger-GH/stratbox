@@ -3,6 +3,7 @@
 
 На первом этапе здесь описываются:
 - правило семейства файлов;
+- активная схема внутреннего имени файла;
 - запись каталога по одному найденному файлу.
 """
 
@@ -18,6 +19,7 @@ class FrankFamilyRule:
 
     code: str
     title: str
+    file_label: str
     parser_group: str
     parser_key: str
     period_mode: str
@@ -32,6 +34,14 @@ class FrankFamilyRule:
 
 
 @dataclass(frozen=True, slots=True)
+class FrankInternalNameScheme:
+    """Активная схема внутреннего имени файлов Frank RG."""
+
+    prefix: str = ""
+    separator: str = "_"
+
+
+@dataclass(frozen=True, slots=True)
 class FrankCatalogRecord:
     """Одна строка каталога найденных файлов."""
 
@@ -40,8 +50,11 @@ class FrankCatalogRecord:
     file_name: str
     extension: str
     normalized_name: str
+    name_origin: str
+    name_priority: int
     family_code: str | None
     family_name: str | None
+    file_label: str | None
     parser_group: str | None
     parser_key: str | None
     period_mode: str | None

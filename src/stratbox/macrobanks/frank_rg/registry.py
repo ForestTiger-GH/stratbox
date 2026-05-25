@@ -21,6 +21,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="regional_issuance_mortgage",
         title="Региональные выдачи — Ипотека",
+        file_label="Региональные выдачи — Ипотека",
         parser_group="regional",
         parser_key="regional_issuance_mortgage_stub",
         period_mode="date",
@@ -33,6 +34,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="regional_portfolios_mortgage",
         title="Региональные портфели — Ипотека",
+        file_label="Региональные портфели — Ипотека",
         parser_group="regional",
         parser_key="regional_portfolios_mortgage_stub",
         period_mode="date",
@@ -44,6 +46,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="regional_issuance_cards",
         title="Региональные выдачи — Карты",
+        file_label="Региональные выдачи — Карты",
         parser_group="regional",
         parser_key="regional_issuance_cards_stub",
         period_mode="date",
@@ -55,6 +58,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="regional_issuance",
         title="Региональные выдачи",
+        file_label="Региональные выдачи",
         parser_group="regional",
         parser_key="regional_issuance_stub",
         period_mode="date",
@@ -67,6 +71,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="regional_portfolios",
         title="Региональные портфели",
+        file_label="Региональные портфели",
         parser_group="regional",
         parser_key="regional_portfolios_stub",
         period_mode="date",
@@ -79,6 +84,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="express_issuance_weekly",
         title="Экспресс выдачи — Weekly",
+        file_label="Экспресс выдачи — Weekly",
         parser_group="express",
         parser_key="express_issuance_weekly_stub",
         period_mode="weekly",
@@ -90,6 +96,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="express_passives",
         title="Экспресс — Пассивы",
+        file_label="Экспресс — Пассивы",
         parser_group="express",
         parser_key="express_passives_stub",
         period_mode="date",
@@ -99,6 +106,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="express_issuance_cards",
         title="Экспресс выдачи — Карты",
+        file_label="Экспресс выдачи — Карты",
         parser_group="express",
         parser_key="express_issuance_cards_stub",
         period_mode="date",
@@ -108,6 +116,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="express_issuance",
         title="Экспресс выдачи",
+        file_label="Экспресс выдачи",
         parser_group="express",
         parser_key="express_issuance_stub",
         period_mode="date",
@@ -118,6 +127,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="express_portfolios",
         title="Экспресс портфели",
+        file_label="Экспресс портфели",
         parser_group="express",
         parser_key="express_portfolios_stub",
         period_mode="date",
@@ -128,6 +138,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="rbm_volumes_q",
         title="Выдачи — Q",
+        file_label="Выдачи — Q",
         parser_group="rbm",
         parser_key="rbm_volumes_q_stub",
         period_mode="date",
@@ -138,6 +149,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="rbm_portfolios_q",
         title="Портфели — Q",
+        file_label="Портфели — Q",
         parser_group="rbm",
         parser_key="rbm_portfolios_q_stub",
         period_mode="date",
@@ -148,6 +160,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="volumes_cards_q",
         title="Выдачи — Карты — Q",
+        file_label="Выдачи — Карты — Q",
         parser_group="rbm",
         parser_key="volumes_cards_q_stub",
         period_mode="date",
@@ -158,6 +171,7 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     FrankFamilyRule(
         code="mortgage_refinancing",
         title="Рефинансирование Ипотеки",
+        file_label="Рефинансирование Ипотеки",
         parser_group="special",
         parser_key="mortgage_refinancing_stub",
         period_mode="date",

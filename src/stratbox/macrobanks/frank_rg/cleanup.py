@@ -9,12 +9,12 @@
 
 Важно:
 - модуль не открывает содержимое файлов и не меняет их формат;
-- все операции выполняются только через FileStore stratbox.
+- все операции выполняются только через FileStore stratbox;
+- файлы, которые не прошли распознавание, функция не трогает вообще.
 """
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 import pandas as pd
@@ -22,10 +22,8 @@ import pandas as pd
 from stratbox.base.filestore import FileStore
 from stratbox.base.runtime import get_filestore
 from stratbox.macrobanks.frank_rg.catalog import build_frank_rg_catalog
+from stratbox.macrobanks.frank_rg.filename_scheme import build_internal_file_name
 from stratbox.macrobanks.frank_rg.selection import select_latest_frank_rg_files
-
-
-_FORBIDDEN_FILENAME_CHARS_RE = re.compile(r'[<>:"/\\|?*]')
 
 
 def _join_path(parent: str, name: str) -> str:
@@ -40,32 +38,24 @@ def _join_path(parent: str, name: str) -> str:
     return f"{left}/{right}"
 
 
-def _sanitize_filename_part(text: str) -> str:
-    """Подготавливает текст для имени файла без потери основного смысла."""
-    value = str(text).strip()
-    value = value.replace("\u00a0", " ")
-    value = _FORBIDDEN_FILENAME_CHARS_RE.sub(" ", value)
-    value = re.sub(r"\s+", " ", value)
-    value = value.strip(" .")
-    return value
-
 
 def build_frank_rg_latest_file_name(period_text: str | None, family_name: str | None, extension: str | None) -> str:
     """Формирует стандартное имя итогового файла по актуальному семейству."""
-    left = _sanitize_filename_part(period_text or "unknown-period")
-    right = _sanitize_filename_part(family_name or "Unknown family")
-    ext = str(extension or "").strip().lower()
+    return build_internal_file_name(
+        period_text=period_text,
+        file_label=family_name,
+        extension=extension,
+    )
 
-    if ext and not ext.startswith("."):
-        ext = f".{ext}"
-
-    return f"{left}_{right}{ext}"
 
 
 def _should_delete_row(row: dict[str, Any], latest_paths: set[str]) -> bool:
     """Определяет, нужно ли удалить файл в режиме зачистки."""
     path = str(row.get("path") or "")
     if path in latest_paths:
+        return False
+
+    if not bool(row.get("is_recognized")):
         return False
 
     is_valid = bool(row.get("is_valid"))
@@ -78,6 +68,7 @@ def _should_delete_row(row: dict[str, Any], latest_paths: set[str]) -> bool:
         "period_older_than_family_min_date",
         "superseded_by_newer_week_in_same_month",
     }
+
 
 
 def build_frank_rg_cleanup_plan(
@@ -101,9 +92,9 @@ def build_frank_rg_cleanup_plan(
 
     for row in latest_df.to_dict(orient="records"):
         source_path = str(row.get("path") or "")
-        target_name = build_frank_rg_latest_file_name(
+        target_name = build_internal_file_name(
             period_text=row.get("period_date_text"),
-            family_name=row.get("family_name"),
+            file_label=row.get("file_label") or row.get("family_name"),
             extension=row.get("extension"),
         )
         target_path = _join_path(root_dir, target_name)
@@ -124,6 +115,8 @@ def build_frank_rg_cleanup_plan(
                 "will_execute": will_execute,
                 "family_code": row.get("family_code"),
                 "family_name": row.get("family_name"),
+                "file_label": row.get("file_label"),
+                "name_origin": row.get("name_origin"),
                 "period_mode": row.get("period_mode"),
                 "period_date": row.get("period_date"),
                 "period_date_text": row.get("period_date_text"),
@@ -147,6 +140,8 @@ def build_frank_rg_cleanup_plan(
                     "will_execute": True,
                     "family_code": row.get("family_code"),
                     "family_name": row.get("family_name"),
+                    "file_label": row.get("file_label"),
+                    "name_origin": row.get("name_origin"),
                     "period_mode": row.get("period_mode"),
                     "period_date": row.get("period_date"),
                     "period_date_text": row.get("period_date_text"),
@@ -168,6 +163,8 @@ def build_frank_rg_cleanup_plan(
                 "will_execute",
                 "family_code",
                 "family_name",
+                "file_label",
+                "name_origin",
                 "period_mode",
                 "period_date",
                 "period_date_text",
@@ -199,6 +196,7 @@ def build_frank_rg_cleanup_plan(
         "latest": latest_df,
         "plan": plan_df,
     }
+
 
 
 def apply_frank_rg_cleanup_plan(
@@ -380,6 +378,7 @@ def apply_frank_rg_cleanup_plan(
             "family_name",
         ]
     ]
+
 
 
 def run_frank_rg_cleanup(
