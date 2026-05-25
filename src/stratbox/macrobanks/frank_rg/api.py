@@ -4,13 +4,20 @@
 Назначение:
 - построить каталог файлов;
 - выбрать наиболее свежие файлы по семействам;
-- прогнать диспетчеризацию в заглушки парсеров.
+- прогнать диспетчеризацию в заглушки парсеров;
+- подготовить и выполнить зачистку каталога по найденным семействам.
 """
 
 from __future__ import annotations
 
 from stratbox.base.filestore import FileStore
 from stratbox.macrobanks.frank_rg.catalog import build_frank_rg_catalog
+from stratbox.macrobanks.frank_rg.cleanup import (
+    apply_frank_rg_cleanup_plan,
+    build_frank_rg_cleanup_plan,
+    build_frank_rg_latest_file_name,
+    run_frank_rg_cleanup,
+)
 from stratbox.macrobanks.frank_rg.dispatch import dispatch_latest_frank_rg_files
 from stratbox.macrobanks.frank_rg.selection import select_latest_frank_rg_files
 
@@ -38,7 +45,11 @@ def run_frank_rg_stage1(
 
 
 __all__ = [
+    "apply_frank_rg_cleanup_plan",
     "build_frank_rg_catalog",
+    "build_frank_rg_cleanup_plan",
+    "build_frank_rg_latest_file_name",
+    "run_frank_rg_cleanup",
     "select_latest_frank_rg_files",
     "run_frank_rg_stage1",
 ]

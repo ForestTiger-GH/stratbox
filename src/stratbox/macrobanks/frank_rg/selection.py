@@ -12,43 +12,31 @@ import pandas as pd
 
 def select_latest_frank_rg_files(catalog_df: pd.DataFrame) -> pd.DataFrame:
     """Выбирает наиболее свежий файл по каждому распознанному семейству."""
+    columns = [
+        "family_code",
+        "family_name",
+        "parser_group",
+        "parser_key",
+        "period_mode",
+        "period_date",
+        "period_date_text",
+        "week_no",
+        "path",
+        "file_name",
+        "extension",
+        "selection_key",
+        "selection_reason",
+    ]
+
     if catalog_df is None or catalog_df.empty:
-        return pd.DataFrame(
-            columns=[
-                "family_code",
-                "family_name",
-                "parser_group",
-                "parser_key",
-                "period_mode",
-                "period_date",
-                "week_no",
-                "path",
-                "file_name",
-                "selection_key",
-                "selection_reason",
-            ]
-        )
+        return pd.DataFrame(columns=columns)
 
     df = catalog_df.copy()
     df = df[df["is_valid"] == True].copy()
     df = df[df["family_code"].notna()].copy()
 
     if df.empty:
-        return pd.DataFrame(
-            columns=[
-                "family_code",
-                "family_name",
-                "parser_group",
-                "parser_key",
-                "period_mode",
-                "period_date",
-                "week_no",
-                "path",
-                "file_name",
-                "selection_key",
-                "selection_reason",
-            ]
-        )
+        return pd.DataFrame(columns=columns)
 
     # Для отбора свежести сначала сортируется дата периода,
     # а для недельных файлов дополнительным ключом выступает номер недели.
@@ -73,19 +61,5 @@ def select_latest_frank_rg_files(catalog_df: pd.DataFrame) -> pd.DataFrame:
         axis=1,
     )
 
-    latest = latest[
-        [
-            "family_code",
-            "family_name",
-            "parser_group",
-            "parser_key",
-            "period_mode",
-            "period_date",
-            "week_no",
-            "path",
-            "file_name",
-            "selection_key",
-            "selection_reason",
-        ]
-    ].reset_index(drop=True)
+    latest = latest[columns].reset_index(drop=True)
     return latest
