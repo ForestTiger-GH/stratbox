@@ -12,12 +12,14 @@ from stratbox.macrobanks.frank_rg import run_frank_rg_cleanup
 
 ROOT_DIR = "."
 DELETE_OTHERS = False
+ARCHIVE_LATEST = False
 EXECUTE = False
 
 
 result = run_frank_rg_cleanup(
     ROOT_DIR,
     delete_others=DELETE_OTHERS,
+    archive_latest=ARCHIVE_LATEST,
     execute=EXECUTE,
 )
 

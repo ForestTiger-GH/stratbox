@@ -14,6 +14,7 @@ from stratbox.base.filestore import FileStore
 from stratbox.macrobanks.frank_rg.catalog import build_frank_rg_catalog
 from stratbox.macrobanks.frank_rg.cleanup import (
     apply_frank_rg_cleanup_plan,
+    build_frank_rg_actuals_archive_name,
     build_frank_rg_cleanup_plan,
     build_frank_rg_latest_file_name,
     run_frank_rg_cleanup,
@@ -46,6 +47,7 @@ def run_frank_rg_stage1(
 
 __all__ = [
     "apply_frank_rg_cleanup_plan",
+    "build_frank_rg_actuals_archive_name",
     "build_frank_rg_catalog",
     "build_frank_rg_cleanup_plan",
     "build_frank_rg_latest_file_name",

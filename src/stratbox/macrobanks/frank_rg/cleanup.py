@@ -15,11 +15,14 @@
 
 from __future__ import annotations
 
+from datetime import date
+from pathlib import PurePosixPath
 from typing import Any
 
 import pandas as pd
 
 from stratbox.base.filestore import FileStore
+from stratbox.base.ioapi.zip import write_zip_from_memory
 from stratbox.base.runtime import get_filestore
 from stratbox.macrobanks.frank_rg.catalog import build_frank_rg_catalog
 from stratbox.macrobanks.frank_rg.filename_scheme import build_internal_file_name
@@ -49,6 +52,48 @@ def build_frank_rg_latest_file_name(period_text: str | None, family_name: str | 
 
 
 
+def build_frank_rg_actuals_archive_name(archive_base_name: str = "FrankRG_Actuals", archive_date: date | None = None) -> str:
+    """Формирует имя ZIP-архива с итоговыми файлами."""
+    effective_date = archive_date or date.today()
+    return f"{archive_base_name}_{effective_date.isoformat()}.zip"
+
+
+
+def _collect_archive_members_from_plan(plan_df: pd.DataFrame, fs: FileStore) -> dict[str, bytes]:
+    """Собирает итоговые файлы latest для последующей упаковки в ZIP."""
+    files_for_archive: dict[str, bytes] = {}
+
+    if plan_df is None or plan_df.empty:
+        return files_for_archive
+
+    latest_actions = {"copy_latest", "rename_latest", "keep_latest"}
+
+    for row in plan_df.to_dict(orient="records"):
+        action_type = str(row.get("action_type") or "")
+        if action_type not in latest_actions:
+            continue
+
+        source_path = str(row.get("source_path") or "")
+        target_path = str(row.get("target_path") or "")
+
+        effective_path = ""
+        if target_path and fs.exists(target_path):
+            effective_path = target_path
+        elif source_path and fs.exists(source_path):
+            effective_path = source_path
+        else:
+            continue
+
+        member_name = PurePosixPath(effective_path.replace("\\", "/")).name
+        if not member_name:
+            continue
+
+        files_for_archive[member_name] = fs.read_bytes(effective_path)
+
+    return files_for_archive
+
+
+
 def _should_delete_row(row: dict[str, Any], latest_paths: set[str]) -> bool:
     """Определяет, нужно ли удалить файл в режиме зачистки."""
     path = str(row.get("path") or "")
@@ -75,6 +120,8 @@ def build_frank_rg_cleanup_plan(
     root_dir: str,
     *,
     delete_others: bool = False,
+    archive_latest: bool = False,
+    archive_base_name: str = "FrankRG_Actuals",
     filestore: FileStore | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Строит план зачистки каталога Frank RG без выполнения файловых операций."""
@@ -153,6 +200,29 @@ def build_frank_rg_cleanup_plan(
                 }
             )
 
+    if archive_latest:
+        archive_name = build_frank_rg_actuals_archive_name(archive_base_name=archive_base_name)
+        archive_path = _join_path(root_dir, archive_name)
+        plan_rows.append(
+            {
+                "action_type": "create_archive",
+                "action_reason": "archive_latest_files",
+                "will_execute": True,
+                "family_code": None,
+                "family_name": None,
+                "file_label": None,
+                "name_origin": None,
+                "period_mode": None,
+                "period_date": None,
+                "period_date_text": None,
+                "week_no": None,
+                "source_path": None,
+                "source_file_name": None,
+                "target_path": archive_path,
+                "target_file_name": archive_name,
+            }
+        )
+
     plan_df = pd.DataFrame(plan_rows)
 
     if plan_df.empty:
@@ -183,6 +253,7 @@ def build_frank_rg_cleanup_plan(
                 "copy_latest": 20,
                 "keep_latest": 30,
                 "delete_source": 40,
+                "create_archive": 50,
             }
         ).fillna(99).astype(int)
         plan_df = plan_df.sort_values(
@@ -343,6 +414,39 @@ def apply_frank_rg_cleanup_plan(
                     )
                 continue
 
+            if action_type == "create_archive":
+                archive_members = _collect_archive_members_from_plan(plan_df, fs)
+                if not archive_members:
+                    logs.append(
+                        {
+                            "action_type": action_type,
+                            "status": "skipped",
+                            "message": "No latest files available for archive.",
+                            "source_path": source_path,
+                            "target_path": target_path,
+                            "family_code": family_code,
+                            "family_name": family_name,
+                        }
+                    )
+                    continue
+
+                if target_path and fs.exists(str(target_path)):
+                    fs.remove(str(target_path))
+
+                write_zip_from_memory(str(target_path), archive_members, store=fs)
+                logs.append(
+                    {
+                        "action_type": action_type,
+                        "status": "done",
+                        "message": f"Archive created with {len(archive_members)} files.",
+                        "source_path": source_path,
+                        "target_path": target_path,
+                        "family_code": family_code,
+                        "family_name": family_name,
+                    }
+                )
+                continue
+
             logs.append(
                 {
                     "action_type": action_type,
@@ -385,6 +489,8 @@ def run_frank_rg_cleanup(
     root_dir: str,
     *,
     delete_others: bool = False,
+    archive_latest: bool = False,
+    archive_base_name: str = "FrankRG_Actuals",
     execute: bool = False,
     replace_existing: bool = False,
     filestore: FileStore | None = None,
@@ -395,6 +501,8 @@ def run_frank_rg_cleanup(
     result = build_frank_rg_cleanup_plan(
         root_dir,
         delete_others=delete_others,
+        archive_latest=archive_latest,
+        archive_base_name=archive_base_name,
         filestore=fs,
     )
     plan_df = result["plan"]

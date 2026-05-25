@@ -2,6 +2,7 @@
 
 from stratbox.macrobanks.frank_rg import (
     apply_frank_rg_cleanup_plan,
+    build_frank_rg_actuals_archive_name,
     build_frank_rg_catalog,
     build_frank_rg_cleanup_plan,
     build_frank_rg_latest_file_name,
@@ -12,6 +13,7 @@ from stratbox.macrobanks.frank_rg import (
 
 __all__ = [
     "apply_frank_rg_cleanup_plan",
+    "build_frank_rg_actuals_archive_name",
     "build_frank_rg_catalog",
     "build_frank_rg_cleanup_plan",
     "build_frank_rg_latest_file_name",
