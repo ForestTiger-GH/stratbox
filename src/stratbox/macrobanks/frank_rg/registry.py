@@ -170,8 +170,8 @@ FAMILY_RULES: tuple[FrankFamilyRule, ...] = (
     ),
     FrankFamilyRule(
         code="mortgage_refinancing",
-        title="Рефинансирование Ипотеки",
-        file_label="Рефинансирование Ипотеки",
+        title="Рефинансирование ипотеки",
+        file_label="Рефинансирование ипотеки",
         parser_group="special",
         parser_key="mortgage_refinancing_stub",
         period_mode="date",
