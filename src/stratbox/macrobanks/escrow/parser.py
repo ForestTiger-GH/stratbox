@@ -24,6 +24,7 @@ import pandas as pd
 from stratbox.macrobanks.escrow.columns import (
     HEADER_SUBJECT_REQUIRED_TOKENS,
     is_subject_header_cell,
+    probe_indicator_columns,
     resolve_indicator_columns,
     resolve_indicator_spec_by_header,
 )
@@ -32,6 +33,7 @@ from stratbox.macrobanks.escrow.rows import parse_escrow_rows
 
 
 _DATE_RE = re.compile(r"(\d{2})(\d{2})(\d{4})")  # DDMMYYYY
+_HEADER_MIN_PROBE_RECOGNIZED = 5
 
 
 def extract_date_from_filename(name: str) -> str | None:
@@ -61,7 +63,7 @@ def _coerce_numeric_value(value: object) -> float | int | None:
     if isinstance(value, (int, float)):
         return value
 
-    text = str(value).replace("\u00a0", " ").strip()
+    text = str(value).replace(" ", " ").strip()
     if not text:
         return None
 
@@ -87,9 +89,16 @@ def _find_header_row(sheet_df: pd.DataFrame) -> tuple[int, list[object]]:
             continue
 
         try:
-            resolve_indicator_columns(row_values)
+            resolved, unknown_headers = probe_indicator_columns(row_values, allow_unknown=True)
         except Exception as exc:
             last_error = exc
+            continue
+
+        if len(resolved) < _HEADER_MIN_PROBE_RECOGNIZED:
+            last_error = ValueError(
+                "Escrow header candidate has too few recognized indicators: "
+                f"recognized={len(resolved)}, unknown_headers={unknown_headers}"
+            )
             continue
 
         return row_index, row_values
@@ -150,7 +159,7 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEs
     """
     file_date = extract_date_from_filename(source_name)
     sheet_name, sheet_df, header_row_index, header_values = _select_sheet_with_header(file_bytes)
-    resolved_columns = resolve_indicator_columns(header_values)
+    resolved_columns = resolve_indicator_columns(header_values, allow_unknown=False)
 
     useful_columns_count = max([resolved.source_index for resolved in resolved_columns], default=1) + 1
     data_df = sheet_df.iloc[header_row_index + 1 :, :useful_columns_count].copy()

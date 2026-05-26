@@ -33,6 +33,7 @@ ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (
         sheet_code="ЗМР",
         required_tokens=("задолженность", "млн", "руб"),
         order=3,
+        is_required=False,
     ),
     EscrowIndicatorSpec(
         code="escrow_accounts_count",
@@ -100,6 +101,8 @@ HEADER_SUBJECT_ALTERNATIVE_TOKENS: tuple[str, ...] = (
     "рф",
 )
 
+_HEADER_MIN_RECOGNIZED_INDICATORS = 5
+
 
 def normalize_header_text(value: object) -> str:
     """Нормализует заголовок столбца для устойчивого распознавания."""
@@ -107,7 +110,7 @@ def normalize_header_text(value: object) -> str:
         return ""
 
     text = str(value)
-    text = text.replace("\u00a0", " ")
+    text = text.replace(" ", " ")
     text = text.replace("ё", "е").replace("Ё", "Е")
     text = re.sub(r"\([^)]*\)", " ", text, flags=re.S)
     text = text.replace("«", " ").replace("»", " ")
@@ -169,13 +172,17 @@ def resolve_indicator_spec_by_header(source_name: object) -> EscrowIndicatorSpec
     return best
 
 
-def resolve_indicator_columns(header_values: list[object] | tuple[object, ...]) -> list[ResolvedEscrowColumn]:
+def probe_indicator_columns(
+    header_values: list[object] | tuple[object, ...],
+    *,
+    allow_unknown: bool = True,
+) -> tuple[list[ResolvedEscrowColumn], list[tuple[int, str]]]:
     """
-    Сопоставляет реальные столбцы Excel со стандартным набором показателей.
+    Мягко сопоставляет реальные столбцы Excel со стандартным реестром показателей.
 
-    Ожидается, что первые два значения header_values соответствуют служебным столбцам:
-    - № п/п
-    - субъект РФ / федеральный округ
+    Возвращает:
+    - resolved: распознанные столбцы;
+    - unknown_headers: непустые нераспознанные заголовки после первых двух служебных колонок.
     """
     if len(header_values) < 3:
         raise ValueError("Escrow header row has too few columns")
@@ -210,21 +217,33 @@ def resolve_indicator_columns(header_values: list[object] | tuple[object, ...]) 
             )
         )
 
-    required_codes = {spec.code for spec in ESCROW_INDICATOR_SPECS if spec.is_required}
-    missing_required = [spec.code for spec in ESCROW_INDICATOR_SPECS if spec.is_required and spec.code not in used_codes]
-    if missing_required:
-        raise ValueError(
-            "Escrow required indicators are resolved incompletely: "
-            f"missing={missing_required}, unknown_headers={unknown_headers}"
-        )
-
-    if unknown_headers:
+    if unknown_headers and not allow_unknown:
         raise ValueError(
             "Escrow header row contains unrecognized non-empty indicator headers: "
             f"{unknown_headers}"
         )
 
     resolved = sorted(resolved, key=lambda item: item.spec.order)
+    return resolved, unknown_headers
+
+
+def resolve_indicator_columns(
+    header_values: list[object] | tuple[object, ...],
+    *,
+    allow_unknown: bool = False,
+) -> list[ResolvedEscrowColumn]:
+    """
+    Строго сопоставляет реальные столбцы Excel со стандартным набором показателей.
+
+    Для исторических файлов допускается отсутствие части известных показателей.
+    Это не считается ошибкой: в итоговых витринах соответствующие даты просто останутся пустыми.
+    """
+    resolved, unknown_headers = probe_indicator_columns(header_values, allow_unknown=allow_unknown)
+    if len(resolved) < _HEADER_MIN_RECOGNIZED_INDICATORS:
+        raise ValueError(
+            "Escrow indicator header row is recognized too weakly: "
+            f"recognized={len(resolved)}, unknown_headers={unknown_headers}"
+        )
     return resolved
 
 
@@ -248,6 +267,7 @@ __all__ = [
     "get_output_indicator_specs",
     "is_subject_header_cell",
     "normalize_header_text",
+    "probe_indicator_columns",
     "resolve_indicator_columns",
     "resolve_indicator_spec_by_header",
     "sheet_code_by_indicator_code",

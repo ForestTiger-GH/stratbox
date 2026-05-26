@@ -19,19 +19,11 @@ from stratbox.macrobanks.escrow.regions import resolve_region_order
 
 
 def resolve_indicator_order(parsed_files: Iterable[ParsedEscrowFile]) -> list[EscrowIndicatorSpec]:
-    """Возвращает порядок показателей, реально встреченных в наборе файлов."""
+    """Возвращает полный порядок выходных показателей по стандартному реестру."""
     parsed_list = list(parsed_files)
     if not parsed_list:
         return []
-
-    present_codes: set[str] = set()
-    for item in parsed_list:
-        for resolved in item.resolved_columns:
-            if resolved.spec.is_output:
-                present_codes.add(resolved.spec.code)
-
-    ordered_specs = [spec for spec in get_output_indicator_specs() if spec.code in present_codes]
-    return ordered_specs
+    return get_output_indicator_specs()
 
 
 def build_escrow_pivot(
