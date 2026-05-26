@@ -1,8 +1,10 @@
 """
 pivots — построение сводных матриц по каждому показателю счетов эскроу.
 
-Результат:
-- для каждого показателя отдельная таблица вида регионы × даты.
+Итог:
+- для каждого показателя отдельная таблица вида строки витрины × даты;
+- порядок строк берется из последнего файла и сохраняет структуру ФО -> регионы -> итог по РФ;
+- порядок показателей берется из стандартного словаря.
 """
 
 from __future__ import annotations
@@ -11,44 +13,42 @@ from typing import Iterable
 
 import pandas as pd
 
-from stratbox.macrobanks.escrow.parser import ParsedEscrowFile
+from stratbox.macrobanks.escrow.models import EscrowIndicatorSpec, ParsedEscrowFile
 from stratbox.macrobanks.escrow.regions import resolve_region_order
 
 
-
-def resolve_indicator_order(parsed_files: Iterable[ParsedEscrowFile]) -> list[str]:
-    """
-    Возвращает порядок показателей по последнему корректно датированному файлу.
-
-    Если даты извлечь не удалось, используется последний файл из списка.
-    """
+def resolve_indicator_order(parsed_files: Iterable[ParsedEscrowFile]) -> list[EscrowIndicatorSpec]:
+    """Возвращает порядок показателей по последнему корректно датированному файлу."""
     parsed_list = list(parsed_files)
     if not parsed_list:
         return []
 
     dated = [item for item in parsed_list if item.file_date]
-    if dated:
-        latest = sorted(dated, key=lambda item: item.file_date or "", reverse=True)[0]
-        return list(dict.fromkeys(latest.indicators_order))
+    latest = sorted(dated or parsed_list, key=lambda item: item.file_date or "", reverse=True)[0]
 
-    return list(dict.fromkeys(parsed_list[-1].indicators_order))
-
+    ordered_specs: list[EscrowIndicatorSpec] = []
+    used_codes: set[str] = set()
+    for resolved in sorted(latest.resolved_columns, key=lambda item: item.spec.order):
+        if resolved.spec.code in used_codes:
+            continue
+        ordered_specs.append(resolved.spec)
+        used_codes.add(resolved.spec.code)
+    return ordered_specs
 
 
 def build_escrow_pivot(
     result_df: pd.DataFrame,
-    indicator: str,
+    indicator_code: str,
     *,
     region_order: list[str],
     date_order: list[str],
 ) -> pd.DataFrame:
-    """Строит сводную матрицу по одному показателю: регионы × даты."""
-    df_ind = result_df.loc[result_df["Показатель"] == indicator].copy()
+    """Строит сводную матрицу по одному показателю: строки витрины × даты."""
+    df_ind = result_df.loc[result_df["indicator_code"] == indicator_code].copy()
     pivot = df_ind.pivot_table(index="Регион", columns="Дата", values="Значение")
     pivot = pivot.reindex(region_order)
     pivot = pivot.reindex(columns=date_order)
     return pivot
-
 
 
 def build_escrow_pivots(
@@ -57,11 +57,11 @@ def build_escrow_pivots(
     parsed_files: Iterable[ParsedEscrowFile] | None = None,
     regions_mode: str = "latest",
     custom_regions: list[str] | tuple[str, ...] | None = None,
-) -> tuple[dict[str, pd.DataFrame], list[str], list[str], list[str]]:
+) -> tuple[dict[str, pd.DataFrame], list[EscrowIndicatorSpec], list[str], list[str]]:
     """
     Возвращает:
-    - pivots: словарь {показатель -> DataFrame}
-    - indicators_order: порядок листов/показателей
+    - pivots: словарь {indicator_code -> DataFrame}
+    - indicator_specs: порядок листов/показателей
     - region_order
     - date_order
     """
@@ -69,27 +69,29 @@ def build_escrow_pivots(
         return {}, [], [], []
 
     date_order = sorted([str(x) for x in result_df["Дата"].dropna().unique().tolist()])
+    parsed_list = list(parsed_files) if parsed_files is not None else None
     region_order = resolve_region_order(
         result_df,
+        parsed_files=parsed_list,
         mode=regions_mode,
         custom_regions=custom_regions,
     )
 
-    if parsed_files is not None:
-        indicators_order = resolve_indicator_order(parsed_files)
+    if parsed_list is not None:
+        indicator_specs = resolve_indicator_order(parsed_list)
     else:
-        indicators_order = sorted([str(x) for x in result_df["Показатель"].dropna().unique().tolist()])
+        raise ValueError("parsed_files is required to build escrow pivots reliably")
 
     pivots: dict[str, pd.DataFrame] = {}
-    for indicator in indicators_order:
-        pivots[indicator] = build_escrow_pivot(
+    for spec in indicator_specs:
+        pivots[spec.code] = build_escrow_pivot(
             result_df,
-            indicator,
+            spec.code,
             region_order=region_order,
             date_order=date_order,
         )
 
-    return pivots, indicators_order, region_order, date_order
+    return pivots, indicator_specs, region_order, date_order
 
 
 __all__ = [

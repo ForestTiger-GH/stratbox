@@ -5,7 +5,7 @@
 - получить список ежемесячных Excel-файлов на странице ЦБ;
 - скачать файлы через общий сетевой слой stratbox;
 - при необходимости сохранить исходники через FileStore;
-- распарсить файлы в "длинный" поток данных;
+- распарсить файлы в семантически правильный "длинный" поток данных;
 - собрать сводные таблицы и итоговую Excel-книгу;
 - сохранить .xlsx или .zip через FileStore.
 """
@@ -186,7 +186,7 @@ def run_escrow_to_xlsx(
         raise RuntimeError("No escrow source files were parsed successfully")
 
     long_df = pd.concat([item.df_long for item in parsed_files], ignore_index=True)
-    pivots, indicators_order, region_order, date_order = build_escrow_pivots(
+    pivots, indicator_specs, region_order, date_order = build_escrow_pivots(
         long_df,
         parsed_files=parsed_files,
         regions_mode=regions_mode,
@@ -195,7 +195,7 @@ def run_escrow_to_xlsx(
 
     workbook = build_escrow_workbook(
         pivots,
-        indicators_order,
+        indicator_specs,
         show_progress=show_progress,
     )
 
@@ -215,7 +215,7 @@ def run_escrow_to_xlsx(
         archive=archive,
         source_files=source_files,
         dates=date_order,
-        indicators=indicators_order,
+        indicators=[spec.canonical_name for spec in indicator_specs],
         regions=region_order,
         rows_long=int(len(long_df)),
     )

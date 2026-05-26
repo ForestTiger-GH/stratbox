@@ -1,37 +1,37 @@
 """
-parser — парсинг одного Excel-файла ЦБ по счетам эскроу в "длинный" поток данных.
+parser — полноценный парсинг одного Excel-файла ЦБ по счетам эскроу.
 
-Возвращаемая структура:
-- Регион
-- Показатель
-- Значение
-- Дата
+Парсер не склеивает "на глаз" первые два столбца.
+Он распознает:
+- строку заголовков;
+- набор показателей;
+- тип каждой строки иерархической таблицы;
+- текущий федеральный округ для каждого субъекта РФ.
 
-Дополнительно парсер возвращает порядок показателей в исходном файле,
-чтобы позднее можно было сохранить порядок листов в итоговом Excel.
+Результат содержит:
+- семантическую таблицу строк;
+- "длинный" поток значений;
+- метаданные о распознанных столбцах.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from io import BytesIO
 
 import pandas as pd
 
+from stratbox.macrobanks.escrow.columns import (
+    HEADER_SUBJECT_REQUIRED_TOKENS,
+    is_subject_header_cell,
+    resolve_indicator_columns,
+    resolve_indicator_spec_by_header,
+)
+from stratbox.macrobanks.escrow.models import ParsedEscrowFile
+from stratbox.macrobanks.escrow.rows import parse_escrow_rows
+
 
 _DATE_RE = re.compile(r"(\d{2})(\d{2})(\d{4})")  # DDMMYYYY
-
-
-@dataclass(frozen=True)
-class ParsedEscrowFile:
-    """Результат парсинга одного Excel-файла по счетам эскроу."""
-
-    source_name: str
-    file_date: str | None
-    indicators_order: list[str]
-    df_long: pd.DataFrame
-
 
 
 def extract_date_from_filename(name: str) -> str | None:
@@ -42,52 +42,150 @@ def extract_date_from_filename(name: str) -> str | None:
     return f"{match.group(3)}-{match.group(2)}-{match.group(1)}"
 
 
-
 def clean_indicator_name(value: object) -> str:
-    """Удаляет хвостовые сноски, пробелы, цифры и звёздочки у названия показателя."""
-    text = str(value)
-    text = re.sub(r"[\s\*\d]+$", "", text).rstrip()
-    return text
+    """Возвращает каноническое название показателя по сырому заголовку."""
+    spec = resolve_indicator_spec_by_header(value)
+    return spec.canonical_name
 
+
+def _coerce_numeric_value(value: object) -> float | int | None:
+    """Надежно переводит значение ячейки в число или возвращает None."""
+    if value is None:
+        return None
+    if pd.isna(value):
+        return None
+
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, (int, float)):
+        return value
+
+    text = str(value).replace("\u00a0", " ").strip()
+    if not text:
+        return None
+
+    text = text.replace(" ", "")
+    text = text.replace(",", ".")
+    number = pd.to_numeric([text], errors="coerce")[0]
+    if pd.isna(number):
+        return None
+    return number
+
+
+def _find_header_row(sheet_df: pd.DataFrame) -> tuple[int, list[object]]:
+    """Находит строку заголовков и возвращает ее индекс и набор значений."""
+    max_probe = min(len(sheet_df), 20)
+
+    for row_index in range(max_probe):
+        row_values = sheet_df.iloc[row_index].tolist()
+        if len(row_values) < 10:
+            continue
+
+        if not is_subject_header_cell(row_values[1] if len(row_values) > 1 else None):
+            continue
+
+        try:
+            resolve_indicator_columns(row_values[:10])
+        except Exception:
+            continue
+
+        return row_index, row_values[:10]
+
+    raise ValueError(
+        "Escrow header row is not found. "
+        f'The second column must contain tokens={HEADER_SUBJECT_REQUIRED_TOKENS}'
+    )
+
+
+def _build_rows_frame(parsed_rows) -> pd.DataFrame:
+    """Преобразует распознанные строки в DataFrame с сохранением порядка."""
+    df_rows = pd.DataFrame(
+        {
+            "display_order": [item.display_order for item in parsed_rows],
+            "row_kind": [item.row_kind for item in parsed_rows],
+            "Регион": [item.entity_name for item in parsed_rows],
+            "federal_district_name": [item.federal_district_name for item in parsed_rows],
+            "region_number": [item.region_number for item in parsed_rows],
+        }
+    )
+    return df_rows
 
 
 def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEscrowFile:
     """
-    Читает один xlsx-файл и возвращает "длинные" данные плюс порядок показателей.
+    Читает один xlsx-файл и возвращает семантически распознанные данные.
+
+    Структура результата:
+    - df_rows: строки итоговой витрины с типом и порядком;
+    - df_long: длинный поток значений с метаданными строки и показателя.
     """
     file_date = extract_date_from_filename(source_name)
-    raw_df = pd.read_excel(BytesIO(file_bytes), header=3)
+    sheet_df = pd.read_excel(BytesIO(file_bytes), sheet_name=0, header=None)
+    header_row_index, header_values = _find_header_row(sheet_df)
+    resolved_columns = resolve_indicator_columns(header_values)
 
-    if raw_df.shape[1] < 3:
-        raise ValueError("Escrow Excel has too few columns to parse")
+    useful_columns_count = 2 + len(resolved_columns)
+    data_df = sheet_df.iloc[header_row_index + 1 :, :useful_columns_count].copy()
+    data_df.columns = header_values[:useful_columns_count]
+    data_df = data_df.reset_index(drop=True)
 
-    region_col = raw_df.columns[1]
-    raw_df[region_col] = raw_df[region_col].fillna(raw_df.iloc[:, 0])
-    raw_df = raw_df.iloc[:, 1:]
+    parsed_rows = parse_escrow_rows(data_df)
+    df_rows = _build_rows_frame(parsed_rows)
 
-    indicators_order = [clean_indicator_name(col) for col in raw_df.columns[1:].tolist()]
+    records: list[dict[str, object]] = []
+    for parsed_row in parsed_rows:
+        for resolved_column in resolved_columns:
+            value = _coerce_numeric_value(
+                data_df.iat[parsed_row.source_row_index, resolved_column.source_index]
+            )
+            if value is None:
+                continue
 
-    long_df = raw_df.melt(id_vars=[region_col], var_name="Показатель", value_name="Значение")
-    long_df = long_df.rename(columns={region_col: "Регион"})
-    long_df["Дата"] = file_date
+            records.append(
+                {
+                    "Регион": parsed_row.entity_name,
+                    "Показатель": resolved_column.spec.canonical_name,
+                    "Значение": value,
+                    "Дата": file_date,
+                    "row_kind": parsed_row.row_kind,
+                    "display_order": parsed_row.display_order,
+                    "federal_district_name": parsed_row.federal_district_name,
+                    "region_number": parsed_row.region_number,
+                    "indicator_code": resolved_column.spec.code,
+                    "sheet_code": resolved_column.spec.sheet_code,
+                    "value_kind": resolved_column.spec.value_kind,
+                    "source_name": source_name,
+                }
+            )
 
-    long_df["Показатель"] = long_df["Показатель"].apply(clean_indicator_name)
-    long_df["Регион"] = (
-        long_df["Регион"]
-        .astype(str)
-        .apply(lambda x: re.sub(r"\d+$", "", x).strip())
-        .replace("Итого", "Итого по РФ")
+    df_long = pd.DataFrame.from_records(
+        records,
+        columns=[
+            "Регион",
+            "Показатель",
+            "Значение",
+            "Дата",
+            "row_kind",
+            "display_order",
+            "federal_district_name",
+            "region_number",
+            "indicator_code",
+            "sheet_code",
+            "value_kind",
+            "source_name",
+        ],
     )
-
-    long_df["Значение"] = long_df["Значение"].replace(r"^\s*$", 0, regex=True)
-    long_df["Значение"] = pd.to_numeric(long_df["Значение"], errors="coerce")
-    long_df = long_df.dropna(subset=["Значение"]).reset_index(drop=True)
 
     return ParsedEscrowFile(
         source_name=source_name,
         file_date=file_date,
-        indicators_order=indicators_order,
-        df_long=long_df,
+        sheet_name="по регионам",
+        header_row_index=header_row_index,
+        resolved_columns=resolved_columns,
+        rows=parsed_rows,
+        df_rows=df_rows,
+        df_long=df_long,
     )
 
 
