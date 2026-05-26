@@ -142,6 +142,21 @@ def _spec_matches_header(spec: EscrowIndicatorSpec, normalized_header: str) -> b
     required_tokens = set(spec.required_tokens)
     forbidden_tokens = set(spec.forbidden_tokens)
 
+    # Для ставки по кредитным договорам в исторических файлах встречаются
+    # как формулировки "Средневзвешенная ставка...", так и более старый
+    # вариант "Средняя ставка...". Парсер должен устойчиво принимать оба
+    # варианта, не смешивая показатель с другими столбцами.
+    if spec.code == "weighted_rate_federal_district_percent":
+        base_tokens = {"ставка", "кредитным", "договорам", "федеральному", "округу", "процент"}
+        adjective_tokens = {"средняя", "средневзвешенная"}
+        if not base_tokens.issubset(tokens):
+            return False
+        if not adjective_tokens.intersection(tokens):
+            return False
+        if forbidden_tokens.intersection(tokens):
+            return False
+        return True
+
     if not required_tokens.issubset(tokens):
         return False
     if forbidden_tokens.intersection(tokens):
