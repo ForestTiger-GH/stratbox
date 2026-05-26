@@ -1,5 +1,5 @@
 """
-Отбор актуальных файлов Frank RG по семействам.
+Отбор актуальных файлов FRG по семействам.
 
 На входе используется уже размеченный каталог.
 На выходе остается по одному наиболее свежему файлу на семейство.
@@ -13,7 +13,7 @@ import pandas as pd
 
 
 
-def select_latest_frank_rg_files(catalog_df: pd.DataFrame) -> pd.DataFrame:
+def select_latest_frg_files(catalog_df: pd.DataFrame) -> pd.DataFrame:
     """Выбирает наиболее свежий файл по каждому распознанному семейству."""
     columns = [
         "family_code",

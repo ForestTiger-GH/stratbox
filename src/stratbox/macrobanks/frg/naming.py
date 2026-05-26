@@ -1,11 +1,11 @@
 """
-Разбор имени файла Frank RG.
+Разбор имени файла поставщика FRG и внутренних имён библиотеки.
 
 Задачи модуля:
 - нормализовать имя файла;
 - извлечь период из имени;
 - определить семейство файла по реестру;
-- поддержать как исходные имена Frank RG, так и внутренние имена,
+- поддержать как исходные имена поставщика FRG, так и внутренние имена,
   которые уже создала сама библиотека.
 """
 
@@ -15,9 +15,9 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
-from stratbox.macrobanks.frank_rg.filename_scheme import get_active_internal_name_scheme
-from stratbox.macrobanks.frank_rg.models import FrankFamilyRule
-from stratbox.macrobanks.frank_rg.registry import get_family_rules
+from stratbox.macrobanks.frg.filename_scheme import get_active_internal_name_scheme
+from stratbox.macrobanks.frg.models import FrgFamilyRule
+from stratbox.macrobanks.frg.registry import get_family_rules
 
 
 _DATE_RE = re.compile(
@@ -81,7 +81,7 @@ class ParsedName:
     normalized_name: str
     name_origin: str
     name_priority: int
-    family_rule: FrankFamilyRule | None
+    family_rule: FrgFamilyRule | None
     period_date: date | None
     period_date_text: str | None
     week_no: int | None
@@ -93,7 +93,7 @@ class ParsedName:
 class InternalNameParseResult:
     """Результат распознавания внутреннего имени файла."""
 
-    family_rule: FrankFamilyRule
+    family_rule: FrgFamilyRule
     period_date: date
     period_date_text: str
     week_no: int | None
@@ -157,6 +157,22 @@ def _stem_without_extension(file_name: str) -> str:
     return base
 
 
+def _extract_supplier_prefix(file_name: str) -> str:
+    """Возвращает префикс до первой точки для проверки поставщика."""
+    stem = _stem_without_extension(file_name)
+    return stem.split(".", 1)[0].strip()
+
+
+def looks_like_frg_supplier_prefix(file_name: str) -> bool:
+    """Проверяет, что до первой точки сигнатура поставщика равна FRG."""
+    prefix = _extract_supplier_prefix(file_name)
+    if not prefix:
+        return False
+
+    upper_latin_letters = "".join(ch for ch in prefix if "A" <= ch <= "Z")
+    return upper_latin_letters == "FRG"
+
+
 
 def _format_date_text(period_date: date) -> str:
     """Формирует стандартный текст календарного периода."""
@@ -217,7 +233,7 @@ def extract_week_period(normalized_name: str) -> tuple[date | None, str | None, 
 
 def _matches_rule(
     normalized_name: str,
-    rule: FrankFamilyRule,
+    rule: FrgFamilyRule,
     *,
     has_week_marker: bool,
     has_q_marker: bool,
@@ -246,7 +262,7 @@ def resolve_family_rule(
     *,
     has_week_marker: bool,
     has_q_marker: bool,
-) -> FrankFamilyRule | None:
+) -> FrgFamilyRule | None:
     """Подбирает первое подходящее правило из реестра."""
     for rule in get_family_rules():
         if _matches_rule(
@@ -276,7 +292,7 @@ def _strip_internal_prefix(stem: str) -> str | None:
 
 
 
-def _resolve_family_rule_by_file_label(label_text: str) -> FrankFamilyRule | None:
+def _resolve_family_rule_by_file_label(label_text: str) -> FrgFamilyRule | None:
     """Подбирает семейство по точному совпадению внутренней файловой подписи."""
     normalized_label = normalize_label_text(label_text)
     for rule in get_family_rules():
@@ -367,12 +383,15 @@ def parse_file_name(file_path: str) -> ParsedName:
 
     has_week_marker = "недел" in normalized_name
     has_q_marker = bool(_Q_MARKER_RE.search(normalized_name))
+    is_frg_source_name = looks_like_frg_supplier_prefix(file_name)
 
-    family_rule = resolve_family_rule(
-        normalized_name,
-        has_week_marker=has_week_marker,
-        has_q_marker=has_q_marker,
-    )
+    family_rule = None
+    if is_frg_source_name:
+        family_rule = resolve_family_rule(
+            normalized_name,
+            has_week_marker=has_week_marker,
+            has_q_marker=has_q_marker,
+        )
 
     if family_rule is not None and family_rule.period_mode == "weekly":
         period_date = weekly_date
@@ -381,7 +400,7 @@ def parse_file_name(file_path: str) -> ParsedName:
         period_date = date_period
         period_text = date_text
 
-    name_origin = "source_raw" if family_rule is not None else "unrecognized"
+    name_origin = "source_raw" if is_frg_source_name and family_rule is not None else "unrecognized"
 
     return ParsedName(
         file_name=file_name,

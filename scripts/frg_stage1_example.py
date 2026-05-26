@@ -1,18 +1,18 @@
 """
-Пример запуска первого этапа Frank RG.
+Пример запуска первого этапа FRG.
 
 Сценарий:
 - пользователь указывает путь к папке с файлами;
 - пакет строит каталог, выбирает latest и запускает заглушки.
 """
 
-from stratbox.macrobanks.frank_rg import run_frank_rg_stage1
+from stratbox.macrobanks.frg import run_frg_stage1
 
 
 ROOT_DIR = "."
 
 
-result = run_frank_rg_stage1(ROOT_DIR, recursive=False)
+result = run_frg_stage1(ROOT_DIR, recursive=False)
 
 catalog_df = result["catalog"]
 latest_df = result["latest"]

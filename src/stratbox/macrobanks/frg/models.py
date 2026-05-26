@@ -1,5 +1,5 @@
 """
-Модели данных для блока Frank RG.
+Модели данных для блока FRG.
 
 На первом этапе здесь описываются:
 - правило семейства файлов;
@@ -14,8 +14,8 @@ from datetime import date
 
 
 @dataclass(frozen=True, slots=True)
-class FrankFamilyRule:
-    """Правило распознавания одного семейства файлов Frank RG."""
+class FrgFamilyRule:
+    """Правило распознавания одного семейства файлов FRG."""
 
     code: str
     title: str
@@ -34,15 +34,15 @@ class FrankFamilyRule:
 
 
 @dataclass(frozen=True, slots=True)
-class FrankInternalNameScheme:
-    """Активная схема внутреннего имени файлов Frank RG."""
+class FrgInternalNameScheme:
+    """Активная схема внутреннего имени файлов FRG."""
 
     prefix: str = ""
     separator: str = "_"
 
 
 @dataclass(frozen=True, slots=True)
-class FrankCatalogRecord:
+class FrgCatalogRecord:
     """Одна строка каталога найденных файлов."""
 
     root_dir: str

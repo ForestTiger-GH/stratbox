@@ -156,9 +156,9 @@ print(out)
 ---
 
 
-## Frank RG
+## FRG
 
-В `stratbox.macrobanks.frank_rg` реализован первый этап обработки файлов Frank RG:
+В `stratbox.macrobanks.frg` реализован первый этап обработки файлов FRG:
 
 - сканирование каталога;
 - распознавание семейства файла по имени;
@@ -168,15 +168,15 @@ print(out)
 Основной публичный вызов:
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_stage1
+from stratbox.macrobanks.frg import run_frg_stage1
 
-result = run_frank_rg_stage1("/path/to/frank_rg")
+result = run_frg_stage1("/path/to/frg_files")
 catalog_df = result["catalog"]
 latest_df = result["latest"]
 dispatch_df = result["dispatch"]
 ```
 
-Подробности: `docs/frank_rg_stage1.md`.
+Подробности: `docs/frg_stage1.md`.
 
 ---
 

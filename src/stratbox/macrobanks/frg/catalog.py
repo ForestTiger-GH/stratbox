@@ -1,5 +1,5 @@
 """
-Построение каталога файлов Frank RG.
+Построение каталога файлов FRG.
 
 На первом этапе модуль:
 - обходит каталог с файлами;
@@ -16,8 +16,8 @@ import pandas as pd
 
 from stratbox.base.filestore import FileStore
 from stratbox.base.runtime import get_filestore
-from stratbox.macrobanks.frank_rg.models import FrankCatalogRecord
-from stratbox.macrobanks.frank_rg.naming import parse_file_name
+from stratbox.macrobanks.frg.models import FrgCatalogRecord
+from stratbox.macrobanks.frg.naming import parse_file_name
 
 
 DEFAULT_ALLOWED_EXTENSIONS = {".xlsx", ".xlsb", ".xlsm", ".xls"}
@@ -79,7 +79,7 @@ def _build_record(
     root_dir: str,
     filestore: FileStore,
     allowed_extensions: set[str],
-) -> FrankCatalogRecord:
+) -> FrgCatalogRecord:
     """Строит одну запись каталога по конкретному пути."""
     parsed = parse_file_name(path)
     size_bytes, mtime, mtime_iso = _safe_stat(path, filestore=filestore)
@@ -103,7 +103,7 @@ def _build_record(
         is_valid = False
         validity_reason = "period_older_than_family_min_date"
 
-    return FrankCatalogRecord(
+    return FrgCatalogRecord(
         root_dir=str(root_dir),
         path=str(path),
         file_name=parsed.file_name,
@@ -166,14 +166,14 @@ def _mark_superseded_weekly_files(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-def build_frank_rg_catalog(
+def build_frg_catalog(
     root_dir: str,
     *,
     recursive: bool = False,
     filestore: FileStore | None = None,
     allowed_extensions: set[str] | None = None,
 ) -> pd.DataFrame:
-    """Сканирует каталог Frank RG и возвращает полный каталог файлов."""
+    """Сканирует каталог FRG и возвращает полный каталог файлов."""
     fs = filestore or get_filestore()
     extensions = allowed_extensions or DEFAULT_ALLOWED_EXTENSIONS
 

@@ -1,5 +1,5 @@
 """
-Диспетчеризация актуальных файлов Frank RG в будущие парсеры.
+Диспетчеризация актуальных файлов FRG в будущие парсеры.
 
 На первом этапе диспетчер запускает только заглушки,
 но уже проверяет правильность маршрутизации по семействам.
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.macrobanks.frank_rg.parsers import (
+from stratbox.macrobanks.frg.parsers import (
     parse_express_issuance_cards_stub,
     parse_express_issuance_stub,
     parse_express_issuance_weekly_stub,
@@ -46,7 +46,7 @@ PARSER_DISPATCH = {
 
 
 
-def dispatch_latest_frank_rg_files(latest_df: pd.DataFrame) -> pd.DataFrame:
+def dispatch_latest_frg_files(latest_df: pd.DataFrame) -> pd.DataFrame:
     """Запускает заглушки парсеров по таблице актуальных файлов."""
     if latest_df is None or latest_df.empty:
         return pd.DataFrame(

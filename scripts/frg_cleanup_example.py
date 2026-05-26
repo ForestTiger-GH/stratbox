@@ -1,5 +1,5 @@
 """
-Пример запуска зачистки каталога Frank RG.
+Пример запуска зачистки каталога FRG.
 
 Сценарий:
 - пользователь указывает путь к папке с файлами;
@@ -7,7 +7,7 @@
 - затем по желанию выполняет копирование/переименование и удаление.
 """
 
-from stratbox.macrobanks.frank_rg import run_frank_rg_cleanup
+from stratbox.macrobanks.frg import run_frg_cleanup
 
 
 ROOT_DIR = "."
@@ -16,7 +16,7 @@ ARCHIVE_LATEST = False
 EXECUTE = False
 
 
-result = run_frank_rg_cleanup(
+result = run_frg_cleanup(
     ROOT_DIR,
     delete_others=DELETE_OTHERS,
     archive_latest=ARCHIVE_LATEST,

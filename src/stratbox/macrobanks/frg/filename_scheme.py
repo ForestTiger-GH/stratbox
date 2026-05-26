@@ -1,8 +1,8 @@
 """
-Активная схема внутренних имён файлов Frank RG.
+Активная схема внутренних имён файлов FRG.
 
 Идея:
-- исходные файлы Frank RG распознаются по "сырому" имени поставщика;
+- исходные файлы FRG распознаются по "сырому" имени поставщика;
 - файлы, которые уже переименовала библиотека, распознаются по отдельной внутренней схеме;
 - в коде поддерживается только одна активная внутренняя схема, которую можно централизованно поменять.
 """
@@ -11,17 +11,17 @@ from __future__ import annotations
 
 import re
 
-from stratbox.macrobanks.frank_rg.models import FrankInternalNameScheme
+from stratbox.macrobanks.frg.models import FrgInternalNameScheme
 
 
 _FORBIDDEN_FILENAME_CHARS_RE = re.compile(r'[<>:"/\|?*]')
-_ACTIVE_INTERNAL_NAME_SCHEME = FrankInternalNameScheme(
+_ACTIVE_INTERNAL_NAME_SCHEME = FrgInternalNameScheme(
     prefix="",
     separator="_",
 )
 
 
-def get_active_internal_name_scheme() -> FrankInternalNameScheme:
+def get_active_internal_name_scheme() -> FrgInternalNameScheme:
     """Возвращает активную схему внутреннего имени файлов."""
     return _ACTIVE_INTERNAL_NAME_SCHEME
 
@@ -43,7 +43,7 @@ def build_internal_file_name(
     file_label: str | None,
     extension: str | None,
     *,
-    scheme: FrankInternalNameScheme | None = None,
+    scheme: FrgInternalNameScheme | None = None,
 ) -> str:
     """Формирует имя файла по активной внутренней схеме."""
     active_scheme = scheme or get_active_internal_name_scheme()

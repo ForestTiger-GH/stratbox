@@ -1,6 +1,6 @@
-"""Доменный слой для банковских и макроэкономических задач."""
+"""Публичный вход в первый этап работы с файлами FRG."""
 
-from stratbox.macrobanks.frg import (
+from stratbox.macrobanks.frg.api import (
     apply_frg_cleanup_plan,
     build_frg_actuals_archive_name,
     build_frg_catalog,

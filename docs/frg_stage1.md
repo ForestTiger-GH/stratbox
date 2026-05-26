@@ -1,6 +1,6 @@
-# Frank RG — stage 1
+# FRG — stage 1
 
-Первый этап внутри `stratbox.macrobanks.frank_rg` решает четыре задачи:
+Первый этап внутри `stratbox.macrobanks.frg` решает четыре задачи:
 
 1. считывает список файлов из каталога;
 2. определяет семейство каждого файла по имени;
@@ -10,9 +10,9 @@
 ## Публичный API
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_stage1
+from stratbox.macrobanks.frg import run_frg_stage1
 
-result = run_frank_rg_stage1("/path/to/frank_rg", recursive=False)
+result = run_frg_stage1("/path/to/frg_files", recursive=False)
 catalog_df = result["catalog"]
 latest_df = result["latest"]
 dispatch_df = result["dispatch"]
@@ -74,10 +74,10 @@ dispatch_df = result["dispatch"]
 Для предварительной работы с файлами добавлен отдельный набор функций:
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_cleanup
+from stratbox.macrobanks.frg import run_frg_cleanup
 
-result = run_frank_rg_cleanup(
-    "/path/to/frank_rg",
+result = run_frg_cleanup(
+    "/path/to/frg_files",
     delete_others=False,
     execute=False,
 )
@@ -124,12 +124,12 @@ execution_df = result["execution"]
 
 ### Архивирование итоговых файлов
 
-В `run_frank_rg_cleanup(...)` добавлена отдельная опция архивирования:
+В `run_frg_cleanup(...)` добавлена отдельная опция архивирования:
 
 - если `archive_latest=True`, то после копирования/переименования создается единый ZIP-архив только с итоговыми файлами `latest`;
 - архив сохраняется в том же каталоге верхнего уровня;
 - вложенные папки в архив не попадают;
-- имя архива формируется как `FrankRG_Actuals_YYYY-MM-DD.zip`;
+- имя архива формируется как `FRG_Actuals_YYYY-MM-DD.zip`;
 - если архив уже существует, он полностью перезаписывается.
 
 Архивирование не влияет на распознавание файлов:
@@ -148,15 +148,15 @@ execution_df = result["execution"]
 После зачистки рядом с исходными файлами могут лежать уже переименованные файлы самой библиотеки.
 Stage 1 теперь поддерживает два формата имени:
 
-- исходное имя поставщика Frank RG;
+- исходное имя поставщика FRG;
 - текущее внутреннее стандартное имя библиотеки.
 
-Внутреннее имя строится по активной схеме из модуля `stratbox.macrobanks.frank_rg.filename_scheme`.
-Сейчас используется формат `период_подпись.ext`, а при необходимости в одном месте можно добавить префикс, например `Frank RG_`.
+Внутреннее имя строится по активной схеме из модуля `stratbox.macrobanks.frg.filename_scheme`.
+Сейчас используется формат `период_подпись.ext`, а при необходимости в одном месте можно добавить префикс, например `FRG_`.
 
 Если в каталоге одновременно лежат:
 
-- исходный файл Frank RG;
+- исходный файл FRG;
 - уже переименованный внутренний файл той же семьи и того же периода,
 
 то при отборе `latest` приоритет отдается внутреннему стандартному имени.

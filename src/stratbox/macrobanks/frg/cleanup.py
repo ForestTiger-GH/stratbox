@@ -1,5 +1,5 @@
 """
-Подготовка и выполнение зачистки каталога Frank RG.
+Подготовка и выполнение зачистки каталога FRG.
 
 Логика модуля:
 - сканирует только верхний уровень каталога без захода во вложенные папки;
@@ -24,9 +24,9 @@ import pandas as pd
 from stratbox.base.filestore import FileStore
 from stratbox.base.ioapi.zip import write_zip_from_memory
 from stratbox.base.runtime import get_filestore
-from stratbox.macrobanks.frank_rg.catalog import build_frank_rg_catalog
-from stratbox.macrobanks.frank_rg.filename_scheme import build_internal_file_name
-from stratbox.macrobanks.frank_rg.selection import select_latest_frank_rg_files
+from stratbox.macrobanks.frg.catalog import build_frg_catalog
+from stratbox.macrobanks.frg.filename_scheme import build_internal_file_name
+from stratbox.macrobanks.frg.selection import select_latest_frg_files
 
 
 def _join_path(parent: str, name: str) -> str:
@@ -42,7 +42,7 @@ def _join_path(parent: str, name: str) -> str:
 
 
 
-def build_frank_rg_latest_file_name(period_text: str | None, family_name: str | None, extension: str | None) -> str:
+def build_frg_latest_file_name(period_text: str | None, family_name: str | None, extension: str | None) -> str:
     """Формирует стандартное имя итогового файла по актуальному семейству."""
     return build_internal_file_name(
         period_text=period_text,
@@ -52,7 +52,7 @@ def build_frank_rg_latest_file_name(period_text: str | None, family_name: str | 
 
 
 
-def build_frank_rg_actuals_archive_name(archive_base_name: str = "FrankRG_Actuals", archive_date: date | None = None) -> str:
+def build_frg_actuals_archive_name(archive_base_name: str = "FRG_Actuals", archive_date: date | None = None) -> str:
     """Формирует имя ZIP-архива с итоговыми файлами."""
     effective_date = archive_date or date.today()
     return f"{archive_base_name}_{effective_date.isoformat()}.zip"
@@ -116,23 +116,23 @@ def _should_delete_row(row: dict[str, Any], latest_paths: set[str]) -> bool:
 
 
 
-def build_frank_rg_cleanup_plan(
+def build_frg_cleanup_plan(
     root_dir: str,
     *,
     delete_others: bool = False,
     archive_latest: bool = False,
-    archive_base_name: str = "FrankRG_Actuals",
+    archive_base_name: str = "FRG_Actuals",
     filestore: FileStore | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """Строит план зачистки каталога Frank RG без выполнения файловых операций."""
+    """Строит план зачистки каталога FRG без выполнения файловых операций."""
     fs = filestore or get_filestore()
 
-    catalog_df = build_frank_rg_catalog(
+    catalog_df = build_frg_catalog(
         root_dir,
         recursive=False,
         filestore=fs,
     )
-    latest_df = select_latest_frank_rg_files(catalog_df)
+    latest_df = select_latest_frg_files(catalog_df)
 
     plan_rows: list[dict[str, Any]] = []
     latest_paths = set(latest_df["path"].dropna().astype(str).tolist())
@@ -201,7 +201,7 @@ def build_frank_rg_cleanup_plan(
             )
 
     if archive_latest:
-        archive_name = build_frank_rg_actuals_archive_name(archive_base_name=archive_base_name)
+        archive_name = build_frg_actuals_archive_name(archive_base_name=archive_base_name)
         archive_path = _join_path(root_dir, archive_name)
         plan_rows.append(
             {
@@ -270,7 +270,7 @@ def build_frank_rg_cleanup_plan(
 
 
 
-def apply_frank_rg_cleanup_plan(
+def apply_frg_cleanup_plan(
     plan_df: pd.DataFrame,
     *,
     filestore: FileStore | None = None,
@@ -485,20 +485,20 @@ def apply_frank_rg_cleanup_plan(
 
 
 
-def run_frank_rg_cleanup(
+def run_frg_cleanup(
     root_dir: str,
     *,
     delete_others: bool = False,
     archive_latest: bool = False,
-    archive_base_name: str = "FrankRG_Actuals",
+    archive_base_name: str = "FRG_Actuals",
     execute: bool = False,
     replace_existing: bool = False,
     filestore: FileStore | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """Готовит или выполняет зачистку каталога Frank RG."""
+    """Готовит или выполняет зачистку каталога FRG."""
     fs = filestore or get_filestore()
 
-    result = build_frank_rg_cleanup_plan(
+    result = build_frg_cleanup_plan(
         root_dir,
         delete_others=delete_others,
         archive_latest=archive_latest,
@@ -508,7 +508,7 @@ def run_frank_rg_cleanup(
     plan_df = result["plan"]
 
     if execute:
-        execution_df = apply_frank_rg_cleanup_plan(
+        execution_df = apply_frg_cleanup_plan(
             plan_df,
             filestore=fs,
             replace_existing=replace_existing,

@@ -1,6 +1,6 @@
-# Frank RG (`stratbox.macrobanks.frank_rg`)
+# FRG (`stratbox.macrobanks.frg`)
 
-Модуль `stratbox.macrobanks.frank_rg` предназначен для первого этапа работы с внешними файлами Frank RG.
+Модуль `stratbox.macrobanks.frg` предназначен для первого этапа работы с внешними файлами FRG.
 На текущем этапе модуль **не читает содержимое Excel-файлов** и **не выполняет парсинг таблиц**. Его задача — стабильно привести файловый контур в порядок перед дальнейшей предметной обработкой.
 
 Модуль решает четыре практические задачи:
@@ -63,12 +63,12 @@
 
 Модуль умеет распознавать:
 
-1. **исходные имена Frank RG**;
+1. **исходные имена FRG**;
 2. **внутренние имена**, которые уже сформировала сама библиотека после зачистки.
 
 Это позволяет запускать обработку повторно в одном и том же каталоге, где рядом могут лежать:
 
-- новые поставленные файлы Frank RG;
+- новые поставленные файлы FRG;
 - уже переименованные итоговые файлы предыдущего запуска.
 
 При совпадении семейства и периода приоритет отдаётся **внутреннему стандартному имени**.
@@ -199,7 +199,7 @@
 
 Если в будущем потребуется добавить префикс, например:
 
-- `Frank RG_2026-05-01_Экспресс выдачи.xlsx`
+- `FRG_2026-05-01_Экспресс выдачи.xlsx`
 
 это нужно менять именно там.
 
@@ -216,9 +216,9 @@
 ### 1. Сканирование каталога и выбор актуальных файлов
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_stage1
+from stratbox.macrobanks.frg import run_frg_stage1
 
-result = run_frank_rg_stage1("/path/to/frank_rg")
+result = run_frg_stage1("/path/to/frg_files")
 catalog_df = result["catalog"]
 latest_df = result["latest"]
 dispatch_df = result["dispatch"]
@@ -233,26 +233,26 @@ dispatch_df = result["dispatch"]
 ### 2. Построение каталога отдельно
 
 ```python
-from stratbox.macrobanks.frank_rg import build_frank_rg_catalog
+from stratbox.macrobanks.frg import build_frg_catalog
 
-catalog_df = build_frank_rg_catalog("/path/to/frank_rg")
+catalog_df = build_frg_catalog("/path/to/frg_files")
 ```
 
 ### 3. Отбор актуальных файлов отдельно
 
 ```python
-from stratbox.macrobanks.frank_rg import select_latest_frank_rg_files
+from stratbox.macrobanks.frg import select_latest_frg_files
 
-latest_df = select_latest_frank_rg_files(catalog_df)
+latest_df = select_latest_frg_files(catalog_df)
 ```
 
 ### 4. Зачистка каталога
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_cleanup
+from stratbox.macrobanks.frg import run_frg_cleanup
 
-result = run_frank_rg_cleanup(
-    "/path/to/frank_rg",
+result = run_frg_cleanup(
+    "/path/to/frg_files",
     delete_others=False,
     archive_latest=False,
     execute=False,
@@ -303,10 +303,10 @@ execution_df = result["execution"]
 Пример:
 
 ```python
-from stratbox.macrobanks.frank_rg import run_frank_rg_cleanup
+from stratbox.macrobanks.frg import run_frg_cleanup
 
-result = run_frank_rg_cleanup(
-    "/path/to/frank_rg",
+result = run_frg_cleanup(
+    "/path/to/frg_files",
     delete_others=True,
     archive_latest=True,
     execute=True,
@@ -322,11 +322,11 @@ result = run_frank_rg_cleanup(
 
 Имя архива формируется так:
 
-- `FrankRG_Actuals_YYYY-MM-DD.zip`
+- `FRG_Actuals_YYYY-MM-DD.zip`
 
 Пример:
 
-- `FrankRG_Actuals_2026-05-26.zip`
+- `FRG_Actuals_2026-05-26.zip`
 
 Архив не используется для распознавания и не участвует в отборе `latest`.
 
@@ -336,7 +336,7 @@ result = run_frank_rg_cleanup(
 
 - `api.py` — публичный API
 - `models.py` — модели правил и записей каталога
-- `registry.py` — реестр семейств Frank RG
+- `registry.py` — реестр семейств FRG
 - `naming.py` — распознавание исходных имён поставщика и внутренних имён библиотеки
 - `filename_scheme.py` — активная схема внутренних имён
 - `catalog.py` — построение полного каталога
