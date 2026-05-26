@@ -13,26 +13,24 @@ from typing import Iterable
 
 import pandas as pd
 
+from stratbox.macrobanks.escrow.columns import get_output_indicator_specs
 from stratbox.macrobanks.escrow.models import EscrowIndicatorSpec, ParsedEscrowFile
 from stratbox.macrobanks.escrow.regions import resolve_region_order
 
 
 def resolve_indicator_order(parsed_files: Iterable[ParsedEscrowFile]) -> list[EscrowIndicatorSpec]:
-    """Возвращает порядок показателей по последнему корректно датированному файлу."""
+    """Возвращает порядок показателей, реально встреченных в наборе файлов."""
     parsed_list = list(parsed_files)
     if not parsed_list:
         return []
 
-    dated = [item for item in parsed_list if item.file_date]
-    latest = sorted(dated or parsed_list, key=lambda item: item.file_date or "", reverse=True)[0]
+    present_codes: set[str] = set()
+    for item in parsed_list:
+        for resolved in item.resolved_columns:
+            if resolved.spec.is_output:
+                present_codes.add(resolved.spec.code)
 
-    ordered_specs: list[EscrowIndicatorSpec] = []
-    used_codes: set[str] = set()
-    for resolved in sorted(latest.resolved_columns, key=lambda item: item.spec.order):
-        if resolved.spec.code in used_codes:
-            continue
-        ordered_specs.append(resolved.spec)
-        used_codes.add(resolved.spec.code)
+    ordered_specs = [spec for spec in get_output_indicator_specs() if spec.code in present_codes]
     return ordered_specs
 
 

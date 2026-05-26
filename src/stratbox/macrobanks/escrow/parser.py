@@ -74,28 +74,56 @@ def _coerce_numeric_value(value: object) -> float | int | None:
 
 
 def _find_header_row(sheet_df: pd.DataFrame) -> tuple[int, list[object]]:
-    """Находит строку заголовков и возвращает ее индекс и набор значений."""
-    max_probe = min(len(sheet_df), 20)
+    """Находит строку заголовков и возвращает ее индекс и полный набор значений."""
+    max_probe = min(len(sheet_df), 25)
+    last_error: Exception | None = None
 
     for row_index in range(max_probe):
         row_values = sheet_df.iloc[row_index].tolist()
-        if len(row_values) < 10:
+        if len(row_values) < 3:
             continue
 
         if not is_subject_header_cell(row_values[1] if len(row_values) > 1 else None):
             continue
 
         try:
-            resolve_indicator_columns(row_values[:10])
-        except Exception:
+            resolve_indicator_columns(row_values)
+        except Exception as exc:
+            last_error = exc
             continue
 
-        return row_index, row_values[:10]
+        return row_index, row_values
 
-    raise ValueError(
+    message = (
         "Escrow header row is not found. "
-        f'The second column must contain tokens={HEADER_SUBJECT_REQUIRED_TOKENS}'
+        f"The second column must contain tokens={HEADER_SUBJECT_REQUIRED_TOKENS}"
     )
+    if last_error is not None:
+        message += f". Last resolve error: {last_error}"
+    raise ValueError(message)
+
+
+def _select_sheet_with_header(file_bytes: bytes) -> tuple[str, pd.DataFrame, int, list[object]]:
+    """Выбирает лист с таблицей по регионам и возвращает его вместе с заголовком."""
+    excel_file = pd.ExcelFile(BytesIO(file_bytes))
+    prioritized = sorted(
+        excel_file.sheet_names,
+        key=lambda name: (0 if "регион" in str(name).lower() else 1, str(name).lower()),
+    )
+
+    last_error: Exception | None = None
+    for sheet_name in prioritized:
+        sheet_df = pd.read_excel(BytesIO(file_bytes), sheet_name=sheet_name, header=None)
+        try:
+            header_row_index, header_values = _find_header_row(sheet_df)
+            return sheet_name, sheet_df, header_row_index, header_values
+        except Exception as exc:
+            last_error = exc
+            continue
+
+    if last_error is not None:
+        raise ValueError(f"Escrow sheet with header row is not found. Last error: {last_error}")
+    raise ValueError("Escrow sheet with header row is not found")
 
 
 def _build_rows_frame(parsed_rows) -> pd.DataFrame:
@@ -121,11 +149,10 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEs
     - df_long: длинный поток значений с метаданными строки и показателя.
     """
     file_date = extract_date_from_filename(source_name)
-    sheet_df = pd.read_excel(BytesIO(file_bytes), sheet_name=0, header=None)
-    header_row_index, header_values = _find_header_row(sheet_df)
+    sheet_name, sheet_df, header_row_index, header_values = _select_sheet_with_header(file_bytes)
     resolved_columns = resolve_indicator_columns(header_values)
 
-    useful_columns_count = 2 + len(resolved_columns)
+    useful_columns_count = max([resolved.source_index for resolved in resolved_columns], default=1) + 1
     data_df = sheet_df.iloc[header_row_index + 1 :, :useful_columns_count].copy()
     data_df.columns = header_values[:useful_columns_count]
     data_df = data_df.reset_index(drop=True)
@@ -180,7 +207,7 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEs
     return ParsedEscrowFile(
         source_name=source_name,
         file_date=file_date,
-        sheet_name="по регионам",
+        sheet_name=sheet_name,
         header_row_index=header_row_index,
         resolved_columns=resolved_columns,
         rows=parsed_rows,

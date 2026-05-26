@@ -25,6 +25,9 @@ class EscrowIndicatorSpec:
     required_tokens: tuple[str, ...]
     order: int
     value_kind: str = "number"
+    forbidden_tokens: tuple[str, ...] = ()
+    is_required: bool = True
+    is_output: bool = True
 
 
 @dataclass(frozen=True)

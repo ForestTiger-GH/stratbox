@@ -39,14 +39,23 @@ ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (
         canonical_name="Кол-во счетов эскроу",
         sheet_code="КСЭ",
         required_tokens=("кол", "во", "счетов", "эскроу"),
+        forbidden_tokens=("имеющих", "остатки"),
         order=4,
+    ),
+    EscrowIndicatorSpec(
+        code="escrow_accounts_with_balance_count",
+        canonical_name="Кол-во счетов эскроу, имеющих остатки",
+        sheet_code="КСЭИО",
+        required_tokens=("кол", "во", "счетов", "эскроу", "имеющих", "остатки"),
+        order=5,
+        is_required=False,
     ),
     EscrowIndicatorSpec(
         code="escrow_balance_mln_rub",
         canonical_name="Остатки средств на счетах эскроу, млн руб.",
         sheet_code="ОСНСЭМР",
         required_tokens=("остатки", "средств", "счетах", "эскроу", "млн", "руб"),
-        order=5,
+        order=6,
     ),
     EscrowIndicatorSpec(
         code="weighted_rate_federal_district_percent",
@@ -61,7 +70,7 @@ ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (
             "округу",
             "процент",
         ),
-        order=6,
+        order=7,
         value_kind="percent",
     ),
     EscrowIndicatorSpec(
@@ -69,23 +78,26 @@ ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (
         canonical_name="Кол-во «раскрытых» счетов эскроу",
         sheet_code="КРСЭ",
         required_tokens=("кол", "во", "раскрытых", "счетов", "эскроу"),
-        order=7,
+        order=8,
     ),
     EscrowIndicatorSpec(
         code="revealed_escrow_amount_mln_rub",
         canonical_name='Сумма средств, перечисленных с «раскрытых» счетов эскроу, млн руб.',
         sheet_code="ССПСРСЭМР",
         required_tokens=("сумма", "средств", "перечисленных", "раскрытых", "счетов", "эскроу", "млн", "руб"),
-        order=8,
+        order=9,
     ),
 )
 
 HEADER_SUBJECT_REQUIRED_TOKENS: tuple[str, ...] = (
     "субъект",
-    "российской",
     "федерации",
-    "федеральный",
     "округ",
+)
+
+HEADER_SUBJECT_ALTERNATIVE_TOKENS: tuple[str, ...] = (
+    "российской",
+    "рф",
 )
 
 
@@ -97,6 +109,7 @@ def normalize_header_text(value: object) -> str:
     text = str(value)
     text = text.replace("\u00a0", " ")
     text = text.replace("ё", "е").replace("Ё", "Е")
+    text = re.sub(r"\([^)]*\)", " ", text, flags=re.S)
     text = text.replace("«", " ").replace("»", " ")
     text = text.replace('"', " ").replace("'", " ")
     text = text.replace("%", " процент ")
@@ -110,51 +123,30 @@ def is_subject_header_cell(value: object) -> bool:
     """Проверяет, что ячейка похожа на заголовок второго столбца таблицы."""
     normalized = normalize_header_text(value)
     tokens = set(normalized.split())
-    return set(HEADER_SUBJECT_REQUIRED_TOKENS).issubset(tokens)
+    return (
+        "субъект" in tokens
+        and "округ" in tokens
+        and ("федерации" in tokens or "российской" in tokens or "рф" in tokens)
+    )
 
 
 def _spec_matches_header(spec: EscrowIndicatorSpec, normalized_header: str) -> bool:
     """Проверяет, что нормализованный заголовок соответствует спецификации."""
     if not normalized_header:
         return False
+
     tokens = set(normalized_header.split())
-    return set(spec.required_tokens).issubset(tokens)
+    required_tokens = set(spec.required_tokens)
+    forbidden_tokens = set(spec.forbidden_tokens)
+
+    if not required_tokens.issubset(tokens):
+        return False
+    if forbidden_tokens.intersection(tokens):
+        return False
+    return True
 
 
-def _select_best_spec(
-    candidates: list[EscrowIndicatorSpec],
-    *,
-    sequential_position: int,
-    used_codes: set[str],
-) -> EscrowIndicatorSpec:
-    """Выбирает лучшую спецификацию из списка кандидатов с учетом позиции."""
-    unused_candidates = [spec for spec in candidates if spec.code not in used_codes]
-    if not unused_candidates:
-        raise ValueError("No unused escrow indicator spec is available for the current column")
-
-    expected_order = sequential_position + 1
-    exact_position = [spec for spec in unused_candidates if spec.order == expected_order]
-    if len(exact_position) == 1:
-        return exact_position[0]
-
-    if len(unused_candidates) == 1:
-        return unused_candidates[0]
-
-    ranked = sorted(
-        unused_candidates,
-        key=lambda spec: (abs(spec.order - expected_order), spec.order),
-    )
-    best = ranked[0]
-    if len(ranked) > 1 and abs(ranked[0].order - expected_order) == abs(ranked[1].order - expected_order):
-        raise ValueError(
-            "Ambiguous escrow indicator header mapping: "
-            f"candidates={[spec.code for spec in ranked]}"
-        )
-    return best
-
-
-
-def resolve_indicator_spec_by_header(source_name: object, *, sequential_position: int | None = None) -> EscrowIndicatorSpec:
+def resolve_indicator_spec_by_header(source_name: object) -> EscrowIndicatorSpec:
     """Сопоставляет один заголовок со спецификацией показателя."""
     normalized = normalize_header_text(source_name)
     matches = [spec for spec in ESCROW_INDICATOR_SPECS if _spec_matches_header(spec, normalized)]
@@ -164,25 +156,17 @@ def resolve_indicator_spec_by_header(source_name: object, *, sequential_position
             f"header={source_name!r}, normalized={normalized!r}"
         )
 
-    if sequential_position is not None:
-        expected_order = sequential_position + 1
-        same_position = [spec for spec in matches if spec.order == expected_order]
-        if len(same_position) == 1:
-            return same_position[0]
-
     if len(matches) == 1:
         return matches[0]
 
-    ranked = sorted(
-        matches,
-        key=lambda spec: (-len(spec.required_tokens), spec.order),
-    )
+    ranked = sorted(matches, key=lambda spec: (-len(spec.required_tokens), spec.order))
+    best = ranked[0]
     if len(ranked) > 1 and len(ranked[0].required_tokens) == len(ranked[1].required_tokens):
         raise ValueError(
             "Ambiguous escrow indicator header mapping: "
-            f"candidates={[spec.code for spec in ranked]}"
+            f"header={source_name!r}, candidates={[spec.code for spec in ranked]}"
         )
-    return ranked[0]
+    return best
 
 
 def resolve_indicator_columns(header_values: list[object] | tuple[object, ...]) -> list[ResolvedEscrowColumn]:
@@ -193,41 +177,60 @@ def resolve_indicator_columns(header_values: list[object] | tuple[object, ...]) 
     - № п/п
     - субъект РФ / федеральный округ
     """
-    if len(header_values) < 10:
+    if len(header_values) < 3:
         raise ValueError("Escrow header row has too few columns")
 
     resolved: list[ResolvedEscrowColumn] = []
     used_codes: set[str] = set()
+    unknown_headers: list[tuple[int, str]] = []
 
-    indicator_headers = list(header_values[2:])
-    for sequential_position, source_name in enumerate(indicator_headers):
+    for source_index, source_name in enumerate(list(header_values)[2:], start=2):
         normalized = normalize_header_text(source_name)
         if not normalized:
             continue
 
-        spec = resolve_indicator_spec_by_header(source_name, sequential_position=sequential_position)
+        try:
+            spec = resolve_indicator_spec_by_header(source_name)
+        except ValueError:
+            unknown_headers.append((source_index, str(source_name).strip()))
+            continue
+
         if spec.code in used_codes:
-            raise ValueError(f"Duplicate escrow indicator header is detected: {source_name!r}")
+            raise ValueError(
+                "Duplicate escrow indicator header is detected: "
+                f"header={source_name!r}, code={spec.code!r}"
+            )
+
         used_codes.add(spec.code)
         resolved.append(
             ResolvedEscrowColumn(
                 source_name=str(source_name).strip(),
-                source_index=sequential_position + 2,
+                source_index=source_index,
                 spec=spec,
             )
         )
 
-    expected_codes = {spec.code for spec in ESCROW_INDICATOR_SPECS}
-    if used_codes != expected_codes:
-        missing = [spec.code for spec in ESCROW_INDICATOR_SPECS if spec.code not in used_codes]
-        extra = sorted([code for code in used_codes if code not in expected_codes])
+    required_codes = {spec.code for spec in ESCROW_INDICATOR_SPECS if spec.is_required}
+    missing_required = [spec.code for spec in ESCROW_INDICATOR_SPECS if spec.is_required and spec.code not in used_codes]
+    if missing_required:
         raise ValueError(
-            "Escrow indicators are resolved incompletely: "
-            f"missing={missing}, extra={extra}"
+            "Escrow required indicators are resolved incompletely: "
+            f"missing={missing_required}, unknown_headers={unknown_headers}"
+        )
+
+    if unknown_headers:
+        raise ValueError(
+            "Escrow header row contains unrecognized non-empty indicator headers: "
+            f"{unknown_headers}"
         )
 
     resolved = sorted(resolved, key=lambda item: item.spec.order)
     return resolved
+
+
+def get_output_indicator_specs() -> list[EscrowIndicatorSpec]:
+    """Возвращает показатели, которые нужно выводить в итоговую книгу."""
+    return [spec for spec in sorted(ESCROW_INDICATOR_SPECS, key=lambda item: item.order) if spec.is_output]
 
 
 def sheet_code_by_indicator_code(indicator_code: str) -> str:
@@ -240,7 +243,9 @@ def sheet_code_by_indicator_code(indicator_code: str) -> str:
 
 __all__ = [
     "ESCROW_INDICATOR_SPECS",
+    "HEADER_SUBJECT_ALTERNATIVE_TOKENS",
     "HEADER_SUBJECT_REQUIRED_TOKENS",
+    "get_output_indicator_specs",
     "is_subject_header_cell",
     "normalize_header_text",
     "resolve_indicator_columns",
