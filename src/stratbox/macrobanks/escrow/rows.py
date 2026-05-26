@@ -19,7 +19,11 @@ import pandas as pd
 from stratbox.macrobanks.escrow.models import EscrowParsedRow
 
 
-_RF_TOTAL_NORMALIZED = "итого по рф"
+_RF_TOTAL_NORMALIZED_VARIANTS = {
+    "итого",
+    "итого по рф",
+    "итого по российской федерации",
+}
 
 
 def cell_to_text(value: object) -> str | None:
@@ -98,7 +102,7 @@ def is_rf_total_row(first_value: object, second_value: object) -> bool:
     if cell_to_text(second_value) is not None:
         return False
     first_text = normalize_row_text_for_match(first_value)
-    return first_text == _RF_TOTAL_NORMALIZED
+    return first_text in _RF_TOTAL_NORMALIZED_VARIANTS
 
 
 def is_federal_district_row(first_value: object, second_value: object) -> bool:
