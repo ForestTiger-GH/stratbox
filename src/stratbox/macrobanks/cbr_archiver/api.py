@@ -21,7 +21,7 @@ from stratbox.macrobanks.cbr_archiver.naming import ensure_unique_download_file_
 from stratbox.macrobanks.cbr_archiver.output import save_as_files, save_as_zip
 from stratbox.macrobanks.cbr_archiver.registry import (
     DEFAULT_ARCHIVE_BASE_NAME,
-    DEFAULT_CBR_ARCHIVE_SOURCES,
+    DEFAULT_CBR_ARCHIVE_URLS,
     DEFAULT_FOLDER_NAME,
     DEFAULT_HEADERS,
     DEFAULT_OUTPUT_BASE_DIR,
@@ -34,7 +34,7 @@ def _coerce_sources(
     sources: Iterable[CbrArchiveSource | str] | None,
 ) -> list[CbrArchiveSource]:
     """Приводит пользовательский список источников к CbrArchiveSource."""
-    raw_sources = list(sources) if sources is not None else list(DEFAULT_CBR_ARCHIVE_SOURCES)
+    raw_sources = list(sources) if sources is not None else list(DEFAULT_CBR_ARCHIVE_URLS)
     out: list[CbrArchiveSource] = []
     for idx, item in enumerate(raw_sources, start=1):
         if isinstance(item, CbrArchiveSource):
@@ -44,8 +44,8 @@ def _coerce_sources(
                 CbrArchiveSource(
                     url=str(item),
                     group="custom",
-                    code=f"custom_{idx:03d}",
-                    title=f"Custom CBR source {idx}",
+                    code=f"source_{idx:03d}",
+                    title="",
                 )
             )
     return out
@@ -94,8 +94,8 @@ def run_cbr_archiver(
     Параметры:
     - out_path: базовая папка или полный путь к .zip в режиме output_mode='zip';
     - output_mode: 'zip' для одного архива или 'files' для папки файлов;
-    - sources: свой список CbrArchiveSource или строк-URL; если None, используется реестр;
-    - source_groups: опциональный фильтр по группам реестра;
+    - sources: свой список строк-URL или CbrArchiveSource; если None, используется плоский реестр URL;
+    - source_groups: опциональный фильтр только для пользовательских CbrArchiveSource с заполненной group;
     - archive_name: явное имя архива, если out_path не является .zip;
     - folder_name: подпапка для режима files; если None, out_path используется как итоговая папка;
     - replace_existing: при True существующие файлы перезаписываются;

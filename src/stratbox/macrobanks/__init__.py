@@ -15,12 +15,14 @@ from stratbox.macrobanks.cbr_archiver import (
     CbrArchiveSource,
     CbrArchiverRunResult,
     DEFAULT_CBR_ARCHIVE_SOURCES,
+    DEFAULT_CBR_ARCHIVE_URLS,
     run_cbr_archiver,
 )
 
 __all__ = [
     "run_cbr_archiver",
     "DEFAULT_CBR_ARCHIVE_SOURCES",
+    "DEFAULT_CBR_ARCHIVE_URLS",
     "CbrArchiverRunResult",
     "CbrArchiveSource",
     "apply_frg_cleanup_plan",
