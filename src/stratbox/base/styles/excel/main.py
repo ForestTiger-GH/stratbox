@@ -79,7 +79,7 @@ def apply_preset(ws: Worksheet, preset_name: str | None, *, freeze_panes: str | 
     preset_name:
     - None => ничего не делает
     - "DEFAULT" => применяет дефолт (core или plugin)
-    - "RSHB GREEN" / "MACROBANKS_GREEN" => применяет конкретный
+    - "COMPANY GREEN" / "MACROBANKS_GREEN" => применяет конкретный
     """
     resolved = resolve_preset_name(preset_name)
     if resolved is None:
