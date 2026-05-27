@@ -1,9 +1,9 @@
 """
 runtime — единственная точка, где определяется:
-- установлен stratbox-plugin или нет
+- установлен плагин или нет
 - какие провайдеры использовать (filestore/secrets)
 
-Доменный код не должен импортировать stratbox-plugin напрямую.
+Доменный код не должен импортировать плагин напрямую.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ _PROVIDERS: Providers | None = None
 
 
 def _load_plugin_providers() -> Providers | None:
-    """Пытается загрузить провайдеры из stratbox-plugin через entry-points."""
+    """Пытается загрузить провайдеры из плагин через entry-points."""
     try:
         eps = entry_points().select(group="stratbox.plugin", name="providers")
         loaded_any = False

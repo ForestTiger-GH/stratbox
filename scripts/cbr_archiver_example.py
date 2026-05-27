@@ -31,7 +31,7 @@ print("Failed:", result_zip.failed_count)
 # Пример сохранения ZIP на сетевой диск через активный FileStore.
 # Путь нужно заменить на фактический каталог пользователя.
 # result_network = run_cbr_archiver(
-#     out_path="DSR/ЦМиРАП/CBR",
+#     out_path="Диск/Каталог/CBR",
 #     output_mode="zip",
 # )
 # print("Network output:", result_network.output_path)

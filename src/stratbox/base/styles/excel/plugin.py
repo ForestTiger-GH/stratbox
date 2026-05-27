@@ -3,7 +3,7 @@
 
 Схема:
 - StratBox содержит базу builtin-пресетов.
-- Если установлен stratbox-plugin, он может вернуть дополнительные пресеты.
+- Если установлен плагин, он может вернуть дополнительные пресеты.
 - Плагин может указать default preset (например: COMPANY GREEN).
 """
 
@@ -34,7 +34,7 @@ def load_addons_from_plugins() -> list[ExcelStylesAddon]:
     Загружает аддоны через entry_points.
 
     Поддерживается несколько провайдеров (на будущее),
-    сейчас обычно будет один: stratbox-plugin.
+    сейчас обычно будет один: плагин.
     """
     addons: list[ExcelStylesAddon] = []
 

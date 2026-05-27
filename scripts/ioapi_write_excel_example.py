@@ -2,7 +2,7 @@
 Пример: запись Excel через stratbox.base.ioapi.
 
 Плюс:
-- один код для local и corp (если установлен stratbox-plugin)
+- один код для local и corp (если установлен плагин)
 
 Запуск:
   python scripts/ioapi_write_excel_example.py --out "data/output.xlsx"
