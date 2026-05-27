@@ -1,10 +1,10 @@
 """
-Подключение корпоративных Excel-пресетов через плагин.
+Подключение Excel-пресетов компании через плагин.
 
 Схема:
 - StratBox содержит базу builtin-пресетов.
 - Если установлен stratbox-plugin, он может вернуть дополнительные пресеты.
-- Плагин может указать default preset (например: RSHB GREEN).
+- Плагин может указать default preset (например: COMPANY GREEN).
 """
 
 from __future__ import annotations
