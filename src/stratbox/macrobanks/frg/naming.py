@@ -126,13 +126,17 @@ def normalize_file_name(file_name: str) -> str:
 
 
 def normalize_label_text(text: str) -> str:
-    """Нормализует подпись семейства для сравнения внутренних имён."""
+    """Нормализует подпись семейства для устойчивого сравнения внутренних имён.
+
+    Важно:
+    - старая и новая версии внутренних имён могут отличаться только расстановкой тире;
+    - при сравнении нужно сохранять смысл слов, но не зависеть от декоративной пунктуации.
+    """
     value = str(text).strip().lower().replace("ё", "е")
-    value = value.replace("—", "-").replace("–", "-")
+    value = value.replace("—", " ").replace("–", " ").replace("-", " ")
     value = value.replace("_", " ")
     value = value.replace(".", " ")
     value = value.replace(",", " ")
-    value = re.sub(r"\s*\-\s*", " - ", value)
     value = re.sub(r"\s+", " ", value)
     return value.strip()
 
