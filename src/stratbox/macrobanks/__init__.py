@@ -11,8 +11,18 @@ from stratbox.macrobanks.frg import (
     select_latest_frg_files,
 )
 from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.cbr_archiver import (
+    CbrArchiveSource,
+    CbrArchiverRunResult,
+    DEFAULT_CBR_ARCHIVE_SOURCES,
+    run_cbr_archiver,
+)
 
 __all__ = [
+    "run_cbr_archiver",
+    "DEFAULT_CBR_ARCHIVE_SOURCES",
+    "CbrArchiverRunResult",
+    "CbrArchiveSource",
     "apply_frg_cleanup_plan",
     "build_frg_actuals_archive_name",
     "build_frg_catalog",

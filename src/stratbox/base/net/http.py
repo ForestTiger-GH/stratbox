@@ -27,6 +27,7 @@ class DownloadResult:
     content: bytes | None
     error: str | None = None
     final_url: str | None = None
+    headers: dict[str, str] | None = None
 
 
 def download_bytes(
@@ -77,6 +78,7 @@ def download_bytes(
                         content=b,
                         error=None,
                         final_url=final,
+                        headers=dict(r.headers),
                     )
 
         except Exception as e:
@@ -91,4 +93,5 @@ def download_bytes(
         content=None,
         error=last_err,
         final_url=final,
+        headers=None,
     )
