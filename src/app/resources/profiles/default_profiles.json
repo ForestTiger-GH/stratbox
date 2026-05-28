@@ -1,0 +1,31 @@
+{
+  "profiles": [
+    {
+      "id": "local_c",
+      "title": "Local C:",
+      "kind": "local",
+      "root": "{home}/StratboxData",
+      "required_dirs": ["input", "output", "logs", "cache"],
+      "description": "Local autonomous data profile for development and offline work.",
+      "readonly": false
+    },
+    {
+      "id": "netdrive_w",
+      "title": "NetDrive W:",
+      "kind": "local",
+      "root": "W:/StrategyBox",
+      "required_dirs": ["input", "output", "logs", "cache"],
+      "description": "Main desktop profile for external storage mounted by NetDrive as drive W:.",
+      "readonly": false
+    },
+    {
+      "id": "home_server",
+      "title": "Home server",
+      "kind": "local",
+      "root": "Z:/StrategyBox",
+      "required_dirs": ["input", "output", "logs", "cache"],
+      "description": "Reserved profile for a future home server or mapped network drive.",
+      "readonly": false
+    }
+  ]
+}

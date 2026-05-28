@@ -1,0 +1,12 @@
+{
+  "id": "environment_check",
+  "title": "Проверка среды",
+  "description": "Проверяет активный профиль данных, доступность корня, чтение, запись, ключевые каталоги и базовые Python-зависимости.",
+  "category": "Сервис",
+  "adapter": "app.tasks.adapters.environment:run",
+  "enabled": true,
+  "input_dir": "input",
+  "output_dir": "logs",
+  "params": [],
+  "links": []
+}

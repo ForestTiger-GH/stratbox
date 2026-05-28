@@ -1,0 +1,12 @@
+QMainWindow {
+    background: #f5f5f5;
+}
+QGroupBox {
+    font-weight: 600;
+}
+QPushButton {
+    padding: 6px 10px;
+}
+QPlainTextEdit {
+    font-family: Consolas, monospace;
+}

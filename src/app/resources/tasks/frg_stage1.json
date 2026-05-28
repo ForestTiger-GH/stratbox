@@ -1,0 +1,33 @@
+{
+  "id": "frg_stage1",
+  "title": "Сканирование FRG",
+  "description": "Строит каталог файлов FRG, выбирает актуальные файлы по семействам и сохраняет результат в Excel.",
+  "category": "FRG",
+  "adapter": "app.tasks.adapters.frg:run",
+  "enabled": true,
+  "input_dir": "input/frg",
+  "output_dir": "output/frg",
+  "params": [
+    {
+      "name": "root_dir",
+      "title": "Папка входных файлов",
+      "type": "text",
+      "default": "input/frg",
+      "description": "Относительный путь внутри активного профиля данных."
+    },
+    {
+      "name": "recursive",
+      "title": "Искать во вложенных папках",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "name": "output_path",
+      "title": "Файл результата",
+      "type": "text",
+      "default": "output/frg/frg_stage1.xlsx",
+      "description": "Относительный путь Excel-файла результата внутри активного профиля данных."
+    }
+  ],
+  "links": []
+}

@@ -1,0 +1,45 @@
+{
+  "id": "cbr_archiver",
+  "title": "Архиватор исходных файлов ЦБ",
+  "description": "Скачивает исходные статистические файлы Банка России и сохраняет их через активный FileStore как ZIP-архив или папку файлов.",
+  "category": "Банк России",
+  "adapter": "app.tasks.adapters.cbr_archiver:run",
+  "enabled": true,
+  "input_dir": "input/cbr_archiver",
+  "output_dir": "output/cbr_archiver",
+  "params": [
+    {
+      "name": "output_mode",
+      "title": "Режим сохранения",
+      "type": "select",
+      "default": "zip",
+      "options": ["zip", "files"],
+      "description": "zip — один архив, files — отдельная папка с файлами."
+    },
+    {
+      "name": "output_dir",
+      "title": "Папка результата",
+      "type": "text",
+      "default": "output/cbr_archiver",
+      "description": "Относительный путь внутри активного профиля данных."
+    },
+    {
+      "name": "replace_existing",
+      "title": "Перезаписывать результат",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "name": "continue_on_error",
+      "title": "Продолжать при ошибках скачивания",
+      "type": "bool",
+      "default": true
+    }
+  ],
+  "links": [
+    {
+      "title": "Банк России",
+      "url": "https://www.cbr.ru/"
+    }
+  ]
+}
