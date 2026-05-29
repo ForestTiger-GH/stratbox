@@ -5,6 +5,7 @@
   "category": "FRG",
   "adapter": "app.tasks.adapters.frg:run",
   "enabled": true,
+  "requires_data_root": true,
   "input_dir": "input/frg",
   "output_dir": "output/frg",
   "params": [
@@ -13,7 +14,7 @@
       "title": "Папка входных файлов",
       "type": "text",
       "default": "input/frg",
-      "description": "Относительный путь внутри активного профиля данных."
+      "description": "Относительный путь внутри business-root."
     },
     {
       "name": "recursive",
@@ -26,7 +27,7 @@
       "title": "Файл результата",
       "type": "text",
       "default": "output/frg/frg_stage1.xlsx",
-      "description": "Относительный путь Excel-файла результата внутри активного профиля данных."
+      "description": "Относительный путь Excel-файла результата внутри business-root."
     }
   ],
   "links": []

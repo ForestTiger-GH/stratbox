@@ -1,3 +1,4 @@
+
 """Adapter задачи архиватора исходных файлов Банка России."""
 
 from __future__ import annotations
@@ -17,7 +18,10 @@ def _as_bool(value: Any) -> bool:
 
 
 def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> TaskResult:
-    """Запускает доменный архиватор ЦБ через FileStore активного профиля."""
+    """Запускает доменный архиватор ЦБ через FileStore активного business-root."""
+    if context.filestore is None:
+        raise RuntimeError("FileStore is not available for current data_root")
+
     output_mode = str(params.get("output_mode") or "zip").strip().lower()
     output_dir = str(params.get("output_dir") or spec.output_dir).strip() or spec.output_dir
 
@@ -36,6 +40,7 @@ def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> Task
 
     details = result.to_dict()
     details["task_log"] = str(context.task_log_path)
+    details["data_root_path"] = str(context.data_root_path) if context.data_root_path else None
 
     message = (
         f"CBR archiver finished: {result.downloaded_count}/{result.total_sources} files downloaded"

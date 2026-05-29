@@ -328,3 +328,16 @@ scripts/        # примеры запуска
 - **`stratbox.base.runtime`** — 7
 
 `stratbox` растёт как **прикладная библиотечная платформа**, где доменный слой `macrobanks` опирается на инфраструктурный контур `base`, а основная сила репозитория сосредоточена в FileStore/IO/Excel-инфраструктуре и экономических обработчиках.
+
+## Desktop shell `app`
+
+Репозиторий содержит пакет `app`, который работает как launcher-managed desktop-оболочка Strategy Box.
+
+Основной пользовательский маршрут выглядит так:
+
+- `stratbox-launcher` подготавливает install/runtime среду;
+- launcher выбирает `system_root` и `data_root`;
+- launcher передает session handoff в `python -m app`;
+- `app` строит GUI-контекст от launcher-managed business-root.
+
+`data_root` в этой модели обозначает корень бизнес-среды. Служебные файлы launcher-а и install-среды туда не записываются.

@@ -1,3 +1,4 @@
+
 """Пользовательский конфиг интерфейса Strategy Box."""
 
 from __future__ import annotations
@@ -20,9 +21,9 @@ class WindowConfig:
 
 @dataclass(slots=True)
 class AppUserConfig:
-    """Настройки самого GUI-приложения, а не launcher bootstrap."""
+    """Настройки GUI, которые не дублируют launcher bootstrap."""
 
-    active_profile: str = "local_c"
+    last_workspace_schema: str = "default"
     last_task: str = "environment_check"
     window: WindowConfig = field(default_factory=WindowConfig)
 
@@ -42,7 +43,7 @@ def _coerce_config(data: dict[str, Any]) -> AppUserConfig:
         height=int(window_raw.get("height", _DEFAULT_CONFIG.window.height)),
     )
     return AppUserConfig(
-        active_profile=str(data.get("active_profile") or _DEFAULT_CONFIG.active_profile),
+        last_workspace_schema=str(data.get("last_workspace_schema") or _DEFAULT_CONFIG.last_workspace_schema),
         last_task=str(data.get("last_task") or _DEFAULT_CONFIG.last_task),
         window=window,
     )

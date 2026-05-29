@@ -1,3 +1,4 @@
+
 """Единый механизм запуска задач приложения."""
 
 from __future__ import annotations
@@ -49,16 +50,35 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
 
     task_logger, task_log_path = _build_task_logger(spec.id, context.paths.task_logs_dir)
     task_context = TaskContext(
-        profile=context.active_profile,
+        workspace_schema=context.workspace_schema,
+        data_root_path=context.data_root_path,
+        data_root_status=context.data_root_status,
         filestore=context.filestore,
         paths=context.paths,
         version=context.version,
         logger=task_logger,
         task_log_path=task_log_path,
+        launcher_handoff=context.launcher_handoff,
+        run_mode=context.run_mode,
     )
 
     task_logger.info("Task started: %s", spec.id)
     context.logger.info("Task started: %s", spec.id)
+
+    if spec.requires_data_root and (not context.data_root_status.available or context.filestore is None):
+        message = "Task requires available data_root"
+        task_logger.error(message)
+        context.logger.warning("Task blocked: %s", spec.id)
+        return TaskResult(
+            ok=False,
+            message=message,
+            outputs=(str(task_log_path),),
+            details={
+                "task_log": str(task_log_path),
+                "data_root_status": context.data_root_status.to_dict(),
+                "requires_data_root": True,
+            },
+        )
 
     try:
         adapter = _load_adapter(spec.adapter)

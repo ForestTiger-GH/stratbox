@@ -1,13 +1,13 @@
+
 """Задача проверки рабочей среды приложения."""
 
 from __future__ import annotations
 
 import importlib.util
 import sys
-from typing import Any
 
-from app.profiles.diagnostics import run_profile_diagnostics
 from app.tasks.models import TaskContext, TaskResult, TaskSpec
+from app.workspace.diagnostics import run_workspace_diagnostics
 
 
 def _package_available(name: str) -> bool:
@@ -15,10 +15,10 @@ def _package_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
 
 
-def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> TaskResult:
-    """Выполняет диагностику активного профиля и базовых зависимостей."""
+def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> TaskResult:
+    """Выполняет диагностику business-root и базовых зависимостей."""
     context.logger.info("Environment check started")
-    profile_report = run_profile_diagnostics(context.profile)
+    workspace_report = run_workspace_diagnostics(context.workspace_schema, context.data_root_path)
 
     package_checks = {
         "stratbox": _package_available("stratbox"),
@@ -28,7 +28,7 @@ def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> Task
         "PySide6": _package_available("PySide6"),
     }
 
-    for item in profile_report.items:
+    for item in workspace_report.items:
         level = "OK" if item.ok else "FAIL"
         context.logger.info("%s | %s | %s", level, item.title, item.details)
 
@@ -36,14 +36,18 @@ def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> Task
         context.logger.info("Package %s: %s", package_name, "OK" if ok else "missing")
 
     details = {
-        "profile": context.profile.to_dict(),
-        "profile_diagnostics": profile_report.to_dict(),
+        "workspace_schema": context.workspace_schema.to_dict(),
+        "data_root_path": str(context.data_root_path) if context.data_root_path else None,
+        "data_root_status": context.data_root_status.to_dict(),
+        "workspace_diagnostics": workspace_report.to_dict(),
         "packages": package_checks,
         "python": sys.version,
         "version": context.version.to_dict(),
+        "run_mode": context.run_mode,
+        "launcher_handoff": context.launcher_handoff.to_dict() if context.launcher_handoff else None,
         "task_log": str(context.task_log_path),
     }
 
-    ok = profile_report.ok and package_checks["stratbox"]
+    ok = workspace_report.ok and package_checks["stratbox"]
     message = "Environment check finished" if ok else "Environment check finished with issues"
     return TaskResult(ok=ok, message=message, outputs=(str(context.task_log_path),), details=details)

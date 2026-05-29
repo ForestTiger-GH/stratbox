@@ -5,6 +5,7 @@
   "category": "Банк России",
   "adapter": "app.tasks.adapters.cbr_archiver:run",
   "enabled": true,
+  "requires_data_root": true,
   "input_dir": "input/cbr_archiver",
   "output_dir": "output/cbr_archiver",
   "params": [
@@ -13,7 +14,10 @@
       "title": "Режим сохранения",
       "type": "select",
       "default": "zip",
-      "options": ["zip", "files"],
+      "options": [
+        "zip",
+        "files"
+      ],
       "description": "zip — один архив, files — отдельная папка с файлами."
     },
     {
@@ -21,7 +25,7 @@
       "title": "Папка результата",
       "type": "text",
       "default": "output/cbr_archiver",
-      "description": "Относительный путь внутри активного профиля данных."
+      "description": "Относительный путь внутри business-root."
     },
     {
       "name": "replace_existing",

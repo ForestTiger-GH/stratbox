@@ -1,3 +1,4 @@
+
 """Точка входа для запуска приложения командой ``python -m app``."""
 
 from __future__ import annotations
@@ -7,6 +8,7 @@ import json
 import sys
 
 from app.core.context import build_app_context
+from app.core.errors import AppStartupError
 from app.tasks.registry import load_task_registry
 from app.tasks.runner import run_task_by_id
 
@@ -25,9 +27,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run environment diagnostics and print JSON result.",
     )
     parser.add_argument(
-        "--profile",
+        "--standalone-dev-root",
         default=None,
-        help="Override active profile id for current run.",
+        help="Explicit business-root for standalone developer launch outside launcher handoff.",
     )
     return parser
 
@@ -36,7 +38,11 @@ def main(argv: list[str] | None = None) -> int:
     """Запускает приложение или сервисную команду."""
     args = _build_parser().parse_args(argv)
 
-    context = build_app_context(profile_id=args.profile)
+    try:
+        context = build_app_context(standalone_dev_root=args.standalone_dev_root)
+    except AppStartupError as exc:
+        print(f"ERROR: {exc}")
+        return 2
 
     if args.diagnose or args.no_gui:
         registry = load_task_registry()

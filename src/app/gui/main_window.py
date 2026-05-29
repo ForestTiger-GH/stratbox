@@ -1,3 +1,4 @@
+
 """Главное окно Strategy Box."""
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from PySide6.QtCore import QThread
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -28,19 +30,21 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.context import AppContext, build_app_context
+from app.core.handoff import (
+    get_launcher_config_path_from_env,
+    get_launcher_handoff_path_from_env,
+    patch_launcher_config_data_root,
+    patch_launcher_handoff_data_root,
+)
 from app.core.user_config import save_user_config
-from app.profiles.diagnostics import run_profile_diagnostics
 from app.tasks.models import TaskParamSpec, TaskResult, TaskSpec
 from app.tasks.registry import TaskRegistry, load_task_registry
+from app.workspace import build_filestore_for_data_root, resolve_data_root_status, run_workspace_diagnostics
 from app.gui.workers import TaskWorker
 
 
 class MainWindow(QMainWindow):
-    """Минимальное главное окно приложения.
-
-    Окно уже разделяет профиль, задачу, параметры, логи и сервисные действия.
-    Предметная логика не находится в GUI: задачи запускаются через adapter-слой.
-    """
+    """Главное окно приложения Strategy Box."""
 
     def __init__(self, context: AppContext):
         super().__init__()
@@ -52,13 +56,11 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Strategy Box")
         self._build_ui()
-        self._load_profiles()
         self._load_tasks()
-        self._refresh_status()
+        self._refresh_context_views()
         self._render_selected_task()
 
     def _build_ui(self) -> None:
-        """Собирает виджеты главного окна."""
         root = QWidget(self)
         self.setCentralWidget(root)
         main_layout = QVBoxLayout(root)
@@ -74,19 +76,26 @@ class MainWindow(QMainWindow):
         left_layout = QVBoxLayout(left)
         splitter.addWidget(left)
 
-        profile_box = QGroupBox("Profile")
-        profile_layout = QVBoxLayout(profile_box)
-        self.profile_combo = QComboBox()
-        self.profile_combo.currentIndexChanged.connect(self._on_profile_changed)
-        profile_layout.addWidget(self.profile_combo)
-        self.check_profile_button = QPushButton("Check profile")
-        self.check_profile_button.clicked.connect(self._check_profile)
-        profile_layout.addWidget(self.check_profile_button)
-        self.profile_status = QPlainTextEdit()
-        self.profile_status.setReadOnly(True)
-        self.profile_status.setMaximumHeight(180)
-        profile_layout.addWidget(self.profile_status)
-        left_layout.addWidget(profile_box)
+        env_box = QGroupBox("Environment")
+        env_layout = QVBoxLayout(env_box)
+        self.environment_label = QLabel()
+        self.environment_label.setWordWrap(True)
+        env_layout.addWidget(self.environment_label)
+
+        env_buttons = QHBoxLayout()
+        self.check_environment_button = QPushButton("Check environment")
+        self.check_environment_button.clicked.connect(self._check_environment)
+        env_buttons.addWidget(self.check_environment_button)
+        self.change_data_root_button = QPushButton("Change data root")
+        self.change_data_root_button.clicked.connect(self._change_data_root)
+        env_buttons.addWidget(self.change_data_root_button)
+        env_layout.addLayout(env_buttons)
+
+        self.environment_status = QPlainTextEdit()
+        self.environment_status.setReadOnly(True)
+        self.environment_status.setMaximumHeight(220)
+        env_layout.addWidget(self.environment_status)
+        left_layout.addWidget(env_box)
 
         task_box = QGroupBox("Tasks")
         task_layout = QVBoxLayout(task_box)
@@ -97,8 +106,8 @@ class MainWindow(QMainWindow):
 
         service_box = QGroupBox("Service")
         service_layout = QVBoxLayout(service_box)
-        self.open_data_button = QPushButton("Open data folder")
-        self.open_data_button.clicked.connect(lambda: self._open_path(self.context.active_profile.resolved_root))
+        self.open_data_button = QPushButton("Open data root")
+        self.open_data_button.clicked.connect(self._open_data_root)
         service_layout.addWidget(self.open_data_button)
         self.open_logs_button = QPushButton("Open logs")
         self.open_logs_button.clicked.connect(lambda: self._open_path(str(self.context.paths.logs_dir)))
@@ -113,6 +122,7 @@ class MainWindow(QMainWindow):
         splitter.addWidget(right)
 
         self.version_label = QLabel()
+        self.version_label.setWordWrap(True)
         right_layout.addWidget(self.version_label)
 
         self.task_title = QLabel()
@@ -144,21 +154,10 @@ class MainWindow(QMainWindow):
         log_layout.addWidget(self.log_view)
         right_layout.addWidget(log_box, 1)
 
-        splitter.setSizes([360, 840])
+        splitter.setSizes([380, 860])
         self._last_outputs: tuple[str, ...] = ()
 
-    def _load_profiles(self) -> None:
-        """Заполняет список профилей."""
-        self.profile_combo.blockSignals(True)
-        self.profile_combo.clear()
-        for profile in self.context.profiles.items:
-            self.profile_combo.addItem(profile.title, profile.id)
-        index = self.profile_combo.findData(self.context.active_profile.id)
-        self.profile_combo.setCurrentIndex(max(index, 0))
-        self.profile_combo.blockSignals(False)
-
     def _load_tasks(self) -> None:
-        """Заполняет список задач."""
         self.task_list.clear()
         for spec in self.registry.enabled():
             item = QListWidgetItem(f"{spec.category} / {spec.title}")
@@ -168,14 +167,12 @@ class MainWindow(QMainWindow):
             self.task_list.setCurrentRow(0)
 
     def _selected_task(self) -> TaskSpec | None:
-        """Возвращает текущую задачу."""
         item = self.task_list.currentItem()
         if not item:
             return None
         return self.registry.get(str(item.data(1000)))
 
     def _clear_params(self) -> None:
-        """Удаляет старые поля параметров."""
         while self.params_layout.count():
             child = self.params_layout.takeAt(0)
             if child.widget():
@@ -183,23 +180,26 @@ class MainWindow(QMainWindow):
         self._param_widgets = {}
 
     def _render_selected_task(self) -> None:
-        """Рисует описание и параметры выбранной задачи."""
         spec = self._selected_task()
         self._clear_params()
         if spec is None:
             self.task_title.setText("No task selected")
             self.task_description.setText("")
+            self.run_button.setEnabled(False)
             return
 
         self.task_title.setText(spec.title)
-        self.task_description.setText(spec.description)
+        description = spec.description
+        if spec.requires_data_root and not self.context.data_root_status.available:
+            description += "\n\nTask requires available data_root."
+        self.task_description.setText(description)
         for param in spec.params:
             widget = self._make_param_widget(param)
             self._param_widgets[param.name] = widget
             self.params_layout.addRow(param.title, widget)
+        self.run_button.setEnabled(not (spec.requires_data_root and not self.context.data_root_status.available))
 
     def _make_param_widget(self, param: TaskParamSpec) -> QWidget:
-        """Создает виджет ввода для параметра задачи."""
         if param.type == "bool":
             widget = QCheckBox()
             widget.setChecked(bool(param.default))
@@ -222,7 +222,6 @@ class MainWindow(QMainWindow):
         return line
 
     def _collect_params(self) -> dict[str, Any]:
-        """Собирает параметры из формы."""
         spec = self._selected_task()
         if spec is None:
             return {}
@@ -246,35 +245,83 @@ class MainWindow(QMainWindow):
                     out[name] = text
         return out
 
-    def _refresh_status(self) -> None:
-        """Обновляет верхнюю строку статуса версии."""
+    def _refresh_context_views(self) -> None:
         version = self.context.version
         dirty = " dirty" if version.dirty else ""
+        data_root_text = str(self.context.data_root_path) if self.context.data_root_path else "(not set)"
         self.version_label.setText(
-            f"Branch: {version.branch} | Commit: {version.commit_short}{dirty} | "
-            f"Repo: {self.context.paths.repo_dir} | Data: {self.context.active_profile.resolved_root}"
+            f"Mode: {self.context.run_mode} | Branch: {version.branch} | Commit: {version.commit_short}{dirty} | "
+            f"Repo: {self.context.paths.repo_dir}\n"
+            f"Data root: {data_root_text} | Data status: {'available' if self.context.data_root_status.available else 'unavailable'} | "
+            f"Degraded: {self.context.degraded_launch}"
         )
+        self.environment_label.setText(
+            f"Workspace schema: {self.context.workspace_schema.title}\n"
+            f"Business root: {data_root_text}"
+        )
+        self.open_data_button.setEnabled(self.context.data_root_status.available and self.context.data_root_path is not None)
+        self._check_environment(quiet=True)
 
-    def _on_profile_changed(self) -> None:
-        """Переключает активный профиль."""
-        profile_id = str(self.profile_combo.currentData())
-        self.context.user_config.active_profile = profile_id
-        save_user_config(self.context.paths.app_config_path, self.context.user_config)
-        self.context = build_app_context(profile_id=profile_id)
-        self._refresh_status()
-        self._check_profile()
-
-    def _check_profile(self) -> None:
-        """Проверяет активный профиль и показывает результат."""
-        report = run_profile_diagnostics(self.context.active_profile)
-        lines = [report.title, f"Root: {self.context.active_profile.resolved_root}", ""]
+    def _check_environment(self, quiet: bool = False) -> None:
+        report = run_workspace_diagnostics(self.context.workspace_schema, self.context.data_root_path)
+        lines = [
+            report.title,
+            f"Run mode: {self.context.run_mode}",
+            f"Data root status: {self.context.data_root_status.message}",
+            "",
+        ]
+        if self.context.launcher_handoff is not None:
+            lines.extend([
+                f"Launcher mode: {self.context.launcher_handoff.launcher_mode}",
+                f"Install profile: {self.context.launcher_handoff.install_profile}",
+                f"Trusted commit: {self.context.launcher_handoff.trusted_repo_commit}",
+                "",
+            ])
         for item in report.items:
             mark = "OK" if item.ok else "FAIL"
             lines.append(f"{mark}: {item.title} — {item.details}")
-        self.profile_status.setPlainText("\n".join(lines))
+        self.environment_status.setPlainText("\n".join(lines))
+        if not quiet:
+            self.log_view.appendPlainText("Environment check finished")
+
+    def _change_data_root(self) -> None:
+        if self._thread is not None:
+            QMessageBox.information(self, "Strategy Box", "Finish current task before changing data root.")
+            return
+        initial = str(self.context.data_root_path or Path.home())
+        selected = QFileDialog.getExistingDirectory(self, "Select data root", initial)
+        if not selected:
+            return
+
+        selected_path = Path(selected).expanduser()
+        status = resolve_data_root_status(selected_path)
+        data_locator = {
+            "kind": "local_path",
+            "value": str(selected_path),
+            "display_name": str(selected_path),
+        }
+
+        config_path = get_launcher_config_path_from_env()
+        handoff_path = get_launcher_handoff_path_from_env()
+        if self.context.run_mode == "launcher_managed":
+            if config_path is None or handoff_path is None:
+                QMessageBox.warning(self, "Strategy Box", "Launcher-managed session misses handoff/config paths.")
+                return
+            try:
+                patch_launcher_config_data_root(config_path, data_locator)
+                patch_launcher_handoff_data_root(handoff_path, data_locator, selected_path, available=status.available)
+            except Exception as exc:
+                QMessageBox.warning(self, "Strategy Box", str(exc))
+                return
+            self.context = build_app_context()
+        else:
+            self.context = build_app_context(standalone_dev_root=str(selected_path), override_data_root_path=selected_path)
+
+        self._refresh_context_views()
+        self._render_selected_task()
+        self.log_view.appendPlainText(f"Data root changed to: {selected_path}")
 
     def _run_selected_task(self) -> None:
-        """Запускает выбранную задачу в фоне."""
         spec = self._selected_task()
         if spec is None:
             return
@@ -293,7 +340,6 @@ class MainWindow(QMainWindow):
         self._thread.start()
 
     def _on_task_finished(self, result: TaskResult) -> None:
-        """Обрабатывает завершение фоновой задачи."""
         self.run_button.setEnabled(True)
         self._last_outputs = result.outputs
         self.open_last_output_button.setEnabled(bool(result.outputs))
@@ -303,9 +349,13 @@ class MainWindow(QMainWindow):
             self.log_view.appendPlainText(f"Output: {output}")
         self._thread = None
         self._worker = None
+        self._render_selected_task()
+
+    def _open_data_root(self) -> None:
+        if self.context.data_root_path is not None:
+            self._open_path(str(self.context.data_root_path))
 
     def _open_path(self, path: str) -> None:
-        """Открывает файл или папку средствами ОС."""
         try:
             p = Path(path)
             target = p if p.is_dir() else p.parent
@@ -317,6 +367,5 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Open path failed", str(exc))
 
     def _open_last_output(self) -> None:
-        """Открывает первый путь из последнего результата."""
         if self._last_outputs:
             self._open_path(self._last_outputs[0])

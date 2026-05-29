@@ -1,0 +1,14 @@
+{
+  "workspaces": [
+    {
+      "id": "default",
+      "title": "Standard workspace",
+      "required_dirs": [
+        "input",
+        "output"
+      ],
+      "description": "Базовая рабочая схема Strategy Box поверх business-root.",
+      "readonly": false
+    }
+  ]
+}

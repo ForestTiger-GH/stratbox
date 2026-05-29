@@ -1,4 +1,5 @@
-"""Базовые сервисы приложения: пути, конфиг, контекст, версия."""
+
+"""Базовые сервисы приложения: контекст, handoff и user-space настройки."""
 
 from app.core.context import AppContext, build_app_context
 
