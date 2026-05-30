@@ -6,7 +6,7 @@ import importlib.util
 import sys
 
 from app.tasks.models import TaskContext, TaskResult, TaskSpec
-from app.workspace.diagnostics import run_workspace_diagnostics
+from app.workspace import resolve_workspace_root, run_workspace_diagnostics
 
 
 def _package_available(name: str) -> bool:
@@ -15,9 +15,21 @@ def _package_available(name: str) -> bool:
 
 
 def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> TaskResult:
-    """Выполняет диагностику business-root и базовых зависимостей."""
+    """Выполняет диагностику business-root selector, workspace root и базовых зависимостей."""
     context.logger.info('Environment check started')
-    workspace_report = run_workspace_diagnostics(context.workspace_schema, context.data_root_path)
+    mode = str(params.get('mode') or 'detailed')
+    create_missing = mode == 'launcher_preflight'
+    workspace_resolution = resolve_workspace_root(
+        context.workspace_schema,
+        context.data_root_selector_path,
+        run_mode=context.run_mode,
+        create_missing=create_missing,
+    )
+    workspace_report = run_workspace_diagnostics(
+        context.workspace_schema,
+        workspace_resolution,
+        create_missing=create_missing,
+    )
 
     package_checks = {
         'stratbox': _package_available('stratbox'),
@@ -36,8 +48,12 @@ def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> T
 
     details = {
         'workspace_schema': context.workspace_schema.to_dict(),
+        'data_root_selector_path': str(context.data_root_selector_path) if context.data_root_selector_path else None,
         'data_root_path': str(context.data_root_path) if context.data_root_path else None,
         'data_root_status': context.data_root_status.to_dict(),
+        'workspace_root_path': str(workspace_resolution.workspace_root_path) if workspace_resolution.workspace_root_path else None,
+        'workspace_status': workspace_resolution.workspace_status.to_dict(),
+        'workspace_resolution': workspace_resolution.to_dict(),
         'workspace_diagnostics': workspace_report.to_dict(),
         'packages': package_checks,
         'python': sys.version,
@@ -56,6 +72,10 @@ def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> T
         'task_log': str(context.task_log_path),
     }
 
-    ok = workspace_report.ok and package_checks['stratbox']
-    message = 'Environment check finished' if ok else 'Environment check finished with issues'
+    if mode == 'launcher_preflight':
+        ok = workspace_resolution.workspace_status.available and package_checks['stratbox']
+        message = 'Launcher preflight finished' if ok else 'Launcher preflight finished with issues'
+    else:
+        ok = workspace_report.ok and package_checks['stratbox']
+        message = 'Environment check finished' if ok else 'Environment check finished with issues'
     return TaskResult(ok=ok, message=message, outputs=(str(context.task_log_path),), details=details)

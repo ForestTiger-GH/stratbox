@@ -18,7 +18,7 @@ from app.core.session_env import (
     UserStateRecord,
 )
 from app.core.version import VersionInfo
-from app.workspace import DataRootStatus, WorkspaceSchema
+from app.workspace import DataRootStatus, WorkspaceRootStatus, WorkspaceSchema
 
 ParamType = Literal['text', 'int', 'float', 'bool', 'path', 'select', 'multiselect']
 
@@ -100,8 +100,11 @@ class TaskContext:
     """Контекст запуска задачи."""
 
     workspace_schema: WorkspaceSchema
+    data_root_selector_path: Path | None
     data_root_path: Path | None
     data_root_status: DataRootStatus
+    workspace_root_path: Path | None
+    workspace_status: WorkspaceRootStatus
     filestore: FileStore | None
     paths: AppPaths
     version: VersionInfo

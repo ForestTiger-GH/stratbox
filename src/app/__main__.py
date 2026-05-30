@@ -23,7 +23,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '--diagnose',
         action='store_true',
-        help='Run environment diagnostics and print JSON result.',
+        help='Run launcher preflight diagnostics and print JSON result.',
     )
     parser.add_argument(
         '--standalone-dev-root',
@@ -43,7 +43,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f'ERROR: {exc}')
         return 2
 
-    if args.diagnose or args.no_gui:
+    if args.diagnose:
+        registry = load_task_registry()
+        result = run_task_by_id('environment_check', registry=registry, context=context, params={'mode': 'launcher_preflight'})
+        print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        return 0 if result.ok else 2
+
+    if args.no_gui:
         registry = load_task_registry()
         result = run_task_by_id('environment_check', registry=registry, context=context, params={})
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))

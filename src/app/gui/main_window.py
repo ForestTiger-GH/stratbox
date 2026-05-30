@@ -32,7 +32,7 @@ from app.core.context import AppContext, build_app_context
 from app.gui.workers import TaskWorker
 from app.tasks.models import TaskParamSpec, TaskResult, TaskSpec
 from app.tasks.registry import TaskRegistry, load_task_registry
-from app.workspace import resolve_data_root_status, run_workspace_diagnostics
+from app.workspace import resolve_data_root_status, resolve_workspace_root, run_workspace_diagnostics
 
 
 class MainWindow(QMainWindow):
@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
 
         service_box = QGroupBox("Service")
         service_layout = QVBoxLayout(service_box)
-        self.open_data_button = QPushButton("Open data root")
+        self.open_data_button = QPushButton("Open workspace root")
         self.open_data_button.clicked.connect(self._open_data_root)
         service_layout.addWidget(self.open_data_button)
         self.open_logs_button = QPushButton("Open logs")
@@ -182,14 +182,14 @@ class MainWindow(QMainWindow):
 
         self.task_title.setText(spec.title)
         description = spec.description
-        if spec.requires_data_root and not self.context.data_root_status.available:
-            description += "\n\nTask requires available data_root."
+        if spec.requires_data_root and not self.context.workspace_status.available:
+            description += "\n\nTask requires available workspace root."
         self.task_description.setText(description)
         for param in spec.params:
             widget = self._make_param_widget(param)
             self._param_widgets[param.name] = widget
             self.params_layout.addRow(param.title, widget)
-        self.run_button.setEnabled(not (spec.requires_data_root and not self.context.data_root_status.available))
+        self.run_button.setEnabled(not (spec.requires_data_root and not self.context.workspace_status.available))
 
     def _make_param_widget(self, param: TaskParamSpec) -> QWidget:
         if param.type == "bool":
@@ -240,7 +240,8 @@ class MainWindow(QMainWindow):
     def _refresh_context_views(self) -> None:
         version = self.context.version
         dirty = " dirty" if version.dirty else ""
-        data_root_text = str(self.context.data_root_path) if self.context.data_root_path else "(not set)"
+        selector_text = str(self.context.data_root_selector_path) if self.context.data_root_selector_path else "(not set)"
+        data_root_text = str(self.context.workspace_root_path or self.context.data_root_path) if (self.context.workspace_root_path or self.context.data_root_path) else "(not set)"
         version_lines = [
             f"Run mode: {self.context.run_mode}",
             f"Branch / Commit: {version.branch} / {version.commit_short}{dirty}",
@@ -259,14 +260,17 @@ class MainWindow(QMainWindow):
             f"Session ID: {self.context.session_id or '(unknown)'}",
             f"Session started: {self.context.session_started_at_utc or '(unknown)'}",
             f"Account / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
-            f"Data root: {data_root_text}",
-            f"Data root status: {'available' if self.context.data_root_status.available else 'unavailable'}",
+            f"Data root selector: {selector_text}",
+            f"Selector status: {'available' if self.context.data_root_status.available else 'unavailable'}",
+            f"Workspace root: {data_root_text}",
+            f"Workspace status: {'available' if self.context.workspace_status.available else 'unavailable'}",
             f"Degraded launch: {self.context.degraded_launch}",
         ])
         self.version_label.setText("\n".join(version_lines))
         env_lines = [
             f"Workspace schema: {self.context.workspace_schema.title}",
-            f"Business root: {data_root_text}",
+            f"Business root selector: {selector_text}",
+            f"Workspace root: {data_root_text}",
         ]
         if self.context.environment_health is not None:
             env_lines.extend([
@@ -276,18 +280,20 @@ class MainWindow(QMainWindow):
                 f"Data: {self.context.environment_health.data_status}",
             ])
         self.environment_label.setText("\n".join(env_lines))
-        self.open_data_button.setEnabled(self.context.data_root_status.available and self.context.data_root_path is not None)
+        self.open_data_button.setEnabled(self.context.workspace_status.available and self.context.workspace_root_path is not None)
         self._check_environment(quiet=True)
 
     def _check_environment(self, quiet: bool = False) -> None:
-        report = run_workspace_diagnostics(self.context.workspace_schema, self.context.data_root_path)
+        resolution = resolve_workspace_root(self.context.workspace_schema, self.context.data_root_selector_path, run_mode=self.context.run_mode, create_missing=False)
+        report = run_workspace_diagnostics(self.context.workspace_schema, resolution, create_missing=False)
         lines = [
             report.title,
             f"Run mode: {self.context.run_mode}",
             f"System ID: {self.context.system_id or '(unknown)'}",
             f"Session ID: {self.context.session_id or '(unknown)'}",
             f"User / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
-            f"Data root status: {self.context.data_root_status.message}",
+            f"Data root selector status: {self.context.data_root_status.message}",
+            f"Workspace status: {self.context.workspace_status.message}",
             "",
         ]
         if self.context.launcher_handoff is not None:
@@ -302,7 +308,7 @@ class MainWindow(QMainWindow):
             lines.extend([
                 "User state:",
                 f"  Preferred data locator: {self.context.user_state.preferred_data_locator}",
-                f"  Last effective root: {self.context.user_state.last_effective_data_root_path}",
+                f"  Last selected selector: {self.context.user_state.last_effective_data_root_path}",
                 f"  Last session: {self.context.user_state.last_session_id}",
                 "",
             ])
@@ -313,7 +319,7 @@ class MainWindow(QMainWindow):
                 f"  Lifecycle: {self.context.session_state.lifecycle_state}",
                 f"  Started: {self.context.session_state.started_at_utc}",
                 f"  Ended: {self.context.session_state.ended_at_utc}",
-                f"  Effective root: {self.context.session_state.effective_data_root_path}",
+                f"  Effective selector: {self.context.session_state.effective_data_root_path}",
                 f"  Failure: {self.context.session_state.failure_message}",
                 "",
             ])
@@ -322,7 +328,7 @@ class MainWindow(QMainWindow):
                 "Active session projection:",
                 f"  Lifecycle: {self.context.active_session.lifecycle_state}",
                 f"  App PID: {self.context.active_session.app_pid}",
-                f"  Effective root: {self.context.active_session.effective_data_root_path}",
+                f"  Effective selector: {self.context.active_session.effective_data_root_path}",
                 "",
             ])
         if self.context.environment_health is not None:
@@ -347,7 +353,7 @@ class MainWindow(QMainWindow):
         if self._thread is not None:
             QMessageBox.information(self, "Strategy Box", "Finish current task before changing data root.")
             return
-        initial = str(self.context.data_root_path or Path.home())
+        initial = str(self.context.data_root_selector_path or self.context.workspace_root_path or Path.home())
         selected = QFileDialog.getExistingDirectory(self, "Select data root", initial)
         if not selected:
             return
@@ -412,8 +418,8 @@ class MainWindow(QMainWindow):
         self._render_selected_task()
 
     def _open_data_root(self) -> None:
-        if self.context.data_root_path is not None:
-            self._open_path(str(self.context.data_root_path))
+        if self.context.workspace_root_path is not None:
+            self._open_path(str(self.context.workspace_root_path))
 
     def _open_path(self, path: str) -> None:
         try:

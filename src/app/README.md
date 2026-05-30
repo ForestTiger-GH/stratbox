@@ -100,3 +100,8 @@ Launcher config больше не является главным runtime source
 - `tasks/` — registry, runner, adapters, task context.
 - `gui/` — Qt GUI.
 - `resources/` — task JSON, workspace schema, styles.
+
+
+## Launcher-managed business root and workspace root
+
+В launcher-managed режиме приложение различает выбранный пользователем business-root selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.

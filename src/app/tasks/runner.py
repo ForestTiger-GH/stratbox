@@ -50,8 +50,11 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
     task_logger, task_log_path = _build_task_logger(spec.id, context.paths.task_logs_dir)
     task_context = TaskContext(
         workspace_schema=context.workspace_schema,
+        data_root_selector_path=context.data_root_selector_path,
         data_root_path=context.data_root_path,
         data_root_status=context.data_root_status,
+        workspace_root_path=context.workspace_root_path,
+        workspace_status=context.workspace_status,
         filestore=context.filestore,
         paths=context.paths,
         version=context.version,
@@ -73,8 +76,8 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
     task_logger.info('Task started: %s', spec.id)
     context.logger.info('Task started: %s', spec.id)
 
-    if spec.requires_data_root and (not context.data_root_status.available or context.filestore is None):
-        message = 'Task requires available data_root'
+    if spec.requires_data_root and (not context.workspace_status.available or context.filestore is None):
+        message = 'Task requires available workspace root'
         task_logger.error(message)
         context.logger.warning('Task blocked: %s', spec.id)
         return TaskResult(
@@ -84,6 +87,7 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
             details={
                 'task_log': str(task_log_path),
                 'data_root_status': context.data_root_status.to_dict(),
+                'workspace_status': context.workspace_status.to_dict(),
                 'requires_data_root': True,
                 'session_id': context.session_id,
                 'system_id': context.system_id,

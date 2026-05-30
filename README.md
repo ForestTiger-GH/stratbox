@@ -360,3 +360,8 @@ scripts/        # примеры запуска
 - `app` строит GUI-контекст от launcher-managed business-root.
 
 `data_root` в этой модели обозначает корень бизнес-среды. Служебные файлы launcher-а и install-среды туда не записываются.
+
+
+## Launcher-managed business root and workspace root
+
+В launcher-managed режиме приложение различает выбранный пользователем business-root selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.

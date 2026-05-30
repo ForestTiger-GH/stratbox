@@ -32,9 +32,11 @@ from app.workspace import (
     DataRootStatus,
     WorkspaceRegistry,
     WorkspaceSchema,
-    build_filestore_for_data_root,
+    WorkspaceRootStatus,
+    build_filestore_for_workspace_root,
     load_workspace_registry,
     resolve_data_root_status,
+    resolve_workspace_root,
 )
 
 
@@ -50,8 +52,11 @@ class AppContext:
     session_env: SessionEnvironmentClient | None
     session_snapshot: SessionEnvironmentSnapshot | None
     run_mode: str
+    data_root_selector_path: Path | None
     data_root_path: Path | None
     data_root_status: DataRootStatus
+    workspace_root_path: Path | None
+    workspace_status: WorkspaceRootStatus
     degraded_launch: bool
     filestore: FileStore | None
     version: VersionInfo
@@ -95,7 +100,7 @@ def build_app_context(
     override_data_root_path: Path | None = None,
 ) -> AppContext:
     """Собирает контекст приложения для GUI или сервисного запуска."""
-    run_mode, launcher_handoff, data_root_path = _resolve_run_contract(
+    run_mode, launcher_handoff, data_root_selector_path = _resolve_run_contract(
         standalone_dev_root=standalone_dev_root,
         override_data_root_path=override_data_root_path,
     )
@@ -118,7 +123,7 @@ def build_app_context(
     environment_health = session_snapshot.environment_health if session_snapshot else None
 
     if session_state is not None and session_state.effective_data_root_path:
-        data_root_path = Path(session_state.effective_data_root_path).expanduser()
+        data_root_selector_path = Path(session_state.effective_data_root_path).expanduser()
 
     selected_schema_id = user_config.last_workspace_schema
     if not workspaces.has(selected_schema_id):
@@ -126,17 +131,26 @@ def build_app_context(
         selected_schema_id = 'default' if workspaces.has('default') else workspaces.items[0].id
     workspace_schema = workspaces.get(selected_schema_id)
 
-    data_root_status = resolve_data_root_status(data_root_path)
-    filestore = build_filestore_for_data_root(data_root_path) if data_root_status.available and data_root_path else None
+    data_root_status = resolve_data_root_status(data_root_selector_path)
+    workspace_resolution = resolve_workspace_root(
+        workspace_schema,
+        data_root_selector_path,
+        run_mode=run_mode,
+        create_missing=True,
+    )
+    workspace_root_path = workspace_resolution.workspace_root_path
+    workspace_status = workspace_resolution.workspace_status
+    filestore = build_filestore_for_workspace_root(workspace_root_path) if workspace_status.available and workspace_root_path else None
     version = get_version_info(paths.repo_dir)
 
     degraded_launch = (launcher_handoff.degraded_launch if launcher_handoff is not None else False) or (session_state.degraded_launch if session_state is not None and session_state.degraded_launch is not None else False) or (not data_root_status.available)
 
     logger.info(
-        'App context initialized. RunMode=%s DataRoot=%s Available=%s Workspace=%s Session=%s',
+        'App context initialized. RunMode=%s Selector=%s Workspace=%s Available=%s Schema=%s Session=%s',
         run_mode,
-        data_root_path,
-        data_root_status.available,
+        data_root_selector_path,
+        workspace_root_path,
+        workspace_status.available,
         workspace_schema.id,
         session_state.session_id if session_state is not None else None,
     )
@@ -150,8 +164,11 @@ def build_app_context(
         session_env=session_env,
         session_snapshot=session_snapshot,
         run_mode=run_mode,
-        data_root_path=data_root_path,
+        data_root_selector_path=data_root_selector_path,
+        data_root_path=workspace_root_path,
         data_root_status=data_root_status,
+        workspace_root_path=workspace_root_path,
+        workspace_status=workspace_status,
         degraded_launch=degraded_launch,
         filestore=filestore,
         version=version,
