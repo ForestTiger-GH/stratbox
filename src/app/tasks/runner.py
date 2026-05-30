@@ -1,4 +1,3 @@
-
 """Единый механизм запуска задач приложения."""
 
 from __future__ import annotations
@@ -17,27 +16,27 @@ from app.tasks.registry import TaskRegistry
 
 def _load_adapter(adapter: str) -> Callable[..., TaskResult]:
     """Загружает функцию adapter из строки вида 'module:function'."""
-    if ":" not in adapter:
+    if ':' not in adapter:
         raise AppTaskError(f"Adapter must use 'module:function' format: {adapter}")
-    module_name, func_name = adapter.split(":", 1)
+    module_name, func_name = adapter.split(':', 1)
     module = importlib.import_module(module_name)
     func = getattr(module, func_name)
     if not callable(func):
-        raise AppTaskError(f"Adapter is not callable: {adapter}")
+        raise AppTaskError(f'Adapter is not callable: {adapter}')
     return func
 
 
 def _build_task_logger(task_id: str, logs_dir: Path) -> tuple[logging.Logger, Path]:
     """Создает отдельный логгер и файл лога для одного запуска задачи."""
     logs_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_path = logs_dir / f"{task_id}_{stamp}.log"
-    logger = logging.getLogger(f"strategy_box_app.task.{task_id}.{stamp}")
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_path = logs_dir / f'{task_id}_{stamp}.log'
+    logger = logging.getLogger(f'strategy_box_app.task.{task_id}.{stamp}')
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
-    handler = logging.FileHandler(log_path, encoding="utf-8")
+    formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+    handler = logging.FileHandler(log_path, encoding='utf-8')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger, log_path
@@ -60,40 +59,56 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
         task_log_path=task_log_path,
         launcher_handoff=context.launcher_handoff,
         run_mode=context.run_mode,
+        system_id=context.system_id,
+        session_id=context.session_id,
+        user_id=context.user_id,
+        account_name=context.account_name,
+        host_name=context.host_name,
+        session_state=context.session_state,
+        user_state=context.user_state,
+        active_session=context.active_session,
+        environment_health=context.environment_health,
     )
 
-    task_logger.info("Task started: %s", spec.id)
-    context.logger.info("Task started: %s", spec.id)
+    task_logger.info('Task started: %s', spec.id)
+    context.logger.info('Task started: %s', spec.id)
 
     if spec.requires_data_root and (not context.data_root_status.available or context.filestore is None):
-        message = "Task requires available data_root"
+        message = 'Task requires available data_root'
         task_logger.error(message)
-        context.logger.warning("Task blocked: %s", spec.id)
+        context.logger.warning('Task blocked: %s', spec.id)
         return TaskResult(
             ok=False,
             message=message,
             outputs=(str(task_log_path),),
             details={
-                "task_log": str(task_log_path),
-                "data_root_status": context.data_root_status.to_dict(),
-                "requires_data_root": True,
+                'task_log': str(task_log_path),
+                'data_root_status': context.data_root_status.to_dict(),
+                'requires_data_root': True,
+                'session_id': context.session_id,
+                'system_id': context.system_id,
             },
         )
 
     try:
         adapter = _load_adapter(spec.adapter)
         result = adapter(context=task_context, params=task_params, spec=spec)
-        task_logger.info("Task finished: %s OK=%s", spec.id, result.ok)
-        context.logger.info("Task finished: %s OK=%s", spec.id, result.ok)
+        task_logger.info('Task finished: %s OK=%s', spec.id, result.ok)
+        context.logger.info('Task finished: %s OK=%s', spec.id, result.ok)
         return result
     except Exception as exc:
-        task_logger.exception("Task failed: %s", spec.id)
-        context.logger.exception("Task failed: %s", spec.id)
+        task_logger.exception('Task failed: %s', spec.id)
+        context.logger.exception('Task failed: %s', spec.id)
         return TaskResult(
             ok=False,
-            message=f"Task failed: {exc}",
+            message=f'Task failed: {exc}',
             outputs=(str(task_log_path),),
-            details={"error": str(exc), "task_log": str(task_log_path)},
+            details={
+                'error': str(exc),
+                'task_log': str(task_log_path),
+                'session_id': context.session_id,
+                'system_id': context.system_id,
+            },
         )
     finally:
         for handler in list(task_logger.handlers):

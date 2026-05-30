@@ -67,6 +67,25 @@ pip install -e .
 
 ---
 
+## Desktop shell внутри репозитория
+
+Внутри репозитория есть пакет `src/app` — launcher-managed desktop-приложение Strategy Box. Оно не заменяет библиотеку `stratbox`, а использует её как доменное ядро.
+
+Главный маршрут такой:
+
+- `stratbox-launcher` разворачивает install-среду;
+- launcher создаёт session state и handoff;
+- `python -m app` читает этот контракт;
+- GUI запускает задачи поверх business-root, который уже выбран launcher-ом.
+
+Это разделяет роли:
+
+- launcher отвечает за install/runtime environment;
+- `app` отвечает за session-aware GUI и запуск задач;
+- пакет `stratbox` остаётся библиотечным и доменным слоем.
+
+---
+
 ## Архитектурные слои
 
 ### `stratbox.base`

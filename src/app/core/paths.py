@@ -1,9 +1,8 @@
-
 """Пути приложения Strategy Box.
 
 Модуль отделяет пользовательские настройки GUI от launcher-managed среды.
-User config хранится в пользовательской папке, а operational logs и runtime
-могут жить внутри system_root, если приложение запущено launcher-ом.
+User config хранится в пользовательской папке, а operational logs, session state
+pointers и runtime-маркеры живут внутри system_root, если приложение запущено launcher-ом.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from pathlib import Path
 
 from app.core.handoff import LauncherHandoff
 
-APP_DIR_NAME = "Stratbox"
+APP_DIR_NAME = 'Stratbox'
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,13 +33,17 @@ class AppPaths:
     launcher_managed: bool = False
     handoff_path: Path | None = None
     launcher_config_path: Path | None = None
+    user_state_path: Path | None = None
+    session_state_path: Path | None = None
+    active_session_path: Path | None = None
+    environment_health_path: Path | None = None
 
 
 def _local_app_data_root() -> Path:
-    local_app_data = os.getenv("LOCALAPPDATA")
+    local_app_data = os.getenv('LOCALAPPDATA')
     if local_app_data:
         return Path(local_app_data).expanduser()
-    return Path.home() / ".local" / "share"
+    return Path.home() / '.local' / 'share'
 
 
 def _detect_repo_dir() -> Path:
@@ -55,25 +58,33 @@ def build_app_paths(
 ) -> AppPaths:
     """Создает структуру путей приложения."""
     repo_dir = _detect_repo_dir()
-    src_dir = repo_dir / "src"
+    src_dir = repo_dir / 'src'
     user_root = _local_app_data_root() / APP_DIR_NAME
-    config_dir = user_root / "config"
+    config_dir = user_root / 'config'
 
     if launcher_handoff is not None:
         system_root = Path(launcher_handoff.system_root).expanduser()
-        bootstrap_root = system_root / "bootstrap"
-        logs_dir = bootstrap_root / "logs" / "app"
-        task_logs_dir = logs_dir / "tasks"
-        cache_dir = bootstrap_root / "state" / "app_cache"
-        runtime_dir = bootstrap_root / "state" / "app_runtime"
+        bootstrap_root = system_root / 'bootstrap'
+        logs_dir = bootstrap_root / 'logs' / 'app'
+        task_logs_dir = logs_dir / 'tasks'
+        cache_dir = bootstrap_root / 'state' / 'app_cache'
+        runtime_dir = bootstrap_root / 'state' / 'app_runtime'
         launcher_managed = True
+        user_state_path = Path(launcher_handoff.user_state_path).expanduser() if launcher_handoff.user_state_path else None
+        session_state_path = Path(launcher_handoff.session_state_path).expanduser() if launcher_handoff.session_state_path else None
+        active_session_path = Path(launcher_handoff.active_session_path).expanduser() if launcher_handoff.active_session_path else None
+        environment_health_path = Path(launcher_handoff.environment_health_path).expanduser() if launcher_handoff.environment_health_path else None
     else:
         system_root = None
-        logs_dir = user_root / "logs"
-        task_logs_dir = logs_dir / "tasks"
-        cache_dir = user_root / "cache"
-        runtime_dir = user_root / "runtime"
+        logs_dir = user_root / 'logs'
+        task_logs_dir = logs_dir / 'tasks'
+        cache_dir = user_root / 'cache'
+        runtime_dir = user_root / 'runtime'
         launcher_managed = False
+        user_state_path = None
+        session_state_path = None
+        active_session_path = None
+        environment_health_path = None
 
     for path in (config_dir, logs_dir, task_logs_dir, cache_dir, runtime_dir):
         path.mkdir(parents=True, exist_ok=True)
@@ -87,9 +98,13 @@ def build_app_paths(
         task_logs_dir=task_logs_dir,
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
-        app_config_path=config_dir / "app.json",
+        app_config_path=config_dir / 'app.json',
         system_root=system_root,
         launcher_managed=launcher_managed,
         handoff_path=handoff_path,
         launcher_config_path=launcher_config_path,
+        user_state_path=user_state_path,
+        session_state_path=session_state_path,
+        active_session_path=active_session_path,
+        environment_health_path=environment_health_path,
     )

@@ -1,9 +1,8 @@
-
 # app
 
 `app` — launcher-managed desktop-приложение Strategy Box.
 
-На текущем этапе `app` больше не выбирает корень данных самостоятельно. В обычном пользовательском маршруте этот корень передает `stratbox-launcher` через session handoff. Приложение читает handoff, строит рабочий контекст и открывает GUI поверх уже выбранного business-root.
+На текущем этапе `app` живёт в модели launcher-managed среды. Launcher разворачивает install-среду, выбирает `system_root`, передаёт business-root через `data_locator`, создаёт session contract и запускает `python -m app`. Приложение читает этот контракт, открывает GUI и работает как клиент launcher-managed session environment.
 
 ## Главный принцип
 
@@ -12,8 +11,9 @@ Launcher отвечает за:
 - `system_root`;
 - install/runtime среду;
 - bootstrap и update payload;
-- `data_root` как business-root;
-- handoff текущей сессии.
+- session creation;
+- install metadata, user state, session state, active session projection и environment health snapshot;
+- передачу handoff текущей сессии.
 
 `app` отвечает за:
 
@@ -21,7 +21,9 @@ Launcher отвечает за:
 - рабочую схему поверх business-root;
 - запуск задач;
 - диагностику среды;
-- отображение launcher-managed состояния.
+- перевод session в runtime-фазу (`running`);
+- корректное завершение session при нормальном закрытии;
+- смену `data_root` как обновление текущей session и пользовательского preferred locator.
 
 ## Режимы запуска
 
@@ -30,9 +32,9 @@ Launcher отвечает за:
 Основной пользовательский маршрут:
 
 - launcher готовит среду;
-- launcher передает handoff;
+- launcher создаёт session state и handoff;
 - `python -m app` читает `STRATBOX_LAUNCHER_HANDOFF_PATH`;
-- приложение строит контекст от `system_root`, `data_root`, trusted commit и launcher mode.
+- приложение строит контекст от `system_root`, `data_root`, session state и environment health.
 
 ### Standalone developer route
 
@@ -44,9 +46,26 @@ python -m app --standalone-dev-root "D:/Data"
 
 Этот маршрут предназначен для разработки и локальной проверки GUI вне launcher-а.
 
+## Session-aware environment
+
+Приложение теперь использует не только стартовый handoff JSON, но и связанные файлы среды:
+
+- `user_state.json`;
+- `sessions/<session_id>.json`;
+- `shared/active_sessions/<session_id>.json`;
+- `shared/health/environment_health.json`.
+
+Эти файлы читаются через внутренний `session_env` client layer. Он позволяет:
+
+- загрузить текущую session;
+- увидеть preferred `data_locator` пользователя;
+- прочитать актуальный snapshot здоровья среды;
+- обновить current session при смене `data_root`;
+- завершить session корректно при закрытии GUI.
+
 ## Рабочая схема
 
-Внутри `app` корень данных больше не задается профилем. Вместо старой profile-model используется рабочая схема (`workspace schema`), которая описывает структуру каталогов и базовые требования поверх уже выбранного business-root.
+Внутри `app` корень данных больше не задаётся профилем. Вместо старой profile-model используется рабочая схема (`workspace schema`), которая описывает структуру каталогов и базовые требования поверх уже выбранного business-root.
 
 ## Change data root
 
@@ -54,10 +73,14 @@ python -m app --standalone-dev-root "D:/Data"
 
 В launcher-managed сессии приложение обновляет:
 
-- launcher config;
-- launcher handoff текущей сессии;
+- current `SessionState`;
+- `UserState.preferred_data_locator`;
+- active session projection;
+- environment health snapshot.
 
-затем пересобирает `AppContext` и обновляет состояние интерфейса.
+После этого приложение пересобирает `AppContext` и обновляет состояние интерфейса.
+
+Launcher config больше не является главным runtime source этой операции. Он остаётся bootstrap convenience layer.
 
 ## Degraded launch
 
@@ -72,7 +95,7 @@ python -m app --standalone-dev-root "D:/Data"
 
 ## Структура
 
-- `core/` — handoff, paths, context, GUI config, version.
+- `core/` — handoff, session environment client, paths, context, GUI config, version.
 - `workspace/` — рабочая схема, business-root diagnostics, FileStore.
 - `tasks/` — registry, runner, adapters, task context.
 - `gui/` — Qt GUI.

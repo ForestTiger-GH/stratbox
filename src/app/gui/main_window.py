@@ -1,4 +1,3 @@
-
 """Главное окно Strategy Box."""
 
 from __future__ import annotations
@@ -30,17 +29,10 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.context import AppContext, build_app_context
-from app.core.handoff import (
-    get_launcher_config_path_from_env,
-    get_launcher_handoff_path_from_env,
-    patch_launcher_config_data_root,
-    patch_launcher_handoff_data_root,
-)
-from app.core.user_config import save_user_config
+from app.gui.workers import TaskWorker
 from app.tasks.models import TaskParamSpec, TaskResult, TaskSpec
 from app.tasks.registry import TaskRegistry, load_task_registry
-from app.workspace import build_filestore_for_data_root, resolve_data_root_status, run_workspace_diagnostics
-from app.gui.workers import TaskWorker
+from app.workspace import resolve_data_root_status, run_workspace_diagnostics
 
 
 class MainWindow(QMainWindow):
@@ -93,7 +85,7 @@ class MainWindow(QMainWindow):
 
         self.environment_status = QPlainTextEdit()
         self.environment_status.setReadOnly(True)
-        self.environment_status.setMaximumHeight(220)
+        self.environment_status.setMaximumHeight(260)
         env_layout.addWidget(self.environment_status)
         left_layout.addWidget(env_box)
 
@@ -154,7 +146,7 @@ class MainWindow(QMainWindow):
         log_layout.addWidget(self.log_view)
         right_layout.addWidget(log_box, 1)
 
-        splitter.setSizes([380, 860])
+        splitter.setSizes([420, 900])
         self._last_outputs: tuple[str, ...] = ()
 
     def _load_tasks(self) -> None:
@@ -249,16 +241,41 @@ class MainWindow(QMainWindow):
         version = self.context.version
         dirty = " dirty" if version.dirty else ""
         data_root_text = str(self.context.data_root_path) if self.context.data_root_path else "(not set)"
-        self.version_label.setText(
-            f"Mode: {self.context.run_mode} | Branch: {version.branch} | Commit: {version.commit_short}{dirty} | "
-            f"Repo: {self.context.paths.repo_dir}\n"
-            f"Data root: {data_root_text} | Data status: {'available' if self.context.data_root_status.available else 'unavailable'} | "
-            f"Degraded: {self.context.degraded_launch}"
-        )
-        self.environment_label.setText(
-            f"Workspace schema: {self.context.workspace_schema.title}\n"
-            f"Business root: {data_root_text}"
-        )
+        version_lines = [
+            f"Run mode: {self.context.run_mode}",
+            f"Branch / Commit: {version.branch} / {version.commit_short}{dirty}",
+            f"Repo: {self.context.paths.repo_dir}",
+        ]
+        if self.context.launcher_handoff is not None:
+            version_lines.extend([
+                f"Launcher mode: {self.context.launcher_handoff.launcher_mode}",
+                f"Install profile: {self.context.launcher_handoff.install_profile}",
+                f"Trusted commit: {self.context.launcher_handoff.trusted_repo_commit}",
+                f"Repo sync mode: {self.context.launcher_handoff.repo_sync_mode}",
+            ])
+        version_lines.extend([
+            f"System ID: {self.context.system_id or '(unknown)'}",
+            f"System created: {self.context.system_created_at_utc or '(unknown)'}",
+            f"Session ID: {self.context.session_id or '(unknown)'}",
+            f"Session started: {self.context.session_started_at_utc or '(unknown)'}",
+            f"Account / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
+            f"Data root: {data_root_text}",
+            f"Data root status: {'available' if self.context.data_root_status.available else 'unavailable'}",
+            f"Degraded launch: {self.context.degraded_launch}",
+        ])
+        self.version_label.setText("\n".join(version_lines))
+        env_lines = [
+            f"Workspace schema: {self.context.workspace_schema.title}",
+            f"Business root: {data_root_text}",
+        ]
+        if self.context.environment_health is not None:
+            env_lines.extend([
+                f"Environment overall: {self.context.environment_health.overall_status}",
+                f"Install: {self.context.environment_health.install_status} | Repo: {self.context.environment_health.repo_status}",
+                f"Runtime: {self.context.environment_health.runtime_status} | Venv: {self.context.environment_health.venv_status}",
+                f"Data: {self.context.environment_health.data_status}",
+            ])
+        self.environment_label.setText("\n".join(env_lines))
         self.open_data_button.setEnabled(self.context.data_root_status.available and self.context.data_root_path is not None)
         self._check_environment(quiet=True)
 
@@ -267,6 +284,9 @@ class MainWindow(QMainWindow):
         lines = [
             report.title,
             f"Run mode: {self.context.run_mode}",
+            f"System ID: {self.context.system_id or '(unknown)'}",
+            f"Session ID: {self.context.session_id or '(unknown)'}",
+            f"User / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
             f"Data root status: {self.context.data_root_status.message}",
             "",
         ]
@@ -275,11 +295,50 @@ class MainWindow(QMainWindow):
                 f"Launcher mode: {self.context.launcher_handoff.launcher_mode}",
                 f"Install profile: {self.context.launcher_handoff.install_profile}",
                 f"Trusted commit: {self.context.launcher_handoff.trusted_repo_commit}",
+                f"Repo sync mode: {self.context.launcher_handoff.repo_sync_mode}",
+                "",
+            ])
+        if self.context.user_state is not None:
+            lines.extend([
+                "User state:",
+                f"  Preferred data locator: {self.context.user_state.preferred_data_locator}",
+                f"  Last effective root: {self.context.user_state.last_effective_data_root_path}",
+                f"  Last session: {self.context.user_state.last_session_id}",
+                "",
+            ])
+        if self.context.session_state is not None:
+            lines.extend([
+                "Session state:",
+                f"  Status: {self.context.session_state.status}",
+                f"  Lifecycle: {self.context.session_state.lifecycle_state}",
+                f"  Started: {self.context.session_state.started_at_utc}",
+                f"  Ended: {self.context.session_state.ended_at_utc}",
+                f"  Effective root: {self.context.session_state.effective_data_root_path}",
+                f"  Failure: {self.context.session_state.failure_message}",
+                "",
+            ])
+        if self.context.active_session is not None:
+            lines.extend([
+                "Active session projection:",
+                f"  Lifecycle: {self.context.active_session.lifecycle_state}",
+                f"  App PID: {self.context.active_session.app_pid}",
+                f"  Effective root: {self.context.active_session.effective_data_root_path}",
+                "",
+            ])
+        if self.context.environment_health is not None:
+            lines.extend([
+                "Environment health:",
+                f"  Overall: {self.context.environment_health.overall_status}",
+                f"  Install: {self.context.environment_health.install_status} — {self.context.environment_health.install_message}",
+                f"  Repo: {self.context.environment_health.repo_status} — {self.context.environment_health.repo_message}",
+                f"  Runtime: {self.context.environment_health.runtime_status} — {self.context.environment_health.runtime_message}",
+                f"  Venv: {self.context.environment_health.venv_status} — {self.context.environment_health.venv_message}",
+                f"  Data: {self.context.environment_health.data_status} — {self.context.environment_health.data_message}",
                 "",
             ])
         for item in report.items:
             mark = "OK" if item.ok else "FAIL"
-            lines.append(f"{mark}: {item.title} — {item.details}")
+            lines.append(f"{mark}: {item.title} — {item.details} [{item.severity}]")
         self.environment_status.setPlainText("\n".join(lines))
         if not quiet:
             self.log_view.appendPlainText("Environment check finished")
@@ -301,19 +360,20 @@ class MainWindow(QMainWindow):
             "display_name": str(selected_path),
         }
 
-        config_path = get_launcher_config_path_from_env()
-        handoff_path = get_launcher_handoff_path_from_env()
         if self.context.run_mode == "launcher_managed":
-            if config_path is None or handoff_path is None:
-                QMessageBox.warning(self, "Strategy Box", "Launcher-managed session misses handoff/config paths.")
+            if self.context.session_env is None:
+                QMessageBox.warning(self, "Strategy Box", "Launcher-managed session misses session environment client.")
                 return
             try:
-                patch_launcher_config_data_root(config_path, data_locator)
-                patch_launcher_handoff_data_root(handoff_path, data_locator, selected_path, available=status.available)
+                self.context.session_env.update_data_root(
+                    data_locator=data_locator,
+                    data_root_path=selected_path,
+                    data_root_status=status,
+                )
+                self.context = build_app_context()
             except Exception as exc:
                 QMessageBox.warning(self, "Strategy Box", str(exc))
                 return
-            self.context = build_app_context()
         else:
             self.context = build_app_context(standalone_dev_root=str(selected_path), override_data_root_path=selected_path)
 

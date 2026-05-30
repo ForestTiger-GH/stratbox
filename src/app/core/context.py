@@ -1,9 +1,9 @@
-
 """Контекст приложения Strategy Box."""
 
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,6 +18,14 @@ from app.core.handoff import (
 )
 from app.core.log_setup import setup_app_logger
 from app.core.paths import AppPaths, build_app_paths
+from app.core.session_env import (
+    ActiveSessionProjectionRecord,
+    EnvironmentHealthSnapshotRecord,
+    SessionEnvironmentClient,
+    SessionEnvironmentSnapshot,
+    SessionStateRecord,
+    UserStateRecord,
+)
 from app.core.user_config import AppUserConfig, load_user_config
 from app.core.version import VersionInfo, get_version_info
 from app.workspace import (
@@ -39,6 +47,8 @@ class AppContext:
     workspaces: WorkspaceRegistry
     workspace_schema: WorkspaceSchema
     launcher_handoff: LauncherHandoff | None
+    session_env: SessionEnvironmentClient | None
+    session_snapshot: SessionEnvironmentSnapshot | None
     run_mode: str
     data_root_path: Path | None
     data_root_status: DataRootStatus
@@ -46,6 +56,17 @@ class AppContext:
     filestore: FileStore | None
     version: VersionInfo
     logger: logging.Logger
+    system_id: str | None = None
+    system_created_at_utc: str | None = None
+    session_id: str | None = None
+    session_started_at_utc: str | None = None
+    user_id: str | None = None
+    account_name: str | None = None
+    host_name: str | None = None
+    session_state: SessionStateRecord | None = None
+    user_state: UserStateRecord | None = None
+    active_session: ActiveSessionProjectionRecord | None = None
+    environment_health: EnvironmentHealthSnapshotRecord | None = None
 
 
 def _resolve_run_contract(
@@ -56,15 +77,15 @@ def _resolve_run_contract(
     handoff = load_launcher_handoff_from_env()
     if handoff is not None:
         if override_data_root_path is not None:
-            return "launcher_managed", handoff, override_data_root_path
+            return 'launcher_managed', handoff, override_data_root_path
         path = Path(handoff.data_root_path).expanduser() if handoff.data_root_path else None
-        return "launcher_managed", handoff, path
+        return 'launcher_managed', handoff, path
 
     if standalone_dev_root:
-        return "standalone_dev", None, Path(standalone_dev_root).expanduser()
+        return 'standalone_dev', None, Path(standalone_dev_root).expanduser()
 
     raise AppStartupError(
-        "Launcher handoff is required for normal startup. Use Stratbox Launcher or pass --standalone-dev-root for development."
+        'Launcher handoff is required for normal startup. Use Stratbox Launcher or pass --standalone-dev-root for development.'
     )
 
 
@@ -89,24 +110,35 @@ def build_app_context(
     user_config = load_user_config(paths.app_config_path)
     workspaces = load_workspace_registry()
 
+    session_env = SessionEnvironmentClient(launcher_handoff) if launcher_handoff is not None else None
+    session_snapshot = session_env.snapshot() if session_env is not None and session_env.enabled else None
+    session_state = session_snapshot.session_state if session_snapshot else None
+    user_state = session_snapshot.user_state if session_snapshot else None
+    active_session = session_snapshot.active_session if session_snapshot else None
+    environment_health = session_snapshot.environment_health if session_snapshot else None
+
+    if session_state is not None and session_state.effective_data_root_path:
+        data_root_path = Path(session_state.effective_data_root_path).expanduser()
+
     selected_schema_id = user_config.last_workspace_schema
     if not workspaces.has(selected_schema_id):
         logger.warning("Unknown workspace schema '%s'; fallback to default", selected_schema_id)
-        selected_schema_id = "default" if workspaces.has("default") else workspaces.items[0].id
+        selected_schema_id = 'default' if workspaces.has('default') else workspaces.items[0].id
     workspace_schema = workspaces.get(selected_schema_id)
 
     data_root_status = resolve_data_root_status(data_root_path)
     filestore = build_filestore_for_data_root(data_root_path) if data_root_status.available and data_root_path else None
     version = get_version_info(paths.repo_dir)
 
-    degraded_launch = (launcher_handoff.degraded_launch if launcher_handoff is not None else False) or (not data_root_status.available)
+    degraded_launch = (launcher_handoff.degraded_launch if launcher_handoff is not None else False) or (session_state.degraded_launch if session_state is not None and session_state.degraded_launch is not None else False) or (not data_root_status.available)
 
     logger.info(
-        "App context initialized. RunMode=%s DataRoot=%s Available=%s Workspace=%s",
+        'App context initialized. RunMode=%s DataRoot=%s Available=%s Workspace=%s Session=%s',
         run_mode,
         data_root_path,
         data_root_status.available,
         workspace_schema.id,
+        session_state.session_id if session_state is not None else None,
     )
 
     return AppContext(
@@ -115,6 +147,8 @@ def build_app_context(
         workspaces=workspaces,
         workspace_schema=workspace_schema,
         launcher_handoff=launcher_handoff,
+        session_env=session_env,
+        session_snapshot=session_snapshot,
         run_mode=run_mode,
         data_root_path=data_root_path,
         data_root_status=data_root_status,
@@ -122,4 +156,15 @@ def build_app_context(
         filestore=filestore,
         version=version,
         logger=logger,
+        system_id=(launcher_handoff.system_id if launcher_handoff else None),
+        system_created_at_utc=(launcher_handoff.system_created_at_utc if launcher_handoff else None),
+        session_id=(session_state.session_id if session_state else (launcher_handoff.session_id if launcher_handoff else None)),
+        session_started_at_utc=(session_state.started_at_utc if session_state else (launcher_handoff.session_started_at_utc if launcher_handoff else None)),
+        user_id=(user_state.user_id if user_state else (launcher_handoff.user_id if launcher_handoff else None)),
+        account_name=(user_state.account_name if user_state else (launcher_handoff.account_name if launcher_handoff else None)),
+        host_name=(user_state.host_name if user_state else (launcher_handoff.host_name if launcher_handoff else os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME'))),
+        session_state=session_state,
+        user_state=user_state,
+        active_session=active_session,
+        environment_health=environment_health,
     )

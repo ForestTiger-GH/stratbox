@@ -1,4 +1,3 @@
-
 """Точка входа для запуска приложения командой ``python -m app``."""
 
 from __future__ import annotations
@@ -15,21 +14,21 @@ from app.tasks.runner import run_task_by_id
 
 def _build_parser() -> argparse.ArgumentParser:
     """Создает парсер аргументов запуска приложения."""
-    parser = argparse.ArgumentParser(prog="python -m app", description="Strategy Box desktop shell")
+    parser = argparse.ArgumentParser(prog='python -m app', description='Strategy Box desktop shell')
     parser.add_argument(
-        "--no-gui",
-        action="store_true",
-        help="Run service command without opening GUI.",
+        '--no-gui',
+        action='store_true',
+        help='Run service command without opening GUI.',
     )
     parser.add_argument(
-        "--diagnose",
-        action="store_true",
-        help="Run environment diagnostics and print JSON result.",
+        '--diagnose',
+        action='store_true',
+        help='Run environment diagnostics and print JSON result.',
     )
     parser.add_argument(
-        "--standalone-dev-root",
+        '--standalone-dev-root',
         default=None,
-        help="Explicit business-root for standalone developer launch outside launcher handoff.",
+        help='Explicit business-root for standalone developer launch outside launcher handoff.',
     )
     return parser
 
@@ -41,12 +40,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         context = build_app_context(standalone_dev_root=args.standalone_dev_root)
     except AppStartupError as exc:
-        print(f"ERROR: {exc}")
+        print(f'ERROR: {exc}')
         return 2
 
     if args.diagnose or args.no_gui:
         registry = load_task_registry()
-        result = run_task_by_id("environment_check", registry=registry, context=context, params={})
+        result = run_task_by_id('environment_check', registry=registry, context=context, params={})
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0 if result.ok else 2
 
@@ -55,5 +54,5 @@ def main(argv: list[str] | None = None) -> int:
     return run_gui(context)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main(sys.argv[1:]))
