@@ -1,0 +1,15 @@
+{
+  "id": "environment_check",
+  "title": "Node and workspace diagnostics",
+  "description": "Проверяет рабочую схему, selector, workspace root, ключевые каталоги и базовые Python-зависимости.",
+  "group": "Service",
+  "kind": "diagnostic",
+  "tags": ["workspace", "node", "service"],
+  "adapter": "app.scenarios.adapters.environment:run",
+  "enabled": true,
+  "requires_workspace": false,
+  "input_dir": "input",
+  "output_dir": "logs",
+  "params": [],
+  "links": []
+}

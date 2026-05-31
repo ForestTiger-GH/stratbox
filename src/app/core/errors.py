@@ -1,4 +1,3 @@
-
 """Исключения пользовательской оболочки Strategy Box."""
 
 from __future__ import annotations
@@ -16,8 +15,8 @@ class AppProfileError(AppError):
     """Ошибка рабочей схемы данных или business-root."""
 
 
-class AppTaskError(AppError):
-    """Ошибка регистрации или запуска задачи."""
+class AppScenarioError(AppError):
+    """Ошибка регистрации или запуска сценария."""
 
 
 class AppStartupError(AppError):

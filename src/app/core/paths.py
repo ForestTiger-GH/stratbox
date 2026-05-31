@@ -25,7 +25,7 @@ class AppPaths:
     user_root: Path
     config_dir: Path
     logs_dir: Path
-    task_logs_dir: Path
+    scenario_logs_dir: Path
     cache_dir: Path
     runtime_dir: Path
     app_config_path: Path
@@ -58,7 +58,6 @@ def build_app_paths(
     handoff_path: Path | None = None,
     appdock_config_path: Path | None = None,
 ) -> AppPaths:
-    """Создает структуру путей приложения."""
     repo_dir = Path(appdock_handoff.workspace.repo_dir).expanduser() if appdock_handoff is not None else _detect_repo_dir()
     src_dir = repo_dir / 'src'
     user_root = _local_app_data_root() / APP_DIR_NAME
@@ -68,8 +67,7 @@ def build_app_paths(
         node_root = Path(appdock_handoff.workspace.node_root).expanduser()
         logs_root = Path(appdock_handoff.workspace.logs_root).expanduser()
         logs_dir = logs_root / 'app'
-        task_logs_dir = logs_dir / 'tasks'
-
+        scenario_logs_dir = logs_dir / 'scenarios'
         session_state_path = Path(appdock_handoff.refs.session_ref).expanduser() if appdock_handoff.refs.session_ref else None
         session_dir = session_state_path.parent if session_state_path is not None else None
         cache_dir = (session_dir / 'cache') if session_dir is not None else (user_root / 'cache')
@@ -83,7 +81,7 @@ def build_app_paths(
         node_root = None
         session_dir = None
         logs_dir = user_root / 'logs'
-        task_logs_dir = logs_dir / 'tasks'
+        scenario_logs_dir = logs_dir / 'scenarios'
         cache_dir = user_root / 'cache'
         runtime_dir = user_root / 'runtime'
         appdock_managed = False
@@ -93,7 +91,7 @@ def build_app_paths(
         health_snapshot_path = None
         app_state_path = None
 
-    for path in (config_dir, logs_dir, task_logs_dir, cache_dir, runtime_dir):
+    for path in (config_dir, logs_dir, scenario_logs_dir, cache_dir, runtime_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     return AppPaths(
@@ -102,7 +100,7 @@ def build_app_paths(
         user_root=user_root,
         config_dir=config_dir,
         logs_dir=logs_dir,
-        task_logs_dir=task_logs_dir,
+        scenario_logs_dir=scenario_logs_dir,
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
         app_config_path=config_dir / 'app.json',

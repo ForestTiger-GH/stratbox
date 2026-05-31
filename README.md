@@ -357,11 +357,11 @@ scripts/        # примеры запуска
 - AppDock подготавливает node-среду;
 - AppDock выбирает target repo, runtime и session surfaces;
 - AppDock передает handoff в `python -m app.entrypoints.appdock`;
-- `app` строит GUI-контекст от AppDock-managed data-root selector.
+- `app` строит GUI-контекст от AppDock-managed workspace selector.
 
 `data_root` в этой модели обозначает selector бизнес-среды. Служебные файлы AppDock и install-среды туда не записываются.
 
 
-## AppDock-managed data root and workspace root
+## AppDock-managed workspace selector and workspace root
 
-В AppDock-managed режиме приложение различает выбранный shell-ом data-root selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.
+В AppDock-managed режиме приложение различает выбранный shell-ом workspace selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.

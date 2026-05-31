@@ -36,9 +36,8 @@ include-package-data = true
 "stratbox.registries" = ["_resources/**/*"]
 "stratbox.macrobanks.cbr_forms.models" = ["*.csv"]
 "app" = [
-  "resources/profiles/*.json",
   "resources/workspace/*.json",
-  "resources/tasks/*.json",
+  "resources/scenarios/*.json",
   "resources/styles/*.qss",
   "resources/icons/*",
   "resources/images/*",

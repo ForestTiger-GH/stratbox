@@ -1,4 +1,3 @@
-
 """Adapter первого этапа FRG."""
 
 from __future__ import annotations
@@ -10,20 +9,18 @@ import pandas as pd
 
 from stratbox.macrobanks.frg.api import run_frg_stage1
 
-from app.tasks.models import TaskContext, TaskResult, TaskSpec
+from app.scenarios.models import ScenarioContext, ScenarioResult, ScenarioSpec
 
 
 def _as_bool(value: Any) -> bool:
-    """Приводит пользовательское значение к bool."""
     if isinstance(value, bool):
         return value
     return str(value).strip().lower() in {"1", "true", "yes", "y", "да"}
 
 
-def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> TaskResult:
-    """Запускает сканирование FRG и сохраняет результат в Excel."""
+def run(*, context: ScenarioContext, params: dict[str, Any], spec: ScenarioSpec) -> ScenarioResult:
     if context.filestore is None:
-        raise RuntimeError("FileStore is not available for current data_root")
+        raise RuntimeError("FileStore is not available for current workspace root")
 
     root_dir = str(params.get("root_dir") or spec.input_dir).strip() or spec.input_dir
     output_path = str(params.get("output_path") or f"{spec.output_dir}/frg_stage1.xlsx").strip()
@@ -45,14 +42,14 @@ def run(*, context: TaskContext, params: dict[str, Any], spec: TaskSpec) -> Task
     row_counts = {name: int(len(df)) for name, df in tables.items()}
     details = {
         "row_counts": row_counts,
-        "task_log": str(context.task_log_path),
-        "data_root_path": str(context.data_root_path) if context.data_root_path else None,
+        "scenario_log": str(context.scenario_log_path),
+        "workspace_root_path": str(context.workspace_root_path) if context.workspace_root_path else None,
     }
     context.logger.info("FRG stage1 finished: %s", row_counts)
 
-    return TaskResult(
+    return ScenarioResult(
         ok=True,
         message="FRG stage1 finished",
-        outputs=(output_path, str(context.task_log_path)),
+        outputs=(output_path, str(context.scenario_log_path)),
         details=details,
     )

@@ -8,18 +8,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from app.core.app_state import AppStateRecord
 from app.core.errors import AppConfigError
 from app.core.handoff import AppDockHandoff
 from app.workspace import DataRootStatus
 
 
 def _utc_now() -> str:
-    """Возвращает текущее UTC-время в ISO-формате."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def _read_json_object(path: Path) -> dict[str, Any]:
-    """Читает JSON-объект из файла или бросает понятную ошибку."""
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
@@ -32,7 +31,6 @@ def _read_json_object(path: Path) -> dict[str, Any]:
 
 
 def _write_json_object(path: Path, payload: dict[str, Any]) -> None:
-    """Сохраняет JSON-объект в файл."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -107,12 +105,8 @@ class SessionStateRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SessionStateRecord":
-        lifecycle_state = str(payload.get("lifecycle_state") or "")
-        status = str(payload.get("status") or "")
-        if not lifecycle_state:
-            lifecycle_state = "ended" if payload.get("ended_at_utc") else "created"
-        if not status:
-            status = lifecycle_state
+        attach_mode = payload.get("attach_mode") or payload.get("target_mode") or ""
+        deployment_profile = payload.get("deployment_profile") or payload.get("target_deployment_profile") or ""
         return cls(
             session_id=str(payload.get("session_id") or ""),
             user_id=str(payload.get("user_id") or ""),
@@ -120,11 +114,11 @@ class SessionStateRecord:
             host_name=str(payload.get("host_name") or ""),
             node_id=str(payload.get("node_id") or ""),
             started_at_utc=str(payload.get("started_at_utc") or ""),
-            attach_mode=str(payload.get("attach_mode") or payload.get("target_mode") or ""),
-            deployment_profile=str(payload.get("deployment_profile") or payload.get("target_deployment_profile") or ""),
-            status=status,
-            lifecycle_state=lifecycle_state,
-            last_updated_at_utc=str(payload.get("last_updated_at_utc") or payload.get("started_at_utc") or ""),
+            attach_mode=str(attach_mode),
+            deployment_profile=str(deployment_profile),
+            status=str(payload.get("status") or ""),
+            lifecycle_state=str(payload.get("lifecycle_state") or ""),
+            last_updated_at_utc=str(payload.get("last_updated_at_utc") or payload.get("last_state_change_at_utc") or ""),
             ended_at_utc=(str(payload["ended_at_utc"]) if payload.get("ended_at_utc") else None),
             effective_data_locator=(payload.get("effective_data_locator") if isinstance(payload.get("effective_data_locator"), dict) else None),
             effective_data_root_path=(str(payload["effective_data_root_path"]) if payload.get("effective_data_root_path") else None),
@@ -144,8 +138,6 @@ class SessionStateRecord:
 
 @dataclass(frozen=True, slots=True)
 class ActiveSessionProjectionRecord:
-    """Короткая shared-проекция активной session."""
-
     session_id: str
     node_id: str
     user_id: str
@@ -184,8 +176,6 @@ class ActiveSessionProjectionRecord:
 
 @dataclass(frozen=True, slots=True)
 class NodeHealthSnapshotRecord:
-    """Snapshot здоровья AppDock node."""
-
     recorded_at_utc: str
     node_id: str | None
     user_id: str | None
@@ -222,78 +212,7 @@ class NodeHealthSnapshotRecord:
 
 
 @dataclass(frozen=True, slots=True)
-class AppStateRecord:
-    """Минимальный обратный контракт app -> AppDock."""
-
-    app_state_contract_version: str
-    app_id: str
-    updated_at_utc: str
-    heartbeat_utc: str | None = None
-    resumable: bool = False
-    clean_shutdown: bool | None = None
-    active_view: str | None = None
-    selected_object: str | None = None
-    active_job: str | None = None
-    warnings: tuple[str, ...] = tuple()
-    workspace_state: dict[str, Any] | None = None
-    state_kind: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "app_state_contract_version": self.app_state_contract_version,
-            "app_id": self.app_id,
-            "updated_at_utc": self.updated_at_utc,
-            "heartbeat_utc": self.heartbeat_utc,
-            "resumable": self.resumable,
-            "clean_shutdown": self.clean_shutdown,
-            "active_view": self.active_view,
-            "selected_object": self.selected_object,
-            "active_job": self.active_job,
-            "warnings": list(self.warnings),
-            "workspace_state": self.workspace_state or {},
-            "state_kind": self.state_kind,
-        }
-
-    def updated(self, **kwargs: Any) -> "AppStateRecord":
-        data = self.to_dict()
-        data.update(kwargs)
-        warnings = data.get("warnings") or []
-        if isinstance(warnings, str):
-            warnings = [warnings]
-        data["warnings"] = tuple(str(item) for item in warnings if str(item).strip())
-        workspace_state = data.get("workspace_state")
-        if workspace_state is None:
-            data["workspace_state"] = {}
-        return AppStateRecord.from_dict(data)
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "AppStateRecord":
-        warnings_raw = payload.get("warnings") or []
-        if isinstance(warnings_raw, str):
-            warnings = (warnings_raw,) if warnings_raw.strip() else tuple()
-        else:
-            warnings = tuple(str(item) for item in warnings_raw if str(item).strip())
-        workspace_state = payload.get("workspace_state") if isinstance(payload.get("workspace_state"), dict) else {}
-        return cls(
-            app_state_contract_version=str(payload.get("app_state_contract_version") or ""),
-            app_id=str(payload.get("app_id") or ""),
-            updated_at_utc=str(payload.get("updated_at_utc") or ""),
-            heartbeat_utc=(str(payload["heartbeat_utc"]) if payload.get("heartbeat_utc") else None),
-            resumable=bool(payload.get("resumable", False)),
-            clean_shutdown=payload.get("clean_shutdown"),
-            active_view=(str(payload["active_view"]) if payload.get("active_view") else None),
-            selected_object=(str(payload["selected_object"]) if payload.get("selected_object") else None),
-            active_job=(str(payload["active_job"]) if payload.get("active_job") else None),
-            warnings=warnings,
-            workspace_state={str(key): value for key, value in workspace_state.items()},
-            state_kind=(str(payload["state_kind"]) if payload.get("state_kind") else None),
-        )
-
-
-@dataclass(frozen=True, slots=True)
 class AppSessionSnapshot:
-    """Единый снимок AppDock state surfaces для app."""
-
     handoff: AppDockHandoff
     session_state: SessionStateRecord | None
     user_state: UserStateRecord | None
@@ -358,11 +277,12 @@ class AppSessionClient:
         )
 
     def _default_app_state(self) -> AppStateRecord:
+        now = _utc_now()
         return AppStateRecord(
             app_state_contract_version="1.0",
             app_id=self.handoff.active_app_target,
-            updated_at_utc=_utc_now(),
-            heartbeat_utc=_utc_now(),
+            updated_at_utc=now,
+            heartbeat_utc=now,
             resumable=True,
             clean_shutdown=None,
             active_view=None,
@@ -371,6 +291,7 @@ class AppSessionClient:
             warnings=tuple(),
             workspace_state={},
             state_kind="runtime",
+            workspace_schema_id=None,
         )
 
     def save_app_state(self, state: AppStateRecord) -> AppStateRecord:
@@ -384,29 +305,23 @@ class AppSessionClient:
         merged = state.updated(updated_at_utc=_utc_now(), heartbeat_utc=_utc_now(), **kwargs)
         return self.save_app_state(merged)
 
-    def mark_running(self, *, active_view: str | None = "main_window") -> AppStateRecord:
-        return self.update_app_state(
-            clean_shutdown=None,
-            resumable=True,
-            active_view=active_view,
-            state_kind="runtime",
-        )
+    def mark_running(self, *, active_view: str | None = "overview") -> AppStateRecord:
+        return self.update_app_state(clean_shutdown=None, resumable=True, active_view=active_view, state_kind="runtime")
 
-    def mark_ended(self, *, clean_shutdown: bool, active_view: str | None = "main_window", warning: str | None = None) -> AppStateRecord | None:
+    def mark_ended(self, *, clean_shutdown: bool, active_view: str | None = "closed", warning: str | None = None) -> AppStateRecord | None:
         warnings: tuple[str, ...] = (warning,) if warning else tuple()
-        return self.update_app_state(
-            clean_shutdown=clean_shutdown,
-            active_view=active_view,
-            warnings=warnings,
-            state_kind="shutdown",
-        )
+        return self.update_app_state(clean_shutdown=clean_shutdown, active_view=active_view, warnings=warnings, state_kind="shutdown")
 
-    def update_data_root(self, *, data_locator: dict[str, Any], data_root_path: Path | None, data_root_status: DataRootStatus) -> AppSessionSnapshot:
+    def update_workspace_selector(self, *, data_locator: dict[str, Any], selector_path: Path | None, data_root_status: DataRootStatus) -> AppSessionSnapshot:
         workspace_state = {
             "selected_data_locator": dict(data_locator),
-            "selected_data_root_path": (str(data_root_path) if data_root_path else None),
+            "selected_data_root_path": (str(selector_path) if selector_path else None),
             "selected_data_root_status": "available" if data_root_status.available else "unavailable",
             "selected_data_root_message": data_root_status.message,
         }
-        self.update_app_state(workspace_state=workspace_state, state_kind="runtime")
+        self.update_app_state(
+            workspace_state=workspace_state,
+            selected_data_root_path=(str(selector_path) if selector_path else None),
+            state_kind="runtime",
+        )
         return self.snapshot()

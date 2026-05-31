@@ -52,8 +52,8 @@ class AppContext:
     session_client: AppSessionClient | None
     session_snapshot: AppSessionSnapshot | None
     run_mode: str
+    launch_origin: str
     data_root_selector_path: Path | None
-    data_root_path: Path | None
     data_root_status: DataRootStatus
     workspace_root_path: Path | None
     workspace_status: WorkspaceRootStatus
@@ -89,10 +89,8 @@ def _selector_override_from_session(snapshot: AppSessionSnapshot | None) -> Path
     if snapshot is None:
         return None
     app_state = snapshot.app_state
-    if app_state is not None and isinstance(app_state.workspace_state, dict):
-        raw = app_state.workspace_state.get("selected_data_root_path")
-        if raw:
-            return Path(str(raw)).expanduser()
+    if app_state is not None and app_state.selected_data_root_path:
+        return Path(str(app_state.selected_data_root_path)).expanduser()
     session_state = snapshot.session_state
     if session_state is not None and session_state.effective_data_root_path:
         return Path(session_state.effective_data_root_path).expanduser()
@@ -122,6 +120,7 @@ def build_app_context(
     *,
     standalone_dev_root: str | None = None,
     override_data_root_path: Path | None = None,
+    launch_origin: str = 'standalone',
 ) -> AppContext:
     """Собирает контекст приложения для GUI или сервисного запуска."""
     run_mode, appdock_handoff, data_root_selector_path = _resolve_run_contract(
@@ -175,8 +174,9 @@ def build_app_context(
     )
 
     logger.info(
-        'App context initialized. RunMode=%s Selector=%s Workspace=%s Available=%s Schema=%s Session=%s',
+        'App context initialized. RunMode=%s LaunchOrigin=%s Selector=%s Workspace=%s Available=%s Schema=%s Session=%s',
         run_mode,
+        launch_origin,
         data_root_selector_path,
         workspace_root_path,
         workspace_status.available,
@@ -193,8 +193,8 @@ def build_app_context(
         session_client=session_client,
         session_snapshot=session_snapshot,
         run_mode=run_mode,
+        launch_origin=launch_origin,
         data_root_selector_path=data_root_selector_path,
-        data_root_path=workspace_root_path,
         data_root_status=data_root_status,
         workspace_root_path=workspace_root_path,
         workspace_status=workspace_status,

@@ -1,4 +1,4 @@
-"""Модели задач пользовательского GUI слоя."""
+"""Модели сценариев пользовательского GUI слоя."""
 
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ ParamType = Literal['text', 'int', 'float', 'bool', 'path', 'select', 'multisele
 
 
 @dataclass(frozen=True, slots=True)
-class TaskParamSpec:
-    """Описание одного пользовательского параметра задачи."""
+class ScenarioParamSpec:
+    """Описание одного пользовательского параметра сценария."""
 
     name: str
     title: str
@@ -36,7 +36,7 @@ class TaskParamSpec:
     options: tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'TaskParamSpec':
+    def from_dict(cls, data: dict[str, Any]) -> 'ScenarioParamSpec':
         return cls(
             name=str(data['name']),
             title=str(data.get('title') or data['name']),
@@ -54,32 +54,36 @@ class TaskParamSpec:
 
 
 @dataclass(frozen=True, slots=True)
-class TaskSpec:
-    """Описание задачи, загружаемое из JSON."""
+class ScenarioSpec:
+    """Описание сценария, загружаемое из JSON."""
 
     id: str
     title: str
     description: str
     adapter: str
-    category: str = 'General'
+    group: str = 'General'
+    kind: str = 'processing'
+    tags: tuple[str, ...] = ()
     enabled: bool = True
-    requires_data_root: bool = True
-    params: tuple[TaskParamSpec, ...] = ()
+    requires_workspace: bool = True
+    params: tuple[ScenarioParamSpec, ...] = ()
     input_dir: str = 'input'
     output_dir: str = 'output'
     links: tuple[dict[str, str], ...] = ()
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'TaskSpec':
+    def from_dict(cls, data: dict[str, Any]) -> 'ScenarioSpec':
         return cls(
             id=str(data['id']),
             title=str(data.get('title') or data['id']),
             description=str(data.get('description') or ''),
             adapter=str(data['adapter']),
-            category=str(data.get('category') or 'General'),
+            group=str(data.get('group') or data.get('category') or 'General'),
+            kind=str(data.get('kind') or 'processing'),
+            tags=tuple(str(x) for x in (data.get('tags') or [])),
             enabled=bool(data.get('enabled', True)),
-            requires_data_root=bool(data.get('requires_data_root', True)),
-            params=tuple(TaskParamSpec.from_dict(x) for x in (data.get('params') or [])),
+            requires_workspace=bool(data.get('requires_workspace', data.get('requires_data_root', True))),
+            params=tuple(ScenarioParamSpec.from_dict(x) for x in (data.get('params') or [])),
             input_dir=str(data.get('input_dir') or 'input'),
             output_dir=str(data.get('output_dir') or 'output'),
             links=tuple(dict(x) for x in (data.get('links') or [])),
@@ -92,16 +96,16 @@ class TaskSpec:
         out = asdict(self)
         out['params'] = [param.to_dict() for param in self.params]
         out['links'] = list(self.links)
+        out['tags'] = list(self.tags)
         return out
 
 
 @dataclass(slots=True)
-class TaskContext:
-    """Контекст запуска задачи."""
+class ScenarioContext:
+    """Контекст запуска сценария."""
 
     workspace_schema: WorkspaceSchema
     data_root_selector_path: Path | None
-    data_root_path: Path | None
     data_root_status: DataRootStatus
     workspace_root_path: Path | None
     workspace_status: WorkspaceRootStatus
@@ -109,9 +113,10 @@ class TaskContext:
     paths: AppPaths
     version: VersionInfo
     logger: logging.Logger
-    task_log_path: Path
+    scenario_log_path: Path
     appdock_handoff: AppDockHandoff | None = None
     run_mode: str = 'appdock_managed'
+    launch_origin: str = 'standalone'
     node_id: str | None = None
     session_id: str | None = None
     user_id: str | None = None
@@ -124,8 +129,8 @@ class TaskContext:
 
 
 @dataclass(frozen=True, slots=True)
-class TaskResult:
-    """Итог выполнения задачи."""
+class ScenarioResult:
+    """Итог выполнения сценария."""
 
     ok: bool
     message: str

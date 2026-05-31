@@ -19,7 +19,7 @@ def run_gui(context: AppContext) -> int:
     from app.gui.main_window import MainWindow
 
     if context.run_mode == 'appdock_managed' and context.session_client is not None:
-        context.session_client.mark_running(active_view='main_window')
+        context.session_client.mark_running(active_view='overview')
 
     try:
         app = QApplication([])
@@ -30,12 +30,12 @@ def run_gui(context: AppContext) -> int:
         except Exception:
             context.logger.warning('GUI stylesheet was not loaded')
         if context.run_mode == 'appdock_managed' and context.session_client is not None:
-            app.aboutToQuit.connect(lambda: context.session_client.mark_ended(clean_shutdown=True, active_view='main_window'))
+            app.aboutToQuit.connect(lambda: context.session_client.mark_ended(clean_shutdown=True, active_view='closed'))
         window = MainWindow(context)
         window.resize(context.user_config.window.width, context.user_config.window.height)
         window.show()
         return int(app.exec())
     except Exception:
         if context.run_mode == 'appdock_managed' and context.session_client is not None:
-            context.session_client.mark_ended(clean_shutdown=False, active_view='main_window', warning='GUI startup failed')
+            context.session_client.mark_ended(clean_shutdown=False, active_view='startup_failed', warning='GUI startup failed')
         raise
