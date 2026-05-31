@@ -1,10 +1,10 @@
-"""Launcher -> app handoff contract."""
+"""AppDock -> app handoff contract."""
 
 from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -12,84 +12,192 @@ from app.core.errors import AppConfigError
 
 
 @dataclass(frozen=True, slots=True)
-class LauncherHandoff:
-    """Контракт запуска приложения из launcher-проекта."""
+class TargetRevisionRef:
+    """Сведения о целевой ревизии подключённого репозитория."""
 
-    system_root: str
-    data_locator: dict[str, Any] | None
-    data_root_status: str
-    data_root_path: str | None
-    launcher_mode: str
-    install_profile: str
-    trusted_repo_commit: str | None = None
-    repo_sync_mode: str | None = None
-    degraded_launch: bool = False
-    system_id: str | None = None
-    system_created_at_utc: str | None = None
-    user_id: str | None = None
-    account_name: str | None = None
-    host_name: str | None = None
-    session_id: str | None = None
-    session_started_at_utc: str | None = None
-    user_state_path: str | None = None
-    session_state_path: str | None = None
-    active_session_path: str | None = None
-    environment_health_path: str | None = None
+    ref_kind: str
+    ref: str
+    commit: str | None
+    sync_mode: str | None
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "TargetRevisionRef":
+        return cls(
+            ref_kind=str(payload.get("ref_kind") or ""),
+            ref=str(payload.get("ref") or ""),
+            commit=(str(payload["commit"]) if payload.get("commit") else None),
+            sync_mode=(str(payload["sync_mode"]) if payload.get("sync_mode") else None),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
-def get_launcher_handoff_path_from_env() -> Path | None:
-    """Возвращает путь до handoff-файла из окружения launcher-а."""
-    value = os.getenv('STRATBOX_LAUNCHER_HANDOFF_PATH', '').strip()
-    return Path(value) if value else None
+@dataclass(frozen=True, slots=True)
+class HandoffWorkspace:
+    """Рабочий контекст, который shell передаёт приложению."""
 
+    repo_dir: str
+    node_root: str
+    logs_root: str
+    data_locator: dict[str, Any] | None
+    data_root_status: str
+    data_root_path: str | None
 
-def get_launcher_config_path_from_env() -> Path | None:
-    """Возвращает путь до launcher-конфига из окружения launcher-а."""
-    value = os.getenv('STRATBOX_LAUNCHER_CONFIG', '').strip()
-    return Path(value) if value else None
-
-
-def load_launcher_handoff(path: Path) -> LauncherHandoff:
-    """Читает и валидирует handoff-файл launcher-а."""
-    try:
-        payload = json.loads(path.read_text(encoding='utf-8'))
-    except Exception as exc:
-        raise AppConfigError(f'Failed to read launcher handoff: {path}') from exc
-    if not isinstance(payload, dict):
-        raise AppConfigError(f'Launcher handoff must be a JSON object: {path}')
-    try:
-        return LauncherHandoff(
-            system_root=str(payload['system_root']),
-            data_locator=(payload.get('data_locator') if isinstance(payload.get('data_locator'), dict) else None),
-            data_root_status=str(payload.get('data_root_status') or 'unavailable'),
-            data_root_path=(str(payload['data_root_path']) if payload.get('data_root_path') else None),
-            launcher_mode=str(payload.get('launcher_mode') or 'release_managed'),
-            install_profile=str(payload.get('install_profile') or 'release_base'),
-            trusted_repo_commit=(str(payload['trusted_repo_commit']) if payload.get('trusted_repo_commit') else None),
-            repo_sync_mode=(str(payload['repo_sync_mode']) if payload.get('repo_sync_mode') else None),
-            degraded_launch=bool(payload.get('degraded_launch', False)),
-            system_id=(str(payload['system_id']) if payload.get('system_id') else None),
-            system_created_at_utc=(str(payload['system_created_at_utc']) if payload.get('system_created_at_utc') else None),
-            user_id=(str(payload['user_id']) if payload.get('user_id') else None),
-            account_name=(str(payload['account_name']) if payload.get('account_name') else None),
-            host_name=(str(payload['host_name']) if payload.get('host_name') else None),
-            session_id=(str(payload['session_id']) if payload.get('session_id') else None),
-            session_started_at_utc=(str(payload['session_started_at_utc']) if payload.get('session_started_at_utc') else None),
-            user_state_path=(str(payload['user_state_path']) if payload.get('user_state_path') else None),
-            session_state_path=(str(payload['session_state_path']) if payload.get('session_state_path') else None),
-            active_session_path=(str(payload['active_session_path']) if payload.get('active_session_path') else None),
-            environment_health_path=(str(payload['environment_health_path']) if payload.get('environment_health_path') else None),
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "HandoffWorkspace":
+        return cls(
+            repo_dir=str(payload.get("repo_dir") or ""),
+            node_root=str(payload.get("node_root") or ""),
+            logs_root=str(payload.get("logs_root") or ""),
+            data_locator=(payload.get("data_locator") if isinstance(payload.get("data_locator"), dict) else None),
+            data_root_status=str(payload.get("data_root_status") or "unavailable"),
+            data_root_path=(str(payload["data_root_path"]) if payload.get("data_root_path") else None),
         )
-    except KeyError as exc:
-        raise AppConfigError(f'Launcher handoff misses required field: {exc}') from exc
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
-def load_launcher_handoff_from_env() -> LauncherHandoff | None:
-    """Читает handoff launcher-а из переменной окружения, если она задана."""
-    path = get_launcher_handoff_path_from_env()
+@dataclass(frozen=True, slots=True)
+class HandoffRefs:
+    """Файловые ссылки на publishable state surfaces AppDock."""
+
+    health_snapshot_ref: str | None = None
+    user_state_ref: str | None = None
+    session_ref: str | None = None
+    active_session_ref: str | None = None
+    app_state_ref: str | None = None
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "HandoffRefs":
+        return cls(
+            health_snapshot_ref=(str(payload["health_snapshot_ref"]) if payload.get("health_snapshot_ref") else None),
+            user_state_ref=(str(payload["user_state_ref"]) if payload.get("user_state_ref") else None),
+            session_ref=(str(payload["session_ref"]) if payload.get("session_ref") else None),
+            active_session_ref=(str(payload["active_session_ref"]) if payload.get("active_session_ref") else None),
+            app_state_ref=(str(payload["app_state_ref"]) if payload.get("app_state_ref") else None),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class AppDockHandoff:
+    """Контракт запуска приложения из AppDock."""
+
+    handoff_contract_version: str
+    generated_at_utc: str
+    connector_id: str
+    bundle_id: str
+    bundle_profile: str | None
+    active_app_target: str
+    entry_surface: str
+    declared_surfaces: tuple[str, ...]
+    attach_mode: str
+    deployment_profile: str
+    degraded_launch: bool
+    target_revision: TargetRevisionRef
+    workspace: HandoffWorkspace
+    refs: HandoffRefs
+    node_id: str | None = None
+    node_created_at_utc: str | None = None
+    user_id: str | None = None
+    account_name: str | None = None
+    host_name: str | None = None
+    session_id: str | None = None
+    session_started_at_utc: str | None = None
+    available_route_groups: tuple[str, ...] = tuple()
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "AppDockHandoff":
+        target_revision_payload = payload.get("target_revision")
+        if not isinstance(target_revision_payload, dict):
+            raise AppConfigError("AppDock handoff misses target_revision object")
+        workspace_payload = payload.get("workspace")
+        if not isinstance(workspace_payload, dict):
+            raise AppConfigError("AppDock handoff misses workspace object")
+        refs_payload = payload.get("refs")
+        if not isinstance(refs_payload, dict):
+            raise AppConfigError("AppDock handoff misses refs object")
+
+        declared_surfaces_raw = payload.get("declared_surfaces") or []
+        if isinstance(declared_surfaces_raw, str):
+            declared_surfaces = (declared_surfaces_raw,) if declared_surfaces_raw.strip() else tuple()
+        else:
+            declared_surfaces = tuple(str(item) for item in declared_surfaces_raw if str(item).strip())
+
+        route_groups_raw = payload.get("available_route_groups") or []
+        if isinstance(route_groups_raw, str):
+            available_route_groups = (route_groups_raw,) if route_groups_raw.strip() else tuple()
+        else:
+            available_route_groups = tuple(str(item) for item in route_groups_raw if str(item).strip())
+
+        return cls(
+            handoff_contract_version=str(payload.get("handoff_contract_version") or ""),
+            generated_at_utc=str(payload.get("generated_at_utc") or ""),
+            connector_id=str(payload.get("connector_id") or ""),
+            bundle_id=str(payload.get("bundle_id") or ""),
+            bundle_profile=(str(payload["bundle_profile"]) if payload.get("bundle_profile") else None),
+            active_app_target=str(payload.get("active_app_target") or ""),
+            entry_surface=str(payload.get("entry_surface") or "overview"),
+            declared_surfaces=declared_surfaces,
+            attach_mode=str(payload.get("attach_mode") or ""),
+            deployment_profile=str(payload.get("deployment_profile") or ""),
+            degraded_launch=bool(payload.get("degraded_launch", False)),
+            target_revision=TargetRevisionRef.from_dict(target_revision_payload),
+            workspace=HandoffWorkspace.from_dict(workspace_payload),
+            refs=HandoffRefs.from_dict(refs_payload),
+            node_id=(str(payload["node_id"]) if payload.get("node_id") else None),
+            node_created_at_utc=(str(payload["node_created_at_utc"]) if payload.get("node_created_at_utc") else None),
+            user_id=(str(payload["user_id"]) if payload.get("user_id") else None),
+            account_name=(str(payload["account_name"]) if payload.get("account_name") else None),
+            host_name=(str(payload["host_name"]) if payload.get("host_name") else None),
+            session_id=(str(payload["session_id"]) if payload.get("session_id") else None),
+            session_started_at_utc=(str(payload["session_started_at_utc"]) if payload.get("session_started_at_utc") else None),
+            available_route_groups=available_route_groups,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def get_appdock_handoff_path_from_env() -> Path | None:
+    """Возвращает путь до handoff-файла из окружения AppDock."""
+    value = os.getenv("APPDOCK_HANDOFF_PATH", "").strip()
+    return Path(value) if value else None
+
+
+def get_appdock_config_path_from_env() -> Path | None:
+    """Возвращает путь до shell-конфига из окружения AppDock."""
+    value = os.getenv("APPDOCK_CONFIG_PATH", "").strip()
+    return Path(value) if value else None
+
+
+def load_appdock_handoff(path: Path) -> AppDockHandoff:
+    """Читает и валидирует handoff-файл AppDock."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise AppConfigError(f"Failed to read AppDock handoff: {path}") from exc
+    if not isinstance(payload, dict):
+        raise AppConfigError(f"AppDock handoff must be a JSON object: {path}")
+    handoff = AppDockHandoff.from_dict(payload)
+    if not handoff.connector_id:
+        raise AppConfigError("AppDock handoff misses connector_id")
+    if not handoff.active_app_target:
+        raise AppConfigError("AppDock handoff misses active_app_target")
+    if not handoff.workspace.repo_dir:
+        raise AppConfigError("AppDock handoff misses workspace.repo_dir")
+    if not handoff.workspace.node_root:
+        raise AppConfigError("AppDock handoff misses workspace.node_root")
+    return handoff
+
+
+def load_appdock_handoff_from_env() -> AppDockHandoff | None:
+    """Читает handoff AppDock из переменной окружения, если она задана."""
+    path = get_appdock_handoff_path_from_env()
     if path is None or not path.exists():
         return None
-    return load_launcher_handoff(path)
+    return load_appdock_handoff(path)

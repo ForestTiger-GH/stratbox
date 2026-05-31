@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 from app.core.context import AppContext
 
 
@@ -20,9 +18,8 @@ def run_gui(context: AppContext) -> int:
 
     from app.gui.main_window import MainWindow
 
-    if context.run_mode == 'launcher_managed' and context.session_env is not None:
-        context.session_env.mark_running(app_pid=os.getpid())
-        context = build_runtime_context_after_session_mark(context)
+    if context.run_mode == 'appdock_managed' and context.session_client is not None:
+        context.session_client.mark_running(active_view='main_window')
 
     try:
         app = QApplication([])
@@ -32,20 +29,13 @@ def run_gui(context: AppContext) -> int:
             app.setStyleSheet(stylesheet)
         except Exception:
             context.logger.warning('GUI stylesheet was not loaded')
-        if context.run_mode == 'launcher_managed' and context.session_env is not None:
-            app.aboutToQuit.connect(lambda: context.session_env.mark_ended(status='app_closed'))
+        if context.run_mode == 'appdock_managed' and context.session_client is not None:
+            app.aboutToQuit.connect(lambda: context.session_client.mark_ended(clean_shutdown=True, active_view='main_window'))
         window = MainWindow(context)
         window.resize(context.user_config.window.width, context.user_config.window.height)
         window.show()
         return int(app.exec())
     except Exception:
-        if context.run_mode == 'launcher_managed' and context.session_env is not None:
-            context.session_env.mark_ended(status='app_failed', failure_message='GUI startup failed')
+        if context.run_mode == 'appdock_managed' and context.session_client is not None:
+            context.session_client.mark_ended(clean_shutdown=False, active_view='main_window', warning='GUI startup failed')
         raise
-
-
-def build_runtime_context_after_session_mark(context: AppContext) -> AppContext:
-    """Пересобирает контекст после перевода launcher-managed session в running."""
-    from app.core.context import build_app_context
-
-    return build_app_context()

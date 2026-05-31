@@ -1,8 +1,8 @@
 """Пути приложения Strategy Box.
 
-Модуль отделяет пользовательские настройки GUI от launcher-managed среды.
-User config хранится в пользовательской папке, а operational logs, session state
-pointers и runtime-маркеры живут внутри system_root, если приложение запущено launcher-ом.
+Модуль отделяет пользовательские настройки GUI от AppDock-managed среды.
+User config хранится в пользовательской папке, а operational refs приходят через
+AppDock handoff и сессионный каталог.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.core.handoff import LauncherHandoff
+from app.core.handoff import AppDockHandoff
 
 APP_DIR_NAME = 'Stratbox'
 
@@ -29,14 +29,16 @@ class AppPaths:
     cache_dir: Path
     runtime_dir: Path
     app_config_path: Path
-    system_root: Path | None = None
-    launcher_managed: bool = False
+    node_root: Path | None = None
+    session_dir: Path | None = None
+    appdock_managed: bool = False
     handoff_path: Path | None = None
-    launcher_config_path: Path | None = None
+    appdock_config_path: Path | None = None
     user_state_path: Path | None = None
     session_state_path: Path | None = None
     active_session_path: Path | None = None
-    environment_health_path: Path | None = None
+    health_snapshot_path: Path | None = None
+    app_state_path: Path | None = None
 
 
 def _local_app_data_root() -> Path:
@@ -52,39 +54,44 @@ def _detect_repo_dir() -> Path:
 
 def build_app_paths(
     *,
-    launcher_handoff: LauncherHandoff | None = None,
+    appdock_handoff: AppDockHandoff | None = None,
     handoff_path: Path | None = None,
-    launcher_config_path: Path | None = None,
+    appdock_config_path: Path | None = None,
 ) -> AppPaths:
     """Создает структуру путей приложения."""
-    repo_dir = _detect_repo_dir()
+    repo_dir = Path(appdock_handoff.workspace.repo_dir).expanduser() if appdock_handoff is not None else _detect_repo_dir()
     src_dir = repo_dir / 'src'
     user_root = _local_app_data_root() / APP_DIR_NAME
     config_dir = user_root / 'config'
 
-    if launcher_handoff is not None:
-        system_root = Path(launcher_handoff.system_root).expanduser()
-        bootstrap_root = system_root / 'bootstrap'
-        logs_dir = bootstrap_root / 'logs' / 'app'
+    if appdock_handoff is not None:
+        node_root = Path(appdock_handoff.workspace.node_root).expanduser()
+        logs_root = Path(appdock_handoff.workspace.logs_root).expanduser()
+        logs_dir = logs_root / 'app'
         task_logs_dir = logs_dir / 'tasks'
-        cache_dir = bootstrap_root / 'state' / 'app_cache'
-        runtime_dir = bootstrap_root / 'state' / 'app_runtime'
-        launcher_managed = True
-        user_state_path = Path(launcher_handoff.user_state_path).expanduser() if launcher_handoff.user_state_path else None
-        session_state_path = Path(launcher_handoff.session_state_path).expanduser() if launcher_handoff.session_state_path else None
-        active_session_path = Path(launcher_handoff.active_session_path).expanduser() if launcher_handoff.active_session_path else None
-        environment_health_path = Path(launcher_handoff.environment_health_path).expanduser() if launcher_handoff.environment_health_path else None
+
+        session_state_path = Path(appdock_handoff.refs.session_ref).expanduser() if appdock_handoff.refs.session_ref else None
+        session_dir = session_state_path.parent if session_state_path is not None else None
+        cache_dir = (session_dir / 'cache') if session_dir is not None else (user_root / 'cache')
+        runtime_dir = (session_dir / 'runtime') if session_dir is not None else (user_root / 'runtime')
+        appdock_managed = True
+        user_state_path = Path(appdock_handoff.refs.user_state_ref).expanduser() if appdock_handoff.refs.user_state_ref else None
+        active_session_path = Path(appdock_handoff.refs.active_session_ref).expanduser() if appdock_handoff.refs.active_session_ref else None
+        health_snapshot_path = Path(appdock_handoff.refs.health_snapshot_ref).expanduser() if appdock_handoff.refs.health_snapshot_ref else None
+        app_state_path = Path(appdock_handoff.refs.app_state_ref).expanduser() if appdock_handoff.refs.app_state_ref else None
     else:
-        system_root = None
+        node_root = None
+        session_dir = None
         logs_dir = user_root / 'logs'
         task_logs_dir = logs_dir / 'tasks'
         cache_dir = user_root / 'cache'
         runtime_dir = user_root / 'runtime'
-        launcher_managed = False
+        appdock_managed = False
         user_state_path = None
         session_state_path = None
         active_session_path = None
-        environment_health_path = None
+        health_snapshot_path = None
+        app_state_path = None
 
     for path in (config_dir, logs_dir, task_logs_dir, cache_dir, runtime_dir):
         path.mkdir(parents=True, exist_ok=True)
@@ -99,12 +106,14 @@ def build_app_paths(
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
         app_config_path=config_dir / 'app.json',
-        system_root=system_root,
-        launcher_managed=launcher_managed,
+        node_root=node_root,
+        session_dir=session_dir,
+        appdock_managed=appdock_managed,
         handoff_path=handoff_path,
-        launcher_config_path=launcher_config_path,
+        appdock_config_path=appdock_config_path,
         user_state_path=user_state_path,
         session_state_path=session_state_path,
         active_session_path=active_session_path,
-        environment_health_path=environment_health_path,
+        health_snapshot_path=health_snapshot_path,
+        app_state_path=app_state_path,
     )

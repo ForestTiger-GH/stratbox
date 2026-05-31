@@ -69,18 +69,18 @@ pip install -e .
 
 ## Desktop shell внутри репозитория
 
-Внутри репозитория есть пакет `src/app` — launcher-managed desktop-приложение Strategy Box. Оно не заменяет библиотеку `stratbox`, а использует её как доменное ядро.
+Внутри репозитория есть пакет `src/app` — desktop-приложение Strategy Box, публикуемое как AppDock app target. Оно не заменяет библиотеку `stratbox`, а использует её как доменное ядро.
 
 Главный маршрут такой:
 
-- `stratbox-launcher` разворачивает install-среду;
-- launcher создаёт session state и handoff;
-- `python -m app` читает этот контракт;
-- GUI запускает задачи поверх business-root, который уже выбран launcher-ом.
+- AppDock подготавливает node-среду;
+- AppDock создаёт session surfaces и handoff;
+- `python -m app.entrypoints.appdock` читает этот контракт;
+- GUI запускает задачи поверх business-root, который уже выбран AppDock.
 
 Это разделяет роли:
 
-- launcher отвечает за install/runtime environment;
+- AppDock отвечает за install/runtime environment;
 - `app` отвечает за session-aware GUI и запуск задач;
 - пакет `stratbox` остаётся библиотечным и доменным слоем.
 
@@ -350,18 +350,18 @@ scripts/        # примеры запуска
 
 ## Desktop shell `app`
 
-Репозиторий содержит пакет `app`, который работает как launcher-managed desktop-оболочка Strategy Box.
+Репозиторий содержит пакет `app`, который работает как desktop-оболочка Strategy Box, публикуемая как AppDock app target.
 
 Основной пользовательский маршрут выглядит так:
 
-- `stratbox-launcher` подготавливает install/runtime среду;
-- launcher выбирает `system_root` и `data_root`;
-- launcher передает session handoff в `python -m app`;
-- `app` строит GUI-контекст от launcher-managed business-root.
+- AppDock подготавливает node-среду;
+- AppDock выбирает target repo, runtime и session surfaces;
+- AppDock передает handoff в `python -m app.entrypoints.appdock`;
+- `app` строит GUI-контекст от AppDock-managed data-root selector.
 
-`data_root` в этой модели обозначает корень бизнес-среды. Служебные файлы launcher-а и install-среды туда не записываются.
+`data_root` в этой модели обозначает selector бизнес-среды. Служебные файлы AppDock и install-среды туда не записываются.
 
 
-## Launcher-managed business root and workspace root
+## AppDock-managed data root and workspace root
 
-В launcher-managed режиме приложение различает выбранный пользователем business-root selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.
+В AppDock-managed режиме приложение различает выбранный shell-ом data-root selector и реальный рабочий каталог. Если selector указывает на корень диска, приложение использует производный каталог `Strategy Box Data` и работает через него как через writable workspace root. Для системного диска используется каталог внутри профиля пользователя, а не корень диска.

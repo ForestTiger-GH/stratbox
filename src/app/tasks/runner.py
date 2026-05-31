@@ -60,9 +60,9 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
         version=context.version,
         logger=task_logger,
         task_log_path=task_log_path,
-        launcher_handoff=context.launcher_handoff,
+        appdock_handoff=context.appdock_handoff,
         run_mode=context.run_mode,
-        system_id=context.system_id,
+        node_id=context.node_id,
         session_id=context.session_id,
         user_id=context.user_id,
         account_name=context.account_name,
@@ -70,7 +70,7 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
         session_state=context.session_state,
         user_state=context.user_state,
         active_session=context.active_session,
-        environment_health=context.environment_health,
+        health_snapshot=context.health_snapshot,
     )
 
     task_logger.info('Task started: %s', spec.id)
@@ -90,7 +90,7 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
                 'workspace_status': context.workspace_status.to_dict(),
                 'requires_data_root': True,
                 'session_id': context.session_id,
-                'system_id': context.system_id,
+                'node_id': context.node_id,
             },
         )
 
@@ -111,7 +111,7 @@ def run_task(spec: TaskSpec, *, context: AppContext, params: dict[str, Any] | No
                 'error': str(exc),
                 'task_log': str(task_log_path),
                 'session_id': context.session_id,
-                'system_id': context.system_id,
+                'node_id': context.node_id,
             },
         )
     finally:

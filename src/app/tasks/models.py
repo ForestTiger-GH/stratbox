@@ -9,11 +9,11 @@ from typing import Any, Literal
 
 from stratbox.base.filestore import FileStore
 
-from app.core.handoff import LauncherHandoff
+from app.core.handoff import AppDockHandoff
 from app.core.paths import AppPaths
 from app.core.session_env import (
     ActiveSessionProjectionRecord,
-    EnvironmentHealthSnapshotRecord,
+    NodeHealthSnapshotRecord,
     SessionStateRecord,
     UserStateRecord,
 )
@@ -110,9 +110,9 @@ class TaskContext:
     version: VersionInfo
     logger: logging.Logger
     task_log_path: Path
-    launcher_handoff: LauncherHandoff | None = None
-    run_mode: str = 'launcher_managed'
-    system_id: str | None = None
+    appdock_handoff: AppDockHandoff | None = None
+    run_mode: str = 'appdock_managed'
+    node_id: str | None = None
     session_id: str | None = None
     user_id: str | None = None
     account_name: str | None = None
@@ -120,7 +120,7 @@ class TaskContext:
     session_state: SessionStateRecord | None = None
     user_state: UserStateRecord | None = None
     active_session: ActiveSessionProjectionRecord | None = None
-    environment_health: EnvironmentHealthSnapshotRecord | None = None
+    health_snapshot: NodeHealthSnapshotRecord | None = None
 
 
 @dataclass(frozen=True, slots=True)

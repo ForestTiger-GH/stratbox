@@ -1,0 +1,51 @@
+{
+  "connector_contract_version": "1.0",
+  "connector_id": "stratbox",
+  "display_name": "Strategy Box",
+  "bundle_id": "stratbox",
+  "bundle_profile": "desktop",
+  "default_app_target_id": "stratbox.desktop",
+  "app_targets": [
+    {
+      "app_id": "stratbox.desktop",
+      "display_name": "Strategy Box",
+      "entrypoint": "app.entrypoints.appdock",
+      "entry_surface": "overview",
+      "bundle_scope": "stratbox",
+      "compatible_modes": [
+        "local",
+        "attached"
+      ],
+      "declared_surfaces": [
+        "overview",
+        "scenarios",
+        "artifacts",
+        "node",
+        "diagnostics",
+        "domain"
+      ],
+      "route_groups_visible_in_app": [
+        "scenarios",
+        "artifacts",
+        "node",
+        "diagnostics"
+      ],
+      "minimum_node_features": [
+        "workspace_context",
+        "health_snapshot"
+      ],
+      "supports_resume": true,
+      "supports_artifacts": true,
+      "supports_remote_attach": false,
+      "supports_multi_user_presence": false,
+      "supports_delegated_jobs": false,
+      "metadata": {
+        "product": "Strategy Box",
+        "ui_kind": "desktop"
+      }
+    }
+  ],
+  "metadata": {
+    "description": "Strategy Box desktop app target for AppDock."
+  }
+}

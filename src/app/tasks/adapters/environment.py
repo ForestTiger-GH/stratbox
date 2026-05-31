@@ -18,7 +18,7 @@ def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> T
     """Выполняет диагностику business-root selector, workspace root и базовых зависимостей."""
     context.logger.info('Environment check started')
     mode = str(params.get('mode') or 'detailed')
-    create_missing = mode == 'launcher_preflight'
+    create_missing = mode == 'appdock_preflight'
     workspace_resolution = resolve_workspace_root(
         context.workspace_schema,
         context.data_root_selector_path,
@@ -59,22 +59,22 @@ def run(*, context: TaskContext, params: dict[str, object], spec: TaskSpec) -> T
         'python': sys.version,
         'version': context.version.to_dict(),
         'run_mode': context.run_mode,
-        'system_id': context.system_id,
+        'node_id': context.node_id,
         'session_id': context.session_id,
         'user_id': context.user_id,
         'account_name': context.account_name,
         'host_name': context.host_name,
-        'launcher_handoff': context.launcher_handoff.to_dict() if context.launcher_handoff else None,
+        'appdock_handoff': context.appdock_handoff.to_dict() if context.appdock_handoff else None,
         'session_state': context.session_state.to_dict() if context.session_state else None,
         'user_state': context.user_state.to_dict() if context.user_state else None,
         'active_session': context.active_session.to_dict() if context.active_session else None,
-        'environment_health': context.environment_health.to_dict() if context.environment_health else None,
+        'health_snapshot': context.health_snapshot.to_dict() if context.health_snapshot else None,
         'task_log': str(context.task_log_path),
     }
 
-    if mode == 'launcher_preflight':
+    if mode == 'appdock_preflight':
         ok = workspace_resolution.workspace_status.available and package_checks['stratbox']
-        message = 'Launcher preflight finished' if ok else 'Launcher preflight finished with issues'
+        message = 'AppDock preflight finished' if ok else 'AppDock preflight finished with issues'
     else:
         ok = workspace_report.ok and package_checks['stratbox']
         message = 'Environment check finished' if ok else 'Environment check finished with issues'

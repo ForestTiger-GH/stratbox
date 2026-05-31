@@ -11,18 +11,18 @@ from stratbox.base.filestore import FileStore
 
 from app.core.errors import AppStartupError
 from app.core.handoff import (
-    LauncherHandoff,
-    get_launcher_config_path_from_env,
-    get_launcher_handoff_path_from_env,
-    load_launcher_handoff_from_env,
+    AppDockHandoff,
+    get_appdock_config_path_from_env,
+    get_appdock_handoff_path_from_env,
+    load_appdock_handoff_from_env,
 )
 from app.core.log_setup import setup_app_logger
 from app.core.paths import AppPaths, build_app_paths
 from app.core.session_env import (
     ActiveSessionProjectionRecord,
-    EnvironmentHealthSnapshotRecord,
-    SessionEnvironmentClient,
-    SessionEnvironmentSnapshot,
+    AppSessionClient,
+    AppSessionSnapshot,
+    NodeHealthSnapshotRecord,
     SessionStateRecord,
     UserStateRecord,
 )
@@ -48,9 +48,9 @@ class AppContext:
     user_config: AppUserConfig
     workspaces: WorkspaceRegistry
     workspace_schema: WorkspaceSchema
-    launcher_handoff: LauncherHandoff | None
-    session_env: SessionEnvironmentClient | None
-    session_snapshot: SessionEnvironmentSnapshot | None
+    appdock_handoff: AppDockHandoff | None
+    session_client: AppSessionClient | None
+    session_snapshot: AppSessionSnapshot | None
     run_mode: str
     data_root_selector_path: Path | None
     data_root_path: Path | None
@@ -61,8 +61,8 @@ class AppContext:
     filestore: FileStore | None
     version: VersionInfo
     logger: logging.Logger
-    system_id: str | None = None
-    system_created_at_utc: str | None = None
+    node_id: str | None = None
+    node_created_at_utc: str | None = None
     session_id: str | None = None
     session_started_at_utc: str | None = None
     user_id: str | None = None
@@ -71,26 +71,50 @@ class AppContext:
     session_state: SessionStateRecord | None = None
     user_state: UserStateRecord | None = None
     active_session: ActiveSessionProjectionRecord | None = None
-    environment_health: EnvironmentHealthSnapshotRecord | None = None
+    health_snapshot: NodeHealthSnapshotRecord | None = None
+
+
+def _selector_path_from_handoff(handoff: AppDockHandoff) -> Path | None:
+    locator = handoff.workspace.data_locator
+    if isinstance(locator, dict) and str(locator.get("kind") or "") == "local_path":
+        value = locator.get("value")
+        if value:
+            return Path(str(value)).expanduser()
+    if handoff.workspace.data_root_path:
+        return Path(handoff.workspace.data_root_path).expanduser()
+    return None
+
+
+def _selector_override_from_session(snapshot: AppSessionSnapshot | None) -> Path | None:
+    if snapshot is None:
+        return None
+    app_state = snapshot.app_state
+    if app_state is not None and isinstance(app_state.workspace_state, dict):
+        raw = app_state.workspace_state.get("selected_data_root_path")
+        if raw:
+            return Path(str(raw)).expanduser()
+    session_state = snapshot.session_state
+    if session_state is not None and session_state.effective_data_root_path:
+        return Path(session_state.effective_data_root_path).expanduser()
+    return None
 
 
 def _resolve_run_contract(
     *,
     standalone_dev_root: str | None = None,
     override_data_root_path: Path | None = None,
-) -> tuple[str, LauncherHandoff | None, Path | None]:
-    handoff = load_launcher_handoff_from_env()
+) -> tuple[str, AppDockHandoff | None, Path | None]:
+    handoff = load_appdock_handoff_from_env()
     if handoff is not None:
         if override_data_root_path is not None:
-            return 'launcher_managed', handoff, override_data_root_path
-        path = Path(handoff.data_root_path).expanduser() if handoff.data_root_path else None
-        return 'launcher_managed', handoff, path
+            return 'appdock_managed', handoff, override_data_root_path
+        return 'appdock_managed', handoff, _selector_path_from_handoff(handoff)
 
     if standalone_dev_root:
         return 'standalone_dev', None, Path(standalone_dev_root).expanduser()
 
     raise AppStartupError(
-        'Launcher handoff is required for normal startup. Use Stratbox Launcher or pass --standalone-dev-root for development.'
+        'AppDock handoff is required for normal startup. Use AppDock or pass --standalone-dev-root for development.'
     )
 
 
@@ -100,30 +124,31 @@ def build_app_context(
     override_data_root_path: Path | None = None,
 ) -> AppContext:
     """Собирает контекст приложения для GUI или сервисного запуска."""
-    run_mode, launcher_handoff, data_root_selector_path = _resolve_run_contract(
+    run_mode, appdock_handoff, data_root_selector_path = _resolve_run_contract(
         standalone_dev_root=standalone_dev_root,
         override_data_root_path=override_data_root_path,
     )
-    handoff_path = get_launcher_handoff_path_from_env()
-    launcher_config_path = get_launcher_config_path_from_env()
+    handoff_path = get_appdock_handoff_path_from_env()
+    appdock_config_path = get_appdock_config_path_from_env()
     paths = build_app_paths(
-        launcher_handoff=launcher_handoff,
+        appdock_handoff=appdock_handoff,
         handoff_path=handoff_path,
-        launcher_config_path=launcher_config_path,
+        appdock_config_path=appdock_config_path,
     )
     logger = setup_app_logger(paths.logs_dir)
     user_config = load_user_config(paths.app_config_path)
     workspaces = load_workspace_registry()
 
-    session_env = SessionEnvironmentClient(launcher_handoff) if launcher_handoff is not None else None
-    session_snapshot = session_env.snapshot() if session_env is not None and session_env.enabled else None
+    session_client = AppSessionClient(appdock_handoff) if appdock_handoff is not None else None
+    session_snapshot = session_client.snapshot() if session_client is not None and session_client.enabled else None
     session_state = session_snapshot.session_state if session_snapshot else None
     user_state = session_snapshot.user_state if session_snapshot else None
     active_session = session_snapshot.active_session if session_snapshot else None
-    environment_health = session_snapshot.environment_health if session_snapshot else None
+    health_snapshot = session_snapshot.health_snapshot if session_snapshot else None
 
-    if session_state is not None and session_state.effective_data_root_path:
-        data_root_selector_path = Path(session_state.effective_data_root_path).expanduser()
+    session_selector_override = _selector_override_from_session(session_snapshot)
+    if override_data_root_path is None and session_selector_override is not None:
+        data_root_selector_path = session_selector_override
 
     selected_schema_id = user_config.last_workspace_schema
     if not workspaces.has(selected_schema_id):
@@ -143,7 +168,11 @@ def build_app_context(
     filestore = build_filestore_for_workspace_root(workspace_root_path) if workspace_status.available and workspace_root_path else None
     version = get_version_info(paths.repo_dir)
 
-    degraded_launch = (launcher_handoff.degraded_launch if launcher_handoff is not None else False) or (session_state.degraded_launch if session_state is not None and session_state.degraded_launch is not None else False) or (not data_root_status.available)
+    degraded_launch = (
+        (appdock_handoff.degraded_launch if appdock_handoff is not None else False)
+        or (session_state.degraded_launch if session_state is not None and session_state.degraded_launch is not None else False)
+        or (not data_root_status.available)
+    )
 
     logger.info(
         'App context initialized. RunMode=%s Selector=%s Workspace=%s Available=%s Schema=%s Session=%s',
@@ -160,8 +189,8 @@ def build_app_context(
         user_config=user_config,
         workspaces=workspaces,
         workspace_schema=workspace_schema,
-        launcher_handoff=launcher_handoff,
-        session_env=session_env,
+        appdock_handoff=appdock_handoff,
+        session_client=session_client,
         session_snapshot=session_snapshot,
         run_mode=run_mode,
         data_root_selector_path=data_root_selector_path,
@@ -173,15 +202,15 @@ def build_app_context(
         filestore=filestore,
         version=version,
         logger=logger,
-        system_id=(launcher_handoff.system_id if launcher_handoff else None),
-        system_created_at_utc=(launcher_handoff.system_created_at_utc if launcher_handoff else None),
-        session_id=(session_state.session_id if session_state else (launcher_handoff.session_id if launcher_handoff else None)),
-        session_started_at_utc=(session_state.started_at_utc if session_state else (launcher_handoff.session_started_at_utc if launcher_handoff else None)),
-        user_id=(user_state.user_id if user_state else (launcher_handoff.user_id if launcher_handoff else None)),
-        account_name=(user_state.account_name if user_state else (launcher_handoff.account_name if launcher_handoff else None)),
-        host_name=(user_state.host_name if user_state else (launcher_handoff.host_name if launcher_handoff else os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME'))),
+        node_id=(session_state.node_id if session_state else (appdock_handoff.node_id if appdock_handoff else None)),
+        node_created_at_utc=(appdock_handoff.node_created_at_utc if appdock_handoff else None),
+        session_id=(session_state.session_id if session_state else (appdock_handoff.session_id if appdock_handoff else None)),
+        session_started_at_utc=(session_state.started_at_utc if session_state else (appdock_handoff.session_started_at_utc if appdock_handoff else None)),
+        user_id=(user_state.user_id if user_state else (appdock_handoff.user_id if appdock_handoff else None)),
+        account_name=(user_state.account_name if user_state else (appdock_handoff.account_name if appdock_handoff else None)),
+        host_name=(user_state.host_name if user_state else (appdock_handoff.host_name if appdock_handoff else os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME'))),
         session_state=session_state,
         user_state=user_state,
         active_session=active_session,
-        environment_health=environment_health,
+        health_snapshot=health_snapshot,
     )

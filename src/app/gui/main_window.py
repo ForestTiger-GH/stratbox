@@ -247,16 +247,18 @@ class MainWindow(QMainWindow):
             f"Branch / Commit: {version.branch} / {version.commit_short}{dirty}",
             f"Repo: {self.context.paths.repo_dir}",
         ]
-        if self.context.launcher_handoff is not None:
+        if self.context.appdock_handoff is not None:
             version_lines.extend([
-                f"Launcher mode: {self.context.launcher_handoff.launcher_mode}",
-                f"Install profile: {self.context.launcher_handoff.install_profile}",
-                f"Trusted commit: {self.context.launcher_handoff.trusted_repo_commit}",
-                f"Repo sync mode: {self.context.launcher_handoff.repo_sync_mode}",
+                f"Connector / App target: {self.context.appdock_handoff.connector_id} / {self.context.appdock_handoff.active_app_target}",
+                f"Bundle / Profile: {self.context.appdock_handoff.bundle_id} / {(self.context.appdock_handoff.bundle_profile or '(none)')}",
+                f"Attach mode: {self.context.appdock_handoff.attach_mode}",
+                f"Deployment profile: {self.context.appdock_handoff.deployment_profile}",
+                f"Target revision: {self.context.appdock_handoff.target_revision.commit}",
+                f"Target sync mode: {self.context.appdock_handoff.target_revision.sync_mode}",
             ])
         version_lines.extend([
-            f"System ID: {self.context.system_id or '(unknown)'}",
-            f"System created: {self.context.system_created_at_utc or '(unknown)'}",
+            f"Node ID: {self.context.node_id or '(unknown)'}",
+            f"Node created: {self.context.node_created_at_utc or '(unknown)'}",
             f"Session ID: {self.context.session_id or '(unknown)'}",
             f"Session started: {self.context.session_started_at_utc or '(unknown)'}",
             f"Account / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
@@ -269,15 +271,15 @@ class MainWindow(QMainWindow):
         self.version_label.setText("\n".join(version_lines))
         env_lines = [
             f"Workspace schema: {self.context.workspace_schema.title}",
-            f"Business root selector: {selector_text}",
+            f"Data root selector: {selector_text}",
             f"Workspace root: {data_root_text}",
         ]
-        if self.context.environment_health is not None:
+        if self.context.health_snapshot is not None:
             env_lines.extend([
-                f"Environment overall: {self.context.environment_health.overall_status}",
-                f"Install: {self.context.environment_health.install_status} | Repo: {self.context.environment_health.repo_status}",
-                f"Runtime: {self.context.environment_health.runtime_status} | Venv: {self.context.environment_health.venv_status}",
-                f"Data: {self.context.environment_health.data_status}",
+                f"Environment overall: {self.context.health_snapshot.overall_status}",
+                f"Install: {self.context.health_snapshot.install_status} | Target: {self.context.health_snapshot.target_status}",
+                f"Runtime: {self.context.health_snapshot.runtime_status} | Venv: {self.context.health_snapshot.venv_status}",
+                f"Data: {self.context.health_snapshot.data_status}",
             ])
         self.environment_label.setText("\n".join(env_lines))
         self.open_data_button.setEnabled(self.context.workspace_status.available and self.context.workspace_root_path is not None)
@@ -289,19 +291,19 @@ class MainWindow(QMainWindow):
         lines = [
             report.title,
             f"Run mode: {self.context.run_mode}",
-            f"System ID: {self.context.system_id or '(unknown)'}",
+            f"Node ID: {self.context.node_id or '(unknown)'}",
             f"Session ID: {self.context.session_id or '(unknown)'}",
             f"User / Host: {(self.context.account_name or '(unknown)')} / {(self.context.host_name or '(unknown)')}",
             f"Data root selector status: {self.context.data_root_status.message}",
             f"Workspace status: {self.context.workspace_status.message}",
             "",
         ]
-        if self.context.launcher_handoff is not None:
+        if self.context.appdock_handoff is not None:
             lines.extend([
-                f"Launcher mode: {self.context.launcher_handoff.launcher_mode}",
-                f"Install profile: {self.context.launcher_handoff.install_profile}",
-                f"Trusted commit: {self.context.launcher_handoff.trusted_repo_commit}",
-                f"Repo sync mode: {self.context.launcher_handoff.repo_sync_mode}",
+                f"Attach mode: {self.context.appdock_handoff.attach_mode}",
+                f"Deployment profile: {self.context.appdock_handoff.deployment_profile}",
+                f"Target revision: {self.context.appdock_handoff.target_revision.commit}",
+                f"Target sync mode: {self.context.appdock_handoff.target_revision.sync_mode}",
                 "",
             ])
         if self.context.user_state is not None:
@@ -331,15 +333,15 @@ class MainWindow(QMainWindow):
                 f"  Effective selector: {self.context.active_session.effective_data_root_path}",
                 "",
             ])
-        if self.context.environment_health is not None:
+        if self.context.health_snapshot is not None:
             lines.extend([
-                "Environment health:",
-                f"  Overall: {self.context.environment_health.overall_status}",
-                f"  Install: {self.context.environment_health.install_status} — {self.context.environment_health.install_message}",
-                f"  Repo: {self.context.environment_health.repo_status} — {self.context.environment_health.repo_message}",
-                f"  Runtime: {self.context.environment_health.runtime_status} — {self.context.environment_health.runtime_message}",
-                f"  Venv: {self.context.environment_health.venv_status} — {self.context.environment_health.venv_message}",
-                f"  Data: {self.context.environment_health.data_status} — {self.context.environment_health.data_message}",
+                "Node health snapshot:",
+                f"  Overall: {self.context.health_snapshot.overall_status}",
+                f"  Install: {self.context.health_snapshot.install_status} — {self.context.health_snapshot.install_message}",
+                f"  Target: {self.context.health_snapshot.target_status} — {self.context.health_snapshot.target_message}",
+                f"  Runtime: {self.context.health_snapshot.runtime_status} — {self.context.health_snapshot.runtime_message}",
+                f"  Venv: {self.context.health_snapshot.venv_status} — {self.context.health_snapshot.venv_message}",
+                f"  Data: {self.context.health_snapshot.data_status} — {self.context.health_snapshot.data_message}",
                 "",
             ])
         for item in report.items:
@@ -366,12 +368,12 @@ class MainWindow(QMainWindow):
             "display_name": str(selected_path),
         }
 
-        if self.context.run_mode == "launcher_managed":
-            if self.context.session_env is None:
-                QMessageBox.warning(self, "Strategy Box", "Launcher-managed session misses session environment client.")
+        if self.context.run_mode == "appdock_managed":
+            if self.context.session_client is None:
+                QMessageBox.warning(self, "Strategy Box", "AppDock-managed session misses session state client.")
                 return
             try:
-                self.context.session_env.update_data_root(
+                self.context.session_client.update_data_root(
                     data_locator=data_locator,
                     data_root_path=selected_path,
                     data_root_status=status,

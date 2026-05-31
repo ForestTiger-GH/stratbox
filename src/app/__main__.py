@@ -23,12 +23,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '--diagnose',
         action='store_true',
-        help='Run launcher preflight diagnostics and print JSON result.',
+        help='Run AppDock preflight diagnostics and print JSON result.',
     )
     parser.add_argument(
         '--standalone-dev-root',
         default=None,
-        help='Explicit business-root for standalone developer launch outside launcher handoff.',
+        help='Explicit business-root for standalone developer launch outside AppDock handoff.',
     )
     return parser
 
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.diagnose:
         registry = load_task_registry()
-        result = run_task_by_id('environment_check', registry=registry, context=context, params={'mode': 'launcher_preflight'})
+        result = run_task_by_id('environment_check', registry=registry, context=context, params={'mode': 'appdock_preflight'})
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0 if result.ok else 2
 
