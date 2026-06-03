@@ -69,7 +69,7 @@ pip install -e .
 
 ## Desktop shell внутри репозитория
 
-Внутри репозитория есть пакет `src/app` — desktop-приложение Strategy Box, публикуемое как AppDock app target. Оно не заменяет библиотеку `stratbox`, а использует её как доменное ядро.
+Внутри репозитория есть пакет `src/app` — desktop-приложение Strategy Box, публикуемое как AppDock app surface. Оно не заменяет библиотеку `stratbox`, а использует её как доменное ядро.
 
 Главный маршрут такой:
 
@@ -350,7 +350,7 @@ scripts/        # примеры запуска
 
 ## Desktop shell `app`
 
-Репозиторий содержит пакет `app`, который работает как desktop-оболочка Strategy Box, публикуемая как AppDock app target.
+Репозиторий содержит пакет `app`, который работает как desktop-оболочка Strategy Box, публикуемая как AppDock app surface.
 
 Основной пользовательский маршрут выглядит так:
 

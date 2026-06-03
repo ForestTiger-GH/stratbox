@@ -10,7 +10,7 @@ from typing import Any
 
 from app.core.app_state import AppStateRecord
 from app.core.errors import AppConfigError
-from app.core.handoff import AppDockHandoff
+from app.core.handoff import AppHandoff
 from app.workspace import DataRootStatus
 
 
@@ -47,7 +47,7 @@ class UserStateRecord:
     last_effective_data_root_path: str | None = None
     last_session_id: str | None = None
     current_session_id: str | None = None
-    last_app_target_id: str | None = None
+    last_app_surface_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -63,7 +63,7 @@ class UserStateRecord:
             last_effective_data_root_path=(str(payload["last_effective_data_root_path"]) if payload.get("last_effective_data_root_path") else None),
             last_session_id=(str(payload["last_session_id"]) if payload.get("last_session_id") else None),
             current_session_id=(str(payload["current_session_id"]) if payload.get("current_session_id") else None),
-            last_app_target_id=(str(payload["last_app_target_id"]) if payload.get("last_app_target_id") else None),
+            last_app_surface_id=(str(payload["last_app_surface_id"]) if payload.get("last_app_surface_id") else None),
         )
 
 
@@ -78,7 +78,6 @@ class SessionStateRecord:
     node_id: str
     started_at_utc: str
     attach_mode: str
-    deployment_profile: str
     status: str
     lifecycle_state: str
     last_updated_at_utc: str
@@ -86,12 +85,12 @@ class SessionStateRecord:
     effective_data_locator: dict[str, Any] | None = None
     effective_data_root_path: str | None = None
     data_root_status: str | None = None
-    target_commit: str | None = None
-    target_sync_mode: str | None = None
+    source_commit: str | None = None
+    source_sync_mode: str | None = None
     degraded_launch: bool | None = None
-    connector_id: str | None = None
-    active_app_target: str | None = None
-    entry_surface: str | None = None
+    world_id: str | None = None
+    active_app_surface: str | None = None
+    entry_view: str | None = None
     handoff_ref: str | None = None
     app_state_ref: str | None = None
     app_pid: int | None = None
@@ -105,8 +104,12 @@ class SessionStateRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SessionStateRecord":
-        attach_mode = payload.get("attach_mode") or payload.get("target_mode") or ""
-        deployment_profile = payload.get("deployment_profile") or payload.get("target_deployment_profile") or ""
+        lifecycle_state = str(payload.get("lifecycle_state") or "")
+        status = str(payload.get("status") or "")
+        if not lifecycle_state:
+            lifecycle_state = 'ended' if payload.get('ended_at_utc') else 'created'
+        if not status:
+            status = lifecycle_state
         return cls(
             session_id=str(payload.get("session_id") or ""),
             user_id=str(payload.get("user_id") or ""),
@@ -114,21 +117,20 @@ class SessionStateRecord:
             host_name=str(payload.get("host_name") or ""),
             node_id=str(payload.get("node_id") or ""),
             started_at_utc=str(payload.get("started_at_utc") or ""),
-            attach_mode=str(attach_mode),
-            deployment_profile=str(deployment_profile),
-            status=str(payload.get("status") or ""),
-            lifecycle_state=str(payload.get("lifecycle_state") or ""),
-            last_updated_at_utc=str(payload.get("last_updated_at_utc") or payload.get("last_state_change_at_utc") or ""),
+            attach_mode=str(payload.get("attach_mode") or ""),
+            status=status,
+            lifecycle_state=lifecycle_state,
+            last_updated_at_utc=str(payload.get("last_updated_at_utc") or payload.get("started_at_utc") or ""),
             ended_at_utc=(str(payload["ended_at_utc"]) if payload.get("ended_at_utc") else None),
             effective_data_locator=(payload.get("effective_data_locator") if isinstance(payload.get("effective_data_locator"), dict) else None),
             effective_data_root_path=(str(payload["effective_data_root_path"]) if payload.get("effective_data_root_path") else None),
             data_root_status=(str(payload["data_root_status"]) if payload.get("data_root_status") else None),
-            target_commit=(str(payload["target_commit"]) if payload.get("target_commit") else None),
-            target_sync_mode=(str(payload["target_sync_mode"]) if payload.get("target_sync_mode") else None),
+            source_commit=(str(payload["source_commit"]) if payload.get("source_commit") else None),
+            source_sync_mode=(str(payload["source_sync_mode"]) if payload.get("source_sync_mode") else None),
             degraded_launch=(bool(payload["degraded_launch"]) if payload.get("degraded_launch") is not None else None),
-            connector_id=(str(payload["connector_id"]) if payload.get("connector_id") else None),
-            active_app_target=(str(payload["active_app_target"]) if payload.get("active_app_target") else None),
-            entry_surface=(str(payload["entry_surface"]) if payload.get("entry_surface") else None),
+            world_id=(str(payload["world_id"]) if payload.get("world_id") else None),
+            active_app_surface=(str(payload["active_app_surface"]) if payload.get("active_app_surface") else None),
+            entry_view=(str(payload["entry_view"]) if payload.get("entry_view") else None),
             handoff_ref=(str(payload["handoff_ref"]) if payload.get("handoff_ref") else None),
             app_state_ref=(str(payload["app_state_ref"]) if payload.get("app_state_ref") else None),
             app_pid=(int(payload["app_pid"]) if payload.get("app_pid") is not None else None),
@@ -149,7 +151,7 @@ class ActiveSessionProjectionRecord:
     effective_data_root_path: str | None = None
     data_root_status: str | None = None
     degraded_launch: bool | None = None
-    active_app_target: str | None = None
+    active_app_surface: str | None = None
     app_pid: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -169,7 +171,7 @@ class ActiveSessionProjectionRecord:
             effective_data_root_path=(str(payload["effective_data_root_path"]) if payload.get("effective_data_root_path") else None),
             data_root_status=(str(payload["data_root_status"]) if payload.get("data_root_status") else None),
             degraded_launch=(bool(payload["degraded_launch"]) if payload.get("degraded_launch") is not None else None),
-            active_app_target=(str(payload["active_app_target"]) if payload.get("active_app_target") else None),
+            active_app_surface=(str(payload["active_app_surface"]) if payload.get("active_app_surface") else None),
             app_pid=(int(payload["app_pid"]) if payload.get("app_pid") is not None else None),
         )
 
@@ -183,8 +185,8 @@ class NodeHealthSnapshotRecord:
     overall_status: str
     install_status: str
     install_message: str
-    target_status: str
-    target_message: str
+    source_status: str
+    source_message: str
     runtime_status: str
     runtime_message: str
     venv_status: str
@@ -193,10 +195,10 @@ class NodeHealthSnapshotRecord:
     data_message: str
     degraded_launch: bool
     effective_data_root_path: str | None = None
-    target_commit: str | None = None
-    target_sync_mode: str | None = None
-    connector_id: str | None = None
-    active_app_target: str | None = None
+    source_commit: str | None = None
+    source_sync_mode: str | None = None
+    world_id: str | None = None
+    active_app_surface: str | None = None
     app_status: str | None = None
     pip_tls_mode: str | None = None
     pip_version: str | None = None
@@ -208,12 +210,39 @@ class NodeHealthSnapshotRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "NodeHealthSnapshotRecord":
-        return cls(**payload)
+        return cls(
+            recorded_at_utc=str(payload.get("recorded_at_utc") or ""),
+            node_id=payload.get("node_id"),
+            user_id=payload.get("user_id"),
+            session_id=payload.get("session_id"),
+            overall_status=str(payload.get("overall_status") or ""),
+            install_status=str(payload.get("install_status") or ""),
+            install_message=str(payload.get("install_message") or ""),
+            source_status=str(payload.get("source_status") or ""),
+            source_message=str(payload.get("source_message") or ""),
+            runtime_status=str(payload.get("runtime_status") or ""),
+            runtime_message=str(payload.get("runtime_message") or ""),
+            venv_status=str(payload.get("venv_status") or ""),
+            venv_message=str(payload.get("venv_message") or ""),
+            data_status=str(payload.get("data_status") or ""),
+            data_message=str(payload.get("data_message") or ""),
+            degraded_launch=bool(payload.get("degraded_launch", False)),
+            effective_data_root_path=payload.get("effective_data_root_path"),
+            source_commit=payload.get("source_commit"),
+            source_sync_mode=payload.get("source_sync_mode"),
+            world_id=payload.get("world_id"),
+            active_app_surface=payload.get("active_app_surface"),
+            app_status=payload.get("app_status"),
+            pip_tls_mode=payload.get("pip_tls_mode"),
+            pip_version=payload.get("pip_version"),
+            install_error_category=payload.get("install_error_category"),
+            install_error_message=payload.get("install_error_message"),
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class AppSessionSnapshot:
-    handoff: AppDockHandoff
+    handoff: AppHandoff
     session_state: SessionStateRecord | None
     user_state: UserStateRecord | None
     active_session: ActiveSessionProjectionRecord | None
@@ -224,7 +253,7 @@ class AppSessionSnapshot:
 class AppSessionClient:
     """Клиент работы с app-facing state surfaces AppDock."""
 
-    def __init__(self, handoff: AppDockHandoff) -> None:
+    def __init__(self, handoff: AppHandoff) -> None:
         self.handoff = handoff
         self.user_state_path = Path(handoff.refs.user_state_ref).expanduser() if handoff.refs.user_state_ref else None
         self.session_state_path = Path(handoff.refs.session_ref).expanduser() if handoff.refs.session_ref else None
@@ -280,7 +309,7 @@ class AppSessionClient:
         now = _utc_now()
         return AppStateRecord(
             app_state_contract_version="1.0",
-            app_id=self.handoff.active_app_target,
+            surface_id=self.handoff.active_app_surface,
             updated_at_utc=now,
             heartbeat_utc=now,
             resumable=True,

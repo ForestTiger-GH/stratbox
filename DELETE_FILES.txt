@@ -1,0 +1,2 @@
+appdock-connector/connector.json
+appdock-connector/

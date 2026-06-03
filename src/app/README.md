@@ -1,12 +1,12 @@
 # app
 
-`app` — desktop-приложение Strategy Box, публикуемое как AppDock app target.
+`app` — desktop-приложение Strategy Box, публикуемое как AppDock app surface.
 
 На текущем этапе AppDock:
 - подготавливает node-среду;
 - синхронизирует внешний репозиторий;
-- валидирует `appdock-connector/connector.json`;
-- выбирает активный app target;
+- валидирует `appdock-world/manifest.json`;
+- выбирает активную app surface;
 - передаёт приложению runtime-context через `APPDOCK_HANDOFF_PATH`;
 - открывает `python -m app.entrypoints.appdock`.
 
@@ -19,7 +19,7 @@ AppDock отвечает за:
 - runtime и trust-контур;
 - handoff и session refs;
 - health snapshot;
-- выбор active app target;
+- выбор active app surface;
 - запуск entrypoint.
 
 `app` отвечает за:
@@ -38,7 +38,7 @@ AppDock отвечает за:
 - AppDock готовит node;
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает `APPDOCK_HANDOFF_PATH`;
-- приложение строит контекст от `workspace`, `refs`, `target_revision` и snapshot-ов.
+- приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов.
 
 ### Standalone developer route
 
@@ -72,7 +72,7 @@ python -m app --standalone-dev-root "D:/Data"
 ## Surface приложения
 
 Внутри `app` основные поверхности такие:
-- `Overview` — App target, revision, node/session, selector и workspace root;
+- `Overview` — World / app surface, revision, node/session, selector и workspace root;
 - `Node and workspace` — schema, selector, status, diagnostics;
 - `Scenarios` — реестр пользовательских сценариев;
 - `Latest result` — итог последнего запуска;

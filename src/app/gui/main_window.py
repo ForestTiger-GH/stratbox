@@ -128,8 +128,8 @@ class MainWindow(QMainWindow):
         self.open_logs_button = QPushButton("Open logs")
         self.open_logs_button.clicked.connect(lambda: self._open_path(str(self.context.paths.logs_dir)))
         service_layout.addWidget(self.open_logs_button)
-        self.open_repo_button = QPushButton("Open repo")
-        self.open_repo_button.clicked.connect(lambda: self._open_path(str(self.context.paths.repo_dir)))
+        self.open_repo_button = QPushButton("Open source")
+        self.open_repo_button.clicked.connect(lambda: self._open_path(str(self.context.paths.source_root)))
         service_layout.addWidget(self.open_repo_button)
         left_layout.addWidget(service_box)
 
@@ -319,13 +319,13 @@ class MainWindow(QMainWindow):
         dirty = ' dirty' if version.dirty else ''
         selector_text = str(self.context.data_root_selector_path) if self.context.data_root_selector_path else '(not set)'
         workspace_text = str(self.context.workspace_root_path) if self.context.workspace_root_path else '(not resolved)'
-        connector_text = self.context.appdock_handoff.connector_id if self.context.appdock_handoff else '(standalone)'
-        active_target = self.context.appdock_handoff.active_app_target if self.context.appdock_handoff else 'standalone'
-        revision = version.commit_short if self.context.appdock_handoff is None else (self.context.appdock_handoff.target_revision.commit or version.commit_short)
+        world_text = self.context.appdock_handoff.world_id if self.context.appdock_handoff else '(standalone)'
+        active_surface = self.context.appdock_handoff.active_app_surface if self.context.appdock_handoff else 'standalone'
+        revision = version.commit_short if self.context.appdock_handoff is None else (self.context.appdock_handoff.source_revision.commit or version.commit_short)
         self.overview_label.setText(
             '\n'.join([
-                f'Connector / App target: {connector_text} / {active_target}',
-                f'Target revision: {revision}{dirty} ({version.branch})',
+                f'World / App surface: {world_text} / {active_surface}',
+                f'Source revision: {revision}{dirty} ({version.branch})',
                 f'Node / Session: {self.context.node_id or "(unknown)"} / {self.context.session_id or "(unknown)"}',
                 f'Attach mode / Launch origin: {self.context.appdock_handoff.attach_mode if self.context.appdock_handoff else self.context.run_mode} / {self.context.launch_origin}',
                 f'Workspace schema: {self.context.workspace_schema.title}',
@@ -399,11 +399,11 @@ class MainWindow(QMainWindow):
         ]
         if self.context.appdock_handoff is not None:
             lines.extend([
-                f'Connector: {self.context.appdock_handoff.connector_id}',
-                f'Active app target: {self.context.appdock_handoff.active_app_target}',
-                f'Deployment profile: {self.context.appdock_handoff.deployment_profile}',
-                f'Target revision: {self.context.appdock_handoff.target_revision.commit}',
-                f'Target sync mode: {self.context.appdock_handoff.target_revision.sync_mode}',
+                f'World: {self.context.appdock_handoff.world_id}',
+                f'Active app surface: {self.context.appdock_handoff.active_app_surface}',
+                f'Bundle profile: {self.context.appdock_handoff.bundle_profile}',
+                f'Source revision: {self.context.appdock_handoff.source_revision.commit}',
+                f'Source sync mode: {self.context.appdock_handoff.source_revision.sync_mode}',
                 '',
             ])
         for item in report.items:

@@ -12,8 +12,8 @@ from app.core.errors import AppConfigError
 
 
 @dataclass(frozen=True, slots=True)
-class TargetRevisionRef:
-    """Сведения о целевой ревизии подключённого репозитория."""
+class SourceRevisionRef:
+    """Сведения о ревизии подключённого world source."""
 
     ref_kind: str
     ref: str
@@ -21,7 +21,7 @@ class TargetRevisionRef:
     sync_mode: str | None
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "TargetRevisionRef":
+    def from_dict(cls, payload: dict[str, Any]) -> "SourceRevisionRef":
         return cls(
             ref_kind=str(payload.get("ref_kind") or ""),
             ref=str(payload.get("ref") or ""),
@@ -37,8 +37,11 @@ class TargetRevisionRef:
 class HandoffWorkspace:
     """Рабочий контекст, который shell передаёт приложению."""
 
-    repo_dir: str
+    source_root: str
     node_root: str
+    config_root: str
+    runtime_root: str
+    bundle_root: str
     logs_root: str
     data_locator: dict[str, Any] | None
     data_root_status: str
@@ -47,8 +50,11 @@ class HandoffWorkspace:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "HandoffWorkspace":
         return cls(
-            repo_dir=str(payload.get("repo_dir") or ""),
+            source_root=str(payload.get("source_root") or ""),
             node_root=str(payload.get("node_root") or ""),
+            config_root=str(payload.get("config_root") or ""),
+            runtime_root=str(payload.get("runtime_root") or ""),
+            bundle_root=str(payload.get("bundle_root") or ""),
             logs_root=str(payload.get("logs_root") or ""),
             data_locator=(payload.get("data_locator") if isinstance(payload.get("data_locator"), dict) else None),
             data_root_status=str(payload.get("data_root_status") or "unavailable"),
@@ -84,21 +90,20 @@ class HandoffRefs:
 
 
 @dataclass(frozen=True, slots=True)
-class AppDockHandoff:
+class AppHandoff:
     """Контракт запуска приложения из AppDock."""
 
     handoff_contract_version: str
     generated_at_utc: str
-    connector_id: str
+    world_id: str
     bundle_id: str
     bundle_profile: str | None
-    active_app_target: str
-    entry_surface: str
-    declared_surfaces: tuple[str, ...]
+    active_app_surface: str
+    entry_view: str
+    declared_views: tuple[str, ...]
     attach_mode: str
-    deployment_profile: str
     degraded_launch: bool
-    target_revision: TargetRevisionRef
+    source_revision: SourceRevisionRef
     workspace: HandoffWorkspace
     refs: HandoffRefs
     node_id: str | None = None
@@ -111,10 +116,10 @@ class AppDockHandoff:
     available_route_groups: tuple[str, ...] = tuple()
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "AppDockHandoff":
-        target_revision_payload = payload.get("target_revision")
-        if not isinstance(target_revision_payload, dict):
-            raise AppConfigError("AppDock handoff misses target_revision object")
+    def from_dict(cls, payload: dict[str, Any]) -> "AppHandoff":
+        source_revision_payload = payload.get("source_revision")
+        if not isinstance(source_revision_payload, dict):
+            raise AppConfigError("AppDock handoff misses source_revision object")
         workspace_payload = payload.get("workspace")
         if not isinstance(workspace_payload, dict):
             raise AppConfigError("AppDock handoff misses workspace object")
@@ -122,11 +127,11 @@ class AppDockHandoff:
         if not isinstance(refs_payload, dict):
             raise AppConfigError("AppDock handoff misses refs object")
 
-        declared_surfaces_raw = payload.get("declared_surfaces") or []
-        if isinstance(declared_surfaces_raw, str):
-            declared_surfaces = (declared_surfaces_raw,) if declared_surfaces_raw.strip() else tuple()
+        declared_views_raw = payload.get("declared_views") or []
+        if isinstance(declared_views_raw, str):
+            declared_views = (declared_views_raw,) if declared_views_raw.strip() else tuple()
         else:
-            declared_surfaces = tuple(str(item) for item in declared_surfaces_raw if str(item).strip())
+            declared_views = tuple(str(item) for item in declared_views_raw if str(item).strip())
 
         route_groups_raw = payload.get("available_route_groups") or []
         if isinstance(route_groups_raw, str):
@@ -137,16 +142,15 @@ class AppDockHandoff:
         return cls(
             handoff_contract_version=str(payload.get("handoff_contract_version") or ""),
             generated_at_utc=str(payload.get("generated_at_utc") or ""),
-            connector_id=str(payload.get("connector_id") or ""),
+            world_id=str(payload.get("world_id") or ""),
             bundle_id=str(payload.get("bundle_id") or ""),
             bundle_profile=(str(payload["bundle_profile"]) if payload.get("bundle_profile") else None),
-            active_app_target=str(payload.get("active_app_target") or ""),
-            entry_surface=str(payload.get("entry_surface") or "overview"),
-            declared_surfaces=declared_surfaces,
+            active_app_surface=str(payload.get("active_app_surface") or ""),
+            entry_view=str(payload.get("entry_view") or "overview"),
+            declared_views=declared_views,
             attach_mode=str(payload.get("attach_mode") or ""),
-            deployment_profile=str(payload.get("deployment_profile") or ""),
             degraded_launch=bool(payload.get("degraded_launch", False)),
-            target_revision=TargetRevisionRef.from_dict(target_revision_payload),
+            source_revision=SourceRevisionRef.from_dict(source_revision_payload),
             workspace=HandoffWorkspace.from_dict(workspace_payload),
             refs=HandoffRefs.from_dict(refs_payload),
             node_id=(str(payload["node_id"]) if payload.get("node_id") else None),
@@ -175,7 +179,7 @@ def get_appdock_config_path_from_env() -> Path | None:
     return Path(value) if value else None
 
 
-def load_appdock_handoff(path: Path) -> AppDockHandoff:
+def load_appdock_handoff(path: Path) -> AppHandoff:
     """Читает и валидирует handoff-файл AppDock."""
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -183,19 +187,19 @@ def load_appdock_handoff(path: Path) -> AppDockHandoff:
         raise AppConfigError(f"Failed to read AppDock handoff: {path}") from exc
     if not isinstance(payload, dict):
         raise AppConfigError(f"AppDock handoff must be a JSON object: {path}")
-    handoff = AppDockHandoff.from_dict(payload)
-    if not handoff.connector_id:
-        raise AppConfigError("AppDock handoff misses connector_id")
-    if not handoff.active_app_target:
-        raise AppConfigError("AppDock handoff misses active_app_target")
-    if not handoff.workspace.repo_dir:
-        raise AppConfigError("AppDock handoff misses workspace.repo_dir")
+    handoff = AppHandoff.from_dict(payload)
+    if not handoff.world_id:
+        raise AppConfigError("AppDock handoff misses world_id")
+    if not handoff.active_app_surface:
+        raise AppConfigError("AppDock handoff misses active_app_surface")
+    if not handoff.workspace.source_root:
+        raise AppConfigError("AppDock handoff misses workspace.source_root")
     if not handoff.workspace.node_root:
         raise AppConfigError("AppDock handoff misses workspace.node_root")
     return handoff
 
 
-def load_appdock_handoff_from_env() -> AppDockHandoff | None:
+def load_appdock_handoff_from_env() -> AppHandoff | None:
     """Читает handoff AppDock из переменной окружения, если она задана."""
     path = get_appdock_handoff_path_from_env()
     if path is None or not path.exists():

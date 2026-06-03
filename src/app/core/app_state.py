@@ -11,7 +11,7 @@ class AppStateRecord:
     """Минимальный обратный контракт app -> AppDock."""
 
     app_state_contract_version: str
-    app_id: str
+    surface_id: str
     updated_at_utc: str
     heartbeat_utc: str | None = None
     resumable: bool = False
@@ -36,7 +36,7 @@ class AppStateRecord:
     def to_dict(self) -> dict[str, Any]:
         return {
             "app_state_contract_version": self.app_state_contract_version,
-            "app_id": self.app_id,
+            "surface_id": self.surface_id,
             "updated_at_utc": self.updated_at_utc,
             "heartbeat_utc": self.heartbeat_utc,
             "resumable": self.resumable,
@@ -91,7 +91,7 @@ class AppStateRecord:
         workspace_state = payload.get("workspace_state") if isinstance(payload.get("workspace_state"), dict) else {}
         return cls(
             app_state_contract_version=str(payload.get("app_state_contract_version") or ""),
-            app_id=str(payload.get("app_id") or ""),
+            surface_id=str(payload.get("surface_id") or ""),
             updated_at_utc=str(payload.get("updated_at_utc") or ""),
             heartbeat_utc=(str(payload["heartbeat_utc"]) if payload.get("heartbeat_utc") else None),
             resumable=bool(payload.get("resumable", False)),

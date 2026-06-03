@@ -11,7 +11,7 @@ from stratbox.base.filestore import FileStore
 
 from app.core.errors import AppStartupError
 from app.core.handoff import (
-    AppDockHandoff,
+    AppHandoff,
     get_appdock_config_path_from_env,
     get_appdock_handoff_path_from_env,
     load_appdock_handoff_from_env,
@@ -48,7 +48,7 @@ class AppContext:
     user_config: AppUserConfig
     workspaces: WorkspaceRegistry
     workspace_schema: WorkspaceSchema
-    appdock_handoff: AppDockHandoff | None
+    appdock_handoff: AppHandoff | None
     session_client: AppSessionClient | None
     session_snapshot: AppSessionSnapshot | None
     run_mode: str
@@ -74,7 +74,7 @@ class AppContext:
     health_snapshot: NodeHealthSnapshotRecord | None = None
 
 
-def _selector_path_from_handoff(handoff: AppDockHandoff) -> Path | None:
+def _selector_path_from_handoff(handoff: AppHandoff) -> Path | None:
     locator = handoff.workspace.data_locator
     if isinstance(locator, dict) and str(locator.get("kind") or "") == "local_path":
         value = locator.get("value")
@@ -101,7 +101,7 @@ def _resolve_run_contract(
     *,
     standalone_dev_root: str | None = None,
     override_data_root_path: Path | None = None,
-) -> tuple[str, AppDockHandoff | None, Path | None]:
+) -> tuple[str, AppHandoff | None, Path | None]:
     handoff = load_appdock_handoff_from_env()
     if handoff is not None:
         if override_data_root_path is not None:
@@ -165,7 +165,7 @@ def build_app_context(
     workspace_root_path = workspace_resolution.workspace_root_path
     workspace_status = workspace_resolution.workspace_status
     filestore = build_filestore_for_workspace_root(workspace_root_path) if workspace_status.available and workspace_root_path else None
-    version = get_version_info(paths.repo_dir)
+    version = get_version_info(paths.source_root)
 
     degraded_launch = (
         (appdock_handoff.degraded_launch if appdock_handoff is not None else False)

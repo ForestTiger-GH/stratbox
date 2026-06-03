@@ -66,6 +66,7 @@ DEFAULT_CBR_ARCHIVE_URLS: tuple[str, ...] = (
 
     # Прочие файлы
     "https://www.cbr.ru/Content/Document/File/115862/obs_tabl20%D1%81.xlsx",
+    "https://cbr.ru/vfs/statistics/credit_statistics/ex_rate_ind/exchange_rate.xlsx",
 )
 
 # Совместимое старое имя: теперь это тоже простой плоский список строк-URL.

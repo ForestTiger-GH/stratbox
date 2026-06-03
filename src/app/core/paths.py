@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.core.handoff import AppDockHandoff
+from app.core.handoff import AppHandoff
 
 APP_DIR_NAME = 'Stratbox'
 
@@ -20,7 +20,7 @@ APP_DIR_NAME = 'Stratbox'
 class AppPaths:
     """Набор основных путей приложения."""
 
-    repo_dir: Path
+    source_root: Path
     src_dir: Path
     user_root: Path
     config_dir: Path
@@ -39,6 +39,8 @@ class AppPaths:
     active_session_path: Path | None = None
     health_snapshot_path: Path | None = None
     app_state_path: Path | None = None
+    bundle_root: Path | None = None
+    appdock_runtime_root: Path | None = None
 
 
 def _local_app_data_root() -> Path:
@@ -48,18 +50,18 @@ def _local_app_data_root() -> Path:
     return Path.home() / '.local' / 'share'
 
 
-def _detect_repo_dir() -> Path:
+def _detect_source_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
 def build_app_paths(
     *,
-    appdock_handoff: AppDockHandoff | None = None,
+    appdock_handoff: AppHandoff | None = None,
     handoff_path: Path | None = None,
     appdock_config_path: Path | None = None,
 ) -> AppPaths:
-    repo_dir = Path(appdock_handoff.workspace.repo_dir).expanduser() if appdock_handoff is not None else _detect_repo_dir()
-    src_dir = repo_dir / 'src'
+    source_root = Path(appdock_handoff.workspace.source_root).expanduser() if appdock_handoff is not None else _detect_source_root()
+    src_dir = source_root / 'src'
     user_root = _local_app_data_root() / APP_DIR_NAME
     config_dir = user_root / 'config'
 
@@ -77,6 +79,8 @@ def build_app_paths(
         active_session_path = Path(appdock_handoff.refs.active_session_ref).expanduser() if appdock_handoff.refs.active_session_ref else None
         health_snapshot_path = Path(appdock_handoff.refs.health_snapshot_ref).expanduser() if appdock_handoff.refs.health_snapshot_ref else None
         app_state_path = Path(appdock_handoff.refs.app_state_ref).expanduser() if appdock_handoff.refs.app_state_ref else None
+        bundle_root = Path(appdock_handoff.workspace.bundle_root).expanduser()
+        appdock_runtime_root = Path(appdock_handoff.workspace.runtime_root).expanduser()
     else:
         node_root = None
         session_dir = None
@@ -90,12 +94,14 @@ def build_app_paths(
         active_session_path = None
         health_snapshot_path = None
         app_state_path = None
+        bundle_root = None
+        appdock_runtime_root = None
 
     for path in (config_dir, logs_dir, scenario_logs_dir, cache_dir, runtime_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     return AppPaths(
-        repo_dir=repo_dir,
+        source_root=source_root,
         src_dir=src_dir,
         user_root=user_root,
         config_dir=config_dir,
@@ -114,4 +120,6 @@ def build_app_paths(
         active_session_path=active_session_path,
         health_snapshot_path=health_snapshot_path,
         app_state_path=app_state_path,
+        bundle_root=bundle_root,
+        appdock_runtime_root=appdock_runtime_root,
     )

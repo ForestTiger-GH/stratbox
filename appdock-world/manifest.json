@@ -1,22 +1,22 @@
 {
-  "connector_contract_version": "1.0",
-  "connector_id": "stratbox",
+  "world_manifest_contract_version": "1.0",
+  "world_id": "stratbox",
   "display_name": "Strategy Box",
   "bundle_id": "stratbox",
   "bundle_profile": "desktop",
-  "default_app_target_id": "stratbox.desktop",
-  "app_targets": [
+  "default_app_surface_id": "stratbox.desktop",
+  "app_surfaces": [
     {
-      "app_id": "stratbox.desktop",
+      "surface_id": "stratbox.desktop",
       "display_name": "Strategy Box",
       "entrypoint": "app.entrypoints.appdock",
-      "entry_surface": "overview",
+      "entry_view": "overview",
       "bundle_scope": "stratbox",
       "compatible_modes": [
         "local",
         "attached"
       ],
-      "declared_surfaces": [
+      "declared_views": [
         "overview",
         "scenarios",
         "artifacts",
@@ -46,6 +46,6 @@
     }
   ],
   "metadata": {
-    "description": "Strategy Box desktop app target for AppDock."
+    "description": "Strategy Box desktop app surface for AppDock world entry."
   }
 }
