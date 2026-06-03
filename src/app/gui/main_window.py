@@ -449,13 +449,12 @@ class MainWindow(QMainWindow):
             return
         selected_path = Path(selected).expanduser()
         status = resolve_data_root_status(selected_path)
-        data_locator = {'kind': 'local_path', 'value': str(selected_path), 'display_name': str(selected_path)}
         if self.context.run_mode == 'appdock_managed':
             if self.context.session_client is None:
                 QMessageBox.warning(self, 'Strategy Box', 'AppDock-managed session misses session client.')
                 return
             try:
-                self.context.session_client.update_workspace_selector(data_locator=data_locator, selector_path=selected_path, data_root_status=status)
+                self.context.session_client.update_workspace_selector(selector_path=selected_path, data_root_status=status)
                 self.context = build_app_context(launch_origin=self.context.launch_origin)
             except Exception as exc:
                 QMessageBox.warning(self, 'Strategy Box', str(exc))

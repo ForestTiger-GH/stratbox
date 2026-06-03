@@ -29,7 +29,8 @@ class AppPaths:
     cache_dir: Path
     runtime_dir: Path
     app_config_path: Path
-    node_root: Path | None = None
+    install_root: Path | None = None
+    system_root: Path | None = None
     session_dir: Path | None = None
     appdock_managed: bool = False
     handoff_path: Path | None = None
@@ -66,7 +67,8 @@ def build_app_paths(
     config_dir = user_root / 'config'
 
     if appdock_handoff is not None:
-        node_root = Path(appdock_handoff.workspace.node_root).expanduser()
+        install_root = Path(appdock_handoff.workspace.install_root).expanduser()
+        system_root = Path(appdock_handoff.workspace.system_root).expanduser()
         logs_root = Path(appdock_handoff.workspace.logs_root).expanduser()
         logs_dir = logs_root / 'app'
         scenario_logs_dir = logs_dir / 'scenarios'
@@ -82,7 +84,8 @@ def build_app_paths(
         bundle_root = Path(appdock_handoff.workspace.bundle_root).expanduser()
         appdock_runtime_root = Path(appdock_handoff.workspace.runtime_root).expanduser()
     else:
-        node_root = None
+        install_root = None
+        system_root = None
         session_dir = None
         logs_dir = user_root / 'logs'
         scenario_logs_dir = logs_dir / 'scenarios'
@@ -110,7 +113,8 @@ def build_app_paths(
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
         app_config_path=config_dir / 'app.json',
-        node_root=node_root,
+        install_root=install_root,
+        system_root=system_root,
         session_dir=session_dir,
         appdock_managed=appdock_managed,
         handoff_path=handoff_path,

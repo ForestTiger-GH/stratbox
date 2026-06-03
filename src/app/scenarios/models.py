@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from stratbox.base.filestore import FileStore
 
-from app.core.handoff import AppDockHandoff
+from app.core.handoff import AppHandoff
 from app.core.paths import AppPaths
 from app.core.session_env import (
     ActiveSessionProjectionRecord,
@@ -114,7 +114,7 @@ class ScenarioContext:
     version: VersionInfo
     logger: logging.Logger
     scenario_log_path: Path
-    appdock_handoff: AppDockHandoff | None = None
+    appdock_handoff: AppHandoff | None = None
     run_mode: str = 'appdock_managed'
     launch_origin: str = 'standalone'
     node_id: str | None = None

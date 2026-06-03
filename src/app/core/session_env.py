@@ -43,7 +43,6 @@ class UserStateRecord:
     account_name: str
     host_name: str
     last_seen_at_utc: str | None = None
-    preferred_data_locator: dict[str, Any] | None = None
     last_effective_data_root_path: str | None = None
     last_session_id: str | None = None
     current_session_id: str | None = None
@@ -59,7 +58,6 @@ class UserStateRecord:
             account_name=str(payload.get("account_name") or ""),
             host_name=str(payload.get("host_name") or ""),
             last_seen_at_utc=(str(payload["last_seen_at_utc"]) if payload.get("last_seen_at_utc") else None),
-            preferred_data_locator=(payload.get("preferred_data_locator") if isinstance(payload.get("preferred_data_locator"), dict) else None),
             last_effective_data_root_path=(str(payload["last_effective_data_root_path"]) if payload.get("last_effective_data_root_path") else None),
             last_session_id=(str(payload["last_session_id"]) if payload.get("last_session_id") else None),
             current_session_id=(str(payload["current_session_id"]) if payload.get("current_session_id") else None),
@@ -82,7 +80,6 @@ class SessionStateRecord:
     lifecycle_state: str
     last_updated_at_utc: str
     ended_at_utc: str | None = None
-    effective_data_locator: dict[str, Any] | None = None
     effective_data_root_path: str | None = None
     data_root_status: str | None = None
     source_commit: str | None = None
@@ -122,7 +119,6 @@ class SessionStateRecord:
             lifecycle_state=lifecycle_state,
             last_updated_at_utc=str(payload.get("last_updated_at_utc") or payload.get("started_at_utc") or ""),
             ended_at_utc=(str(payload["ended_at_utc"]) if payload.get("ended_at_utc") else None),
-            effective_data_locator=(payload.get("effective_data_locator") if isinstance(payload.get("effective_data_locator"), dict) else None),
             effective_data_root_path=(str(payload["effective_data_root_path"]) if payload.get("effective_data_root_path") else None),
             data_root_status=(str(payload["data_root_status"]) if payload.get("data_root_status") else None),
             source_commit=(str(payload["source_commit"]) if payload.get("source_commit") else None),
@@ -341,9 +337,8 @@ class AppSessionClient:
         warnings: tuple[str, ...] = (warning,) if warning else tuple()
         return self.update_app_state(clean_shutdown=clean_shutdown, active_view=active_view, warnings=warnings, state_kind="shutdown")
 
-    def update_workspace_selector(self, *, data_locator: dict[str, Any], selector_path: Path | None, data_root_status: DataRootStatus) -> AppSessionSnapshot:
+    def update_workspace_selector(self, *, selector_path: Path | None, data_root_status: DataRootStatus) -> AppSessionSnapshot:
         workspace_state = {
-            "selected_data_locator": dict(data_locator),
             "selected_data_root_path": (str(selector_path) if selector_path else None),
             "selected_data_root_status": "available" if data_root_status.available else "unavailable",
             "selected_data_root_message": data_root_status.message,

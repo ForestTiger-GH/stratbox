@@ -75,11 +75,6 @@ class AppContext:
 
 
 def _selector_path_from_handoff(handoff: AppHandoff) -> Path | None:
-    locator = handoff.workspace.data_locator
-    if isinstance(locator, dict) and str(locator.get("kind") or "") == "local_path":
-        value = locator.get("value")
-        if value:
-            return Path(str(value)).expanduser()
     if handoff.workspace.data_root_path:
         return Path(handoff.workspace.data_root_path).expanduser()
     return None

@@ -15,7 +15,7 @@
 ## Главный принцип
 
 AppDock отвечает за:
-- `node_root`;
+- `system_root` and install context;
 - runtime и trust-контур;
 - handoff и session refs;
 - health snapshot;

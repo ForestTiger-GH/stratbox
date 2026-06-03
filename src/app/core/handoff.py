@@ -37,26 +37,26 @@ class SourceRevisionRef:
 class HandoffWorkspace:
     """Рабочий контекст, который shell передаёт приложению."""
 
+    install_root: str
+    system_root: str
     source_root: str
-    node_root: str
     config_root: str
     runtime_root: str
     bundle_root: str
     logs_root: str
-    data_locator: dict[str, Any] | None
     data_root_status: str
     data_root_path: str | None
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "HandoffWorkspace":
         return cls(
+            install_root=str(payload.get("install_root") or ""),
+            system_root=str(payload.get("system_root") or ""),
             source_root=str(payload.get("source_root") or ""),
-            node_root=str(payload.get("node_root") or ""),
             config_root=str(payload.get("config_root") or ""),
             runtime_root=str(payload.get("runtime_root") or ""),
             bundle_root=str(payload.get("bundle_root") or ""),
             logs_root=str(payload.get("logs_root") or ""),
-            data_locator=(payload.get("data_locator") if isinstance(payload.get("data_locator"), dict) else None),
             data_root_status=str(payload.get("data_root_status") or "unavailable"),
             data_root_path=(str(payload["data_root_path"]) if payload.get("data_root_path") else None),
         )
@@ -194,8 +194,10 @@ def load_appdock_handoff(path: Path) -> AppHandoff:
         raise AppConfigError("AppDock handoff misses active_app_surface")
     if not handoff.workspace.source_root:
         raise AppConfigError("AppDock handoff misses workspace.source_root")
-    if not handoff.workspace.node_root:
-        raise AppConfigError("AppDock handoff misses workspace.node_root")
+    if not handoff.workspace.install_root:
+        raise AppConfigError("AppDock handoff misses workspace.install_root")
+    if not handoff.workspace.system_root:
+        raise AppConfigError("AppDock handoff misses workspace.system_root")
     return handoff
 
 
