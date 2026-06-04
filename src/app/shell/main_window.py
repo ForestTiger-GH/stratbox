@@ -11,11 +11,11 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMenu,
+    QScrollArea,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
@@ -238,6 +238,12 @@ class MainWindow(QMainWindow):
         return box
 
     def _build_left_sidebar(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setObjectName('leftSidebarScroll')
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
         box = QWidget()
         box.setObjectName('leftSidebar')
         layout = QVBoxLayout(box)
@@ -245,11 +251,6 @@ class MainWindow(QMainWindow):
         layout.setSpacing(14)
 
         layout.addWidget(self._section_title('Сценарии'))
-        self.scenario_search = QLineEdit()
-        self.scenario_search.setObjectName('scenarioSearch')
-        self.scenario_search.setPlaceholderText('Поиск сценария')
-        self.scenario_search.textChanged.connect(self._populate_scenario_tree)
-        layout.addWidget(self.scenario_search)
 
         self.scenario_tree = QTreeWidget()
         self.scenario_tree.setHeaderHidden(True)
@@ -257,15 +258,11 @@ class MainWindow(QMainWindow):
         self.scenario_tree.itemSelectionChanged.connect(self._scenario_selection_changed)
         layout.addWidget(self.scenario_tree, 1)
 
-        layout.addWidget(self._section_title('Фильтры'))
-        self.filter_mode_label = QLabel('Все сообщения')
-        self.filter_mode_label.setObjectName('sidebarTextMuted')
-        layout.addWidget(self.filter_mode_label)
-
         layout.addWidget(self._section_title('Последние артефакты'))
         self.artifact_list = QListWidget()
         self.artifact_list.setObjectName('artifactList')
         self.artifact_list.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.artifact_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.artifact_list.itemDoubleClicked.connect(self._open_selected_artifact)
         layout.addWidget(self.artifact_list, 0)
 
@@ -295,7 +292,8 @@ class MainWindow(QMainWindow):
         account_layout.addWidget(self.system_side_button, 0, Qt.AlignLeft)
 
         layout.addWidget(account_block, 0, Qt.AlignLeft)
-        return box
+        scroll.setWidget(box)
+        return scroll
 
     def _build_center_shell(self) -> QWidget:
         box = QWidget()
@@ -395,7 +393,7 @@ class MainWindow(QMainWindow):
     def _populate_scenario_tree(self) -> None:
         current = self._selected_scenario_id
         self.scenario_tree.clear()
-        grouped = group_scenarios(self.runtime.scenario_registry, search=self.scenario_search.text())
+        grouped = group_scenarios(self.runtime.scenario_registry, search='')
         selected_item: QTreeWidgetItem | None = None
         for group_name, items in grouped.items():
             group_item = QTreeWidgetItem([group_name])
@@ -537,30 +535,10 @@ class MainWindow(QMainWindow):
         self.runtime.feed_store.set_mode(mode)
         for key, button in self.filter_buttons.items():
             button.setChecked(key == mode)
-        titles = {
-            'all': 'Все сообщения',
-            'mine': 'Мои сообщения',
-            'running': 'Сценарии в работе',
-            'success': 'Успешные сообщения',
-            'errors': 'Сообщения с ошибками',
-        }
-        self.filter_mode_label.setText(titles.get(mode, 'Все сообщения'))
         self._refresh_feed()
 
     def _filter_by_participant(self, participant_id: str | None) -> None:
         self.runtime.feed_store.set_author(participant_id)
-        if participant_id:
-            participant = self.runtime.presence_service.participant_by_id(participant_id)
-            self.filter_mode_label.setText(f'Автор: {participant.display_name if participant else participant_id}')
-        else:
-            base_titles = {
-                'all': 'Все сообщения',
-                'mine': 'Мои сообщения',
-                'running': 'Сценарии в работе',
-                'success': 'Успешные сообщения',
-                'errors': 'Сообщения с ошибками',
-            }
-            self.filter_mode_label.setText(base_titles.get(self.runtime.feed_store.filter_state.mode, 'Все сообщения'))
         self._refresh_feed()
 
     def _filter_my_messages(self) -> None:
@@ -574,8 +552,13 @@ class MainWindow(QMainWindow):
 
     def _refresh_recent_artifacts(self) -> None:
         self.artifact_list.clear()
-        for artifact in self._recent_artifacts:
+        visible_artifacts = self._recent_artifacts[:3]
+        for artifact in visible_artifacts:
             self.artifact_list.addItem(artifact)
+        row_count = max(1, len(visible_artifacts))
+        row_height = max(self.artifact_list.sizeHintForRow(0), 26) if visible_artifacts else 26
+        frame = self.artifact_list.frameWidth() * 2
+        self.artifact_list.setFixedHeight((row_height * row_count) + frame + 4)
 
     def _refresh_state(self) -> None:
         self.runtime.presence_service.mark_refreshed()

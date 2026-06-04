@@ -9,6 +9,12 @@ QMainWindow {
     background: #ffffff;
 }
 
+#leftSidebarScroll {
+    border: none;
+    background: #ffffff;
+}
+
+
 #topBar {
     border-bottom: 1px solid #eef1f4;
 }
@@ -75,7 +81,6 @@ QMainWindow {
     color: #6b7280;
 }
 
-#scenarioSearch,
 #composerLineEdit,
 #composerComboBox {
     border: 1px solid #e7ebf0;
