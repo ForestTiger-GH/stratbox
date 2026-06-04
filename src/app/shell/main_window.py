@@ -27,15 +27,15 @@ from PySide6.QtWidgets import (
 )
 
 from app.bootstrap.runtime import AppRuntime
+from app.chat.projector import ChatProjector
+from app.chat.widgets import ChatThreadView
 from app.shell.chat_scene import ChatSceneHost
-from app.shell.smooth_feed_list import SmoothFeedList
 from app.presence.models import ParticipantRecord
 from app.scenarios.catalog import group_scenarios
 from app.scenarios.composer import ScenarioComposer
 from app.scenarios.models import ScenarioResult, ScenarioSpec
 from app.system.commands import build_diagnostics_text
 from app.timeline.models import FeedAction, FeedEntry
-from app.timeline.widgets import FeedCard
 from app.workspace import run_workspace_diagnostics
 
 
@@ -199,6 +199,7 @@ class MainWindow(QMainWindow):
         self._selected_scenario_id: str | None = None
         self._recent_artifacts: list[str] = list(self.context.session_snapshot.app_state.recent_artifacts) if self.context.session_snapshot and self.context.session_snapshot.app_state else []
         self._last_result_message = ''
+        self.chat_projector = ChatProjector(context=self.context, presence_service=self.runtime.presence_service)
         self._build_ui()
         self._build_menus()
         self._populate_scenario_tree()
@@ -337,14 +338,9 @@ class MainWindow(QMainWindow):
         feed_layout.setContentsMargins(0, 0, 0, 0)
         feed_layout.setSpacing(0)
 
-        self.feed_list = SmoothFeedList()
-        self.feed_list.setObjectName('feedList')
-        self.feed_list.setSpacing(10)
-        self.feed_list.setSelectionMode(QAbstractItemView.NoSelection)
-        self.feed_list.setFrameShape(QFrame.NoFrame)
-        self.feed_list.viewport().setAutoFillBackground(False)
-        self.feed_list.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
-        feed_layout.addWidget(self.feed_list)
+        self.chat_thread = ChatThreadView(on_action=self._handle_feed_action)
+        self.chat_thread.setObjectName('chatThreadView')
+        feed_layout.addWidget(self.chat_thread)
 
         scene_host.content_layout.addWidget(self.feed_host, 1)
 
@@ -515,19 +511,11 @@ class MainWindow(QMainWindow):
         self._refresh_context_views()
 
     def _refresh_feed(self, *, force_scroll_to_bottom: bool = False) -> None:
-        scroll_bar = self.feed_list.verticalScrollBar()
-        was_near_bottom = force_scroll_to_bottom or (scroll_bar.maximum() - scroll_bar.value() <= max(24, scroll_bar.singleStep() * 2))
-        self.feed_list.clear()
-        for entry in self.runtime.feed_store.visible_entries():
-            item = QListWidgetItem()
-            author = self.runtime.presence_service.participant_by_id(entry.author_id)
-            author_color = author.accent_color if author is not None else self.runtime.presence_service.color_for_participant(entry.author_id)
-            card = FeedCard(entry, on_action=self._handle_feed_action, author_color=author_color)
-            item.setSizeHint(card.sizeHint())
-            self.feed_list.addItem(item)
-            self.feed_list.setItemWidget(item, card)
+        was_near_bottom = force_scroll_to_bottom or self.chat_thread.is_near_bottom()
+        messages = [self.chat_projector.project(entry) for entry in self.runtime.feed_store.visible_entries()]
+        self.chat_thread.set_messages(messages)
         if was_near_bottom:
-            self.feed_list.scrollToBottom()
+            self.chat_thread.scroll_to_bottom()
 
     def _handle_feed_action(self, entry: FeedEntry, action: FeedAction) -> None:
         payload = action.payload
