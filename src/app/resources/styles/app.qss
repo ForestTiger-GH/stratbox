@@ -102,6 +102,17 @@ QPushButton:disabled {
     background: #ffffff;
 }
 
+#systemSideButton:hover {
+    background: #F7F7F7;
+    border-color: #F3F3F3;
+}
+
+#systemSideButton:pressed,
+#systemSideButton:checked {
+    background: #F3F3F3;
+    border-color: #F3F3F3;
+}
+
 #userOnlineNames {
     color: #6b7280;
     font-size: 12px;

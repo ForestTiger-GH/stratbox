@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from app.bootstrap.runtime import AppRuntime
 from app.shell.chat_scene import ChatSceneHost
+from app.shell.smooth_feed_list import SmoothFeedList
 from app.presence.models import ParticipantRecord
 from app.scenarios.catalog import group_scenarios
 from app.scenarios.composer import ScenarioComposer
@@ -336,7 +337,7 @@ class MainWindow(QMainWindow):
         feed_layout.setContentsMargins(0, 0, 0, 0)
         feed_layout.setSpacing(0)
 
-        self.feed_list = QListWidget()
+        self.feed_list = SmoothFeedList()
         self.feed_list.setObjectName('feedList')
         self.feed_list.setSpacing(10)
         self.feed_list.setSelectionMode(QAbstractItemView.NoSelection)
@@ -411,7 +412,7 @@ class MainWindow(QMainWindow):
                     meta={'режим': self.runtime.appdock_bridge.host_mode_label()},
                 )
             ])
-        self._refresh_feed()
+        self._refresh_feed(force_scroll_to_bottom=True)
         self._refresh_recent_artifacts()
 
     def _populate_scenario_tree(self) -> None:
@@ -510,10 +511,12 @@ class MainWindow(QMainWindow):
         for entry in entries:
             self.runtime.feed_store.append(entry)
             self.runtime.presence_service.register_feed_entry(entry)
-        self._refresh_feed()
+        self._refresh_feed(force_scroll_to_bottom=True)
         self._refresh_context_views()
 
-    def _refresh_feed(self) -> None:
+    def _refresh_feed(self, *, force_scroll_to_bottom: bool = False) -> None:
+        scroll_bar = self.feed_list.verticalScrollBar()
+        was_near_bottom = force_scroll_to_bottom or (scroll_bar.maximum() - scroll_bar.value() <= max(24, scroll_bar.singleStep() * 2))
         self.feed_list.clear()
         for entry in self.runtime.feed_store.visible_entries():
             item = QListWidgetItem()
@@ -523,7 +526,8 @@ class MainWindow(QMainWindow):
             item.setSizeHint(card.sizeHint())
             self.feed_list.addItem(item)
             self.feed_list.setItemWidget(item, card)
-        self.feed_list.scrollToBottom()
+        if was_near_bottom:
+            self.feed_list.scrollToBottom()
 
     def _handle_feed_action(self, entry: FeedEntry, action: FeedAction) -> None:
         payload = action.payload
