@@ -335,16 +335,23 @@ class MainWindow(QMainWindow):
 
         bottom = QWidget()
         bottom.setObjectName('composerShell')
-        composer_layout = QHBoxLayout(bottom)
+        composer_layout = QVBoxLayout(bottom)
         composer_layout.setContentsMargins(12, 10, 12, 10)
         composer_layout.setSpacing(10)
         self.composer = ScenarioComposer()
         self.composer.submitted.connect(self._run_selected_scenario)
         composer_layout.addWidget(self.composer, 1)
+
+        composer_actions = QHBoxLayout()
+        composer_actions.setContentsMargins(0, 0, 0, 0)
+        composer_actions.setSpacing(10)
+        composer_actions.addStretch(1)
         self.run_button = QPushButton('Запустить')
         self.run_button.setObjectName('primaryRunButton')
         self.run_button.clicked.connect(self._run_selected_scenario)
-        composer_layout.addWidget(self.run_button, 0, Qt.AlignBottom)
+        composer_actions.addWidget(self.run_button, 0, Qt.AlignRight)
+        composer_layout.addLayout(composer_actions)
+
         layout.addWidget(bottom)
 
         self._set_filter_mode('all')

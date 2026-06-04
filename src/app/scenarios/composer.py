@@ -7,9 +7,9 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QLabel,
-    QHBoxLayout,
     QLineEdit,
     QSizePolicy,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -23,13 +23,10 @@ class ScenarioComposer(QWidget):
         super().__init__(parent)
         self._spec: ScenarioSpec | None = None
         self._widgets: dict[str, QWidget] = {}
-        self._row = QHBoxLayout(self)
-        self._row.setContentsMargins(16, 12, 16, 12)
-        self._row.setSpacing(10)
-        self._placeholder = QLabel('Выберите сценарий слева')
-        self._placeholder.setObjectName('composerPlaceholder')
-        self._row.addWidget(self._placeholder)
-        self._row.addStretch(1)
+        self._column = QVBoxLayout(self)
+        self._column.setContentsMargins(16, 12, 16, 12)
+        self._column.setSpacing(10)
+        self._render_placeholder()
 
     @property
     def current_spec(self) -> ScenarioSpec | None:
@@ -39,41 +36,64 @@ class ScenarioComposer(QWidget):
         self._spec = spec
         self._reset()
         if spec is None:
-            self._placeholder = QLabel('Выберите сценарий слева')
-            self._placeholder.setObjectName('composerPlaceholder')
-            self._row.addWidget(self._placeholder)
-            self._row.addStretch(1)
+            self._render_placeholder()
             return
 
         title = QLabel(spec.title)
         title.setObjectName('composerScenarioTitle')
-        self._row.addWidget(title)
+        title.setWordWrap(True)
+        self._column.addWidget(title)
 
         for param in spec.params:
-            widget = self._build_param_widget(param)
-            self._widgets[param.name] = widget
-            self._row.addWidget(widget)
+            block = self._build_param_block(param)
+            self._column.addWidget(block)
 
-        self._row.addStretch(1)
+        self._column.addStretch(1)
+
+    def _render_placeholder(self) -> None:
+        placeholder = QLabel('Выберите сценарий слева')
+        placeholder.setObjectName('composerPlaceholder')
+        self._column.addWidget(placeholder)
+        self._column.addStretch(1)
 
     def _reset(self) -> None:
-        while self._row.count():
-            item = self._row.takeAt(0)
+        while self._column.count():
+            item = self._column.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
         self._widgets.clear()
 
-    def _build_param_widget(self, spec: ScenarioParamSpec) -> QWidget:
+    def _build_param_block(self, spec: ScenarioParamSpec) -> QWidget:
+        block = QWidget()
+        block.setObjectName('composerParamBlock')
+        layout = QVBoxLayout(block)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
         if spec.type == 'bool':
             widget = QCheckBox(spec.title)
             widget.setChecked(bool(spec.default))
             widget.setObjectName('composerCheckBox')
-            return widget
+            self._widgets[spec.name] = widget
+            layout.addWidget(widget)
+            return block
+
+        label = QLabel(spec.title)
+        label.setObjectName('composerParamLabel')
+        layout.addWidget(label)
+
+        widget = self._build_param_widget(spec)
+        self._widgets[spec.name] = widget
+        layout.addWidget(widget)
+        return block
+
+    def _build_param_widget(self, spec: ScenarioParamSpec) -> QWidget:
         if spec.type == 'select':
             combo = QComboBox()
             combo.setObjectName('composerComboBox')
-            combo.setMinimumWidth(180)
+            combo.setMinimumWidth(220)
+            combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             for option in spec.options:
                 combo.addItem(option, option)
             default_value = str(spec.default) if spec.default is not None else None
@@ -90,7 +110,7 @@ class ScenarioComposer(QWidget):
         if spec.default not in (None, ''):
             line.setText(str(spec.default))
         line.setToolTip(spec.description)
-        line.setMinimumWidth(180)
+        line.setMinimumWidth(220)
         line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         line.returnPressed.connect(self.submitted.emit)
         return line
@@ -112,7 +132,7 @@ class ScenarioComposer(QWidget):
                 if param.type == 'int':
                     params[param.name] = int(text) if text else int(param.default or 0)
                 elif param.type == 'float':
-                    params[param.name] = float(text) if text else float(param.default or 0)
+                    params[param.name] = float(text) if text else float(param.default or 0.0)
                 else:
-                    params[param.name] = text or param.default
+                    params[param.name] = text or str(param.default or '')
         return params

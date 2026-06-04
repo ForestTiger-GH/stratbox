@@ -20,12 +20,12 @@ QMainWindow {
 }
 
 #leftSidebarAnchor {
-    background: #f5f7fa;
-    border-top: 1px solid #eef1f4;
+    background: #F3F3F3;
+    border-top: 1px solid #F3F3F3;
 }
 
 #topBar {
-    border-bottom: 1px solid #eef1f4;
+    border-bottom: 1px solid #F3F3F3;
 }
 
 #topBarTitle {
@@ -43,7 +43,7 @@ QMainWindow {
 #feedActionButton,
 #primaryRunButton,
 #filterPill {
-    border: 1px solid #e8ecf1;
+    border: 1px solid #F3F3F3;
     border-radius: 14px;
     background: #ffffff;
     padding: 8px 12px;
@@ -54,12 +54,13 @@ QMainWindow {
 #feedActionButton:hover,
 #primaryRunButton:hover,
 #filterPill:hover {
-    background: #f7f9fb;
+    background: #F3F3F3;
 }
 
 #systemSideButton {
     text-align: left;
     width: 100%;
+    background: #F3F3F3;
 }
 
 #userOnlineNames {
@@ -91,7 +92,7 @@ QMainWindow {
 
 #composerLineEdit,
 #composerComboBox {
-    border: 1px solid #e7ebf0;
+    border: 1px solid #F3F3F3;
     border-radius: 14px;
     padding: 9px 12px;
     background: #ffffff;
@@ -114,7 +115,7 @@ QMainWindow {
 }
 
 #composerShell {
-    border: 1px solid #eef1f4;
+    border: 1px solid #F3F3F3;
     border-radius: 20px;
     background: #ffffff;
 }
@@ -122,7 +123,7 @@ QMainWindow {
 #primaryRunButton,
 #feedActionButton,
 #filterPill {
-    border: 1px solid #e7ebf0;
+    border: 1px solid #F3F3F3;
     border-radius: 14px;
     background: #ffffff;
     padding: 8px 12px;
@@ -192,7 +193,7 @@ QMainWindow {
 
 #artifactList::item:selected,
 #scenarioTree::item:selected {
-    background: #f5f7fa;
+    background: #F3F3F3;
     color: #111111;
 }
 
@@ -202,7 +203,7 @@ QMainWindow {
 }
 
 #feedCard {
-    border: 1px solid #eef1f4;
+    border: 1px solid #F3F3F3;
     border-radius: 20px;
     background: #ffffff;
 }
@@ -235,7 +236,7 @@ QMainWindow {
 }
 
 #systemDialogCard {
-    border: 1px solid #eef1f4;
+    border: 1px solid #F3F3F3;
     border-radius: 18px;
     background: #ffffff;
 }
@@ -265,7 +266,7 @@ QScrollBar::handle:vertical {
 
 QMenu {
     background: #ffffff;
-    border: 1px solid #e7ebf0;
+    border: 1px solid #F3F3F3;
     padding: 8px;
     border-radius: 14px;
 }
@@ -276,5 +277,16 @@ QMenu::item {
 }
 
 QMenu::item:selected {
-    background: #f5f7fa;
+    background: #F3F3F3;
+}
+
+
+#composerParamBlock {
+    background: transparent;
+}
+
+#composerParamLabel {
+    color: #6b7280;
+    font-size: 12px;
+    padding-left: 2px;
 }
