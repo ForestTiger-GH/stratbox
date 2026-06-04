@@ -15,6 +15,15 @@ QMainWindow {
 }
 
 
+#leftSidebarShell {
+    background: #ffffff;
+}
+
+#leftSidebarAnchor {
+    background: #f5f7fa;
+    border-top: 1px solid #eef1f4;
+}
+
 #topBar {
     border-bottom: 1px solid #eef1f4;
 }
@@ -30,7 +39,6 @@ QMainWindow {
     color: #6b7280;
 }
 
-#userMenuButton,
 #systemSideButton,
 #feedActionButton,
 #primaryRunButton,
@@ -42,7 +50,6 @@ QMainWindow {
     color: #111111;
 }
 
-#userMenuButton:hover,
 #systemSideButton:hover,
 #feedActionButton:hover,
 #primaryRunButton:hover,
@@ -52,6 +59,7 @@ QMainWindow {
 
 #systemSideButton {
     text-align: left;
+    width: 100%;
 }
 
 #userOnlineNames {
@@ -147,10 +155,39 @@ QMainWindow {
     outline: none;
 }
 
+#scenarioTree::branch {
+    background: transparent;
+    border: none;
+}
+
+#scenarioTree::branch:has-children,
+#scenarioTree::branch:has-siblings,
+#scenarioTree::branch:closed,
+#scenarioTree::branch:open {
+    image: none;
+    border: none;
+}
+
 #artifactList::item,
 #scenarioTree::item {
     padding: 8px 6px;
     border-radius: 10px;
+}
+
+#scenarioTree::item:has-children {
+    padding-left: 0px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    background: transparent;
+}
+
+#scenarioTree::item:has-children:selected,
+#scenarioTree::item:has-children:hover {
+    background: transparent;
+    color: #6b7280;
 }
 
 #artifactList::item:selected,

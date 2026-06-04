@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QBrush, QCloseEvent, QColor
+from PySide6.QtGui import QBrush, QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -14,13 +14,12 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
-    QMenu,
     QScrollArea,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
     QSplitter,
-    QToolButton,
+    QSizePolicy,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -111,20 +110,27 @@ class SystemDialog(QDialog):
         on_refresh,
         on_show_diagnostics,
         on_copy_diagnostics,
+        on_show_participants,
         on_exit,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle('Система')
         self.setModal(True)
-        self.resize(620, 520)
+        self.resize(620, 560)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
         layout.setSpacing(14)
 
         layout.addWidget(self._section('Среда', environment_text))
-        layout.addWidget(self._section('Хост и участники', host_text))
+
+        host_frame = self._section('Хост и участники', host_text)
+        host_box = host_frame.layout()
+        participants_button = QPushButton('Участники')
+        participants_button.clicked.connect(on_show_participants)
+        host_box.addWidget(participants_button)
+        layout.addWidget(host_frame)
 
         actions_frame = QFrame()
         actions_frame.setObjectName('systemDialogCard')
@@ -161,7 +167,7 @@ class SystemDialog(QDialog):
         buttons.addWidget(close_button)
         layout.addLayout(buttons)
 
-    def _section(self, title_text: str, body_text: str) -> QWidget:
+    def _section(self, title_text: str, body_text: str) -> QFrame:
         frame = QFrame()
         frame.setObjectName('systemDialogCard')
         box = QVBoxLayout(frame)
@@ -239,6 +245,12 @@ class MainWindow(QMainWindow):
         return box
 
     def _build_left_sidebar(self) -> QWidget:
+        container = QWidget()
+        container.setObjectName('leftSidebarShell')
+        outer = QVBoxLayout(container)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
         scroll = QScrollArea()
         scroll.setObjectName('leftSidebarScroll')
         scroll.setWidgetResizable(True)
@@ -255,6 +267,9 @@ class MainWindow(QMainWindow):
 
         self.scenario_tree = QTreeWidget()
         self.scenario_tree.setHeaderHidden(True)
+        self.scenario_tree.setRootIsDecorated(False)
+        self.scenario_tree.setItemsExpandable(False)
+        self.scenario_tree.setIndentation(0)
         self.scenario_tree.setObjectName('scenarioTree')
         self.scenario_tree.itemSelectionChanged.connect(self._scenario_selection_changed)
         layout.addWidget(self.scenario_tree, 1)
@@ -268,33 +283,30 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.artifact_list, 0)
 
         layout.addStretch(1)
+        scroll.setWidget(box)
+        outer.addWidget(scroll, 1)
 
-        account_block = QWidget()
-        account_layout = QVBoxLayout(account_block)
-        account_layout.setContentsMargins(0, 0, 0, 0)
-        account_layout.setSpacing(6)
+        anchor_block = QWidget()
+        anchor_block.setObjectName('leftSidebarAnchor')
+        anchor_layout = QVBoxLayout(anchor_block)
+        anchor_layout.setContentsMargins(18, 14, 12, 14)
+        anchor_layout.setSpacing(8)
 
         self.other_online_label = QLabel('')
         self.other_online_label.setObjectName('userOnlineNames')
         self.other_online_label.setTextFormat(Qt.RichText)
         self.other_online_label.setWordWrap(True)
         self.other_online_label.hide()
-        account_layout.addWidget(self.other_online_label)
-
-        self.user_button = QToolButton()
-        self.user_button.setObjectName('userMenuButton')
-        self.user_button.setPopupMode(QToolButton.InstantPopup)
-        self.user_button.setToolButtonStyle(Qt.ToolButtonTextOnly)
-        account_layout.addWidget(self.user_button, 0, Qt.AlignLeft)
+        anchor_layout.addWidget(self.other_online_label)
 
         self.system_side_button = QPushButton('Система')
         self.system_side_button.setObjectName('systemSideButton')
+        self.system_side_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.system_side_button.clicked.connect(self._show_system_dialog)
-        account_layout.addWidget(self.system_side_button, 0, Qt.AlignLeft)
+        anchor_layout.addWidget(self.system_side_button)
 
-        layout.addWidget(account_block, 0, Qt.AlignLeft)
-        scroll.setWidget(box)
-        return scroll
+        outer.addWidget(anchor_block, 0)
+        return container
 
     def _build_center_shell(self) -> QWidget:
         box = QWidget()
@@ -339,18 +351,7 @@ class MainWindow(QMainWindow):
         return box
 
     def _build_menus(self) -> None:
-        user_menu = QMenu(self)
-        action_participants = QAction('Участники', self)
-        action_participants.triggered.connect(self._show_participants_dialog)
-        user_menu.addAction(action_participants)
-        user_menu.addSeparator()
-        action_my = QAction('Показать мои сообщения', self)
-        action_my.triggered.connect(self._filter_my_messages)
-        user_menu.addAction(action_my)
-        action_all = QAction('Показать все сообщения', self)
-        action_all.triggered.connect(lambda: self._filter_by_participant(None))
-        user_menu.addAction(action_all)
-        self.user_button.setMenu(user_menu)
+        return
 
     def _section_title(self, text: str) -> QLabel:
         label = QLabel(text)
@@ -399,6 +400,7 @@ class MainWindow(QMainWindow):
         for group_name, items in grouped.items():
             group_item = QTreeWidgetItem([group_name])
             group_item.setData(0, Qt.UserRole, None)
+            group_item.setFlags(group_item.flags() & ~Qt.ItemIsSelectable)
             self.scenario_tree.addTopLevelItem(group_item)
             for scenario in items:
                 item = QTreeWidgetItem([scenario.title])
@@ -607,8 +609,6 @@ class MainWindow(QMainWindow):
     def _refresh_context_views(self) -> None:
         mode = self.runtime.appdock_bridge.host_mode_label()
         self.mode_label.setText(f'{mode} · workspace {self.context.workspace_schema.title}')
-        current_user = self.context.account_name or self.context.user_id or 'Пользователь'
-        self.user_button.setText(current_user)
         others_html = self.runtime.presence_service.other_online_html()
         if others_html:
             self.other_online_label.setText(others_html)
@@ -624,6 +624,7 @@ class MainWindow(QMainWindow):
             on_refresh=self._refresh_state,
             on_show_diagnostics=self._show_diagnostics,
             on_copy_diagnostics=self._copy_diagnostics,
+            on_show_participants=self._show_participants_dialog,
             on_exit=self.close,
             parent=self,
         )
