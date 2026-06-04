@@ -4,7 +4,10 @@
   "description": "Скачивает исходные статистические файлы Банка России и сохраняет их через активный FileStore как ZIP-архив или папку файлов.",
   "group": "Банк России",
   "kind": "export",
-  "tags": ["cbr", "archive"],
+  "tags": [
+    "cbr",
+    "archive"
+  ],
   "adapter": "app.scenarios.adapters.cbr_archiver:run",
   "enabled": true,
   "requires_workspace": true,
@@ -16,7 +19,10 @@
       "title": "Режим сохранения",
       "type": "select",
       "default": "zip",
-      "options": ["zip", "files"],
+      "options": [
+        "zip",
+        "files"
+      ],
       "description": "zip — один архив, files — отдельная папка с файлами."
     },
     {
@@ -44,5 +50,16 @@
       "title": "Банк России",
       "url": "https://www.cbr.ru/"
     }
-  ]
+  ],
+  "icon": "archive-box",
+  "order": 30,
+  "group_order": 20,
+  "search_aliases": [
+    "цб",
+    "архив",
+    "zip"
+  ],
+  "composer_submit_label": "Сохранить",
+  "supports_repeat": true,
+  "result_preview_kind": "artifacts"
 }

@@ -4,7 +4,10 @@
   "description": "Строит каталог файлов FRG, выбирает актуальные файлы по семействам и сохраняет результат в Excel.",
   "group": "FRG",
   "kind": "processing",
-  "tags": ["frg", "excel"],
+  "tags": [
+    "frg",
+    "excel"
+  ],
   "adapter": "app.scenarios.adapters.frg:run",
   "enabled": true,
   "requires_workspace": true,
@@ -32,5 +35,16 @@
       "description": "Относительный путь Excel-файла результата внутри workspace root."
     }
   ],
-  "links": []
+  "links": [],
+  "icon": "scan-search",
+  "order": 20,
+  "group_order": 10,
+  "search_aliases": [
+    "frg",
+    "сканирование",
+    "excel"
+  ],
+  "composer_submit_label": "Запустить",
+  "supports_repeat": true,
+  "result_preview_kind": "artifacts"
 }

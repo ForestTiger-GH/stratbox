@@ -1,12 +1,218 @@
-QMainWindow {
-    background: #f5f5f5;
+QWidget {
+    background: #ffffff;
+    color: #111111;
+    font-family: "Segoe UI", "Inter", sans-serif;
+    font-size: 13px;
 }
-QGroupBox {
+
+QMainWindow {
+    background: #ffffff;
+}
+
+#topBar {
+    border-bottom: 1px solid #eef1f4;
+}
+
+#topBarTitle {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111111;
+}
+
+#topBarSubtle {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+#topBarMenuButton,
+#userMenuButton {
+    border: 1px solid #e8ecf1;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 8px 12px;
+    color: #111111;
+}
+
+#topBarMenuButton:hover,
+#userMenuButton:hover,
+#feedActionButton:hover,
+#primaryRunButton:hover,
+#filterPill:hover {
+    background: #f7f9fb;
+}
+
+#onlineBadge {
+    color: #0f8f54;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 14px;
+    background: #f3fbf6;
+    border: 1px solid #d8f0df;
+}
+
+#sidebarSectionTitle {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+#sidebarText {
+    color: #111111;
+    line-height: 1.4;
+}
+
+#sidebarTextMuted,
+#feedCardMeta,
+#feedCardTimestamp,
+#feedCardAuthor,
+#composerPlaceholder {
+    color: #6b7280;
+}
+
+#scenarioSearch,
+#composerLineEdit,
+#composerComboBox {
+    border: 1px solid #e7ebf0;
+    border-radius: 14px;
+    padding: 9px 12px;
+    background: #ffffff;
+    min-height: 18px;
+}
+
+#composerComboBox {
+    padding-right: 28px;
+}
+
+#composerScenarioTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111111;
+    padding-right: 4px;
+}
+
+#composerCheckBox {
+    padding: 2px 0 2px 2px;
+}
+
+#composerShell {
+    border: 1px solid #eef1f4;
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+#primaryRunButton,
+#feedActionButton,
+#filterPill {
+    border: 1px solid #e7ebf0;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 8px 12px;
+}
+
+#primaryRunButton {
+    background: #111111;
+    color: #ffffff;
+    border-color: #111111;
     font-weight: 600;
 }
-QPushButton {
-    padding: 6px 10px;
+
+#primaryRunButton:disabled {
+    background: #d1d5db;
+    border-color: #d1d5db;
+    color: #ffffff;
 }
-QPlainTextEdit {
-    font-family: Consolas, monospace;
+
+#filterPill:checked {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+}
+
+#feedList,
+#artifactList,
+#scenarioTree {
+    border: none;
+    background: transparent;
+    outline: none;
+}
+
+#artifactList::item,
+#scenarioTree::item {
+    padding: 8px 6px;
+    border-radius: 10px;
+}
+
+#artifactList::item:selected,
+#scenarioTree::item:selected {
+    background: #f5f7fa;
+    color: #111111;
+}
+
+#scenarioTree::item:hover,
+#artifactList::item:hover {
+    background: #f8fafc;
+}
+
+#feedCard {
+    border: 1px solid #eef1f4;
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+#feedCard[feedStatus="running"] {
+    border-color: #dbeafe;
+    background: #f8fbff;
+}
+
+#feedCard[feedStatus="success"] {
+    border-color: #d8f0df;
+    background: #f7fcf8;
+}
+
+#feedCard[feedStatus="error"] {
+    border-color: #f6d2d5;
+    background: #fff8f8;
+}
+
+#feedCardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111111;
+}
+
+#feedCardBody,
+#feedCardOutputs {
+    color: #111111;
+    line-height: 1.45;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: #d7dce3;
+    border-radius: 5px;
+    min-height: 24px;
+}
+
+QMenu {
+    background: #ffffff;
+    border: 1px solid #e7ebf0;
+    padding: 8px;
+    border-radius: 14px;
+}
+
+QMenu::item {
+    padding: 8px 14px;
+    border-radius: 10px;
+}
+
+QMenu::item:selected {
+    background: #f5f7fa;
 }

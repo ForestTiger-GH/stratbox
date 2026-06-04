@@ -10,17 +10,18 @@
       "surface_id": "stratbox.desktop",
       "display_name": "Strategy Box",
       "entrypoint": "app.entrypoints.appdock",
-      "entry_view": "overview",
+      "entry_view": "timeline",
       "bundle_scope": "stratbox",
       "compatible_modes": [
         "local",
         "attached"
       ],
       "declared_views": [
-        "overview",
+        "timeline",
         "scenarios",
         "artifacts",
-        "node",
+        "workspace",
+        "participants",
         "diagnostics",
         "domain"
       ],
@@ -37,11 +38,11 @@
       "supports_resume": true,
       "supports_artifacts": true,
       "supports_remote_attach": false,
-      "supports_multi_user_presence": false,
+      "supports_multi_user_presence": true,
       "supports_delegated_jobs": false,
       "metadata": {
         "product": "Strategy Box",
-        "ui_kind": "desktop"
+        "ui_kind": "desktop_timeline_surface"
       }
     }
   ],

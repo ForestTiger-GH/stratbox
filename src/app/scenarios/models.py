@@ -70,6 +70,13 @@ class ScenarioSpec:
     input_dir: str = 'input'
     output_dir: str = 'output'
     links: tuple[dict[str, str], ...] = ()
+    icon: str | None = None
+    order: int = 100
+    group_order: int = 100
+    search_aliases: tuple[str, ...] = ()
+    composer_submit_label: str = 'Запустить'
+    supports_repeat: bool = True
+    result_preview_kind: str = 'artifacts'
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'ScenarioSpec':
@@ -87,6 +94,13 @@ class ScenarioSpec:
             input_dir=str(data.get('input_dir') or 'input'),
             output_dir=str(data.get('output_dir') or 'output'),
             links=tuple(dict(x) for x in (data.get('links') or [])),
+            icon=(str(data['icon']) if data.get('icon') else None),
+            order=int(data.get('order', 100)),
+            group_order=int(data.get('group_order', 100)),
+            search_aliases=tuple(str(x) for x in (data.get('search_aliases') or [])),
+            composer_submit_label=str(data.get('composer_submit_label') or 'Запустить'),
+            supports_repeat=bool(data.get('supports_repeat', True)),
+            result_preview_kind=str(data.get('result_preview_kind') or 'artifacts'),
         )
 
     def default_params(self) -> dict[str, Any]:
@@ -97,6 +111,7 @@ class ScenarioSpec:
         out['params'] = [param.to_dict() for param in self.params]
         out['links'] = list(self.links)
         out['tags'] = list(self.tags)
+        out['search_aliases'] = list(self.search_aliases)
         return out
 
 
