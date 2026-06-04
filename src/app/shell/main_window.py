@@ -212,11 +212,12 @@ class MainWindow(QMainWindow):
 
         self.main_splitter.addWidget(self.left_sidebar)
         self.main_splitter.addWidget(self.center_shell)
-        splitter_sizes = self.runtime.preferences.current().splitter_sizes
-        if len(splitter_sizes) >= 2:
-            self.main_splitter.setSizes(splitter_sizes[:2])
-        else:
-            self.main_splitter.setSizes([340, 980])
+        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.setCollapsible(0, False)
+        self.main_splitter.setCollapsible(1, False)
+        self.left_sidebar.setMinimumWidth(336)
+        self.left_sidebar.setMaximumWidth(336)
+        self.main_splitter.setSizes([336, 984])
 
     def _build_top_bar(self) -> QWidget:
         box = QWidget()
