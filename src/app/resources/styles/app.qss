@@ -9,6 +9,11 @@ QMainWindow {
     background: #ffffff;
 }
 
+QSplitter::handle {
+    background: #F3F3F3;
+}
+
+
 #leftSidebarScroll {
     border: none;
     background: #ffffff;
@@ -20,7 +25,7 @@ QMainWindow {
 }
 
 #leftSidebarAnchor {
-    background: #F3F3F3;
+    background: #F7F7F7;
     border-top: 1px solid #F3F3F3;
 }
 
@@ -39,10 +44,7 @@ QMainWindow {
     color: #6b7280;
 }
 
-#systemSideButton,
-#feedActionButton,
-#primaryRunButton,
-#filterPill {
+QPushButton {
     border: 1px solid #F3F3F3;
     border-radius: 14px;
     background: #ffffff;
@@ -50,17 +52,34 @@ QMainWindow {
     color: #111111;
 }
 
-#systemSideButton:hover,
-#feedActionButton:hover,
-#primaryRunButton:hover,
-#filterPill:hover {
+QPushButton:hover {
+    background: #F7F7F7;
+}
+
+QPushButton:pressed,
+QPushButton:checked {
     background: #F3F3F3;
+}
+
+QPushButton:disabled {
+    background: #ffffff;
+    color: #9ca3af;
+    border-color: #F3F3F3;
+}
+
+#systemSideButton,
+#feedActionButton,
+#primaryRunButton,
+#filterPill {
+    border: 1px solid #F3F3F3;
+    border-radius: 14px;
+    padding: 8px 12px;
 }
 
 #systemSideButton {
     text-align: left;
     width: 100%;
-    background: #F3F3F3;
+    background: #ffffff;
 }
 
 #userOnlineNames {
@@ -130,22 +149,22 @@ QMainWindow {
 }
 
 #primaryRunButton {
-    background: #111111;
-    color: #ffffff;
-    border-color: #111111;
+    background: #ffffff;
+    color: #111111;
+    border-color: #F3F3F3;
     font-weight: 600;
 }
 
 #primaryRunButton:disabled {
-    background: #d1d5db;
-    border-color: #d1d5db;
-    color: #ffffff;
+    background: #ffffff;
+    border-color: #F3F3F3;
+    color: #9ca3af;
 }
 
 #filterPill:checked {
-    background: #111111;
-    border-color: #111111;
-    color: #ffffff;
+    background: #F3F3F3;
+    border-color: #F3F3F3;
+    color: #111111;
 }
 
 #feedList,
@@ -199,7 +218,7 @@ QMainWindow {
 
 #scenarioTree::item:hover,
 #artifactList::item:hover {
-    background: #f8fafc;
+    background: #F7F7F7;
 }
 
 #feedCard {
@@ -209,17 +228,17 @@ QMainWindow {
 }
 
 #feedCard[feedStatus="running"] {
-    border-color: #dbeafe;
+    border-color: #F3F3F3;
     background: #f8fbff;
 }
 
 #feedCard[feedStatus="success"] {
-    border-color: #d8f0df;
+    border-color: #F3F3F3;
     background: #f7fcf8;
 }
 
 #feedCard[feedStatus="error"] {
-    border-color: #f6d2d5;
+    border-color: #F3F3F3;
     background: #fff8f8;
 }
 
