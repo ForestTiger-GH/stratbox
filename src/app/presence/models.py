@@ -11,3 +11,4 @@ class ParticipantRecord:
     host_name: str | None = None
     last_seen_label: str | None = None
     run_count: int = 0
+    accent_color: str = '#3b82f6'

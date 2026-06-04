@@ -4,10 +4,11 @@ from pathlib import Path
 from typing import Iterable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtGui import QAction, QBrush, QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -28,7 +29,6 @@ from PySide6.QtWidgets import (
 
 from app.bootstrap.runtime import AppRuntime
 from app.presence.models import ParticipantRecord
-from app.runs.models import RunRecord
 from app.scenarios.catalog import group_scenarios
 from app.scenarios.composer import ScenarioComposer
 from app.scenarios.models import ScenarioResult, ScenarioSpec
@@ -43,6 +43,7 @@ class ParticipantsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle('Участники')
         self.setModal(True)
+        self.resize(520, 420)
         self.selected_participant_id: str | None = None
 
         layout = QVBoxLayout(self)
@@ -60,6 +61,7 @@ class ParticipantsDialog(QDialog):
                 text += f' · запусков: {participant.run_count}'
             item = QListWidgetItem(text)
             item.setData(Qt.UserRole, participant.participant_id)
+            item.setForeground(QBrush(QColor(participant.accent_color)))
             self.list.addItem(item)
         self.list.itemDoubleClicked.connect(self._accept_current)
         layout.addWidget(self.list)
@@ -100,6 +102,82 @@ class DiagnosticsDialog(QDialog):
         layout.addWidget(viewer)
 
 
+class SystemDialog(QDialog):
+    def __init__(
+        self,
+        *,
+        environment_text: str,
+        host_text: str,
+        on_refresh,
+        on_show_diagnostics,
+        on_copy_diagnostics,
+        on_exit,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle('Система')
+        self.setModal(True)
+        self.resize(620, 520)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(14)
+
+        layout.addWidget(self._section('Среда', environment_text))
+        layout.addWidget(self._section('Хост и участники', host_text))
+
+        actions_frame = QFrame()
+        actions_frame.setObjectName('systemDialogCard')
+        actions_layout = QVBoxLayout(actions_frame)
+        actions_layout.setContentsMargins(16, 16, 16, 16)
+        actions_layout.setSpacing(10)
+
+        title = QLabel('Действия')
+        title.setObjectName('systemDialogSectionTitle')
+        actions_layout.addWidget(title)
+
+        refresh_button = QPushButton('Обновить состояние')
+        refresh_button.clicked.connect(on_refresh)
+        actions_layout.addWidget(refresh_button)
+
+        diagnostics_button = QPushButton('Диагностика')
+        diagnostics_button.clicked.connect(on_show_diagnostics)
+        actions_layout.addWidget(diagnostics_button)
+
+        copy_button = QPushButton('Скопировать диагностику')
+        copy_button.clicked.connect(on_copy_diagnostics)
+        actions_layout.addWidget(copy_button)
+
+        exit_button = QPushButton('Выход')
+        exit_button.clicked.connect(on_exit)
+        actions_layout.addWidget(exit_button)
+
+        layout.addWidget(actions_frame)
+
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        close_button = QPushButton('Закрыть')
+        close_button.clicked.connect(self.accept)
+        buttons.addWidget(close_button)
+        layout.addLayout(buttons)
+
+    def _section(self, title_text: str, body_text: str) -> QWidget:
+        frame = QFrame()
+        frame.setObjectName('systemDialogCard')
+        box = QVBoxLayout(frame)
+        box.setContentsMargins(16, 16, 16, 16)
+        box.setSpacing(8)
+        title = QLabel(title_text)
+        title.setObjectName('systemDialogSectionTitle')
+        box.addWidget(title)
+        body = QLabel(body_text)
+        body.setObjectName('systemDialogBody')
+        body.setWordWrap(True)
+        body.setTextFormat(Qt.RichText)
+        box.addWidget(body)
+        return frame
+
+
 class MainWindow(QMainWindow):
     def __init__(self, runtime: AppRuntime):
         super().__init__()
@@ -131,12 +209,14 @@ class MainWindow(QMainWindow):
 
         self.left_sidebar = self._build_left_sidebar()
         self.center_shell = self._build_center_shell()
-        self.right_sidebar = self._build_right_sidebar()
 
         self.main_splitter.addWidget(self.left_sidebar)
         self.main_splitter.addWidget(self.center_shell)
-        self.main_splitter.addWidget(self.right_sidebar)
-        self.main_splitter.setSizes(self.runtime.preferences.current().splitter_sizes)
+        splitter_sizes = self.runtime.preferences.current().splitter_sizes
+        if len(splitter_sizes) >= 2:
+            self.main_splitter.setSizes(splitter_sizes[:2])
+        else:
+            self.main_splitter.setSizes([340, 980])
 
     def _build_top_bar(self) -> QWidget:
         box = QWidget()
@@ -155,16 +235,6 @@ class MainWindow(QMainWindow):
         title_col.addWidget(self.mode_label)
         layout.addLayout(title_col)
         layout.addStretch(1)
-
-        self.online_badge = QLabel('')
-        self.online_badge.setObjectName('onlineBadge')
-        layout.addWidget(self.online_badge, 0, Qt.AlignVCenter)
-
-        self.system_button = QToolButton()
-        self.system_button.setText('⋯')
-        self.system_button.setObjectName('topBarMenuButton')
-        self.system_button.setPopupMode(QToolButton.InstantPopup)
-        layout.addWidget(self.system_button, 0, Qt.AlignVCenter)
         return box
 
     def _build_left_sidebar(self) -> QWidget:
@@ -174,11 +244,18 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 18, 12, 18)
         layout.setSpacing(14)
 
-        layout.addWidget(self._section_title('Среда'))
-        self.environment_label = QLabel('')
-        self.environment_label.setObjectName('sidebarText')
-        self.environment_label.setWordWrap(True)
-        layout.addWidget(self.environment_label)
+        layout.addWidget(self._section_title('Сценарии'))
+        self.scenario_search = QLineEdit()
+        self.scenario_search.setObjectName('scenarioSearch')
+        self.scenario_search.setPlaceholderText('Поиск сценария')
+        self.scenario_search.textChanged.connect(self._populate_scenario_tree)
+        layout.addWidget(self.scenario_search)
+
+        self.scenario_tree = QTreeWidget()
+        self.scenario_tree.setHeaderHidden(True)
+        self.scenario_tree.setObjectName('scenarioTree')
+        self.scenario_tree.itemSelectionChanged.connect(self._scenario_selection_changed)
+        layout.addWidget(self.scenario_tree, 1)
 
         layout.addWidget(self._section_title('Фильтры'))
         self.filter_mode_label = QLabel('Все сообщения')
@@ -190,21 +267,34 @@ class MainWindow(QMainWindow):
         self.artifact_list.setObjectName('artifactList')
         self.artifact_list.setSelectionMode(QAbstractItemView.SingleSelection)
         self.artifact_list.itemDoubleClicked.connect(self._open_selected_artifact)
-        layout.addWidget(self.artifact_list, 1)
-
-        layout.addWidget(self._section_title('Хост и участники'))
-        self.presence_label = QLabel('')
-        self.presence_label.setObjectName('sidebarText')
-        self.presence_label.setWordWrap(True)
-        layout.addWidget(self.presence_label)
+        layout.addWidget(self.artifact_list, 0)
 
         layout.addStretch(1)
+
+        account_block = QWidget()
+        account_layout = QVBoxLayout(account_block)
+        account_layout.setContentsMargins(0, 0, 0, 0)
+        account_layout.setSpacing(6)
+
+        self.other_online_label = QLabel('')
+        self.other_online_label.setObjectName('userOnlineNames')
+        self.other_online_label.setTextFormat(Qt.RichText)
+        self.other_online_label.setWordWrap(True)
+        self.other_online_label.hide()
+        account_layout.addWidget(self.other_online_label)
 
         self.user_button = QToolButton()
         self.user_button.setObjectName('userMenuButton')
         self.user_button.setPopupMode(QToolButton.InstantPopup)
         self.user_button.setToolButtonStyle(Qt.ToolButtonTextOnly)
-        layout.addWidget(self.user_button, 0, Qt.AlignLeft)
+        account_layout.addWidget(self.user_button, 0, Qt.AlignLeft)
+
+        self.system_side_button = QPushButton('Система')
+        self.system_side_button.setObjectName('systemSideButton')
+        self.system_side_button.clicked.connect(self._show_system_dialog)
+        account_layout.addWidget(self.system_side_button, 0, Qt.AlignLeft)
+
+        layout.addWidget(account_block, 0, Qt.AlignLeft)
         return box
 
     def _build_center_shell(self) -> QWidget:
@@ -249,52 +339,8 @@ class MainWindow(QMainWindow):
         self._set_filter_mode('all')
         return box
 
-    def _build_right_sidebar(self) -> QWidget:
-        box = QWidget()
-        box.setObjectName('rightSidebar')
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(12, 18, 18, 18)
-        layout.setSpacing(12)
-
-        title = QHBoxLayout()
-        title.addWidget(self._section_title('Сценарии'))
-        title.addStretch(1)
-        layout.addLayout(title)
-
-        self.scenario_search = QLineEdit()
-        self.scenario_search.setObjectName('scenarioSearch')
-        self.scenario_search.setPlaceholderText('Поиск сценария')
-        self.scenario_search.textChanged.connect(self._populate_scenario_tree)
-        layout.addWidget(self.scenario_search)
-
-        self.scenario_tree = QTreeWidget()
-        self.scenario_tree.setHeaderHidden(True)
-        self.scenario_tree.setObjectName('scenarioTree')
-        self.scenario_tree.itemSelectionChanged.connect(self._scenario_selection_changed)
-        layout.addWidget(self.scenario_tree, 1)
-        return box
-
     def _build_menus(self) -> None:
-        system_menu = QMenu(self)
-        action_refresh = QAction('Обновить состояние', self)
-        action_refresh.triggered.connect(self._refresh_state)
-        system_menu.addAction(action_refresh)
-        action_diag = QAction('Диагностика', self)
-        action_diag.triggered.connect(self._show_diagnostics)
-        system_menu.addAction(action_diag)
-        action_copy = QAction('Скопировать диагностику', self)
-        action_copy.triggered.connect(self._copy_diagnostics)
-        system_menu.addAction(action_copy)
-        system_menu.addSeparator()
-        action_exit = QAction('Выход', self)
-        action_exit.triggered.connect(self.close)
-        system_menu.addAction(action_exit)
-        self.system_button.setMenu(system_menu)
-
         user_menu = QMenu(self)
-        action_online = QAction('Кто online', self)
-        action_online.triggered.connect(self._show_online_info)
-        user_menu.addAction(action_online)
         action_participants = QAction('Участники', self)
         action_participants.triggered.connect(self._show_participants_dialog)
         user_menu.addAction(action_participants)
@@ -336,7 +382,7 @@ class MainWindow(QMainWindow):
                     kind='system_notice',
                     status='info',
                     title='Рабочая поверхность готова',
-                    body='Выберите сценарий справа. Параметры появятся внизу, запуск уйдёт в общую ленту.',
+                    body='Выберите сценарий слева. Параметры появятся внизу, запуск уйдёт в общую ленту.',
                     created_at=self._now(),
                     author_id=self.context.user_id,
                     author_label=self.context.account_name or 'Пользователь',
@@ -448,7 +494,9 @@ class MainWindow(QMainWindow):
         self.feed_list.clear()
         for entry in self.runtime.feed_store.visible_entries():
             item = QListWidgetItem()
-            card = FeedCard(entry, on_action=self._handle_feed_action)
+            author = self.runtime.presence_service.participant_by_id(entry.author_id)
+            author_color = author.accent_color if author is not None else self.runtime.presence_service.color_for_participant(entry.author_id)
+            card = FeedCard(entry, on_action=self._handle_feed_action, author_color=author_color)
             item.setSizeHint(card.sizeHint())
             self.feed_list.addItem(item)
             self.feed_list.setItemWidget(item, card)
@@ -505,19 +553,19 @@ class MainWindow(QMainWindow):
             participant = self.runtime.presence_service.participant_by_id(participant_id)
             self.filter_mode_label.setText(f'Автор: {participant.display_name if participant else participant_id}')
         else:
-            self.filter_mode_label.setText('Все сообщения')
+            base_titles = {
+                'all': 'Все сообщения',
+                'mine': 'Мои сообщения',
+                'running': 'Сценарии в работе',
+                'success': 'Успешные сообщения',
+                'errors': 'Сообщения с ошибками',
+            }
+            self.filter_mode_label.setText(base_titles.get(self.runtime.feed_store.filter_state.mode, 'Все сообщения'))
         self._refresh_feed()
 
     def _filter_my_messages(self) -> None:
         self.runtime.feed_store.set_author(self.context.user_id or 'local-user')
         self._set_filter_mode('mine')
-
-    def _show_online_info(self) -> None:
-        participants = [item.display_name for item in self.runtime.presence_service.participants() if item.is_online]
-        if not participants:
-            QMessageBox.information(self, 'Кто online', 'Сейчас никто не отмечен как online.')
-            return
-        QMessageBox.information(self, 'Кто online', '\n'.join(participants))
 
     def _show_participants_dialog(self) -> None:
         dialog = ParticipantsDialog(self.runtime.presence_service.participants(), self)
@@ -545,27 +593,57 @@ class MainWindow(QMainWindow):
             )
         ])
 
-    def _refresh_context_views(self) -> None:
+    def _build_environment_text(self) -> str:
         mode = self.runtime.appdock_bridge.host_mode_label()
         workspace_root = str(self.context.workspace_root_path) if self.context.workspace_root_path else '—'
         selector = str(self.context.data_root_selector_path) if self.context.data_root_selector_path else '—'
-        self.mode_label.setText(f'{mode} · workspace {self.context.workspace_schema.title}')
-        self.online_badge.setText(f'● {self.runtime.presence_service.online_count()} online')
-        self.environment_label.setText(
-            f'Workspace: {workspace_root}\n'
-            f'Selector: {selector}\n'
-            f'Режим: {mode}\n'
+        return (
+            f'Workspace: {workspace_root}<br>'
+            f'Selector: {selector}<br>'
+            f'Режим: {mode}<br>'
             f'Node: {self.context.node_id or "-"}'
         )
+
+    def _build_host_text(self) -> str:
+        participants = self.runtime.presence_service.participants()
+        if participants:
+            chunks = []
+            for item in participants:
+                status = 'online' if item.is_online else (item.last_seen_label or 'offline')
+                chunks.append(f'<span style="color:{item.accent_color};">{item.display_name}</span> · {status}')
+            people = '<br>'.join(chunks)
+        else:
+            people = 'Участники пока отсутствуют.'
+        return (
+            f'Host: {self.context.host_name or "-"}<br>'
+            f'Участников: {len(participants)}<br><br>'
+            f'{people}'
+        )
+
+    def _refresh_context_views(self) -> None:
+        mode = self.runtime.appdock_bridge.host_mode_label()
+        self.mode_label.setText(f'{mode} · workspace {self.context.workspace_schema.title}')
         current_user = self.context.account_name or self.context.user_id or 'Пользователь'
         self.user_button.setText(current_user)
-        participants = self.runtime.presence_service.participants()
-        presence_lines = [
-            f'Online: {self.runtime.presence_service.online_count()}',
-            f'Host: {self.context.host_name or "-"}',
-            f'Участников: {len(participants)}',
-        ]
-        self.presence_label.setText('\n'.join(presence_lines))
+        others_html = self.runtime.presence_service.other_online_html()
+        if others_html:
+            self.other_online_label.setText(others_html)
+            self.other_online_label.show()
+        else:
+            self.other_online_label.clear()
+            self.other_online_label.hide()
+
+    def _show_system_dialog(self) -> None:
+        dialog = SystemDialog(
+            environment_text=self._build_environment_text(),
+            host_text=self._build_host_text(),
+            on_refresh=self._refresh_state,
+            on_show_diagnostics=self._show_diagnostics,
+            on_copy_diagnostics=self._copy_diagnostics,
+            on_exit=self.close,
+            parent=self,
+        )
+        dialog.exec()
 
     def _show_diagnostics(self) -> None:
         dialog = DiagnosticsDialog(build_diagnostics_text(self.context), self)

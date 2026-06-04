@@ -26,6 +26,7 @@ class FeedCard(QFrame):
         entry: FeedEntry,
         *,
         on_action: Callable[[FeedEntry, FeedAction], None],
+        author_color: str | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -53,6 +54,8 @@ class FeedCard(QFrame):
         if entry.author_label:
             author = QLabel(entry.author_label)
             author.setObjectName('feedCardAuthor')
+            if author_color:
+                author.setStyleSheet(f'color: {author_color};')
             layout.addWidget(author)
 
         body = QLabel(entry.body)

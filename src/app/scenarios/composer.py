@@ -26,7 +26,7 @@ class ScenarioComposer(QWidget):
         self._row = QHBoxLayout(self)
         self._row.setContentsMargins(16, 12, 16, 12)
         self._row.setSpacing(10)
-        self._placeholder = QLabel('Выберите сценарий справа')
+        self._placeholder = QLabel('Выберите сценарий слева')
         self._placeholder.setObjectName('composerPlaceholder')
         self._row.addWidget(self._placeholder)
         self._row.addStretch(1)
@@ -39,7 +39,7 @@ class ScenarioComposer(QWidget):
         self._spec = spec
         self._reset()
         if spec is None:
-            self._placeholder = QLabel('Выберите сценарий справа')
+            self._placeholder = QLabel('Выберите сценарий слева')
             self._placeholder.setObjectName('composerPlaceholder')
             self._row.addWidget(self._placeholder)
             self._row.addStretch(1)

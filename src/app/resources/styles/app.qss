@@ -24,8 +24,11 @@ QMainWindow {
     color: #6b7280;
 }
 
-#topBarMenuButton,
-#userMenuButton {
+#userMenuButton,
+#systemSideButton,
+#feedActionButton,
+#primaryRunButton,
+#filterPill {
     border: 1px solid #e8ecf1;
     border-radius: 14px;
     background: #ffffff;
@@ -33,22 +36,22 @@ QMainWindow {
     color: #111111;
 }
 
-#topBarMenuButton:hover,
 #userMenuButton:hover,
+#systemSideButton:hover,
 #feedActionButton:hover,
 #primaryRunButton:hover,
 #filterPill:hover {
     background: #f7f9fb;
 }
 
-#onlineBadge {
-    color: #0f8f54;
+#systemSideButton {
+    text-align: left;
+}
+
+#userOnlineNames {
+    color: #6b7280;
     font-size: 12px;
-    font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 14px;
-    background: #f3fbf6;
-    border: 1px solid #d8f0df;
+    padding-left: 2px;
 }
 
 #sidebarSectionTitle {
@@ -187,6 +190,23 @@ QMainWindow {
 #feedCardOutputs {
     color: #111111;
     line-height: 1.45;
+}
+
+#systemDialogCard {
+    border: 1px solid #eef1f4;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+#systemDialogSectionTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #111111;
+}
+
+#systemDialogBody {
+    color: #374151;
+    line-height: 1.5;
 }
 
 QScrollBar:vertical {

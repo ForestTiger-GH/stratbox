@@ -9,6 +9,17 @@ from app.timeline.models import FeedEntry
 
 
 class PresenceService:
+    _PALETTE = (
+        '#2563eb',
+        '#7c3aed',
+        '#db2777',
+        '#0f766e',
+        '#ea580c',
+        '#059669',
+        '#9333ea',
+        '#dc2626',
+    )
+
     def __init__(self, context: AppContext) -> None:
         self._context = context
         self._participants: 'OrderedDict[str, ParticipantRecord]' = OrderedDict()
@@ -24,7 +35,13 @@ class PresenceService:
             host_name=self._context.host_name,
             last_seen_label='сейчас',
             run_count=0,
+            accent_color=self.color_for_participant(participant_id),
         )
+
+    def color_for_participant(self, participant_id: str | None) -> str:
+        key = participant_id or 'unknown'
+        idx = sum(ord(ch) for ch in key) % len(self._PALETTE)
+        return self._PALETTE[idx]
 
     def register_feed_entry(self, entry: FeedEntry) -> None:
         participant_id = entry.author_id or 'unknown'
@@ -38,6 +55,7 @@ class PresenceService:
                 host_name=None,
                 last_seen_label=entry.timestamp_label,
                 run_count=0,
+                accent_color=self.color_for_participant(participant_id),
             )
             self._participants[participant_id] = record
         record.display_name = display_name
@@ -64,3 +82,20 @@ class PresenceService:
         if current is not None:
             current.last_seen_label = datetime.now().strftime('%H:%M')
             current.is_online = True
+
+    def other_online_participants(self) -> tuple[ParticipantRecord, ...]:
+        current_id = self._context.user_id or 'local-user'
+        return tuple(
+            item for item in self._participants.values()
+            if item.is_online and item.participant_id != current_id
+        )
+
+    def other_online_html(self) -> str:
+        participants = self.other_online_participants()
+        if not participants:
+            return ''
+        chunks = [
+            f'<span style="color:{item.accent_color};">{item.display_name}</span>'
+            for item in participants
+        ]
+        return ' · '.join(chunks)
