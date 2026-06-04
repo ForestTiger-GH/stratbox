@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QCloseEvent, QColor, QPainter, QPixmap
+from PySide6.QtGui import QBrush, QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSplitter,
-    QStackedLayout,
     QSizePolicy,
     QTreeWidget,
     QTreeWidgetItem,
@@ -28,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.bootstrap.runtime import AppRuntime
+from app.shell.chat_scene import ChatSceneHost
 from app.presence.models import ParticipantRecord
 from app.scenarios.catalog import group_scenarios
 from app.scenarios.composer import ScenarioComposer
@@ -41,46 +41,6 @@ from app.workspace import run_workspace_diagnostics
 
 def _chat_background_image_path() -> Path:
     return Path(__file__).resolve().parents[1] / 'resources' / 'images' / 'chat_history_background.png'
-
-
-class FeedBackgroundWidget(QWidget):
-    def __init__(self, image_path: Path, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._image_path = image_path
-        self._source = QPixmap(str(image_path)) if image_path.exists() else QPixmap()
-        self._scaled = QPixmap()
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self.setAutoFillBackground(False)
-
-    def resizeEvent(self, event) -> None:  # type: ignore[override]
-        self._rebuild_scaled_pixmap()
-        super().resizeEvent(event)
-
-    def paintEvent(self, event) -> None:  # type: ignore[override]
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-        painter.fillRect(self.rect(), QColor('#ffffff'))
-        if not self._scaled.isNull():
-            x = (self.width() - self._scaled.width()) // 2
-            y = (self.height() - self._scaled.height()) // 2
-            painter.drawPixmap(x, y, self._scaled)
-        painter.end()
-        super().paintEvent(event)
-
-    def _rebuild_scaled_pixmap(self) -> None:
-        if self.width() <= 0 or self.height() <= 0 or self._source.isNull():
-            self._scaled = QPixmap()
-            return
-        scale = max(self.width() / self._source.width(), self.height() / self._source.height())
-        target_width = max(1, int(self._source.width() * scale))
-        target_height = max(1, int(self._source.height() * scale))
-        self._scaled = self._source.scaled(
-            target_width,
-            target_height,
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation,
-        )
-
 
 
 class ParticipantsDialog(QDialog):
@@ -355,21 +315,7 @@ class MainWindow(QMainWindow):
         return container
 
     def _build_center_shell(self) -> QWidget:
-        scene_host = QWidget()
-        scene_host.setObjectName('centerSceneHost')
-        scene_stack = QStackedLayout(scene_host)
-        scene_stack.setContentsMargins(0, 0, 0, 0)
-        scene_stack.setStackingMode(QStackedLayout.StackAll)
-
-        self.center_background = FeedBackgroundWidget(_chat_background_image_path(), scene_host)
-        self.center_background.setObjectName('centerSceneBackground')
-        scene_stack.addWidget(self.center_background)
-
-        content = QWidget()
-        content.setObjectName('centerSceneContent')
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(8, 12, 8, 12)
-        layout.setSpacing(12)
+        scene_host = ChatSceneHost(_chat_background_image_path())
 
         filters = QHBoxLayout()
         filters.setSpacing(8)
@@ -382,7 +328,7 @@ class MainWindow(QMainWindow):
             self.filter_buttons[mode] = button
             filters.addWidget(button)
         filters.addStretch(1)
-        layout.addLayout(filters)
+        scene_host.content_layout.addLayout(filters)
 
         self.feed_host = QWidget()
         self.feed_host.setObjectName('feedAreaHost')
@@ -399,7 +345,7 @@ class MainWindow(QMainWindow):
         self.feed_list.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
         feed_layout.addWidget(self.feed_list)
 
-        layout.addWidget(self.feed_host, 1)
+        scene_host.content_layout.addWidget(self.feed_host, 1)
 
         bottom = QWidget()
         bottom.setObjectName('composerShell')
@@ -420,8 +366,7 @@ class MainWindow(QMainWindow):
         composer_actions.addWidget(self.run_button, 0, Qt.AlignRight)
         composer_layout.addLayout(composer_actions)
 
-        layout.addWidget(bottom)
-        scene_stack.addWidget(content)
+        scene_host.content_layout.addWidget(bottom)
 
         self._set_filter_mode('all')
         return scene_host

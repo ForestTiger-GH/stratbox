@@ -52,6 +52,11 @@ QSplitter::handle {
     background: transparent;
 }
 
+#centerSceneBackground {
+    border: none;
+    background: transparent;
+}
+
 QListWidget#feedList,
 QListWidget#feedList::viewport {
     border: none;
