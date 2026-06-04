@@ -45,6 +45,8 @@ QSplitter::handle {
 }
 
 
+#centerSceneHost,
+#centerSceneContent,
 #feedAreaHost {
     border: none;
     background: transparent;

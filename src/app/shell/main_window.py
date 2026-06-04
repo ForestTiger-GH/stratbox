@@ -355,8 +355,19 @@ class MainWindow(QMainWindow):
         return container
 
     def _build_center_shell(self) -> QWidget:
-        box = QWidget()
-        layout = QVBoxLayout(box)
+        scene_host = QWidget()
+        scene_host.setObjectName('centerSceneHost')
+        scene_stack = QStackedLayout(scene_host)
+        scene_stack.setContentsMargins(0, 0, 0, 0)
+        scene_stack.setStackingMode(QStackedLayout.StackAll)
+
+        self.center_background = FeedBackgroundWidget(_chat_background_image_path(), scene_host)
+        self.center_background.setObjectName('centerSceneBackground')
+        scene_stack.addWidget(self.center_background)
+
+        content = QWidget()
+        content.setObjectName('centerSceneContent')
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(8, 12, 8, 12)
         layout.setSpacing(12)
 
@@ -375,12 +386,9 @@ class MainWindow(QMainWindow):
 
         self.feed_host = QWidget()
         self.feed_host.setObjectName('feedAreaHost')
-        feed_stack = QStackedLayout(self.feed_host)
-        feed_stack.setContentsMargins(0, 0, 0, 0)
-        feed_stack.setStackingMode(QStackedLayout.StackAll)
-
-        self.feed_background = FeedBackgroundWidget(_chat_background_image_path(), self.feed_host)
-        feed_stack.addWidget(self.feed_background)
+        feed_layout = QVBoxLayout(self.feed_host)
+        feed_layout.setContentsMargins(0, 0, 0, 0)
+        feed_layout.setSpacing(0)
 
         self.feed_list = QListWidget()
         self.feed_list.setObjectName('feedList')
@@ -389,7 +397,7 @@ class MainWindow(QMainWindow):
         self.feed_list.setFrameShape(QFrame.NoFrame)
         self.feed_list.viewport().setAutoFillBackground(False)
         self.feed_list.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
-        feed_stack.addWidget(self.feed_list)
+        feed_layout.addWidget(self.feed_list)
 
         layout.addWidget(self.feed_host, 1)
 
@@ -413,9 +421,10 @@ class MainWindow(QMainWindow):
         composer_layout.addLayout(composer_actions)
 
         layout.addWidget(bottom)
+        scene_stack.addWidget(content)
 
         self._set_filter_mode('all')
-        return box
+        return scene_host
 
 
     def _build_menus(self) -> None:
