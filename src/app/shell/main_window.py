@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QCloseEvent, QColor
+from PySide6.QtGui import QBrush, QCloseEvent, QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSplitter,
+    QStackedLayout,
     QSizePolicy,
     QTreeWidget,
     QTreeWidgetItem,
@@ -35,6 +36,51 @@ from app.system.commands import build_diagnostics_text
 from app.timeline.models import FeedAction, FeedEntry
 from app.timeline.widgets import FeedCard
 from app.workspace import run_workspace_diagnostics
+
+
+
+def _chat_background_image_path() -> Path:
+    return Path(__file__).resolve().parents[1] / 'resources' / 'images' / 'chat_history_background.png'
+
+
+class FeedBackgroundWidget(QWidget):
+    def __init__(self, image_path: Path, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._image_path = image_path
+        self._source = QPixmap(str(image_path)) if image_path.exists() else QPixmap()
+        self._scaled = QPixmap()
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setAutoFillBackground(False)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        self._rebuild_scaled_pixmap()
+        super().resizeEvent(event)
+
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+        painter.fillRect(self.rect(), QColor('#ffffff'))
+        if not self._scaled.isNull():
+            x = (self.width() - self._scaled.width()) // 2
+            y = (self.height() - self._scaled.height()) // 2
+            painter.drawPixmap(x, y, self._scaled)
+        painter.end()
+        super().paintEvent(event)
+
+    def _rebuild_scaled_pixmap(self) -> None:
+        if self.width() <= 0 or self.height() <= 0 or self._source.isNull():
+            self._scaled = QPixmap()
+            return
+        scale = max(self.width() / self._source.width(), self.height() / self._source.height())
+        target_width = max(1, int(self._source.width() * scale))
+        target_height = max(1, int(self._source.height() * scale))
+        self._scaled = self._source.scaled(
+            target_width,
+            target_height,
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation,
+        )
+
 
 
 class ParticipantsDialog(QDialog):
@@ -327,11 +373,25 @@ class MainWindow(QMainWindow):
         filters.addStretch(1)
         layout.addLayout(filters)
 
+        self.feed_host = QWidget()
+        self.feed_host.setObjectName('feedAreaHost')
+        feed_stack = QStackedLayout(self.feed_host)
+        feed_stack.setContentsMargins(0, 0, 0, 0)
+        feed_stack.setStackingMode(QStackedLayout.StackAll)
+
+        self.feed_background = FeedBackgroundWidget(_chat_background_image_path(), self.feed_host)
+        feed_stack.addWidget(self.feed_background)
+
         self.feed_list = QListWidget()
         self.feed_list.setObjectName('feedList')
         self.feed_list.setSpacing(10)
         self.feed_list.setSelectionMode(QAbstractItemView.NoSelection)
-        layout.addWidget(self.feed_list, 1)
+        self.feed_list.setFrameShape(QFrame.NoFrame)
+        self.feed_list.viewport().setAutoFillBackground(False)
+        self.feed_list.viewport().setAttribute(Qt.WA_TranslucentBackground, True)
+        feed_stack.addWidget(self.feed_list)
+
+        layout.addWidget(self.feed_host, 1)
 
         bottom = QWidget()
         bottom.setObjectName('composerShell')
@@ -356,6 +416,7 @@ class MainWindow(QMainWindow):
 
         self._set_filter_mode('all')
         return box
+
 
     def _build_menus(self) -> None:
         return

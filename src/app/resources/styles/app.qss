@@ -44,6 +44,19 @@ QSplitter::handle {
     color: #6b7280;
 }
 
+
+#feedAreaHost {
+    border: none;
+    background: transparent;
+}
+
+QListWidget#feedList,
+QListWidget#feedList::viewport {
+    border: none;
+    background: transparent;
+}
+
+
 QPushButton {
     border: 1px solid #F3F3F3;
     border-radius: 14px;
