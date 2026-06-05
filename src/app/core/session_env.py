@@ -316,7 +316,7 @@ class AppSessionClient:
             warnings=tuple(),
             workspace_state={},
             state_kind="runtime",
-            workspace_schema_id=None,
+            app_extensions={},
         )
 
     def save_app_state(self, state: AppStateRecord) -> AppStateRecord:
