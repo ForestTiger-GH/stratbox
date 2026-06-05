@@ -11,8 +11,8 @@ class AppDockBridge:
         if self.context.run_mode != 'appdock_managed':
             return 'локальный режим'
         if self.context.active_session is not None:
-            return 'online'
-        return 'managed session'
+            return 'активная AppDock-сессия'
+        return 'AppDock-managed session'
 
     def host_mode_label(self) -> str:
-        return 'через host' if self.context.run_mode == 'appdock_managed' else 'локально'
+        return 'через AppDock' if self.context.run_mode == 'appdock_managed' else 'локально'

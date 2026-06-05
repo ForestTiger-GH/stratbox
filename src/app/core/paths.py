@@ -3,9 +3,10 @@
 Strategy Box поддерживает два разных режима размещения.
 
 1. AppDock-managed
-   Приложение использует install-root, который подготовил AppDock, и не создаёт
-   собственные user-level каталоги. Operational-файлы лежат прямо внутри install-root
-   с базовыми именами (`app.json`, `logs/`, `cache/`, `runtime/`).
+   Приложение использует install-root, который подготовил AppDock. Все собственные
+   operational-файлы живут в одном app-owned system folder внутри install-root.
+   Если AppDock явно передал install_root_system_dir, используется он. Иначе
+   приложение создаёт и использует fallback-папку `install_root/AppDock`.
 
 2. Standalone developer route
    Для локальной разработки и автономного запуска приложение использует свою
@@ -18,9 +19,10 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.core.handoff import AppHandoff
+from app.core.handoff import AppHandoff, HandoffSystemDir
 
 APP_DIR_NAME = 'Stratbox'
+APPDOCK_MANAGED_SYSTEM_DIR_NAME = 'AppDock'
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +41,7 @@ class AppPaths:
     config_dir: Path | None = None
     install_root: Path | None = None
     system_root: Path | None = None
+    managed_system_root: Path | None = None
     session_dir: Path | None = None
     appdock_managed: bool = False
     handoff_path: Path | None = None
@@ -48,8 +51,8 @@ class AppPaths:
     active_session_path: Path | None = None
     health_snapshot_path: Path | None = None
     app_state_path: Path | None = None
+    cleanup_registry_path: Path | None = None
     bundle_root: Path | None = None
-    appdock_runtime_root: Path | None = None
 
 
 def _local_app_data_root() -> Path:
@@ -68,6 +71,12 @@ def _ensure_directories(*paths: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
+def _resolve_managed_storage_root(*, install_root: Path, install_root_system_dir: HandoffSystemDir | None) -> Path:
+    if install_root_system_dir is not None and str(install_root_system_dir.path).strip():
+        return Path(install_root_system_dir.path).expanduser()
+    return install_root / APPDOCK_MANAGED_SYSTEM_DIR_NAME
+
+
 def _build_appdock_managed_paths(
     *,
     source_root: Path,
@@ -81,27 +90,31 @@ def _build_appdock_managed_paths(
     session_state_path = Path(appdock_handoff.refs.session_ref).expanduser() if appdock_handoff.refs.session_ref else None
     session_dir = session_state_path.parent if session_state_path is not None else None
 
-    logs_dir = install_root / 'logs'
+    managed_system_root = _resolve_managed_storage_root(
+        install_root=install_root,
+        install_root_system_dir=appdock_handoff.provided_system_dirs.install_root_system_dir,
+    )
+    logs_dir = managed_system_root / 'logs'
     scenario_logs_dir = logs_dir / 'scenarios'
-    cache_dir = install_root / 'cache'
-    runtime_dir = install_root / 'runtime'
-    app_config_path = install_root / 'app.json'
+    cache_dir = managed_system_root / 'cache'
+    runtime_dir = managed_system_root / 'runtime'
+    app_config_path = managed_system_root / 'app.json'
 
-    _ensure_directories(logs_dir, scenario_logs_dir, cache_dir, runtime_dir)
+    _ensure_directories(managed_system_root, logs_dir, scenario_logs_dir, cache_dir, runtime_dir)
 
     workspace = appdock_handoff.workspace
     bundle_root = Path(workspace.bundle_root).expanduser() if workspace.bundle_root else None
-    appdock_runtime_root = Path(workspace.runtime_root).expanduser() if getattr(workspace, 'runtime_root', None) else None
 
     user_state_path = Path(appdock_handoff.refs.user_state_ref).expanduser() if appdock_handoff.refs.user_state_ref else None
     active_session_path = Path(appdock_handoff.refs.active_session_ref).expanduser() if appdock_handoff.refs.active_session_ref else None
     health_snapshot_path = Path(appdock_handoff.refs.health_snapshot_ref).expanduser() if appdock_handoff.refs.health_snapshot_ref else None
     app_state_path = Path(appdock_handoff.refs.app_state_ref).expanduser() if appdock_handoff.refs.app_state_ref else None
+    cleanup_registry_path = Path(appdock_handoff.refs.cleanup_registry_ref).expanduser() if appdock_handoff.refs.cleanup_registry_ref else None
 
     return AppPaths(
         source_root=source_root,
         src_dir=src_dir,
-        app_storage_root=install_root,
+        app_storage_root=managed_system_root,
         logs_dir=logs_dir,
         scenario_logs_dir=scenario_logs_dir,
         cache_dir=cache_dir,
@@ -111,6 +124,7 @@ def _build_appdock_managed_paths(
         config_dir=None,
         install_root=install_root,
         system_root=system_root,
+        managed_system_root=managed_system_root,
         session_dir=session_dir,
         appdock_managed=True,
         handoff_path=handoff_path,
@@ -120,8 +134,8 @@ def _build_appdock_managed_paths(
         active_session_path=active_session_path,
         health_snapshot_path=health_snapshot_path,
         app_state_path=app_state_path,
+        cleanup_registry_path=cleanup_registry_path,
         bundle_root=bundle_root,
-        appdock_runtime_root=appdock_runtime_root,
     )
 
 
@@ -155,6 +169,7 @@ def _build_standalone_paths(
         config_dir=config_dir,
         install_root=None,
         system_root=None,
+        managed_system_root=None,
         session_dir=None,
         appdock_managed=False,
         handoff_path=handoff_path,
@@ -164,8 +179,8 @@ def _build_standalone_paths(
         active_session_path=None,
         health_snapshot_path=None,
         app_state_path=None,
+        cleanup_registry_path=None,
         bundle_root=None,
-        appdock_runtime_root=None,
     )
 
 

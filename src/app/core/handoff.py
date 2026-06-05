@@ -1,10 +1,10 @@
-"""AppDock -> app handoff contract."""
+"""AppDock -> app handoff contract used by Strategy Box."""
 
 from __future__ import annotations
 
 import json
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -40,10 +40,7 @@ class HandoffWorkspace:
     install_root: str
     system_root: str
     source_root: str
-    config_root: str
-    runtime_root: str
     bundle_root: str
-    logs_root: str
     data_root_status: str
     data_root_path: str | None
 
@@ -53,16 +50,64 @@ class HandoffWorkspace:
             install_root=str(payload.get("install_root") or ""),
             system_root=str(payload.get("system_root") or ""),
             source_root=str(payload.get("source_root") or ""),
-            config_root=str(payload.get("config_root") or ""),
-            runtime_root=str(payload.get("runtime_root") or ""),
             bundle_root=str(payload.get("bundle_root") or ""),
-            logs_root=str(payload.get("logs_root") or ""),
             data_root_status=str(payload.get("data_root_status") or "unavailable"),
             data_root_path=(str(payload["data_root_path"]) if payload.get("data_root_path") else None),
         )
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class HandoffSystemDir:
+    """AppDock-provided optional system directory."""
+
+    kind: str
+    directory_name: str
+    path: str
+    provider_class: str
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "HandoffSystemDir | None":
+        if not isinstance(payload, dict) or not payload:
+            return None
+        path = str(payload.get("path") or "").strip()
+        if not path:
+            return None
+        return cls(
+            kind=str(payload.get("kind") or ""),
+            directory_name=str(payload.get("directory_name") or ""),
+            path=path,
+            provider_class=str(payload.get("provider_class") or ""),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class HandoffProvidedSystemDirs:
+    """Optional system dirs materialized by AppDock."""
+
+    install_root_system_dir: HandoffSystemDir | None = None
+    user_local_system_dir: HandoffSystemDir | None = None
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "HandoffProvidedSystemDirs":
+        payload = payload or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        return cls(
+            install_root_system_dir=HandoffSystemDir.from_dict(payload.get("install_root_system_dir")),
+            user_local_system_dir=HandoffSystemDir.from_dict(payload.get("user_local_system_dir")),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "install_root_system_dir": self.install_root_system_dir.to_dict() if self.install_root_system_dir else None,
+            "user_local_system_dir": self.user_local_system_dir.to_dict() if self.user_local_system_dir else None,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +119,7 @@ class HandoffRefs:
     session_ref: str | None = None
     active_session_ref: str | None = None
     app_state_ref: str | None = None
+    cleanup_registry_ref: str | None = None
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "HandoffRefs":
@@ -83,6 +129,7 @@ class HandoffRefs:
             session_ref=(str(payload["session_ref"]) if payload.get("session_ref") else None),
             active_session_ref=(str(payload["active_session_ref"]) if payload.get("active_session_ref") else None),
             app_state_ref=(str(payload["app_state_ref"]) if payload.get("app_state_ref") else None),
+            cleanup_registry_ref=(str(payload["cleanup_registry_ref"]) if payload.get("cleanup_registry_ref") else None),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -105,7 +152,8 @@ class AppHandoff:
     degraded_launch: bool
     source_revision: SourceRevisionRef
     workspace: HandoffWorkspace
-    refs: HandoffRefs
+    provided_system_dirs: HandoffProvidedSystemDirs = field(default_factory=HandoffProvidedSystemDirs)
+    refs: HandoffRefs = field(default_factory=HandoffRefs)
     node_id: str | None = None
     node_created_at_utc: str | None = None
     user_id: str | None = None
@@ -123,7 +171,7 @@ class AppHandoff:
         workspace_payload = payload.get("workspace")
         if not isinstance(workspace_payload, dict):
             raise AppConfigError("AppDock handoff misses workspace object")
-        refs_payload = payload.get("refs")
+        refs_payload = payload.get("refs") or {}
         if not isinstance(refs_payload, dict):
             raise AppConfigError("AppDock handoff misses refs object")
 
@@ -152,6 +200,7 @@ class AppHandoff:
             degraded_launch=bool(payload.get("degraded_launch", False)),
             source_revision=SourceRevisionRef.from_dict(source_revision_payload),
             workspace=HandoffWorkspace.from_dict(workspace_payload),
+            provided_system_dirs=HandoffProvidedSystemDirs.from_dict(payload.get("provided_system_dirs")),
             refs=HandoffRefs.from_dict(refs_payload),
             node_id=(str(payload["node_id"]) if payload.get("node_id") else None),
             node_created_at_utc=(str(payload["node_created_at_utc"]) if payload.get("node_created_at_utc") else None),

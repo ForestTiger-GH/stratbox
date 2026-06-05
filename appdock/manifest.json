@@ -5,6 +5,12 @@
   "bundle_id": "stratbox",
   "bundle_profile": "desktop",
   "default_app_surface_id": "stratbox.desktop",
+  "program": {
+    "description": "Strategy Box desktop surface for AppDock-managed analytical work.",
+    "version": "0.1.0",
+    "vendor": "Strategy Box",
+    "display_category": "analytics_desktop"
+  },
   "app_surfaces": [
     {
       "surface_id": "stratbox.desktop",
@@ -46,6 +52,17 @@
       }
     }
   ],
+  "capabilities": {
+    "supports_remote_attach": false,
+    "supports_delegated_jobs": false,
+    "supports_artifacts": true,
+    "supports_resume": true,
+    "supports_presence": true,
+    "publication_profiles": [],
+    "capability_profiles": [
+      "desktop_analytical_world"
+    ]
+  },
   "metadata": {
     "description": "Strategy Box desktop app surface for AppDock world entry."
   }

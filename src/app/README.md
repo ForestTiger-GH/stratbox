@@ -5,9 +5,10 @@
 На текущем этапе AppDock:
 - подготавливает node-среду;
 - синхронизирует внешний репозиторий;
-- валидирует `appdock-world/manifest.json`;
+- валидирует `appdock/manifest.json`;
 - выбирает активную app surface;
 - передаёт приложению runtime-context через `APPDOCK_HANDOFF_PATH`;
+- дополнительно может читать repo-local `appdock/distribution.json` как product delivery preset.
 - открывает `python -m app.entrypoints.appdock`.
 
 `app` при этом не выполняет bootstrap shell-а и не управляет install/update средой. Он читает handoff, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
@@ -40,7 +41,7 @@ AppDock отвечает за:
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает `APPDOCK_HANDOFF_PATH`;
 - приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
-- все собственные persistent operational-файлы кладутся прямо в `install_root`, без user-level каталогов и без дополнительных top-level имён Strategy Box.
+- все собственные persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/AppDock`; если AppDock явно передал `install_root_system_dir`, приложение использует его. Внутри этой папки лежат `app.json`, `logs/`, `cache/`, `runtime/`.
 
 ### Standalone developer route
 

@@ -76,8 +76,9 @@ pip install -e .
 - AppDock подготавливает node-среду;
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает этот контракт;
+- repo-local `appdock/distribution.json` задаёт product delivery policy для AppDock frontdoor и install/runtime поведения.
 - GUI запускает задачи поверх business-root, который уже выбран AppDock;
-- в AppDock-managed режиме desktop surface хранит свои operational-файлы прямо внутри `install_root` (`app.json`, `logs/`, `cache/`, `runtime/`) и не создаёт user-level каталогов.
+- в AppDock-managed режиме desktop surface хранит свои operational-файлы в одном app-owned system folder внутри `install_root` (по умолчанию `install_root/AppDock`, либо в `install_root_system_dir`, если его явно передал AppDock). Там лежат `app.json`, `logs/`, `cache/`, `runtime/`, без user-level каталогов и без россыпи файлов по корню установки.
 
 Это разделяет роли:
 
