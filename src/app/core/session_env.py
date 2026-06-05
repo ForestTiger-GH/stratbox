@@ -310,7 +310,7 @@ class AppSessionClient:
             heartbeat_utc=now,
             resumable=True,
             clean_shutdown=None,
-            active_view=None,
+            active_view=(self.handoff.entry_view or "timeline"),
             selected_object=None,
             active_job=None,
             warnings=tuple(),
@@ -330,8 +330,9 @@ class AppSessionClient:
         merged = state.updated(updated_at_utc=_utc_now(), heartbeat_utc=_utc_now(), **kwargs)
         return self.save_app_state(merged)
 
-    def mark_running(self, *, active_view: str | None = "overview") -> AppStateRecord:
-        return self.update_app_state(clean_shutdown=None, resumable=True, active_view=active_view, state_kind="runtime")
+    def mark_running(self, *, active_view: str | None = None) -> AppStateRecord:
+        resolved_view = active_view or self.handoff.entry_view or "timeline"
+        return self.update_app_state(clean_shutdown=None, resumable=True, active_view=resolved_view, state_kind="runtime")
 
     def mark_ended(self, *, clean_shutdown: bool, active_view: str | None = "closed", warning: str | None = None) -> AppStateRecord | None:
         warnings: tuple[str, ...] = (warning,) if warning else tuple()

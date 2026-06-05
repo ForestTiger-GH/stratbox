@@ -42,3 +42,6 @@ include-package-data = true
   "resources/icons/*",
   "resources/images/*",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]

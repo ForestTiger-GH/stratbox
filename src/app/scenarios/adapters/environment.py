@@ -41,6 +41,19 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
     for package_name, ok in package_checks.items():
         context.logger.info('Package %s: %s', package_name, 'OK' if ok else 'missing')
 
+    degraded_launch = (
+        (context.appdock_handoff.degraded_launch if context.appdock_handoff is not None else False)
+        or (context.session_state.degraded_launch if context.session_state is not None and context.session_state.degraded_launch is not None else False)
+        or (not context.data_root_status.available)
+    )
+
+    degraded_preflight_allowed = (
+        mode == 'appdock_preflight'
+        and context.run_mode == 'appdock_managed'
+        and degraded_launch
+        and not context.data_root_status.available
+    )
+
     details = {
         'workspace_schema': context.workspace_schema.to_dict(),
         'data_root_selector_path': str(context.data_root_selector_path) if context.data_root_selector_path else None,
@@ -65,11 +78,16 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
         'active_session': context.active_session.to_dict() if context.active_session else None,
         'health_snapshot': context.health_snapshot.to_dict() if context.health_snapshot else None,
         'scenario_log': str(context.scenario_log_path),
+        'degraded_preflight_allowed': degraded_preflight_allowed,
     }
 
     if mode == 'appdock_preflight':
-        ok = workspace_resolution.workspace_status.available and package_checks['stratbox']
-        message = 'AppDock preflight finished' if ok else 'AppDock preflight finished with issues'
+        workspace_available = workspace_resolution.workspace_status.available
+        ok = package_checks['stratbox'] and (workspace_available or degraded_preflight_allowed)
+        if ok and degraded_preflight_allowed and not workspace_available:
+            message = 'AppDock preflight finished in degraded mode'
+        else:
+            message = 'AppDock preflight finished' if ok else 'AppDock preflight finished with issues'
     else:
         ok = workspace_report.ok and package_checks['stratbox']
         message = 'Node and workspace diagnostics finished' if ok else 'Node and workspace diagnostics finished with issues'

@@ -10,6 +10,28 @@ from typing import Any
 
 from app.core.errors import AppConfigError
 
+SUPPORTED_HANDOFF_CONTRACT_MAJOR = 1
+
+
+def _parse_contract_major(*, version: str, contract_name: str) -> int:
+    raw = version.strip()
+    if not raw:
+        raise AppConfigError(f"{contract_name} version is missing")
+    major_text = raw.split('.', 1)[0].strip()
+    if not major_text.isdigit():
+        raise AppConfigError(f"{contract_name} version has invalid format: {version}")
+    return int(major_text)
+
+
+def _assert_supported_handoff_version(version: str) -> str:
+    major = _parse_contract_major(version=version, contract_name="AppDock handoff contract")
+    if major != SUPPORTED_HANDOFF_CONTRACT_MAJOR:
+        raise AppConfigError(
+            f"Unsupported AppDock handoff contract version: {version}. "
+            f"Strategy Box supports {SUPPORTED_HANDOFF_CONTRACT_MAJOR}.x"
+        )
+    return version.strip()
+
 
 @dataclass(frozen=True, slots=True)
 class SourceRevisionRef:
@@ -88,7 +110,12 @@ class HandoffSystemDir:
 
 @dataclass(frozen=True, slots=True)
 class HandoffProvidedSystemDirs:
-    """Optional system dirs materialized by AppDock."""
+    """Optional system dirs materialized by AppDock.
+
+    Strategy Box currently uses only ``install_root_system_dir`` and deliberately
+    ignores ``user_local_system_dir`` because all app-owned system files are kept
+    inside the AppDock installation tree.
+    """
 
     install_root_system_dir: HandoffSystemDir | None = None
     user_local_system_dir: HandoffSystemDir | None = None
@@ -188,13 +215,13 @@ class AppHandoff:
             available_route_groups = tuple(str(item) for item in route_groups_raw if str(item).strip())
 
         return cls(
-            handoff_contract_version=str(payload.get("handoff_contract_version") or ""),
+            handoff_contract_version=_assert_supported_handoff_version(str(payload.get("handoff_contract_version") or "")),
             generated_at_utc=str(payload.get("generated_at_utc") or ""),
             world_id=str(payload.get("world_id") or ""),
             bundle_id=str(payload.get("bundle_id") or ""),
             bundle_profile=(str(payload["bundle_profile"]) if payload.get("bundle_profile") else None),
             active_app_surface=str(payload.get("active_app_surface") or ""),
-            entry_view=str(payload.get("entry_view") or "overview"),
+            entry_view=str(payload.get("entry_view") or "timeline"),
             declared_views=declared_views,
             attach_mode=str(payload.get("attach_mode") or ""),
             degraded_launch=bool(payload.get("degraded_launch", False)),

@@ -40,6 +40,7 @@ AppDock отвечает за:
 - AppDock готовит node;
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает `APPDOCK_HANDOFF_PATH`;
+- app-side handoff валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
 - приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
 - все собственные persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/AppDock`; если AppDock явно передал `install_root_system_dir`, приложение использует его. Внутри этой папки лежат `app.json`, `logs/`, `cache/`, `runtime/`.
 
