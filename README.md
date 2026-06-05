@@ -76,7 +76,8 @@ pip install -e .
 - AppDock подготавливает node-среду;
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает этот контракт;
-- GUI запускает задачи поверх business-root, который уже выбран AppDock.
+- GUI запускает задачи поверх business-root, который уже выбран AppDock;
+- в AppDock-managed режиме desktop surface хранит свои operational-файлы прямо внутри `install_root` (`app.json`, `logs/`, `cache/`, `runtime/`) и не создаёт user-level каталогов.
 
 Это разделяет роли:
 

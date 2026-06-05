@@ -39,7 +39,8 @@ AppDock отвечает за:
 - AppDock готовит node;
 - AppDock создаёт session surfaces и handoff;
 - `python -m app.entrypoints.appdock` читает `APPDOCK_HANDOFF_PATH`;
-- приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов.
+- приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
+- все собственные persistent operational-файлы кладутся прямо в `install_root`, без user-level каталогов и без дополнительных top-level имён Strategy Box.
 
 ### Standalone developer route
 
