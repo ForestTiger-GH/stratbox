@@ -16,7 +16,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog='python -m app', description='Strategy Box desktop shell')
     parser.add_argument('--no-gui', action='store_true', help='Run service command without opening GUI.')
     parser.add_argument('--diagnose', action='store_true', help='Run AppDock preflight diagnostics and print JSON result.')
-    parser.add_argument('--standalone-dev-root', default=None, help='Explicit selector path for standalone developer launch outside AppDock handoff.')
+    parser.add_argument('--standalone-dev-root', default=None, help='Explicit selector path for standalone developer launch outside AppDock activation context.')
     return parser
 
 

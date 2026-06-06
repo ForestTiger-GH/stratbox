@@ -1,4 +1,4 @@
-"""Контекст приложения Strategy Box."""
+"""Strategy Box application context."""
 
 from __future__ import annotations
 
@@ -10,12 +10,6 @@ from pathlib import Path
 from stratbox.base.filestore import FileStore
 
 from app.core.errors import AppStartupError
-from app.core.handoff import (
-    AppHandoff,
-    get_appdock_config_path_from_env,
-    get_appdock_handoff_path_from_env,
-    load_appdock_handoff_from_env,
-)
 from app.core.log_setup import setup_app_logger
 from app.core.paths import AppPaths, build_app_paths
 from app.core.session_env import (
@@ -28,6 +22,12 @@ from app.core.session_env import (
 )
 from app.core.user_config import AppUserConfig, load_user_config
 from app.core.version import VersionInfo, get_version_info
+from app.integrations.appdock.runtime_contracts import (
+    AppActivationContext,
+    get_activation_context_path_from_env,
+    get_appdock_config_path_from_env,
+    load_activation_context_from_env,
+)
 from app.workspace import (
     DataRootStatus,
     WorkspaceRegistry,
@@ -42,13 +42,13 @@ from app.workspace import (
 
 @dataclass(slots=True)
 class AppContext:
-    """Единый объект состояния приложения."""
+    """Unified runtime state for GUI and service commands."""
 
     paths: AppPaths
     user_config: AppUserConfig
     workspaces: WorkspaceRegistry
     workspace_schema: WorkspaceSchema
-    appdock_handoff: AppHandoff | None
+    appdock_activation: AppActivationContext | None
     session_client: AppSessionClient | None
     session_snapshot: AppSessionSnapshot | None
     run_mode: str
@@ -74,18 +74,18 @@ class AppContext:
     health_snapshot: NodeHealthSnapshotRecord | None = None
 
 
-def _selector_path_from_handoff(handoff: AppHandoff) -> Path | None:
-    if handoff.workspace.data_root_path:
-        return Path(handoff.workspace.data_root_path).expanduser()
+def _selector_path_from_activation(context: AppActivationContext) -> Path | None:
+    if context.workspace.data_root_path:
+        return Path(context.workspace.data_root_path).expanduser()
     return None
 
 
 def _selector_override_from_session(snapshot: AppSessionSnapshot | None) -> Path | None:
     if snapshot is None:
         return None
-    app_state = snapshot.app_state
-    if app_state is not None and app_state.selected_data_root_path:
-        return Path(str(app_state.selected_data_root_path)).expanduser()
+    runtime_state = snapshot.runtime_state
+    if runtime_state is not None and runtime_state.selected_data_root_path:
+        return Path(str(runtime_state.selected_data_root_path)).expanduser()
     session_state = snapshot.session_state
     if session_state is not None and session_state.effective_data_root_path:
         return Path(session_state.effective_data_root_path).expanduser()
@@ -96,18 +96,19 @@ def _resolve_run_contract(
     *,
     standalone_dev_root: str | None = None,
     override_data_root_path: Path | None = None,
-) -> tuple[str, AppHandoff | None, Path | None]:
-    handoff = load_appdock_handoff_from_env()
-    if handoff is not None:
+) -> tuple[str, AppActivationContext | None, Path | None]:
+    appdock_activation = load_activation_context_from_env()
+    if appdock_activation is not None:
         if override_data_root_path is not None:
-            return 'appdock_managed', handoff, override_data_root_path
-        return 'appdock_managed', handoff, _selector_path_from_handoff(handoff)
+            return 'appdock_managed', appdock_activation, override_data_root_path
+        return 'appdock_managed', appdock_activation, _selector_path_from_activation(appdock_activation)
 
     if standalone_dev_root:
         return 'standalone_dev', None, Path(standalone_dev_root).expanduser()
 
     raise AppStartupError(
-        'AppDock handoff is required for normal startup. Use AppDock or pass --standalone-dev-root for development.'
+        'AppDock activation context is required for normal startup. '
+        'Use AppDock or pass --standalone-dev-root for development.'
     )
 
 
@@ -117,23 +118,22 @@ def build_app_context(
     override_data_root_path: Path | None = None,
     launch_origin: str = 'standalone',
 ) -> AppContext:
-    """Собирает контекст приложения для GUI или сервисного запуска."""
-    run_mode, appdock_handoff, data_root_selector_path = _resolve_run_contract(
+    run_mode, appdock_activation, data_root_selector_path = _resolve_run_contract(
         standalone_dev_root=standalone_dev_root,
         override_data_root_path=override_data_root_path,
     )
-    handoff_path = get_appdock_handoff_path_from_env()
+    activation_context_path = get_activation_context_path_from_env()
     appdock_config_path = get_appdock_config_path_from_env()
     paths = build_app_paths(
-        appdock_handoff=appdock_handoff,
-        handoff_path=handoff_path,
+        appdock_activation=appdock_activation,
+        activation_context_path=activation_context_path,
         appdock_config_path=appdock_config_path,
     )
     logger = setup_app_logger(paths.logs_dir)
     user_config = load_user_config(paths.app_config_path)
     workspaces = load_workspace_registry()
 
-    session_client = AppSessionClient(appdock_handoff) if appdock_handoff is not None else None
+    session_client = AppSessionClient(appdock_activation) if appdock_activation is not None else None
     session_snapshot = session_client.snapshot() if session_client is not None and session_client.enabled else None
     session_state = session_snapshot.session_state if session_snapshot else None
     user_state = session_snapshot.user_state if session_snapshot else None
@@ -163,7 +163,7 @@ def build_app_context(
     version = get_version_info(paths.source_root)
 
     degraded_launch = (
-        (appdock_handoff.degraded_launch if appdock_handoff is not None else False)
+        (appdock_activation.degraded_launch if appdock_activation is not None else False)
         or (session_state.degraded_launch if session_state is not None and session_state.degraded_launch is not None else False)
         or (not data_root_status.available)
     )
@@ -179,12 +179,18 @@ def build_app_context(
         session_state.session_id if session_state is not None else None,
     )
 
+    resolved_host_name = (
+        user_state.host_name if user_state is not None else None
+    ) or (
+        appdock_activation.host_name if appdock_activation is not None else None
+    ) or os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME')
+
     return AppContext(
         paths=paths,
         user_config=user_config,
         workspaces=workspaces,
         workspace_schema=workspace_schema,
-        appdock_handoff=appdock_handoff,
+        appdock_activation=appdock_activation,
         session_client=session_client,
         session_snapshot=session_snapshot,
         run_mode=run_mode,
@@ -197,13 +203,13 @@ def build_app_context(
         filestore=filestore,
         version=version,
         logger=logger,
-        node_id=(session_state.node_id if session_state else (appdock_handoff.node_id if appdock_handoff else None)),
-        node_created_at_utc=(appdock_handoff.node_created_at_utc if appdock_handoff else None),
-        session_id=(session_state.session_id if session_state else (appdock_handoff.session_id if appdock_handoff else None)),
-        session_started_at_utc=(session_state.started_at_utc if session_state else (appdock_handoff.session_started_at_utc if appdock_handoff else None)),
-        user_id=(user_state.user_id if user_state else (appdock_handoff.user_id if appdock_handoff else None)),
-        account_name=(user_state.account_name if user_state else (appdock_handoff.account_name if appdock_handoff else None)),
-        host_name=(user_state.host_name if user_state else (appdock_handoff.host_name if appdock_handoff else os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME'))),
+        node_id=(session_state.node_id if session_state else (appdock_activation.node_id if appdock_activation else None)),
+        node_created_at_utc=(appdock_activation.node_created_at_utc if appdock_activation else None),
+        session_id=(session_state.session_id if session_state else (appdock_activation.session_id if appdock_activation else None)),
+        session_started_at_utc=(session_state.started_at_utc if session_state else (appdock_activation.session_started_at_utc if appdock_activation else None)),
+        user_id=(user_state.user_id if user_state else (appdock_activation.user_id if appdock_activation else None)),
+        account_name=(user_state.account_name if user_state else (appdock_activation.account_name if appdock_activation else None)),
+        host_name=resolved_host_name,
         session_state=session_state,
         user_state=user_state,
         active_session=active_session,

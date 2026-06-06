@@ -42,7 +42,7 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
         context.logger.info('Package %s: %s', package_name, 'OK' if ok else 'missing')
 
     degraded_launch = (
-        (context.appdock_handoff.degraded_launch if context.appdock_handoff is not None else False)
+        (context.appdock_activation.degraded_launch if context.appdock_activation is not None else False)
         or (context.session_state.degraded_launch if context.session_state is not None and context.session_state.degraded_launch is not None else False)
         or (not context.data_root_status.available)
     )
@@ -72,7 +72,7 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
         'user_id': context.user_id,
         'account_name': context.account_name,
         'host_name': context.host_name,
-        'appdock_handoff': context.appdock_handoff.to_dict() if context.appdock_handoff else None,
+        'appdock_activation': context.appdock_activation.to_dict() if context.appdock_activation else None,
         'session_state': context.session_state.to_dict() if context.session_state else None,
         'user_state': context.user_state.to_dict() if context.user_state else None,
         'active_session': context.active_session.to_dict() if context.active_session else None,

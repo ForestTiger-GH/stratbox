@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.runtime = runtime
         self.context = runtime.context
         self._selected_scenario_id: str | None = None
-        self._recent_artifacts: list[str] = list(self.context.session_snapshot.app_state.recent_artifacts) if self.context.session_snapshot and self.context.session_snapshot.app_state else []
+        self._recent_artifacts: list[str] = list(self.context.session_snapshot.runtime_state.recent_artifacts) if self.context.session_snapshot and self.context.session_snapshot.runtime_state else []
         self._last_result_message = ''
         self.chat_projector = ChatProjector(context=self.context, presence_service=self.runtime.presence_service)
         self._build_ui()
@@ -378,8 +378,8 @@ class MainWindow(QMainWindow):
         return label
 
     def _seed_feed(self) -> None:
-        if self.context.session_snapshot and self.context.session_snapshot.app_state and self.context.session_snapshot.app_state.last_scenario_title:
-            title = self.context.session_snapshot.app_state.last_scenario_title
+        if self.context.session_snapshot and self.context.session_snapshot.runtime_state and self.context.session_snapshot.runtime_state.last_scenario_title:
+            title = self.context.session_snapshot.runtime_state.last_scenario_title
             self._append_feed_entries([
                 FeedEntry(
                     entry_id='resume:last',
@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
                     created_at=self._now(),
                     author_id=self.context.user_id,
                     author_label=self.context.account_name or 'Пользователь',
-                    outputs=self.context.session_snapshot.app_state.last_outputs,
+                    outputs=self.context.session_snapshot.runtime_state.last_outputs,
                     meta={'вид': 'resume'},
                 )
             ])

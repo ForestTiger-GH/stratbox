@@ -74,12 +74,12 @@ pip install -e .
 Главный маршрут такой:
 
 - AppDock подготавливает node-среду;
-- AppDock создаёт session surfaces и handoff;
+- AppDock создаёт session surfaces и activation context;
 - `python -m app.entrypoints.appdock` читает этот контракт;
-- app-side контракт handoff валидируется по major-версии (`1.x`), чтобы несовместимые изменения AppDock не проходили молча;
-- repo-local `appdock/distribution.json` задаёт product delivery policy для AppDock frontdoor и install/runtime поведения.
+- app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимые изменения AppDock не проходили молча;
+- repo-local `appdock/preset.json` задаёт product delivery policy для AppDock frontdoor и install/runtime поведения.
 - GUI запускает задачи поверх business-root, который уже выбран AppDock;
-- в AppDock-managed режиме desktop surface хранит свои operational-файлы в одном app-owned system folder внутри `install_root` (по умолчанию `install_root/AppDock`, либо в `install_root_system_dir`, если его явно передал AppDock). Там лежат `app.json`, `logs/`, `cache/`, `runtime/`, без user-level каталогов и без россыпи файлов по корню установки.
+- в AppDock-managed режиме desktop surface хранит свои operational-файлы в одном app-owned system folder внутри `install_root` (по умолчанию `install_root/stratbox-system`, либо в `install_root_system_dir`, если его явно передал AppDock). Там лежат `app.json`, `logs/`, `cache/`, `runtime/`, без user-level каталогов и без россыпи файлов по корню установки.
 
 Это разделяет роли:
 
@@ -359,7 +359,7 @@ scripts/        # примеры запуска
 
 - AppDock подготавливает node-среду;
 - AppDock выбирает target repo, runtime и session surfaces;
-- AppDock передает handoff в `python -m app.entrypoints.appdock`;
+- AppDock передает activation context в `python -m app.entrypoints.appdock`;
 - `app` строит GUI-контекст от AppDock-managed workspace selector.
 
 `data_root` в этой модели обозначает selector бизнес-среды. Служебные файлы AppDock и install-среды туда не записываются.

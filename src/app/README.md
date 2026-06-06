@@ -6,19 +6,19 @@
 - подготавливает node-среду;
 - синхронизирует внешний репозиторий;
 - валидирует `appdock/manifest.json`;
-- выбирает активную app surface;
-- передаёт приложению runtime-context через `APPDOCK_HANDOFF_PATH`;
-- дополнительно может читать repo-local `appdock/distribution.json` как product delivery preset.
+- optional читает repo-local `appdock/preset.json` как product delivery preset;
+- выбирает активную surface;
+- передаёт приложению runtime-context через `APPDOCK_ACTIVATION_CONTEXT_PATH`;
 - открывает `python -m app.entrypoints.appdock`.
 
-`app` при этом не выполняет bootstrap shell-а и не управляет install/update средой. Он читает handoff, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
+`app` при этом не выполняет bootstrap shell-а и не управляет install/update средой. Он читает activation context, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
 
 ## Главный принцип
 
 AppDock отвечает за:
 - `system_root` and install context;
 - runtime и trust-контур;
-- handoff и session refs;
+- activation context и session refs;
 - health snapshot;
 - выбор active app surface;
 - запуск entrypoint.
@@ -29,7 +29,7 @@ AppDock отвечает за:
 - каталог сценариев и launch composer;
 - запуск сценариев;
 - workspace и диагностику среды;
-- собственный `app_state.json`;
+- собственный `runtime_state.json`;
 - лёгкий presence участников.
 
 ## Режимы запуска
@@ -38,11 +38,11 @@ AppDock отвечает за:
 
 Основной пользовательский маршрут:
 - AppDock готовит node;
-- AppDock создаёт session surfaces и handoff;
-- `python -m app.entrypoints.appdock` читает `APPDOCK_HANDOFF_PATH`;
-- app-side handoff валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
+- AppDock создаёт session surfaces и activation context;
+- `python -m app.entrypoints.appdock` читает `APPDOCK_ACTIVATION_CONTEXT_PATH`;
+- app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
 - приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
-- все собственные persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/AppDock`; если AppDock явно передал `install_root_system_dir`, приложение использует его. Внутри этой папки лежат `app.json`, `logs/`, `cache/`, `runtime/`.
+- все собственные persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/stratbox-system`; если AppDock явно передал `install_root_system_dir`, приложение использует его. Внутри этой папки лежат `app.json`, `logs/`, `cache/`, `runtime/`.
 
 ### Standalone developer route
 
@@ -54,8 +54,8 @@ python -m app --standalone-dev-root "D:/Data"
 
 ## Структурные слои
 
-- `foundation/` — маленькие базовые типы app surface.
 - `bootstrap/` — сборка runtime и запуск desktop surface.
+- `core/` — контекст, paths, logger и user-space настройки.
 - `integrations/` — AppDock и platform adapters.
 - `shell/` — каркас окна, top bar, sidebars, menus.
 - `timeline/` — общая лента запусков, результатов и системных notices.
@@ -64,7 +64,7 @@ python -m app --standalone-dev-root "D:/Data"
 - `presence/` — online и участники.
 - `workspace/` — selector, workspace root, diagnostics, FileStore.
 - `system/` — системные действия surface.
-- `state/` — локальное состояние и пользовательские preferences.
+- `state/` — runtime continuity и пользовательские preferences.
 - `resources/` — styles, scenario specs, workspace registry.
 - `entrypoints/` — AppDock-facing точки входа.
 

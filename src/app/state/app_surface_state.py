@@ -30,7 +30,7 @@ class AppSurfaceStateService:
     ) -> None:
         if self._context.session_client is None:
             return
-        self._context.session_client.update_app_state(
+        self._context.session_client.update_runtime_state(
             active_view=active_view,
             selected_object=selected_object,
             active_job=active_job,
@@ -43,7 +43,7 @@ class AppSurfaceStateService:
             workspace_schema_id=self._context.workspace_schema.id,
             effective_workspace_root=(str(self._context.workspace_root_path) if self._context.workspace_root_path else None),
             selected_data_root_path=(str(self._context.data_root_selector_path) if self._context.data_root_selector_path else None),
-            workspace_state={
+            surface_state={
                 'selected_data_root_path': (str(self._context.data_root_selector_path) if self._context.data_root_selector_path else None),
                 'workspace_root_path': (str(self._context.workspace_root_path) if self._context.workspace_root_path else None),
             },

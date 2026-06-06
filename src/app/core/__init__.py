@@ -1,5 +1,5 @@
 
-"""Базовые сервисы приложения: контекст, handoff и user-space настройки."""
+"""Базовые сервисы приложения: контекст, activation-bound runtime и user-space настройки."""
 
 from app.core.context import AppContext, build_app_context
 

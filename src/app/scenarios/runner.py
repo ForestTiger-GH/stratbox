@@ -54,7 +54,7 @@ def run_scenario(spec: ScenarioSpec, *, context: AppContext, params: dict[str, A
         version=context.version,
         logger=scenario_logger,
         scenario_log_path=scenario_log_path,
-        appdock_handoff=context.appdock_handoff,
+        appdock_activation=context.appdock_activation,
         run_mode=context.run_mode,
         launch_origin=context.launch_origin,
         node_id=context.node_id,
