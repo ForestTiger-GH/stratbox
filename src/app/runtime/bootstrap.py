@@ -11,15 +11,16 @@ from typing import TYPE_CHECKING, Any
 
 from app.runtime.context import AppContext
 from app.platform.appdock.bridge import AppDockBridge
+from app.platform.appdock.surface_state import AppSurfaceStateService
 from app.platform.desktop.services import PlatformServices
 from app.application.presence.service import PresenceService
 from app.application.product.catalog.registry import build_product_registry
 from app.application.product.catalog.models import ProductRegistry
-if TYPE_CHECKING:
-    from app.presentation.desktop.run_coordinator import RunCoordinator
-from app.runtime.app_surface_state import AppSurfaceStateService
 from app.runtime.user_preferences import PreferencesService
 from app.application.timeline.store import FeedStore
+
+if TYPE_CHECKING:
+    from app.presentation.desktop.run_coordinator import RunCoordinator
 
 
 @dataclass(slots=True)
@@ -35,17 +36,31 @@ class AppRuntime:
     run_coordinator: Any
 
 
-
-def build_runtime(context: AppContext) -> AppRuntime:
+def _build_application_services(context: AppContext) -> tuple[ProductRegistry, FeedStore, PresenceService, PreferencesService]:
     registry = build_product_registry(context)
     feed_store = FeedStore()
     presence_service = PresenceService(context)
     preferences = PreferencesService(context)
+    return registry, feed_store, presence_service, preferences
+
+
+def _build_platform_services(context: AppContext) -> tuple[AppSurfaceStateService, PlatformServices, AppDockBridge]:
     surface_state = AppSurfaceStateService(context)
     platform = PlatformServices()
     bridge = AppDockBridge(context)
+    return surface_state, platform, bridge
+
+
+def _build_presentation_services(context: AppContext):
     from app.presentation.desktop.run_coordinator import RunCoordinator
-    run_coordinator = RunCoordinator(context=context, on_log=context.logger.info)
+
+    return RunCoordinator(context=context, on_log=context.logger.info)
+
+
+def build_runtime(context: AppContext) -> AppRuntime:
+    registry, feed_store, presence_service, preferences = _build_application_services(context)
+    surface_state, platform, bridge = _build_platform_services(context)
+    run_coordinator = _build_presentation_services(context)
     return AppRuntime(
         context=context,
         product_registry=registry,

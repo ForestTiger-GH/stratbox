@@ -93,9 +93,6 @@ def _read_surface_extension_value(payload: dict[str, Any], surface_state: dict[s
     if key in surface_state:
         return surface_state[key]
     return payload.get(key)
-    if legacy_key:
-        return payload.get(legacy_key)
-    return payload.get(key)
 
 
 @dataclass(frozen=True, slots=True)

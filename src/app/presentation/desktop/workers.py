@@ -21,5 +21,14 @@ class ProductWorker(QObject):
 
     @Slot()
     def run(self) -> None:
-        result: ProductResult = run_product_operation(self._spec, context=self._context, params=self._params)
+        try:
+            result: ProductResult = run_product_operation(self._spec, context=self._context, params=self._params)
+        except Exception as exc:  # pragma: no cover - defensive boundary
+            self._context.logger.exception('Unhandled worker failure: %s', self._spec.id)
+            result = ProductResult(
+                ok=False,
+                message=f'Unhandled worker failure: {exc}',
+                outputs=tuple(),
+                details={'error': str(exc), 'operation_id': self._spec.id},
+            )
         self.finished.emit(result)
