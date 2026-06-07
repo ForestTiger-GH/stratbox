@@ -6,10 +6,10 @@ import argparse
 import json
 import sys
 
-from app.core.context import build_app_context
-from app.core.errors import AppStartupError
-from app.product.catalog.registry import build_product_registry
-from app.product.execution.runner import run_product_operation_by_id
+from app.runtime.context import build_app_context
+from app.runtime.errors import AppStartupError
+from app.application.product.catalog.registry import build_product_registry
+from app.application.product.execution.runner import run_product_operation_by_id
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None, *, launch_origin: str = 'standalone') ->
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0 if result.ok else 2
 
-    from app.gui.main import run_gui
+    from app.presentation.desktop.main import run_gui
     return run_gui(context)
 
 

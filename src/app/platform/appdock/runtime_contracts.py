@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.core.errors import AppConfigError
+from app.runtime.errors import AppConfigError
 
 SUPPORTED_ACTIVATION_CONTRACT_MAJOR = 1
 ACTIVATION_CONTEXT_ENV = 'APPDOCK_ACTIVATION_CONTEXT_PATH'

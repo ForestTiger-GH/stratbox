@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.core.context import AppContext
+from app.runtime.context import AppContext
 
 
 class AppDockBridge:

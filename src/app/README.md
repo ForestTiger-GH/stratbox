@@ -1,6 +1,6 @@
 # app
 
-`app` — desktop surface Strategy Box, публикуемая как AppDock app surface.
+`app` — desktop product surface Strategy Box.
 
 На текущем этапе AppDock:
 - подготавливает node-среду;
@@ -11,7 +11,7 @@
 - передаёт приложению runtime-context через `APPDOCK_ACTIVATION_CONTEXT_PATH`;
 - открывает `python -m app.entrypoints.appdock`.
 
-`app` при этом не выполняет bootstrap shell-а и не управляет install/update средой. Он читает activation context, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
+`app` при этом не управляет install/update средой. Он читает activation context, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
 
 ## Главный принцип
 
@@ -24,9 +24,9 @@ AppDock отвечает за:
 - запуск entrypoint.
 
 `app` отвечает за:
-- desktop shell surface;
+- desktop product surface;
 - timeline / feed работы;
-- **product operations** и их пользовательские формы;
+- product operations и их пользовательские формы;
 - запуск операций;
 - workspace и диагностику среды;
 - собственный `runtime_state.json`;
@@ -42,7 +42,7 @@ AppDock отвечает за:
 - `python -m app.entrypoints.appdock` читает `APPDOCK_ACTIVATION_CONTEXT_PATH`;
 - app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
 - приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
-- все собственные persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/stratbox-system`; если AppDock явно передал `install_root_system_dir`, приложение использует его. Внутри этой папки лежат `app.json`, `logs/`, `cache/`, `runtime/`.
+- все persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/stratbox-system`; если AppDock явно передал `install_root_system_dir`, приложение использует его.
 
 ### Standalone developer route
 
@@ -52,23 +52,49 @@ AppDock отвечает за:
 python -m app --standalone-dev-root "D:/Data"
 ```
 
-В этом режиме не только selector/workspace, но и app-owned storage (`app.json`, `logs/`, `cache/`, `runtime/`) живут внутри указанного dev-root.
+В этом режиме app-owned storage (`app.json`, `logs/`, `cache/`, `runtime/`) живёт внутри `<dev-root>/.strategy_box/system/`.
 
-## Структурные слои
+## Каноническая структура
 
-- `bootstrap/` — сборка runtime и запуск desktop surface.
-- `core/` — тонкое ядро приложения: context, paths, config, version, logger.
+- `entrypoints/` — точки входа surface.
+- `runtime/` — runtime приложения: context, paths, config, logging, session-runtime, bootstrap.
 - `platform/` — boundary к AppDock и desktop platform services.
-- `product/` — product catalog, формы операций и execution layer.
-- `runs/` — Qt-thread lifecycle для конкретных запусков.
-- `shell/` — каркас окна и композиция desktop surface.
-- `timeline/` — общая лента запусков, результатов и системных notices.
-- `presence/` — online и участники.
-- `workspace/` — selector, workspace root, diagnostics, FileStore.
-- `system/` — системные действия surface.
-- `state/` — runtime continuity, surface-state и пользовательские preferences.
-- `resources/` — styles, workspace registry и прочие UI-ресурсы.
-- `entrypoints/` — AppDock-facing точки входа.
+- `application/` — product-layer, workspace, presence, timeline store и system-команды.
+- `presentation/` — desktop UI, chat/feed, формы операций и Qt runner.
+- `resources/` — styles, images и прочие статические ресурсы.
+
+## Внутренние оси
+
+### `runtime/`
+Тонкий runtime-контур приложения:
+- `context.py`
+- `paths.py`
+- `config.py`
+- `logging.py`
+- `version.py`
+- `session_runtime.py`
+- `user_preferences.py`
+- `bootstrap.py`
+
+### `platform/`
+Boundary к внешней платформе:
+- `platform/appdock/` — AppDock runtime contracts, entry bridge;
+- `platform/desktop/` — desktop platform services.
+
+### `application/`
+Смысл продукта:
+- `application/product/` — product catalog, формы, execution, операции;
+- `application/workspace/` — selector, workspace root, diagnostics, FileStore;
+- `application/presence/` — участники и online;
+- `application/timeline/` — feed-модели и store;
+- `application/system/` — системные команды surface.
+
+### `presentation/`
+Desktop-представление:
+- `presentation/desktop/` — главное окно, Qt runner, composition root UI;
+- `presentation/chat/` — chat/feed проекция;
+- `presentation/forms/` — Qt-виджеты форм product operations;
+- `presentation/timeline/` — Qt-виджеты feed/timeline.
 
 ## Surface приложения
 
