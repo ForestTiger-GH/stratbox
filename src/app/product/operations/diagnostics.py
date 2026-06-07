@@ -1,11 +1,10 @@
-"""Сценарий проверки рабочей среды приложения."""
-
 from __future__ import annotations
 
 import importlib.util
 import sys
+from typing import Any
 
-from app.scenarios.models import ScenarioContext, ScenarioResult, ScenarioSpec
+from app.product.models import ProductOperationContext, ProductOperationSpec, ProductResult
 from app.workspace import resolve_workspace_root, run_workspace_diagnostics
 
 
@@ -13,9 +12,8 @@ def _package_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
 
 
-def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSpec) -> ScenarioResult:
-    context.logger.info('Diagnostics started')
-    mode = str(params.get('mode') or 'detailed')
+def run(*, context: ProductOperationContext, params: dict[str, Any], spec: ProductOperationSpec) -> ProductResult:
+    mode = str(params.get('mode') or 'full')
     create_missing = mode == 'appdock_preflight'
     workspace_resolution = resolve_workspace_root(
         context.workspace_schema,
@@ -77,7 +75,7 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
         'user_state': context.user_state.to_dict() if context.user_state else None,
         'active_session': context.active_session.to_dict() if context.active_session else None,
         'health_snapshot': context.health_snapshot.to_dict() if context.health_snapshot else None,
-        'scenario_log': str(context.scenario_log_path),
+        'operation_log': str(context.operation_log_path),
         'degraded_preflight_allowed': degraded_preflight_allowed,
     }
 
@@ -90,5 +88,6 @@ def run(*, context: ScenarioContext, params: dict[str, object], spec: ScenarioSp
             message = 'AppDock preflight finished' if ok else 'AppDock preflight finished with issues'
     else:
         ok = workspace_report.ok and package_checks['stratbox']
-        message = 'Node and workspace diagnostics finished' if ok else 'Node and workspace diagnostics finished with issues'
-    return ScenarioResult(ok=ok, message=message, outputs=(str(context.scenario_log_path),), details=details)
+        message = 'Диагностика среды завершена' if ok else 'Диагностика среды завершена с замечаниями'
+
+    return ProductResult(ok=ok, message=message, outputs=(str(context.operation_log_path),), details=details)

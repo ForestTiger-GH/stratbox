@@ -8,28 +8,28 @@ from typing import Iterable
 
 from stratbox.base.filestore import FileStore
 from stratbox.base.runtime import get_filestore
-from stratbox.macrobanks.cbr_archiver.contracts import (
-    CbrRegistryItem,
-    CbrSourceCollectRequest,
-    CbrSourceCollectResult,
+from stratbox.macrobanks.cbr_file_collector.contracts import (
+    CbrFileRegistryItem,
+    CbrFileCollectRequest,
+    CbrFileCollectResult,
 )
-from stratbox.macrobanks.cbr_archiver.downloader import download_sources
-from stratbox.macrobanks.cbr_archiver.file_names import ensure_unique_download_file_names
-from stratbox.macrobanks.cbr_archiver.registry import DEFAULT_CBR_SOURCES
-from stratbox.macrobanks.cbr_archiver.save import save_downloaded_sources
+from stratbox.macrobanks.cbr_file_collector.downloader import download_sources
+from stratbox.macrobanks.cbr_file_collector.file_names import ensure_unique_download_file_names
+from stratbox.macrobanks.cbr_file_collector.registry import DEFAULT_CBR_FILE_SOURCES
+from stratbox.macrobanks.cbr_file_collector.save import save_downloaded_sources
 
 
-def list_cbr_sources(*, registry: Iterable[CbrRegistryItem] | None = None) -> tuple[CbrRegistryItem, ...]:
-    items = tuple(registry) if registry is not None else DEFAULT_CBR_SOURCES
+def list_cbr_file_sources(*, registry: Iterable[CbrFileRegistryItem] | None = None) -> tuple[CbrFileRegistryItem, ...]:
+    items = tuple(registry) if registry is not None else DEFAULT_CBR_FILE_SOURCES
     return tuple(items)
 
 
-def collect_cbr_sources(
-    request: CbrSourceCollectRequest,
+def collect_cbr_files(
+    request: CbrFileCollectRequest,
     *,
-    registry: Iterable[CbrRegistryItem] | None = None,
+    registry: Iterable[CbrFileRegistryItem] | None = None,
     filestore: FileStore | None = None,
-) -> CbrSourceCollectResult:
+) -> CbrFileCollectResult:
     target_path = str(request.target_path).strip()
     if not target_path:
         raise ValueError("target_path must not be empty")
@@ -47,7 +47,7 @@ def collect_cbr_sources(
         raise ValueError("save_mode='files' requires target_path that points to a directory")
 
     store = filestore or get_filestore()
-    sources = list_cbr_sources(registry=registry)
+    sources = list_cbr_file_sources(registry=registry)
 
     downloaded, failures = download_sources(
         sources,
@@ -75,7 +75,7 @@ def collect_cbr_sources(
             overwrite=request.overwrite,
         )
 
-    return CbrSourceCollectResult(
+    return CbrFileCollectResult(
         target_path=saved_target_path,
         save_mode=request.save_mode,
         saved_paths=saved_paths,
@@ -87,4 +87,4 @@ def collect_cbr_sources(
     )
 
 
-__all__ = ["collect_cbr_sources", "list_cbr_sources"]
+__all__ = ["collect_cbr_files", "list_cbr_file_sources"]

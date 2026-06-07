@@ -1,8 +1,3 @@
-"""Совместимый re-export run worker.
+from app.runs.workers import ProductWorker
 
-Фактическая реализация worker теперь живёт в ``app.runs.workers``.
-"""
-
-from app.runs.workers import ScenarioWorker
-
-__all__ = ["ScenarioWorker"]
+__all__ = ['ProductWorker']

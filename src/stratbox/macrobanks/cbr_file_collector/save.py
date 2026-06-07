@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from stratbox.base import ioapi as ia
 from stratbox.base.filestore import FileStore
-from stratbox.macrobanks.cbr_archiver.contracts import CbrCollectedFile, CbrDownloadedSource, SaveMode
+from stratbox.macrobanks.cbr_file_collector.contracts import CbrCollectedFile, CbrDownloadedFileSource, SaveMode
 
 
 def _normalize_path(path: str) -> str:
@@ -37,7 +37,7 @@ def _ensure_parent_dir(path: str, *, store: FileStore) -> None:
     store.makedirs(_parent_dir(path))
 
 
-def _build_collected_files(downloaded: list[CbrDownloadedSource]) -> tuple[CbrCollectedFile, ...]:
+def _build_collected_files(downloaded: list[CbrDownloadedFileSource]) -> tuple[CbrCollectedFile, ...]:
     return tuple(
         CbrCollectedFile(
             source_id=item.source_id,
@@ -52,7 +52,7 @@ def _build_collected_files(downloaded: list[CbrDownloadedSource]) -> tuple[CbrCo
 
 
 def save_downloaded_sources(
-    downloaded: list[CbrDownloadedSource],
+    downloaded: list[CbrDownloadedFileSource],
     *,
     target_path: str,
     save_mode: SaveMode,

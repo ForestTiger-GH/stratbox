@@ -5,14 +5,14 @@ from typing import Any
 from PySide6.QtCore import QObject, Signal, Slot
 
 from app.core.context import AppContext
-from app.scenarios.models import ScenarioResult, ScenarioSpec
-from app.scenarios.runner import run_scenario
+from app.product.models import ProductOperationSpec, ProductResult
+from app.product.runner import run_product_operation
 
 
-class ScenarioWorker(QObject):
+class ProductWorker(QObject):
     finished = Signal(object)
 
-    def __init__(self, *, spec: ScenarioSpec, context: AppContext, params: dict[str, Any]):
+    def __init__(self, *, spec: ProductOperationSpec, context: AppContext, params: dict[str, Any]):
         super().__init__()
         self._spec = spec
         self._context = context
@@ -20,5 +20,5 @@ class ScenarioWorker(QObject):
 
     @Slot()
     def run(self) -> None:
-        result: ScenarioResult = run_scenario(self._spec, context=self._context, params=self._params)
+        result: ProductResult = run_product_operation(self._spec, context=self._context, params=self._params)
         self.finished.emit(result)

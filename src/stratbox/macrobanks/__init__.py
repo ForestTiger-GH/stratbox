@@ -11,22 +11,22 @@ from stratbox.macrobanks.frg import (
     select_latest_frg_files,
 )
 from stratbox.macrobanks.escrow import run_escrow_to_xlsx
-from stratbox.macrobanks.cbr_archiver import (
-    CbrRegistryItem,
-    CbrSourceCollectRequest,
-    CbrSourceCollectResult,
-    DEFAULT_CBR_SOURCES,
-    collect_cbr_sources,
-    list_cbr_sources,
+from stratbox.macrobanks.cbr_file_collector import (
+    CbrFileRegistryItem,
+    CbrFileCollectRequest,
+    CbrFileCollectResult,
+    DEFAULT_CBR_FILE_SOURCES,
+    collect_cbr_files,
+    list_cbr_file_sources,
 )
 
 __all__ = [
-    "collect_cbr_sources",
-    "list_cbr_sources",
-    "DEFAULT_CBR_SOURCES",
-    "CbrSourceCollectResult",
-    "CbrSourceCollectRequest",
-    "CbrRegistryItem",
+    "collect_cbr_files",
+    "list_cbr_file_sources",
+    "DEFAULT_CBR_FILE_SOURCES",
+    "CbrFileCollectResult",
+    "CbrFileCollectRequest",
+    "CbrFileRegistryItem",
     "apply_frg_cleanup_plan",
     "build_frg_actuals_archive_name",
     "build_frg_catalog",

@@ -1,6 +1,6 @@
-# CBR source collector (`stratbox.macrobanks.cbr_archiver`)
+# CBR file collector (`stratbox.macrobanks.cbr_file_collector`)
 
-Домен `stratbox.macrobanks.cbr_archiver` предназначен для загрузки **исходных** статистических файлов Банка России по жёсткому встроенному списку.
+Домен `stratbox.macrobanks.cbr_file_collector` предназначен для загрузки **исходных** статистических файлов Банка России по жёсткому встроенному списку.
 
 Это домен **загрузки исходников**, а не домен парсинга или аналитики. Он:
 
@@ -24,23 +24,23 @@
 ## Публичный API
 
 ```python
-from stratbox.macrobanks.cbr_archiver import (
-    CbrSourceCollectRequest,
-    collect_cbr_sources,
-    list_cbr_sources,
+from stratbox.macrobanks.cbr_file_collector import (
+    CbrFileCollectRequest,
+    collect_cbr_files,
+    list_cbr_file_sources,
 )
 ```
 
 Главная операция домена:
 
 ```python
-collect_cbr_sources(request) -> CbrSourceCollectResult
+collect_cbr_files(request) -> CbrFileCollectResult
 ```
 
 Дополнительная read-only операция:
 
 ```python
-list_cbr_sources() -> tuple[CbrRegistryItem, ...]
+list_cbr_file_sources() -> tuple[CbrFileRegistryItem, ...]
 ```
 
 ---
@@ -49,7 +49,7 @@ list_cbr_sources() -> tuple[CbrRegistryItem, ...]
 
 ### 1. Жёсткий встроенный реестр
 
-Источники лежат в `registry.py` как структурированный реестр `DEFAULT_CBR_SOURCES`.
+Источники лежат в `registry.py` как структурированный реестр `DEFAULT_CBR_FILE_SOURCES`.
 
 Каждый элемент содержит:
 
@@ -91,7 +91,7 @@ list_cbr_sources() -> tuple[CbrRegistryItem, ...]
 Главный запрос:
 
 ```python
-CbrSourceCollectRequest(
+CbrFileCollectRequest(
     target_path: str,
     save_mode: Literal["zip", "files"] = "zip",
     overwrite: bool = True,
@@ -121,12 +121,12 @@ CbrSourceCollectRequest(
 ## Result
 
 ```python
-CbrSourceCollectResult(
+CbrFileCollectResult(
     target_path: str,
     save_mode: Literal["zip", "files"],
     saved_paths: tuple[str, ...],
     collected_files: tuple[CbrCollectedFile, ...],
-    failures: tuple[CbrSourceFailure, ...],
+    failures: tuple[CbrFileCollectFailure, ...],
     requested_count: int,
     success_count: int,
     failure_count: int,
@@ -147,9 +147,9 @@ CbrSourceCollectResult(
 ## Пример: ZIP-режим
 
 ```python
-from stratbox.macrobanks.cbr_archiver import CbrSourceCollectRequest, collect_cbr_sources
+from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 
-request = CbrSourceCollectRequest(
+request = CbrFileCollectRequest(
     target_path="/content/CBR Collected Files.zip",
     save_mode="zip",
     overwrite=True,
@@ -157,7 +157,7 @@ request = CbrSourceCollectRequest(
     retry_attempts=3,
 )
 
-result = collect_cbr_sources(request)
+result = collect_cbr_files(request)
 print(result.ok)
 print(result.target_path)
 print(result.success_count, result.failure_count)
@@ -168,16 +168,16 @@ print(result.success_count, result.failure_count)
 ## Пример: Files-режим
 
 ```python
-from stratbox.macrobanks.cbr_archiver import CbrSourceCollectRequest, collect_cbr_sources
+from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 
-request = CbrSourceCollectRequest(
+request = CbrFileCollectRequest(
     target_path="/content/CBR Collected Files",
     save_mode="files",
     overwrite=True,
     continue_on_error=True,
 )
 
-result = collect_cbr_sources(request)
+result = collect_cbr_files(request)
 print(result.target_path)
 print(result.saved_paths)
 ```
@@ -187,9 +187,9 @@ print(result.saved_paths)
 ## Структура домена
 
 ```text
-cbr_archiver/
+cbr_file_collector/
   contracts.py   # request/result/failure contracts
-  operations.py  # collect_cbr_sources, list_cbr_sources
+  operations.py  # collect_cbr_files, list_cbr_file_sources
   registry.py    # жёсткий встроенный список источников
   downloader.py  # скачивание, retry, case-variants, HTML guard
   save.py        # сохранение zip/files через FileStore
@@ -200,7 +200,7 @@ cbr_archiver/
 
 ## Практический смысл
 
-`cbr_archiver` даёт воспроизводимый способ собрать исходные статистические файлы Банка России:
+`cbr_file_collector` даёт воспроизводимый способ собрать исходные статистические файлы Банка России:
 
 - без предобработки содержимого;
 - в одинаковой форме из Colab, Jupyter, app и plugin-среды;

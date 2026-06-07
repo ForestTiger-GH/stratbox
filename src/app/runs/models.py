@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 from uuid import uuid4
@@ -11,8 +11,8 @@ RunStatus = Literal['submitted', 'running', 'success', 'failed']
 @dataclass(slots=True)
 class RunRecord:
     run_id: str
-    scenario_id: str
-    scenario_title: str
+    operation_id: str
+    operation_title: str
     params: dict[str, Any]
     status: RunStatus
     created_at: datetime
@@ -24,11 +24,11 @@ class RunRecord:
     message: str = ''
 
     @classmethod
-    def create(cls, *, scenario_id: str, scenario_title: str, params: dict[str, Any], author_id: str | None, author_label: str | None) -> 'RunRecord':
+    def create(cls, *, operation_id: str, operation_title: str, params: dict[str, Any], author_id: str | None, author_label: str | None) -> 'RunRecord':
         return cls(
             run_id=uuid4().hex,
-            scenario_id=scenario_id,
-            scenario_title=scenario_title,
+            operation_id=operation_id,
+            operation_title=operation_title,
             params=params,
             status='submitted',
             created_at=datetime.now(),

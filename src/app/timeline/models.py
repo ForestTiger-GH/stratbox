@@ -26,7 +26,7 @@ class FeedEntry:
     author_id: str | None = None
     author_label: str | None = None
     run_id: str | None = None
-    scenario_id: str | None = None
+    operation_id: str | None = None
     outputs: tuple[str, ...] = tuple()
     tags: tuple[str, ...] = tuple()
     actions: tuple[FeedAction, ...] = tuple()

@@ -12,7 +12,7 @@ import re
 import urllib.parse
 from dataclasses import replace
 
-from stratbox.macrobanks.cbr_archiver.contracts import CbrDownloadedSource
+from stratbox.macrobanks.cbr_file_collector.contracts import CbrDownloadedFileSource
 
 
 def filename_from_headers(headers: dict[str, str] | None) -> str | None:
@@ -83,9 +83,9 @@ def make_unique_file_name(file_name: str, used: set[str]) -> str:
         idx += 1
 
 
-def ensure_unique_download_file_names(files: list[CbrDownloadedSource]) -> list[CbrDownloadedSource]:
+def ensure_unique_download_file_names(files: list[CbrDownloadedFileSource]) -> list[CbrDownloadedFileSource]:
     used: set[str] = set()
-    out: list[CbrDownloadedSource] = []
+    out: list[CbrDownloadedFileSource] = []
     for item in files:
         unique_name = make_unique_file_name(item.file_name, used)
         if unique_name == item.file_name:

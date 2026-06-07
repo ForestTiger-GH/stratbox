@@ -16,7 +16,7 @@
 ## Главный принцип
 
 AppDock отвечает за:
-- `system_root` and install context;
+- `system_root` и install context;
 - runtime и trust-контур;
 - activation context и session refs;
 - health snapshot;
@@ -26,8 +26,8 @@ AppDock отвечает за:
 `app` отвечает за:
 - desktop shell surface;
 - timeline / feed работы;
-- каталог сценариев и launch composer;
-- запуск сценариев;
+- **product operations** и их пользовательские формы;
+- запуск операций;
 - workspace и диагностику среды;
 - собственный `runtime_state.json`;
 - лёгкий presence участников.
@@ -59,13 +59,13 @@ python -m app --standalone-dev-root "D:/Data"
 - `integrations/` — AppDock и platform adapters.
 - `shell/` — каркас окна, top bar, sidebars, menus.
 - `timeline/` — общая лента запусков, результатов и системных notices.
-- `scenarios/` — каталог сценариев, JSON-spec, composer и launch request.
+- `product/` — product registry, формы операций и execution layer.
 - `runs/` — lifecycle конкретных запусков.
 - `presence/` — online и участники.
 - `workspace/` — selector, workspace root, diagnostics, FileStore.
 - `system/` — системные действия surface.
 - `state/` — runtime continuity и пользовательские preferences.
-- `resources/` — styles, scenario specs, workspace registry.
+- `resources/` — styles, workspace registry и прочие UI-ресурсы.
 - `entrypoints/` — AppDock-facing точки входа.
 
 ## Surface приложения
@@ -73,7 +73,7 @@ python -m app --standalone-dev-root "D:/Data"
 Внутри `app` основные поверхности такие:
 - `Timeline` — единая лента запусков и результатов;
 - `Workspace` — схема, selector, status, diagnostics;
-- `Scenarios` — реестр пользовательских сценариев;
+- `Operations` — продуктовый каталог действий Strategy Box;
 - `Recent artifacts` — быстрый доступ к выходам;
 - `Participants` — лёгкий список пользователей и фильтры по автору;
 - `System diagnostics` — инженерная сводка среды.

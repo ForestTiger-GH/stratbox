@@ -15,7 +15,7 @@ SaveMode = Literal["zip", "files"]
 
 
 @dataclass(frozen=True, slots=True)
-class CbrRegistryItem:
+class CbrFileRegistryItem:
     """Один встроенный источник исходного файла Банка России."""
 
     source_id: str
@@ -25,7 +25,7 @@ class CbrRegistryItem:
 
 
 @dataclass(frozen=True, slots=True)
-class CbrSourceCollectRequest:
+class CbrFileCollectRequest:
     """Запрос на загрузку и сохранение исходных файлов Банка России."""
 
     target_path: str
@@ -43,7 +43,7 @@ class CbrSourceCollectRequest:
 
 
 @dataclass(frozen=True, slots=True)
-class CbrDownloadedSource:
+class CbrDownloadedFileSource:
     """Внутреннее представление скачанного источника с байтами файла."""
 
     source_id: str
@@ -68,7 +68,7 @@ class CbrCollectedFile:
 
 
 @dataclass(frozen=True, slots=True)
-class CbrSourceFailure:
+class CbrFileCollectFailure:
     """Сведения о неудачной загрузке одного источника."""
 
     source_id: str
@@ -81,14 +81,14 @@ class CbrSourceFailure:
 
 
 @dataclass(frozen=True, slots=True)
-class CbrSourceCollectResult:
+class CbrFileCollectResult:
     """Итог загрузки и сохранения набора исходных файлов Банка России."""
 
     target_path: str
     save_mode: SaveMode
     saved_paths: tuple[str, ...]
     collected_files: tuple[CbrCollectedFile, ...]
-    failures: tuple[CbrSourceFailure, ...]
+    failures: tuple[CbrFileCollectFailure, ...]
     requested_count: int
     success_count: int
     failure_count: int
@@ -103,10 +103,10 @@ class CbrSourceCollectResult:
 
 __all__ = [
     "CbrCollectedFile",
-    "CbrDownloadedSource",
-    "CbrRegistryItem",
-    "CbrSourceCollectRequest",
-    "CbrSourceCollectResult",
-    "CbrSourceFailure",
+    "CbrDownloadedFileSource",
+    "CbrFileRegistryItem",
+    "CbrFileCollectRequest",
+    "CbrFileCollectResult",
+    "CbrFileCollectFailure",
     "SaveMode",
 ]

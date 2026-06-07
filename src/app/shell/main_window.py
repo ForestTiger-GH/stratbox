@@ -31,9 +31,9 @@ from app.chat.projector import ChatProjector
 from app.chat.widgets import ChatThreadView
 from app.shell.chat_scene import ChatSceneHost
 from app.presence.models import ParticipantRecord
-from app.scenarios.catalog import group_scenarios
-from app.scenarios.composer import ScenarioComposer
-from app.scenarios.models import ScenarioResult, ScenarioSpec
+from app.product.catalog import group_operations
+from app.product.composer import OperationComposer
+from app.product.models import ProductResult, ProductOperationSpec
 from app.system.commands import build_diagnostics_text
 from app.timeline.models import FeedAction, FeedEntry
 from app.workspace import run_workspace_diagnostics
@@ -196,13 +196,13 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.runtime = runtime
         self.context = runtime.context
-        self._selected_scenario_id: str | None = None
+        self._selected_operation_id: str | None = runtime.context.user_config.last_operation_id
         self._recent_artifacts: list[str] = list(self.context.session_snapshot.runtime_state.recent_artifacts) if self.context.session_snapshot and self.context.session_snapshot.runtime_state else []
         self._last_result_message = ''
         self.chat_projector = ChatProjector(context=self.context, presence_service=self.runtime.presence_service)
         self._build_ui()
         self._build_menus()
-        self._populate_scenario_tree()
+        self._populate_operation_tree()
         self._seed_feed()
         self._refresh_context_views()
         self.runtime.run_coordinator.run_finished.connect(self._on_run_finished)
@@ -271,16 +271,16 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 18, 12, 18)
         layout.setSpacing(14)
 
-        layout.addWidget(self._section_title('Сценарии'))
+        layout.addWidget(self._section_title('Операции'))
 
-        self.scenario_tree = QTreeWidget()
-        self.scenario_tree.setHeaderHidden(True)
-        self.scenario_tree.setRootIsDecorated(False)
-        self.scenario_tree.setItemsExpandable(False)
-        self.scenario_tree.setIndentation(0)
-        self.scenario_tree.setObjectName('scenarioTree')
-        self.scenario_tree.itemSelectionChanged.connect(self._scenario_selection_changed)
-        layout.addWidget(self.scenario_tree, 1)
+        self.operation_tree = QTreeWidget()
+        self.operation_tree.setHeaderHidden(True)
+        self.operation_tree.setRootIsDecorated(False)
+        self.operation_tree.setItemsExpandable(False)
+        self.operation_tree.setIndentation(0)
+        self.operation_tree.setObjectName('scenarioTree')
+        self.operation_tree.itemSelectionChanged.connect(self._operation_selection_changed)
+        layout.addWidget(self.operation_tree, 1)
 
         layout.addWidget(self._section_title('Последние артефакты'))
         self.artifact_list = QListWidget()
@@ -349,8 +349,8 @@ class MainWindow(QMainWindow):
         composer_layout = QVBoxLayout(bottom)
         composer_layout.setContentsMargins(12, 10, 12, 10)
         composer_layout.setSpacing(10)
-        self.composer = ScenarioComposer()
-        self.composer.submitted.connect(self._run_selected_scenario)
+        self.composer = OperationComposer()
+        self.composer.submitted.connect(self._run_selected_operation)
         composer_layout.addWidget(self.composer, 1)
 
         composer_actions = QHBoxLayout()
@@ -359,7 +359,7 @@ class MainWindow(QMainWindow):
         composer_actions.addStretch(1)
         self.run_button = QPushButton('Запустить')
         self.run_button.setObjectName('primaryRunButton')
-        self.run_button.clicked.connect(self._run_selected_scenario)
+        self.run_button.clicked.connect(self._run_selected_operation)
         composer_actions.addWidget(self.run_button, 0, Qt.AlignRight)
         composer_layout.addLayout(composer_actions)
 
@@ -386,7 +386,7 @@ class MainWindow(QMainWindow):
                     kind='system_notice',
                     status='info',
                     title='Последняя сессия',
-                    body=f'Последний сценарий: {title}',
+                    body=f'Последняя операция: {title}',
                     created_at=self._now(),
                     author_id=self.context.user_id,
                     author_label=self.context.account_name or 'Пользователь',
@@ -401,7 +401,7 @@ class MainWindow(QMainWindow):
                     kind='system_notice',
                     status='info',
                     title='Рабочая поверхность готова',
-                    body='Выберите сценарий слева. Параметры появятся внизу, запуск уйдёт в общую ленту.',
+                    body='Выберите операцию слева. Параметры появятся внизу, запуск уйдёт в общую ленту.',
                     created_at=self._now(),
                     author_id=self.context.user_id,
                     author_label=self.context.account_name or 'Пользователь',
@@ -411,52 +411,53 @@ class MainWindow(QMainWindow):
         self._refresh_feed(force_scroll_to_bottom=True)
         self._refresh_recent_artifacts()
 
-    def _populate_scenario_tree(self) -> None:
-        current = self._selected_scenario_id
-        self.scenario_tree.clear()
-        grouped = group_scenarios(self.runtime.scenario_registry, search='')
+    def _populate_operation_tree(self) -> None:
+        current = self._selected_operation_id
+        self.operation_tree.clear()
+        grouped = group_operations(self.runtime.product_registry)
         selected_item: QTreeWidgetItem | None = None
         for group_name, items in grouped.items():
             group_item = QTreeWidgetItem([group_name])
             group_item.setData(0, Qt.UserRole, None)
             group_item.setFlags(group_item.flags() & ~Qt.ItemIsSelectable)
-            self.scenario_tree.addTopLevelItem(group_item)
-            for scenario in items:
-                item = QTreeWidgetItem([scenario.title])
-                item.setData(0, Qt.UserRole, scenario.id)
-                item.setToolTip(0, scenario.description)
+            self.operation_tree.addTopLevelItem(group_item)
+            for operation in items:
+                item = QTreeWidgetItem([operation.title])
+                item.setData(0, Qt.UserRole, operation.id)
+                item.setToolTip(0, operation.description)
                 group_item.addChild(item)
-                if scenario.id == current:
+                if operation.id == current:
                     selected_item = item
             group_item.setExpanded(True)
         if selected_item is not None:
-            self.scenario_tree.setCurrentItem(selected_item)
-        elif self.scenario_tree.topLevelItemCount() > 0 and self.scenario_tree.topLevelItem(0).childCount() > 0:
-            self.scenario_tree.setCurrentItem(self.scenario_tree.topLevelItem(0).child(0))
+            self.operation_tree.setCurrentItem(selected_item)
+        elif self.operation_tree.topLevelItemCount() > 0 and self.operation_tree.topLevelItem(0).childCount() > 0:
+            self.operation_tree.setCurrentItem(self.operation_tree.topLevelItem(0).child(0))
 
-    def _scenario_selection_changed(self) -> None:
-        item = self.scenario_tree.currentItem()
+    def _operation_selection_changed(self) -> None:
+        item = self.operation_tree.currentItem()
         if item is None:
-            self._selected_scenario_id = None
-            self.composer.set_scenario(None)
+            self._selected_operation_id = None
+            self.composer.set_operation(None)
             return
-        scenario_id = item.data(0, Qt.UserRole)
-        if not scenario_id:
+        operation_id = item.data(0, Qt.UserRole)
+        if not operation_id:
             return
-        spec = self.runtime.scenario_registry.get(str(scenario_id))
-        self._selected_scenario_id = spec.id
-        self.composer.set_scenario(spec)
-        self.runtime.preferences.save(last_scenario_id=spec.id)
+        spec = self.runtime.product_registry.get(str(operation_id))
+        self._selected_operation_id = spec.id
+        self.composer.set_operation(spec)
+        self.runtime.preferences.save(last_operation_id=spec.id)
+        self.run_button.setText(spec.submit_label)
 
-    def _selected_scenario(self) -> ScenarioSpec | None:
-        if not self._selected_scenario_id:
+    def _selected_operation(self) -> ProductOperationSpec | None:
+        if not self._selected_operation_id:
             return None
-        if not self.runtime.scenario_registry.has(self._selected_scenario_id):
+        if not self.runtime.product_registry.has(self._selected_operation_id):
             return None
-        return self.runtime.scenario_registry.get(self._selected_scenario_id)
+        return self.runtime.product_registry.get(self._selected_operation_id)
 
-    def _run_selected_scenario(self) -> None:
-        spec = self._selected_scenario()
+    def _run_selected_operation(self) -> None:
+        spec = self._selected_operation()
         if spec is None:
             return
         if self.runtime.run_coordinator.is_busy:
@@ -471,8 +472,8 @@ class MainWindow(QMainWindow):
             active_view='timeline',
             selected_object=spec.id,
             active_job=spec.id,
-            last_scenario_id=spec.id,
-            last_scenario_title=spec.title,
+            last_operation_id=spec.id,
+            last_operation_title=spec.title,
             recent_artifacts=tuple(self._recent_artifacts),
         )
         lifecycle = self.runtime.run_coordinator.submit(spec, params)
@@ -483,23 +484,23 @@ class MainWindow(QMainWindow):
         lifecycle = payload
         self.run_button.setEnabled(True)
         self._append_feed_entries(lifecycle.timeline_entries)
-        scenario_result: ScenarioResult | None = lifecycle.scenario_result
-        if scenario_result is not None:
-            self._last_result_message = scenario_result.message
-            for output in scenario_result.outputs:
+        operation_result: ProductResult | None = lifecycle.operation_result
+        if operation_result is not None:
+            self._last_result_message = operation_result.message
+            for output in operation_result.outputs:
                 if output not in self._recent_artifacts:
                     self._recent_artifacts.insert(0, output)
             self._recent_artifacts = self._recent_artifacts[:12]
             self._refresh_recent_artifacts()
             self.runtime.surface_state.update_runtime(
                 active_view='timeline',
-                selected_object=lifecycle.run_record.scenario_id,
+                selected_object=lifecycle.run_record.operation_id,
                 active_job=None,
-                last_scenario_id=lifecycle.run_record.scenario_id,
-                last_scenario_title=lifecycle.run_record.scenario_title,
-                last_scenario_ok=scenario_result.ok,
-                last_outputs=scenario_result.outputs,
-                last_scenario_log=(next((item for item in scenario_result.outputs if item.endswith('.log')), None)),
+                last_operation_id=lifecycle.run_record.operation_id,
+                last_operation_title=lifecycle.run_record.operation_title,
+                last_operation_ok=operation_result.ok,
+                last_outputs=operation_result.outputs,
+                last_operation_log=(next((item for item in operation_result.outputs if item.endswith('.log')), None)),
                 recent_artifacts=tuple(self._recent_artifacts),
             )
 
@@ -538,14 +539,14 @@ class MainWindow(QMainWindow):
                 )
             ])
         elif action.id == 'repeat_run' and payload:
-            self._select_scenario(str(payload))
+            self._select_operation(str(payload))
 
-    def _select_scenario(self, scenario_id: str) -> None:
-        matches = self.scenario_tree.findItems('', Qt.MatchContains | Qt.MatchRecursive)
+    def _select_operation(self, operation_id: str) -> None:
+        matches = self.operation_tree.findItems('', Qt.MatchContains | Qt.MatchRecursive)
         for item in matches:
-            if item.data(0, Qt.UserRole) == scenario_id:
-                self.scenario_tree.setCurrentItem(item)
-                self.scenario_tree.scrollToItem(item)
+            if item.data(0, Qt.UserRole) == operation_id:
+                self.operation_tree.setCurrentItem(item)
+                self.operation_tree.scrollToItem(item)
                 return
 
     def _set_filter_mode(self, mode: str) -> None:
@@ -664,11 +665,11 @@ class MainWindow(QMainWindow):
             width=self.width(),
             height=self.height(),
             splitter_sizes=self.main_splitter.sizes(),
-            last_scenario_id=self._selected_scenario_id,
+            last_operation_id=self._selected_operation_id,
         )
         self.runtime.surface_state.update_runtime(
             active_view='closed',
-            selected_object=self._selected_scenario_id,
+            selected_object=self._selected_operation_id,
             active_job=None,
             recent_artifacts=tuple(self._recent_artifacts),
         )

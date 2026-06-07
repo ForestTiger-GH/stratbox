@@ -30,7 +30,7 @@ class PreferencesService:
     def current(self) -> SurfacePreferences:
         return SurfacePreferences(user_config=self._context.user_config)
 
-    def save(self, *, width: int | None = None, height: int | None = None, splitter_sizes: list[int] | None = None, last_scenario_id: str | None = None) -> None:
+    def save(self, *, width: int | None = None, height: int | None = None, splitter_sizes: list[int] | None = None, last_operation_id: str | None = None) -> None:
         config = self._context.user_config
         if width is not None:
             config.window.width = width
@@ -38,6 +38,6 @@ class PreferencesService:
             config.window.height = height
         if splitter_sizes is not None:
             config.splitter_sizes = splitter_sizes
-        if last_scenario_id is not None:
-            config.last_scenario_id = last_scenario_id
+        if last_operation_id is not None:
+            config.last_operation_id = last_operation_id
         save_user_config(self._context.paths.app_config_path, config)

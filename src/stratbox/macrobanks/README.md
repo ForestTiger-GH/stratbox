@@ -17,7 +17,7 @@ macrobanks/
   cbr_forms/     # отчетные формы Банка России: 101, 102, 123, 135, 805
   escrow/        # счета эскроу: скачивание, парсинг, long/pivot, Excel/ZIP
   frg/           # файловый контур FRG: каталог, latest, зачистка, архивирование
-  cbr_archiver/  # скачивание статистических файлов Банка России без обработки содержимого
+  cbr_file_collector/  # скачивание статистических файлов Банка России без обработки содержимого
 ```
 
 ## Публичные входы
@@ -58,10 +58,10 @@ cleanup = run_frg_cleanup("data/frg", archive_latest=True, execute=False)
 ### CBR archiver
 
 ```python
-from stratbox.macrobanks.cbr_archiver import CbrSourceCollectRequest, collect_cbr_sources
+from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 
-result = collect_cbr_sources(
-    CbrSourceCollectRequest(
+result = collect_cbr_files(
+    CbrFileCollectRequest(
         target_path="/content/CBR Collected Files.zip",
         save_mode="zip",
     )
@@ -90,7 +90,7 @@ result = collect_cbr_sources(
 Если домен занимается файловым контуром или архивированием, он не должен пересохранять Excel и менять содержимое файлов. Например:
 
 - `frg` работает по именам файлов и не открывает Excel-книги;
-- `cbr_archiver` скачивает исходные файлы ЦБ и сохраняет их как есть.
+- `cbr_file_collector` скачивает исходные файлы ЦБ и сохраняет их как есть.
 
 ### 4. Реестры должны быть явными
 
@@ -98,7 +98,7 @@ result = collect_cbr_sources(
 
 - формы и показатели — в `cbr_forms`;
 - FRG-семейства — в `frg/registry.py`;
-- ссылки на статистические файлы ЦБ — в `cbr_archiver/registry.py`;
+- ссылки на статистические файлы ЦБ — в `cbr_file_collector/registry.py`;
 - показатели escrow — в соответствующем реестре домена.
 
 Это позволяет сопровождать библиотеку вручную и безопасно, без скрытой магии в середине конвейера.

@@ -11,13 +11,13 @@ import re
 import time
 
 from stratbox.base.net import download_bytes
-from stratbox.macrobanks.cbr_archiver.contracts import (
-    CbrDownloadedSource,
-    CbrRegistryItem,
-    CbrSourceFailure,
+from stratbox.macrobanks.cbr_file_collector.contracts import (
+    CbrDownloadedFileSource,
+    CbrFileRegistryItem,
+    CbrFileCollectFailure,
 )
-from stratbox.macrobanks.cbr_archiver.file_names import resolve_download_file_name
-from stratbox.macrobanks.cbr_archiver.registry import DEFAULT_HEADERS
+from stratbox.macrobanks.cbr_file_collector.file_names import resolve_download_file_name
+from stratbox.macrobanks.cbr_file_collector.registry import DEFAULT_HEADERS
 
 
 def build_cbr_url_variants(url: str) -> list[str]:
@@ -75,7 +75,7 @@ def _download_once(
 
 
 def download_one_source(
-    source: CbrRegistryItem,
+    source: CbrFileRegistryItem,
     *,
     timeout_sec: int = 60,
     retry_attempts: int = 3,
@@ -84,11 +84,11 @@ def download_one_source(
     headers: dict[str, str] | None = None,
     plugin_only: bool = True,
     try_case_variants: bool = True,
-) -> CbrDownloadedSource | CbrSourceFailure:
+) -> CbrDownloadedFileSource | CbrFileCollectFailure:
     request_headers = headers or DEFAULT_HEADERS
     candidates = build_cbr_url_variants(source.url) if try_case_variants else [source.url]
 
-    last_failure = CbrSourceFailure(
+    last_failure = CbrFileCollectFailure(
         source_id=source.source_id,
         url=source.url,
         error="No download attempt was made",
@@ -108,7 +108,7 @@ def download_one_source(
             result_headers = getattr(result, "headers", None)
 
             if not result.ok or not result.content:
-                last_failure = CbrSourceFailure(
+                last_failure = CbrFileCollectFailure(
                     source_id=source.source_id,
                     url=source.url,
                     error=result.error or "unknown download error",
@@ -120,7 +120,7 @@ def download_one_source(
                 continue
 
             if _looks_like_html(result.content, result_headers):
-                last_failure = CbrSourceFailure(
+                last_failure = CbrFileCollectFailure(
                     source_id=source.source_id,
                     url=source.url,
                     error="Downloaded content looks like HTML page, not source file",
@@ -137,7 +137,7 @@ def download_one_source(
                 url=candidate_url,
                 fallback=f"{source.source_id or 'downloaded_file'}.xlsx",
             )
-            return CbrDownloadedSource(
+            return CbrDownloadedFileSource(
                 source_id=source.source_id,
                 url=source.url,
                 file_name=file_name,
@@ -154,7 +154,7 @@ def download_one_source(
 
 
 def download_sources(
-    sources: tuple[CbrRegistryItem, ...] | list[CbrRegistryItem],
+    sources: tuple[CbrFileRegistryItem, ...] | list[CbrFileRegistryItem],
     *,
     timeout_sec: int = 60,
     retry_attempts: int = 3,
@@ -165,7 +165,7 @@ def download_sources(
     try_case_variants: bool = True,
     continue_on_error: bool = True,
     show_progress: bool = True,
-) -> tuple[list[CbrDownloadedSource], list[CbrSourceFailure]]:
+) -> tuple[list[CbrDownloadedFileSource], list[CbrFileCollectFailure]]:
     iterator = list(sources)
     if show_progress:
         try:
@@ -176,8 +176,8 @@ def download_sources(
     else:
         progress_iter = iterator
 
-    downloaded: list[CbrDownloadedSource] = []
-    failed: list[CbrSourceFailure] = []
+    downloaded: list[CbrDownloadedFileSource] = []
+    failed: list[CbrFileCollectFailure] = []
 
     for source in progress_iter:
         item = download_one_source(
@@ -190,7 +190,7 @@ def download_sources(
             plugin_only=plugin_only,
             try_case_variants=try_case_variants,
         )
-        if isinstance(item, CbrDownloadedSource):
+        if isinstance(item, CbrDownloadedFileSource):
             downloaded.append(item)
             continue
 
