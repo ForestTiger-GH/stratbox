@@ -52,19 +52,21 @@ AppDock отвечает за:
 python -m app --standalone-dev-root "D:/Data"
 ```
 
+В этом режиме не только selector/workspace, но и app-owned storage (`app.json`, `logs/`, `cache/`, `runtime/`) живут внутри указанного dev-root.
+
 ## Структурные слои
 
 - `bootstrap/` — сборка runtime и запуск desktop surface.
-- `core/` — контекст, paths, logger и user-space настройки.
-- `integrations/` — AppDock и platform adapters.
-- `shell/` — каркас окна, top bar, sidebars, menus.
+- `core/` — тонкое ядро приложения: context, paths, config, version, logger.
+- `platform/` — boundary к AppDock и desktop platform services.
+- `product/` — product catalog, формы операций и execution layer.
+- `runs/` — Qt-thread lifecycle для конкретных запусков.
+- `shell/` — каркас окна и композиция desktop surface.
 - `timeline/` — общая лента запусков, результатов и системных notices.
-- `product/` — product registry, формы операций и execution layer.
-- `runs/` — lifecycle конкретных запусков.
 - `presence/` — online и участники.
 - `workspace/` — selector, workspace root, diagnostics, FileStore.
 - `system/` — системные действия surface.
-- `state/` — runtime continuity и пользовательские preferences.
+- `state/` — runtime continuity, surface-state и пользовательские preferences.
 - `resources/` — styles, workspace registry и прочие UI-ресурсы.
 - `entrypoints/` — AppDock-facing точки входа.
 

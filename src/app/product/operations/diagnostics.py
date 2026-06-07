@@ -4,7 +4,8 @@ import importlib.util
 import sys
 from typing import Any
 
-from app.product.models import ProductOperationContext, ProductOperationSpec, ProductResult
+from app.product.catalog.models import ProductOperationSpec
+from app.product.execution.requests import ProductOperationContext, ProductResult
 from app.workspace import resolve_workspace_root, run_workspace_diagnostics
 
 

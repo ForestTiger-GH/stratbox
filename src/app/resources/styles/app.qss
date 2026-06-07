@@ -139,7 +139,8 @@ QPushButton:disabled {
 }
 
 #composerLineEdit,
-#composerComboBox {
+#composerComboBox,
+#composerSpinBox {
     border: 1px solid #F3F3F3;
     border-radius: 14px;
     padding: 9px 12px;
@@ -151,7 +152,7 @@ QPushButton:disabled {
     padding-right: 28px;
 }
 
-#composerScenarioTitle {
+#composerOperationTitle {
     font-size: 13px;
     font-weight: 600;
     color: #111111;
@@ -198,32 +199,32 @@ QPushButton:disabled {
 
 #feedList,
 #artifactList,
-#scenarioTree {
+#operationTree {
     border: none;
     background: transparent;
     outline: none;
 }
 
-#scenarioTree::branch {
+#operationTree::branch {
     background: transparent;
     border: none;
 }
 
-#scenarioTree::branch:has-children,
-#scenarioTree::branch:has-siblings,
-#scenarioTree::branch:closed,
-#scenarioTree::branch:open {
+#operationTree::branch:has-children,
+#operationTree::branch:has-siblings,
+#operationTree::branch:closed,
+#operationTree::branch:open {
     image: none;
     border: none;
 }
 
 #artifactList::item,
-#scenarioTree::item {
+#operationTree::item {
     padding: 8px 6px;
     border-radius: 10px;
 }
 
-#scenarioTree::item:has-children {
+#operationTree::item:has-children {
     padding-left: 0px;
     font-size: 11px;
     font-weight: 600;
@@ -233,19 +234,19 @@ QPushButton:disabled {
     background: transparent;
 }
 
-#scenarioTree::item:has-children:selected,
-#scenarioTree::item:has-children:hover {
+#operationTree::item:has-children:selected,
+#operationTree::item:has-children:hover {
     background: transparent;
     color: #6b7280;
 }
 
 #artifactList::item:selected,
-#scenarioTree::item:selected {
+#operationTree::item:selected {
     background: #F3F3F3;
     color: #111111;
 }
 
-#scenarioTree::item:hover,
+#operationTree::item:hover,
 #artifactList::item:hover {
     background: #F7F7F7;
 }

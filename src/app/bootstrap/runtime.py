@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.core.context import AppContext
-from app.integrations.appdock_bridge import AppDockBridge
-from app.integrations.platform_services import PlatformServices
+from app.platform.appdock.bridge import AppDockBridge
+from app.platform.desktop.services import PlatformServices
 from app.presence.service import PresenceService
-from app.product.registry import build_product_registry
-from app.product.models import ProductRegistry
+from app.product.catalog.registry import build_product_registry
+from app.product.catalog.models import ProductRegistry
 from app.runs.service import RunCoordinator
 from app.state.app_surface_state import AppSurfaceStateService
 from app.state.user_preferences import PreferencesService

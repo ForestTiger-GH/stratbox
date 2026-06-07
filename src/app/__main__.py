@@ -8,8 +8,8 @@ import sys
 
 from app.core.context import build_app_context
 from app.core.errors import AppStartupError
-from app.product.registry import build_product_registry
-from app.product.runner import run_product_operation_by_id
+from app.product.catalog.registry import build_product_registry
+from app.product.execution.runner import run_product_operation_by_id
 
 
 def _build_parser() -> argparse.ArgumentParser:

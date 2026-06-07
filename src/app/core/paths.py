@@ -5,11 +5,14 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
-from app.integrations.appdock.runtime_contracts import AppActivationContext, ActivationSystemDir
+from app.platform.appdock.runtime_contracts import ActivationSystemDir, AppActivationContext
 
 APP_DIR_NAME = 'Strategy Box'
 APPDOCK_MANAGED_SYSTEM_DIR_NAME = 'stratbox-system'
+APP_STORAGE_DEV_DIR_NAME = '.strategy_box'
+StorageMode = Literal['appdock_managed', 'standalone_user_profile', 'standalone_dev_root']
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,10 +21,11 @@ class AppPaths:
     src_dir: Path
     app_storage_root: Path
     logs_dir: Path
-    scenario_logs_dir: Path
+    operation_logs_dir: Path
     cache_dir: Path
     runtime_dir: Path
     app_config_path: Path
+    storage_mode: StorageMode
     user_root: Path | None = None
     config_dir: Path | None = None
     install_root: Path | None = None
@@ -38,6 +42,11 @@ class AppPaths:
     runtime_state_path: Path | None = None
     cleanup_registry_path: Path | None = None
     bundle_root: Path | None = None
+    dev_root: Path | None = None
+
+    @property
+    def scenario_logs_dir(self) -> Path:  # legacy alias
+        return self.operation_logs_dir
 
 
 def _local_app_data_root() -> Path:
@@ -62,6 +71,15 @@ def _resolve_managed_storage_root(*, install_root: Path, install_root_system_dir
     return install_root / APPDOCK_MANAGED_SYSTEM_DIR_NAME
 
 
+def _build_storage_roots(app_storage_root: Path) -> tuple[Path, Path, Path, Path]:
+    logs_dir = app_storage_root / 'logs'
+    operation_logs_dir = logs_dir / 'operations'
+    cache_dir = app_storage_root / 'cache'
+    runtime_dir = app_storage_root / 'runtime'
+    _ensure_directories(app_storage_root, logs_dir, operation_logs_dir, cache_dir, runtime_dir)
+    return logs_dir, operation_logs_dir, cache_dir, runtime_dir
+
+
 def _build_appdock_managed_paths(
     *,
     source_root: Path,
@@ -79,13 +97,8 @@ def _build_appdock_managed_paths(
         install_root=install_root,
         install_root_system_dir=appdock_activation.provided_system_dirs.install_root_system_dir,
     )
-    logs_dir = managed_system_root / 'logs'
-    scenario_logs_dir = logs_dir / 'scenarios'
-    cache_dir = managed_system_root / 'cache'
-    runtime_dir = managed_system_root / 'runtime'
+    logs_dir, operation_logs_dir, cache_dir, runtime_dir = _build_storage_roots(managed_system_root)
     app_config_path_resolved = managed_system_root / 'app.json'
-
-    _ensure_directories(managed_system_root, logs_dir, scenario_logs_dir, cache_dir, runtime_dir)
 
     workspace = appdock_activation.workspace
     bundle_root = Path(workspace.bundle_root).expanduser() if workspace.bundle_root else None
@@ -101,10 +114,11 @@ def _build_appdock_managed_paths(
         src_dir=src_dir,
         app_storage_root=managed_system_root,
         logs_dir=logs_dir,
-        scenario_logs_dir=scenario_logs_dir,
+        operation_logs_dir=operation_logs_dir,
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
         app_config_path=app_config_path_resolved,
+        storage_mode='appdock_managed',
         user_root=None,
         config_dir=None,
         install_root=install_root,
@@ -124,7 +138,7 @@ def _build_appdock_managed_paths(
     )
 
 
-def _build_standalone_paths(
+def _build_standalone_user_paths(
     *,
     source_root: Path,
     src_dir: Path,
@@ -133,39 +147,57 @@ def _build_standalone_paths(
 ) -> AppPaths:
     user_root = _local_app_data_root() / APP_DIR_NAME
     config_dir = user_root / 'config'
-    logs_dir = user_root / 'logs'
-    scenario_logs_dir = logs_dir / 'scenarios'
-    cache_dir = user_root / 'cache'
-    runtime_dir = user_root / 'runtime'
+    app_storage_root = user_root
+    logs_dir, operation_logs_dir, cache_dir, runtime_dir = _build_storage_roots(app_storage_root)
+    _ensure_directories(config_dir)
     app_config_path_resolved = config_dir / 'app.json'
-
-    _ensure_directories(config_dir, logs_dir, scenario_logs_dir, cache_dir, runtime_dir)
-
     return AppPaths(
         source_root=source_root,
         src_dir=src_dir,
-        app_storage_root=user_root,
+        app_storage_root=app_storage_root,
         logs_dir=logs_dir,
-        scenario_logs_dir=scenario_logs_dir,
+        operation_logs_dir=operation_logs_dir,
         cache_dir=cache_dir,
         runtime_dir=runtime_dir,
         app_config_path=app_config_path_resolved,
+        storage_mode='standalone_user_profile',
         user_root=user_root,
         config_dir=config_dir,
-        install_root=None,
-        system_root=None,
-        managed_system_root=None,
-        session_dir=None,
         appdock_managed=False,
         activation_context_path=activation_context_path,
         appdock_config_path=appdock_config_path,
-        user_state_path=None,
-        session_state_path=None,
-        active_session_path=None,
-        health_snapshot_path=None,
-        runtime_state_path=None,
-        cleanup_registry_path=None,
-        bundle_root=None,
+    )
+
+
+def _build_standalone_dev_paths(
+    *,
+    source_root: Path,
+    src_dir: Path,
+    activation_context_path: Path | None,
+    appdock_config_path: Path | None,
+    dev_root: Path,
+) -> AppPaths:
+    dev_root_resolved = dev_root.expanduser()
+    app_storage_root = dev_root_resolved / APP_STORAGE_DEV_DIR_NAME / 'system'
+    config_dir = app_storage_root
+    logs_dir, operation_logs_dir, cache_dir, runtime_dir = _build_storage_roots(app_storage_root)
+    app_config_path_resolved = config_dir / 'app.json'
+    return AppPaths(
+        source_root=source_root,
+        src_dir=src_dir,
+        app_storage_root=app_storage_root,
+        logs_dir=logs_dir,
+        operation_logs_dir=operation_logs_dir,
+        cache_dir=cache_dir,
+        runtime_dir=runtime_dir,
+        app_config_path=app_config_path_resolved,
+        storage_mode='standalone_dev_root',
+        user_root=dev_root_resolved,
+        config_dir=config_dir,
+        appdock_managed=False,
+        activation_context_path=activation_context_path,
+        appdock_config_path=appdock_config_path,
+        dev_root=dev_root_resolved,
     )
 
 
@@ -174,6 +206,7 @@ def build_app_paths(
     appdock_activation: AppActivationContext | None = None,
     activation_context_path: Path | None = None,
     appdock_config_path: Path | None = None,
+    standalone_dev_root: Path | None = None,
 ) -> AppPaths:
     source_root = Path(appdock_activation.workspace.source_root).expanduser() if appdock_activation is not None else _detect_source_root()
     src_dir = source_root / 'src'
@@ -185,7 +218,15 @@ def build_app_paths(
             activation_context_path=activation_context_path,
             appdock_config_path=appdock_config_path,
         )
-    return _build_standalone_paths(
+    if standalone_dev_root is not None:
+        return _build_standalone_dev_paths(
+            source_root=source_root,
+            src_dir=src_dir,
+            activation_context_path=activation_context_path,
+            appdock_config_path=appdock_config_path,
+            dev_root=standalone_dev_root,
+        )
+    return _build_standalone_user_paths(
         source_root=source_root,
         src_dir=src_dir,
         activation_context_path=activation_context_path,

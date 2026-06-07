@@ -10,7 +10,8 @@ from stratbox.macrobanks.cbr_file_collector import (
     collect_cbr_files,
 )
 
-from app.product.models import ProductOperationContext, ProductOperationSpec, ProductResult
+from app.product.catalog.models import ProductOperationSpec
+from app.product.execution.requests import ProductOperationContext, ProductResult
 
 
 def _as_bool(value: Any) -> bool:

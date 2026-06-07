@@ -12,7 +12,7 @@ from stratbox.base.filestore import FileStore
 from app.core.errors import AppStartupError
 from app.core.log_setup import setup_app_logger
 from app.core.paths import AppPaths, build_app_paths
-from app.core.session_env import (
+from app.state.session_runtime import (
     ActiveSessionProjectionRecord,
     AppSessionClient,
     AppSessionSnapshot,
@@ -22,7 +22,7 @@ from app.core.session_env import (
 )
 from app.core.user_config import AppUserConfig, load_user_config
 from app.core.version import VersionInfo, get_version_info
-from app.integrations.appdock.runtime_contracts import (
+from app.platform.appdock.runtime_contracts import (
     AppActivationContext,
     get_activation_context_path_from_env,
     get_appdock_config_path_from_env,
@@ -128,6 +128,7 @@ def build_app_context(
         appdock_activation=appdock_activation,
         activation_context_path=activation_context_path,
         appdock_config_path=appdock_config_path,
+        standalone_dev_root=(Path(standalone_dev_root).expanduser() if standalone_dev_root else None),
     )
     logger = setup_app_logger(paths.logs_dir)
     user_config = load_user_config(paths.app_config_path)

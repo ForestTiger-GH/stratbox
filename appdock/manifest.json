@@ -47,7 +47,7 @@
       "entry_view": "timeline",
       "declared_views": [
         "timeline",
-        "scenarios",
+        "operations",
         "artifacts",
         "workspace",
         "participants",
@@ -74,7 +74,7 @@
         "product": "Strategy Box",
         "ui_kind": "desktop_timeline_surface",
         "route_groups_visible_in_app": [
-          "scenarios",
+          "operations",
           "artifacts",
           "node",
           "diagnostics"

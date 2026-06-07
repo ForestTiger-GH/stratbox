@@ -31,9 +31,10 @@ from app.chat.projector import ChatProjector
 from app.chat.widgets import ChatThreadView
 from app.shell.chat_scene import ChatSceneHost
 from app.presence.models import ParticipantRecord
-from app.product.catalog import group_operations
-from app.product.composer import OperationComposer
-from app.product.models import ProductResult, ProductOperationSpec
+from app.product.catalog.grouping import group_operations
+from app.product.forms.factory import OperationFormPanel
+from app.product.catalog.models import ProductOperationSpec
+from app.product.execution.requests import ProductResult
 from app.system.commands import build_diagnostics_text
 from app.timeline.models import FeedAction, FeedEntry
 from app.workspace import run_workspace_diagnostics
@@ -278,7 +279,7 @@ class MainWindow(QMainWindow):
         self.operation_tree.setRootIsDecorated(False)
         self.operation_tree.setItemsExpandable(False)
         self.operation_tree.setIndentation(0)
-        self.operation_tree.setObjectName('scenarioTree')
+        self.operation_tree.setObjectName('operationTree')
         self.operation_tree.itemSelectionChanged.connect(self._operation_selection_changed)
         layout.addWidget(self.operation_tree, 1)
 
@@ -349,7 +350,7 @@ class MainWindow(QMainWindow):
         composer_layout = QVBoxLayout(bottom)
         composer_layout.setContentsMargins(12, 10, 12, 10)
         composer_layout.setSpacing(10)
-        self.composer = OperationComposer()
+        self.composer = OperationFormPanel(preferences=self.runtime.preferences)
         self.composer.submitted.connect(self._run_selected_operation)
         composer_layout.addWidget(self.composer, 1)
 
@@ -378,8 +379,8 @@ class MainWindow(QMainWindow):
         return label
 
     def _seed_feed(self) -> None:
-        if self.context.session_snapshot and self.context.session_snapshot.runtime_state and self.context.session_snapshot.runtime_state.last_scenario_title:
-            title = self.context.session_snapshot.runtime_state.last_scenario_title
+        if self.context.session_snapshot and self.context.session_snapshot.runtime_state and self.context.session_snapshot.runtime_state.last_operation_title:
+            title = self.context.session_snapshot.runtime_state.last_operation_title
             self._append_feed_entries([
                 FeedEntry(
                     entry_id='resume:last',

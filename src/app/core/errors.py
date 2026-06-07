@@ -15,8 +15,12 @@ class AppProfileError(AppError):
     """Ошибка рабочей схемы данных или business-root."""
 
 
-class AppScenarioError(AppError):
-    """Ошибка регистрации или запуска сценария."""
+class AppOperationError(AppError):
+    """Ошибка регистрации или запуска продуктовой операции."""
+
+
+class AppScenarioError(AppOperationError):  # legacy alias
+    """Устаревший алиас для ошибок сценарного слоя."""
 
 
 class AppStartupError(AppError):

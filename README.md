@@ -41,7 +41,7 @@ df = ia.excel.read_df("outputs/table.xlsx")
 from stratbox.macrobanks.cbr_forms import run_all_forms_to_xlsx
 from stratbox.macrobanks.escrow import run_escrow_to_xlsx
 from stratbox.macrobanks.frg import run_frg_stage1, run_frg_cleanup
-from stratbox.macrobanks.cbr_archiver import run_cbr_archiver
+from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 ```
 
 ---
@@ -113,7 +113,7 @@ pip install -e .
 - `cbr_forms` — обработка отчетных форм Банка России 101, 102, 123, 135 и 805;
 - `escrow` — обработка данных по счетам эскроу;
 - `frg` — файловый контур для работы с наборами FRG-файлов;
-- `cbr_archiver` — скачивание и сохранение исходных статистических файлов Банка России.
+- `cbr_file_collector` — загрузка и сохранение исходных файлов Банка России без предобработки.
 
 ### `stratbox.registries`
 
@@ -261,19 +261,24 @@ result = run_frg_stage1("data/frg")
 latest_df = result["latest"]
 ```
 
-### CBR archiver
+### CBR file collector
 
-Домен `stratbox.macrobanks.cbr_archiver` скачивает плоский список статистических файлов Банка России и сохраняет исходники без изменения содержимого: либо отдельными файлами в папку, либо одним ZIP-архивом.
+Домен `stratbox.macrobanks.cbr_file_collector` скачивает фиксированный список файлов Банка России и сохраняет исходники без изменения содержимого: либо отдельными файлами в папку, либо одним ZIP-архивом.
 
 ```python
-from stratbox.macrobanks.cbr_archiver import run_cbr_archiver
+from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 
-result = run_cbr_archiver(
-    out_path="/content",
-    output_mode="zip",
+result = collect_cbr_files(
+    CbrFileCollectRequest(
+        target_path="/content/CBR Files.zip",
+        save_mode="zip",
+        overwrite=True,
+        retry_attempts=3,
+    )
 )
 
-print(result.output_path)
+print(result.target_path)
+print(result.success_count, result.failure_count)
 ```
 
 ---

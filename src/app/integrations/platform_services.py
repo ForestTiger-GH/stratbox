@@ -1,21 +1,5 @@
-from __future__ import annotations
+"""Compatibility facade for desktop platform services."""
 
-import os
-import subprocess
-from pathlib import Path
+from app.platform.desktop.services import PlatformServices
 
-
-class PlatformServices:
-    def open_path(self, path: str) -> None:
-        p = Path(path)
-        target = p if p.is_dir() else p.parent
-        target = target if target.exists() else p
-        if os.name == 'nt':
-            os.startfile(str(target))  # type: ignore[attr-defined]
-        else:
-            subprocess.Popen(['xdg-open', str(target)])
-
-    def copy_text(self, value: str) -> None:
-        from PySide6.QtGui import QGuiApplication
-
-        QGuiApplication.clipboard().setText(value)
+__all__ = ['PlatformServices']

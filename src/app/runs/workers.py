@@ -5,8 +5,9 @@ from typing import Any
 from PySide6.QtCore import QObject, Signal, Slot
 
 from app.core.context import AppContext
-from app.product.models import ProductOperationSpec, ProductResult
-from app.product.runner import run_product_operation
+from app.product.catalog.models import ProductOperationSpec
+from app.product.execution.requests import ProductResult
+from app.product.execution.runner import run_product_operation
 
 
 class ProductWorker(QObject):

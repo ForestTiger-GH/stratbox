@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from app.core.context import AppContext
 from app.core.user_config import AppUserConfig, save_user_config
@@ -29,6 +30,13 @@ class PreferencesService:
 
     def current(self) -> SurfacePreferences:
         return SurfacePreferences(user_config=self._context.user_config)
+
+    def load_operation_values(self, operation_id: str) -> dict[str, Any]:
+        return dict(self._context.user_config.operation_form_values.get(operation_id) or {})
+
+    def save_operation_values(self, operation_id: str, values: dict[str, Any]) -> None:
+        self._context.user_config.operation_form_values[operation_id] = dict(values)
+        save_user_config(self._context.paths.app_config_path, self._context.user_config)
 
     def save(self, *, width: int | None = None, height: int | None = None, splitter_sizes: list[int] | None = None, last_operation_id: str | None = None) -> None:
         config = self._context.user_config

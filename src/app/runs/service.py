@@ -7,7 +7,8 @@ from typing import Callable
 from PySide6.QtCore import QObject, QThread, Signal
 
 from app.core.context import AppContext
-from app.product.models import ProductOperationSpec, ProductResult
+from app.product.catalog.models import ProductOperationSpec
+from app.product.execution.requests import ProductResult
 from app.runs.models import RunRecord
 from app.runs.workers import ProductWorker
 from app.timeline.models import FeedAction, FeedEntry

@@ -67,4 +67,4 @@ quarters = period_points(
 
 ## Правила расширения
 
-В `common` стоит добавлять только такие функции, которые действительно являются общими. Если логика относится к конкретному предметному процессу, ей место в соответствующем домене, например в `macrobanks/cbr_forms`, `macrobanks/escrow`, `macrobanks/frg` или `macrobanks/cbr_archiver`.
+В `common` стоит добавлять только такие функции, которые действительно являются общими. Если логика относится к конкретному предметному процессу, ей место в соответствующем домене, например в `macrobanks/cbr_forms`, `macrobanks/escrow`, `macrobanks/frg` или `macrobanks/cbr_file_collector`.

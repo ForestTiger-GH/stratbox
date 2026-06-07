@@ -34,11 +34,11 @@ class AppSurfaceStateService:
             active_view=active_view,
             selected_object=selected_object,
             active_job=active_job,
-            last_scenario_id=last_operation_id,
-            last_scenario_title=last_operation_title,
-            last_scenario_ok=last_operation_ok,
+            last_operation_id=last_operation_id,
+            last_operation_title=last_operation_title,
+            last_operation_ok=last_operation_ok,
             last_outputs=last_outputs,
-            last_scenario_log=last_operation_log,
+            last_operation_log=last_operation_log,
             recent_artifacts=recent_artifacts,
             workspace_schema_id=self._context.workspace_schema.id,
             effective_workspace_root=(str(self._context.workspace_root_path) if self._context.workspace_root_path else None),
@@ -46,5 +46,10 @@ class AppSurfaceStateService:
             surface_state={
                 'selected_data_root_path': (str(self._context.data_root_selector_path) if self._context.data_root_selector_path else None),
                 'workspace_root_path': (str(self._context.workspace_root_path) if self._context.workspace_root_path else None),
+                # temporary boundary aliases for current AppDock runtime readers
+                'last_scenario_id': last_operation_id,
+                'last_scenario_title': last_operation_title,
+                'last_scenario_ok': last_operation_ok,
+                'last_scenario_log': last_operation_log,
             },
         )

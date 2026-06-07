@@ -1,12 +1,5 @@
-from __future__ import annotations
+"""Compatibility facade for product catalog grouping."""
 
-from collections import defaultdict
+from app.product.catalog.grouping import group_operations
 
-from app.product.models import ProductOperationSpec, ProductRegistry
-
-
-def group_operations(registry: ProductRegistry) -> dict[str, list[ProductOperationSpec]]:
-    grouped: dict[str, list[ProductOperationSpec]] = defaultdict(list)
-    for operation in sorted(registry.enabled(), key=lambda item: (item.group_order, item.group.lower(), item.order, item.title.lower())):
-        grouped[operation.group].append(operation)
-    return dict(grouped)
+__all__ = ['group_operations']

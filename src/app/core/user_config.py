@@ -22,6 +22,7 @@ class AppUserConfig:
     last_operation_id: str = 'cbr_file_collector.collect'
     splitter_sizes: list[int] = field(default_factory=lambda: [420, 900])
     environment_panel_expanded: bool = True
+    operation_form_values: dict[str, dict[str, Any]] = field(default_factory=dict)
     window: WindowConfig = field(default_factory=WindowConfig)
 
     def to_dict(self) -> dict[str, Any]:
@@ -41,14 +42,18 @@ def _coerce_config(data: dict[str, Any]) -> AppUserConfig:
     splitter_sizes = [int(x) for x in splitter_sizes_raw if isinstance(x, (int, float, str)) and str(x).strip()]
     if not splitter_sizes:
         splitter_sizes = list(_DEFAULT_CONFIG.splitter_sizes)
-    last_operation_id = str(
-        data.get('last_operation_id') or data.get('last_scenario_id') or _DEFAULT_CONFIG.last_operation_id
-    )
+    last_operation_id = str(data.get('last_operation_id') or data.get('last_scenario_id') or _DEFAULT_CONFIG.last_operation_id)
+    raw_form_values = data.get('operation_form_values') if isinstance(data.get('operation_form_values'), dict) else {}
+    operation_form_values: dict[str, dict[str, Any]] = {}
+    for operation_id, values in raw_form_values.items():
+        if isinstance(values, dict):
+            operation_form_values[str(operation_id)] = dict(values)
     return AppUserConfig(
         last_workspace_schema=str(data.get('last_workspace_schema') or _DEFAULT_CONFIG.last_workspace_schema),
         last_operation_id=last_operation_id,
         splitter_sizes=splitter_sizes,
         environment_panel_expanded=bool(data.get('environment_panel_expanded', _DEFAULT_CONFIG.environment_panel_expanded)),
+        operation_form_values=operation_form_values,
         window=window,
     )
 
