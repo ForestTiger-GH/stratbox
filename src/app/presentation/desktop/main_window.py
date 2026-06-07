@@ -32,7 +32,7 @@ from app.presentation.chat.widgets import ChatThreadView
 from app.presentation.desktop.chat_scene import ChatSceneHost
 from app.application.presence.models import ParticipantRecord
 from app.application.product.catalog.grouping import group_operations
-from app.application.product.forms.factory import OperationFormPanel
+from app.presentation.forms.panel import OperationFormPanel
 from app.application.product.catalog.models import ProductOperationSpec
 from app.application.product.execution.requests import ProductResult
 from app.application.system.commands import build_diagnostics_text
@@ -42,7 +42,7 @@ from app.application.workspace import run_workspace_diagnostics
 
 
 def _chat_background_image_path() -> Path:
-    return Path(__file__).resolve().parents[1] / 'resources' / 'images' / 'chat_history_background.png'
+    return Path(__file__).resolve().parents[2] / 'resources' / 'images' / 'chat_history_background.png'
 
 
 class ParticipantsDialog(QDialog):
