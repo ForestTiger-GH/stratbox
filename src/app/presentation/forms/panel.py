@@ -6,9 +6,9 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from app.runtime.user_preferences import PreferencesService
-from ..catalog.models import ProductOperationSpec
-from .models import ProductParamSpec
-from .validators import validate_field_value
+from app.application.product.catalog.models import ProductOperationSpec
+from app.application.product.forms.models import ProductParamSpec
+from app.application.product.forms.validators import validate_field_value
 from app.presentation.forms.widgets import build_widget_for_param
 
 
