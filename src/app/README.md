@@ -27,6 +27,7 @@ AppDock отвечает за:
 - desktop product surface;
 - timeline / feed работы;
 - product operations и их пользовательские формы;
+- текущие бизнес-операции: загрузчик исходных файлов ЦБ и история счетов эскроу;
 - запуск операций;
 - workspace и диагностику среды;
 - собственный `runtime_state.json`;
