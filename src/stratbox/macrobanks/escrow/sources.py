@@ -9,11 +9,14 @@ sources — получение ссылок на ежемесячные Excel-ф
 
 from __future__ import annotations
 
-from urllib.parse import urljoin
+import re
+from posixpath import basename as posix_basename
+from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
 from stratbox.base.net import download_bytes
+from stratbox.macrobanks.escrow.contracts import EscrowSourceLink
 
 
 CBR_ESCROW_INDEX_URL = "https://www.cbr.ru/statistics/bank_sector/equity_const_financing/"
@@ -24,9 +27,25 @@ DEFAULT_HEADERS = {
         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
 }
+_DATE_RE = re.compile(r"(\d{2})(\d{2})(\d{4})")
 
 
-def fetch_escrow_excel_links(
+def _source_name_from_url(url: str) -> str:
+    path = urlsplit(str(url)).path or ""
+    name = posix_basename(path)
+    return name or "escrow_source.xlsx"
+
+
+
+def _date_hint_from_name(name: str) -> str | None:
+    match = _DATE_RE.search(str(name))
+    if not match:
+        return None
+    return f"{match.group(3)}-{match.group(2)}-{match.group(1)}"
+
+
+
+def discover_escrow_source_links(
     *,
     index_url: str = CBR_ESCROW_INDEX_URL,
     timeout: int = 60,
@@ -35,9 +54,9 @@ def fetch_escrow_excel_links(
     min_bytes_ok: int = 512,
     headers: dict[str, str] | None = None,
     plugin_only: bool = True,
-) -> list[str]:
+) -> tuple[EscrowSourceLink, ...]:
     """
-    Возвращает список абсолютных ссылок на ежемесячные .xlsx по счетам эскроу.
+    Возвращает структурированный список ссылок на ежемесячные .xlsx по счетам эскроу.
 
     Ссылки возвращаются в том порядке, в котором они встретились на странице.
     Дубликаты удаляются без потери исходного порядка.
@@ -58,7 +77,7 @@ def fetch_escrow_excel_links(
 
     soup = BeautifulSoup(download.content, "html.parser")
 
-    links: list[str] = []
+    links: list[EscrowSourceLink] = []
     seen: set[str] = set()
     for node in soup.find_all("a", href=True):
         href = str(node["href"] or "").strip()
@@ -71,14 +90,46 @@ def fetch_escrow_excel_links(
         if absolute in seen:
             continue
         seen.add(absolute)
-        links.append(absolute)
+        source_name = _source_name_from_url(absolute)
+        links.append(
+            EscrowSourceLink(
+                source_id=source_name,
+                url=absolute,
+                source_name=source_name,
+                file_date_hint=_date_hint_from_name(source_name),
+            )
+        )
 
-    return links
+    return tuple(links)
+
+
+
+def fetch_escrow_excel_links(
+    *,
+    index_url: str = CBR_ESCROW_INDEX_URL,
+    timeout: int = 60,
+    retries: int = 2,
+    backoff: float = 0.5,
+    min_bytes_ok: int = 512,
+    headers: dict[str, str] | None = None,
+    plugin_only: bool = True,
+) -> list[str]:
+    """Совместимый фасад: возвращает только URL-адреса источников."""
+    return [item.url for item in discover_escrow_source_links(
+        index_url=index_url,
+        timeout=timeout,
+        retries=retries,
+        backoff=backoff,
+        min_bytes_ok=min_bytes_ok,
+        headers=headers,
+        plugin_only=plugin_only,
+    )]
 
 
 __all__ = [
     "CBR_ESCROW_INDEX_URL",
     "CBR_BASE_URL",
     "DEFAULT_HEADERS",
+    "discover_escrow_source_links",
     "fetch_escrow_excel_links",
 ]

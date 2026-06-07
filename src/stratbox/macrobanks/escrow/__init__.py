@@ -1,10 +1,45 @@
-"""
-Домен обработки данных ЦБ РФ по финансированию долевого строительства (счета эскроу).
+"""escrow — домен исторических данных и витрин по счетам эскроу."""
 
-Публичный вход:
-- run_escrow_to_xlsx
-"""
+from stratbox.macrobanks.escrow.contracts import (
+    EscrowExportResult,
+    EscrowHistoryBuildRequest,
+    EscrowHistoryResult,
+    EscrowIndicatorSpec,
+    EscrowParsedRow,
+    EscrowPivotPack,
+    EscrowSourceDownloadResult,
+    EscrowSourceFailure,
+    EscrowSourceLink,
+    EscrowViewBuildRequest,
+    EscrowWorkbookExportRequest,
+    ParsedEscrowFile,
+    ResolvedEscrowColumn,
+)
+from stratbox.macrobanks.escrow.operations import (
+    build_escrow_history,
+    build_escrow_views,
+    discover_escrow_sources,
+    export_escrow_workbook,
+    run_escrow_export,
+)
 
-from stratbox.macrobanks.escrow.api import run_escrow_to_xlsx
-
-__all__ = ["run_escrow_to_xlsx"]
+__all__ = [
+    "EscrowExportResult",
+    "EscrowHistoryBuildRequest",
+    "EscrowHistoryResult",
+    "EscrowIndicatorSpec",
+    "EscrowParsedRow",
+    "EscrowPivotPack",
+    "EscrowSourceDownloadResult",
+    "EscrowSourceFailure",
+    "EscrowSourceLink",
+    "EscrowViewBuildRequest",
+    "EscrowWorkbookExportRequest",
+    "ParsedEscrowFile",
+    "ResolvedEscrowColumn",
+    "discover_escrow_sources",
+    "build_escrow_history",
+    "build_escrow_views",
+    "export_escrow_workbook",
+    "run_escrow_export",
+]

@@ -10,7 +10,19 @@ from stratbox.macrobanks.frg import (
     run_frg_stage1,
     select_latest_frg_files,
 )
-from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.escrow import (
+    EscrowExportResult,
+    EscrowHistoryBuildRequest,
+    EscrowHistoryResult,
+    EscrowPivotPack,
+    EscrowViewBuildRequest,
+    EscrowWorkbookExportRequest,
+    build_escrow_history,
+    build_escrow_views,
+    discover_escrow_sources,
+    export_escrow_workbook,
+    run_escrow_export,
+)
 from stratbox.macrobanks.cbr_file_collector import (
     CbrFileRegistryItem,
     CbrFileCollectRequest,
@@ -35,5 +47,15 @@ __all__ = [
     "run_frg_cleanup",
     "select_latest_frg_files",
     "run_frg_stage1",
-    "run_escrow_to_xlsx",
+    "EscrowExportResult",
+    "EscrowHistoryBuildRequest",
+    "EscrowHistoryResult",
+    "EscrowPivotPack",
+    "EscrowViewBuildRequest",
+    "EscrowWorkbookExportRequest",
+    "build_escrow_history",
+    "build_escrow_views",
+    "discover_escrow_sources",
+    "export_escrow_workbook",
+    "run_escrow_export",
 ]

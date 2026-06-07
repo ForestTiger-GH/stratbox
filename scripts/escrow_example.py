@@ -3,22 +3,40 @@
 
 Сценарий:
 - месячные источники ЦБ сохраняются в кэш-папку;
-- итоговый файл выгружается в zip-архив;
+- строится исторический набор данных;
+- итоговый workbook выгружается в zip-архив;
 - один и тот же код работает с local FileStore и с plugin FileStore.
 """
 
 from stratbox.base import runtime
-from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.escrow import (
+    EscrowHistoryBuildRequest,
+    EscrowViewBuildRequest,
+    EscrowWorkbookExportRequest,
+    build_escrow_history,
+    export_escrow_workbook,
+)
 
 
 providers = runtime.get_providers()
 print(f"INFO: providers source = {providers.source}")
 
-result = run_escrow_to_xlsx(
-    out_path="outputs/Escrow Accounts.zip",
-    archive=True,
-    source_cache_dir="cache/escrow",
-    show_progress=True,
+history = build_escrow_history(
+    EscrowHistoryBuildRequest(
+        index_url="https://www.cbr.ru/statistics/bank_sector/equity_const_financing/",
+        source_cache_dir="cache/escrow",
+        show_progress=True,
+    )
+)
+
+result = export_escrow_workbook(
+    history,
+    EscrowWorkbookExportRequest(
+        out_path="outputs/Escrow Accounts.zip",
+        archive=True,
+        show_progress=True,
+    ),
+    view_request=EscrowViewBuildRequest(regions_mode="latest"),
 )
 
 print(f"INFO: output path = {result.output_path}")

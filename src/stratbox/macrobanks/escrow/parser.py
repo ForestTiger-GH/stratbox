@@ -28,7 +28,7 @@ from stratbox.macrobanks.escrow.columns import (
     resolve_indicator_columns,
     resolve_indicator_spec_by_header,
 )
-from stratbox.macrobanks.escrow.models import ParsedEscrowFile
+from stratbox.macrobanks.escrow.contracts import ParsedEscrowFile
 from stratbox.macrobanks.escrow.rows import parse_escrow_rows
 
 

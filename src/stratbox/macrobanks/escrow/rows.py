@@ -16,7 +16,7 @@ import re
 
 import pandas as pd
 
-from stratbox.macrobanks.escrow.models import EscrowParsedRow
+from stratbox.macrobanks.escrow.contracts import EscrowParsedRow
 
 
 _RF_TOTAL_NORMALIZED_VARIANTS = {

@@ -15,7 +15,7 @@
 ```text
 macrobanks/
   cbr_forms/     # отчетные формы Банка России: 101, 102, 123, 135, 805
-  escrow/        # счета эскроу: скачивание, парсинг, long/pivot, Excel/ZIP
+  escrow/        # счета эскроу: источники, history dataset, pivots, workbook export
   frg/           # файловый контур FRG: каталог, latest, зачистка, архивирование
   cbr_file_collector/  # скачивание статистических файлов Банка России без обработки содержимого
 ```
@@ -38,9 +38,9 @@ out = run_all_forms_to_xlsx(
 ### Escrow
 
 ```python
-from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.escrow import run_escrow_export
 
-result = run_escrow_to_xlsx(
+result = run_escrow_export(
     out_path="outputs/Escrow Accounts.xlsx",
     source_cache_dir="cache/escrow",
 )

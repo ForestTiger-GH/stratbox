@@ -15,7 +15,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-from stratbox.macrobanks.escrow.models import EscrowIndicatorSpec
+from stratbox.macrobanks.escrow.contracts import EscrowIndicatorSpec
 
 
 HEADER_FONT = Font(name="Arial", size=10, bold=True, color="000000")

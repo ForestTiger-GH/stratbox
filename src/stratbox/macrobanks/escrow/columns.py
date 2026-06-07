@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from stratbox.macrobanks.escrow.models import EscrowIndicatorSpec, ResolvedEscrowColumn
+from stratbox.macrobanks.escrow.contracts import EscrowIndicatorSpec, ResolvedEscrowColumn
 
 
 ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (

@@ -39,7 +39,7 @@ df = ia.excel.read_df("outputs/table.xlsx")
 
 ```python
 from stratbox.macrobanks.cbr_forms import run_all_forms_to_xlsx
-from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.escrow import run_escrow_export
 from stratbox.macrobanks.frg import run_frg_stage1, run_frg_cleanup
 from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
 ```
@@ -242,9 +242,9 @@ print(out)
 Домен `stratbox.macrobanks.escrow` строит единую Excel-витрину по счетам эскроу: получает ссылки на исходные файлы, скачивает Excel, парсит исторически разные форматы публикаций, собирает long-поток и формирует сводные листы по показателям.
 
 ```python
-from stratbox.macrobanks.escrow import run_escrow_to_xlsx
+from stratbox.macrobanks.escrow import run_escrow_export
 
-result = run_escrow_to_xlsx(
+result = run_escrow_export(
     out_path="outputs/Escrow Accounts.xlsx",
     source_cache_dir="cache/escrow",
 )

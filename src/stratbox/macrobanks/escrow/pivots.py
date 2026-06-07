@@ -14,7 +14,7 @@ from typing import Iterable
 import pandas as pd
 
 from stratbox.macrobanks.escrow.columns import get_output_indicator_specs
-from stratbox.macrobanks.escrow.models import EscrowIndicatorSpec, ParsedEscrowFile
+from stratbox.macrobanks.escrow.contracts import EscrowIndicatorSpec, ParsedEscrowFile
 from stratbox.macrobanks.escrow.regions import resolve_region_order
 
 
