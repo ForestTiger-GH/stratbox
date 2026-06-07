@@ -42,7 +42,7 @@ from stratbox.base import ioapi as ia
 from stratbox.macrobanks.cbr_forms import run_all_forms_to_xlsx
 from stratbox.macrobanks.escrow import run_escrow_to_xlsx
 from stratbox.macrobanks.frg import run_frg_stage1, run_frg_cleanup
-from stratbox.macrobanks.cbr_archiver import run_cbr_archiver
+from stratbox.macrobanks.cbr_archiver import CbrSourceCollectRequest, collect_cbr_sources
 ```
 
 ## Что не должно попадать в основной пакет

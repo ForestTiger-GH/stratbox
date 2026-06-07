@@ -1,12 +1,12 @@
 {
   "id": "cbr_archiver",
-  "title": "Архиватор исходных файлов ЦБ",
-  "description": "Скачивает исходные статистические файлы Банка России и сохраняет их через активный FileStore как ZIP-архив или папку файлов.",
+  "title": "Загрузчик исходных файлов ЦБ",
+  "description": "Скачивает встроенный список исходных статистических файлов Банка России и сохраняет их через активный FileStore как ZIP-архив или каталог файлов без предобработки содержимого.",
   "group": "Банк России",
   "kind": "export",
   "tags": [
     "cbr",
-    "archive"
+    "sources"
   ],
   "adapter": "app.scenarios.adapters.cbr_archiver:run",
   "enabled": true,
@@ -15,7 +15,7 @@
   "output_dir": "output/cbr_archiver",
   "params": [
     {
-      "name": "output_mode",
+      "name": "save_mode",
       "title": "Режим сохранения",
       "type": "select",
       "default": "zip",
@@ -23,17 +23,17 @@
         "zip",
         "files"
       ],
-      "description": "zip — один архив, files — отдельная папка с файлами."
+      "description": "zip — один архив исходников, files — каталог исходных файлов. Итоговый путь собирается приложением автоматически."
     },
     {
       "name": "output_dir",
-      "title": "Папка результата",
+      "title": "Каталог результата",
       "type": "text",
       "default": "output/cbr_archiver",
-      "description": "Относительный путь внутри workspace root."
+      "description": "Относительный путь внутри workspace root. Внутри него приложение создаст либо ZIP, либо каталог файлов."
     },
     {
-      "name": "replace_existing",
+      "name": "overwrite",
       "title": "Перезаписывать результат",
       "type": "bool",
       "default": true
@@ -43,6 +43,13 @@
       "title": "Продолжать при ошибках скачивания",
       "type": "bool",
       "default": true
+    },
+    {
+      "name": "retry_attempts",
+      "title": "Количество попыток",
+      "type": "int",
+      "default": 3,
+      "description": "Сколько раз пробовать скачать проблемный источник перед фиксацией ошибки."
     }
   ],
   "links": [
@@ -56,10 +63,10 @@
   "group_order": 20,
   "search_aliases": [
     "цб",
-    "архив",
+    "исходники",
     "zip"
   ],
-  "composer_submit_label": "Сохранить",
+  "composer_submit_label": "Скачать",
   "supports_repeat": true,
   "result_preview_kind": "artifacts"
 }

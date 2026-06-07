@@ -1,29 +1,26 @@
 """
 downloader — скачивание исходных файлов Банка России.
 
-Принципиально важно:
-- домен не использует requests напрямую;
-- каждый URL проходит через stratbox.base.net.download_bytes();
-- при наличии плагина корпоративные шлюзы применяются на уровне base.net;
-- содержимое скачанных файлов не меняется.
+Домен работает через stratbox.base.net.download_bytes и не зависит напрямую от
+конкретного HTTP-клиента или корпоративного сетевого шлюза.
 """
 
 from __future__ import annotations
 
 import re
+import time
 
 from stratbox.base.net import download_bytes
-from stratbox.macrobanks.cbr_archiver.models import (
-    CbrArchiveSource,
-    CbrDownloadFailure,
-    CbrDownloadedFile,
+from stratbox.macrobanks.cbr_archiver.contracts import (
+    CbrDownloadedSource,
+    CbrRegistryItem,
+    CbrSourceFailure,
 )
-from stratbox.macrobanks.cbr_archiver.naming import resolve_download_file_name
+from stratbox.macrobanks.cbr_archiver.file_names import resolve_download_file_name
 from stratbox.macrobanks.cbr_archiver.registry import DEFAULT_HEADERS
 
 
 def build_cbr_url_variants(url: str) -> list[str]:
-    """Строит варианты URL с разным регистром ключевых каталогов сайта ЦБ."""
     variants: list[str] = []
     for banksector in ("BankSector", "banksector"):
         for mortgage in ("Mortgage", "mortgage"):
@@ -41,7 +38,6 @@ def build_cbr_url_variants(url: str) -> list[str]:
 
 
 def _headers_get(headers: dict[str, str] | None, key: str) -> str:
-    """Возвращает HTTP-заголовок без чувствительности к регистру."""
     if not headers:
         return ""
     key_low = key.lower()
@@ -52,126 +48,155 @@ def _headers_get(headers: dict[str, str] | None, key: str) -> str:
 
 
 def _looks_like_html(content: bytes, headers: dict[str, str] | None) -> bool:
-    """Проверяет, не вернул ли сайт HTML-страницу вместо файла."""
     content_type = _headers_get(headers, "Content-Type").lower()
     if "text/html" in content_type:
         return True
-
     head = (content or b"")[:512].lstrip().lower()
     return head.startswith(b"<!doctype html") or head.startswith(b"<html")
 
 
-def download_one_source(
-    source: CbrArchiveSource,
+def _download_once(
+    url: str,
     *,
-    timeout: int = 60,
-    retries: int = 2,
-    backoff: float = 0.5,
+    timeout_sec: int,
+    min_bytes_ok: int,
+    headers: dict[str, str] | None,
+    plugin_only: bool,
+):
+    return download_bytes(
+        url,
+        timeout=timeout_sec,
+        retries=0,
+        backoff=0,
+        min_bytes_ok=min_bytes_ok,
+        headers=headers,
+        plugin_only=plugin_only,
+    )
+
+
+def download_one_source(
+    source: CbrRegistryItem,
+    *,
+    timeout_sec: int = 60,
+    retry_attempts: int = 3,
+    retry_backoff_sec: float = 0.5,
     min_bytes_ok: int = 512,
     headers: dict[str, str] | None = None,
     plugin_only: bool = True,
     try_case_variants: bool = True,
-) -> CbrDownloadedFile | CbrDownloadFailure:
-    """Скачивает один источник ЦБ и возвращает файл или ошибку."""
+) -> CbrDownloadedSource | CbrSourceFailure:
     request_headers = headers or DEFAULT_HEADERS
     candidates = build_cbr_url_variants(source.url) if try_case_variants else [source.url]
 
-    last_failure = CbrDownloadFailure(source=source, error="No download attempt was made")
+    last_failure = CbrSourceFailure(
+        source_id=source.source_id,
+        url=source.url,
+        error="No download attempt was made",
+        attempts_used=0,
+    )
 
-    for candidate_url in candidates:
-        result = download_bytes(
-            candidate_url,
-            timeout=timeout,
-            retries=retries,
-            backoff=backoff,
-            min_bytes_ok=min_bytes_ok,
-            headers=request_headers,
-            plugin_only=plugin_only,
-        )
-        result_headers = getattr(result, "headers", None)
+    attempts_total = max(1, int(retry_attempts))
+    for attempt in range(1, attempts_total + 1):
+        for candidate_url in candidates:
+            result = _download_once(
+                candidate_url,
+                timeout_sec=timeout_sec,
+                min_bytes_ok=min_bytes_ok,
+                headers=request_headers,
+                plugin_only=plugin_only,
+            )
+            result_headers = getattr(result, "headers", None)
 
-        if not result.ok or not result.content:
-            last_failure = CbrDownloadFailure(
-                source=source,
-                error=result.error or "unknown download error",
-                status_code=result.status_code,
+            if not result.ok or not result.content:
+                last_failure = CbrSourceFailure(
+                    source_id=source.source_id,
+                    url=source.url,
+                    error=result.error or "unknown download error",
+                    status_code=result.status_code,
+                    attempts_used=attempt,
+                    used_url=candidate_url,
+                    final_url=result.final_url,
+                )
+                continue
+
+            if _looks_like_html(result.content, result_headers):
+                last_failure = CbrSourceFailure(
+                    source_id=source.source_id,
+                    url=source.url,
+                    error="Downloaded content looks like HTML page, not source file",
+                    status_code=result.status_code,
+                    attempts_used=attempt,
+                    used_url=candidate_url,
+                    final_url=result.final_url,
+                )
+                continue
+
+            file_name = resolve_download_file_name(
+                explicit_file_name=source.expected_file_name,
+                headers=result_headers,
+                url=candidate_url,
+                fallback=f"{source.source_id or 'downloaded_file'}.xlsx",
+            )
+            return CbrDownloadedSource(
+                source_id=source.source_id,
+                url=source.url,
+                file_name=file_name,
+                content=result.content,
+                size_bytes=len(result.content),
                 used_url=candidate_url,
                 final_url=result.final_url,
             )
-            continue
 
-        if _looks_like_html(result.content, result_headers):
-            last_failure = CbrDownloadFailure(
-                source=source,
-                error="Downloaded content looks like HTML page, not source file",
-                status_code=result.status_code,
-                used_url=candidate_url,
-                final_url=result.final_url,
-            )
-            continue
-
-        file_name = resolve_download_file_name(
-            explicit_file_name=source.file_name,
-            headers=result_headers,
-            url=candidate_url,
-            fallback=f"{source.code or 'downloaded_file'}.xlsx",
-        )
-        return CbrDownloadedFile(
-            source=source,
-            file_name=file_name,
-            content=result.content,
-            size_bytes=len(result.content),
-            used_url=candidate_url,
-            final_url=result.final_url,
-        )
+        if attempt < attempts_total:
+            time.sleep(retry_backoff_sec * attempt)
 
     return last_failure
 
 
 def download_sources(
-    sources: list[CbrArchiveSource],
+    sources: tuple[CbrRegistryItem, ...] | list[CbrRegistryItem],
     *,
-    timeout: int = 60,
-    retries: int = 2,
-    backoff: float = 0.5,
+    timeout_sec: int = 60,
+    retry_attempts: int = 3,
+    retry_backoff_sec: float = 0.5,
     min_bytes_ok: int = 512,
     headers: dict[str, str] | None = None,
     plugin_only: bool = True,
     try_case_variants: bool = True,
     continue_on_error: bool = True,
     show_progress: bool = True,
-) -> tuple[list[CbrDownloadedFile], list[CbrDownloadFailure]]:
-    """Скачивает список источников ЦБ."""
-    iterator = sources
+) -> tuple[list[CbrDownloadedSource], list[CbrSourceFailure]]:
+    iterator = list(sources)
     if show_progress:
         try:
             from tqdm.auto import tqdm
-
-            iterator = tqdm(sources, desc="CBR sources", leave=False)
+            progress_iter = tqdm(iterator, desc="CBR sources", leave=False)
         except Exception:
-            iterator = sources
+            progress_iter = iterator
+    else:
+        progress_iter = iterator
 
-    downloaded: list[CbrDownloadedFile] = []
-    failed: list[CbrDownloadFailure] = []
+    downloaded: list[CbrDownloadedSource] = []
+    failed: list[CbrSourceFailure] = []
 
-    for source in iterator:
+    for source in progress_iter:
         item = download_one_source(
             source,
-            timeout=timeout,
-            retries=retries,
-            backoff=backoff,
+            timeout_sec=timeout_sec,
+            retry_attempts=retry_attempts,
+            retry_backoff_sec=retry_backoff_sec,
             min_bytes_ok=min_bytes_ok,
             headers=headers,
             plugin_only=plugin_only,
             try_case_variants=try_case_variants,
         )
-        if isinstance(item, CbrDownloadedFile):
+        if isinstance(item, CbrDownloadedSource):
             downloaded.append(item)
             continue
 
         failed.append(item)
         if not continue_on_error:
-            raise RuntimeError(f"Failed to download CBR source: {source.url} :: {item.error}")
+            break
 
     return downloaded, failed
 

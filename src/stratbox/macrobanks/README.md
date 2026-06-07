@@ -58,11 +58,13 @@ cleanup = run_frg_cleanup("data/frg", archive_latest=True, execute=False)
 ### CBR archiver
 
 ```python
-from stratbox.macrobanks.cbr_archiver import run_cbr_archiver
+from stratbox.macrobanks.cbr_archiver import CbrSourceCollectRequest, collect_cbr_sources
 
-result = run_cbr_archiver(
-    out_path="/content",
-    output_mode="zip",
+result = collect_cbr_sources(
+    CbrSourceCollectRequest(
+        target_path="/content/CBR Collected Files.zip",
+        save_mode="zip",
+    )
 )
 ```
 
