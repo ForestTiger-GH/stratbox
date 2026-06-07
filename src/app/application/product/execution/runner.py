@@ -72,8 +72,7 @@ def _build_operation_context(context: AppContext, *, logger: logging.Logger, ope
 
 
 def run_product_operation(spec: ProductOperationSpec, *, context: AppContext, params: dict[str, Any] | None = None) -> ProductResult:
-    operation_params = spec.default_params()
-    operation_params.update(params or {})
+    operation_params = spec.resolve_params(params)
     operation_logger, operation_log_path = _build_operation_logger(spec.id, context.paths.operation_logs_dir)
     operation_context = _build_operation_context(context, logger=operation_logger, operation_log_path=operation_log_path)
     operation_logger.info('Operation started: %s', spec.id)

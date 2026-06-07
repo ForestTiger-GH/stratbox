@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from html import escape
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from app.runtime.user_preferences import PreferencesService
@@ -42,8 +43,9 @@ class OperationFormPanel(QWidget):
             self._column.addWidget(description)
 
         remembered = self._preferences.load_operation_values(spec.id) if self._preferences is not None else {}
-        basic_params = [param for param in spec.params if getattr(param, 'section', 'basic') == 'basic']
-        advanced_params = [param for param in spec.params if getattr(param, 'section', 'basic') == 'advanced']
+        visible_params = spec.visible_params()
+        basic_params = [param for param in visible_params if getattr(param, 'section', 'basic') == 'basic']
+        advanced_params = [param for param in visible_params if getattr(param, 'section', 'basic') == 'advanced']
         if basic_params:
             self._column.addWidget(self._section_label('Основные параметры'))
             for param in basic_params:
@@ -58,7 +60,7 @@ class OperationFormPanel(QWidget):
         if self._spec is None:
             return {}
         params: dict[str, Any] = {}
-        for param in self._spec.params:
+        for param in self._spec.visible_params():
             widget = self._widgets[param.name]
             if param.type == 'bool':
                 value = bool(widget.isChecked())  # type: ignore[attr-defined]
@@ -81,20 +83,27 @@ class OperationFormPanel(QWidget):
         box = QVBoxLayout(host)
         box.setContentsMargins(0, 0, 0, 0)
         box.setSpacing(6)
-        label = QLabel(param.title)
-        label.setObjectName('composerFieldLabel')
+        label = self._build_param_label(param)
         box.addWidget(label)
         widget = build_widget_for_param(self, param)
         box.addWidget(widget)
         if remembered_value not in (None, ''):
             self._apply_value(widget, param, remembered_value)
         self._widgets[param.name] = widget
-        if param.description:
-            description = QLabel(param.description)
-            description.setWordWrap(True)
-            description.setObjectName('composerFieldHint')
-            box.addWidget(description)
         return host
+
+    def _build_param_label(self, param: ProductParamSpec) -> QLabel:
+        label = QLabel(param.title)
+        label.setWordWrap(True)
+        if param.description:
+            label.setObjectName('composerFieldLabelHinted')
+            label.setToolTip(param.description)
+            label.setCursor(Qt.WhatsThisCursor)
+            label.setTextFormat(Qt.RichText)
+            label.setText(f"<span style='text-decoration: underline;'>{escape(param.title)}</span>")
+        else:
+            label.setObjectName('composerFieldLabel')
+        return label
 
     def _apply_value(self, widget: QWidget, param: ProductParamSpec, value: Any) -> None:
         if param.type == 'bool':

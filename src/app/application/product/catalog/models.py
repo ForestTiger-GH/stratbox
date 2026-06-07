@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +15,7 @@ class ProductOperationSpec:
     enabled: bool = True
     requires_workspace: bool = True
     params: tuple[object, ...] = ()
+    fixed_param_values: dict[str, object] = field(default_factory=dict)
     icon: str | None = None
     order: int = 100
     group_order: int = 100
@@ -26,7 +27,18 @@ class ProductOperationSpec:
     visibility_policy: str = 'default'
 
     def default_params(self) -> dict[str, object]:
-        return {getattr(param, 'name'): getattr(param, 'default') for param in self.params}
+        defaults = {getattr(param, 'name'): getattr(param, 'default') for param in self.params}
+        defaults.update(self.fixed_param_values)
+        return defaults
+
+    def visible_params(self) -> tuple[object, ...]:
+        return self.params
+
+    def resolve_params(self, params: dict[str, object] | None = None) -> dict[str, object]:
+        resolved = {getattr(param, 'name'): getattr(param, 'default') for param in self.params}
+        resolved.update(params or {})
+        resolved.update(self.fixed_param_values)
+        return resolved
 
 
 @dataclass(frozen=True, slots=True)
