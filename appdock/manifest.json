@@ -16,7 +16,7 @@
       "surface_role": "interactive",
       "activation": {
         "kind": "python_module",
-        "target": "app.entrypoints.appdock",
+        "target": "app.platform.appdock.entry",
         "args": [],
         "cwd_policy": {
           "mode": "source_root"

@@ -75,7 +75,7 @@ pip install -e .
 
 - AppDock подготавливает node-среду;
 - AppDock создаёт session surfaces и activation context;
-- `python -m app.entrypoints.appdock` читает этот контракт;
+- `python -m app.platform.appdock.entry` читает этот контракт;
 - app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимые изменения AppDock не проходили молча;
 - repo-local `appdock/preset.json` задаёт product delivery policy для AppDock frontdoor и install/runtime поведения.
 - GUI запускает задачи поверх business-root, который уже выбран AppDock;
@@ -364,7 +364,7 @@ scripts/        # примеры запуска
 
 - AppDock подготавливает node-среду;
 - AppDock выбирает target repo, runtime и session surfaces;
-- AppDock передает activation context в `python -m app.entrypoints.appdock`;
+- AppDock передает activation context в `python -m app.platform.appdock.entry`;
 - `app` строит GUI-контекст от AppDock-managed workspace selector.
 
 `data_root` в этой модели обозначает selector бизнес-среды. Служебные файлы AppDock и install-среды туда не записываются.

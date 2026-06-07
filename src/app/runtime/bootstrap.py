@@ -1,3 +1,9 @@
+"""Runtime assembly for Strategy Box app.
+
+This module is the canonical place where the desktop product surface wires
+runtime, platform and application services together.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

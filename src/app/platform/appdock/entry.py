@@ -1,4 +1,8 @@
-"""AppDock-facing runtime entry for Strategy Box."""
+"""Canonical AppDock-facing module entry for Strategy Box.
+
+This module is the only AppDock-specific Python-module entrypoint and is intended
+to be launched as ``python -m app.platform.appdock.entry``.
+"""
 
 from __future__ import annotations
 

@@ -9,7 +9,7 @@
 - optional читает repo-local `appdock/preset.json` как product delivery preset;
 - выбирает активную surface;
 - передаёт приложению runtime-context через `APPDOCK_ACTIVATION_CONTEXT_PATH`;
-- открывает `python -m app.entrypoints.appdock`.
+- открывает `python -m app.platform.appdock.entry`.
 
 `app` при этом не управляет install/update средой. Он читает activation context, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
 
@@ -39,7 +39,7 @@ AppDock отвечает за:
 Основной пользовательский маршрут:
 - AppDock готовит node;
 - AppDock создаёт session surfaces и activation context;
-- `python -m app.entrypoints.appdock` читает `APPDOCK_ACTIVATION_CONTEXT_PATH`;
+- `python -m app.platform.appdock.entry` читает `APPDOCK_ACTIVATION_CONTEXT_PATH`;
 - app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
 - приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
 - все persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/stratbox-system`; если AppDock явно передал `install_root_system_dir`, приложение использует его.
@@ -56,8 +56,8 @@ python -m app --standalone-dev-root "D:/Data"
 
 ## Каноническая структура
 
-- `entrypoints/` — точки входа surface.
-- `runtime/` — runtime приложения: context, paths, config, logging, session-runtime, bootstrap.
+- `__main__.py` — стандартная desktop-точка входа `python -m app`; AppDock-specific entry живёт в `platform/appdock/entry.py`.
+- `runtime/` — runtime приложения: context, paths, config, logging, session-runtime и сборка runtime в `runtime/bootstrap.py`.
 - `platform/` — boundary к AppDock и desktop platform services.
 - `application/` — product-layer, workspace, presence, timeline store и system-команды.
 - `presentation/` — desktop UI, chat/feed, формы операций и Qt runner.
