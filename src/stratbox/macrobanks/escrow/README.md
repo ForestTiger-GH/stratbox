@@ -41,6 +41,7 @@ from stratbox.macrobanks.escrow import (
 ### Источники
 
 - `EscrowSourceLink` — найденный источник со ссылкой и именем файла;
+- `EscrowSourceLink.source_id` — устойчивый идентификатор источника, построенный от абсолютного URL;
 - `EscrowSourceDownloadResult` — успешно скачанный или прочитанный из кэша файл;
 - `EscrowSourceFailure` — ошибка обработки одного источника.
 
@@ -71,8 +72,6 @@ from stratbox.macrobanks.escrow import (
 ---
 
 ## Почему это сильнее старой модели
-
-Старая модель думала про домен как про один большой сценарий `run_escrow_to_xlsx(...)`.
 
 Новая модель разделяет смысл:
 

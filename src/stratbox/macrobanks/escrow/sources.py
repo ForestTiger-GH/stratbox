@@ -10,6 +10,7 @@ sources — получение ссылок на ежемесячные Excel-ф
 from __future__ import annotations
 
 import re
+from hashlib import sha1
 from posixpath import basename as posix_basename
 from urllib.parse import urljoin, urlsplit
 
@@ -20,7 +21,6 @@ from stratbox.macrobanks.escrow.contracts import EscrowSourceLink
 
 
 CBR_ESCROW_INDEX_URL = "https://www.cbr.ru/statistics/bank_sector/equity_const_financing/"
-CBR_BASE_URL = "https://www.cbr.ru"
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -35,6 +35,16 @@ def _source_name_from_url(url: str) -> str:
     name = posix_basename(path)
     return name or "escrow_source.xlsx"
 
+
+
+def _source_id_from_absolute_url(url: str) -> str:
+    path = urlsplit(str(url)).path or ""
+    stem = posix_basename(path)
+    if "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+    slug = re.sub(r"[^0-9a-zA-Z]+", "_", stem).strip("_").lower() or "escrow_source"
+    digest = sha1(str(url).encode("utf-8")).hexdigest()[:8]
+    return f"{slug}_{digest}"
 
 
 def _date_hint_from_name(name: str) -> str | None:
@@ -86,14 +96,14 @@ def discover_escrow_source_links(
         if not href.lower().endswith(".xlsx"):
             continue
 
-        absolute = urljoin(CBR_BASE_URL, href)
+        absolute = urljoin(index_url, href)
         if absolute in seen:
             continue
         seen.add(absolute)
         source_name = _source_name_from_url(absolute)
         links.append(
             EscrowSourceLink(
-                source_id=source_name,
+                source_id=_source_id_from_absolute_url(absolute),
                 url=absolute,
                 source_name=source_name,
                 file_date_hint=_date_hint_from_name(source_name),
@@ -104,32 +114,8 @@ def discover_escrow_source_links(
 
 
 
-def fetch_escrow_excel_links(
-    *,
-    index_url: str = CBR_ESCROW_INDEX_URL,
-    timeout: int = 60,
-    retries: int = 2,
-    backoff: float = 0.5,
-    min_bytes_ok: int = 512,
-    headers: dict[str, str] | None = None,
-    plugin_only: bool = True,
-) -> list[str]:
-    """Совместимый фасад: возвращает только URL-адреса источников."""
-    return [item.url for item in discover_escrow_source_links(
-        index_url=index_url,
-        timeout=timeout,
-        retries=retries,
-        backoff=backoff,
-        min_bytes_ok=min_bytes_ok,
-        headers=headers,
-        plugin_only=plugin_only,
-    )]
-
-
 __all__ = [
     "CBR_ESCROW_INDEX_URL",
-    "CBR_BASE_URL",
     "DEFAULT_HEADERS",
     "discover_escrow_source_links",
-    "fetch_escrow_excel_links",
 ]
