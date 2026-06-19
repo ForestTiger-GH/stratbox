@@ -8,8 +8,8 @@ import sys
 
 from app.runtime.context import build_app_context
 from app.runtime.errors import AppStartupError
-from app.application.product.catalog.registry import build_product_registry
-from app.application.product.execution.runner import run_product_operation_by_id
+from app.application.operations.catalog.registry import build_operation_registry
+from app.application.operations.execution.runner import run_operation_by_id
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -28,15 +28,15 @@ def main(argv: list[str] | None = None, *, launch_origin: str = 'standalone') ->
         print(f'ERROR: {exc}')
         return 2
 
-    registry = build_product_registry(context)
+    registry = build_operation_registry(context)
 
     if args.diagnose:
-        result = run_product_operation_by_id('system.diagnostics', registry=registry, context=context, params={'mode': 'appdock_preflight'})
+        result = run_operation_by_id('system.diagnostics', registry=registry, context=context, params={'mode': 'appdock_preflight'})
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0 if result.ok else 2
 
     if args.no_gui:
-        result = run_product_operation_by_id('system.diagnostics', registry=registry, context=context, params={})
+        result = run_operation_by_id('system.diagnostics', registry=registry, context=context, params={})
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0 if result.ok else 2
 

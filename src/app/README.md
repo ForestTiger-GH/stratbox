@@ -1,108 +1,38 @@
-# app
+# Strategy Box App Surface
 
-`app` — desktop product surface Strategy Box.
+Strategy Box теперь строится как scenario-first рабочая поверхность поверх AppDock-managed среды.
 
-На текущем этапе AppDock:
-- подготавливает node-среду;
-- синхронизирует внешний репозиторий;
-- валидирует `appdock/manifest.json`;
-- optional читает repo-local `appdock/preset.json` как product delivery preset;
-- выбирает активную surface;
-- передаёт приложению runtime-context через `APPDOCK_ACTIVATION_CONTEXT_PATH`;
-- открывает `python -m app.platform.appdock.entry`.
+## Главная модель
 
-`app` при этом не управляет install/update средой. Он читает activation context, строит собственную product surface и работает как лёгкая рабочая поверхность над уже подготовленным node.
+- `OperationSpec` — атомарный внутренний шаг.
+- `ScenarioSpec` — пользовательская рабочая единица.
+- `ScenarioRunCase` — конкретный запуск сценария, который отображается в центральном чате одной динамической карточкой.
+- `OperationalEvent` — структурированное событие для логов, фона, системы и будущего ИИ-слоя.
+- `ArtifactRecord` — результат с происхождением: сценарий, кейс, операция, автор и путь.
+- `LogRecord` — технический лог, связанный с шагом и кейсом.
 
-## Главный принцип
+## UI
 
-AppDock отвечает за:
-- `system_root` и install context;
-- runtime и trust-контур;
-- activation context и session refs;
-- health snapshot;
-- выбор active app surface;
-- запуск entrypoint.
+Desktop surface использует новый shell:
 
-`app` отвечает за:
-- desktop product surface;
-- timeline / feed работы;
-- product operations и их пользовательские формы;
-- текущие бизнес-операции: загрузчик исходных файлов ЦБ и история счетов эскроу;
-- запуск операций;
-- workspace и диагностику среды;
-- собственный `runtime_state.json`;
-- лёгкий presence участников.
+- верхняя полоса с пользовательским меню;
+- mode rail слева;
+- левая панель режимов: проводник, отдельные сценарии, сценарные блоки, фоновые процессы, пользователи;
+- центральный сценарный чат;
+- нижний composer выбранного сценария;
+- правая выезжающая inspector-панель.
 
-## Режимы запуска
+Правая панель открыта по умолчанию, но архитектурно является вспомогательным drawer-layer. Она уезжает за правую грань окна и освобождает центр. Внутри панели находятся логи, артефакты и параметры.
 
-### AppDock-managed
+## Иконки
 
-Основной пользовательский маршрут:
-- AppDock готовит node;
-- AppDock создаёт session surfaces и activation context;
-- `python -m app.platform.appdock.entry` читает `APPDOCK_ACTIVATION_CONTEXT_PATH`;
-- app-side activation context валидируется по major-версии (`1.x`), чтобы несовместимый контракт не принимался молча;
-- приложение строит контекст от `workspace`, `refs`, `source_revision` и snapshot-ов;
-- все persistent operational-файлы кладутся в один app-owned system folder внутри `install_root`. По умолчанию это `install_root/stratbox-system`; если AppDock явно передал `install_root_system_dir`, приложение использует его.
+Сейчас mode rail использует текстовые placeholder-символы. Для финального премиального вида нужно заменить их на SVG/PNG outline-иконки в `src/app/resources/icons/`:
 
-### Standalone developer route
-
-Для отладки доступен явный dev-route:
-
-```bash
-python -m app --standalone-dev-root "D:/Data"
-```
-
-В этом режиме app-owned storage (`app.json`, `logs/`, `cache/`, `runtime/`) живёт внутри `<dev-root>/.strategy_box/system/`.
-
-## Каноническая структура
-
-- `__main__.py` — стандартная desktop-точка входа `python -m app`; AppDock-specific entry живёт в `platform/appdock/entry.py`.
-- `runtime/` — runtime приложения: context, paths, config, logging, session-runtime и сборка runtime в `runtime/bootstrap.py`.
-- `platform/` — boundary к AppDock и desktop platform services.
-- `application/` — product-layer, workspace, presence, timeline store и system-команды.
-- `presentation/` — desktop UI, chat/feed, формы операций и Qt runner.
-- `resources/` — styles, images и прочие статические ресурсы.
-
-## Внутренние оси
-
-### `runtime/`
-Тонкий runtime-контур приложения:
-- `context.py`
-- `paths.py`
-- `config.py`
-- `logging.py`
-- `version.py`
-- `session_runtime.py`
-- `user_preferences.py`
-- `bootstrap.py`
-
-### `platform/`
-Boundary к внешней платформе:
-- `platform/appdock/` — AppDock runtime contracts, entry bridge;
-- `platform/desktop/` — desktop platform services.
-
-### `application/`
-Смысл продукта:
-- `application/product/` — product catalog, формы, execution, операции;
-- `application/workspace/` — selector, workspace root, diagnostics, FileStore;
-- `application/presence/` — участники и online;
-- `application/timeline/` — feed-модели и store;
-- `application/system/` — системные команды surface.
-
-### `presentation/`
-Desktop-представление:
-- `presentation/desktop/` — главное окно, Qt runner, composition root UI;
-- `presentation/chat/` — chat/feed проекция;
-- `presentation/forms/` — Qt-виджеты форм product operations;
-- `presentation/timeline/` — Qt-виджеты feed/timeline.
-
-## Surface приложения
-
-Внутри `app` основные поверхности такие:
-- `Timeline` — единая лента запусков и результатов;
-- `Workspace` — схема, selector, status, diagnostics;
-- `Operations` — продуктовый каталог действий Strategy Box;
-- `Recent artifacts` — быстрый доступ к выходам;
-- `Participants` — лёгкий список пользователей и фильтры по автору;
-- `System diagnostics` — инженерная сводка среды.
+- `mode_workspace.svg` — проводник / папки;
+- `mode_atomic_scenarios.svg` — отдельные сценарии / действие;
+- `mode_scenario_blocks.svg` — сценарные блоки / цепочка;
+- `mode_background.svg` — фоновые процессы / часы;
+- `mode_people.svg` — пользователи / поручения;
+- `inspector_logs.svg` — логи;
+- `inspector_artifacts.svg` — артефакты;
+- `inspector_parameters.svg` — параметры.

@@ -17,7 +17,7 @@ class AppSurfaceStateService:
 
     def mark_running(self) -> None:
         if self._context.session_client is not None:
-            self._context.session_client.mark_running(active_view='timeline')
+            self._context.session_client.mark_running(active_view='scenario_chat')
 
     def mark_closed(self, *, clean_shutdown: bool) -> None:
         if self._context.session_client is not None:
@@ -35,6 +35,10 @@ class AppSurfaceStateService:
         last_outputs: tuple[str, ...] = tuple(),
         last_operation_log: str | None = None,
         recent_artifacts: tuple[str, ...] = tuple(),
+        last_scenario_id: str | None = None,
+        last_scenario_title: str | None = None,
+        last_case_id: str | None = None,
+        last_case_status: str | None = None,
     ) -> None:
         if self._context.session_client is None:
             return
@@ -54,5 +58,9 @@ class AppSurfaceStateService:
             surface_state={
                 'selected_data_root_path': (str(self._context.data_root_selector_path) if self._context.data_root_selector_path else None),
                 'workspace_root_path': (str(self._context.workspace_root_path) if self._context.workspace_root_path else None),
+                'last_scenario_id': last_scenario_id,
+                'last_scenario_title': last_scenario_title,
+                'last_case_id': last_case_id,
+                'last_case_status': last_case_status,
             },
         )

@@ -7,9 +7,9 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from app.runtime.user_preferences import PreferencesService
-from app.application.product.catalog.models import ProductOperationSpec
-from app.application.product.forms.models import ProductParamSpec
-from app.application.product.forms.validators import validate_field_value
+from app.application.operations.catalog.models import OperationSpec
+from app.application.operations.forms.models import OperationParamSpec
+from app.application.operations.forms.validators import validate_field_value
 from app.presentation.forms.widgets import build_widget_for_param
 
 
@@ -19,14 +19,14 @@ class OperationFormPanel(QWidget):
     def __init__(self, *, preferences: PreferencesService | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._preferences = preferences
-        self._spec: ProductOperationSpec | None = None
+        self._spec: OperationSpec | None = None
         self._widgets: dict[str, QWidget] = {}
         self._column = QVBoxLayout(self)
         self._column.setContentsMargins(16, 12, 16, 12)
         self._column.setSpacing(10)
         self._render_placeholder()
 
-    def set_operation(self, spec: ProductOperationSpec | None) -> None:
+    def set_operation(self, spec: OperationSpec | None) -> None:
         self._spec = spec
         self._reset()
         if spec is None:
@@ -78,7 +78,7 @@ class OperationFormPanel(QWidget):
             self._preferences.save_operation_values(self._spec.id, params)
         return params
 
-    def _build_param_block(self, param: ProductParamSpec, remembered_value: Any = None) -> QWidget:
+    def _build_param_block(self, param: OperationParamSpec, remembered_value: Any = None) -> QWidget:
         host = QWidget(self)
         box = QVBoxLayout(host)
         box.setContentsMargins(0, 0, 0, 0)
@@ -92,7 +92,7 @@ class OperationFormPanel(QWidget):
         self._widgets[param.name] = widget
         return host
 
-    def _build_param_label(self, param: ProductParamSpec) -> QLabel:
+    def _build_param_label(self, param: OperationParamSpec) -> QLabel:
         label = QLabel(param.title)
         label.setWordWrap(True)
         if param.description:
@@ -105,7 +105,7 @@ class OperationFormPanel(QWidget):
             label.setObjectName('composerFieldLabel')
         return label
 
-    def _apply_value(self, widget: QWidget, param: ProductParamSpec, value: Any) -> None:
+    def _apply_value(self, widget: QWidget, param: OperationParamSpec, value: Any) -> None:
         if param.type == 'bool':
             widget.setChecked(bool(value))  # type: ignore[attr-defined]
         elif param.type == 'select':

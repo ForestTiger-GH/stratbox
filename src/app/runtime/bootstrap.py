@@ -1,47 +1,87 @@
 """Runtime assembly for Strategy Box app.
 
-This module is the canonical place where the desktop product surface wires
-runtime, platform and application services together.
+This module is the canonical place where the desktop surface wires runtime,
+platform and application services together. The UI is scenario-first: operations
+remain atomic internal steps, while ScenarioRunCase is the user-visible working unit.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from app.runtime.context import AppContext
+from app.application.artifacts.store import ArtifactStore
+from app.application.assignments.store import AssignmentStore
+from app.application.background.registry import build_background_registry
+from app.application.background.store import BackgroundProcessStore
+from app.application.cases.store import ScenarioCaseStore
+from app.application.events.store import OperationalEventStore
+from app.application.logs.store import LogStore
+from app.application.operations.catalog.models import OperationRegistry
+from app.application.operations.catalog.registry import build_operation_registry
+from app.application.presence.service import PresenceService
+from app.application.scenarios.models import ScenarioRegistry
+from app.application.scenarios.registry import build_scenario_registry
 from app.platform.appdock.bridge import AppDockBridge
 from app.platform.appdock.surface_state import AppSurfaceStateService
 from app.platform.desktop.services import PlatformServices
-from app.application.presence.service import PresenceService
-from app.application.product.catalog.registry import build_product_registry
-from app.application.product.catalog.models import ProductRegistry
+from app.runtime.context import AppContext
 from app.runtime.user_preferences import PreferencesService
-from app.application.timeline.store import FeedStore
-
-if TYPE_CHECKING:
-    from app.presentation.desktop.run_coordinator import RunCoordinator
 
 
 @dataclass(slots=True)
 class AppRuntime:
     context: AppContext
-    product_registry: ProductRegistry
-    feed_store: FeedStore
+    operation_registry: OperationRegistry
+    scenario_registry: ScenarioRegistry
+    case_store: ScenarioCaseStore
+    event_store: OperationalEventStore
+    artifact_store: ArtifactStore
+    log_store: LogStore
+    background_store: BackgroundProcessStore
+    assignment_store: AssignmentStore
     presence_service: PresenceService
     preferences: PreferencesService
     surface_state: AppSurfaceStateService
     platform: PlatformServices
     appdock_bridge: AppDockBridge
-    run_coordinator: Any
+    scenario_coordinator: Any
 
 
-def _build_application_services(context: AppContext) -> tuple[ProductRegistry, FeedStore, PresenceService, PreferencesService]:
-    registry = build_product_registry(context)
-    feed_store = FeedStore()
+def _build_application_services(context: AppContext) -> tuple[
+    OperationRegistry,
+    ScenarioRegistry,
+    ScenarioCaseStore,
+    OperationalEventStore,
+    ArtifactStore,
+    LogStore,
+    BackgroundProcessStore,
+    AssignmentStore,
+    PresenceService,
+    PreferencesService,
+]:
+    operation_registry = build_operation_registry(context)
+    scenario_registry = build_scenario_registry(operation_registry)
+    case_store = ScenarioCaseStore()
+    event_store = OperationalEventStore()
+    artifact_store = ArtifactStore()
+    log_store = LogStore()
+    background_store = BackgroundProcessStore(build_background_registry())
+    assignment_store = AssignmentStore()
     presence_service = PresenceService(context)
     preferences = PreferencesService(context)
-    return registry, feed_store, presence_service, preferences
+    return (
+        operation_registry,
+        scenario_registry,
+        case_store,
+        event_store,
+        artifact_store,
+        log_store,
+        background_store,
+        assignment_store,
+        presence_service,
+        preferences,
+    )
 
 
 def _build_platform_services(context: AppContext) -> tuple[AppSurfaceStateService, PlatformServices, AppDockBridge]:
@@ -51,24 +91,44 @@ def _build_platform_services(context: AppContext) -> tuple[AppSurfaceStateServic
     return surface_state, platform, bridge
 
 
-def _build_presentation_services(context: AppContext):
-    from app.presentation.desktop.run_coordinator import RunCoordinator
-
-    return RunCoordinator(context=context, on_log=context.logger.info)
-
-
 def build_runtime(context: AppContext) -> AppRuntime:
-    registry, feed_store, presence_service, preferences = _build_application_services(context)
+    (
+        operation_registry,
+        scenario_registry,
+        case_store,
+        event_store,
+        artifact_store,
+        log_store,
+        background_store,
+        assignment_store,
+        presence_service,
+        preferences,
+    ) = _build_application_services(context)
     surface_state, platform, bridge = _build_platform_services(context)
-    run_coordinator = _build_presentation_services(context)
+    from app.presentation.desktop.scenario_coordinator import ScenarioCoordinator
+
+    scenario_coordinator = ScenarioCoordinator(
+        context=context,
+        operation_registry=operation_registry,
+        case_store=case_store,
+        event_store=event_store,
+        artifact_store=artifact_store,
+        log_store=log_store,
+    )
     return AppRuntime(
         context=context,
-        product_registry=registry,
-        feed_store=feed_store,
+        operation_registry=operation_registry,
+        scenario_registry=scenario_registry,
+        case_store=case_store,
+        event_store=event_store,
+        artifact_store=artifact_store,
+        log_store=log_store,
+        background_store=background_store,
+        assignment_store=assignment_store,
         presence_service=presence_service,
         preferences=preferences,
         surface_state=surface_state,
         platform=platform,
         appdock_bridge=bridge,
-        run_coordinator=run_coordinator,
+        scenario_coordinator=scenario_coordinator,
     )

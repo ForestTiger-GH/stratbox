@@ -14,7 +14,7 @@ def run_gui(context: AppContext) -> int:
         print('ERROR: PySide6 is not installed. Install app extra: pip install -e .[app]')
         return 1
 
-    from app.presentation.desktop.main_window import MainWindow
+    from app.presentation.desktop.shell.main_window import MainWindow
 
     runtime = build_runtime(context)
     runtime.surface_state.mark_running()

@@ -44,15 +44,21 @@
           "ui": "primary"
         }
       },
-      "entry_view": "timeline",
+      "entry_view": "scenario_chat",
       "declared_views": [
-        "timeline",
-        "operations",
-        "artifacts",
+        "scenario_chat",
         "workspace",
+        "atomic_scenarios",
+        "scenario_blocks",
+        "background_processes",
         "participants",
+        "assignments",
+        "logs",
+        "artifacts",
+        "parameters",
+        "node_overview",
         "diagnostics",
-        "domain"
+        "settings"
       ],
       "compatible_modes": [
         "local",
@@ -72,13 +78,16 @@
       "supports_delegated_jobs": false,
       "metadata": {
         "product": "Strategy Box",
-        "ui_kind": "desktop_timeline_surface",
+        "ui_kind": "desktop_scenario_workspace",
         "route_groups_visible_in_app": [
-          "operations",
+          "scenarios",
+          "workspace",
           "artifacts",
+          "logs",
           "node",
           "diagnostics"
-        ]
+        ],
+        "right_inspector": "drawer_open_by_default_collapsible"
       }
     }
   ],
@@ -122,6 +131,7 @@
     }
   },
   "metadata": {
-    "description": "Strategy Box desktop app surface for AppDock world entry."
+    "description": "Strategy Box scenario-first desktop app surface for AppDock world entry.",
+    "ui_model": "scenario_first_operational_workspace"
   }
 }

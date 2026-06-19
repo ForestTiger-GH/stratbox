@@ -1,422 +1,342 @@
 QWidget {
-    background: #ffffff;
-    color: #111111;
+    background: #F4F7FA;
+    color: #111827;
     font-family: "Segoe UI", "Inter", sans-serif;
     font-size: 13px;
 }
 
 QMainWindow {
-    background: #ffffff;
-}
-
-QSplitter::handle {
-    background: #F3F3F3;
-}
-
-
-#leftSidebarScroll {
-    border: none;
-    background: #ffffff;
-}
-
-
-#leftSidebarShell {
-    background: #ffffff;
-}
-
-#leftSidebarAnchor {
-    background: #F7F7F7;
-    border-top: 1px solid #F3F3F3;
+    background: #F4F7FA;
 }
 
 #topBar {
-    border-bottom: 1px solid #F3F3F3;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5ECF2;
 }
 
 #topBarTitle {
     font-size: 22px;
-    font-weight: 600;
-    color: #111111;
+    font-weight: 700;
+    color: #111827;
 }
 
-#topBarSubtle {
+#topBarSubtle,
+#leftPanelHint,
+#composerPlaceholder,
+#chatMeta {
+    color: #6B7280;
     font-size: 12px;
-    color: #6b7280;
 }
 
+#userMenuButton {
+    border: 1px solid #E5ECF2;
+    border-radius: 16px;
+    background: #F8FAFC;
+    padding: 8px 14px;
+    font-weight: 600;
+}
 
-#centerSceneHost,
-#centerSceneContent,
-#feedAreaHost,
-QScrollArea#chatThreadView,
-QScrollArea#chatThreadView > QWidget,
-#chatThread,
-#chatMessageRow {
-    border: none;
+#shellRoot {
+    background: #F4F7FA;
+}
+
+#modeRail {
+    background: #EEF3F7;
+    border-right: 1px solid #E5ECF2;
+}
+
+#modeRailButton {
+    border: 1px solid transparent;
+    border-radius: 16px;
     background: transparent;
+    font-size: 18px;
+    padding: 0;
 }
 
-#centerSceneBackground {
-    border: none;
-    background: transparent;
+#modeRailButton:hover {
+    background: #FFFFFF;
+    border-color: #E5ECF2;
 }
 
-
-QPushButton {
-    border: 1px solid #F3F3F3;
-    border-radius: 14px;
-    background: #ffffff;
-    padding: 8px 12px;
-    color: #111111;
+#modeRailButton[active="true"],
+#modeRailButton:checked {
+    background: #E6F3F4;
+    border-color: #B7DCDD;
+    color: #0F6F78;
 }
 
-QPushButton:hover {
-    background: #F7F7F7;
+#leftPanel {
+    background: #FFFFFF;
+    border-right: 1px solid #E5ECF2;
 }
 
-QPushButton:pressed,
-QPushButton:checked {
-    background: #F3F3F3;
+#leftPanelTitle {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
 }
 
-QPushButton:disabled {
-    background: #ffffff;
-    color: #9ca3af;
-    border-color: #F3F3F3;
-}
-
-#systemSideButton,
-#feedActionButton,
-#primaryRunButton,
-#filterPill {
-    border: 1px solid #F3F3F3;
-    border-radius: 14px;
-    padding: 8px 12px;
-}
-
-#systemSideButton {
-    text-align: left;
-    width: 100%;
-    background: #ffffff;
-}
-
-#systemSideButton:hover {
-    background: #F7F7F7;
-    border-color: #F3F3F3;
-}
-
-#systemSideButton:pressed,
-#systemSideButton:checked {
-    background: #F3F3F3;
-    border-color: #F3F3F3;
-}
-
-#userOnlineNames {
-    color: #6b7280;
-    font-size: 12px;
-    padding-left: 2px;
-}
-
-#sidebarSectionTitle {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #6b7280;
-}
-
-#sidebarText {
-    color: #111111;
-    line-height: 1.4;
-}
-
-#sidebarTextMuted,
-#feedCardMeta,
-#feedCardTimestamp,
-#feedCardAuthor,
-#composerPlaceholder {
-    color: #6b7280;
-}
-
-#composerLineEdit,
-#composerComboBox,
-#composerSpinBox {
-    border: 1px solid #F3F3F3;
-    border-radius: 14px;
-    padding: 9px 12px;
-    background: #ffffff;
-    min-height: 18px;
-}
-
-#composerComboBox {
-    padding-right: 28px;
-}
-
-#composerOperationTitle {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111111;
-    padding-right: 4px;
-}
-
-#composerFieldLabel,
-#composerFieldLabelHinted {
-    color: #111111;
-    font-size: 12px;
-    font-weight: 600;
-    padding-left: 1px;
-}
-
-#composerFieldLabelHinted {
-    color: #374151;
-    text-decoration: underline;
-}
-
+#sidebarSectionTitle,
+#sectionTitle,
 #composerSectionTitle {
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #6b7280;
-    padding-top: 2px;
-    padding-left: 1px;
+    color: #6B7280;
 }
 
-#composerPlaceholderTitle {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111111;
+#centerPanel,
+#centerSceneHost,
+#centerSceneContent,
+#centerSceneBackground,
+#scenarioChatView,
+#scenarioChatView > QWidget {
+    background: transparent;
+    border: none;
 }
 
-#composerCheckBox {
-    padding: 2px 0 2px 2px;
-}
-
-#composerShell {
-    border: 1px solid #F3F3F3;
-    border-radius: 20px;
-    background: #ffffff;
-}
-
-#primaryRunButton,
-#feedActionButton,
-#filterPill {
-    border: 1px solid #F3F3F3;
+#scenarioFilterPill,
+#rightInspectorTab,
+#secondaryActionButton,
+#feedActionButton {
+    border: 1px solid #E5ECF2;
     border-radius: 14px;
-    background: #ffffff;
+    background: #FFFFFF;
     padding: 8px 12px;
+    color: #111827;
+}
+
+#scenarioFilterPill:hover,
+#rightInspectorTab:hover,
+#secondaryActionButton:hover,
+#feedActionButton:hover {
+    background: #F8FAFC;
+}
+
+#scenarioFilterPill[active="true"],
+#scenarioFilterPill:checked,
+#rightInspectorTab[active="true"],
+#rightInspectorTab:checked {
+    background: #E6F3F4;
+    border-color: #B7DCDD;
+    color: #0F6F78;
+    font-weight: 700;
+}
+
+#bottomScenarioComposer {
+    border: 1px solid #E5ECF2;
+    border-radius: 22px;
+    background: #FFFFFF;
 }
 
 #primaryRunButton {
-    background: #ffffff;
-    color: #111111;
-    border-color: #F3F3F3;
-    font-weight: 600;
+    border: 1px solid #0F6F78;
+    border-radius: 16px;
+    background: #0F6F78;
+    color: #FFFFFF;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+#primaryRunButton:hover {
+    background: #0B5D64;
 }
 
 #primaryRunButton:disabled {
-    background: #ffffff;
-    border-color: #F3F3F3;
-    color: #9ca3af;
+    background: #E5ECF2;
+    border-color: #E5ECF2;
+    color: #94A3B8;
 }
 
-#filterPill:checked {
-    background: #F3F3F3;
-    border-color: #F3F3F3;
-    color: #111111;
+#rightInspectorDrawer {
+    background: #FFFFFF;
+    border-left: 1px solid #D9E4EC;
 }
 
-#feedList,
+#rightInspectorTitle {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+}
+
+#rightInspectorCloseButton,
+#rightDrawerHandle {
+    border: 1px solid #D9E4EC;
+    border-radius: 14px;
+    background: #FFFFFF;
+    color: #0F6F78;
+    font-weight: 700;
+}
+
+#rightDrawerHandle {
+    border-radius: 15px;
+    background: #F8FAFC;
+}
+
+#scenarioCaseBubble {
+    border: 1px solid #E5ECF2;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+#scenarioCaseBubble[tone="running"] {
+    border-color: #CFE0FF;
+    background: #F8FBFF;
+}
+
+#scenarioCaseBubble[tone="success"] {
+    border-color: #CFEADB;
+    background: #F8FCFA;
+}
+
+#scenarioCaseBubble[tone="failed"],
+#scenarioCaseBubble[tone="error"] {
+    border-color: #F0CACA;
+    background: #FFF7F7;
+}
+
+#scenarioNoticeBubble {
+    border: 1px solid #EEF3F7;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.86);
+}
+
+#chatMessageTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+
+#chatMessageBody,
+#chatStepLine {
+    color: #111827;
+    line-height: 1.45;
+}
+
+#chatStage {
+    border: 1px solid #E5ECF2;
+    border-radius: 14px;
+    background: #F8FAFC;
+    padding: 8px 10px;
+    color: #0F6F78;
+    font-weight: 600;
+}
+
+#statusChip {
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#statusChip[status="running"] { background: #EFF6FF; color: #2563EB; }
+#statusChip[status="success"] { background: #EAF7F0; color: #138A5B; }
+#statusChip[status="warning"] { background: #FFF7E6; color: #B7791F; }
+#statusChip[status="failed"], #statusChip[status="error"] { background: #FFF1F1; color: #C24141; }
+#statusChip[status="prepared"], #statusChip[status="info"] { background: #EEF3F7; color: #475569; }
+
 #artifactList,
-#operationTree {
+#operationTree,
+#workspaceTree {
     border: none;
     background: transparent;
     outline: none;
 }
 
-#operationTree::branch {
+#operationTree::branch,
+#workspaceTree::branch {
     background: transparent;
-    border: none;
-}
-
-#operationTree::branch:has-children,
-#operationTree::branch:has-siblings,
-#operationTree::branch:closed,
-#operationTree::branch:open {
-    image: none;
     border: none;
 }
 
 #artifactList::item,
-#operationTree::item {
-    padding: 8px 6px;
-    border-radius: 10px;
+#operationTree::item,
+#workspaceTree::item {
+    padding: 9px 8px;
+    border-radius: 12px;
 }
 
-#operationTree::item:has-children {
-    padding-left: 0px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #6b7280;
-    background: transparent;
-}
-
-#operationTree::item:has-children:selected,
-#operationTree::item:has-children:hover {
-    background: transparent;
-    color: #6b7280;
+#artifactList::item:hover,
+#operationTree::item:hover,
+#workspaceTree::item:hover {
+    background: #F8FAFC;
 }
 
 #artifactList::item:selected,
-#operationTree::item:selected {
-    background: #F3F3F3;
-    color: #111111;
+#operationTree::item:selected,
+#workspaceTree::item:selected {
+    background: #E6F3F4;
+    color: #0F6F78;
 }
 
-#operationTree::item:hover,
-#artifactList::item:hover {
-    background: #F7F7F7;
+#composerLineEdit,
+#composerComboBox,
+#composerSpinBox {
+    border: 1px solid #E5ECF2;
+    border-radius: 14px;
+    padding: 9px 12px;
+    background: #FFFFFF;
+    min-height: 18px;
 }
 
-
-#chatBubble {
-    border: 1px solid #F3F3F3;
-    border-radius: 20px;
-    background: #ffffff;
+#composerLineEdit:focus,
+#composerComboBox:focus,
+#composerSpinBox:focus {
+    border-color: #0F6F78;
 }
 
-#chatBubble[chatRole="outgoing"] {
-    background: #F7F7F7;
-}
-
-#chatBubble[chatTone="running"] {
-    background: #f8fbff;
-}
-
-#chatBubble[chatTone="success"] {
-    background: #f7fcf8;
-}
-
-#chatBubble[chatTone="error"] {
-    background: #fff8f8;
-}
-
-#chatBubble[chatTone="system"],
-#chatBubble[chatTone="presence"] {
-    background: #fcfcfc;
-}
-
-#chatAuthor {
-    font-size: 12px;
-    font-weight: 600;
-}
-
-#chatTimestamp,
-#chatMeta {
-    color: #6b7280;
-    font-size: 12px;
-}
-
-#chatHeadline {
+#composerOperationTitle {
     font-size: 14px;
-    font-weight: 600;
-    color: #111111;
+    font-weight: 700;
+    color: #111827;
 }
 
-#chatSummary,
-#chatOutputs,
-#chatErrorDetail {
-    color: #111111;
-    line-height: 1.45;
+#composerFieldLabel,
+#composerFieldLabelHinted {
+    color: #111827;
+    font-size: 12px;
+    font-weight: 700;
 }
 
-#chatOutputs {
+#composerFieldLabelHinted {
     color: #374151;
 }
 
-#chatActionButton {
-    border: 1px solid #F3F3F3;
-    border-radius: 12px;
-    background: #ffffff;
-    padding: 6px 10px;
-}
-
-#chatActionButton:hover {
-    background: #F7F7F7;
-}
-
-#chatActionButton:pressed,
-#chatActionButton:checked {
-    background: #F3F3F3;
-}
-
-#feedCard {
-    border: 1px solid #F3F3F3;
-    border-radius: 20px;
-    background: #ffffff;
-}
-
-#feedCard[feedStatus="running"] {
-    border-color: #F3F3F3;
-    background: #f8fbff;
-}
-
-#feedCard[feedStatus="success"] {
-    border-color: #F3F3F3;
-    background: #f7fcf8;
-}
-
-#feedCard[feedStatus="error"] {
-    border-color: #F3F3F3;
-    background: #fff8f8;
-}
-
-#feedCardTitle {
+#composerPlaceholderTitle {
     font-size: 14px;
-    font-weight: 600;
-    color: #111111;
+    font-weight: 700;
+    color: #111827;
 }
 
-#feedCardBody,
-#feedCardOutputs {
-    color: #111111;
-    line-height: 1.45;
+#composerCheckBox {
+    padding: 4px 0 4px 2px;
 }
 
-#systemDialogCard {
-    border: 1px solid #F3F3F3;
-    border-radius: 18px;
-    background: #ffffff;
+#logViewer {
+    border: 1px solid #E5ECF2;
+    border-radius: 16px;
+    background: #F8FAFC;
+    color: #111827;
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 11px;
 }
 
-#systemDialogSectionTitle {
-    font-size: 12px;
-    font-weight: 600;
-    color: #111111;
+QPushButton {
+    border: 1px solid #E5ECF2;
+    border-radius: 14px;
+    background: #FFFFFF;
+    padding: 8px 12px;
+    color: #111827;
 }
 
-#systemDialogBody {
-    color: #374151;
-    line-height: 1.5;
-}
-
-QScrollBar:vertical {
-    background: transparent;
-    width: 10px;
-    margin: 2px;
-}
-
-QScrollBar::handle:vertical {
-    background: #d7dce3;
-    border-radius: 5px;
-    min-height: 24px;
-}
+QPushButton:hover { background: #F8FAFC; }
+QPushButton:pressed { background: #EEF3F7; }
+QPushButton:disabled { background: #FFFFFF; color: #94A3B8; border-color: #EEF3F7; }
 
 QMenu {
-    background: #ffffff;
-    border: 1px solid #F3F3F3;
+    background: #FFFFFF;
+    border: 1px solid #E5ECF2;
     padding: 8px;
     border-radius: 14px;
 }
@@ -426,17 +346,16 @@ QMenu::item {
     border-radius: 10px;
 }
 
-QMenu::item:selected {
-    background: #F3F3F3;
-}
+QMenu::item:selected { background: #E6F3F4; color: #0F6F78; }
 
-
-#composerParamBlock {
+QScrollBar:vertical {
     background: transparent;
+    width: 10px;
+    margin: 2px;
 }
 
-#composerParamLabel {
-    color: #6b7280;
-    font-size: 12px;
-    padding-left: 2px;
+QScrollBar::handle:vertical {
+    background: #CDD8E3;
+    border-radius: 5px;
+    min-height: 24px;
 }

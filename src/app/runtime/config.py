@@ -12,18 +12,33 @@ from app.runtime.errors import AppConfigError
 
 @dataclass(slots=True)
 class WindowConfig:
-    width: int = 1200
-    height: int = 760
+    width: int = 1440
+    height: int = 860
+
+
+@dataclass(slots=True)
+class ShellLayoutConfig:
+    selected_mode: str = 'workspace'
+    left_panel_width: int = 344
+    right_inspector_open: bool = True
+    right_inspector_width: int = 408
+    right_inspector_tab: str = 'logs'
+
+
+@dataclass(slots=True)
+class ChatConfig:
+    filter_mode: str = 'all'
+    selected_author_id: str | None = None
 
 
 @dataclass(slots=True)
 class AppUserConfig:
     last_workspace_schema: str = 'default'
-    last_operation_id: str = 'cbr_file_collector.collect'
-    splitter_sizes: list[int] = field(default_factory=lambda: [420, 900])
-    environment_panel_expanded: bool = True
-    operation_form_values: dict[str, dict[str, Any]] = field(default_factory=dict)
+    last_scenario_id: str = 'scenario.atomic.cbr_file_collector.collect'
+    scenario_form_values: dict[str, dict[str, Any]] = field(default_factory=dict)
     window: WindowConfig = field(default_factory=WindowConfig)
+    shell: ShellLayoutConfig = field(default_factory=ShellLayoutConfig)
+    chat: ChatConfig = field(default_factory=ChatConfig)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -34,27 +49,44 @@ _DEFAULT_CONFIG = AppUserConfig()
 
 def _coerce_config(data: dict[str, Any]) -> AppUserConfig:
     window_raw = data.get('window') if isinstance(data.get('window'), dict) else {}
+    shell_raw = data.get('shell') if isinstance(data.get('shell'), dict) else {}
+    chat_raw = data.get('chat') if isinstance(data.get('chat'), dict) else {}
     window = WindowConfig(
         width=int(window_raw.get('width', _DEFAULT_CONFIG.window.width)),
         height=int(window_raw.get('height', _DEFAULT_CONFIG.window.height)),
     )
-    splitter_sizes_raw = data.get('splitter_sizes') if isinstance(data.get('splitter_sizes'), list) else _DEFAULT_CONFIG.splitter_sizes
-    splitter_sizes = [int(x) for x in splitter_sizes_raw if isinstance(x, (int, float, str)) and str(x).strip()]
-    if not splitter_sizes:
-        splitter_sizes = list(_DEFAULT_CONFIG.splitter_sizes)
-    last_operation_id = str(data.get('last_operation_id') or _DEFAULT_CONFIG.last_operation_id)
-    raw_form_values = data.get('operation_form_values') if isinstance(data.get('operation_form_values'), dict) else {}
-    operation_form_values: dict[str, dict[str, Any]] = {}
-    for operation_id, values in raw_form_values.items():
+    shell = ShellLayoutConfig(
+        selected_mode=str(shell_raw.get('selected_mode') or _DEFAULT_CONFIG.shell.selected_mode),
+        left_panel_width=int(shell_raw.get('left_panel_width', _DEFAULT_CONFIG.shell.left_panel_width)),
+        right_inspector_open=bool(shell_raw.get('right_inspector_open', _DEFAULT_CONFIG.shell.right_inspector_open)),
+        right_inspector_width=int(shell_raw.get('right_inspector_width', _DEFAULT_CONFIG.shell.right_inspector_width)),
+        right_inspector_tab=str(shell_raw.get('right_inspector_tab') or _DEFAULT_CONFIG.shell.right_inspector_tab),
+    )
+    chat = ChatConfig(
+        filter_mode=str(chat_raw.get('filter_mode') or _DEFAULT_CONFIG.chat.filter_mode),
+        selected_author_id=(str(chat_raw.get('selected_author_id')) if chat_raw.get('selected_author_id') else None),
+    )
+    raw_values = data.get('scenario_form_values')
+    if not isinstance(raw_values, dict):
+        raw_values = data.get('operation_form_values') if isinstance(data.get('operation_form_values'), dict) else {}
+    scenario_form_values: dict[str, dict[str, Any]] = {}
+    for scenario_id, values in raw_values.items():
         if isinstance(values, dict):
-            operation_form_values[str(operation_id)] = dict(values)
+            key = str(scenario_id)
+            if not key.startswith('scenario.'):
+                key = f'scenario.atomic.{key}'
+            scenario_form_values[key] = dict(values)
+    last_scenario_id = data.get('last_scenario_id') or data.get('last_operation_id') or _DEFAULT_CONFIG.last_scenario_id
+    last_scenario_id = str(last_scenario_id)
+    if not last_scenario_id.startswith('scenario.'):
+        last_scenario_id = f'scenario.atomic.{last_scenario_id}'
     return AppUserConfig(
         last_workspace_schema=str(data.get('last_workspace_schema') or _DEFAULT_CONFIG.last_workspace_schema),
-        last_operation_id=last_operation_id,
-        splitter_sizes=splitter_sizes,
-        environment_panel_expanded=bool(data.get('environment_panel_expanded', _DEFAULT_CONFIG.environment_panel_expanded)),
-        operation_form_values=operation_form_values,
+        last_scenario_id=last_scenario_id,
+        scenario_form_values=scenario_form_values,
         window=window,
+        shell=shell,
+        chat=chat,
     )
 
 

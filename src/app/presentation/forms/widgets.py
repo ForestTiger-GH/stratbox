@@ -11,10 +11,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.application.product.forms.models import ProductParamSpec
+from app.application.operations.forms.models import OperationParamSpec
 
 
-def build_widget_for_param(parent: QWidget, spec: ProductParamSpec) -> QWidget:
+def build_widget_for_param(parent: QWidget, spec: OperationParamSpec) -> QWidget:
     if spec.type == 'bool':
         widget = QCheckBox(parent)
         widget.setObjectName('composerCheckBox')
