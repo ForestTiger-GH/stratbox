@@ -40,8 +40,8 @@
     "display_name_override": "Strategy Box"
   },
   "update_policy": {
-    "mode": "manual_only",
-    "update_on_launch": false
+    "mode": "auto_on_launch",
+    "update_on_launch": true
   },
   "shortcut_policy": {
     "desktop_shortcut": false,
