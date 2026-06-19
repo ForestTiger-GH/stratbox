@@ -24,9 +24,9 @@ class ActiveBackgroundStrip(QWidget):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-        active = self._store.active_states()
+        active = self._store.enabled_states()
         if not active:
-            label = QLabel('Фоновые процессы выключены')
+            label = QLabel('Фоновые процессы не включены')
             label.setObjectName('chatMeta')
             self._layout.addWidget(label)
         for state in active:

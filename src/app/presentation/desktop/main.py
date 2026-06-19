@@ -10,8 +10,8 @@ def run_gui(context: AppContext) -> int:
     try:
         from PySide6.QtWidgets import QApplication
     except ImportError:
-        context.logger.error('PySide6 is not installed. Install app extra: pip install -e .[app]')
-        print('ERROR: PySide6 is not installed. Install app extra: pip install -e .[app]')
+        context.logger.error('PySide6 is not installed. Reinstall project dependencies.')
+        print('ERROR: PySide6 is not installed. Reinstall project dependencies.')
         return 1
 
     from app.presentation.desktop.shell.main_window import MainWindow

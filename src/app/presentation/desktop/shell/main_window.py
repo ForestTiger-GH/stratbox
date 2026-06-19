@@ -123,10 +123,11 @@ class MainWindow(QMainWindow):
             return
         self.body.right_drawer.set_selected_case(case_id)
         self.body.open_right_drawer('case')
+        active_job = self.runtime.scenario_coordinator.active_case_id
         self.runtime.surface_state.update_runtime(
             active_view='scenario_chat',
             selected_object=case_id,
-            active_job=None,
+            active_job=active_job,
             last_case_id=case_id,
             last_case_status=self.runtime.case_store.get(case_id).status,
             recent_artifacts=tuple(item.path for item in self.runtime.artifact_store.all()[:12]),

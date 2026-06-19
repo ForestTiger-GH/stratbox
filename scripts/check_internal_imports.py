@@ -16,7 +16,9 @@ CRITICAL_MODULES = [
     'app.application.events',
     'app.application.assignments',
     'app.application.background',
+    'app.application.history',
 ]
+
 
 
 def main() -> int:

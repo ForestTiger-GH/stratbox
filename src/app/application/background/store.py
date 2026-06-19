@@ -32,8 +32,11 @@ class BackgroundProcessStore:
     def enabled_ids(self) -> tuple[str, ...]:
         return tuple(sorted(pid for pid, state in self._states.items() if state.enabled))
 
-    def active_states(self) -> tuple[BackgroundProcessState, ...]:
+    def enabled_states(self) -> tuple[BackgroundProcessState, ...]:
         return tuple(state for state in self.states() if state.enabled)
+
+    def active_states(self) -> tuple[BackgroundProcessState, ...]:
+        return tuple(state for state in self.states() if state.status in {'running', 'warning', 'error'})
 
     def is_enabled(self, process_id: str) -> bool:
         return self._states.get(process_id, BackgroundProcessState(process_id)).enabled

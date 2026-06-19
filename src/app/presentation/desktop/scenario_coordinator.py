@@ -52,6 +52,10 @@ class ScenarioCoordinator(QObject):
     def is_busy(self) -> bool:
         return self._thread is not None or self._active_case is not None
 
+    @property
+    def active_case_id(self) -> str | None:
+        return self._active_case.case_id if self._active_case is not None else None
+
     def submit(self, scenario: ScenarioSpec, params: dict[str, Any]) -> ScenarioRunCase:
         if self.is_busy:
             raise RuntimeError('A scenario is already running')
