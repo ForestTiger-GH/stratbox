@@ -103,6 +103,7 @@ def run_scenario(
                 case_id=case.case_id,
                 scenario_id=scenario.id,
                 operation_id=operation.id,
+                step_id=step_run.step_id,
                 status=('success' if result.ok else 'error'),
             ))
         artifacts = [

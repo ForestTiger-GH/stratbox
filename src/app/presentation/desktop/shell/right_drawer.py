@@ -63,7 +63,9 @@ class RightInspectorDrawer(QFrame):
         self.set_active_tab(runtime.context.user_config.shell.right_inspector_tab)
 
     def set_active_tab(self, tab_id: str, *, emit: bool = False) -> None:
-        panel = self._panels.get(tab_id) or self.logs_panel
+        if tab_id not in self._panels:
+            tab_id = 'logs'
+        panel = self._panels[tab_id]
         self.stack.setCurrentWidget(panel)
         for key, button in self._tab_buttons.items():
             active = key == tab_id
