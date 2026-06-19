@@ -24,6 +24,14 @@ Thumbs.db
 filestore.env
 stratbox.env
 
-# Logs
+# Runtime log files
 *.log
-logs/
+
+# Runtime/generated log directories only
+/appdock-system/logs/
+/stratbox-system/logs/
+/data/**/logs/
+
+# Never ignore source-code package
+!src/app/application/logs/
+!src/app/application/logs/**
