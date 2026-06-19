@@ -61,9 +61,11 @@ class MainWindow(QMainWindow):
         self.runtime.scenario_coordinator.run_finished.connect(self._on_case_finished)
 
     def _seed_initial_state(self) -> None:
-        if self.context.session_snapshot and self.context.session_snapshot.runtime_state and self.context.session_snapshot.runtime_state.last_operation_title:
-            title = self.context.session_snapshot.runtime_state.last_operation_title
-            body = f'Последняя операция: {title}'
+        runtime_state = self.context.session_snapshot.runtime_state if self.context.session_snapshot else None
+        if runtime_state and runtime_state.last_scenario_title:
+            body = f'Последний сценарий: {runtime_state.last_scenario_title}'
+        elif runtime_state and runtime_state.last_operation_title:
+            body = f'Последняя операция: {runtime_state.last_operation_title}'
         else:
             body = 'Выберите сценарий слева или откройте проводник. Правая панель содержит логи, артефакты и параметры.'
         self.runtime.event_store.add(OperationalEvent.create(
@@ -169,6 +171,7 @@ class MainWindow(QMainWindow):
         self._refresh_context_views()
 
     def _on_case_finished(self, case) -> None:
+        self.runtime.presence_service.register_case(case)
         self.body.center_panel.set_busy(False)
         self.runtime.surface_state.update_runtime(
             active_view='scenario_chat',

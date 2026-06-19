@@ -237,7 +237,7 @@ class ActiveSurface:
     def from_dict(cls, payload: dict[str, Any]) -> 'ActiveSurface':
         return cls(
             surface_id=_required_string(payload, 'surface_id', scope='activation_context.active_surface'),
-            entry_view=str(payload.get('entry_view') or 'timeline'),
+            entry_view=str(payload.get('entry_view') or 'scenario_chat'),
             declared_views=_tuple_strings(payload.get('declared_views')),
         )
 

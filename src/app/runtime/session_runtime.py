@@ -25,6 +25,10 @@ _EXTENSION_FIELD_NAMES = {
     'selected_data_root_path',
     'launch_warning',
     'recent_artifacts',
+    'last_scenario_id',
+    'last_scenario_title',
+    'last_case_id',
+    'last_case_status',
 }
 
 
@@ -357,6 +361,26 @@ class RuntimeStateRecord:
     def recent_artifacts(self) -> tuple[str, ...]:
         return _tuple_strings(self.surface_state.get('recent_artifacts'))
 
+    @property
+    def last_scenario_id(self) -> str | None:
+        value = self.surface_state.get('last_scenario_id')
+        return str(value) if value not in (None, '') else None
+
+    @property
+    def last_scenario_title(self) -> str | None:
+        value = self.surface_state.get('last_scenario_title')
+        return str(value) if value not in (None, '') else None
+
+    @property
+    def last_case_id(self) -> str | None:
+        value = self.surface_state.get('last_case_id')
+        return str(value) if value not in (None, '') else None
+
+    @property
+    def last_case_status(self) -> str | None:
+        value = self.surface_state.get('last_case_status')
+        return str(value) if value not in (None, '') else None
+
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             'contract_version': self.contract_version,
@@ -502,7 +526,7 @@ class AppSessionClient:
             heartbeat_utc=now,
             resumable=True,
             clean_shutdown=None,
-            active_view=(self.activation_context.entry_view or 'timeline'),
+            active_view=(self.activation_context.entry_view or 'scenario_chat'),
             selected_object=None,
             active_job=None,
             warnings=tuple(),
@@ -522,7 +546,7 @@ class AppSessionClient:
         return self.save_runtime_state(merged)
 
     def mark_running(self, *, active_view: str | None = None) -> RuntimeStateRecord:
-        resolved_view = active_view or self.activation_context.entry_view or 'timeline'
+        resolved_view = active_view or self.activation_context.entry_view or 'scenario_chat'
         return self.update_runtime_state(clean_shutdown=None, resumable=True, active_view=resolved_view, state_kind='runtime')
 
     def mark_ended(self, *, clean_shutdown: bool, active_view: str | None = 'closed', warning: str | None = None) -> RuntimeStateRecord | None:

@@ -5,7 +5,6 @@ from datetime import datetime
 
 from app.runtime.context import AppContext
 from app.application.presence.models import ParticipantRecord
-from app.application.timeline.models import FeedEntry
 
 
 class PresenceService:
@@ -43,9 +42,10 @@ class PresenceService:
         idx = sum(ord(ch) for ch in key) % len(self._PALETTE)
         return self._PALETTE[idx]
 
-    def register_feed_entry(self, entry: FeedEntry) -> None:
-        participant_id = entry.author_id or 'unknown'
-        display_name = entry.author_label or participant_id
+    def register_case(self, case) -> None:
+        participant_id = case.author_id or 'unknown'
+        display_name = case.author_label or participant_id
+        timestamp = getattr(case, 'timestamp_label', datetime.now().strftime('%H:%M'))
         record = self._participants.get(participant_id)
         if record is None:
             record = ParticipantRecord(
@@ -53,15 +53,14 @@ class PresenceService:
                 display_name=display_name,
                 is_online=False,
                 host_name=None,
-                last_seen_label=entry.timestamp_label,
+                last_seen_label=timestamp,
                 run_count=0,
                 accent_color=self.color_for_participant(participant_id),
             )
             self._participants[participant_id] = record
         record.display_name = display_name
-        record.last_seen_label = entry.timestamp_label
-        if entry.kind in {'run_submitted', 'run_started', 'run_completed', 'run_failed'}:
-            record.run_count += 1
+        record.last_seen_label = timestamp
+        record.run_count += 1
         if participant_id == (self._context.user_id or 'local-user'):
             record.is_online = True
             record.host_name = self._context.host_name

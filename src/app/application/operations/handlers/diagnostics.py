@@ -82,11 +82,16 @@ def run(*, context: OperationContext, params: dict[str, Any], spec: OperationSpe
 
     if mode == 'appdock_preflight':
         workspace_available = workspace_resolution.workspace_status.available
-        ok = package_checks['stratbox'] and (workspace_available or degraded_preflight_allowed)
+        required_packages_ok = package_checks['stratbox'] and package_checks['PySide6']
+        ok = required_packages_ok and (workspace_available or degraded_preflight_allowed)
         if ok and degraded_preflight_allowed and not workspace_available:
             message = 'AppDock preflight finished in degraded mode'
+        elif ok:
+            message = 'AppDock preflight finished'
+        elif not package_checks['PySide6']:
+            message = 'AppDock preflight failed: PySide6 is required for the desktop surface'
         else:
-            message = 'AppDock preflight finished' if ok else 'AppDock preflight finished with issues'
+            message = 'AppDock preflight finished with issues'
     else:
         ok = workspace_report.ok and package_checks['stratbox']
         message = 'Диагностика среды завершена' if ok else 'Диагностика среды завершена с замечаниями'
