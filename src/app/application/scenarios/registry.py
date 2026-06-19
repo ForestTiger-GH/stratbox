@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.application.operations.catalog.models import OperationRegistry
+from app.application.operations.forms.models import OperationParamSpec
 from .models import ScenarioRegistry, ScenarioSpec, ScenarioStepSpec
 
 
@@ -37,6 +38,10 @@ def build_scenario_registry(operation_registry: OperationRegistry) -> ScenarioRe
             )
         )
     if operation_registry.has('cbr_file_collector.collect') and operation_registry.has('escrow.history.export'):
+        cbr = operation_registry.get('cbr_file_collector.collect')
+        escrow = operation_registry.get('escrow.history.export')
+        cbr_defaults = cbr.default_params()
+        escrow_defaults = escrow.default_params()
         scenarios.append(
             ScenarioSpec(
                 id='scenario.cbr.full_update',
@@ -50,15 +55,65 @@ def build_scenario_registry(operation_registry: OperationRegistry) -> ScenarioRe
                         operation_id='cbr_file_collector.collect',
                         title='Загрузка исходных файлов ЦБ',
                         order=10,
+                        params_map={
+                            'cbr_save_mode': 'save_mode',
+                            'target_dir': 'target_dir',
+                            'overwrite': 'overwrite',
+                        },
                     ),
                     ScenarioStepSpec(
                         id='step.export_escrow_history',
                         operation_id='escrow.history.export',
                         title='Сбор истории счетов эскроу',
                         order=20,
+                        params_map={
+                            'escrow_output_format': 'output_format',
+                            'target_dir': 'target_dir',
+                            'refresh_sources': 'refresh',
+                        },
                     ),
                 ),
-                params=operation_registry.get('escrow.history.export').params,
+                params=(
+                    OperationParamSpec(
+                        name='target_dir',
+                        title='Каталог результата',
+                        type='path_dir',
+                        default=str(escrow_defaults.get('target_dir') or cbr_defaults.get('target_dir') or ''),
+                        description='Единый каталог для результатов сценария. Каждый шаг создаёт внутри него свои файлы.',
+                        required=True,
+                        placeholder='Выберите каталог результата',
+                    ),
+                    OperationParamSpec(
+                        name='cbr_save_mode',
+                        title='Формат сохранения исходников ЦБ',
+                        type='select',
+                        default=str(cbr_defaults.get('save_mode') or 'zip'),
+                        options=(('ZIP-архив', 'zip'), ('Каталог файлов', 'files')),
+                        description='Как сохранить исходные файлы Банка России.',
+                    ),
+                    OperationParamSpec(
+                        name='escrow_output_format',
+                        title='Формат итоговой сводки эскроу',
+                        type='select',
+                        default=str(escrow_defaults.get('output_format') or 'xlsx'),
+                        options=(('Excel-файл', 'xlsx'), ('ZIP-архив', 'zip')),
+                        description='Формат итогового артефакта по счетам эскроу.',
+                    ),
+                    OperationParamSpec(
+                        name='refresh_sources',
+                        title='Перескачать исходники эскроу',
+                        type='bool',
+                        default=bool(escrow_defaults.get('refresh', False)),
+                        description='Заново скачать исходники, даже если они уже есть в локальном кэше.',
+                    ),
+                    OperationParamSpec(
+                        name='overwrite',
+                        title='Перезаписывать результат',
+                        type='bool',
+                        default=bool(cbr_defaults.get('overwrite', True)),
+                        description='Разрешить перезапись файлов, которые уже есть в каталоге результата.',
+                    ),
+                ),
                 submit_label='Обновить данные',
                 order=10,
                 group_order=20,

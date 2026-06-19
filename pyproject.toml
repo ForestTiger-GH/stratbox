@@ -17,9 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-app = [
-  "PySide6>=6.6",
-]
+app = []
 plugin = [
   "stratbox-plugin>=0.2.1",
 ]

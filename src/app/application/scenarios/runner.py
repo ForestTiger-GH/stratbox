@@ -18,6 +18,24 @@ ArtifactEmitted = Callable[[list[ArtifactRecord]], None]
 LogEmitted = Callable[[LogRecord], None]
 
 
+def _build_step_params(*, scenario_params: dict[str, Any], step) -> dict[str, Any]:
+    """Build operation params for one scenario step.
+
+    Atomic scenarios pass scenario params through as-is. Composite scenarios may
+    expose their own user-facing params and map them to operation-specific names.
+    Step overrides always win.
+    """
+    if step.params_map:
+        resolved: dict[str, Any] = {}
+        for source_key, target_key in step.params_map.items():
+            if source_key in scenario_params:
+                resolved[target_key] = scenario_params[source_key]
+    else:
+        resolved = dict(scenario_params)
+    resolved.update(step.params_override)
+    return resolved
+
+
 def build_case_for_scenario(*, scenario: ScenarioSpec, context: AppContext, params: dict[str, Any]) -> ScenarioRunCase:
     steps = [
         ScenarioStepRun(step_id=step.id, operation_id=step.operation_id, title=step.title)
@@ -80,8 +98,7 @@ def run_scenario(
             scenario_id=scenario.id,
             operation_id=operation.id,
         ))
-        step_params = dict(params)
-        step_params.update(step_spec.params_override)
+        step_params = _build_step_params(scenario_params=params, step=step_spec)
         result = run_operation(
             operation,
             context=context,

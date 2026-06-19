@@ -359,3 +359,32 @@ QScrollBar::handle:vertical {
     border-radius: 5px;
     min-height: 24px;
 }
+
+#activeBackgroundStrip {
+    background: transparent;
+}
+
+#backgroundProcessChip {
+    background: #E6F3F4;
+    border: 1px solid #CBE4E7;
+    color: #0F6F78;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 6px 10px;
+}
+
+#backgroundProcessChip:hover {
+    background: #D8EEF1;
+}
+
+#rightInspectorTab[active="true"] {
+    background: #0F6F78;
+    color: #FFFFFF;
+    border-color: #0F6F78;
+}
+
+#scenarioCaseBubble:hover {
+    border-color: #0F6F78;
+    background: #FBFDFE;
+}

@@ -13,12 +13,13 @@ class LogsPanel(QWidget):
         super().__init__(parent)
         self._store = store
         self._platform = platform
+        self._case_id: str | None = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 16)
         layout.setSpacing(10)
-        title = QLabel('Логи')
-        title.setObjectName('leftPanelTitle')
-        layout.addWidget(title)
+        self.title = QLabel('Логи')
+        self.title.setObjectName('leftPanelTitle')
+        layout.addWidget(self.title)
         self.list = QListWidget()
         self.list.setObjectName('artifactList')
         self.list.itemSelectionChanged.connect(self._selection_changed)
@@ -34,15 +35,21 @@ class LogsPanel(QWidget):
         layout.addWidget(self.open_button)
         self.refresh()
 
+    def set_case_filter(self, case_id: str | None) -> None:
+        self._case_id = case_id or None
+        self.refresh()
+
     def refresh(self) -> None:
         self.list.clear()
-        for log in self._store.all():
-            item = QListWidgetItem(f'{log.timestamp_label} · {log.title}')
+        logs = self._store.by_case(self._case_id) if self._case_id else self._store.all()
+        self.title.setText('Логи выбранного кейса' if self._case_id else 'Все логи')
+        for log in logs:
+            item = QListWidgetItem(f'{log.timestamp_label} · {log.title}\n{log.status} · {log.path}')
             item.setData(Qt.UserRole, log.path)
             item.setToolTip(log.path)
             self.list.addItem(item)
         if self.list.count() == 0:
-            self.viewer.setPlainText('Логи появятся после запуска сценария.')
+            self.viewer.setPlainText('Логи выбранного кейса появятся после запуска.' if self._case_id else 'Логи появятся после запуска сценария.')
 
     def _selection_changed(self) -> None:
         item = self.list.currentItem()

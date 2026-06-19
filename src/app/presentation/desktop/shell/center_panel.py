@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QHBoxLayout, QPushButton
 
 from app.application.events.models import OperationalEvent
 from app.presentation.desktop.chat_scene import ChatSceneHost
+from app.presentation.desktop.components.background_strip import ActiveBackgroundStrip
 from app.presentation.desktop.components.scenario_composer import BottomScenarioComposer
+from app.presentation.scenario_chat.models import ScenarioChatMessage
 from app.presentation.scenario_chat.projector import project_case, project_event
 from app.presentation.scenario_chat.widgets import ScenarioChatView
 from app.runtime.bootstrap import AppRuntime
@@ -22,6 +24,7 @@ class CenterScenarioPanel(ChatSceneHost):
     parameters_requested = Signal()
     artifact_open_requested = Signal(str)
     case_selected = Signal(str)
+    background_process_selected = Signal(str)
 
     def __init__(self, runtime: AppRuntime, parent=None) -> None:
         super().__init__(_chat_background_image_path(), parent)
@@ -40,6 +43,9 @@ class CenterScenarioPanel(ChatSceneHost):
             filters.addWidget(button)
         filters.addStretch(1)
         self.content_layout.addLayout(filters)
+        self.background_strip = ActiveBackgroundStrip(runtime.background_store)
+        self.background_strip.process_selected.connect(self.background_process_selected.emit)
+        self.content_layout.addWidget(self.background_strip)
         self.chat = ScenarioChatView()
         self.chat.case_selected.connect(self.case_selected.emit)
         self.chat.artifact_open_requested.connect(self.artifact_open_requested.emit)
@@ -70,11 +76,30 @@ class CenterScenarioPanel(ChatSceneHost):
         self.composer.set_busy(busy)
 
     def refresh(self) -> None:
+        self.background_strip.refresh()
         author_id = self._runtime.context.user_id if self._filter_mode == 'mine' else self._runtime.context.user_config.chat.selected_author_id
         cases = self._runtime.case_store.visible(mode=self._filter_mode, author_id=author_id)
-        messages = [project_case(case, self._runtime.artifact_store) for case in cases]
-        if not messages:
-            events = self._runtime.event_store.recent(20)
-            important = [event for event in events if event.kind in {'system_notice', 'background_notice'}]
-            messages.extend(project_event(event) for event in important)
+        messages: list[ScenarioChatMessage] = [project_case(case, self._runtime.artifact_store) for case in cases]
+        important_events = [
+            event for event in self._runtime.event_store.recent(100)
+            if event.kind in {'system_notice', 'background_notice', 'assignment_notice'}
+            and self._event_visible_for_filter(event)
+        ]
+        messages.extend(project_event(event) for event in important_events)
+        messages.sort(key=lambda item: item.sort_key)
         self.chat.set_messages(tuple(messages))
+
+    def _event_visible_for_filter(self, event: OperationalEvent) -> bool:
+        if self._filter_mode == 'all':
+            return True
+        if self._filter_mode == 'errors':
+            return event.status == 'error'
+        if self._filter_mode == 'unread':
+            return event.unread
+        if self._filter_mode == 'running':
+            return event.status == 'running'
+        if self._filter_mode == 'mine':
+            return event.author_id in {None, self._runtime.context.user_id}
+        if self._filter_mode == 'success':
+            return event.status in {'success', 'warning'}
+        return True

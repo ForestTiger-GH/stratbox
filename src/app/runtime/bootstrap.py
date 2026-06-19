@@ -17,6 +17,7 @@ from app.application.background.store import BackgroundProcessStore
 from app.application.cases.store import ScenarioCaseStore
 from app.application.events.store import OperationalEventStore
 from app.application.logs.store import LogStore
+from app.application.history.persistence import HistoryPersistenceService
 from app.application.operations.catalog.models import OperationRegistry
 from app.application.operations.catalog.registry import build_operation_registry
 from app.application.presence.service import PresenceService
@@ -40,6 +41,7 @@ class AppRuntime:
     log_store: LogStore
     background_store: BackgroundProcessStore
     assignment_store: AssignmentStore
+    history_persistence: HistoryPersistenceService
     presence_service: PresenceService
     preferences: PreferencesService
     surface_state: AppSurfaceStateService
@@ -104,6 +106,14 @@ def build_runtime(context: AppContext) -> AppRuntime:
         presence_service,
         preferences,
     ) = _build_application_services(context)
+    history_persistence = HistoryPersistenceService(context.paths.runtime_dir)
+    history_persistence.load_into(
+        case_store=case_store,
+        event_store=event_store,
+        artifact_store=artifact_store,
+        log_store=log_store,
+        assignment_store=assignment_store,
+    )
     surface_state, platform, bridge = _build_platform_services(context)
     from app.presentation.desktop.scenario_coordinator import ScenarioCoordinator
 
@@ -125,6 +135,7 @@ def build_runtime(context: AppContext) -> AppRuntime:
         log_store=log_store,
         background_store=background_store,
         assignment_store=assignment_store,
+        history_persistence=history_persistence,
         presence_service=presence_service,
         preferences=preferences,
         surface_state=surface_state,

@@ -16,6 +16,9 @@ class ArtifactStore:
         for item in artifacts:
             self.add(item)
 
+    def replace_all(self, artifacts: list[ArtifactRecord] | tuple[ArtifactRecord, ...]) -> None:
+        self._items = {item.artifact_id: item for item in artifacts}
+
     def all(self) -> tuple[ArtifactRecord, ...]:
         return tuple(sorted(self._items.values(), key=lambda item: item.created_at, reverse=True))
 

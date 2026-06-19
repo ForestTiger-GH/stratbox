@@ -14,6 +14,9 @@ class OperationalEventStore:
         for event in events:
             self.add(event)
 
+    def replace_all(self, events: tuple[OperationalEvent, ...] | list[OperationalEvent]) -> None:
+        self._events = {event.event_id: event for event in events}
+
     def all(self) -> tuple[OperationalEvent, ...]:
         return tuple(sorted(self._events.values(), key=lambda item: item.created_at))
 

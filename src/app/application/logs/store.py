@@ -10,6 +10,13 @@ class LogStore:
     def add(self, log: LogRecord) -> None:
         self._items[log.log_id] = log
 
+    def extend(self, logs: list[LogRecord] | tuple[LogRecord, ...]) -> None:
+        for log in logs:
+            self.add(log)
+
+    def replace_all(self, logs: list[LogRecord] | tuple[LogRecord, ...]) -> None:
+        self._items = {log.log_id: log for log in logs}
+
     def all(self) -> tuple[LogRecord, ...]:
         return tuple(sorted(self._items.values(), key=lambda item: item.created_at, reverse=True))
 

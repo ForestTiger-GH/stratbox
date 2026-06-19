@@ -24,9 +24,9 @@ class TopBar(QWidget):
         title = QLabel('Strategy Box')
         title.setObjectName('topBarTitle')
         title_col.addWidget(title)
-        subtitle = QLabel(self._build_subtitle())
-        subtitle.setObjectName('topBarSubtle')
-        title_col.addWidget(subtitle)
+        self.subtitle = QLabel(self._build_subtitle())
+        self.subtitle.setObjectName('topBarSubtle')
+        title_col.addWidget(self.subtitle)
         layout.addLayout(title_col)
         layout.addStretch(1)
         self.user_button = QPushButton(runtime.context.account_name or 'Пользователь')
@@ -41,6 +41,10 @@ class TopBar(QWidget):
         mode = self._runtime.appdock_bridge.host_mode_label()
         workspace = str(ctx.workspace_root_path) if ctx.workspace_root_path else 'workspace не выбран'
         return f'{mode} · {node} · {workspace}'
+
+    def refresh_context(self) -> None:
+        self.subtitle.setText(self._build_subtitle())
+        self.user_button.setText(self._runtime.context.account_name or 'Пользователь')
 
     def _show_menu(self) -> None:
         from PySide6.QtWidgets import QMenu

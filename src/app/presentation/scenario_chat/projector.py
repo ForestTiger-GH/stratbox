@@ -21,6 +21,7 @@ _STATUS_LABELS = {
 
 def project_case(case: ScenarioRunCase, artifacts: ArtifactStore) -> ScenarioChatMessage:
     case_artifacts = artifacts.by_case(case.case_id)
+    sort_dt = case.finished_at or case.started_at or case.created_at
     return ScenarioChatMessage(
         message_id=case.case_id,
         message_kind='case',
@@ -31,6 +32,7 @@ def project_case(case: ScenarioRunCase, artifacts: ArtifactStore) -> ScenarioCha
         status=case.status,
         author_label=case.author_label or 'Пользователь',
         timestamp_label=case.timestamp_label,
+        sort_key=sort_dt.isoformat(),
         stage_label=case.current_stage or None,
         params_summary=case.short_params_text(),
         steps=tuple(ScenarioStepLine(step.title, step.status, step.message) for step in case.steps),
@@ -50,6 +52,7 @@ def project_event(event: OperationalEvent) -> ScenarioChatMessage:
         status=event.status,
         author_label=event.author_label or ('Фоновый процесс' if event.actor_kind == 'background' else 'Система'),
         timestamp_label=event.timestamp_label,
+        sort_key=event.created_at.isoformat(),
         source_event_id=event.event_id,
         source_case_id=event.case_id,
     )

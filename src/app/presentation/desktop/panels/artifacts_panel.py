@@ -12,12 +12,13 @@ class ArtifactsPanel(QWidget):
         super().__init__(parent)
         self._store = store
         self._platform = platform
+        self._case_id: str | None = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 16)
         layout.setSpacing(10)
-        title = QLabel('Артефакты')
-        title.setObjectName('leftPanelTitle')
-        layout.addWidget(title)
+        self.title = QLabel('Артефакты')
+        self.title.setObjectName('leftPanelTitle')
+        layout.addWidget(self.title)
         self.list = QListWidget()
         self.list.setObjectName('artifactList')
         self.list.itemDoubleClicked.connect(lambda *_: self._open_current())
@@ -32,15 +33,21 @@ class ArtifactsPanel(QWidget):
         layout.addWidget(self.copy_button)
         self.refresh()
 
+    def set_case_filter(self, case_id: str | None) -> None:
+        self._case_id = case_id or None
+        self.refresh()
+
     def refresh(self) -> None:
         self.list.clear()
-        for artifact in self._store.all():
+        artifacts = self._store.by_case(self._case_id) if self._case_id else self._store.all()
+        self.title.setText('Артефакты выбранного кейса' if self._case_id else 'Все артефакты')
+        for artifact in artifacts:
             item = QListWidgetItem(f'{artifact.kind.upper()} · {artifact.name}\n{artifact.timestamp_label} · {artifact.path}')
             item.setData(Qt.UserRole, artifact.path)
             item.setToolTip(artifact.path)
             self.list.addItem(item)
         if self.list.count() == 0:
-            self.list.addItem(QListWidgetItem('Артефакты появятся после запуска сценария.'))
+            self.list.addItem(QListWidgetItem('Артефакты выбранного кейса появятся после запуска.' if self._case_id else 'Артефакты появятся после запуска сценария.'))
 
     def _current_path(self) -> str | None:
         item = self.list.currentItem()

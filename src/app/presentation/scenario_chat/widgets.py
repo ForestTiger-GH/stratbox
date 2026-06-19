@@ -8,12 +8,15 @@ from .models import ScenarioChatMessage
 
 
 class ScenarioCaseBubble(QFrame):
+    clicked = Signal(str)
     artifact_open_requested = Signal(str)
 
     def __init__(self, message: ScenarioChatMessage, parent=None) -> None:
         super().__init__(parent)
+        self._case_id = message.source_case_id
         self.setObjectName('scenarioCaseBubble')
         self.setProperty('tone', message.tone)
+        self.setCursor(Qt.PointingHandCursor)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(10)
@@ -62,6 +65,11 @@ class ScenarioCaseBubble(QFrame):
                 button.clicked.connect(lambda checked=False, p=artifact.path: self.artifact_open_requested.emit(p))
                 layout.addWidget(button)
 
+    def mousePressEvent(self, event) -> None:
+        if self._case_id:
+            self.clicked.emit(self._case_id)
+        super().mousePressEvent(event)
+
 
 class ScenarioNoticeBubble(QFrame):
     def __init__(self, message: ScenarioChatMessage, parent=None) -> None:
@@ -91,6 +99,7 @@ class ScenarioChatView(QScrollArea):
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._had_messages = False
         self._host = QWidget()
         self._layout = QVBoxLayout(self._host)
         self._layout.setContentsMargins(28, 24, 28, 24)
@@ -99,6 +108,8 @@ class ScenarioChatView(QScrollArea):
         self.setWidget(self._host)
 
     def set_messages(self, messages: tuple[ScenarioChatMessage, ...]) -> None:
+        bar = self.verticalScrollBar()
+        was_at_bottom = (not self._had_messages) or bar.value() >= bar.maximum() - 12
         while self._layout.count():
             item = self._layout.takeAt(0)
             widget = item.widget()
@@ -106,16 +117,20 @@ class ScenarioChatView(QScrollArea):
                 widget.deleteLater()
         if not messages:
             empty = ScenarioNoticeBubble(ScenarioChatMessage(
-                message_id='empty', message_kind='notice', tone='info', title='Strategy Box готов', summary='Выберите сценарий слева или откройте проводник.', status_label='Инфо', status='info', author_label='Система', timestamp_label='',
+                message_id='empty', message_kind='notice', tone='info', title='Strategy Box готов',
+                summary='Выберите сценарий слева или откройте проводник.', status_label='Инфо', status='info',
+                author_label='Система', timestamp_label='', sort_key='',
             ))
             self._layout.addWidget(empty)
         for message in messages:
             if message.message_kind == 'case':
                 bubble = ScenarioCaseBubble(message)
+                bubble.clicked.connect(self.case_selected.emit)
                 bubble.artifact_open_requested.connect(self.artifact_open_requested.emit)
-                bubble.mousePressEvent = lambda event, cid=message.source_case_id: self.case_selected.emit(cid or '')  # type: ignore[method-assign]
                 self._layout.addWidget(bubble)
             else:
                 self._layout.addWidget(ScenarioNoticeBubble(message))
         self._layout.addStretch(1)
-        self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
+        self._had_messages = bool(messages)
+        if was_at_bottom:
+            bar.setValue(bar.maximum())

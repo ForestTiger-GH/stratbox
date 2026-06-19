@@ -12,7 +12,6 @@ from app.application.events.store import OperationalEventStore
 from app.application.logs.models import LogRecord
 from app.application.logs.store import LogStore
 from app.application.operations.catalog.models import OperationRegistry
-from app.application.operations.execution.requests import OperationResult
 from app.application.scenarios.models import ScenarioSpec
 from app.application.scenarios.runner import run_scenario
 from app.runtime.context import AppContext
@@ -61,23 +60,3 @@ class ScenarioWorker(QObject):
             self._case.message = f'Unhandled scenario failure: {exc}'
             final_case = self._case
         self.finished.emit(final_case)
-
-
-# Compatibility classes are intentionally minimal for legacy CLI/diagnostic imports.
-class ProductWorker(QObject):
-    finished = Signal(object)
-
-    def __init__(self, *, spec, context: AppContext, params: dict[str, Any]):
-        super().__init__()
-        self._spec = spec
-        self._context = context
-        self._params = params
-
-    @Slot()
-    def run(self) -> None:
-        from app.application.operations.execution.runner import run_operation
-        try:
-            result: OperationResult = run_operation(self._spec, context=self._context, params=self._params)
-        except Exception as exc:  # pragma: no cover
-            result = OperationResult(False, f'Unhandled worker failure: {exc}', tuple(), {'error': str(exc)})
-        self.finished.emit(result)

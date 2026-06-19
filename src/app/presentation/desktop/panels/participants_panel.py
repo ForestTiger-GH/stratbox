@@ -3,30 +3,25 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
-from app.application.assignments.store import AssignmentStore
 from app.application.presence.service import PresenceService
 
 
 class ParticipantsPanel(QWidget):
     participant_selected = Signal(object)
 
-    def __init__(self, presence: PresenceService, assignments: AssignmentStore, parent=None) -> None:
+    def __init__(self, presence: PresenceService, parent=None) -> None:
         super().__init__(parent)
         self._presence = presence
-        self._assignments = assignments
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 14, 18)
         layout.setSpacing(12)
-        title = QLabel('Пользователи и поручения')
+        title = QLabel('Участники')
         title.setObjectName('leftPanelTitle')
         layout.addWidget(title)
-        self.assignments_label = QLabel('Активных поручений пока нет.')
-        self.assignments_label.setObjectName('leftPanelHint')
-        self.assignments_label.setWordWrap(True)
-        layout.addWidget(self.assignments_label)
-        users_title = QLabel('Участники')
-        users_title.setObjectName('sidebarSectionTitle')
-        layout.addWidget(users_title)
+        hint = QLabel('Пользователи, host, будущие AI-акторы и системные участники рабочей поверхности.')
+        hint.setObjectName('leftPanelHint')
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
         self.list = QListWidget()
         self.list.setObjectName('artifactList')
         self.list.itemSelectionChanged.connect(self._selection_changed)

@@ -16,6 +16,7 @@ class ScenarioStepSpec:
     order: int = 100
     required: bool = True
     params_override: dict[str, object] = field(default_factory=dict)
+    params_map: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

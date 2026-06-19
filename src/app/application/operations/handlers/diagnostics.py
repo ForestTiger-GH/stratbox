@@ -47,9 +47,16 @@ def run(*, context: OperationContext, params: dict[str, Any], spec: OperationSpe
         'app.runtime.bootstrap': _module_import_status('app.runtime.bootstrap'),
         'app.presentation.desktop.main': _module_import_status('app.presentation.desktop.main'),
         'app.application.scenarios.runner': _module_import_status('app.application.scenarios.runner'),
+        'app.application.history.persistence': _module_import_status('app.application.history.persistence'),
+        'app.application.logs': _module_import_status('app.application.logs'),
+        'app.application.assignments': _module_import_status('app.application.assignments'),
+        'app.application.background': _module_import_status('app.application.background'),
     }
     if package_checks['PySide6']:
         internal_import_checks['app.presentation.desktop.shell.main_window'] = _module_import_status('app.presentation.desktop.shell.main_window')
+        internal_import_checks['app.presentation.desktop.panels.case_panel'] = _module_import_status('app.presentation.desktop.panels.case_panel')
+        internal_import_checks['app.presentation.desktop.panels.node_overview_panel'] = _module_import_status('app.presentation.desktop.panels.node_overview_panel')
+        internal_import_checks['app.presentation.desktop.panels.assignments_panel'] = _module_import_status('app.presentation.desktop.panels.assignments_panel')
     for item in workspace_report.items:
         level = 'OK' if item.ok else 'FAIL'
         context.logger.info('%s | %s | %s', level, item.title, item.details)

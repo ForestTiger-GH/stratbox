@@ -27,6 +27,7 @@ class ScenarioChatMessage:
     status: str
     author_label: str
     timestamp_label: str
+    sort_key: str
     stage_label: str | None = None
     params_summary: str = ''
     steps: tuple[ScenarioStepLine, ...] = ()

@@ -85,9 +85,15 @@
           "artifacts",
           "logs",
           "node",
-          "diagnostics"
+          "diagnostics",
+          "background",
+          "participants",
+          "assignments"
         ],
-        "right_inspector": "drawer_open_by_default_collapsible"
+        "right_inspector": "case_aware_drawer",
+        "ui_model": "scenario_first_operational_workspace",
+        "history_model": "case_event_artifact_log",
+        "collaboration_model": "presence_assignments"
       }
     }
   ],
@@ -132,6 +138,8 @@
   },
   "metadata": {
     "description": "Strategy Box scenario-first desktop app surface for AppDock world entry.",
-    "ui_model": "scenario_first_operational_workspace"
+    "ui_model": "scenario_first_operational_workspace",
+    "right_inspector": "case_aware_drawer",
+    "history_model": "case_event_artifact_log"
   }
 }

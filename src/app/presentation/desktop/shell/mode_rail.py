@@ -10,6 +10,7 @@ class ShellMode:
     SCENARIO_BLOCKS = 'scenario_blocks'
     BACKGROUND = 'background'
     PEOPLE = 'people'
+    ASSIGNMENTS = 'assignments'
 
 
 class ModeRail(QFrame):
@@ -20,7 +21,8 @@ class ModeRail(QFrame):
         (ShellMode.ATOMIC_SCENARIOS, '⚙', 'Отдельные сценарии'),
         (ShellMode.SCENARIO_BLOCKS, '🧩', 'Сценарные блоки'),
         (ShellMode.BACKGROUND, '◷', 'Фоновые процессы'),
-        (ShellMode.PEOPLE, '👥', 'Пользователи'),
+        (ShellMode.PEOPLE, '👥', 'Участники'),
+        (ShellMode.ASSIGNMENTS, '✓', 'Поручения'),
     )
 
     def __init__(self, parent=None) -> None:

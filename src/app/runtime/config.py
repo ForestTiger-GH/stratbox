@@ -22,7 +22,7 @@ class ShellLayoutConfig:
     left_panel_width: int = 344
     right_inspector_open: bool = True
     right_inspector_width: int = 408
-    right_inspector_tab: str = 'logs'
+    right_inspector_tab: str = 'case'
 
 
 @dataclass(slots=True)

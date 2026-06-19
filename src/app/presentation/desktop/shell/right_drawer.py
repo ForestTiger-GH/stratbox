@@ -5,7 +5,9 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QStacked
 
 from app.runtime.bootstrap import AppRuntime
 from app.presentation.desktop.panels.artifacts_panel import ArtifactsPanel
+from app.presentation.desktop.panels.case_panel import CasePanel
 from app.presentation.desktop.panels.logs_panel import LogsPanel
+from app.presentation.desktop.panels.node_overview_panel import NodeOverviewPanel
 from app.presentation.desktop.panels.parameters_panel import ScenarioParametersPanel
 
 
@@ -19,6 +21,8 @@ class RightInspectorDrawer(QFrame):
         super().__init__(parent)
         self.setObjectName('rightInspectorDrawer')
         self._runtime = runtime
+        self._selected_case_id: str | None = None
+        self._selected_scenario_id: str | None = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -38,7 +42,13 @@ class RightInspectorDrawer(QFrame):
         tabs.setContentsMargins(12, 0, 12, 10)
         tabs.setSpacing(8)
         self._tab_buttons: dict[str, QPushButton] = {}
-        for tab_id, label in (('logs', 'Логи'), ('artifacts', 'Артефакты'), ('parameters', 'Параметры')):
+        for tab_id, label in (
+            ('case', 'Кейс'),
+            ('logs', 'Логи'),
+            ('artifacts', 'Артефакты'),
+            ('parameters', 'Параметры'),
+            ('node', 'Узел'),
+        ):
             button = QPushButton(label)
             button.setCheckable(True)
             button.setObjectName('rightInspectorTab')
@@ -47,15 +57,25 @@ class RightInspectorDrawer(QFrame):
             tabs.addWidget(button)
         layout.addLayout(tabs)
         self.stack = QStackedWidget()
+        self.case_panel = CasePanel(
+            case_store=runtime.case_store,
+            event_store=runtime.event_store,
+            artifact_store=runtime.artifact_store,
+            log_store=runtime.log_store,
+            platform=runtime.platform,
+        )
         self.logs_panel = LogsPanel(runtime.log_store, runtime.platform)
         self.artifacts_panel = ArtifactsPanel(runtime.artifact_store, runtime.platform)
         self.parameters_panel = ScenarioParametersPanel(preferences=runtime.preferences)
+        self.node_panel = NodeOverviewPanel(runtime)
         self.parameters_panel.params_changed.connect(self.params_changed.emit)
         self.parameters_panel.submitted.connect(self.submitted.emit)
         self._panels = {
+            'case': self.case_panel,
             'logs': self.logs_panel,
             'artifacts': self.artifacts_panel,
             'parameters': self.parameters_panel,
+            'node': self.node_panel,
         }
         for panel in self._panels.values():
             self.stack.addWidget(panel)
@@ -76,12 +96,25 @@ class RightInspectorDrawer(QFrame):
         if emit:
             self.tab_changed.emit(tab_id)
 
+    def set_selected_case(self, case_id: str | None) -> None:
+        self._selected_case_id = case_id or None
+        self.case_panel.set_case_id(self._selected_case_id)
+        self.logs_panel.set_case_filter(self._selected_case_id)
+        self.artifacts_panel.set_case_filter(self._selected_case_id)
+        self.refresh()
+
+    def selected_case_id(self) -> str | None:
+        return self._selected_case_id
+
     def set_scenario(self, scenario) -> None:
+        self._selected_scenario_id = scenario.id if scenario is not None else None
         self.parameters_panel.set_scenario(scenario)
 
     def collect_params(self) -> dict:
         return self.parameters_panel.collect_params()
 
     def refresh(self) -> None:
+        self.case_panel.refresh()
         self.logs_panel.refresh()
         self.artifacts_panel.refresh()
+        self.node_panel.refresh()
