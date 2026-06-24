@@ -1,0 +1,26 @@
+{
+  "last_workspace_schema": "default",
+  "last_scenario_id": "scenario.atomic.cbr_file_collector.collect",
+  "scenario_form_values": {
+    "scenario.atomic.cbr_file_collector.collect": {
+      "save_mode": "zip",
+      "target_dir": ".tmp/dev-workspace/output/cbr_file_collector",
+      "overwrite": true
+    }
+  },
+  "window": {
+    "width": 1440,
+    "height": 860
+  },
+  "shell": {
+    "selected_mode": "workspace",
+    "left_panel_width": 344,
+    "right_inspector_open": true,
+    "right_inspector_width": 408,
+    "right_inspector_tab": "case"
+  },
+  "chat": {
+    "filter_mode": "all",
+    "selected_author_id": null
+  }
+}

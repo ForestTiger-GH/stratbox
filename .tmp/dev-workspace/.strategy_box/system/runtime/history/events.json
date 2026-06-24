@@ -1,0 +1,20 @@
+[
+  {
+    "event_id": "7e8a1254e6324edcb63f79584e797a81",
+    "kind": "system_notice",
+    "status": "info",
+    "title": "Рабочая поверхность готова",
+    "body": "Выберите сценарий слева или откройте проводник. Правая панель содержит кейс, логи, артефакты, параметры и состояние узла.",
+    "created_at": "2026-06-24T20:02:24.080472",
+    "actor_kind": "system",
+    "author_id": null,
+    "author_label": "Пользователь",
+    "case_id": null,
+    "scenario_id": null,
+    "operation_id": null,
+    "artifact_ids": [],
+    "log_ids": [],
+    "meta": {},
+    "unread": true
+  }
+]
