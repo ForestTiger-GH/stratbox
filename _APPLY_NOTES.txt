@@ -1,0 +1,9 @@
+This archive contains only changed and new files for converting `stratbox` into a clean core repository.
+
+How to apply:
+1. Unpack these files over a working copy of the current `stratbox` repository.
+2. Delete the paths listed in `_DELETE_LIST.txt`.
+3. Run:
+   - python scripts/check_release_integrity.py
+   - python scripts/check_internal_imports.py
+   - pytest -q

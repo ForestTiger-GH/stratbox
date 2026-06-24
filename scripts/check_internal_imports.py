@@ -2,23 +2,27 @@ from __future__ import annotations
 
 import importlib
 import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / 'src'
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 CRITICAL_MODULES = [
-    'app.platform.appdock.entry',
-    'app.runtime.bootstrap',
-    'app.presentation.desktop.main',
-    'app.presentation.desktop.shell.main_window',
-    'app.presentation.desktop.scenario_coordinator',
-    'app.application.scenarios.runner',
-    'app.application.logs',
-    'app.application.artifacts',
-    'app.application.cases',
-    'app.application.events',
-    'app.application.assignments',
-    'app.application.background',
-    'app.application.history',
+    'stratbox',
+    'stratbox.base.runtime',
+    'stratbox.base.ioapi',
+    'stratbox.base.filestore',
+    'stratbox.base.net',
+    'stratbox.base.secrets',
+    'stratbox.macrobanks.cbr_file_collector',
+    'stratbox.macrobanks.cbr_forms',
+    'stratbox.macrobanks.escrow',
+    'stratbox.macrobanks.frg',
+    'stratbox.registries',
+    'stratbox.text.banks',
 ]
-
 
 
 def main() -> int:

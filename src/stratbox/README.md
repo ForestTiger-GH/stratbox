@@ -55,3 +55,8 @@ from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collec
 - одноразовые ноутбучные фрагменты, которые не оформлены как повторно используемые функции.
 
 Корпоративные особенности должны подключаться через отдельный плагин и стандартные точки расширения.
+
+
+## Репозиторная граница
+
+`stratbox` — это core-пакет. Desktop surface, AppDock manifest/preset и GUI-слой должны жить в отдельных репозиториях, например в `stratbox-windows`.

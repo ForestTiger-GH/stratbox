@@ -1,0 +1,16 @@
+DELETE THESE PATHS FROM THE REPOSITORY COPY
+
+Directories:
+- .tmp/
+- appdock/
+- src/app/
+
+Files to remove from scripts/ after moving examples:
+- scripts/cbr_file_collector_example.py
+- scripts/escrow_example.py
+- scripts/frg_cleanup_example.py
+- scripts/frg_stage1_example.py
+- scripts/ioapi_read_excel_example.py
+- scripts/ioapi_write_excel_example.py
+- scripts/pandas_read_excel_example.py
+- scripts/pandas_write_excel_example.py

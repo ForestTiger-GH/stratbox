@@ -12,6 +12,14 @@ build/
 .venv-build/
 venv/
 
+# Temporary/runtime state
+.tmp/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Jupyter
 .ipynb_checkpoints/
 
@@ -27,11 +35,6 @@ stratbox.env
 # Runtime log files
 *.log
 
-# Runtime/generated log directories only
-/appdock-system/logs/
+# Generated log directories
 /stratbox-system/logs/
 /data/**/logs/
-
-# Never ignore source-code package
-!src/app/application/logs/
-!src/app/application/logs/**

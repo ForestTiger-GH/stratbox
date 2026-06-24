@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stratbox"
 version = "0.2.1"
-description = "Strategy department toolbox (core + domains)."
+description = "Strategy Box core library with business domains and neutral infrastructure."
 requires-python = ">=3.10"
 dependencies = [
   "pandas>=2.0",
@@ -13,20 +13,19 @@ dependencies = [
   "requests>=2.31",
   "tqdm>=4.66",
   "beautifulsoup4>=4.12",
-  "PySide6>=6.6",
+  "dbfread>=2.0",
 ]
 
 [project.optional-dependencies]
-app = []
 plugin = [
   "stratbox-plugin>=0.2.1",
 ]
 pdf = [
   "pypdf>=4.0",
 ]
-
-[project.scripts]
-stratbox-app = "app.__main__:main"
+test = [
+  "pytest>=8.0",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -34,11 +33,10 @@ include-package-data = true
 [tool.setuptools.package-data]
 "stratbox.registries" = ["_resources/**/*"]
 "stratbox.macrobanks.cbr_forms.models" = ["*.csv"]
-"app" = [
-  "resources/workspace/*.json",
-  "resources/styles/*.qss",
-  "resources/images/*",
-]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
