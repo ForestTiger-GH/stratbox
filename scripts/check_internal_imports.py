@@ -17,6 +17,7 @@ CRITICAL_MODULES = [
     'stratbox.base.net',
     'stratbox.base.secrets',
     'stratbox.macrobanks.cbr_file_collector',
+    'stratbox.macrobanks.cbr_industries',
     'stratbox.macrobanks.cbr_forms',
     'stratbox.macrobanks.escrow',
     'stratbox.macrobanks.frg',

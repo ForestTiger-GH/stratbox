@@ -8,6 +8,7 @@ MODULES = [
     'stratbox.base.ioapi',
     'stratbox.base.filestore',
     'stratbox.macrobanks.cbr_file_collector',
+    'stratbox.macrobanks.cbr_industries',
     'stratbox.macrobanks.cbr_forms',
     'stratbox.macrobanks.escrow',
     'stratbox.macrobanks.frg',
