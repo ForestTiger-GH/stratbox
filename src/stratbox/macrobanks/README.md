@@ -28,7 +28,9 @@ macrobanks/
 ```python
 from stratbox.macrobanks.cbr_industries import (
     CBR_SORS_INDEX_URL,
+    Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpStreamBuildRequest,
+    build_cbr_0105a_debt_corp_pivot_set,
     build_cbr_0105a_debt_corp_stream,
 )
 
@@ -38,6 +40,20 @@ result = build_cbr_0105a_debt_corp_stream(
         date_from="2026-01-01",
         source_cache_dir="cache/cbr_industries/01_05_A_Debt_corp",
     )
+)
+
+filtered = result.df_stream.loc[
+    result.df_stream["industry_code"].astype("object") == "total"
+].copy()
+
+pivot_set = build_cbr_0105a_debt_corp_pivot_set(
+    filtered,
+    Cbr0105ADebtCorpPivotRequest(
+        row_dimension="region_code",
+        column_dimension="report_date",
+        sheet_dimensions=("measure", "currency_scope"),
+    ),
+    stream_result=result,
 )
 ```
 

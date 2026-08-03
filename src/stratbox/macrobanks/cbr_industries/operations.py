@@ -10,6 +10,10 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpDownloadBatchResult,
     Cbr0105ADebtCorpDownloadedSource,
     Cbr0105ADebtCorpDownloadRequest,
+    Cbr0105ADebtCorpPivotRequest,
+    Cbr0105ADebtCorpPivotSetResult,
+    Cbr0105ADebtCorpPivotWorkbookRequest,
+    Cbr0105ADebtCorpPivotWorkbookResult,
     Cbr0105ADebtCorpSourceFailure,
     Cbr0105ADebtCorpSourceLink,
     Cbr0105ADebtCorpStreamBuildRequest,
@@ -19,9 +23,15 @@ from stratbox.macrobanks.cbr_industries.contracts import (
 from stratbox.macrobanks.cbr_industries.download import (
     try_download_cbr_0105a_debt_corp_source,
 )
+from stratbox.macrobanks.cbr_industries.export import (
+    save_cbr_0105a_debt_corp_pivot_workbook as _save_pivot_workbook,
+)
 from stratbox.macrobanks.cbr_industries.parser import (
-    optimize_cbr_0105a_debt_corp_stream_dtypes,
+    concat_cbr_0105a_debt_corp_streams,
     parse_cbr_0105a_debt_corp_source,
+)
+from stratbox.macrobanks.cbr_industries.pivots import (
+    build_cbr_0105a_debt_corp_pivot_set as _build_pivot_set,
 )
 from stratbox.macrobanks.cbr_industries.regions import (
     normalize_cbr_0105a_debt_corp_regions_to_latest,
@@ -200,35 +210,67 @@ def build_cbr_0105a_debt_corp_stream(
         raise RuntimeError("No 01_05_A_Debt_corp workbooks were parsed successfully")
 
     normalized_files = normalize_cbr_0105a_debt_corp_regions_to_latest(parsed_files)
-    stream = pd.concat([item.df_stream for item in normalized_files], ignore_index=True)
-    stream = optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
+    stream = concat_cbr_0105a_debt_corp_streams(
+        item.df_stream for item in normalized_files
+    )
     stream = stream.sort_values(
         ["report_date", "sheet_order", "region_order", "industry_order"],
         kind="stable",
     ).reset_index(drop=True)
     dates = tuple(sorted(str(value) for value in stream["report_date"].dropna().unique()))
     latest_file = max(normalized_files, key=lambda item: item.report_date)
+    latest_discovered_report_date = max(
+        item.report_date for item in download_result.source_links
+    )
+    validation_issues = tuple(
+        issue for parsed in normalized_files for issue in parsed.validation_issues
+    )
 
     return Cbr0105ADebtCorpStreamResult(
         source_links=download_result.source_links,
         downloaded_sources=download_result.downloaded_sources,
         failures=tuple(failures),
         parsed_files=normalized_files,
-        validation_issues=tuple(
-            issue for parsed in normalized_files for issue in parsed.validation_issues
-        ),
+        validation_issues=validation_issues,
         df_stream=stream,
         dates=dates,
         latest_report_date=latest_file.report_date,
-        region_names=tuple(item.canonical_name for item in latest_file.regions),
-        industry_codes=tuple(item.code for item in latest_file.industries),
+        latest_discovered_report_date=latest_discovered_report_date,
+        region_normalization_date=latest_file.report_date,
+        region_normalization_is_latest_discovered=(
+            latest_file.report_date == latest_discovered_report_date
+        ),
+        regions=latest_file.regions,
+        industries=latest_file.industries,
         rows_stream=int(len(stream)),
     )
 
 
+def build_cbr_0105a_debt_corp_pivot_set(
+    df_stream: pd.DataFrame,
+    request: Cbr0105ADebtCorpPivotRequest,
+    *,
+    stream_result: Cbr0105ADebtCorpStreamResult | None = None,
+) -> Cbr0105ADebtCorpPivotSetResult:
+    """Преобразует предварительно отфильтрованный поток в набор двумерных таблиц."""
+    return _build_pivot_set(df_stream, request, stream_result=stream_result)
+
+
+def save_cbr_0105a_debt_corp_pivot_workbook(
+    pivot_set: Cbr0105ADebtCorpPivotSetResult,
+    request: Cbr0105ADebtCorpPivotWorkbookRequest,
+    *,
+    filestore: FileStore | None = None,
+) -> Cbr0105ADebtCorpPivotWorkbookResult:
+    """Сохраняет готовый набор таблиц отдельными листами одной XLSX-книги."""
+    return _save_pivot_workbook(pivot_set, request, filestore=filestore)
+
+
 __all__ = [
+    "build_cbr_0105a_debt_corp_pivot_set",
     "build_cbr_0105a_debt_corp_stream",
     "discover_cbr_0105a_debt_corp_sources",
     "download_cbr_0105a_debt_corp_sources",
     "parse_cbr_0105a_debt_corp_downloaded_source",
+    "save_cbr_0105a_debt_corp_pivot_workbook",
 ]

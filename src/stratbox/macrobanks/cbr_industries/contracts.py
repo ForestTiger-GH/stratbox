@@ -21,6 +21,13 @@ Cbr0105ADebtCorpCurrencyScope = Literal[
     "foreign_currency_and_precious_metals",
     "total",
 ]
+Cbr0105ADebtCorpPivotDimension = Literal[
+    "report_date",
+    "region_code",
+    "industry_code",
+    "measure",
+    "currency_scope",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,7 +55,7 @@ class Cbr0105ADebtCorpIndustrySpec:
 
 @dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpRegionSpec:
-    """Одна географическая строка конкретной книги."""
+    """Одна географическая строка серии ``01_05_A_Debt_corp``."""
 
     code: str
     source_name: str
@@ -103,7 +110,7 @@ class Cbr0105ADebtCorpSourceFailure:
 
 @dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpValidationIssue:
-    """Неструктурное отклонение, найденное в опубликованных значениях."""
+    """Отклонение, найденное в структуре или значениях публикации."""
 
     code: str
     severity: Literal["warning", "error"]
@@ -158,7 +165,11 @@ class Cbr0105ADebtCorpDownloadBatchResult:
 
     @property
     def ok(self) -> bool:
-        return len(self.failures) == 0
+        return not self.failures
+
+    @property
+    def is_partial(self) -> bool:
+        return bool(self.failures) and bool(self.downloaded_sources)
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,13 +203,105 @@ class Cbr0105ADebtCorpStreamResult:
     df_stream: pd.DataFrame
     dates: tuple[str, ...]
     latest_report_date: str
-    region_names: tuple[str, ...]
-    industry_codes: tuple[str, ...]
+    latest_discovered_report_date: str
+    region_normalization_date: str
+    region_normalization_is_latest_discovered: bool
+    regions: tuple[Cbr0105ADebtCorpRegionSpec, ...]
+    industries: tuple[Cbr0105ADebtCorpIndustrySpec, ...]
     rows_stream: int
 
     @property
+    def sources_ok(self) -> bool:
+        return not self.failures
+
+    @property
+    def validation_ok(self) -> bool:
+        return not any(issue.severity == "error" for issue in self.validation_issues)
+
+    @property
     def ok(self) -> bool:
-        return len(self.failures) == 0
+        return self.sources_ok and self.validation_ok
+
+    @property
+    def is_partial(self) -> bool:
+        return bool(self.failures) and bool(self.parsed_files)
+
+
+@dataclass(frozen=True, slots=True)
+class Cbr0105ADebtCorpPivotRequest:
+    """Запрос на построение набора двумерных таблиц из отфильтрованного потока.
+
+    Все смысловые измерения, которые не назначены строками, столбцами или листами,
+    обязаны быть заранее отфильтрованы до одного значения.
+    """
+
+    row_dimension: Cbr0105ADebtCorpPivotDimension
+    column_dimension: Cbr0105ADebtCorpPivotDimension
+    value_columns: tuple[str, ...] = ("value",)
+    sheet_dimensions: tuple[Cbr0105ADebtCorpPivotDimension, ...] = ()
+    require_complete_stream: bool = True
+    max_sheet_count: int = 100
+
+
+@dataclass(frozen=True)
+class Cbr0105ADebtCorpPivotTable:
+    """Одна двумерная таблица будущего листа workbook."""
+
+    sheet_key: tuple[tuple[str, object], ...]
+    suggested_sheet_name: str
+    row_dimension: Cbr0105ADebtCorpPivotDimension
+    column_dimension: Cbr0105ADebtCorpPivotDimension
+    value_columns: tuple[str, ...]
+    df_table: pd.DataFrame
+    rows: int
+    data_columns: int
+    missing_values: int
+
+
+@dataclass(frozen=True)
+class Cbr0105ADebtCorpPivotSetResult:
+    """Набор таблиц, построенный одной универсальной pivot-операцией."""
+
+    tables: tuple[Cbr0105ADebtCorpPivotTable, ...]
+    row_dimension: Cbr0105ADebtCorpPivotDimension
+    column_dimension: Cbr0105ADebtCorpPivotDimension
+    value_columns: tuple[str, ...]
+    sheet_dimensions: tuple[Cbr0105ADebtCorpPivotDimension, ...]
+    fixed_dimensions: tuple[tuple[str, object], ...]
+    source_rows: int
+    table_count: int
+    is_partial: bool
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.tables)
+
+
+@dataclass(frozen=True, slots=True)
+class Cbr0105ADebtCorpPivotWorkbookRequest:
+    """Запрос на сохранение готового набора pivot-таблиц в одну книгу Excel."""
+
+    out_path: str
+    overwrite: bool = False
+    freeze_headers: bool = True
+    enable_auto_filter: bool = True
+    adjust_column_widths: bool = True
+    include_metadata_sheet: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class Cbr0105ADebtCorpPivotWorkbookResult:
+    """Результат отдельной операции сохранения Excel-книги."""
+
+    output_path: str
+    sheet_names: tuple[str, ...]
+    sheet_count: int
+    file_size: int
+    sha256: str
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.output_path) and self.sheet_count > 0
 
 
 __all__ = [
@@ -209,6 +312,12 @@ __all__ = [
     "Cbr0105ADebtCorpFailureStage",
     "Cbr0105ADebtCorpIndustrySpec",
     "Cbr0105ADebtCorpMeasure",
+    "Cbr0105ADebtCorpPivotDimension",
+    "Cbr0105ADebtCorpPivotRequest",
+    "Cbr0105ADebtCorpPivotSetResult",
+    "Cbr0105ADebtCorpPivotTable",
+    "Cbr0105ADebtCorpPivotWorkbookRequest",
+    "Cbr0105ADebtCorpPivotWorkbookResult",
     "Cbr0105ADebtCorpRegionSpec",
     "Cbr0105ADebtCorpSheetSpec",
     "Cbr0105ADebtCorpSourceErrorPolicy",

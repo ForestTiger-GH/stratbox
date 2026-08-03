@@ -40,7 +40,11 @@ from stratbox.base import ioapi as ia
 
 ```python
 from stratbox.macrobanks.cbr_forms import run_all_forms_to_xlsx
-from stratbox.macrobanks.cbr_industries import build_cbr_0105a_debt_corp_stream
+from stratbox.macrobanks.cbr_industries import (
+    build_cbr_0105a_debt_corp_stream,
+    build_cbr_0105a_debt_corp_pivot_set,
+    save_cbr_0105a_debt_corp_pivot_workbook,
+)
 from stratbox.macrobanks.escrow import run_escrow_export
 from stratbox.macrobanks.frg import run_frg_stage1, run_frg_cleanup
 from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files

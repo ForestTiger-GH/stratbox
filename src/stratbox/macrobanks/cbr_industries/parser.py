@@ -9,6 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from io import BytesIO
+from typing import Iterable
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -116,6 +117,59 @@ def optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream: pd.DataFrame) -> pd.Da
     if "value" in stream.columns:
         stream["value"] = pd.array(stream["value"], dtype="Float64")
     return stream
+
+
+def _ordered_categories(frames: tuple[pd.DataFrame, ...], column: str) -> list[object]:
+    categories: list[object] = []
+    seen: set[object] = set()
+    for frame in frames:
+        if column not in frame.columns:
+            continue
+        series = frame[column]
+        values = (
+            series.cat.categories.tolist()
+            if isinstance(series.dtype, pd.CategoricalDtype)
+            else series.dropna().unique().tolist()
+        )
+        for value in values:
+            if pd.isna(value) or value in seen:
+                continue
+            seen.add(value)
+            categories.append(value)
+    return categories
+
+
+def concat_cbr_0105a_debt_corp_streams(
+    frames: Iterable[pd.DataFrame],
+) -> pd.DataFrame:
+    """Объединяет месячные потоки без распаковки категорий в тяжелый ``object``.
+
+    Pandas сохраняет categorical dtype только при одинаковом наборе категорий во
+    всех частях. Поэтому категории сначала выравниваются на небольших справочниках,
+    а затем выполняется concat.
+    """
+    frame_tuple = tuple(frame for frame in frames if frame is not None and not frame.empty)
+    if not frame_tuple:
+        return pd.DataFrame(columns=STREAM_COLUMNS)
+
+    category_dtypes: dict[str, pd.CategoricalDtype] = {}
+    for column in _CATEGORY_COLUMNS:
+        if any(column in frame.columns for frame in frame_tuple):
+            category_dtypes[column] = pd.CategoricalDtype(
+                categories=_ordered_categories(frame_tuple, column),
+                ordered=False,
+            )
+
+    aligned: list[pd.DataFrame] = []
+    for frame in frame_tuple:
+        current = frame.copy(deep=False)
+        for column, dtype in category_dtypes.items():
+            if column in current.columns:
+                current[column] = current[column].astype(dtype)
+        aligned.append(current)
+
+    stream = pd.concat(aligned, ignore_index=True, copy=False)
+    return optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
 
 
 def _report_date_from_cell(value: object) -> str:
@@ -247,6 +301,23 @@ def _build_validation_issues(
             )
         )
 
+    negative_mask = df_stream["value"].notna() & (df_stream["value"] < 0)
+    negative_count = int(negative_mask.sum())
+    if negative_count:
+        issues.append(
+            Cbr0105ADebtCorpValidationIssue(
+                code="negative_values",
+                severity="error",
+                message="В остатках задолженности присутствуют отрицательные значения.",
+                count=negative_count,
+                details={
+                    "report_date": report_date,
+                    "source_name": source_name,
+                    "minimum_value": float(df_stream.loc[negative_mask, "value"].min()),
+                },
+            )
+        )
+
     pivot = df_stream.pivot_table(
         index=["region_code", "industry_code"],
         columns=["measure", "currency_scope"],
@@ -336,165 +407,168 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             category=UserWarning,
         )
         workbook = load_workbook(BytesIO(file_bytes), read_only=True, data_only=True)
-    if not workbook.sheetnames:
-        raise ValueError("01_05_A_Debt_corp workbook has no worksheets")
 
-    records: list[dict[str, object]] = []
-    seen_sheet_codes: set[str] = set()
-    parsed_sheet_specs = []
-    common_region_names: list[str] | None = None
-    common_region_rows: list[int] | None = None
-    common_regions = None
-    industries = None
+    try:
+        if not workbook.sheetnames:
+            raise ValueError("01_05_A_Debt_corp workbook has no worksheets")
 
-    for worksheet in workbook.worksheets:
-        sheet_rows = [tuple(row) for row in worksheet.iter_rows(values_only=True)]
-        if len(sheet_rows) < 4:
-            raise ValueError(f"01_05_A_Debt_corp sheet is too short: {worksheet.title!r}")
-        sheet_title = sheet_rows[0][0] if sheet_rows[0] else None
-        sheet_spec = resolve_cbr_0105a_debt_corp_sheet_spec(sheet_title)
-        if sheet_spec.code in seen_sheet_codes:
-            raise ValueError(
-                "Duplicate semantic sheet in 01_05_A_Debt_corp workbook: "
-                f"code={sheet_spec.code!r}, sheet={worksheet.title!r}"
-            )
-        seen_sheet_codes.add(sheet_spec.code)
-        parsed_sheet_specs.append(sheet_spec)
+        records: list[dict[str, object]] = []
+        seen_sheet_codes: set[str] = set()
+        parsed_sheet_specs = []
+        common_region_names: list[str] | None = None
+        common_region_rows: list[int] | None = None
+        common_regions = None
+        industries = None
 
-        sheet_date = _report_date_from_cell(sheet_rows[1][0] if sheet_rows[1] else None)
-        if sheet_date != filename_date:
-            raise ValueError(
-                "01_05_A_Debt_corp date mismatch between filename and sheet: "
-                f"source_name={source_name!r}, filename_date={filename_date}, "
-                f"sheet={worksheet.title!r}, sheet_date={sheet_date}"
-            )
-
-        header_cells = _non_empty_industry_headers(sheet_rows, sheet_name=worksheet.title)
-        current_industries = resolve_cbr_0105a_debt_corp_industries(
-            [value for _, value in header_cells]
-        )
-        if industries is None:
-            industries = current_industries
-
-        region_rows, region_names = _region_names(sheet_rows, sheet_name=worksheet.title)
-        common_region_names = _validate_sheet_region_names(
-            common_region_names,
-            region_names,
-            sheet_name=worksheet.title,
-        )
-        if common_region_rows is None:
-            common_region_rows = region_rows
-            common_regions = build_cbr_0105a_debt_corp_region_specs(region_names)
-        elif region_rows != common_region_rows:
-            raise ValueError(
-                "Geographic row numbers differ between 01_05_A_Debt_corp sheets: "
-                f"sheet={worksheet.title!r}"
-            )
-
-        assert common_regions is not None
-        for source_row, region in zip(region_rows, common_regions, strict=True):
-            for (source_column, source_header), industry in zip(
-                header_cells,
-                current_industries,
-                strict=True,
-            ):
-                coordinate = f"{get_column_letter(source_column)}{source_row}"
-                row_values = sheet_rows[source_row - 1]
-                raw_value = (
-                    row_values[source_column - 1]
-                    if source_column - 1 < len(row_values)
-                    else None
+        for worksheet in workbook.worksheets:
+            sheet_rows = [tuple(row) for row in worksheet.iter_rows(values_only=True)]
+            if len(sheet_rows) < 4:
+                raise ValueError(f"01_05_A_Debt_corp sheet is too short: {worksheet.title!r}")
+            sheet_title = sheet_rows[0][0] if sheet_rows[0] else None
+            sheet_spec = resolve_cbr_0105a_debt_corp_sheet_spec(sheet_title)
+            if sheet_spec.code in seen_sheet_codes:
+                raise ValueError(
+                    "Duplicate semantic sheet in 01_05_A_Debt_corp workbook: "
+                    f"code={sheet_spec.code!r}, sheet={worksheet.title!r}"
                 )
-                value = _coerce_numeric_value(
-                    raw_value,
-                    coordinate=coordinate,
-                    sheet_name=worksheet.title,
-                )
-                records.append(
-                    {
-                        "series_code": CBR_0105A_DEBT_CORP_SERIES_CODE,
-                        "report_date": filename_date,
-                        "sheet_code": sheet_spec.code,
-                        "sheet_order": sheet_spec.order,
-                        "measure": sheet_spec.measure,
-                        "measure_name_ru": sheet_spec.measure_name_ru,
-                        "currency_scope": sheet_spec.currency_scope,
-                        "currency_scope_name_ru": sheet_spec.currency_scope_name_ru,
-                        "unit": CBR_0105A_DEBT_CORP_UNIT,
-                        "unit_name_ru": CBR_0105A_DEBT_CORP_UNIT_NAME_RU,
-                        "region_code": region.code,
-                        "region_name": region.canonical_name,
-                        "region_source_name": region.source_name,
-                        "region_kind": region.region_kind,
-                        "federal_district_name": region.federal_district_name,
-                        "region_order": region.order,
-                        "industry_code": industry.code,
-                        "industry_name_ru": industry.canonical_name_ru,
-                        "industry_source_name": clean_cbr_0105a_source_label(source_header),
-                        "industry_parent_code": industry.parent_code,
-                        "industry_hierarchy_level": industry.hierarchy_level,
-                        "industry_order": industry.order,
-                        "value": value,
-                        "source_id": source_identifier,
-                        "source_url": source_url,
-                        "source_name": source_name,
-                        "source_sha256": digest,
-                        "source_sheet_name": worksheet.title,
-                        "source_sheet_title": str(sheet_title or "").strip(),
-                        "source_row": source_row,
-                        "source_column": get_column_letter(source_column),
-                    }
+            seen_sheet_codes.add(sheet_spec.code)
+            parsed_sheet_specs.append(sheet_spec)
+
+            sheet_date = _report_date_from_cell(sheet_rows[1][0] if sheet_rows[1] else None)
+            if sheet_date != filename_date:
+                raise ValueError(
+                    "01_05_A_Debt_corp date mismatch between filename and sheet: "
+                    f"source_name={source_name!r}, filename_date={filename_date}, "
+                    f"sheet={worksheet.title!r}, sheet_date={sheet_date}"
                 )
 
-    expected_sheet_codes = {spec.code for spec in CBR_0105A_DEBT_CORP_SHEET_SPECS}
-    if seen_sheet_codes != expected_sheet_codes:
-        raise ValueError(
-            "01_05_A_Debt_corp workbook must contain six semantic sheets: "
-            f"missing={sorted(expected_sheet_codes - seen_sheet_codes)}, "
-            f"unexpected={sorted(seen_sheet_codes - expected_sheet_codes)}"
+            header_cells = _non_empty_industry_headers(sheet_rows, sheet_name=worksheet.title)
+            current_industries = resolve_cbr_0105a_debt_corp_industries(
+                [value for _, value in header_cells]
+            )
+            if industries is None:
+                industries = current_industries
+
+            region_rows, region_names = _region_names(sheet_rows, sheet_name=worksheet.title)
+            common_region_names = _validate_sheet_region_names(
+                common_region_names,
+                region_names,
+                sheet_name=worksheet.title,
+            )
+            if common_region_rows is None:
+                common_region_rows = region_rows
+                common_regions = build_cbr_0105a_debt_corp_region_specs(region_names)
+            elif region_rows != common_region_rows:
+                raise ValueError(
+                    "Geographic row numbers differ between 01_05_A_Debt_corp sheets: "
+                    f"sheet={worksheet.title!r}"
+                )
+
+            assert common_regions is not None
+            for source_row, region in zip(region_rows, common_regions, strict=True):
+                for (source_column, source_header), industry in zip(
+                    header_cells,
+                    current_industries,
+                    strict=True,
+                ):
+                    coordinate = f"{get_column_letter(source_column)}{source_row}"
+                    row_values = sheet_rows[source_row - 1]
+                    raw_value = (
+                        row_values[source_column - 1]
+                        if source_column - 1 < len(row_values)
+                        else None
+                    )
+                    value = _coerce_numeric_value(
+                        raw_value,
+                        coordinate=coordinate,
+                        sheet_name=worksheet.title,
+                    )
+                    records.append(
+                        {
+                            "series_code": CBR_0105A_DEBT_CORP_SERIES_CODE,
+                            "report_date": filename_date,
+                            "sheet_code": sheet_spec.code,
+                            "sheet_order": sheet_spec.order,
+                            "measure": sheet_spec.measure,
+                            "measure_name_ru": sheet_spec.measure_name_ru,
+                            "currency_scope": sheet_spec.currency_scope,
+                            "currency_scope_name_ru": sheet_spec.currency_scope_name_ru,
+                            "unit": CBR_0105A_DEBT_CORP_UNIT,
+                            "unit_name_ru": CBR_0105A_DEBT_CORP_UNIT_NAME_RU,
+                            "region_code": region.code,
+                            "region_name": region.canonical_name,
+                            "region_source_name": region.source_name,
+                            "region_kind": region.region_kind,
+                            "federal_district_name": region.federal_district_name,
+                            "region_order": region.order,
+                            "industry_code": industry.code,
+                            "industry_name_ru": industry.canonical_name_ru,
+                            "industry_source_name": clean_cbr_0105a_source_label(source_header),
+                            "industry_parent_code": industry.parent_code,
+                            "industry_hierarchy_level": industry.hierarchy_level,
+                            "industry_order": industry.order,
+                            "value": value,
+                            "source_id": source_identifier,
+                            "source_url": source_url,
+                            "source_name": source_name,
+                            "source_sha256": digest,
+                            "source_sheet_name": worksheet.title,
+                            "source_sheet_title": str(sheet_title or "").strip(),
+                            "source_row": source_row,
+                            "source_column": get_column_letter(source_column),
+                        }
+                    )
+
+        expected_sheet_codes = {spec.code for spec in CBR_0105A_DEBT_CORP_SHEET_SPECS}
+        if seen_sheet_codes != expected_sheet_codes:
+            raise ValueError(
+                "01_05_A_Debt_corp workbook must contain six semantic sheets: "
+                f"missing={sorted(expected_sheet_codes - seen_sheet_codes)}, "
+                f"unexpected={sorted(seen_sheet_codes - expected_sheet_codes)}"
+            )
+        assert industries is not None and common_regions is not None
+
+        df_stream = pd.DataFrame.from_records(records, columns=STREAM_COLUMNS)
+        df_stream = optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream)
+        key_columns = [
+            "report_date",
+            "measure",
+            "currency_scope",
+            "region_code",
+            "industry_code",
+        ]
+        duplicate_count = int(df_stream.duplicated(key_columns, keep=False).sum())
+        if duplicate_count:
+            raise ValueError(
+                "Duplicate observations in 01_05_A_Debt_corp stream: "
+                f"duplicate_rows={duplicate_count}"
+            )
+
+        df_stream = df_stream.sort_values(
+            ["report_date", "sheet_order", "region_order", "industry_order"],
+            kind="stable",
+        ).reset_index(drop=True)
+        validation_issues = _build_validation_issues(
+            df_stream,
+            report_date=filename_date,
+            source_name=source_name,
         )
-    assert industries is not None and common_regions is not None
 
-    df_stream = pd.DataFrame.from_records(records, columns=STREAM_COLUMNS)
-    df_stream = optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream)
-    key_columns = [
-        "report_date",
-        "measure",
-        "currency_scope",
-        "region_code",
-        "industry_code",
-    ]
-    duplicate_count = int(df_stream.duplicated(key_columns, keep=False).sum())
-    if duplicate_count:
-        raise ValueError(
-            "Duplicate observations in 01_05_A_Debt_corp stream: "
-            f"duplicate_rows={duplicate_count}"
+        return ParsedCbr0105ADebtCorpFile(
+            source_id=source_identifier,
+            source_name=source_name,
+            source_url=source_url,
+            source_sha256=digest,
+            report_date=filename_date,
+            sheets=tuple(sorted(parsed_sheet_specs, key=lambda item: item.order)),
+            industries=industries,
+            regions=common_regions,
+            validation_issues=validation_issues,
+            df_stream=df_stream,
+            rows_stream=int(len(df_stream)),
         )
-
-    df_stream = df_stream.sort_values(
-        ["report_date", "sheet_order", "region_order", "industry_order"],
-        kind="stable",
-    ).reset_index(drop=True)
-    validation_issues = _build_validation_issues(
-        df_stream,
-        report_date=filename_date,
-        source_name=source_name,
-    )
-    workbook.close()
-
-    return ParsedCbr0105ADebtCorpFile(
-        source_id=source_identifier,
-        source_name=source_name,
-        source_url=source_url,
-        source_sha256=digest,
-        report_date=filename_date,
-        sheets=tuple(sorted(parsed_sheet_specs, key=lambda item: item.order)),
-        industries=industries,
-        regions=common_regions,
-        validation_issues=validation_issues,
-        df_stream=df_stream,
-        rows_stream=int(len(df_stream)),
-    )
+    finally:
+        workbook.close()
 
 
 def parse_cbr_0105a_debt_corp_source(
@@ -512,6 +586,7 @@ def parse_cbr_0105a_debt_corp_source(
 
 __all__ = [
     "STREAM_COLUMNS",
+    "concat_cbr_0105a_debt_corp_streams",
     "optimize_cbr_0105a_debt_corp_stream_dtypes",
     "parse_cbr_0105a_debt_corp_excel_bytes",
     "parse_cbr_0105a_debt_corp_source",
