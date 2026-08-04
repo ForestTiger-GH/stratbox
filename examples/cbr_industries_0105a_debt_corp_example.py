@@ -6,6 +6,7 @@ from stratbox.macrobanks.cbr_industries import (
     Cbr0105ADebtCorpPivotWorkbookRequest,
     Cbr0105ADebtCorpStreamBuildRequest,
     build_cbr_0105a_debt_corp_pivot_set,
+    calculate_cbr_0105a_debt_corp_apk_industry,
     build_cbr_0105a_debt_corp_stream,
     save_cbr_0105a_debt_corp_pivot_workbook,
 )
@@ -20,9 +21,12 @@ stream_result = build_cbr_0105a_debt_corp_stream(
     )
 )
 
-# Фильтр выполняется до pivot: здесь выбирается отраслевой итог.
-filtered_stream = stream_result.df_stream.loc[
-    stream_result.df_stream["industry_code"].astype("object") == "total"
+# Промежуточная операция добавляет расчетную отрасль АПК.
+apk_result = calculate_cbr_0105a_debt_corp_apk_industry(stream_result.df_stream)
+
+# Фильтр выполняется до pivot: здесь выбирается только рассчитанный АПК.
+filtered_stream = apk_result.df_stream.loc[
+    apk_result.df_stream["industry_code"].astype("object") == "apk"
 ].copy()
 
 pivot_set = build_cbr_0105a_debt_corp_pivot_set(
@@ -39,7 +43,7 @@ pivot_set = build_cbr_0105a_debt_corp_pivot_set(
 saved = save_cbr_0105a_debt_corp_pivot_workbook(
     pivot_set,
     Cbr0105ADebtCorpPivotWorkbookRequest(
-        out_path="output/01_05_A_Debt_corp_total_by_regions.xlsx",
+        out_path="output/01_05_A_Debt_corp_apk_by_regions.xlsx",
         overwrite=True,
     ),
 )

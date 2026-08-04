@@ -1,6 +1,7 @@
 """Отраслевые таблицы Банка России."""
 
 from stratbox.macrobanks.cbr_industries.contracts import (
+    Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpDownloadBatchResult,
     Cbr0105ADebtCorpDownloadedSource,
     Cbr0105ADebtCorpDownloadRequest,
@@ -20,7 +21,15 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpValidationIssue,
     ParsedCbr0105ADebtCorpFile,
 )
+from stratbox.macrobanks.cbr_industries.derived import (
+    CBR_0105A_DEBT_CORP_APK_FORMULA_RU,
+    CBR_0105A_DEBT_CORP_APK_INDUSTRY_SPEC,
+    CBR_0105A_DEBT_CORP_APK_SOURCE_INDUSTRY_CODES,
+    CBR_0105A_DEBT_CORP_LPK_FORMULA_RU,
+    Cbr0105ADebtCorpDerivedIndustryError,
+)
 from stratbox.macrobanks.cbr_industries.operations import (
+    calculate_cbr_0105a_debt_corp_apk_industry,
     build_cbr_0105a_debt_corp_pivot_set,
     build_cbr_0105a_debt_corp_stream,
     discover_cbr_0105a_debt_corp_sources,
@@ -54,6 +63,10 @@ from stratbox.macrobanks.cbr_industries.schema import (
 from stratbox.macrobanks.cbr_industries.sources import CBR_SORS_INDEX_URL
 
 __all__ = [
+    "CBR_0105A_DEBT_CORP_APK_FORMULA_RU",
+    "CBR_0105A_DEBT_CORP_APK_INDUSTRY_SPEC",
+    "CBR_0105A_DEBT_CORP_APK_SOURCE_INDUSTRY_CODES",
+    "CBR_0105A_DEBT_CORP_LPK_FORMULA_RU",
     "CBR_0105A_DEBT_CORP_EXPECTED_REGION_COUNT",
     "CBR_0105A_DEBT_CORP_INDUSTRY_SPECS",
     "CBR_0105A_DEBT_CORP_PIVOT_DIMENSIONS",
@@ -64,6 +77,8 @@ __all__ = [
     "CBR_0105A_DEBT_CORP_UNIT",
     "CBR_0105A_DEBT_CORP_UNIT_NAME_RU",
     "CBR_SORS_INDEX_URL",
+    "Cbr0105ADebtCorpApkCalculationResult",
+    "Cbr0105ADebtCorpDerivedIndustryError",
     "Cbr0105ADebtCorpDownloadBatchResult",
     "Cbr0105ADebtCorpDownloadedSource",
     "Cbr0105ADebtCorpDownloadRequest",
@@ -85,6 +100,7 @@ __all__ = [
     "ParsedCbr0105ADebtCorpFile",
     "STREAM_COLUMNS",
     "build_cbr_0105a_debt_corp_pivot_set",
+    "calculate_cbr_0105a_debt_corp_apk_industry",
     "build_cbr_0105a_debt_corp_stream",
     "concat_cbr_0105a_debt_corp_streams",
     "discover_cbr_0105a_debt_corp_sources",

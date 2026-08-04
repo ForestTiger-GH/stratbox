@@ -31,6 +31,7 @@ from stratbox.macrobanks.cbr_industries import (
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpStreamBuildRequest,
     build_cbr_0105a_debt_corp_pivot_set,
+    calculate_cbr_0105a_debt_corp_apk_industry,
     build_cbr_0105a_debt_corp_stream,
 )
 
@@ -42,8 +43,10 @@ result = build_cbr_0105a_debt_corp_stream(
     )
 )
 
-filtered = result.df_stream.loc[
-    result.df_stream["industry_code"].astype("object") == "total"
+apk_result = calculate_cbr_0105a_debt_corp_apk_industry(result.df_stream)
+
+filtered = apk_result.df_stream.loc[
+    apk_result.df_stream["industry_code"].astype("object") == "apk"
 ].copy()
 
 pivot_set = build_cbr_0105a_debt_corp_pivot_set(

@@ -567,3 +567,101 @@ def test_pivot_partial_stream_policy_is_explicit() -> None:
         stream_result=partial,
     )
     assert pivot_set.is_partial
+
+
+def test_apk_calculation_uses_corrected_lpk_formula() -> None:
+    from stratbox.macrobanks.cbr_industries.derived import (
+        CBR_0105A_DEBT_CORP_APK_FORMULA_RU,
+        CBR_0105A_DEBT_CORP_LPK_FORMULA_RU,
+    )
+    from stratbox.macrobanks.cbr_industries.operations import (
+        calculate_cbr_0105a_debt_corp_apk_industry,
+    )
+
+    result = _stream_result()
+    stream = result.df_stream.copy()
+    component_values = {
+        "agriculture_hunting_forestry": 100,
+        "agriculture_hunting_services": 70,
+        "manufacturing_food_beverages_tobacco": 30,
+        "manufacturing_machinery_agriculture_forestry": 10,
+        "manufacturing_wood_products": 20,
+    }
+    industry_codes = stream["industry_code"].astype("object")
+    for industry_code, value in component_values.items():
+        stream.loc[industry_codes.eq(industry_code), "value"] = value
+
+    calculated = calculate_cbr_0105a_debt_corp_apk_industry(stream)
+
+    expected_groups = 2 * 6 * 96
+    assert calculated.ok
+    assert calculated.industry.code == "apk"
+    assert calculated.industry.canonical_name_ru == "АПК"
+    assert calculated.rows_added == expected_groups
+    assert calculated.groups_calculated == expected_groups
+    assert calculated.source_rows_used == expected_groups * 5
+    assert calculated.lpk_formula_ru == CBR_0105A_DEBT_CORP_LPK_FORMULA_RU
+    assert calculated.apk_formula_ru == CBR_0105A_DEBT_CORP_APK_FORMULA_RU
+
+    # ЛПК = 20 + 100 - 70 = 50.
+    # АПК = 70 + 30 + 10 + 50 = 160.
+    assert calculated.df_apk["value"].eq(160).all()
+    assert calculated.df_apk["industry_code"].astype("object").eq("apk").all()
+    assert calculated.df_apk["industry_name_ru"].astype("object").eq("АПК").all()
+    assert calculated.df_apk["industry_order"].eq(27).all()
+    assert calculated.df_apk["source_column"].isna().all()
+    assert len(calculated.df_stream) == len(stream) + expected_groups
+    assert not calculated.df_stream["industry_code"].astype("object").eq("lpk").any()
+
+
+def test_apk_calculation_rejects_incomplete_component_group() -> None:
+    from stratbox.macrobanks.cbr_industries.derived import (
+        Cbr0105ADebtCorpDerivedIndustryError,
+    )
+    from stratbox.macrobanks.cbr_industries.operations import (
+        calculate_cbr_0105a_debt_corp_apk_industry,
+    )
+
+    result = _stream_result()
+    stream = result.df_stream.copy()
+    mask = (
+        stream["industry_code"].astype("object").eq(
+            "manufacturing_machinery_agriculture_forestry"
+        )
+        & stream["report_date"].astype("object").eq("2019-02-01")
+        & stream["region_code"].astype("object").eq("0105a_region_001")
+        & stream["measure"].astype("object").eq("debt")
+        & stream["currency_scope"].astype("object").eq("rubles")
+    )
+    stream = stream.loc[~mask].copy()
+
+    with pytest.raises(Cbr0105ADebtCorpDerivedIndustryError) as exc_info:
+        calculate_cbr_0105a_debt_corp_apk_industry(stream)
+    assert exc_info.value.code == "APK_INCOMPLETE_COMPONENT_VALUES"
+    assert exc_info.value.details["group_count"] == 1
+
+
+def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
+    from stratbox.macrobanks.cbr_industries.operations import (
+        calculate_cbr_0105a_debt_corp_apk_industry,
+    )
+
+    result = _stream_result()
+    calculated = calculate_cbr_0105a_debt_corp_apk_industry(result.df_stream)
+    filtered = calculated.df_stream.loc[
+        calculated.df_stream["industry_code"].astype("object").eq("apk")
+    ].copy()
+
+    pivot_set = build_cbr_0105a_debt_corp_pivot_set(
+        filtered,
+        Cbr0105ADebtCorpPivotRequest(
+            row_dimension="region_code",
+            column_dimension="report_date",
+            sheet_dimensions=("measure", "currency_scope"),
+        ),
+        stream_result=result,
+    )
+
+    assert pivot_set.table_count == 6
+    assert all(table.rows == 96 for table in pivot_set.tables)
+    assert dict(pivot_set.fixed_dimensions)["industry_code"] == "apk"

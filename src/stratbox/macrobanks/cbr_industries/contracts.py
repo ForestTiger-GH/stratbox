@@ -227,6 +227,25 @@ class Cbr0105ADebtCorpStreamResult:
         return bool(self.failures) and bool(self.parsed_files)
 
 
+@dataclass(frozen=True)
+class Cbr0105ADebtCorpApkCalculationResult:
+    """Результат добавления расчетной отрасли ``АПК`` в поток."""
+
+    industry: Cbr0105ADebtCorpIndustrySpec
+    source_industry_codes: tuple[str, ...]
+    lpk_formula_ru: str
+    apk_formula_ru: str
+    df_apk: pd.DataFrame
+    df_stream: pd.DataFrame
+    source_rows_used: int
+    groups_calculated: int
+    rows_added: int
+
+    @property
+    def ok(self) -> bool:
+        return self.rows_added > 0 and self.rows_added == len(self.df_apk)
+
+
 @dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpPivotRequest:
     """Запрос на построение набора двумерных таблиц из отфильтрованного потока.
@@ -305,6 +324,7 @@ class Cbr0105ADebtCorpPivotWorkbookResult:
 
 
 __all__ = [
+    "Cbr0105ADebtCorpApkCalculationResult",
     "Cbr0105ADebtCorpCurrencyScope",
     "Cbr0105ADebtCorpDownloadBatchResult",
     "Cbr0105ADebtCorpDownloadedSource",

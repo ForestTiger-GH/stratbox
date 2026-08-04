@@ -7,6 +7,7 @@ import pandas as pd
 from stratbox.base.filestore import FileStore
 from stratbox.base.runtime import get_filestore
 from stratbox.macrobanks.cbr_industries.contracts import (
+    Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpDownloadBatchResult,
     Cbr0105ADebtCorpDownloadedSource,
     Cbr0105ADebtCorpDownloadRequest,
@@ -19,6 +20,9 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpStreamBuildRequest,
     Cbr0105ADebtCorpStreamResult,
     ParsedCbr0105ADebtCorpFile,
+)
+from stratbox.macrobanks.cbr_industries.derived import (
+    calculate_cbr_0105a_debt_corp_apk_industry as _calculate_apk_industry,
 )
 from stratbox.macrobanks.cbr_industries.download import (
     try_download_cbr_0105a_debt_corp_source,
@@ -246,6 +250,13 @@ def build_cbr_0105a_debt_corp_stream(
     )
 
 
+def calculate_cbr_0105a_debt_corp_apk_industry(
+    df_stream: pd.DataFrame,
+) -> Cbr0105ADebtCorpApkCalculationResult:
+    """Дополняет поток расчетной отраслью ``АПК`` для всех наблюдений."""
+    return _calculate_apk_industry(df_stream)
+
+
 def build_cbr_0105a_debt_corp_pivot_set(
     df_stream: pd.DataFrame,
     request: Cbr0105ADebtCorpPivotRequest,
@@ -267,6 +278,7 @@ def save_cbr_0105a_debt_corp_pivot_workbook(
 
 
 __all__ = [
+    "calculate_cbr_0105a_debt_corp_apk_industry",
     "build_cbr_0105a_debt_corp_pivot_set",
     "build_cbr_0105a_debt_corp_stream",
     "discover_cbr_0105a_debt_corp_sources",
