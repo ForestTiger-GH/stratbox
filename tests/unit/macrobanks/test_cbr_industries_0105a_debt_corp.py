@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from openpyxl import Workbook, load_workbook
@@ -122,6 +124,38 @@ def _workbook_bytes(
     return buffer.getvalue()
 
 
+def _with_underreported_worksheet_dimension(
+    content: bytes,
+    *,
+    worksheet_number: int,
+    declared_dimension: str,
+) -> bytes:
+    """Rewrites only XLSX dimension metadata while preserving real cells."""
+    source = BytesIO(content)
+    target = BytesIO()
+    sheet_path = f"xl/worksheets/sheet{worksheet_number}.xml"
+    with ZipFile(source, "r") as input_zip, ZipFile(
+        target,
+        "w",
+        compression=ZIP_DEFLATED,
+    ) as output_zip:
+        for item in input_zip.infolist():
+            data = input_zip.read(item.filename)
+            if item.filename == sheet_path:
+                text = data.decode("utf-8")
+                text, replacements = re.subn(
+                    r'<dimension ref="[^"]+"',
+                    f'<dimension ref="{declared_dimension}"',
+                    text,
+                    count=1,
+                )
+                if replacements != 1:
+                    raise AssertionError(f"No dimension metadata in {sheet_path}")
+                data = text.encode("utf-8")
+            output_zip.writestr(item, data)
+    return target.getvalue()
+
+
 def _parsed_pair():
     old = parse_cbr_0105a_debt_corp_excel_bytes(
         _workbook_bytes(
@@ -213,6 +247,37 @@ def test_parser_recognizes_sheets_and_full_geographic_layout() -> None:
     assert zero_row["value"] == 0
     assert zero_row["source_column"] == "B"
     assert zero_row["source_row"] == 84
+
+
+def test_parser_ignores_underreported_xlsx_dimension_metadata() -> None:
+    content = _workbook_bytes(
+        report_date="01.01.2026",
+        kemerovo_name="Кемеровская область - Кузбасс",
+    )
+    # The fourth sheet mirrors the defective official January 2026 metadata:
+    # its XML declares the last column as Z even though AA cells are present.
+    malformed = _with_underreported_worksheet_dimension(
+        content,
+        worksheet_number=4,
+        declared_dimension="A1:Z99",
+    )
+
+    parsed = parse_cbr_0105a_debt_corp_excel_bytes(
+        malformed,
+        source_name="01_05_A_Debt_corp_20260101.xlsx",
+    )
+
+    assert parsed.rows_stream == 6 * 96 * 26
+    final_industry = parsed.df_stream.loc[
+        (
+            parsed.df_stream["sheet_code"]
+            == "overdue_debt_foreign_currency_and_precious_metals"
+        )
+        & (parsed.df_stream["industry_code"] == "completion_of_settlements")
+    ]
+    assert len(final_industry) == 96
+    assert final_industry["source_column"].astype("object").eq("AA").all()
+    assert final_industry["value"].eq(2).all()
 
 
 def test_parser_rejects_incomplete_geographic_layout() -> None:

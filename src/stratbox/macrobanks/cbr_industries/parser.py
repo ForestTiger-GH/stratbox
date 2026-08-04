@@ -421,6 +421,13 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         industries = None
 
         for worksheet in workbook.worksheets:
+            # Some official CBR workbooks contain an incorrect worksheet
+            # ``dimension`` declaration.  In particular, a sheet may declare
+            # ``A1:Z99`` while real cells in column AA are present in the XML.
+            # Read-only openpyxl trusts that declaration and otherwise truncates
+            # the last industry column.  Resetting the cached dimensions makes
+            # the streaming reader derive the actual used range from cell data.
+            worksheet.reset_dimensions()
             sheet_rows = [tuple(row) for row in worksheet.iter_rows(values_only=True)]
             if len(sheet_rows) < 4:
                 raise ValueError(f"01_05_A_Debt_corp sheet is too short: {worksheet.title!r}")
