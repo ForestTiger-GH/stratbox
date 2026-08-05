@@ -1,8 +1,8 @@
 {
-  "mapping_version": "cbr-legacy-okved2-bridge-2026.1",
-  "status": "METHODOLOGY_DERIVED",
+  "mapping_version": "cbr-legacy-okved2-bridge-2026.2",
+  "status": "METHODOLOGY_DERIVED_CONDITIONAL",
   "strict_official_crosswalk": false,
-  "description": "Versioned semantic and methodology-derived bridge between published CBR legacy activity nodes and OKVED2 classes. It supplies a weighted fit objective and must never be reported as STRICT evidence.",
+  "description": "Conditional atom-to-class bridge. All atom/class flows remain feasible; preferred methodology-derived edges have zero reclassification penalty and fallback edges have positive penalty. Results are certified only within the globally minimum-reclassification solution set and never promoted to strict publication facts.",
   "source_basis": [
     "CBR legacy publication node names and hierarchy",
     "OKVED2 class and section boundaries",

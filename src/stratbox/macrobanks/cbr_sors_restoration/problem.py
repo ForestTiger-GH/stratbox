@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from math import sqrt
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsRunConfig, SorsSourceBundle
-from stratbox.macrobanks.cbr_sors_restoration.mapping import bridge_groups, bridge_weights
+from stratbox.macrobanks.cbr_sors_restoration.mapping import (
+    build_atom_class_edges,
+    read_legacy_atoms,
+    read_legacy_membership,
+)
 from stratbox.macrobanks.cbr_sors_restoration.metrics import METRIC_COMPONENTS, source_metric
 from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS
 
@@ -37,384 +40,598 @@ class CsrMatrixData:
 
 @dataclass(frozen=True)
 class SorsProblem:
+    model_layer: str
     matrix: CsrMatrixData
     row_lower: np.ndarray
     row_upper: np.ndarray
     col_lower: np.ndarray
     col_upper: np.ndarray
-    bridge_objective: np.ndarray
-    variable_grid: pd.DataFrame
+    objective: np.ndarray
     constraints_grid: pd.DataFrame
-    region_positions: dict[str, int]
-    class_positions: dict[str, int]
-    component_positions: dict[str, int]
-    n_primary_variables: int
+    metadata: dict[str, object] = field(default_factory=dict)
 
     @property
     def num_variables(self) -> int:
         return int(len(self.col_lower))
 
 
-def _project_problem(
-    problem: SorsProblem,
-    *,
-    row_positions: np.ndarray,
-    row_lower: np.ndarray,
-    row_upper: np.ndarray,
-    constraints_grid: pd.DataFrame,
-) -> SorsProblem:
-    n_columns = problem.n_primary_variables
-    indptr = [0]
-    indices: list[int] = []
-    data: list[float] = []
-    for row_position in row_positions.astype(int):
-        start = int(problem.matrix.indptr[row_position])
-        end = int(problem.matrix.indptr[row_position + 1])
-        row_indices = problem.matrix.indices[start:end]
-        row_data = problem.matrix.data[start:end]
-        mask = row_indices < n_columns
-        indices.extend(row_indices[mask].astype(int).tolist())
-        data.extend(row_data[mask].astype(float).tolist())
-        indptr.append(len(indices))
-    matrix = CsrMatrixData(
-        shape=(len(row_positions), n_columns),
-        indptr=np.asarray(indptr, dtype=np.int64),
-        indices=np.asarray(indices, dtype=np.int32),
-        data=np.asarray(data, dtype=float),
-    )
-    variable_grid = problem.variable_grid.iloc[:n_columns].copy().reset_index(drop=True)
-    return SorsProblem(
-        matrix=matrix,
-        row_lower=np.asarray(row_lower, dtype=float),
-        row_upper=np.asarray(row_upper, dtype=float),
-        col_lower=problem.col_lower[:n_columns].copy(),
-        col_upper=problem.col_upper[:n_columns].copy(),
-        bridge_objective=np.zeros(n_columns, dtype=float),
-        variable_grid=variable_grid,
-        constraints_grid=constraints_grid.reset_index(drop=True),
-        region_positions=problem.region_positions,
-        class_positions=problem.class_positions,
-        component_positions=problem.component_positions,
-        n_primary_variables=n_columns,
-    )
-
-
-def strict_publication_problem(problem: SorsProblem) -> SorsProblem:
-    mask = problem.constraints_grid['hardness'].astype(str).eq('HARD_PUBLICATION').to_numpy()
-    positions = np.flatnonzero(mask)
-    return _project_problem(
-        problem,
-        row_positions=positions,
-        row_lower=problem.row_lower[positions],
-        row_upper=problem.row_upper[positions],
-        constraints_grid=problem.constraints_grid.iloc[positions].copy(),
-    )
-
-
-def bridge_profile_problem(
-    problem: SorsProblem,
-    optimum_values: np.ndarray,
-    *,
-    tolerance: float,
-    geography_node_id: str | None = None,
-) -> SorsProblem:
-    meta = problem.constraints_grid.copy()
-    hard_mask = meta['hardness'].astype(str).eq('HARD_PUBLICATION').to_numpy()
-    bridge_mask = meta['hardness'].astype(str).eq('BRIDGE_OBJECTIVE').to_numpy()
-    if geography_node_id is not None:
-        geography = meta.get('geography_node_id', pd.Series(index=meta.index, dtype=object)).astype(str)
-        bridge_mask &= geography.eq(str(geography_node_id)).to_numpy()
-    selected_mask = hard_mask | bridge_mask
-    positions = np.flatnonzero(selected_mask)
-    lower = problem.row_lower[positions].copy()
-    upper = problem.row_upper[positions].copy()
-    selected_meta = meta.iloc[positions].copy()
-    primary_values = np.asarray(optimum_values[:problem.n_primary_variables], dtype=float)
-    for local_position, row_position in enumerate(positions):
-        if not bridge_mask[row_position]:
-            continue
-        start = int(problem.matrix.indptr[row_position])
-        end = int(problem.matrix.indptr[row_position + 1])
-        row_indices = problem.matrix.indices[start:end]
-        row_data = problem.matrix.data[start:end]
-        mask = row_indices < problem.n_primary_variables
-        fitted = float(np.dot(row_data[mask], primary_values[row_indices[mask]]))
-        lower[local_position] = max(0.0, fitted - tolerance)
-        upper[local_position] = fitted + tolerance
-    selected_meta.loc[selected_meta['hardness'].astype(str).eq('BRIDGE_OBJECTIVE'), 'hardness'] = 'BRIDGE_PROFILE'
-    selected_meta.loc[selected_meta['constraint_kind'].astype(str).eq('legacy_bridge_fit'), 'constraint_kind'] = 'legacy_bridge_profile'
-    return _project_problem(
-        problem,
-        row_positions=positions,
-        row_lower=lower,
-        row_upper=upper,
-        constraints_grid=selected_meta,
-    )
-
-
-class ProblemBuilder:
-    def __init__(self, bundle: SorsSourceBundle, config: SorsRunConfig, mapping_edges: pd.DataFrame):
-        self.bundle = bundle
-        self.config = config
-        self.mapping_edges = mapping_edges
-        self.regions = bundle.atomic_regions.reset_index(drop=True)
-        self.classes = bundle.okved2_classes.reset_index(drop=True)
-        self.region_positions = {name: i for i, name in enumerate(self.regions['region_name'].astype(str))}
-        self.region_code_positions = {code: i for i, code in enumerate(self.regions['region_code'].astype(str))}
-        self.class_positions = {code: i for i, code in enumerate(self.classes['class_code'].astype(str))}
-        self.component_positions = {name: i for i, name in enumerate(COMPONENTS)}
-        self.n_primary = len(self.regions) * len(self.classes) * len(COMPONENTS)
+class _SparseProblemBuilder:
+    def __init__(self) -> None:
         self.rows: list[list[tuple[int, float]]] = []
         self.row_lower: list[float] = []
         self.row_upper: list[float] = []
         self.row_meta: list[dict[str, object]] = []
-        self.bridge_objective: list[float] = [0.0] * self.n_primary
-        self.col_meta: list[dict[str, object]] = []
-        for r, region in self.regions.iterrows():
-            for c, cls in self.classes.iterrows():
-                for k, component in enumerate(COMPONENTS):
-                    self.col_meta.append({
-                        'variable_id': self.x_index(r, c, component),
-                        'variable_kind': 'regional_okved2_component',
-                        'region_code': region['region_code'],
-                        'region_name': region['region_name'],
-                        'federal_district_name': region['federal_district_name'],
-                        'class_code': cls['class_code'],
-                        'class_name': cls['class_name'],
-                        'section_code': cls['section_code'],
-                        'component': component,
-                    })
-        self.geo_members = {
-            row.geography_node_id: tuple(row.atomic_region_codes)
-            for row in bundle.geography_nodes.itertuples(index=False)
-        }
-        self.bridge_groups = bridge_groups(mapping_edges)
-        self.bridge_weights = bridge_weights(mapping_edges)
 
-    def x_index(self, region_pos: int, class_pos: int, component: str) -> int:
-        return (region_pos * len(self.classes) + class_pos) * len(COMPONENTS) + self.component_positions[component]
-
-    def expression(self, region_codes, class_codes, metric: str) -> list[tuple[int, float]]:
-        components = METRIC_COMPONENTS[metric]
-        return [
-            (self.x_index(self.region_code_positions[region], self.class_positions[class_code], component), 1.0)
-            for region in region_codes
-            for class_code in class_codes
-            for component in components
-        ]
-
-    def add_hard(self, *, constraint_id: str, items, lower: float, upper: float, source_observation_id: str, source_series: str, kind: str) -> None:
-        values = list(items)
-        if not values:
-            raise ValueError(f'Constraint {constraint_id} has no variables')
-        self.rows.append(values)
+    def add_row(
+        self,
+        items,
+        *,
+        lower: float,
+        upper: float,
+        constraint_id: str,
+        constraint_kind: str,
+        source_observation_id: str | None = None,
+        source_series: str | None = None,
+        model_layer: str,
+    ) -> None:
+        combined: dict[int, float] = {}
+        for column, coefficient in items:
+            column = int(column)
+            combined[column] = combined.get(column, 0.0) + float(coefficient)
+        row = [(column, coefficient) for column, coefficient in combined.items() if coefficient]
+        if not row:
+            raise ValueError(f'Constraint {constraint_id!r} has no variables')
+        self.rows.append(row)
         self.row_lower.append(float(lower))
         self.row_upper.append(float(upper))
         self.row_meta.append({
             'constraint_id': constraint_id,
-            'constraint_kind': kind,
-            'hardness': 'HARD_PUBLICATION',
+            'constraint_kind': constraint_kind,
+            'model_layer': model_layer,
             'source_observation_id': source_observation_id,
             'source_series': source_series,
-            'published_lower': lower,
-            'published_upper': upper,
-            'bridge_weight': 0.0,
+            'lower_bound': float(lower),
+            'upper_bound': float(upper),
         })
 
-    def add_soft_bridge(self, *, constraint_id: str, items, value: float, observation, base_weight: float, geography_weight: float) -> None:
-        expression = list(items)
-        if not expression:
-            return
-        positive = len(self.bridge_objective)
-        negative = positive + 1
-        self.bridge_objective.extend([0.0, 0.0])
-        self.col_meta.extend([
-            {'variable_id': positive, 'variable_kind': 'bridge_positive_deviation', 'bridge_constraint_id': constraint_id},
-            {'variable_id': negative, 'variable_kind': 'bridge_negative_deviation', 'bridge_constraint_id': constraint_id},
-        ])
-        expression.extend([(positive, -1.0), (negative, 1.0)])
-        weight = float(base_weight) * float(geography_weight) / sqrt(max(abs(float(value)), 100.0))
-        self.bridge_objective[positive] = weight
-        self.bridge_objective[negative] = weight
-        self.rows.append(expression)
-        self.row_lower.append(float(value))
-        self.row_upper.append(float(value))
-        self.row_meta.append({
-            'constraint_id': constraint_id,
-            'constraint_kind': 'legacy_bridge_fit',
-            'hardness': 'BRIDGE_OBJECTIVE',
-            'source_observation_id': observation.observation_id,
-            'source_series': observation.source_series,
-            'published_lower': observation.published_lower,
-            'published_upper': observation.published_upper,
-            'bridge_weight': weight,
-            'geography_node_id': getattr(observation, 'geography_node_id', None),
-            'geography_name': getattr(observation, 'geography_name', None),
-            'geography_kind': getattr(observation, 'geography_kind', None),
-            'activity_code': getattr(observation, 'activity_code', None),
-            'measure': getattr(observation, 'measure', None),
-            'currency': getattr(observation, 'currency', None),
-        })
+    def matrix(self, n_columns: int) -> CsrMatrixData:
+        indptr = [0]
+        indices: list[int] = []
+        data: list[float] = []
+        for row in self.rows:
+            for column, coefficient in sorted(row):
+                indices.append(column)
+                data.append(coefficient)
+            indptr.append(len(indices))
+        return CsrMatrixData(
+            shape=(len(self.rows), n_columns),
+            indptr=np.asarray(indptr, dtype=np.int64),
+            indices=np.asarray(indices, dtype=np.int32),
+            data=np.asarray(data, dtype=float),
+        )
+
+
+class _PublicationMixin:
+    bundle: SorsSourceBundle
+    regions: pd.DataFrame
+    classes: pd.DataFrame
+    geo_members: dict[str, tuple[str, ...]]
 
     def _class_codes_for_publication(self, code: str, *, fd: bool = False) -> tuple[str, ...]:
         if code == 'PUBLISHED_OTHER':
             if not fd:
                 return self.bundle.published_other_classes
-            published_sections = set(self.bundle.fd_okved2_grid['activity_code'].astype(str)) - {'PUBLISHED_OTHER'}
-            return tuple(self.classes.loc[~self.classes['section_code'].isin(published_sections), 'class_code'].astype(str))
+            published_sections = (
+                set(self.bundle.fd_okved2_grid['activity_code'].astype(str))
+                - {'PUBLISHED_OTHER'}
+            )
+            return tuple(
+                self.classes.loc[
+                    ~self.classes['section_code'].astype(str).isin(published_sections),
+                    'class_code',
+                ].astype(str)
+            )
         if fd:
-            return tuple(self.classes.loc[self.classes['section_code'].astype(str) == code, 'class_code'].astype(str))
+            return tuple(
+                self.classes.loc[
+                    self.classes['section_code'].astype(str).eq(code), 'class_code'
+                ].astype(str)
+            )
         return (code,)
 
-    def add_publication_constraints(self) -> None:
+
+class StrictProblemBuilder(_SparseProblemBuilder, _PublicationMixin):
+    """Official-publication model without any legacy/OKVED2 mapping assumption."""
+
+    def __init__(self, bundle: SorsSourceBundle):
+        super().__init__()
+        self.bundle = bundle
+        self.regions = bundle.atomic_regions.reset_index(drop=True)
+        self.classes = bundle.okved2_classes.reset_index(drop=True)
+        self.region_positions = {
+            code: i for i, code in enumerate(self.regions['region_code'].astype(str))
+        }
+        self.class_positions = {
+            code: i for i, code in enumerate(self.classes['class_code'].astype(str))
+        }
+        self.component_positions = {name: i for i, name in enumerate(COMPONENTS)}
+        self.geo_members = {
+            row.geography_node_id: tuple(row.atomic_region_codes)
+            for row in bundle.geography_nodes.itertuples(index=False)
+        }
+        self.n = len(self.regions) * len(self.classes) * len(COMPONENTS)
+
+    def index(self, region_code: str, class_code: str, component: str) -> int:
+        r = self.region_positions[region_code]
+        c = self.class_positions[class_code]
+        k = self.component_positions[component]
+        return (r * len(self.classes) + c) * len(COMPONENTS) + k
+
+    def expression(self, region_codes, class_codes, metric: str):
+        return [
+            (self.index(region, class_code, component), 1.0)
+            for region in region_codes
+            for class_code in class_codes
+            for component in METRIC_COMPONENTS[metric]
+        ]
+
+    def _publication_rows(self) -> None:
         all_regions = tuple(self.regions['region_code'].astype(str))
         all_classes = tuple(self.classes['class_code'].astype(str))
-        regional_total = self.bundle.regional_traditional_grid[self.bundle.regional_traditional_grid['activity_code'].astype(str) == 'total']
+        regional_total = self.bundle.regional_traditional_grid[
+            self.bundle.regional_traditional_grid['activity_code'].astype(str).eq('total')
+        ]
         for row in regional_total.itertuples(index=False):
-            metric = source_metric(row.measure, row.currency)
-            members = self.geo_members[str(row.geography_node_id)]
-            self.add_hard(
-                constraint_id=f'hard:{row.observation_id}',
-                items=self.expression(members, all_classes, metric),
+            self.add_row(
+                self.expression(
+                    self.geo_members[str(row.geography_node_id)],
+                    all_classes,
+                    source_metric(row.measure, row.currency),
+                ),
                 lower=row.published_lower,
                 upper=row.published_upper,
+                constraint_id=f'strict:{row.observation_id}',
+                constraint_kind='regional_total',
                 source_observation_id=row.observation_id,
                 source_series=row.source_series,
-                kind='regional_total',
+                model_layer='STRICT',
             )
-        national_old_total = self.bundle.national_traditional_grid[self.bundle.national_traditional_grid['activity_code'].astype(str) == 'total']
+        national_old_total = self.bundle.national_traditional_grid[
+            self.bundle.national_traditional_grid['activity_code'].astype(str).eq('total')
+        ]
         for row in national_old_total.itertuples(index=False):
-            metric = source_metric(row.measure, row.currency)
-            self.add_hard(
-                constraint_id=f'hard:{row.observation_id}',
-                items=self.expression(all_regions, all_classes, metric),
+            self.add_row(
+                self.expression(
+                    all_regions, all_classes, source_metric(row.measure, row.currency)
+                ),
                 lower=row.published_lower,
                 upper=row.published_upper,
+                constraint_id=f'strict:{row.observation_id}',
+                constraint_kind='national_traditional_total',
                 source_observation_id=row.observation_id,
                 source_series=row.source_series,
-                kind='national_traditional_total',
+                model_layer='STRICT',
             )
         for row in self.bundle.national_okved2_grid.itertuples(index=False):
-            metric = source_metric(row.measure, row.currency)
-            classes = self._class_codes_for_publication(str(row.activity_code))
-            self.add_hard(
-                constraint_id=f'hard:{row.observation_id}',
-                items=self.expression(all_regions, classes, metric),
+            self.add_row(
+                self.expression(
+                    all_regions,
+                    self._class_codes_for_publication(str(row.activity_code)),
+                    source_metric(row.measure, row.currency),
+                ),
                 lower=row.published_lower,
                 upper=row.published_upper,
+                constraint_id=f'strict:{row.observation_id}',
+                constraint_kind='national_okved2',
                 source_observation_id=row.observation_id,
                 source_series=row.source_series,
-                kind='national_okved2',
+                model_layer='STRICT',
             )
         fd_members = {
             name: tuple(group['region_code'].astype(str))
             for name, group in self.regions.groupby('federal_district_name', sort=False)
         }
         for row in self.bundle.fd_okved2_grid.itertuples(index=False):
-            metric = source_metric(row.measure, 'total')
-            classes = self._class_codes_for_publication(str(row.activity_code), fd=True)
-            self.add_hard(
-                constraint_id=f'hard:{row.observation_id}',
-                items=self.expression(fd_members[str(row.geography_name)], classes, metric),
+            self.add_row(
+                self.expression(
+                    fd_members[str(row.geography_name)],
+                    self._class_codes_for_publication(str(row.activity_code), fd=True),
+                    source_metric(row.measure, 'total'),
+                ),
                 lower=row.published_lower,
                 upper=row.published_upper,
+                constraint_id=f'strict:{row.observation_id}',
+                constraint_kind='fd_okved2_section',
                 source_observation_id=row.observation_id,
                 source_series=row.source_series,
-                kind='fd_okved2_section',
-            )
-
-    def add_bridge_constraints(self) -> None:
-        def geography_weight(kind: str, member_count: int) -> float:
-            if member_count == 1:
-                return 1.0
-            if kind == 'federal_district_total':
-                return 0.25
-            if kind == 'country_total':
-                return 0.125
-            return 0.5
-        regional = self.bundle.regional_traditional_grid
-        regional = regional[regional['activity_code'].astype(str).isin(self.bridge_groups)]
-        for row in regional.itertuples(index=False):
-            metric = source_metric(row.measure, row.currency)
-            members = self.geo_members[str(row.geography_node_id)]
-            classes = self.bridge_groups[str(row.activity_code)]
-            self.add_soft_bridge(
-                constraint_id=f'bridge:{row.observation_id}',
-                items=self.expression(members, classes, metric),
-                value=row.value,
-                observation=row,
-                base_weight=self.bridge_weights[str(row.activity_code)],
-                geography_weight=geography_weight(str(row.geography_kind), len(members)),
-            )
-        for row in self.bundle.national_traditional_grid.itertuples(index=False):
-            if str(row.activity_code) not in self.bridge_groups:
-                continue
-            metric = source_metric(row.measure, row.currency)
-            classes = self.bridge_groups[str(row.activity_code)]
-            self.add_soft_bridge(
-                constraint_id=f'bridge:{row.observation_id}',
-                items=self.expression(tuple(self.regions['region_code'].astype(str)), classes, metric),
-                value=row.value,
-                observation=row,
-                base_weight=self.bridge_weights[str(row.activity_code)],
-                geography_weight=0.125,
+                model_layer='STRICT',
             )
 
     def build(self) -> SorsProblem:
-        self.add_publication_constraints()
-        self.add_bridge_constraints()
-        indptr = [0]
-        indices: list[int] = []
-        data: list[float] = []
-        for items in self.rows:
-            combined: dict[int, float] = {}
-            for column, coefficient in items:
-                combined[int(column)] = combined.get(int(column), 0.0) + float(coefficient)
-            for column in sorted(combined):
-                coefficient = combined[column]
-                if coefficient != 0.0:
-                    indices.append(column)
-                    data.append(coefficient)
-            indptr.append(len(indices))
-        matrix = CsrMatrixData(
-            shape=(len(self.rows), len(self.bridge_objective)),
-            indptr=np.asarray(indptr, dtype=np.int64),
-            indices=np.asarray(indices, dtype=np.int32),
-            data=np.asarray(data, dtype=float),
-        )
-        col_lower = np.zeros(len(self.bridge_objective), dtype=float)
-        col_upper = np.full(len(self.bridge_objective), np.inf, dtype=float)
+        self._publication_rows()
         return SorsProblem(
-            matrix=matrix,
+            model_layer='STRICT',
+            matrix=self.matrix(self.n),
             row_lower=np.asarray(self.row_lower, dtype=float),
             row_upper=np.asarray(self.row_upper, dtype=float),
-            col_lower=col_lower,
-            col_upper=col_upper,
-            bridge_objective=np.asarray(self.bridge_objective, dtype=float),
-            variable_grid=pd.DataFrame(self.col_meta),
+            col_lower=np.zeros(self.n, dtype=float),
+            col_upper=np.full(self.n, np.inf, dtype=float),
+            objective=np.zeros(self.n, dtype=float),
             constraints_grid=pd.DataFrame(self.row_meta),
-            region_positions=self.region_positions,
-            class_positions=self.class_positions,
-            component_positions=self.component_positions,
-            n_primary_variables=self.n_primary,
+            metadata={
+                'region_codes': tuple(self.regions['region_code'].astype(str)),
+                'class_codes': tuple(self.classes['class_code'].astype(str)),
+                'components': tuple(COMPONENTS),
+            },
+        )
+
+    def target(self, region_name: str, class_code: str, metric: str) -> LinearTarget:
+        region = self.regions.loc[
+            self.regions['region_name'].astype(str).eq(region_name)
+        ].iloc[0]
+        indices = np.asarray([
+            self.index(str(region.region_code), class_code, component)
+            for component in METRIC_COMPONENTS[metric]
+        ], dtype=np.int32)
+        return LinearTarget(
+            target_id=f'{region.region_code}:{class_code}:{metric}',
+            region_name=region_name,
+            region_code=str(region.region_code),
+            class_code=class_code,
+            metric=metric,
+            indices=indices,
+            coefficients=np.ones(len(indices), dtype=float),
         )
 
 
-def make_target(problem: SorsProblem, bundle: SorsSourceBundle, region_name: str, class_code: str, metric: str) -> LinearTarget:
-    r = problem.region_positions[region_name]
-    c = problem.class_positions[class_code]
-    indices = np.asarray([
-        (r * len(bundle.okved2_classes) + c) * len(COMPONENTS) + problem.component_positions[component]
-        for component in METRIC_COMPONENTS[metric]
-    ], dtype=np.int32)
-    coefficients = np.ones(len(indices), dtype=float)
-    region_row = bundle.atomic_regions.loc[bundle.atomic_regions['region_name'].astype(str) == region_name].iloc[0]
-    return LinearTarget(
-        target_id=f'{region_row.region_code}:{class_code}:{metric}',
-        region_name=region_name,
-        region_code=str(region_row.region_code),
-        class_code=class_code,
-        metric=metric,
-        indices=indices,
-        coefficients=coefficients,
-    )
+class BridgeFlowProblemBuilder(_SparseProblemBuilder, _PublicationMixin):
+    """Conditional minimum-reclassification model in factorized form.
+
+    Preferred atom/class flows are explicit. Mass that cannot use a preferred
+    edge is represented by an atom-side residual and a class-side residual,
+    balanced for every region and monetary component. This is mathematically
+    equivalent, for the objective and all class totals, to a complete fallback
+    atom/class transportation graph with unit penalty, while avoiding hundreds
+    of thousands of explicit fallback variables.
+    """
+
+    def __init__(
+        self,
+        bundle: SorsSourceBundle,
+        config: SorsRunConfig,
+        mapping_edges: pd.DataFrame | None = None,
+    ):
+        super().__init__()
+        self.bundle = bundle
+        self.config = config
+        self.regions = bundle.atomic_regions.reset_index(drop=True)
+        self.classes = bundle.okved2_classes.reset_index(drop=True)
+        self.atoms = read_legacy_atoms().reset_index(drop=True)
+        self.membership = read_legacy_membership()
+        self.mapping_edges = (
+            build_atom_class_edges(bundle.okved2_classes, config.mapping_version)
+            if mapping_edges is None else mapping_edges.copy()
+        )
+        preferred = self.mapping_edges[
+            self.mapping_edges['is_preferred'].astype(bool)
+        ].copy()
+        atom_order = {
+            code: i for i, code in enumerate(self.atoms['atom_code'].astype(str))
+        }
+        class_order = {
+            code: i for i, code in enumerate(self.classes['class_code'].astype(str))
+        }
+        preferred['_atom_order'] = preferred['atom_code'].astype(str).map(atom_order)
+        preferred['_class_order'] = preferred['class_code'].astype(str).map(class_order)
+        preferred = preferred.sort_values(['_atom_order', '_class_order'])
+        self.preferred_pairs = tuple(
+            zip(
+                preferred['atom_code'].astype(str),
+                preferred['class_code'].astype(str),
+                strict=True,
+            )
+        )
+        self.pair_positions = {
+            pair: i for i, pair in enumerate(self.preferred_pairs)
+        }
+        self.pairs_by_atom: dict[str, tuple[tuple[str, str], ...]] = {}
+        self.pairs_by_class: dict[str, tuple[tuple[str, str], ...]] = {}
+        for pair in self.preferred_pairs:
+            self.pairs_by_atom.setdefault(pair[0], []).append(pair)
+            self.pairs_by_class.setdefault(pair[1], []).append(pair)
+        self.pairs_by_atom = {
+            key: tuple(value) for key, value in self.pairs_by_atom.items()
+        }
+        self.pairs_by_class = {
+            key: tuple(value) for key, value in self.pairs_by_class.items()
+        }
+        self.region_positions = {
+            code: i for i, code in enumerate(self.regions['region_code'].astype(str))
+        }
+        self.atom_positions = {
+            code: i for i, code in enumerate(self.atoms['atom_code'].astype(str))
+        }
+        self.class_positions = {
+            code: i for i, code in enumerate(self.classes['class_code'].astype(str))
+        }
+        self.component_positions = {name: i for i, name in enumerate(COMPONENTS)}
+        self.geo_members = {
+            row.geography_node_id: tuple(row.atomic_region_codes)
+            for row in bundle.geography_nodes.itertuples(index=False)
+        }
+        self.node_atoms = {
+            node: tuple(group['atom_code'].astype(str))
+            for node, group in self.membership.groupby('node_code', sort=False)
+        }
+        self.node_atoms['total'] = tuple(self.atoms['atom_code'].astype(str))
+        self.n_regions = len(self.regions)
+        self.n_atoms = len(self.atoms)
+        self.n_classes = len(self.classes)
+        self.n_components = len(COMPONENTS)
+        self.n_pairs = len(self.preferred_pairs)
+        self.atom_offset = 0
+        self.preferred_offset = self.n_regions * self.n_atoms * self.n_components
+        self.atom_residual_offset = (
+            self.preferred_offset
+            + self.n_regions * self.n_pairs * self.n_components
+        )
+        self.class_residual_offset = (
+            self.atom_residual_offset
+            + self.n_regions * self.n_atoms * self.n_components
+        )
+        self.n = (
+            self.class_residual_offset
+            + self.n_regions * self.n_classes * self.n_components
+        )
+
+    def y_index(self, region_code: str, atom_code: str, component: str) -> int:
+        r = self.region_positions[region_code]
+        a = self.atom_positions[atom_code]
+        k = self.component_positions[component]
+        return (r * self.n_atoms + a) * self.n_components + k
+
+    def preferred_index(
+        self,
+        region_code: str,
+        atom_code: str,
+        class_code: str,
+        component: str,
+    ) -> int:
+        r = self.region_positions[region_code]
+        pair = self.pair_positions[(atom_code, class_code)]
+        k = self.component_positions[component]
+        return self.preferred_offset + (
+            (r * self.n_pairs + pair) * self.n_components + k
+        )
+
+    def atom_residual_index(
+        self, region_code: str, atom_code: str, component: str
+    ) -> int:
+        r = self.region_positions[region_code]
+        a = self.atom_positions[atom_code]
+        k = self.component_positions[component]
+        return self.atom_residual_offset + (
+            (r * self.n_atoms + a) * self.n_components + k
+        )
+
+    def class_residual_index(
+        self, region_code: str, class_code: str, component: str
+    ) -> int:
+        r = self.region_positions[region_code]
+        c = self.class_positions[class_code]
+        k = self.component_positions[component]
+        return self.class_residual_offset + (
+            (r * self.n_classes + c) * self.n_components + k
+        )
+
+    def legacy_expression(self, region_codes, atom_codes, metric: str):
+        return [
+            (self.y_index(region, atom, component), 1.0)
+            for region in region_codes
+            for atom in atom_codes
+            for component in METRIC_COMPONENTS[metric]
+        ]
+
+    def class_expression(self, region_code: str, class_code: str, metric: str):
+        items = [
+            (
+                self.preferred_index(region_code, atom, class_code, component),
+                1.0,
+            )
+            for atom, _ in self.pairs_by_class.get(class_code, ())
+            for component in METRIC_COMPONENTS[metric]
+        ]
+        items.extend(
+            (
+                self.class_residual_index(region_code, class_code, component),
+                1.0,
+            )
+            for component in METRIC_COMPONENTS[metric]
+        )
+        return items
+
+    def okved_expression(self, region_codes, class_codes, metric: str):
+        return [
+            item
+            for region in region_codes
+            for class_code in class_codes
+            for item in self.class_expression(region, class_code, metric)
+        ]
+
+    def _flow_rows(self) -> None:
+        for region in self.regions['region_code'].astype(str):
+            for atom in self.atoms['atom_code'].astype(str):
+                pairs = self.pairs_by_atom.get(atom, ())
+                for component in COMPONENTS:
+                    items = [(self.y_index(region, atom, component), 1.0)]
+                    items.extend(
+                        (
+                            self.preferred_index(
+                                region, pair[0], pair[1], component
+                            ),
+                            -1.0,
+                        )
+                        for pair in pairs
+                    )
+                    items.append(
+                        (
+                            self.atom_residual_index(region, atom, component),
+                            -1.0,
+                        )
+                    )
+                    self.add_row(
+                        items,
+                        lower=0.0,
+                        upper=0.0,
+                        constraint_id=f'bridge-link:{region}:{atom}:{component}',
+                        constraint_kind='atom_preferred_flow_conservation',
+                        model_layer='CONDITIONAL_BRIDGE',
+                    )
+            for component in COMPONENTS:
+                items = [
+                    (
+                        self.atom_residual_index(region, atom, component),
+                        1.0,
+                    )
+                    for atom in self.atoms['atom_code'].astype(str)
+                ]
+                items.extend(
+                    (
+                        self.class_residual_index(region, class_code, component),
+                        -1.0,
+                    )
+                    for class_code in self.classes['class_code'].astype(str)
+                )
+                self.add_row(
+                    items,
+                    lower=0.0,
+                    upper=0.0,
+                    constraint_id=f'bridge-residual-balance:{region}:{component}',
+                    constraint_kind='fallback_mass_balance',
+                    model_layer='CONDITIONAL_BRIDGE',
+                )
+
+    def _legacy_rows(self) -> None:
+        for frame in (
+            self.bundle.regional_traditional_grid,
+            self.bundle.national_traditional_grid,
+        ):
+            for row in frame.itertuples(index=False):
+                region_codes = (
+                    self.geo_members[str(row.geography_node_id)]
+                    if row.source_series == '01_05_A'
+                    else tuple(self.regions['region_code'].astype(str))
+                )
+                atom_codes = self.node_atoms[str(row.activity_code)]
+                self.add_row(
+                    self.legacy_expression(
+                        region_codes,
+                        atom_codes,
+                        source_metric(row.measure, row.currency),
+                    ),
+                    lower=row.published_lower,
+                    upper=row.published_upper,
+                    constraint_id=f'bridge-hard:{row.observation_id}',
+                    constraint_kind='legacy_publication',
+                    source_observation_id=row.observation_id,
+                    source_series=row.source_series,
+                    model_layer='CONDITIONAL_BRIDGE',
+                )
+
+    def _okved_rows(self) -> None:
+        all_regions = tuple(self.regions['region_code'].astype(str))
+        for row in self.bundle.national_okved2_grid.itertuples(index=False):
+            self.add_row(
+                self.okved_expression(
+                    all_regions,
+                    self._class_codes_for_publication(str(row.activity_code)),
+                    source_metric(row.measure, row.currency),
+                ),
+                lower=row.published_lower,
+                upper=row.published_upper,
+                constraint_id=f'bridge-hard:{row.observation_id}',
+                constraint_kind='national_okved2',
+                source_observation_id=row.observation_id,
+                source_series=row.source_series,
+                model_layer='CONDITIONAL_BRIDGE',
+            )
+        fd_members = {
+            name: tuple(group['region_code'].astype(str))
+            for name, group in self.regions.groupby('federal_district_name', sort=False)
+        }
+        for row in self.bundle.fd_okved2_grid.itertuples(index=False):
+            self.add_row(
+                self.okved_expression(
+                    fd_members[str(row.geography_name)],
+                    self._class_codes_for_publication(str(row.activity_code), fd=True),
+                    source_metric(row.measure, 'total'),
+                ),
+                lower=row.published_lower,
+                upper=row.published_upper,
+                constraint_id=f'bridge-hard:{row.observation_id}',
+                constraint_kind='fd_okved2_section',
+                source_observation_id=row.observation_id,
+                source_series=row.source_series,
+                model_layer='CONDITIONAL_BRIDGE',
+            )
+
+    def build(self) -> SorsProblem:
+        self._flow_rows()
+        self._legacy_rows()
+        self._okved_rows()
+        objective = np.zeros(self.n, dtype=float)
+        objective[
+            self.atom_residual_offset:self.class_residual_offset
+        ] = 1.0
+        return SorsProblem(
+            model_layer='CONDITIONAL_BRIDGE',
+            matrix=self.matrix(self.n),
+            row_lower=np.asarray(self.row_lower, dtype=float),
+            row_upper=np.asarray(self.row_upper, dtype=float),
+            col_lower=np.zeros(self.n, dtype=float),
+            col_upper=np.full(self.n, np.inf, dtype=float),
+            objective=objective,
+            constraints_grid=pd.DataFrame(self.row_meta),
+            metadata={
+                'region_codes': tuple(self.regions['region_code'].astype(str)),
+                'atom_codes': tuple(self.atoms['atom_code'].astype(str)),
+                'class_codes': tuple(self.classes['class_code'].astype(str)),
+                'components': tuple(COMPONENTS),
+                'preferred_pairs': self.preferred_pairs,
+                'atom_offset': self.atom_offset,
+                'preferred_offset': self.preferred_offset,
+                'atom_residual_offset': self.atom_residual_offset,
+                'class_residual_offset': self.class_residual_offset,
+            },
+        )
+
+    def target(self, region_name: str, class_code: str, metric: str) -> LinearTarget:
+        region = self.regions.loc[
+            self.regions['region_name'].astype(str).eq(region_name)
+        ].iloc[0]
+        items = self.class_expression(
+            str(region.region_code), class_code, metric
+        )
+        return LinearTarget(
+            target_id=f'{region.region_code}:{class_code}:{metric}',
+            region_name=region_name,
+            region_code=str(region.region_code),
+            class_code=class_code,
+            metric=metric,
+            indices=np.asarray([item[0] for item in items], dtype=np.int32),
+            coefficients=np.asarray([item[1] for item in items], dtype=float),
+        )
+
+
+def build_strict_problem(bundle: SorsSourceBundle) -> tuple[SorsProblem, StrictProblemBuilder]:
+    builder = StrictProblemBuilder(bundle)
+    return builder.build(), builder
+
+
+def build_bridge_flow_problem(
+    bundle: SorsSourceBundle,
+    config: SorsRunConfig,
+    mapping_edges: pd.DataFrame | None = None,
+) -> tuple[SorsProblem, BridgeFlowProblemBuilder]:
+    builder = BridgeFlowProblemBuilder(bundle, config, mapping_edges)
+    return builder.build(), builder

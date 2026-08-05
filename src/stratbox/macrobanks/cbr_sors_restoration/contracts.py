@@ -30,9 +30,10 @@ class SorsTargetScope:
 class SorsRunConfig:
     as_of_date: str
     publication_step: float = 1.0
-    mapping_version: str = 'cbr-legacy-okved2-bridge-2026.1'
-    bridge_profile_tolerance: float = 1e-6
+    mapping_version: str = 'cbr-legacy-okved2-bridge-2026.2'
     point_tolerance: float = 1e-6
+    bridge_objective_tolerance: float = 1e-5
+    include_conditional_bridge: bool = True
     target_scope: SorsTargetScope = field(default_factory=SorsTargetScope)
     solver_time_limit_seconds: float | None = 300.0
     solver_threads: int = 1
@@ -56,10 +57,11 @@ class SorsSourceBundle:
 class SorsRestorationResult:
     canonical_grid: pd.DataFrame
     facts_grid: pd.DataFrame
+    estimates_grid: pd.DataFrame
     bounds_grid: pd.DataFrame
+    bridge_bounds_grid: pd.DataFrame
     bridge_diagnostics_grid: pd.DataFrame
     constraints_grid: pd.DataFrame
     mapping_edges_grid: pd.DataFrame
     conflicts_grid: pd.DataFrame
     audit: dict[str, object]
-

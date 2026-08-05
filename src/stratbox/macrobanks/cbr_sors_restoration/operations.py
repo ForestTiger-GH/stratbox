@@ -7,30 +7,27 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.certification import CertifiedInterval, certify_interval
+from stratbox.macrobanks.cbr_sors_restoration.certification import certify_interval
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsRestorationResult,
     SorsRunConfig,
     SorsSourceBundle,
     SorsSourceFiles,
 )
-from stratbox.macrobanks.cbr_sors_restoration.evidence import published_facts
-from stratbox.macrobanks.cbr_sors_restoration.mapping import read_bridge_targets
-from stratbox.macrobanks.cbr_sors_restoration.metrics import source_metric
+from stratbox.macrobanks.cbr_sors_restoration.evidence import FACT_COLUMNS, published_facts
+from stratbox.macrobanks.cbr_sors_restoration.mapping import (
+    build_atom_class_edges,
+    read_mapping_manifest,
+    validate_mapping_version,
+)
 from stratbox.macrobanks.cbr_sors_restoration.parsers import load_sors_source_grid
 from stratbox.macrobanks.cbr_sors_restoration.problem import (
     LinearTarget,
-    ProblemBuilder,
-    SorsProblem,
-    bridge_profile_problem,
-    make_target,
-    strict_publication_problem,
+    build_bridge_flow_problem,
+    build_strict_problem,
 )
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
-from stratbox.macrobanks.cbr_sors_restoration.solver import (
-    SolveResult,
-    solve_restoration_batch,
-)
+from stratbox.macrobanks.cbr_sors_restoration.solver import solve_restoration_batch
 from stratbox.macrobanks.cbr_sors_restoration.validation import validate_source_bundle
 
 
@@ -41,11 +38,34 @@ def _model_run_id(bundle: SorsSourceBundle, config: SorsRunConfig) -> str:
         'sources': bundle.source_manifest[['source_series', 'sha256']]
         .sort_values('source_series')
         .to_dict('records'),
+        'version': '0.3.1',
     }
-    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:20]
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode()
+    ).hexdigest()[:20]
 
 
-def _select_targets(bundle: SorsSourceBundle, config: SorsRunConfig) -> list[tuple[str, str, str]]:
+def _constraint_hash(*frames: pd.DataFrame) -> str:
+    records: list[dict[str, object]] = []
+    for frame in frames:
+        if frame.empty:
+            continue
+        cols = [
+            col for col in (
+                'constraint_id', 'constraint_kind', 'model_layer',
+                'source_observation_id', 'lower_bound', 'upper_bound',
+            ) if col in frame.columns
+        ]
+        records.extend(frame[cols].sort_values(cols[0]).to_dict('records'))
+    return hashlib.sha256(
+        json.dumps(records, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
+def _select_targets(
+    bundle: SorsSourceBundle,
+    config: SorsRunConfig,
+) -> list[tuple[str, str, str]]:
     scope = config.target_scope
     if scope.certify_all:
         regions = tuple(bundle.atomic_regions['region_name'].astype(str))
@@ -60,111 +80,216 @@ def _select_targets(bundle: SorsSourceBundle, config: SorsRunConfig) -> list[tup
     missing_regions = sorted(set(regions) - known_regions)
     missing_classes = sorted(set(classes) - known_classes)
     if missing_regions or missing_classes:
-        raise ValueError(f'Unknown SORS targets: regions={missing_regions}, classes={missing_classes}')
-    targets = [(region, code, metric) for region in regions for code in classes for metric in scope.metrics]
+        raise ValueError(
+            f'Unknown SORS targets: regions={missing_regions}, '
+            f'classes={missing_classes}'
+        )
+    targets = [
+        (region, code, metric)
+        for region in regions
+        for code in classes
+        for metric in scope.metrics
+    ]
     if scope.max_targets is not None and len(targets) > scope.max_targets:
-        raise ValueError(f'Target scope contains {len(targets)} metrics, maximum is {scope.max_targets}')
+        raise ValueError(
+            f'Target scope contains {len(targets)} metrics, '
+            f'maximum is {scope.max_targets}'
+        )
     return targets
 
 
-def _bridge_diagnostics(problem: SorsProblem, solution: np.ndarray) -> pd.DataFrame:
-    dev = problem.variable_grid[
-        problem.variable_grid['variable_kind'].isin(
-            ['bridge_positive_deviation', 'bridge_negative_deviation']
-        )
-    ].copy()
-    if dev.empty:
-        return pd.DataFrame()
-    dev['solver_value'] = solution[dev['variable_id'].astype(int)]
-    pivot = (
-        dev.pivot_table(
-            index='bridge_constraint_id',
-            columns='variable_kind',
-            values='solver_value',
-            aggfunc='sum',
-            fill_value=0.0,
-        )
-        .reset_index()
-    )
-    pivot['bridge_error'] = (
-        pivot.get('bridge_positive_deviation', 0.0)
-        - pivot.get('bridge_negative_deviation', 0.0)
-    )
-    meta = problem.constraints_grid[
-        problem.constraints_grid['hardness'] == 'BRIDGE_OBJECTIVE'
-    ].copy()
-    return meta.merge(
-        pivot,
-        left_on='constraint_id',
-        right_on='bridge_constraint_id',
-        how='left',
-    )
-
-
-def _require_pair(target: LinearTarget, lower: SolveResult, upper: SolveResult) -> None:
+def _require_pair(
+    target: LinearTarget,
+    lower,
+    upper,
+    *,
+    layer: str,
+) -> None:
     if not all(item.success and item.objective_value is not None for item in (lower, upper)):
         raise RuntimeError(
-            f'Failed to certify target {target.target_id}: '
+            f'Failed to certify {layer} target {target.target_id}: '
             f'lower={lower.status}, upper={upper.status}'
         )
 
 
-def _singleton_bridge_nodes(mapping_edges: pd.DataFrame) -> dict[str, tuple[str, ...]]:
-    grouped = mapping_edges.groupby('legacy_node_code', sort=False)['class_code'].agg(
-        lambda values: tuple(dict.fromkeys(str(value) for value in values))
-    )
-    result: dict[str, list[str]] = {}
-    for node_code, classes in grouped.items():
-        if len(classes) == 1:
-            result.setdefault(classes[0], []).append(str(node_code))
-    return {code: tuple(nodes) for code, nodes in result.items()}
-
-
-def _singleton_profile_interval(
-    problem: SorsProblem,
-    target: LinearTarget,
-    bridge_solution: np.ndarray,
-    *,
-    singleton_nodes: dict[str, tuple[str, ...]],
-    tolerance: float,
-    policy: RoundingPolicy,
-    point_tolerance: float,
-) -> CertifiedInterval | None:
-    nodes = singleton_nodes.get(target.class_code, ())
-    if not nodes:
+def _target_value(target: LinearTarget, values: np.ndarray | None) -> float | None:
+    if values is None:
         return None
-    meta = problem.constraints_grid
-    geography = meta.get('geography_node_id', pd.Series(index=meta.index, dtype=object))
-    activities = meta.get('activity_code', pd.Series(index=meta.index, dtype=object))
-    candidates = meta[
-        meta['hardness'].astype(str).eq('BRIDGE_OBJECTIVE')
-        & geography.astype(str).eq(target.region_code)
-        & activities.astype(str).isin(nodes)
-    ]
-    intervals: list[tuple[float, float]] = []
-    for row_position, row in candidates.iterrows():
-        if source_metric(str(row['measure']), str(row['currency'])) != target.metric:
+    return float(np.dot(target.coefficients, values[target.indices]))
+
+
+def _bridge_diagnostics(
+    mapping_edges: pd.DataFrame,
+    bridge_problem,
+    values: np.ndarray | None,
+) -> pd.DataFrame:
+    if values is None:
+        return pd.DataFrame()
+    meta = bridge_problem.metadata
+    region_codes = tuple(meta['region_codes'])
+    atom_codes = tuple(meta['atom_codes'])
+    class_codes = tuple(meta['class_codes'])
+    components = tuple(meta['components'])
+    preferred_pairs = tuple(meta['preferred_pairs'])
+    preferred_offset = int(meta['preferred_offset'])
+    atom_residual_offset = int(meta['atom_residual_offset'])
+    class_residual_offset = int(meta['class_residual_offset'])
+
+    preferred_values = np.asarray(
+        values[preferred_offset:atom_residual_offset], dtype=float
+    ).reshape(len(region_codes), len(preferred_pairs), len(components))
+    preferred_totals = preferred_values.sum(axis=(0, 2))
+    records: list[dict[str, object]] = []
+    for position, (atom_code, class_code) in enumerate(preferred_pairs):
+        amount = float(preferred_totals[position])
+        if amount <= 1e-9:
             continue
-        start = int(problem.matrix.indptr[int(row_position)])
-        end = int(problem.matrix.indptr[int(row_position) + 1])
-        indices = problem.matrix.indices[start:end]
-        coefficients = problem.matrix.data[start:end]
-        mask = indices < problem.n_primary_variables
-        fitted = float(np.dot(coefficients[mask], bridge_solution[indices[mask]]))
-        intervals.append((max(0.0, fitted - tolerance), fitted + tolerance))
-    if not intervals:
-        return None
-    lower = max(value[0] for value in intervals)
-    upper = min(value[1] for value in intervals)
-    if upper < lower:
-        return None
-    return certify_interval(
-        lower,
-        upper,
-        policy=policy,
-        point_tolerance=point_tolerance,
-        evidence_layer='BRIDGE_SINGLETON_PROFILE',
+        records.append({
+            'diagnostic_kind': 'preferred_flow',
+            'atom_code': atom_code,
+            'class_code': class_code,
+            'flow_total_mln_rub': amount,
+        })
+
+    atom_residual = np.asarray(
+        values[atom_residual_offset:class_residual_offset], dtype=float
+    ).reshape(len(region_codes), len(atom_codes), len(components))
+    for atom_position, atom_code in enumerate(atom_codes):
+        amount = float(atom_residual[:, atom_position, :].sum())
+        if amount <= 1e-9:
+            continue
+        records.append({
+            'diagnostic_kind': 'fallback_supply_by_atom',
+            'atom_code': atom_code,
+            'class_code': None,
+            'flow_total_mln_rub': amount,
+        })
+
+    class_residual = np.asarray(
+        values[class_residual_offset:], dtype=float
+    ).reshape(len(region_codes), len(class_codes), len(components))
+    for class_position, class_code in enumerate(class_codes):
+        amount = float(class_residual[:, class_position, :].sum())
+        if amount <= 1e-9:
+            continue
+        records.append({
+            'diagnostic_kind': 'fallback_demand_by_class',
+            'atom_code': None,
+            'class_code': class_code,
+            'flow_total_mln_rub': amount,
+        })
+    out = pd.DataFrame(records)
+    if out.empty:
+        return out
+    preferred_meta = mapping_edges[
+        mapping_edges['is_preferred'].astype(bool)
+    ].drop_duplicates(['atom_code', 'class_code'])
+    return out.merge(
+        preferred_meta,
+        on=['atom_code', 'class_code'],
+        how='left',
+    ).sort_values(
+        ['diagnostic_kind', 'flow_total_mln_rub'],
+        ascending=[True, False],
+    ).reset_index(drop=True)
+
+
+def _fact_record(
+    *,
+    config: SorsRunConfig,
+    model_run_id: str,
+    constraint_set_hash: str,
+    target: LinearTarget,
+    class_name: str,
+    certified,
+) -> dict[str, object]:
+    return {
+        'as_of_date': config.as_of_date,
+        'geography_node_id': target.region_code,
+        'geography_name': target.region_name,
+        'geography_kind': 'atomic_region',
+        'classifier_id': 'okved2',
+        'activity_code': target.class_code,
+        'activity_name': class_name,
+        'metric': target.metric,
+        'value': certified.published_value,
+        'lower_bound': certified.lower,
+        'upper_bound': certified.upper,
+        'status': certified.status,
+        'evidence_layer': 'STRICT',
+        'is_published': False,
+        'is_reconstructed': True,
+        'is_estimate': False,
+        'proof_type': 'lp_minmax',
+        'observation_id': None,
+        'source_series': None,
+        'source_file_actual': None,
+        'source_sheet': None,
+        'source_row': None,
+        'source_column': None,
+        'source_sha256': None,
+        'model_run_id': model_run_id,
+        'mapping_version': None,
+        'constraint_set_hash': constraint_set_hash,
+        'lower_solve_id': f'strict:min:{target.target_id}',
+        'upper_solve_id': f'strict:max:{target.target_id}',
+        'bridge_objective_value': None,
+    }
+
+
+def _estimate_record(
+    *,
+    config: SorsRunConfig,
+    model_run_id: str,
+    constraint_set_hash: str,
+    target: LinearTarget,
+    class_name: str,
+    certified,
+    optimum_value: float | None,
+    bridge_objective_value: float,
+) -> dict[str, object]:
+    value = (
+        certified.published_value
+        if certified.published_value is not None
+        else optimum_value
     )
+    status = (
+        certified.status
+        if certified.published_value is not None
+        else 'CONDITIONAL_BRIDGE_ESTIMATE'
+    )
+    return {
+        'as_of_date': config.as_of_date,
+        'geography_node_id': target.region_code,
+        'geography_name': target.region_name,
+        'geography_kind': 'atomic_region',
+        'classifier_id': 'okved2',
+        'activity_code': target.class_code,
+        'activity_name': class_name,
+        'metric': target.metric,
+        'value': value,
+        'lower_bound': certified.lower,
+        'upper_bound': certified.upper,
+        'status': status,
+        'evidence_layer': 'CONDITIONAL_BRIDGE_OPTIMUM',
+        'is_published': False,
+        'is_reconstructed': False,
+        'is_estimate': True,
+        'proof_type': 'global_optimum_set_minmax',
+        'observation_id': None,
+        'source_series': None,
+        'source_file_actual': None,
+        'source_sheet': None,
+        'source_row': None,
+        'source_column': None,
+        'source_sha256': None,
+        'model_run_id': model_run_id,
+        'mapping_version': config.mapping_version,
+        'constraint_set_hash': constraint_set_hash,
+        'lower_solve_id': f'bridge:min:{target.target_id}',
+        'upper_solve_id': f'bridge:max:{target.target_id}',
+        'bridge_objective_value': bridge_objective_value,
+    }
 
 
 def run_sors_restoration(
@@ -174,208 +299,260 @@ def run_sors_restoration(
     bundle = (
         source
         if isinstance(source, SorsSourceBundle)
-        else load_sors_source_grid(source, config.as_of_date, config.publication_step)
+        else load_sors_source_grid(
+            source, config.as_of_date, config.publication_step
+        )
     )
     validate_source_bundle(bundle)
-    mapping_edges = read_bridge_targets(bundle.okved2_classes, config.mapping_version)
-    problem = ProblemBuilder(bundle, config, mapping_edges).build()
-    strict_problem = strict_publication_problem(problem)
-    model_run_id = _model_run_id(bundle, config)
-    policy = RoundingPolicy(step=config.publication_step)
+    mapping_manifest = validate_mapping_version(config.mapping_version)
+    mapping_edges = build_atom_class_edges(
+        bundle.okved2_classes, config.mapping_version
+    )
+    strict_problem, strict_builder = build_strict_problem(bundle)
+    bridge_problem = None
+    bridge_builder = None
+    if config.include_conditional_bridge:
+        bridge_problem, bridge_builder = build_bridge_flow_problem(
+            bundle, config, mapping_edges
+        )
 
     target_specs = _select_targets(bundle, config)
-    targets = [make_target(problem, bundle, *spec) for spec in target_specs]
-    singleton_nodes = _singleton_bridge_nodes(mapping_edges)
-    profile_lp_targets = [
-        target for target in targets if target.class_code not in singleton_nodes
+    strict_targets = [
+        strict_builder.target(*spec) for spec in target_specs
     ]
+    bridge_targets = (
+        [bridge_builder.target(*spec) for spec in target_specs]
+        if bridge_builder is not None else []
+    )
     batch = solve_restoration_batch(
-        problem,
-        targets,
-        profile_targets=profile_lp_targets,
-        profile_tolerance=config.bridge_profile_tolerance,
+        strict_problem,
+        strict_targets,
+        bridge_problem=bridge_problem,
+        bridge_targets=bridge_targets,
+        bridge_objective_tolerance=config.bridge_objective_tolerance,
         time_limit=config.solver_time_limit_seconds,
         threads=config.solver_threads,
     )
-    bridge_optimum = batch['bridge']
-    bridge_backend = batch['backend']
-    bridge_solver_version = batch['version']
-    if (
-        not bridge_optimum.success
-        or bridge_optimum.objective_value is None
-        or bridge_optimum.values is None
+
+    conflicts: list[dict[str, object]] = []
+    if not batch.strict_feasibility.success:
+        conflicts.append({
+            'model_layer': 'STRICT',
+            'status': batch.strict_feasibility.status,
+            'message': 'Official publication model is infeasible.',
+        })
+        return SorsRestorationResult(
+            canonical_grid=bundle.canonical_grid,
+            facts_grid=published_facts(bundle.canonical_grid),
+            estimates_grid=pd.DataFrame(columns=FACT_COLUMNS),
+            bounds_grid=pd.DataFrame(),
+            bridge_bounds_grid=pd.DataFrame(),
+            bridge_diagnostics_grid=pd.DataFrame(),
+            constraints_grid=strict_problem.constraints_grid,
+            mapping_edges_grid=mapping_edges,
+            conflicts_grid=pd.DataFrame(conflicts),
+            audit={
+                'as_of_date': config.as_of_date,
+                'strategy_box_version': '0.3.1',
+                'hard_feasible': False,
+                'solver_backend': batch.backend,
+                'solver_version': batch.version,
+            },
+        )
+
+    if bridge_problem is not None and (
+        batch.bridge_optimum is None or not batch.bridge_optimum.success
     ):
-        raise ValueError(f'SORS bridge optimization failed: {bridge_optimum.status}')
-    bridge_solution_values = bridge_optimum.values.copy()
-    strict_feasibility = bridge_optimum
-    strict_backend = bridge_backend
-    strict_solver_version = bridge_solver_version
-    strict_intervals: dict[str, CertifiedInterval] = {}
-    for target in targets:
-        lower, upper = batch['strict'][target.target_id]
-        _require_pair(target, lower, upper)
-        strict_intervals[target.target_id] = certify_interval(
+        conflicts.append({
+            'model_layer': 'CONDITIONAL_BRIDGE',
+            'status': (
+                None if batch.bridge_optimum is None
+                else batch.bridge_optimum.status
+            ),
+            'message': 'Conditional atom-flow bridge model is infeasible.',
+        })
+
+    model_run_id = _model_run_id(bundle, config)
+    constraint_set_hash = _constraint_hash(
+        strict_problem.constraints_grid,
+        pd.DataFrame() if bridge_problem is None else bridge_problem.constraints_grid,
+    )
+    policy = RoundingPolicy(step=config.publication_step)
+    class_names = (
+        bundle.okved2_classes.set_index('class_code')['class_name']
+        .astype(str).to_dict()
+    )
+    strict_bounds: list[dict[str, object]] = []
+    bridge_bounds: list[dict[str, object]] = []
+    reconstructed: list[dict[str, object]] = []
+    estimates: list[dict[str, object]] = []
+
+    for target in strict_targets:
+        lower, upper = batch.strict_targets[target.target_id]
+        _require_pair(target, lower, upper, layer='STRICT')
+        cert = certify_interval(
             float(lower.objective_value),
             float(upper.objective_value),
             policy=policy,
             point_tolerance=config.point_tolerance,
             evidence_layer='STRICT',
         )
+        strict_bounds.append({
+            'as_of_date': config.as_of_date,
+            'region_code': target.region_code,
+            'region_name': target.region_name,
+            'class_code': target.class_code,
+            'class_name': class_names[target.class_code],
+            'metric': target.metric,
+            'lower_bound': cert.lower,
+            'upper_bound': cert.upper,
+            'published_value': cert.published_value,
+            'status': cert.status,
+            'model_run_id': model_run_id,
+            'constraint_set_hash': constraint_set_hash,
+        })
+        if cert.published_value is not None:
+            reconstructed.append(_fact_record(
+                config=config,
+                model_run_id=model_run_id,
+                constraint_set_hash=constraint_set_hash,
+                target=target,
+                class_name=class_names[target.class_code],
+                certified=cert,
+            ))
 
-    # Phase 3: conservative local-profile envelopes. Only the selected region's
-    # fitted legacy margins are fixed; all other regions remain free under the
-    # official national and FD constraints. A point identified here is therefore
-    # also point identified under the complete selected bridge profile.
-    bounds_records: list[dict[str, object]] = []
-    reconstructed_records: list[dict[str, object]] = []
-    class_names = (
-        bundle.okved2_classes.set_index('class_code')['class_name'].astype(str).to_dict()
-    )
-    for target in targets:
-        strict_cert = strict_intervals[target.target_id]
-        bridge_cert = _singleton_profile_interval(
-            problem,
-            target,
-            bridge_solution_values,
-            singleton_nodes=singleton_nodes,
-            tolerance=config.bridge_profile_tolerance,
-            policy=policy,
-            point_tolerance=config.point_tolerance,
-        )
-        if bridge_cert is None:
-            bridge_lower, bridge_upper = batch['profile'][target.target_id]
-            _require_pair(target, bridge_lower, bridge_upper)
-            bridge_cert = certify_interval(
-                float(bridge_lower.objective_value),
-                float(bridge_upper.objective_value),
+    if (
+        bridge_problem is not None
+        and batch.bridge_optimum is not None
+        and batch.bridge_optimum.success
+        and batch.bridge_optimum.objective_value is not None
+    ):
+        for target in bridge_targets:
+            lower, upper = batch.bridge_targets[target.target_id]
+            _require_pair(
+                target, lower, upper, layer='CONDITIONAL_BRIDGE_OPTIMUM'
+            )
+            cert = certify_interval(
+                float(lower.objective_value),
+                float(upper.objective_value),
                 policy=policy,
                 point_tolerance=config.point_tolerance,
-                evidence_layer='BRIDGE_LOCAL_PROFILE',
+                evidence_layer='CONDITIONAL_BRIDGE_OPTIMUM',
             )
-        bounds_records.append(
-            {
+            optimum_value = _target_value(
+                target, batch.bridge_optimum.values
+            )
+            bridge_bounds.append({
                 'as_of_date': config.as_of_date,
                 'region_code': target.region_code,
                 'region_name': target.region_name,
                 'class_code': target.class_code,
                 'class_name': class_names[target.class_code],
                 'metric': target.metric,
-                'strict_lower': strict_cert.lower,
-                'strict_upper': strict_cert.upper,
-                'strict_status': strict_cert.status,
-                'bridge_lower': bridge_cert.lower,
-                'bridge_upper': bridge_cert.upper,
-                'bridge_status': bridge_cert.status,
-                'bridge_published_value': bridge_cert.published_value,
+                'lower_bound': cert.lower,
+                'upper_bound': cert.upper,
+                'published_value': cert.published_value,
+                'optimum_point_value': optimum_value,
+                'status': cert.status,
+                'bridge_objective_value': batch.bridge_optimum.objective_value,
+                'bridge_objective_tolerance': config.bridge_objective_tolerance,
                 'model_run_id': model_run_id,
                 'mapping_version': config.mapping_version,
-            }
-        )
-        chosen = (
-            strict_cert
-            if not strict_cert.status.endswith('BOUNDED')
-            else bridge_cert
-        )
-        if chosen.published_value is not None:
-            evidence_layer = (
-                'STRICT'
-                if chosen is strict_cert
-                else (
-                    'BRIDGE_SINGLETON_PROFILE'
-                    if chosen.status.startswith('BRIDGE_SINGLETON_PROFILE')
-                    else 'BRIDGE_LOCAL_PROFILE'
-                )
-            )
-            reconstructed_records.append(
-                {
-                    'as_of_date': config.as_of_date,
-                    'geography_node_id': target.region_code,
-                    'geography_name': target.region_name,
-                    'geography_kind': 'atomic_region',
-                    'classifier_id': 'okved2',
-                    'activity_code': target.class_code,
-                    'activity_name': class_names[target.class_code],
-                    'metric': target.metric,
-                    'value': chosen.published_value,
-                    'lower_bound': chosen.lower,
-                    'upper_bound': chosen.upper,
-                    'status': chosen.status,
-                    'evidence_layer': evidence_layer,
-                    'is_published': False,
-                    'is_reconstructed': True,
-                    'proof_type': (
-                        'bridge_singleton_profile'
-                        if evidence_layer == 'BRIDGE_SINGLETON_PROFILE'
-                        else 'lp_minmax'
-                    ),
-                    'observation_id': None,
-                    'source_series': None,
-                    'source_file_actual': None,
-                    'source_sheet': None,
-                    'source_row': None,
-                    'source_column': None,
-                    'source_sha256': None,
-                    'model_run_id': model_run_id,
-                    'mapping_version': config.mapping_version,
-                }
-            )
+                'constraint_set_hash': constraint_set_hash,
+            })
+            estimates.append(_estimate_record(
+                config=config,
+                model_run_id=model_run_id,
+                constraint_set_hash=constraint_set_hash,
+                target=target,
+                class_name=class_names[target.class_code],
+                certified=cert,
+                optimum_value=optimum_value,
+                bridge_objective_value=float(
+                    batch.bridge_optimum.objective_value
+                ),
+            ))
 
     published = published_facts(bundle.canonical_grid)
-    reconstructed = pd.DataFrame(reconstructed_records, columns=published.columns)
-    facts = pd.concat([published, reconstructed], ignore_index=True)
-    bounds = pd.DataFrame(bounds_records)
-    diagnostics = _bridge_diagnostics(problem, bridge_solution_values)
-    created = datetime.now(timezone.utc).isoformat()
-    strict_fact_count = int(
-        (reconstructed.get('evidence_layer', pd.Series(dtype=str)) == 'STRICT').sum()
+    reconstructed_frame = pd.DataFrame(reconstructed).reindex(columns=FACT_COLUMNS)
+    facts = pd.concat([published, reconstructed_frame], ignore_index=True)
+    estimates_frame = pd.DataFrame(estimates).reindex(columns=FACT_COLUMNS)
+    strict_constraints = strict_problem.constraints_grid.assign(
+        mapping_version=None
     )
-    profile_fact_count = int(
-        reconstructed.get('evidence_layer', pd.Series(dtype=str))
-        .astype(str)
-        .str.startswith('BRIDGE_')
-        .sum()
+    bridge_constraints = (
+        pd.DataFrame()
+        if bridge_problem is None
+        else bridge_problem.constraints_grid.assign(
+            mapping_version=config.mapping_version
+        )
+    )
+    constraints = pd.concat(
+        [strict_constraints, bridge_constraints], ignore_index=True, sort=False
+    )
+    diagnostics = (
+        pd.DataFrame()
+        if bridge_problem is None or batch.bridge_optimum is None
+        else _bridge_diagnostics(
+            mapping_edges, bridge_problem, batch.bridge_optimum.values
+        )
+    )
+    bridge_fallback_mass = (
+        None
+        if batch.bridge_optimum is None
+        else batch.bridge_optimum.objective_value
     )
     audit = {
         'model_run_id': model_run_id,
         'as_of_date': config.as_of_date,
-        'created_at_utc': created,
-        'strategy_box_version': '0.3.0',
-        'solver_backend': bridge_backend,
-        'solver_version': bridge_solver_version,
-        'strict_solver_backend': strict_backend,
-        'strict_solver_version': strict_solver_version,
+        'created_at_utc': datetime.now(timezone.utc).isoformat(),
+        'strategy_box_version': '0.3.1',
+        'solver_backend': batch.backend,
+        'solver_version': batch.version,
         'mapping_version': config.mapping_version,
+        'mapping_status': mapping_manifest.get('status'),
+        'strict_official_crosswalk': mapping_manifest.get(
+            'strict_official_crosswalk'
+        ),
         'atomic_regions': len(bundle.atomic_regions),
         'okved2_classes': len(bundle.okved2_classes),
-        'primary_variables': problem.n_primary_variables,
-        'total_variables': problem.num_variables,
-        'constraints': int(problem.matrix.shape[0]),
-        'hard_constraints': int(
-            (problem.constraints_grid['hardness'] == 'HARD_PUBLICATION').sum()
+        'strict_variables': strict_problem.num_variables,
+        'strict_constraints': int(strict_problem.matrix.shape[0]),
+        'bridge_variables': (
+            0 if bridge_problem is None else bridge_problem.num_variables
         ),
-        'bridge_constraints': int(
-            (problem.constraints_grid['hardness'] == 'BRIDGE_OBJECTIVE').sum()
+        'bridge_constraints': (
+            0 if bridge_problem is None else int(bridge_problem.matrix.shape[0])
         ),
-        'hard_feasible': strict_feasibility.success,
-        'bridge_objective_value': bridge_optimum.objective_value,
-        'targets_certified': len(targets),
-        'strict_reconstructed_facts': strict_fact_count,
-        'bridge_reconstructed_facts': profile_fact_count,
+        'strict_feasible': batch.strict_feasibility.success,
+        'bridge_feasible': (
+            None if batch.bridge_optimum is None
+            else batch.bridge_optimum.success
+        ),
+        'minimum_off_preferred_bridge_mass_mln_rub': bridge_fallback_mass,
+        'bridge_objective_tolerance': config.bridge_objective_tolerance,
+        'targets_certified': len(strict_targets),
+        'strict_reconstructed_facts': len(reconstructed_frame),
+        'conditional_bridge_estimates': len(estimates_frame),
         'source_rows': int(len(bundle.canonical_grid)),
+        'constraint_set_hash': constraint_set_hash,
         'important_note': (
-            'BRIDGE profile facts are conditional reconstructions. They are '
-            'unique under the target region margins fitted by the deterministic '
-            'minimum-error methodology-derived bridge and are distinct from STRICT '
-            'facts implied by publications alone.'
+            'facts_grid contains only published observations and values '
+            'identified by official publication constraints. estimates_grid '
+            'contains conditional bridge results certified across the complete '
+            'globally minimum-reclassification solution set; these values are '
+            'never promoted to reconstructed facts.'
         ),
     }
     return SorsRestorationResult(
         canonical_grid=bundle.canonical_grid,
         facts_grid=facts,
-        bounds_grid=bounds,
+        estimates_grid=estimates_frame,
+        bounds_grid=pd.DataFrame(strict_bounds),
+        bridge_bounds_grid=pd.DataFrame(bridge_bounds),
         bridge_diagnostics_grid=diagnostics,
-        constraints_grid=problem.constraints_grid,
+        constraints_grid=constraints,
         mapping_edges_grid=mapping_edges,
-        conflicts_grid=pd.DataFrame(),
+        conflicts_grid=pd.DataFrame(conflicts),
         audit=audit,
     )

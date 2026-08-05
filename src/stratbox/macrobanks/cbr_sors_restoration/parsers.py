@@ -77,6 +77,7 @@ def parse_regional_traditional(path: str | Path, as_of_date: str, policy: Roundi
     frame = parsed.df_stream.copy()
     frame['source_series'] = '01_05_A'
     frame['source_file_actual'] = actual.name
+    frame['source_sheet'] = frame['source_sheet_name'].astype(str)
     frame['source_file_logical'] = canonical_name
     frame['as_of_date'] = as_of_date
     frame['activity_code'] = frame['industry_code'].astype(str)
@@ -258,4 +259,5 @@ def load_sors_source_grid(files: SorsSourceFiles, as_of_date: str, publication_s
     return SorsSourceBundle(canonical, regional, national_old, national_new, fd, geography, atomic, classes, missing, manifest)
 
 
+load_sors_source_bundle = load_sors_source_grid
 load_sors_sources = load_sors_source_grid

@@ -1,15 +1,24 @@
-"""Google Colab example for SORS Restoration V2.
+"""Google Colab example for SORS Restoration 0.3.1.
 
-Run in a clean Colab runtime. SORS V2 uses highspy directly and does not require
-SciPy, avoiding NumPy/SciPy binary conflicts from the previous prototype.
+Use a clean runtime. Different SORS implementations must never be installed under
+one version in the same Colab session.
 
-Installation from a Git branch:
-    !pip install --no-cache-dir highspy
-    !pip install --no-cache-dir "git+https://github.com/ForestTiger-GH/stratbox.git@YOUR_BRANCH"
+Recommended installation cell for a wheel uploaded to /content:
 
-The first example certifies one target deliberately. Expand the target scope only
-after the smoke run succeeds: each non-singleton metric requires strict and bridge
-min/max solves.
+    !pip uninstall -y stratbox
+    !rm -rf /usr/local/lib/python3.12/dist-packages/stratbox
+    !rm -rf /usr/local/lib/python3.12/dist-packages/stratbox-*.dist-info
+    !pip install --no-cache-dir "highspy>=1.11,<2"
+    !pip install --no-cache-dir --force-reinstall --no-deps \
+        /content/stratbox-0.3.1-py3-none-any.whl
+
+Then restart the session before importing:
+
+    from google.colab import runtime
+    runtime.restart_session()
+
+facts_grid contains only published and STRICT reconstructed values.
+estimates_grid contains conditional minimum-reclassification bridge results.
 """
 
 from stratbox.macrobanks.cbr_sors_restoration import (
@@ -41,6 +50,8 @@ result = run_sors_restoration(files, config)
 print(result.audit)
 display(result.facts_grid.query('is_reconstructed == True'))
 display(result.bounds_grid)
+display(result.estimates_grid)
+display(result.bridge_bounds_grid)
 
 export_sors_restoration_xlsx(
     result,
