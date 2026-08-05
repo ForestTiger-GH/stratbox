@@ -1,0 +1,11 @@
+{
+  "mapping_version": "cbr-legacy-okved2-bridge-2026.1",
+  "status": "METHODOLOGY_DERIVED",
+  "strict_official_crosswalk": false,
+  "description": "Versioned semantic and methodology-derived bridge between published CBR legacy activity nodes and OKVED2 classes. It supplies a weighted fit objective and must never be reported as STRICT evidence.",
+  "source_basis": [
+    "CBR legacy publication node names and hierarchy",
+    "OKVED2 class and section boundaries",
+    "published national and federal-district SORS aggregates"
+  ]
+}

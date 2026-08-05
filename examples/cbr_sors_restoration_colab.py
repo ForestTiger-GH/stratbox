@@ -1,35 +1,48 @@
-"""Minimal Google Colab / notebook example for one SORS reporting date.
+"""Google Colab example for SORS Restoration V2.
 
-In Colab, install Strategy Box from your repository/branch first, e.g.:
-    !pip install "git+https://github.com/ForestTiger-GH/stratbox.git@YOUR_BRANCH"
-Then upload/download the four SORS workbooks and point FILES to them.
+Run in a clean Colab runtime. SORS V2 uses highspy directly and does not require
+SciPy, avoiding NumPy/SciPy binary conflicts from the previous prototype.
+
+Installation from a Git branch:
+    !pip install --no-cache-dir highspy
+    !pip install --no-cache-dir "git+https://github.com/ForestTiger-GH/stratbox.git@YOUR_BRANCH"
+
+The first example certifies one target deliberately. Expand the target scope only
+after the smoke run succeeds: each non-singleton metric requires strict and bridge
+min/max solves.
 """
 
 from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsRestorationConfig,
-    SorsRestorationFiles,
+    SorsRunConfig,
+    SorsSourceFiles,
+    SorsTargetScope,
     export_sors_restoration_xlsx,
     run_sors_restoration,
 )
 
-FILES = SorsRestorationFiles(
-    regional_traditional='/content/01_05_A_Debt_corp_20260601.xlsx',
+files = SorsSourceFiles(
+    regional_traditional='/content/01_05_A_Debt_corp_20260601 (1).xlsx',
+    national_traditional='/content/01_02_A_Debt_corp_by_activity.xlsx',
     national_okved2='/content/01_02_C_Debt_corp_by_activity.xlsx',
-    fd_okved2='/content/01_03_C_Loans_corp_by_fd_activity_20260601.xlsx',
-    national_traditional='/content/01_02_A_Debt_corp_by_activity.xlsx',  # diagnostics only
+    fd_okved2='/content/01_03_C_Loans_corp_by_fd_activity_20260601 (1).xlsx',
 )
 
-CONFIG = SorsRestorationConfig(
+config = SorsRunConfig(
     as_of_date='2026-06-01',
-    certify_mode='targets',
-    # Examples: certify all components of selected region/class combinations.
-    target_region_names=('г. Москва', 'Брянская область', 'Краснодарский край'),
-    target_class_codes=('01', '10', '35'),
-    max_lp_targets=100,
+    target_scope=SorsTargetScope(
+        region_names=('г. Москва',),
+        class_codes=('16',),
+        metrics=('debt_total',),
+        max_targets=10,
+    ),
 )
 
-result = run_sors_restoration(FILES, CONFIG)
+result = run_sors_restoration(files, config)
 print(result.audit)
-display(result.facts_grid.head(50))
-display(result.bounds_grid.query("region_name == 'г. Москва' and class_code in ['01','10','35']"))
-export_sors_restoration_xlsx(result, '/content/SORS_Restored_20260601.xlsx')
+display(result.facts_grid.query('is_reconstructed == True'))
+display(result.bounds_grid)
+
+export_sors_restoration_xlsx(
+    result,
+    '/content/SORS_Restored_20260601.xlsx',
+)

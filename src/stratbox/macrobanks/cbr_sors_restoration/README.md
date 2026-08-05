@@ -1,9 +1,130 @@
-# CBR SORS restoration
+# CBR SORS Restoration V2
 
-Domain for strict partial identification of regional corporate debt by OKVED2 from overlapping Bank of Russia SORS tables.
+Домен восстанавливает максимально возможную часть региональной статистики задолженности юридических лиц и ИП по классам ОКВЭД2 для одного отчётного периода.
 
-The strict solver uses only published margins, publication-rounding intervals, non-negativity and explicitly proven hard mappings. Semantic or historically fitted mappings are diagnostics/priors only and never become strict facts automatically.
+## Что используется
 
-Core representation uses four non-overlapping components: performing RUB, overdue RUB, performing FX, overdue FX. The pipeline is: parse -> atomic geography -> deterministic interval closure -> LP feasibility -> min/max certification -> fixed point -> optional analytical benchmark.
+Четыре публикации Банка России:
 
-See the project-level methodology note delivered with the implementation for the proof/status policy and limitations.
+- `01_05_A`: регионы × традиционные виды деятельности, шесть денежных показателей;
+- `01_02_A`: Россия × традиционные виды деятельности, шесть показателей;
+- `01_02_C`: Россия × классы ОКВЭД2, шесть показателей;
+- `01_03_C`: федеральные округа × разделы ОКВЭД2, задолженность и просрочка.
+
+Физические имена файлов могут содержать браузерные суффиксы `(1)`, `(2)` и т.п. Логический тип и отчётная дата проверяются отдельно.
+
+## Два доказательных слоя
+
+### `STRICT`
+
+Используются только опубликованные маржи, интервалы округления, неотрицательность и официальная географическая/классификационная иерархия. Значение публикуется как восстановленное только после min/max-сертификации.
+
+### `BRIDGE_*_PROFILE`
+
+Традиционные региональные отрасли связываются с родственными классами ОКВЭД2 через версионированный методологический bridge. Bridge минимизирует взвешенное отклонение от всех традиционных отраслевых публикаций, одновременно в точности сохраняя официальные национальные, окружные и региональные маржи.
+
+Такие результаты являются **условными реконструкциями**, а не официально доказанными значениями. Они всегда имеют отдельный `evidence_layer` и не смешиваются со `STRICT`.
+
+- `BRIDGE_SINGLETON_PROFILE`: традиционная группа в bridge связана с одним классом ОКВЭД2; профильное значение следует напрямую из выбранного оптимального bridge.
+- `BRIDGE_LOCAL_PROFILE`: значение сертифицировано min/max при фиксированных fitted-маржах целевого региона; остальные регионы остаются свободными под официальными агрегатами.
+
+## Денежная модель
+
+Внутренне используются четыре непересекающихся компонента:
+
+```text
+performing_rub
+overdue_rub
+performing_fx
+overdue_fx
+```
+
+Пользовательские метрики:
+
+```text
+debt_rub
+debt_fx
+debt_total
+overdue_rub
+overdue_fx
+overdue_total
+```
+
+Все шесть исходных листов используются как самостоятельные интервальные ограничения. Прямые листы «итого» не удаляются как якобы избыточные.
+
+## Размер среза 01.06.2026
+
+```text
+source observations     15 874
+atomic regions              85
+real OKVED2 classes          88
+primary variables        29 920
+hard publication rows     1 324
+bridge fit rows          13 968
+```
+
+Категория `Прочее` из публикации не считается классом ОКВЭД2. Она выражается суммой восьми реальных классов, которые в `01_02_C` не показаны отдельно.
+
+## Solver
+
+Основной backend — `highspy`.
+
+```bash
+pip install "stratbox[sors-restoration]"
+```
+
+SciPy не является зависимостью домена. Для сред разработки, где `highspy` отсутствует, существует изолированный compatibility worker на внутреннем HiGHS из SciPy; он нужен только для тестирования уже установленной среды и не является рекомендуемым production backend.
+
+## API
+
+```python
+from stratbox.macrobanks.cbr_sors_restoration import (
+    SorsRunConfig,
+    SorsSourceFiles,
+    SorsTargetScope,
+    run_sors_restoration,
+)
+
+files = SorsSourceFiles(
+    regional_traditional="01_05_A_Debt_corp_20260601 (1).xlsx",
+    national_traditional="01_02_A_Debt_corp_by_activity.xlsx",
+    national_okved2="01_02_C_Debt_corp_by_activity.xlsx",
+    fd_okved2="01_03_C_Loans_corp_by_fd_activity_20260601 (1).xlsx",
+)
+
+config = SorsRunConfig(
+    as_of_date="2026-06-01",
+    target_scope=SorsTargetScope(
+        region_names=("г. Москва",),
+        class_codes=("16",),
+        metrics=("debt_total",),
+    ),
+)
+
+result = run_sors_restoration(files, config)
+```
+
+Результат содержит:
+
+```text
+canonical_grid
+facts_grid
+bounds_grid
+bridge_diagnostics_grid
+constraints_grid
+mapping_edges_grid
+conflicts_grid
+audit
+```
+
+## Принцип публикации
+
+- `facts_grid` объединяет исходные опубликованные записи и восстановленные записи.
+- `bounds_grid` сохраняет strict- и bridge-диапазоны всех запрошенных целей.
+- широкая ячейка остаётся диапазоном;
+- модельная точка никогда не становится `STRICT`;
+- версия bridge и hash входных файлов входят в audit.
+
+## Ограничение текущей V2
+
+Bridge `cbr-legacy-okved2-bridge-2026.1` построен по методологии и смысловым границам опубликованных групп. Он версионирован и явно имеет `METHODOLOGY_DERIVED`, поскольку готовой официальной денежной матрицы ЦБ между legacy-группами и ОКВЭД2 нет. Следующая методологическая волна может заменить его графом на базе официального переходного ключа ОКВЭД-2007 → ОКВЭД2, не меняя Solver-контур.
