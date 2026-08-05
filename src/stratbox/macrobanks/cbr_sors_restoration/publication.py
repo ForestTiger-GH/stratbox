@@ -1,13 +1,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import floor
+from math import floor, inf, isfinite
+
+import numpy as np
 
 
 @dataclass(frozen=True, slots=True)
 class PublicationInterval:
     lower: float
     upper: float
+    lower_attained: bool = True
+    upper_attained: bool = False
+
+    def __post_init__(self) -> None:
+        if self.upper < self.lower:
+            raise ValueError(f'Invalid interval [{self.lower}, {self.upper}]')
+
+    @property
+    def width(self) -> float:
+        return float(self.upper - self.lower)
+
+    @property
+    def is_point(self) -> bool:
+        return self.lower == self.upper and self.lower_attained and self.upper_attained
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,28 +31,102 @@ class RoundingPolicy:
     step: float = 1.0
     tolerance: float = 1e-8
 
-    def interval(self, value: float) -> PublicationInterval:
-        half = self.step / 2.0
-        return PublicationInterval(max(0.0, float(value) - half), float(value) + half)
+    def __post_init__(self) -> None:
+        if self.step <= 0:
+            raise ValueError('Rounding step must be positive')
+        if self.tolerance <= 0:
+            raise ValueError('Rounding tolerance must be positive')
 
-    def bucket(self, value: float) -> float:
+    def interval(self, value: float) -> PublicationInterval:
+        value = float(value)
         if value < 0:
             raise ValueError('Published SORS values cannot be negative')
-        return floor(float(value) / self.step + 0.5 + self.tolerance) * self.step
+        half = self.step / 2.0
+        return PublicationInterval(
+            lower=max(0.0, value - half),
+            upper=value + half,
+            lower_attained=True,
+            upper_attained=False,
+        )
 
-    def single_bucket(self, lower: float, upper: float) -> float | None:
-        if upper < lower - self.tolerance:
+    def bucket(self, value: float) -> float:
+        value = float(value)
+        if value < -self.tolerance:
+            raise ValueError('Published SORS values cannot be negative')
+        value = max(0.0, value)
+        return floor(value / self.step + 0.5) * self.step
+
+    def single_bucket_interval(self, interval: PublicationInterval) -> float | None:
+        if interval.upper < interval.lower - self.tolerance:
             return None
-        lo = self.bucket(max(0.0, lower))
-        hi_probe = max(lower, upper - self.tolerance)
-        hi = self.bucket(max(0.0, hi_probe))
-        return lo if abs(lo - hi) <= self.tolerance else None
+        lower_value = max(0.0, float(interval.lower))
+        upper_value = max(0.0, float(interval.upper))
+        lower_index = floor(lower_value / self.step + 0.5)
+        upper_scaled = upper_value / self.step + 0.5
+        nearest = round(upper_scaled)
+        if (
+            not interval.upper_attained
+            and abs(upper_scaled - nearest) <= self.tolerance
+        ):
+            upper_index = int(nearest) - 1
+        else:
+            upper_index = floor(upper_scaled)
+        return (
+            float(lower_index) * self.step
+            if lower_index == upper_index
+            else None
+        )
+
+    def single_bucket(
+        self,
+        lower: float,
+        upper: float,
+        *,
+        lower_attained: bool = True,
+        upper_attained: bool = True,
+    ) -> float | None:
+        return self.single_bucket_interval(
+            PublicationInterval(
+                float(lower),
+                float(upper),
+                lower_attained=lower_attained,
+                upper_attained=upper_attained,
+            )
+        )
 
 
-def publication_interval(value: float, step: float = 1.0) -> tuple[float, float]:
-    x = RoundingPolicy(step=step).interval(value)
-    return x.lower, x.upper
+def publication_interval(value: float, step: float = 1.0) -> PublicationInterval:
+    return RoundingPolicy(step=step).interval(value)
 
 
-def published_bucket(lower: float, upper: float, step: float = 1.0, tol: float = 1e-8) -> float | None:
-    return RoundingPolicy(step=step, tolerance=tol).single_bucket(lower, upper)
+def published_bucket(
+    lower: float,
+    upper: float,
+    step: float = 1.0,
+    tol: float = 1e-8,
+    *,
+    lower_attained: bool = True,
+    upper_attained: bool = True,
+) -> float | None:
+    return RoundingPolicy(step=step, tolerance=tol).single_bucket(
+        lower,
+        upper,
+        lower_attained=lower_attained,
+        upper_attained=upper_attained,
+    )
+
+
+def solver_lower_bound(value: float, attained: bool) -> float:
+    """Convert a semantic lower endpoint to a closed floating-point bound."""
+    value = float(value)
+    if attained or not isfinite(value):
+        return value
+    return float(np.nextafter(value, inf))
+
+
+def solver_upper_bound(value: float, attained: bool) -> float:
+    """Convert a semantic upper endpoint to a closed floating-point bound."""
+    value = float(value)
+    if attained or not isfinite(value):
+        return value
+    return float(np.nextafter(value, -inf))

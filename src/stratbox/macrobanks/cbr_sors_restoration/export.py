@@ -1,89 +1,243 @@
 from __future__ import annotations
 
+import gc
+import hashlib
+import math
+import re
+from dataclasses import asdict
+from datetime import date, datetime
 from pathlib import Path
+from threading import Lock
+from typing import Any
 
 import pandas as pd
+import xlsxwriter
+import xlsxwriter.workbook as xlsxwriter_workbook
+from zipfile import ZipFile
 
-from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsRestorationResult
-
-
-def _strict_restored(result: SorsRestorationResult) -> pd.DataFrame:
-    facts = result.facts_grid
-    return facts[
-        facts['classifier_id'].astype(str).eq('okved2')
-        & facts['geography_kind'].astype(str).eq('atomic_region')
-        & facts['is_reconstructed'].astype(bool)
-        & ~facts['is_estimate'].astype(bool)
-    ].copy()
+from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsWorkbookRequest
+from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
+from stratbox.macrobanks.cbr_sors_restoration.results import (
+    SorsRestorationResult,
+    SorsWorkbookResult,
+)
 
 
-def _conditional_estimates(result: SorsRestorationResult) -> pd.DataFrame:
-    estimates = result.estimates_grid
-    if estimates.empty:
-        return estimates
-    return estimates[
-        estimates['classifier_id'].astype(str).eq('okved2')
-        & estimates['geography_kind'].astype(str).eq('atomic_region')
-        & estimates['is_estimate'].astype(bool)
-    ].copy()
+
+_XLSXWRITER_ZIP_LOCK = Lock()
 
 
-def _write_metric_pivots(writer, frame: pd.DataFrame, prefix: str) -> None:
-    if frame.empty:
-        return
-    for metric, group in frame.groupby('metric', sort=False):
-        sheet = f'{prefix}_{metric}'[:31]
-        pivot = group.pivot_table(
-            index='geography_name',
-            columns='activity_code',
-            values='value',
-            aggfunc='first',
-        )
-        pivot.to_excel(writer, sheet_name=sheet)
+class _FastZipFile(ZipFile):
+    """Use fast Deflate for large analytical workbooks."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('compresslevel', 1)
+        super().__init__(*args, **kwargs)
 
 
-def export_sors_restoration_xlsx(
+_PRIMARY_COLUMNS = (
+    'as_of_date', 'region_code', 'class_code', 'metric',
+    'value', 'value_precision', 'identified_value',
+    'identified_value_precision', 'feasibility_confirmed',
+    'lower_bound', 'upper_bound', 'lower_attained', 'upper_attained',
+    'interval_width', 'identification_status', 'derivation_method',
+    'is_strict_fact', 'is_reconstructed',
+    'is_zero_at_published_precision', 'is_exact_zero', 'is_lp_certified',
+    'closure_pass', 'supporting_constraint_count',
+)
+
+_REGION_COLUMNS = (
+    'region_code', 'region_name', 'region_order',
+    'federal_district_code', 'federal_district_name',
+    'federal_district_order',
+)
+
+_CLASS_COLUMNS = (
+    'class_code', 'class_name', 'class_order',
+    'section_code', 'section_name', 'section_order',
+    'publication_category_code', 'is_individually_published',
+)
+
+_METRIC_COLUMNS = ('metric', 'metric_name', 'metric_order', 'unit')
+
+
+
+def _sheet_name(value: str, used: set[str]) -> str:
+    cleaned = re.sub(r'[:\\/?*\[\]]', '_', value).strip() or 'Sheet'
+    candidate = cleaned[:31]
+    suffix = 2
+    while candidate in used:
+        tail = f'_{suffix}'
+        candidate = f'{cleaned[:31-len(tail)]}{tail}'
+        suffix += 1
+    used.add(candidate)
+    return candidate
+
+
+def _excel_value(value: Any) -> Any:
+    if value is None or value is pd.NA:
+        return None
+    if isinstance(value, float):
+        if math.isnan(value):
+            return None
+        if math.isinf(value):
+            return 'INF' if value > 0 else '-INF'
+        return value
+    if isinstance(value, (str, int, bool, datetime, date)):
+        return value
+    if hasattr(value, 'item'):
+        try:
+            return _excel_value(value.item())
+        except Exception:
+            pass
+    if isinstance(value, (tuple, list, set, dict)):
+        return str(value)
+    return str(value)
+
+
+def _widths(frame: pd.DataFrame) -> list[int]:
+    sample = frame.head(200)
+    widths: list[int] = []
+    for column in frame.columns:
+        values = sample[column].map(_excel_value).dropna().astype(str)
+        maximum = max([len(str(column)), *(len(value) for value in values)], default=len(str(column)))
+        widths.append(min(max(maximum + 2, 10), 48))
+    return widths
+
+
+def _write_frame(workbook, frame: pd.DataFrame, sheet: str, header_format) -> None:
+    worksheet = workbook.add_worksheet(sheet)
+    worksheet.freeze_panes(1, 0)
+    worksheet.write_row(0, 0, list(frame.columns), header_format)
+    for row_index, row in enumerate(frame.itertuples(index=False, name=None), start=1):
+        worksheet.write_row(row_index, 0, [_excel_value(value) for value in row])
+    if len(frame.columns):
+        worksheet.autofilter(0, 0, max(len(frame), 1), len(frame.columns) - 1)
+    for column_index, width in enumerate(_widths(frame)):
+        worksheet.set_column(column_index, column_index, width)
+
+
+def export_sors_workbook(
     result: SorsRestorationResult,
-    path: str | Path,
-) -> Path:
-    out = Path(path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    restored = _strict_restored(result)
-    estimates = _conditional_estimates(result)
-    with pd.ExcelWriter(out, engine='openpyxl') as writer:
-        result.canonical_grid.to_excel(writer, sheet_name='SourceGrid', index=False)
-        result.facts_grid.to_excel(writer, sheet_name='FactsGrid', index=False)
-        restored.to_excel(writer, sheet_name='StrictRestored', index=False)
-        result.estimates_grid.to_excel(writer, sheet_name='ConditionalEstimates', index=False)
-        result.bounds_grid.to_excel(writer, sheet_name='StrictBounds', index=False)
-        result.bridge_bounds_grid.to_excel(writer, sheet_name='BridgeBounds', index=False)
-        result.bridge_diagnostics_grid.to_excel(
-            writer, sheet_name='BridgeDiagnostics', index=False
+    request: SorsWorkbookRequest,
+) -> SorsWorkbookResult:
+    output = Path(request.output_path)
+    if output.exists() and not request.overwrite:
+        raise FileExistsError(f'SORS workbook already exists: {output}')
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists():
+        output.unlink()
+    used: set[str] = set()
+    frames: list[tuple[str, pd.DataFrame]] = []
+
+    def queue(frame: pd.DataFrame, name: str) -> None:
+        frames.append((_sheet_name(name, used), frame))
+
+    if request.include_primary_grid:
+        columns = [
+            column
+            for column in _PRIMARY_COLUMNS
+            if column in result.regional_okved2_grid
+        ]
+        primary = result.regional_okved2_grid[columns]
+        chunk_size = request.primary_grid_rows_per_sheet
+        if chunk_size is None:
+            queue(primary, 'Regional_OKVED2')
+        else:
+            for start in range(0, len(primary), chunk_size):
+                part = start // chunk_size + 1
+                name = 'Regional_OKVED2' if part == 1 else f'Regional_OKVED2_{part:02d}'
+                queue(primary.iloc[start : start + chunk_size], name)
+    if request.include_dimensions:
+        region_columns = [
+            column for column in _REGION_COLUMNS
+            if column in result.regional_okved2_grid
+        ]
+        class_columns = [
+            column for column in _CLASS_COLUMNS
+            if column in result.regional_okved2_grid
+        ]
+        metric_columns = [
+            column for column in _METRIC_COLUMNS
+            if column in result.regional_okved2_grid
+        ]
+        queue(
+            result.regional_okved2_grid[region_columns]
+            .drop_duplicates('region_code')
+            .sort_values('region_order', kind='stable')
+            .reset_index(drop=True),
+            'Regions',
         )
-        result.mapping_edges_grid.to_excel(writer, sheet_name='Mapping', index=False)
-        result.constraints_grid.to_excel(writer, sheet_name='Constraints', index=False)
-        result.conflicts_grid.to_excel(writer, sheet_name='Conflicts', index=False)
-        pd.DataFrame([result.audit]).to_excel(writer, sheet_name='Audit', index=False)
-        _write_metric_pivots(writer, restored, 'STRICT')
-        _write_metric_pivots(writer, estimates, 'BRIDGE')
-        if not restored.empty:
-            by_region = restored.pivot_table(
-                index=['geography_name', 'activity_code', 'activity_name'],
-                columns='metric',
-                values='value',
-                aggfunc='first',
-            ).reset_index()
-            by_region.to_excel(
-                writer, sheet_name='Strict_ByRegionOKVED2', index=False
-            )
-        if not estimates.empty:
-            by_region_est = estimates.pivot_table(
-                index=['geography_name', 'activity_code', 'activity_name'],
-                columns='metric',
-                values='value',
-                aggfunc='first',
-            ).reset_index()
-            by_region_est.to_excel(
-                writer, sheet_name='Bridge_ByRegionOKVED2', index=False
-            )
-    return out
+        queue(
+            result.regional_okved2_grid[class_columns]
+            .drop_duplicates('class_code')
+            .sort_values('class_order', kind='stable')
+            .reset_index(drop=True),
+            'OKVED2',
+        )
+        queue(
+            result.regional_okved2_grid[metric_columns]
+            .drop_duplicates('metric')
+            .sort_values('metric_order', kind='stable')
+            .reset_index(drop=True),
+            'Metrics',
+        )
+    if request.include_strict_facts:
+        columns = [column for column in _PRIMARY_COLUMNS if column in result.strict_facts_grid]
+        queue(result.strict_facts_grid[columns], 'Strict_Facts')
+    if request.include_validation:
+        queue(result.validation_grid, 'Validation')
+    if request.include_conflicts:
+        queue(result.conflicts_grid, 'Conflicts')
+    if request.include_source_grid:
+        queue(result.source_grid, 'SourceGrid')
+    if request.include_components:
+        queue(result.strict_components_grid, 'Components')
+    if request.include_derivations:
+        queue(result.derivations_grid, 'Derivations')
+    if request.include_constraints:
+        queue(result.constraints_grid, 'Constraints')
+    if request.include_solver_runs:
+        queue(result.solver_runs_grid, 'SolverRuns')
+    if request.include_metadata_sheet:
+        queue(result.audit_grid, 'Audit')
+        queue(pd.DataFrame([asdict(result.summary)]), 'Parameters')
+    for position, pivot_request in enumerate(request.pivots, start=1):
+        pivot = build_sors_pivot(result, pivot_request)
+        selector = pivot.selected_region_name if pivot.orientation == 'REGION_TO_CLASSES' else pivot.selected_class_code
+        queue(pivot.table, f'Pivot_{position}_{selector}')
+
+    workbook = xlsxwriter.Workbook(output, {'constant_memory': True})
+    header_format = workbook.add_format(
+        {'bold': True, 'bg_color': '#D9EAF7', 'border': 1}
+    )
+    closed = False
+    gc_was_enabled = gc.isenabled()
+    if gc_was_enabled:
+        gc.disable()
+    try:
+        for sheet, frame in frames:
+            _write_frame(workbook, frame, sheet, header_format)
+        with _XLSXWRITER_ZIP_LOCK:
+            original_zip_file = xlsxwriter_workbook.ZipFile
+            try:
+                xlsxwriter_workbook.ZipFile = _FastZipFile
+                workbook.close()
+                closed = True
+            finally:
+                xlsxwriter_workbook.ZipFile = original_zip_file
+    finally:
+        if not closed:
+            workbook.close()
+        if gc_was_enabled:
+            gc.enable()
+
+    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    sheets = tuple(sheet for sheet, _ in frames)
+    return SorsWorkbookResult(
+        output_path=output,
+        sheet_names=sheets,
+        sheet_count=len(sheets),
+        file_size=output.stat().st_size,
+        sha256=digest,
+    )

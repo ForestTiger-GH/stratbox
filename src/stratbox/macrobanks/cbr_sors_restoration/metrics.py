@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS
+from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS, TARGET_METRICS
 
 METRIC_COMPONENTS: dict[str, tuple[str, ...]] = {
     'debt_rub': ('performing_rub', 'overdue_rub'),
@@ -10,6 +10,16 @@ METRIC_COMPONENTS: dict[str, tuple[str, ...]] = {
     'overdue_fx': ('overdue_fx',),
     'overdue_total': ('overdue_rub', 'overdue_fx'),
 }
+
+METRIC_NAMES_RU = {
+    'debt_rub': 'Задолженность в рублях',
+    'debt_fx': 'Задолженность в иностранной валюте и драгоценных металлах',
+    'debt_total': 'Задолженность, итого',
+    'overdue_rub': 'Просроченная задолженность в рублях',
+    'overdue_fx': 'Просроченная задолженность в иностранной валюте и драгоценных металлах',
+    'overdue_total': 'Просроченная задолженность, итого',
+}
+METRIC_ORDER = {metric: i + 1 for i, metric in enumerate(TARGET_METRICS)}
 
 
 def source_metric(measure: str, currency: str) -> str:

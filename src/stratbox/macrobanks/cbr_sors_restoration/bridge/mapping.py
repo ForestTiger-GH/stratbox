@@ -6,7 +6,7 @@ import re
 
 import pandas as pd
 
-_RESOURCE_PACKAGE = 'stratbox.macrobanks.cbr_sors_restoration'
+_RESOURCE_PACKAGE = 'stratbox.macrobanks.cbr_sors_restoration.bridge'
 _RESOURCE_DIR = '_resources'
 
 
