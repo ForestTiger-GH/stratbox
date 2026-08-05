@@ -11,6 +11,8 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpDownloadBatchResult,
     Cbr0105ADebtCorpDownloadedSource,
     Cbr0105ADebtCorpDownloadRequest,
+    Cbr0105ADebtCorpIndustryWorkbookRequest,
+    Cbr0105ADebtCorpIndustryWorkbookResult,
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotSetResult,
     Cbr0105ADebtCorpPivotWorkbookRequest,
@@ -28,6 +30,7 @@ from stratbox.macrobanks.cbr_industries.download import (
     try_download_cbr_0105a_debt_corp_source,
 )
 from stratbox.macrobanks.cbr_industries.export import (
+    save_cbr_0105a_debt_corp_industry_workbook as _save_industry_workbook,
     save_cbr_0105a_debt_corp_pivot_workbook as _save_pivot_workbook,
 )
 from stratbox.macrobanks.cbr_industries.parser import (
@@ -267,6 +270,81 @@ def build_cbr_0105a_debt_corp_pivot_set(
     return _build_pivot_set(df_stream, request, stream_result=stream_result)
 
 
+def export_cbr_0105a_debt_corp_industry_workbook(
+    stream_result: Cbr0105ADebtCorpStreamResult,
+    request: Cbr0105ADebtCorpIndustryWorkbookRequest,
+    *,
+    filestore: FileStore | None = None,
+) -> Cbr0105ADebtCorpIndustryWorkbookResult:
+    """Формирует CBR-подобную шестилистовую книгу по одной выбранной отрасли.
+
+    ``industry_code="apk"`` рассчитывает АПК автоматически. Любой исходный
+    код, включая опубликованное ``industry_code="total"``, выгружается без
+    пересчета из канонического потока.
+    """
+    if not stream_result.ok:
+        raise RuntimeError(
+            "Industry workbook export requires a complete and valid stream result"
+        )
+
+    industry_code = str(request.industry_code).strip()
+    if not industry_code:
+        raise ValueError("Industry workbook industry_code is empty")
+
+    stream = stream_result.df_stream
+    industry_codes = stream["industry_code"].astype("object")
+    if not industry_codes.eq(industry_code).any():
+        if industry_code == "apk" and request.calculate_apk_if_missing:
+            stream = _calculate_apk_industry(stream).df_stream
+            industry_codes = stream["industry_code"].astype("object")
+        else:
+            available = tuple(
+                sorted(str(value) for value in industry_codes.dropna().unique())
+            )
+            raise ValueError(
+                f"Industry code {industry_code!r} is absent from the stream; "
+                f"available={available}"
+            )
+
+    filtered = stream.loc[industry_codes.eq(industry_code)].copy()
+    names = tuple(
+        str(value)
+        for value in filtered["industry_name_ru"].astype("object").dropna().unique()
+    )
+    if len(names) != 1:
+        raise ValueError(
+            "Industry workbook requires one unambiguous industry name: "
+            f"industry_code={industry_code!r}, names={names}"
+        )
+    industry_name_ru = names[0]
+
+    pivot_set = _build_pivot_set(
+        filtered,
+        Cbr0105ADebtCorpPivotRequest(
+            row_dimension="region_code",
+            column_dimension="report_date",
+            value_columns=("value",),
+            sheet_dimensions=("currency_scope", "measure"),
+            require_complete_stream=True,
+            max_sheet_count=6,
+        ),
+        stream_result=stream_result,
+    )
+    normalized_request = Cbr0105ADebtCorpIndustryWorkbookRequest(
+        out_path=request.out_path,
+        industry_code=industry_code,
+        overwrite=request.overwrite,
+        calculate_apk_if_missing=request.calculate_apk_if_missing,
+        include_metadata_sheet=request.include_metadata_sheet,
+    )
+    return _save_industry_workbook(
+        pivot_set,
+        normalized_request,
+        industry_name_ru=industry_name_ru,
+        filestore=filestore,
+    )
+
+
 def save_cbr_0105a_debt_corp_pivot_workbook(
     pivot_set: Cbr0105ADebtCorpPivotSetResult,
     request: Cbr0105ADebtCorpPivotWorkbookRequest,
@@ -283,6 +361,7 @@ __all__ = [
     "build_cbr_0105a_debt_corp_stream",
     "discover_cbr_0105a_debt_corp_sources",
     "download_cbr_0105a_debt_corp_sources",
+    "export_cbr_0105a_debt_corp_industry_workbook",
     "parse_cbr_0105a_debt_corp_downloaded_source",
     "save_cbr_0105a_debt_corp_pivot_workbook",
 ]

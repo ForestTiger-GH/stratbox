@@ -39,6 +39,7 @@ class Cbr0105ADebtCorpSheetSpec:
     measure_name_ru: str
     currency_scope: Cbr0105ADebtCorpCurrencyScope
     currency_scope_name_ru: str
+    workbook_sheet_name: str
     order: int
 
 
@@ -323,6 +324,41 @@ class Cbr0105ADebtCorpPivotWorkbookResult:
         return bool(self.output_path) and self.sheet_count > 0
 
 
+@dataclass(frozen=True, slots=True)
+class Cbr0105ADebtCorpIndustryWorkbookRequest:
+    """Запрос на CBR-подобную книгу динамики одной отрасли по регионам."""
+
+    out_path: str
+    industry_code: str = "apk"
+    overwrite: bool = False
+    calculate_apk_if_missing: bool = True
+    include_metadata_sheet: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class Cbr0105ADebtCorpIndustryWorkbookResult:
+    """Результат экспорта одной отрасли в шестилистовую CBR-подобную книгу."""
+
+    output_path: str
+    industry_code: str
+    industry_name_ru: str
+    sheet_names: tuple[str, ...]
+    sheet_count: int
+    dates: tuple[str, ...]
+    rows_per_sheet: int
+    file_size: int
+    sha256: str
+
+    @property
+    def ok(self) -> bool:
+        return (
+            bool(self.output_path)
+            and bool(self.industry_code)
+            and self.sheet_count == 6
+            and self.rows_per_sheet > 0
+        )
+
+
 __all__ = [
     "Cbr0105ADebtCorpApkCalculationResult",
     "Cbr0105ADebtCorpCurrencyScope",
@@ -331,6 +367,8 @@ __all__ = [
     "Cbr0105ADebtCorpDownloadRequest",
     "Cbr0105ADebtCorpFailureStage",
     "Cbr0105ADebtCorpIndustrySpec",
+    "Cbr0105ADebtCorpIndustryWorkbookRequest",
+    "Cbr0105ADebtCorpIndustryWorkbookResult",
     "Cbr0105ADebtCorpMeasure",
     "Cbr0105ADebtCorpPivotDimension",
     "Cbr0105ADebtCorpPivotRequest",

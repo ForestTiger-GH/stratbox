@@ -22,6 +22,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Задолженность",
         currency_scope="rubles",
         currency_scope_name_ru="В рублях",
+        workbook_sheet_name="в рублях",
         order=1,
     ),
     Cbr0105ADebtCorpSheetSpec(
@@ -30,6 +31,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Просроченная задолженность",
         currency_scope="rubles",
         currency_scope_name_ru="В рублях",
+        workbook_sheet_name="в т.ч. просроч. в рублях",
         order=2,
     ),
     Cbr0105ADebtCorpSheetSpec(
@@ -38,6 +40,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Задолженность",
         currency_scope="foreign_currency_and_precious_metals",
         currency_scope_name_ru="В иностранной валюте и драгоценных металлах",
+        workbook_sheet_name="в инвалюте",
         order=3,
     ),
     Cbr0105ADebtCorpSheetSpec(
@@ -46,6 +49,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Просроченная задолженность",
         currency_scope="foreign_currency_and_precious_metals",
         currency_scope_name_ru="В иностранной валюте и драгоценных металлах",
+        workbook_sheet_name="в т.ч. просроч. в инвалюте",
         order=4,
     ),
     Cbr0105ADebtCorpSheetSpec(
@@ -54,6 +58,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Задолженность",
         currency_scope="total",
         currency_scope_name_ru="Итого",
+        workbook_sheet_name="итого",
         order=5,
     ),
     Cbr0105ADebtCorpSheetSpec(
@@ -62,6 +67,7 @@ CBR_0105A_DEBT_CORP_SHEET_SPECS: tuple[Cbr0105ADebtCorpSheetSpec, ...] = (
         measure_name_ru="Просроченная задолженность",
         currency_scope="total",
         currency_scope_name_ru="Итого",
+        workbook_sheet_name="в т.ч. просроч. итого",
         order=6,
     ),
 )

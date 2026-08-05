@@ -11,6 +11,7 @@ from openpyxl import Workbook, load_workbook
 
 from stratbox.base.filestore import LocalFileStore
 from stratbox.macrobanks.cbr_industries.contracts import (
+    Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotWorkbookRequest,
     Cbr0105ADebtCorpSourceFailure,
@@ -23,6 +24,7 @@ from stratbox.macrobanks.cbr_industries.download import (
 )
 from stratbox.macrobanks.cbr_industries.operations import (
     build_cbr_0105a_debt_corp_pivot_set,
+    export_cbr_0105a_debt_corp_industry_workbook,
     save_cbr_0105a_debt_corp_pivot_workbook,
 )
 from stratbox.macrobanks.cbr_industries.parser import (
@@ -665,3 +667,130 @@ def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
     assert pivot_set.table_count == 6
     assert all(table.rows == 96 for table in pivot_set.tables)
     assert dict(pivot_set.fixed_dimensions)["industry_code"] == "apk"
+
+
+
+def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) -> None:
+    result = _stream_result()
+    store = LocalFileStore(root=str(tmp_path))
+
+    exported = export_cbr_0105a_debt_corp_industry_workbook(
+        result,
+        Cbr0105ADebtCorpIndustryWorkbookRequest(
+            out_path="apk_by_regions.xlsx",
+            industry_code="apk",
+            overwrite=True,
+        ),
+        filestore=store,
+    )
+
+    assert exported.ok
+    assert exported.industry_code == "apk"
+    assert exported.industry_name_ru == "АПК"
+    assert exported.sheet_names == (
+        "в рублях",
+        "в т.ч. просроч. в рублях",
+        "в инвалюте",
+        "в т.ч. просроч. в инвалюте",
+        "итого",
+        "в т.ч. просроч. итого",
+    )
+    assert exported.dates == ("2019-02-01", "2026-06-01")
+    assert exported.rows_per_sheet == 96
+
+    workbook = load_workbook(tmp_path / "apk_by_regions.xlsx", data_only=True)
+    try:
+        assert workbook.sheetnames == list(exported.sheet_names)
+        sheet = workbook["в рублях"]
+        assert "АПК" in sheet["A1"].value
+        assert "Задолженность" in sheet["A1"].value
+        assert "в рублях" in sheet["A1"].value
+        assert sheet["A2"].value == (
+            "Динамика по состоянию на отчетные даты с "
+            "01.02.2019 по 01.06.2026"
+        )
+        assert sheet["A3"].value is None
+        assert sheet["B3"].value == "01.02.2019"
+        assert sheet["C3"].value == "01.06.2026"
+        assert sheet["A4"].value == "РОССИЙСКАЯ ФЕДЕРАЦИЯ"
+        assert sheet["A4"].fill.fgColor.rgb == "00CEFFFF"
+        assert sheet["A4"].font.bold
+        assert sheet["A5"].font.bold
+        assert not sheet["A6"].font.bold
+        assert sheet["B4"].number_format == "#,##0;\\-#,##0;0"
+        assert sheet.freeze_panes == "B4"
+        assert not sheet.sheet_view.showGridLines
+        assert sheet.max_row == 99
+        assert sheet.max_column == 3
+    finally:
+        workbook.close()
+
+
+def test_industry_workbook_uses_published_total_without_recalculation(tmp_path: Path) -> None:
+    result = _stream_result()
+    store = LocalFileStore(root=str(tmp_path))
+
+    exported = export_cbr_0105a_debt_corp_industry_workbook(
+        result,
+        Cbr0105ADebtCorpIndustryWorkbookRequest(
+            out_path="total_by_regions.xlsx",
+            industry_code="total",
+            overwrite=True,
+        ),
+        filestore=store,
+    )
+
+    assert exported.ok
+    assert exported.industry_code == "total"
+    assert exported.industry_name_ru == "ВСЕГО"
+    workbook = load_workbook(tmp_path / "total_by_regions.xlsx", data_only=True)
+    try:
+        sheet = workbook["в рублях"]
+        assert "всего по видам экономической деятельности" in sheet["A1"].value
+        assert "«ВСЕГО»" not in sheet["A1"].value
+        # Synthetic source value for total/rubles equals 10 on both dates.
+        assert sheet["B4"].value == 10
+        assert sheet["C4"].value == 10
+    finally:
+        workbook.close()
+
+
+def test_industry_workbook_supports_fast_selection_of_source_industry(tmp_path: Path) -> None:
+    result = _stream_result()
+    store = LocalFileStore(root=str(tmp_path))
+
+    exported = export_cbr_0105a_debt_corp_industry_workbook(
+        result,
+        Cbr0105ADebtCorpIndustryWorkbookRequest(
+            out_path="manufacturing.xlsx",
+            industry_code="manufacturing",
+            overwrite=True,
+            include_metadata_sheet=True,
+        ),
+        filestore=store,
+    )
+
+    assert exported.ok
+    assert exported.industry_name_ru == "Обрабатывающие производства"
+    workbook = load_workbook(tmp_path / "manufacturing.xlsx", data_only=True)
+    try:
+        assert workbook.sheetnames[0] == "_Параметры"
+        assert "Обрабатывающие производства" in workbook["итого"]["A1"].value
+        assert workbook["_Параметры"]["B3"].value == "manufacturing"
+    finally:
+        workbook.close()
+
+
+def test_industry_workbook_rejects_unknown_industry(tmp_path: Path) -> None:
+    result = _stream_result()
+    store = LocalFileStore(root=str(tmp_path))
+
+    with pytest.raises(ValueError, match="is absent from the stream"):
+        export_cbr_0105a_debt_corp_industry_workbook(
+            result,
+            Cbr0105ADebtCorpIndustryWorkbookRequest(
+                out_path="unknown.xlsx",
+                industry_code="unknown",
+            ),
+            filestore=store,
+        )
