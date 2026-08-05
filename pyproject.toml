@@ -14,6 +14,7 @@ dependencies = [
   "tqdm>=4.66",
   "beautifulsoup4>=4.12",
   "dbfread>=2.0",
+  "scipy>=1.11",
 ]
 
 [project.optional-dependencies]
