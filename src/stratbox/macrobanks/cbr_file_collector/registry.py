@@ -46,6 +46,8 @@ DEFAULT_CBR_FILE_SOURCES: tuple[CbrFileRegistryItem, ...] = (
     CbrFileRegistryItem("debt_structure_benchmark_rate", "https://cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/02_03_Debt_structure_by_benchmark_interest_rate_type.xlsx", "Структура долга по типу бенчмарк-ставки"),
     CbrFileRegistryItem("sme_borrowers_info", "https://www.cbr.ru/vfs/statistics/banksector/loans_to_corporations/02_02_SME_Borrowers_info.xlsx", "МСП: сведения о заёмщиках"),
 
+    CbrFileRegistryItem("sme_by_activity", "https://www.cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/01_10_F_New_loans_sme_by_activity.xlsx", "МСП: выдачи по видам деятельности"),
+
     # Долговые бумаги
     CbrFileRegistryItem("debt_securities", "https://www.cbr.ru/vfs/statistics/debt_securities/66-debt_securities.xlsx", "Долговые ценные бумаги"),
 
@@ -63,6 +65,19 @@ DEFAULT_CBR_FILE_SOURCES: tuple[CbrFileRegistryItem, ...] = (
     # Домашние хозяйства
     CbrFileRegistryItem("households_bm", "https://cbr.ru/vfs/statistics/households/households_bm.xlsx", "Домохозяйства BM"),
     CbrFileRegistryItem("households_om", "https://cbr.ru/vfs/statistics/households/households_om.xlsx", "Домохозяйства OM"),
+
+    # Обзоры
+    CbrFileRegistryItem("monetary_agg", "https://www.cbr.ru/vfs/statistics/credit_statistics/monetary_agg.xlsx", "Денежные агрегаты"),
+    CbrFileRegistryItem("survey_cb", "https://www.cbr.ru/vfs/statistics/credit_statistics/survey/survey_cb.xlsx", "Обзор центрального банка"),
+    CbrFileRegistryItem("balance_odc", "https://www.cbr.ru/vfs/statistics/credit_statistics/survey/balance_odc.xlsx", "Баланс кредитных организаций"),
+    CbrFileRegistryItem("survey_odc", "https://www.cbr.ru/vfs/statistics/credit_statistics/survey/survey_odc.xlsx", "Обзор кредитных организаций"),
+    CbrFileRegistryItem("survey_dc_new", "https://www.cbr.ru/vfs/statistics/credit_statistics/survey/survey_dc_new.xlsx", "Обзор банковской системы"),
+    CbrFileRegistryItem("annex_survey_dc", "https://www.cbr.ru/vfs/statistics/credit_statistics/survey/annex_survey_dc.xlsx", "Приложение к Обзору банковской системы"),
+
+    # Внешний долг
+    CbrFileRegistryItem("debt_new", "https://www.cbr.ru/vfs/statistics/credit_statistics/debt/debt_new.xlsx", "Внешний долг Российской Федерации"),
+    CbrFileRegistryItem("debt_maturity", "https://www.cbr.ru/vfs/statistics/credit_statistics/debt/debt_maturity.xlsx", "Внешний долг Российской Федерации по срокам погашения и финансовым инструментам"),
+    CbrFileRegistryItem("debt_cur-mat_new", "https://www.cbr.ru/vfs/statistics/credit_statistics/debt/debt_cur-mat_new.xlsx", "Внешний долг Российской Федерации в национальной и иностранной валютах"),
 
     # Прочие файлы
     CbrFileRegistryItem("obs_table_20s", "https://www.cbr.ru/Content/Document/File/115862/obs_tabl20%D1%81.xlsx", "Таблица obs_tabl20с"),
