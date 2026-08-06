@@ -1,7 +1,11 @@
 # Диагностика
 
-Статусы Solver нормализованы: `OPTIMAL`, `INFEASIBLE`, `TIME_LIMIT`, `ITERATION_LIMIT`, `UNBOUNDED`, `ERROR`, `SOLVER_UNAVAILABLE`.
+Crosswalk различает:
 
-Только `INFEASIBLE` запускает elastic conflict model. Она сначала находит минимальное общее расширение интервалов, затем при этом epsilon минимизирует локальные lower/upper slacks. `conflicts_grid` показывает конкретные constraints и исходные observation IDs.
+- `OPTIMAL` — feasibility подтверждена;
+- `INFEASIBLE_BY_CLOSURE` — противоречие доказано до Solver;
+- `INFEASIBLE` — HiGHS доказал несовместимость сценария;
+- `SOLVER_UNAVAILABLE` — модель собрана, но доказательство feasibility отсутствует;
+- `TIME_LIMIT`/`INCOMPLETE` — доказательство не завершено и не трактуется как infeasibility.
 
-Отсутствие `highspy`, timeout или numerical failure не называются несовместимостью.
+`conflicts_grid` хранит сценарий и конкретное ограничение. `diagnostics_grid` содержит размер модели, число closure-pass, updates, выбранных и завершённых min/max целей.

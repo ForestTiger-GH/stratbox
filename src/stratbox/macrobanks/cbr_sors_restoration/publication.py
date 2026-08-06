@@ -59,6 +59,8 @@ class RoundingPolicy:
     def single_bucket_interval(self, interval: PublicationInterval) -> float | None:
         if interval.upper < interval.lower - self.tolerance:
             return None
+        if not (isfinite(interval.lower) and isfinite(interval.upper)):
+            return None
         lower_value = max(0.0, float(interval.lower))
         upper_value = max(0.0, float(interval.upper))
         lower_index = floor(lower_value / self.step + 0.5)

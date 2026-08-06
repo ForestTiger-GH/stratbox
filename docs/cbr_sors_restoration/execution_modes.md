@@ -1,16 +1,21 @@
 # Режимы выполнения
 
-## Strict certification
+## STRICT
 
-- `closure` — closure + feasibility, без target min/max;
-- `targets` — явный region/class/metric scope;
-- `priority` — наиболее узкие и перспективные unresolved-клетки;
+- `closure` — детерминированное замыкание и feasibility;
+- `targets` — min/max указанной области;
+- `priority` — ограниченный бюджет перспективных целей;
 - `all` — исчерпывающая сертификация.
 
-`batch_size`, per-solve timeout, batch timeout, reset interval и retry задаются отдельно. После каждого batch модель получает новые bounds, запускает closure и компилируется заново. Неуспешная цель получает собственный статус и не уничтожает остальные результаты.
+## CROSSWALK
 
-## Bridge
+- `disabled` — crosswalk не запускается;
+- `feasibility` — компиляция, closure и общая проверка совместимости; значения принимаются только если уже схлопнулись безопасными outer bounds;
+- `targets` — min/max указанной области;
+- `all` — min/max всех ещё не определённых целей.
 
-- `disabled` — стандарт;
-- `optimum_only` — minimum reclassification benchmark;
-- `targets` — benchmark + conditional min/max под objective cap.
+Crosswalk запускается после STRICT и получает строгие component bounds. В нём отсутствует objective cap.
+
+## Сценарии
+
+`scenario_ids=("core",)` запускает один сценарий. Несколько сценариев при `feasible_envelope` объединяются по минимальной нижней и максимальной верхней границе среди совместимых сценариев.

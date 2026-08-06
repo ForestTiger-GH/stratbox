@@ -1,7 +1,14 @@
 import sys
+from dataclasses import replace
 
+import numpy as np
+import pandas as pd
 import pytest
 
+from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import (
+    CsrMatrixData,
+    SorsLinearProblem,
+)
 from stratbox.macrobanks.cbr_sors_restoration.linear.highs import (
     SorsSolverDependencyError,
     _load_highs,
@@ -14,47 +21,81 @@ def test_solver_has_no_scipy_internal_fallback(monkeypatch) -> None:
         _load_highs()
 
 
-def test_bridge_solver_unavailable_returns_partial_result(monkeypatch, small_result) -> None:
-    from dataclasses import replace
-    from types import SimpleNamespace
-
-    import numpy as np
-    import pandas as pd
-
-    from stratbox.macrobanks.cbr_sors_restoration.bridge import operations
-    from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsBridgeConfig
-
-    problem = SimpleNamespace(
-        num_variables=0,
-        num_constraints=0,
-        matrix=SimpleNamespace(nnz=0),
-        objective=np.asarray([], dtype=float),
+def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
+    monkeypatch,
+    small_result,
+) -> None:
+    from stratbox.macrobanks.cbr_sors_restoration.contracts import (
+        SorsCrosswalkConfig,
     )
-    compilation = SimpleNamespace(
-        problem=problem,
-        target_catalog_grid=pd.DataFrame(
-            columns=(
-                'target_id', 'region_code', 'region_name', 'class_code',
-                'metric', 'indices', 'coefficients', 'constant',
-            )
+    from stratbox.macrobanks.cbr_sors_restoration.crosswalk import operations
+    from stratbox.macrobanks.cbr_sors_restoration.crosswalk.problem import (
+        CrosswalkCompilation,
+    )
+
+    problem = SorsLinearProblem(
+        model_layer='CROSSWALK',
+        matrix=CsrMatrixData(
+            shape=(0, 0),
+            indptr=np.asarray([0], dtype=np.int64),
+            indices=np.asarray([], dtype=np.int32),
+            data=np.asarray([], dtype=float),
         ),
-        mapping_edges_grid=pd.DataFrame(),
+        row_lower=np.asarray([], dtype=float),
+        row_upper=np.asarray([], dtype=float),
+        col_lower=np.asarray([], dtype=float),
+        col_upper=np.asarray([], dtype=float),
+        objective=np.asarray([], dtype=float),
+        constraints_grid=pd.DataFrame(),
+        variables_grid=pd.DataFrame(),
     )
+    compilation = CrosswalkCompilation(
+        problem=problem,
+        target_catalog_grid=pd.DataFrame(),
+        mapping_edges_grid=pd.DataFrame(),
+        relations_grid=pd.DataFrame(),
+    )
+    scenario_grid = small_result.regional_okved2_grid.copy()
+    scenario_grid['scenario_id'] = 'core'
+    scenario_grid['bounds_certified'] = False
+    scenario_grid['value_identified'] = False
+    scenario_grid['is_final_accepted'] = False
+    scenario_grid['is_benchmark_estimate'] = False
+    scenario_grid['benchmark_value'] = None
+    scenario_grid['value'] = None
 
-    class UnavailableSession:
-        def __init__(self, *args, **kwargs):
-            raise SorsSolverDependencyError('official HiGHS unavailable')
+    execution = operations._ScenarioExecution(
+        scenario_id='core',
+        status='SOLVER_UNAVAILABLE',
+        grid=scenario_grid,
+        compilation=compilation,
+        derivations_grid=pd.DataFrame(),
+        solver_runs_grid=pd.DataFrame(),
+        conflicts_grid=pd.DataFrame(
+            [
+                {
+                    'conflict_id': 'solver',
+                    'conflict_status': 'SOLVER_UNAVAILABLE',
+                }
+            ]
+        ),
+        diagnostics_grid=pd.DataFrame(
+            [{'key': 'scenario_id', 'value': 'core'}]
+        ),
+    )
+    monkeypatch.setattr(
+        operations,
+        'read_crosswalk_scenarios',
+        lambda *args: ('core',),
+    )
+    monkeypatch.setattr(operations, '_run_scenario', lambda *args: execution)
 
-    monkeypatch.setattr(operations, 'compile_bridge_problem', lambda *args: compilation)
-    monkeypatch.setattr(operations, 'HighsSession', UnavailableSession)
-    result = operations.run_sors_bridge(
+    result = operations.run_sors_crosswalk(
         replace(small_result, _source_bundle=object()),
-        SorsBridgeConfig(mode='optimum_only'),
+        SorsCrosswalkConfig(mode='feasibility'),
     )
     assert result.status == 'SOLVER_UNAVAILABLE'
-    assert len(result.regional_okved2_grid) == len(
-        small_result.regional_okved2_grid
+    assert not result.crosswalk_facts_grid.shape[0]
+    assert int(result.regional_okved2_grid['is_final_accepted'].fillna(False).sum()) == int(
+        small_result.regional_okved2_grid['is_strict_fact'].sum()
     )
-    assert result.diagnostics_grid.set_index('key').loc[
-        'targets_attempted', 'value'
-    ] == 0

@@ -407,7 +407,7 @@ def run_sors_restoration(
             {'key': 'targets_attempted', 'value': len(attempted)},
             {'key': 'targets_completed', 'value': len(completed)},
             {
-                'key': 'conditional_bridge',
+                'key': 'crosswalk_relation_system',
                 'value': 'separate operation; never executed inside strict run',
             },
         ]

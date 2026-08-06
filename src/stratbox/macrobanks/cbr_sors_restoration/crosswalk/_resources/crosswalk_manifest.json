@@ -1,0 +1,13 @@
+{
+  "mapping_version": "cbr-legacy-okved2-crosswalk-2026.3",
+  "status": "METHODOLOGY_DERIVED_CONDITIONAL",
+  "strict_official_crosswalk": false,
+  "description": "Scenario-based conditional crosswalk. Each scenario defines the allowed legacy-atom to OKVED2-class flow graph. The graph is compiled as hard flow-conservation equations; no optimizer-selected profile is promoted to a reconstructed value. A value is accepted only after feasible min/max certification collapses to a point or one publication bucket.",
+  "default_scenario_id": "core",
+  "scenario_ids": ["core", "broad"],
+  "source_basis": [
+    "CBR legacy publication node names and hierarchy",
+    "OKVED2 class and section boundaries",
+    "published national, regional and federal-district SORS aggregates"
+  ]
+}

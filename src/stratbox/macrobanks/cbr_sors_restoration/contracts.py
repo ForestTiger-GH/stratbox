@@ -8,7 +8,8 @@ import pandas as pd
 from stratbox.macrobanks.cbr_sors_restoration.schema import TARGET_METRICS
 
 _CERTIFICATION_MODES = {'closure', 'targets', 'priority', 'all'}
-_BRIDGE_MODES = {'disabled', 'optimum_only', 'targets'}
+_CROSSWALK_MODES = {'disabled', 'feasibility', 'targets', 'all'}
+_CROSSWALK_SCENARIO_POLICIES = {'single', 'feasible_envelope'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,12 +82,15 @@ class SorsCertificationConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class SorsBridgeConfig:
+class SorsCrosswalkConfig:
     mode: str = 'disabled'
-    mapping_version: str = 'cbr-legacy-okved2-bridge-2026.2'
-    objective_tolerance: float = 1e-5
+    mapping_version: str = 'cbr-legacy-okved2-crosswalk-2026.3'
+    scenario_ids: tuple[str, ...] = ('core',)
+    scenario_policy: str = 'feasible_envelope'
     scope: SorsTargetScope = field(default_factory=SorsTargetScope)
     max_targets: int | None = 250
+    point_tolerance: float = 1e-6
+    closure_max_passes: int = 50
     per_solve_time_limit_seconds: float | None = 300.0
     batch_time_limit_seconds: float | None = None
     model_reset_interval: int = 25
@@ -94,31 +98,48 @@ class SorsBridgeConfig:
     threads: int = 1
 
     def __post_init__(self) -> None:
-        if self.mode not in _BRIDGE_MODES:
+        if self.mode not in _CROSSWALK_MODES:
             raise ValueError(
-                f'Unsupported SORS bridge mode {self.mode!r}; '
-                f'expected one of {sorted(_BRIDGE_MODES)}'
+                f'Unsupported SORS crosswalk mode {self.mode!r}; '
+                f'expected one of {sorted(_CROSSWALK_MODES)}'
             )
-        if self.objective_tolerance < 0:
-            raise ValueError('objective_tolerance cannot be negative')
+        if not self.scenario_ids:
+            raise ValueError('At least one crosswalk scenario is required')
+        if len(set(self.scenario_ids)) != len(self.scenario_ids):
+            raise ValueError('Crosswalk scenario_ids must be unique')
+        if self.scenario_policy not in _CROSSWALK_SCENARIO_POLICIES:
+            raise ValueError(
+                f'Unsupported crosswalk scenario policy {self.scenario_policy!r}; '
+                f'expected one of {sorted(_CROSSWALK_SCENARIO_POLICIES)}'
+            )
+        if self.scenario_policy == 'single' and len(self.scenario_ids) != 1:
+            raise ValueError('single scenario policy requires exactly one scenario_id')
+        if self.point_tolerance <= 0:
+            raise ValueError('Crosswalk point_tolerance must be positive')
+        if self.closure_max_passes <= 0:
+            raise ValueError('Crosswalk closure_max_passes must be positive')
         if self.max_targets is not None and self.max_targets < 0:
-            raise ValueError('max_targets cannot be negative')
+            raise ValueError('Crosswalk max_targets cannot be negative')
         if self.mode == 'targets' and not (
             self.scope.region_codes
             or self.scope.region_names
             or self.scope.class_codes
         ):
             raise ValueError(
-                'bridge targets mode requires an explicit region or class scope'
+                'crosswalk targets mode requires an explicit region or class scope'
             )
+        if self.mode == 'all' and self.max_targets is not None:
+            raise ValueError('crosswalk all mode is exhaustive; max_targets must be None')
         if self.model_reset_interval <= 0 or self.threads <= 0:
-            raise ValueError('Bridge model_reset_interval and threads must be positive')
+            raise ValueError(
+                'Crosswalk model_reset_interval and threads must be positive'
+            )
         for name, value in (
             ('per_solve_time_limit_seconds', self.per_solve_time_limit_seconds),
             ('batch_time_limit_seconds', self.batch_time_limit_seconds),
         ):
             if value is not None and value <= 0:
-                raise ValueError(f'Bridge {name} must be positive when set')
+                raise ValueError(f'Crosswalk {name} must be positive when set')
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,7 +181,7 @@ class SorsPivotRequest:
     region_code: str | None = None
     region_name: str | None = None
     class_code: str | None = None
-    evidence_layer: str = 'STRICT'
+    evidence_layer: str = 'PRIMARY'
     metrics: tuple[str, ...] = TARGET_METRICS
     include_unidentified: bool = True
     include_bounds: bool = False
@@ -186,6 +207,9 @@ class SorsWorkbookRequest:
     include_source_grid: bool = False
     include_primary_grid: bool = True
     include_strict_facts: bool = True
+    include_crosswalk_facts: bool = True
+    include_crosswalk_bounds: bool = False
+    include_crosswalk_mapping: bool = False
     include_components: bool = False
     include_derivations: bool = False
     include_constraints: bool = False

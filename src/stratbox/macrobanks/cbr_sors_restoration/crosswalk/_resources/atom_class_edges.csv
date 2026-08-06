@@ -1,0 +1,51 @@
+scenario_id,atom_code,okved2_classes,edge_kind,evidence_type,comment
+core,mining_fuel,05 06 07 09,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Fuel and energy mining and related support
+core,mining_other,08,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of legacy mining after fuel-energy mining
+core,manufacturing_food_beverages_tobacco,10 11 12,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Food beverages and tobacco
+core,manufacturing_wood_products,16,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Direct semantic class
+core,manufacturing_pulp_paper_publishing_printing,17 18 58,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Publishing moved outside manufacturing in OKVED2
+core,manufacturing_coke_petroleum_nuclear_materials,19 24,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Coke petroleum and nuclear-material legacy group
+core,manufacturing_chemicals,20 21,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Chemicals and pharmaceuticals
+core,manufacturing_non_metallic_mineral_products,23,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Direct semantic class
+core,manufacturing_metallurgy_metal_products,24 25,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Metallurgy and fabricated metals
+core,manufacturing_machinery_agriculture_forestry,28,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Agricultural and forestry machinery
+core,manufacturing_machinery_other,26 27,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of machinery group after agricultural machinery
+core,manufacturing_automobiles,29,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Motor vehicles
+core,manufacturing_transport_equipment_other,30,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of transport-equipment group after automobiles
+core,manufacturing_remainder,13 14 15 22 31 32 33,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual manufacturing classes not represented by published legacy subgroups
+core,electricity_gas_water,35 36 37 38 39,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Electricity gas water sewerage and waste
+core,agriculture_hunting_services,01,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Agriculture hunting and related services
+core,forestry,02,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of broad agriculture and forestry after narrow agriculture
+core,construction_buildings_structures,41 42,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Buildings and civil engineering
+core,construction_other,43,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of construction after buildings and structures
+core,air_transport,51,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Air transport
+core,transport_communications_other,49 50 52 53 61,CONDITIONAL_ALLOWED,RESIDUAL_IDENTITY,Residual of transport and communications after air transport
+core,trade,45 46 47,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Trade section
+core,real_estate_renting_business_services,62 63 68 69-75 77-82,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,IT real estate professional and administrative services
+core,other_activities,03 55 56 59 60 64 65 66 84 85 86 87 88 90-99,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Legacy residual activities including fishing and social services
+core,completion_of_settlements,01-99,TECHNICAL_UNALLOCATED,TECHNICAL_CATEGORY,Technical use category remains explicitly unconstrained across classes
+broad,mining_fuel,05 06 07 09,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Fuel and energy mining and related support
+broad,mining_other,05 06 07 08 09,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad mining residual scenario
+broad,manufacturing_food_beverages_tobacco,10 11 12,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Food beverages and tobacco
+broad,manufacturing_wood_products,16,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Direct semantic class
+broad,manufacturing_pulp_paper_publishing_printing,17 18 58,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Publishing moved outside manufacturing in OKVED2
+broad,manufacturing_coke_petroleum_nuclear_materials,19 24,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Coke petroleum and nuclear-material legacy group
+broad,manufacturing_chemicals,20 21,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Chemicals and pharmaceuticals
+broad,manufacturing_non_metallic_mineral_products,23,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Direct semantic class
+broad,manufacturing_metallurgy_metal_products,24 25,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Metallurgy and fabricated metals
+broad,manufacturing_machinery_agriculture_forestry,28,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Agricultural and forestry machinery
+broad,manufacturing_machinery_other,26 27 28,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad machinery residual scenario
+broad,manufacturing_automobiles,29,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Motor vehicles
+broad,manufacturing_transport_equipment_other,29 30,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad transport-equipment residual scenario
+broad,manufacturing_remainder,10-33,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad manufacturing residual scenario
+broad,electricity_gas_water,35 36 37 38 39,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Electricity gas water sewerage and waste
+broad,agriculture_hunting_services,01,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Agriculture hunting and related services
+broad,forestry,01 02,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad agriculture and forestry residual scenario
+broad,construction_buildings_structures,41 42,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Buildings and civil engineering
+broad,construction_other,41 42 43,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad construction residual scenario
+broad,air_transport,51,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Air transport
+broad,transport_communications_other,49 50 51 52 53 61,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad transport and communications residual scenario
+broad,trade,45 46 47,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Trade section
+broad,real_estate_renting_business_services,62 63 68 69-75 77-82,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,IT real estate professional and administrative services
+broad,other_activities,03 55 56 58 59 60 64 65 66 84 85 86 87 88 90-99,CONDITIONAL_ALLOWED,METHODOLOGY_DERIVED,Broad legacy residual activities
+broad,completion_of_settlements,01-99,TECHNICAL_UNALLOCATED,TECHNICAL_CATEGORY,Technical use category remains explicitly unconstrained across classes

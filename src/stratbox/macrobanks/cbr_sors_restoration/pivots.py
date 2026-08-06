@@ -4,6 +4,7 @@ import pandas as pd
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsPivotRequest
 from stratbox.macrobanks.cbr_sors_restoration.results import (
+    SorsCrosswalkResult,
     SorsPivotResult,
     SorsRestorationResult,
 )
@@ -36,11 +37,14 @@ def _flatten_measure_columns(table: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_sors_pivot(
-    result: SorsRestorationResult,
+    result: SorsRestorationResult | SorsCrosswalkResult,
     request: SorsPivotRequest,
 ) -> SorsPivotResult:
     frame = result.regional_okved2_grid
-    frame = frame[frame['evidence_layer'].astype(str).eq(request.evidence_layer)].copy()
+    if request.evidence_layer != 'PRIMARY':
+        frame = frame[
+            frame['evidence_layer'].astype(str).eq(request.evidence_layer)
+        ].copy()
     frame = frame[frame['metric'].astype(str).isin(request.metrics)]
     selected_region_code: str | None = None
     selected_region_name: str | None = None
@@ -66,7 +70,12 @@ def build_sors_pivot(
         ]
 
     if not request.include_unidentified:
-        selected = selected[selected['is_strict_fact'].astype(bool)]
+        accepted_column = (
+            'is_final_accepted'
+            if 'is_final_accepted' in selected.columns
+            else 'is_strict_fact'
+        )
+        selected = selected[selected[accepted_column].astype(bool)]
     source_rows = len(selected)
     identified_cells = int(selected['value'].notna().sum())
     unidentified_cells = int(selected['value'].isna().sum())

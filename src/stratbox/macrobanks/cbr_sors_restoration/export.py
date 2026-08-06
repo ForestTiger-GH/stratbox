@@ -18,6 +18,7 @@ from zipfile import ZipFile
 from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsWorkbookRequest
 from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
 from stratbox.macrobanks.cbr_sors_restoration.results import (
+    SorsCrosswalkResult,
     SorsRestorationResult,
     SorsWorkbookResult,
 )
@@ -41,8 +42,13 @@ _PRIMARY_COLUMNS = (
     'identified_value_precision', 'feasibility_confirmed',
     'lower_bound', 'upper_bound', 'lower_attained', 'upper_attained',
     'interval_width', 'identification_status', 'derivation_method',
-    'is_strict_fact', 'is_reconstructed',
+    'is_strict_fact', 'already_strict_fact', 'is_reconstructed', 'bounds_certified',
+    'value_identified', 'is_final_accepted', 'is_estimate',
+    'is_benchmark_estimate', 'benchmark_value', 'evidence_layer',
+    'evidence_profile', 'mapping_version', 'scenario_ids',
+    'scenario_coverage_complete', 'supporting_relation_ids',
     'is_zero_at_published_precision', 'is_exact_zero', 'is_lp_certified',
+    'lp_lower_certified', 'lp_upper_certified',
     'closure_pass', 'supporting_constraint_count',
 )
 
@@ -118,7 +124,7 @@ def _write_frame(workbook, frame: pd.DataFrame, sheet: str, header_format) -> No
 
 
 def export_sors_workbook(
-    result: SorsRestorationResult,
+    result: SorsRestorationResult | SorsCrosswalkResult,
     request: SorsWorkbookRequest,
 ) -> SorsWorkbookResult:
     output = Path(request.output_path)
@@ -182,17 +188,38 @@ def export_sors_workbook(
             .reset_index(drop=True),
             'Metrics',
         )
-    if request.include_strict_facts:
-        columns = [column for column in _PRIMARY_COLUMNS if column in result.strict_facts_grid]
-        queue(result.strict_facts_grid[columns], 'Strict_Facts')
-    if request.include_validation:
-        queue(result.validation_grid, 'Validation')
+    strict_source = (
+        result
+        if isinstance(result, SorsRestorationResult)
+        else result._strict_result
+    )
+    if request.include_strict_facts and strict_source is not None:
+        columns = [
+            column for column in _PRIMARY_COLUMNS
+            if column in strict_source.strict_facts_grid
+        ]
+        queue(strict_source.strict_facts_grid[columns], 'Strict_Facts')
+    if isinstance(result, SorsCrosswalkResult):
+        if request.include_crosswalk_facts:
+            columns = [
+                column for column in _PRIMARY_COLUMNS
+                if column in result.crosswalk_facts_grid
+            ]
+            queue(result.crosswalk_facts_grid[columns], 'Crosswalk_Facts')
+        if request.include_crosswalk_bounds:
+            queue(result.crosswalk_bounds_grid, 'Crosswalk_Bounds')
+            queue(result.scenario_bounds_grid, 'Crosswalk_Scenarios')
+        if request.include_crosswalk_mapping:
+            queue(result.mapping_edges_grid, 'Crosswalk_Edges')
+            queue(result.relations_grid, 'Crosswalk_Relations')
+    if request.include_validation and strict_source is not None:
+        queue(strict_source.validation_grid, 'Validation')
     if request.include_conflicts:
         queue(result.conflicts_grid, 'Conflicts')
-    if request.include_source_grid:
-        queue(result.source_grid, 'SourceGrid')
-    if request.include_components:
-        queue(result.strict_components_grid, 'Components')
+    if request.include_source_grid and strict_source is not None:
+        queue(strict_source.source_grid, 'SourceGrid')
+    if request.include_components and strict_source is not None:
+        queue(strict_source.strict_components_grid, 'Components')
     if request.include_derivations:
         queue(result.derivations_grid, 'Derivations')
     if request.include_constraints:
@@ -201,7 +228,8 @@ def export_sors_workbook(
         queue(result.solver_runs_grid, 'SolverRuns')
     if request.include_metadata_sheet:
         queue(result.audit_grid, 'Audit')
-        queue(pd.DataFrame([asdict(result.summary)]), 'Parameters')
+        if strict_source is not None:
+            queue(pd.DataFrame([asdict(strict_source.summary)]), 'Parameters')
     for position, pivot_request in enumerate(request.pivots, start=1):
         pivot = build_sors_pivot(result, pivot_request)
         selector = pivot.selected_region_name if pivot.orientation == 'REGION_TO_CLASSES' else pivot.selected_class_code

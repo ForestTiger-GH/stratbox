@@ -60,6 +60,6 @@ def parse_regional_traditional(
     out = canonicalize_observations(
         frame,
         policy,
-        source_role='STRICT_REGIONAL_TOTALS_AND_BRIDGE_LEGACY',
+        source_role='STRICT_REGIONAL_TOTALS_AND_CROSSWALK_LEGACY',
     )
     return out, geography, atomic

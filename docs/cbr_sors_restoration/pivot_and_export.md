@@ -1,18 +1,19 @@
-# Pivot и экспорт
+# Pivot и Excel
 
-`build_sors_pivot()` принимает ровно один селектор.
+`build_sors_pivot` принимает STRICT и CROSSWALK results. Значение `evidence_layer="PRIMARY"` использует итоговый primary grid. Можно отдельно выбрать `STRICT` или `CROSSWALK`.
 
-При выборе региона строки соответствуют классам ОКВЭД2. При выборе класса строки соответствуют регионам. Столбцами становятся выбранные метрики; можно добавить lower/upper/status.
+`include_unidentified=False` фильтрует по `is_final_accepted`, а для старого strict-result — по `is_strict_fact`.
 
-`export_sors_workbook()` формирует нормализованную книгу:
+`export_sors_workbook` для crosswalk-result умеет добавлять:
 
-- `Regional_OKVED2` — полный GRID из 44 880 строк с кодами региона, класса, метрики, значением, bounds и доказательным статусом;
-- `Regions`, `OKVED2`, `Metrics` — справочники с названиями и порядком отображения, чтобы длинные подписи не повторялись десятки тысяч раз;
-- `Strict_Facts`;
-- `Validation`, `Conflicts`, `Audit`, `Parameters`;
-- произвольное число Pivot-листов;
-- опциональные `SourceGrid`, `Components`, `Derivations`, `Constraints`, `SolverRuns`.
+- `Crosswalk_Facts`;
+- `Crosswalk_Bounds` и `Crosswalk_Scenarios`;
+- `Crosswalk_Edges` и `Crosswalk_Relations`.
 
-По явному `primary_grid_rows_per_sheet` основной GRID можно разбить на несколько листов. Стандартный экспорт сохраняет его одним листом.
+Управление выполняется полями `SorsWorkbookRequest`:
 
-Экспорт возвращает путь, список листов, размер и SHA-256.
+```text
+include_crosswalk_facts
+include_crosswalk_bounds
+include_crosswalk_mapping
+```

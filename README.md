@@ -40,6 +40,12 @@ python -m pip install -e ".[pdf]"
 python -m pip install -e ".[test]"
 ```
 
+Установка с Solver для восстановления SORS:
+
+```bash
+python -m pip install -e ".[sors-restoration]"
+```
+
 ## Что находится внутри пакета
 
 `src/stratbox` разделён на несколько слоёв:

@@ -1,9 +1,8 @@
 """Evidence-preserving regional OKVED2 reconstruction from CBR SORS tables."""
 
-from stratbox.macrobanks.cbr_sors_restoration.bridge.operations import run_sors_bridge
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
-    SorsBridgeConfig,
     SorsCertificationConfig,
+    SorsCrosswalkConfig,
     SorsPivotRequest,
     SorsRunConfig,
     SorsSourceBundle,
@@ -11,11 +10,14 @@ from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsTargetScope,
     SorsWorkbookRequest,
 )
+from stratbox.macrobanks.cbr_sors_restoration.crosswalk.operations import (
+    run_sors_crosswalk,
+)
 from stratbox.macrobanks.cbr_sors_restoration.export import export_sors_workbook
 from stratbox.macrobanks.cbr_sors_restoration.operations import run_sors_restoration
 from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
 from stratbox.macrobanks.cbr_sors_restoration.results import (
-    SorsBridgeResult,
+    SorsCrosswalkResult,
     SorsPivotResult,
     SorsRestorationResult,
     SorsRunSummary,
@@ -24,9 +26,9 @@ from stratbox.macrobanks.cbr_sors_restoration.results import (
 from stratbox.macrobanks.cbr_sors_restoration.sources import load_sors_sources
 
 __all__ = [
-    'SorsBridgeConfig',
-    'SorsBridgeResult',
     'SorsCertificationConfig',
+    'SorsCrosswalkConfig',
+    'SorsCrosswalkResult',
     'SorsPivotRequest',
     'SorsPivotResult',
     'SorsRestorationResult',
@@ -40,6 +42,6 @@ __all__ = [
     'build_sors_pivot',
     'export_sors_workbook',
     'load_sors_sources',
-    'run_sors_bridge',
+    'run_sors_crosswalk',
     'run_sors_restoration',
 ]

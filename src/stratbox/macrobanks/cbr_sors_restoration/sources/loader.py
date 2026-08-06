@@ -111,14 +111,14 @@ def load_sors_sources(
             files.regional_traditional,
             len(regional),
             required=True,
-            role='STRICT_REGIONAL_TOTALS_AND_BRIDGE_LEGACY',
+            role='STRICT_REGIONAL_TOTALS_AND_CROSSWALK_LEGACY',
         ),
         source_manifest_record(
             '01_02_A',
             files.national_traditional,
             len(national_traditional),
             required=True,
-            role='STRICT_NATIONAL_TOTAL_AND_BRIDGE_LEGACY',
+            role='STRICT_NATIONAL_TOTAL_AND_CROSSWALK_LEGACY',
         ),
         source_manifest_record(
             '01_02_C',

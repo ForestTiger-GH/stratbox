@@ -8,13 +8,13 @@ from time import perf_counter
 import pytest
 
 from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsBridgeConfig,
+    SorsCrosswalkConfig,
     SorsCertificationConfig,
     SorsRunConfig,
     SorsSourceFiles,
     SorsWorkbookRequest,
     export_sors_workbook,
-    run_sors_bridge,
+    run_sors_crosswalk,
     run_sors_restoration,
 )
 
@@ -94,18 +94,18 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
 
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')
-def test_bridge_optimum_gate() -> None:
+def test_crosswalk_feasibility_gate() -> None:
     strict = run_sors_restoration(
         _files(),
         SorsRunConfig(as_of_date='2026-06-01'),
     )
     started = perf_counter()
-    bridge = run_sors_bridge(
+    crosswalk = run_sors_crosswalk(
         strict,
-        SorsBridgeConfig(
-            mode='optimum_only',
+        SorsCrosswalkConfig(
+            mode='feasibility',
             per_solve_time_limit_seconds=1_800,
         ),
     )
     assert perf_counter() - started < 3_600
-    assert bridge.status == 'OPTIMAL'
+    assert crosswalk.status in {'OPTIMAL', 'PARTIAL'}

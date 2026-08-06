@@ -52,15 +52,23 @@ class SorsRestorationResult:
 
 
 @dataclass(frozen=True)
-class SorsBridgeResult:
+class SorsCrosswalkResult:
     regional_okved2_grid: pd.DataFrame
+    crosswalk_bounds_grid: pd.DataFrame
+    crosswalk_facts_grid: pd.DataFrame
+    scenario_bounds_grid: pd.DataFrame
     mapping_edges_grid: pd.DataFrame
+    relations_grid: pd.DataFrame
+    constraints_grid: pd.DataFrame
+    variables_grid: pd.DataFrame
+    derivations_grid: pd.DataFrame
     diagnostics_grid: pd.DataFrame
     solver_runs_grid: pd.DataFrame
     conflicts_grid: pd.DataFrame
     audit_grid: pd.DataFrame
-    bridge_run_id: str
+    crosswalk_run_id: str
     status: str
+    _strict_result: object | None = None
 
 
 @dataclass(frozen=True)

@@ -34,3 +34,16 @@ def test_open_endpoints_use_adjacent_floating_point_solver_bounds() -> None:
     assert solver_lower_bound(0.0, False) > 0.0
     assert solver_upper_bound(0.5, True) == 0.5
     assert solver_upper_bound(0.5, False) < 0.5
+
+
+def test_unbounded_interval_has_no_publication_bucket() -> None:
+    from math import inf
+
+    from stratbox.macrobanks.cbr_sors_restoration.publication import (
+        PublicationInterval,
+        RoundingPolicy,
+    )
+
+    assert RoundingPolicy().single_bucket_interval(
+        PublicationInterval(0.0, inf, True, False)
+    ) is None

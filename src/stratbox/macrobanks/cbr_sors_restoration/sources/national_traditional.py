@@ -36,7 +36,7 @@ def parse_national_traditional(
         as_of_date,
         classifier_id='cbr_traditional',
         source_series='01_02_A',
-        source_role='STRICT_NATIONAL_TOTAL_AND_BRIDGE_LEGACY',
+        source_role='STRICT_NATIONAL_TOTAL_AND_CROSSWALK_LEGACY',
         policy=policy,
     )
     specs = list(CBR_0105A_DEBT_CORP_INDUSTRY_SPECS)
