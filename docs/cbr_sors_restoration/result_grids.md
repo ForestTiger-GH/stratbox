@@ -1,30 +1,56 @@
 # Result grids
 
-## STRICT result
+## Основной результат
 
-- `regional_okved2_grid` — полный официальный bounds/facts grid;
-- `strict_facts_grid` — принятые официальные факты;
-- `strict_components_grid` — компонентные bounds;
-- `derivations_grid`, `constraints_grid`, `solver_runs_grid` — proof trail.
+- `regional_okved2_grid` — шесть пользовательских метрик по регионам и классам;
+- `strict_facts_grid` — принятые STRICT-метрики;
+- `strict_components_grid` — четыре базовые РКВС-компоненты и их bounds;
+- `constraints_grid`, `variables_grid`, `solver_runs_grid` — математический proof trail.
 
-## CROSSWALK result
+## Поклеточный контур
 
-- `regional_okved2_grid` — primary grid: STRICT имеет приоритет, затем принятые CROSSWALK значения;
-- `crosswalk_bounds_grid` — robust scenario envelope;
-- `crosswalk_facts_grid` — только принятые conditional facts;
-- `scenario_bounds_grid` — отдельные результаты сценариев;
-- `mapping_edges_grid` — допустимые атом→класс рёбра;
-- `relations_grid` — семантические conservation relations;
-- `variables_grid` — явные flow columns;
-- `constraints_grid` — публикационные и strict-bound строки;
-- `derivations_grid` — interval closure;
-- `solver_runs_grid`, `conflicts_grid`, `diagnostics_grid`, `audit_grid`.
+### `facts_ledger_grid`
 
-## Ключевые флаги
+Append-only история продвижений базовых РКВС. Содержит supersession, precision, uniqueness basis, horizon, proof IDs и supporting relations.
 
-- `bounds_certified` — границы опираются на подтверждённую совместимую модель;
-- `value_identified` — диапазон схлопнулся;
-- `is_final_accepted` — значение разрешено к использованию;
-- `is_strict_fact` — официальный слой;
-- `is_benchmark_estimate` — всегда `False` в основном crosswalk-контуре;
-- `evidence_layer`, `evidence_profile`, `scenario_ids` — происхождение доказательства.
+### `current_component_facts_grid`
+
+Текущая лучшая версия каждого принятого компонента.
+
+### `cell_target_plan_grid`
+
+Полный каталог 29 920 целей с bounds, scope, priority, cascade score, attempt count и skip reason.
+
+### `cell_attempts_grid`
+
+Одна строка на попытку цели: статус, самый большой horizon, факт изменения bounds, число новых каскадных фактов и runtime.
+
+### `cell_subsystems_grid`
+
+Размер и происхождение каждой cumulative local system:
+
+- число constraints;
+- число variables;
+- nnz;
+- исходные solver rows/columns;
+- supporting constraint IDs.
+
+### `promotion_events_grid`
+
+События записи и улучшения фактов.
+
+### `fixed_point_passes_grid`
+
+Итоги каскадных проходов и причина остановки.
+
+## Ключевые статусы
+
+- `UNIQUE_FEASIBLE_VALUE`;
+- `UNIQUE_AT_PUBLISHED_PRECISION`;
+- `MULTIPLE_FEASIBLE_VALUES`;
+- `SOLVER_INCOMPLETE`;
+- `IDENTIFIED_BEFORE_SOLVER`;
+- `UNRESOLVED_AT_HORIZON`;
+- `UNRESOLVED_GLOBAL`.
+
+Поля `cell_lower_solve_id` и `cell_upper_solve_id` ссылаются на реальные `solve_id` в `solver_runs_grid`.

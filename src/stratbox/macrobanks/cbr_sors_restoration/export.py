@@ -49,6 +49,8 @@ _PRIMARY_COLUMNS = (
     'scenario_coverage_complete', 'supporting_relation_ids',
     'is_zero_at_published_precision', 'is_exact_zero', 'is_lp_certified',
     'lp_lower_certified', 'lp_upper_certified',
+    'cell_resolution_status', 'cell_largest_horizon',
+    'cell_attempt_id', 'cell_subsystem_id',
     'closure_pass', 'supporting_constraint_count',
 )
 
@@ -220,6 +222,18 @@ def export_sors_workbook(
         queue(strict_source.source_grid, 'SourceGrid')
     if request.include_components and strict_source is not None:
         queue(strict_source.strict_components_grid, 'Components')
+    if request.include_fact_ledger and strict_source is not None:
+        queue(strict_source.facts_ledger_grid, 'Fact_Ledger')
+        queue(strict_source.current_component_facts_grid, 'Current_Cell_Facts')
+        queue(strict_source.cell_target_plan_grid, 'Cell_Target_Plan')
+    if request.include_cell_attempts and strict_source is not None:
+        queue(strict_source.cell_attempts_grid, 'Cell_Attempts')
+    if request.include_cell_subsystems and strict_source is not None:
+        queue(strict_source.cell_subsystems_grid, 'Cell_Subsystems')
+    if request.include_promotion_events and strict_source is not None:
+        queue(strict_source.promotion_events_grid, 'Promotions')
+    if request.include_fixed_point_passes and strict_source is not None:
+        queue(strict_source.fixed_point_passes_grid, 'Fixed_Point_Passes')
     if request.include_derivations:
         queue(result.derivations_grid, 'Derivations')
     if request.include_constraints:

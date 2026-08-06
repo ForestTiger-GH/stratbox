@@ -1,7 +1,8 @@
 """Evidence-preserving regional OKVED2 reconstruction from CBR SORS tables."""
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
-    SorsCertificationConfig,
+    SorsCellResolutionConfig,
+    SorsCellScope,
     SorsCrosswalkConfig,
     SorsPivotRequest,
     SorsRunConfig,
@@ -26,7 +27,8 @@ from stratbox.macrobanks.cbr_sors_restoration.results import (
 from stratbox.macrobanks.cbr_sors_restoration.sources import load_sors_sources
 
 __all__ = [
-    'SorsCertificationConfig',
+    'SorsCellResolutionConfig',
+    'SorsCellScope',
     'SorsCrosswalkConfig',
     'SorsCrosswalkResult',
     'SorsPivotRequest',

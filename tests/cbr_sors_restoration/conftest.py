@@ -85,8 +85,7 @@ def small_result() -> SorsRestorationResult:
         component_quantities=16, regional_metric_rows=len(grid),
         raw_publication_observations=0, unique_publication_constraints=0,
         closure_passes=1, closure_identified_facts=2, lp_identified_facts=0,
-        strict_facts=2, certification_targets_attempted=0,
-        certification_targets_completed=0,
+        strict_facts=2,
     )
     empty = pd.DataFrame()
     return SorsRestorationResult(
@@ -95,7 +94,6 @@ def small_result() -> SorsRestorationResult:
         strict_components_grid=empty,
         strict_facts_grid=grid[grid['is_strict_fact']].copy(),
         derivations_grid=empty, constraints_grid=empty, variables_grid=empty,
-        certification_plan_grid=empty, solver_runs_grid=empty,
-        conflicts_grid=empty, audit_grid=pd.DataFrame([{'key': 'x', 'value': 'y'}]),
+        solver_runs_grid=empty, conflicts_grid=empty, audit_grid=pd.DataFrame([{'key': 'x', 'value': 'y'}]),
         summary=summary,
     )

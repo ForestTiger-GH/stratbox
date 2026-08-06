@@ -21,10 +21,14 @@ def _present(value: object) -> bool:
 
 
 def _derivation_method(row) -> str:
+    if _present(getattr(row, 'cell_lower_solve_id', None)) or _present(
+        getattr(row, 'cell_upper_solve_id', None)
+    ):
+        return 'TARGET_CELL_SYSTEM'
     if _present(getattr(row, 'lp_lower_solve_id', None)) or _present(
         getattr(row, 'lp_upper_solve_id', None)
     ):
-        return 'LP_MINMAX'
+        return 'LEGACY_TARGET_SYSTEM'
     if _present(getattr(row, 'last_derivation_id', None)):
         return 'DETERMINISTIC_CLOSURE'
     return 'NONE'
@@ -145,22 +149,44 @@ def build_regional_okved2_grid(
                     certification.is_zero_at_published_precision
                 ),
                 'is_exact_zero': bool(certification.is_exact_zero),
-                'is_lp_certified': bool(identified and method == 'LP_MINMAX'),
+                'is_lp_certified': bool(
+                    identified and method in {'TARGET_CELL_SYSTEM', 'LEGACY_TARGET_SYSTEM'}
+                ),
                 'proof_id': (
-                    getattr(row, 'lp_lower_solve_id', None)
-                    if _present(getattr(row, 'lp_lower_solve_id', None))
+                    getattr(row, 'cell_lower_solve_id', None)
+                    if _present(getattr(row, 'cell_lower_solve_id', None))
                     else (
-                        getattr(row, 'last_derivation_id', None)
-                        if _present(getattr(row, 'last_derivation_id', None))
-                        else None
+                        getattr(row, 'lp_lower_solve_id', None)
+                        if _present(getattr(row, 'lp_lower_solve_id', None))
+                        else (
+                            getattr(row, 'last_derivation_id', None)
+                            if _present(getattr(row, 'last_derivation_id', None))
+                            else None
+                        )
                     )
                 ),
                 'closure_pass': getattr(row, 'last_derivation_pass', None),
                 'supporting_constraint_count': getattr(
                     row, 'last_derivation_support_count', 0
                 ),
-                'lower_solve_id': getattr(row, 'lp_lower_solve_id', None),
-                'upper_solve_id': getattr(row, 'lp_upper_solve_id', None),
+                'lower_solve_id': (
+                    getattr(row, 'cell_lower_solve_id', None)
+                    if _present(getattr(row, 'cell_lower_solve_id', None))
+                    else getattr(row, 'lp_lower_solve_id', None)
+                ),
+                'upper_solve_id': (
+                    getattr(row, 'cell_upper_solve_id', None)
+                    if _present(getattr(row, 'cell_upper_solve_id', None))
+                    else getattr(row, 'lp_upper_solve_id', None)
+                ),
+                'cell_resolution_status': getattr(
+                    row, 'cell_resolution_status', None
+                ),
+                'cell_largest_horizon': getattr(
+                    row, 'cell_largest_horizon', None
+                ),
+                'cell_attempt_id': getattr(row, 'cell_attempt_id', None),
+                'cell_subsystem_id': getattr(row, 'cell_subsystem_id', None),
                 'rules_version': rules_version,
                 'solver_backend': solver_backend,
                 'solver_version': solver_version,

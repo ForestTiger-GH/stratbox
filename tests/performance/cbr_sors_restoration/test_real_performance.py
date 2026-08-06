@@ -9,7 +9,7 @@ import pytest
 
 from stratbox.macrobanks.cbr_sors_restoration import (
     SorsCrosswalkConfig,
-    SorsCertificationConfig,
+    SorsCellResolutionConfig,
     SorsRunConfig,
     SorsSourceFiles,
     SorsWorkbookRequest,
@@ -78,19 +78,17 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
         _files(),
         SorsRunConfig(
             as_of_date='2026-06-01',
-            strict_certification=SorsCertificationConfig(
+            cell_resolution=SorsCellResolutionConfig(
                 mode='priority',
-                max_targets=target_budget,
-                batch_size=50,
-                model_reset_interval=25,
+                max_target_attempts=target_budget,
                 per_solve_time_limit_seconds=30,
-                batch_time_limit_seconds=1_800,
+                run_time_limit_seconds=1_800,
             ),
         ),
     )
     assert perf_counter() - started < maximum_seconds
     assert result.summary.strict_status == 'OPTIMAL'
-    assert result.summary.certification_targets_attempted <= target_budget
+    assert result.summary.cell_targets_attempted <= target_budget
 
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')

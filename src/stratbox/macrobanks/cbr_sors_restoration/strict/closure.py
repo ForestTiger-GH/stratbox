@@ -31,6 +31,7 @@ def run_deterministic_closure(
     *,
     tolerance: float = 1e-9,
     max_passes: int = 100,
+    seed_quantity_ids: tuple[str, ...] | None = None,
 ) -> SorsClosureResult:
     quantities = graph.quantities_grid.copy().reset_index(drop=True)
     quantity_ids = tuple(quantities['quantity_id'].astype(str))
@@ -139,7 +140,15 @@ def run_deterministic_closure(
                 }
             )
 
-    current_relations = set(range(len(relations)))
+    if seed_quantity_ids is None:
+        current_relations = set(range(len(relations)))
+    else:
+        unknown_seeds = sorted(set(seed_quantity_ids) - set(positions))
+        if unknown_seeds:
+            raise ValueError(f'Unknown closure seed quantities: {unknown_seeds}')
+        current_relations: set[int] = set()
+        for quantity_id in seed_quantity_ids:
+            current_relations.update(adjacent[positions[str(quantity_id)]])
     passes = 0
     for pass_number in range(1, max_passes + 1):
         passes = pass_number
@@ -323,3 +332,106 @@ def run_deterministic_closure(
         passes=passes,
         bound_updates=update_count,
     )
+
+
+class SorsClosureState:
+    """Persistent closure state for the RKVS fixed-point engine."""
+
+    def __init__(
+        self,
+        graph: SorsQuantityGraph,
+        *,
+        tolerance: float = 1e-9,
+        max_passes: int = 100,
+    ) -> None:
+        self._relations_grid = graph.relations_grid.copy()
+        self._bindings_grid = graph.observation_bindings_grid.copy()
+        self.quantities_grid = graph.quantities_grid.copy()
+        self.derivations_grid = pd.DataFrame()
+        self.conflicts_grid = pd.DataFrame()
+        self.tolerance = float(tolerance)
+        self.max_passes = int(max_passes)
+        self.total_passes = 0
+        self.total_bound_updates = 0
+
+    def replace_quantities(self, quantities_grid: pd.DataFrame) -> None:
+        expected = tuple(self.quantities_grid['quantity_id'].astype(str))
+        received = tuple(quantities_grid['quantity_id'].astype(str))
+        if expected != received:
+            raise ValueError('Closure state quantity ordering cannot change')
+        self.quantities_grid = quantities_grid.copy()
+
+    def _offset_derivations(
+        self,
+        derivations: pd.DataFrame,
+        quantities: pd.DataFrame,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        if derivations.empty:
+            return derivations, quantities
+        derivations = derivations.copy()
+        id_offset = len(self.derivations_grid)
+        pass_offset = self.total_passes
+        old_ids = tuple(derivations['derivation_id'].astype(str))
+        new_ids = tuple(
+            f'derivation:{id_offset + position:08d}'
+            for position in range(1, len(derivations) + 1)
+        )
+        remap = dict(zip(old_ids, new_ids, strict=True))
+        derivations['derivation_id'] = derivations['derivation_id'].astype(str).map(remap)
+        derivations['pass_number'] = derivations['pass_number'].astype(int) + pass_offset
+        quantities = quantities.copy()
+        changed_quantity_ids = set(derivations['result_quantity_id'].astype(str))
+        changed = quantities['quantity_id'].astype(str).isin(changed_quantity_ids)
+        quantities.loc[changed, 'last_derivation_id'] = quantities.loc[
+            changed, 'last_derivation_id'
+        ].map(
+            lambda value: remap.get(str(value), value)
+            if value is not None and not pd.isna(value)
+            else value
+        )
+        if 'last_derivation_pass' in quantities:
+            quantities.loc[changed, 'last_derivation_pass'] = quantities.loc[
+                changed, 'last_derivation_pass'
+            ].map(
+                lambda value: int(value) + pass_offset
+                if value is not None and not pd.isna(value)
+                else value
+            )
+        return derivations, quantities
+
+    def run(
+        self,
+        *,
+        seed_quantity_ids: tuple[str, ...] | None = None,
+    ) -> SorsClosureResult:
+        graph = SorsQuantityGraph(
+            self.quantities_grid,
+            self._relations_grid,
+            self._bindings_grid,
+        )
+        result = run_deterministic_closure(
+            graph,
+            tolerance=self.tolerance,
+            max_passes=self.max_passes,
+            seed_quantity_ids=seed_quantity_ids,
+        )
+        derivations, quantities = self._offset_derivations(
+            result.derivations_grid, result.quantities_grid
+        )
+        self.quantities_grid = quantities
+        if not derivations.empty:
+            self.derivations_grid = pd.concat(
+                [self.derivations_grid, derivations],
+                ignore_index=True,
+                sort=False,
+            )
+        self.conflicts_grid = result.conflicts_grid
+        self.total_passes += result.passes
+        self.total_bound_updates += result.bound_updates
+        return SorsClosureResult(
+            quantities_grid=self.quantities_grid.copy(),
+            derivations_grid=derivations,
+            conflicts_grid=result.conflicts_grid,
+            passes=result.passes,
+            bound_updates=result.bound_updates,
+        )

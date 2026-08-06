@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pandas as pd
@@ -27,8 +27,14 @@ class SorsRunSummary:
     closure_identified_facts: int
     lp_identified_facts: int
     strict_facts: int
-    certification_targets_attempted: int
-    certification_targets_completed: int
+    cell_resolution_status: str = 'CLOSURE_COMPLETE'
+    fixed_point_passes: int = 0
+    cell_targets_attempted: int = 0
+    cell_targets_resolved: int = 0
+    cell_targets_resolved_by_local_system: int = 0
+    component_facts: int = 0
+    exact_component_facts: int = 0
+    published_component_facts: int = 0
 
 
 @dataclass(frozen=True)
@@ -42,11 +48,17 @@ class SorsRestorationResult:
     derivations_grid: pd.DataFrame
     constraints_grid: pd.DataFrame
     variables_grid: pd.DataFrame
-    certification_plan_grid: pd.DataFrame
     solver_runs_grid: pd.DataFrame
     conflicts_grid: pd.DataFrame
     audit_grid: pd.DataFrame
     summary: SorsRunSummary
+    facts_ledger_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    current_component_facts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    cell_target_plan_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    cell_attempts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    cell_subsystems_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    promotion_events_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    fixed_point_passes_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
     _source_bundle: object | None = None
     _strict_problem: object | None = None
 

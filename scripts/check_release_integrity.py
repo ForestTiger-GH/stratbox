@@ -21,6 +21,7 @@ REQUIRED_FILES = [
     'docs/cbr_sors_restoration/architecture.md',
     'docs/cbr_sors_restoration/acceptance.md',
     'docs/cbr_sors_restoration/implementation_report_2026-08-05.md',
+    'docs/cbr_sors_restoration/implementation_report_2026-08-06.md',
     'examples/cbr_sors_restoration_colab.py',
     'tests/cbr_sors_restoration/test_publication.py',
 ]
@@ -55,7 +56,13 @@ def main() -> int:
 
     if (ROOT / '.git').exists():
         for rel in CHECK_IGNORE_PATHS:
-            result = subprocess.run(['git', 'check-ignore', '-v', rel], cwd=ROOT, text=True, capture_output=True)
+            ignored_path = rel.rstrip('/') + '/'
+            result = subprocess.run(
+                ['git', 'check-ignore', '-v', '--no-index', ignored_path],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
             if result.returncode != 0:
                 failures.append(f'gitignore does not hide path: {rel}')
             else:

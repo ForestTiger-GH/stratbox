@@ -1,19 +1,27 @@
 # Pivot и Excel
 
-`build_sors_pivot` принимает STRICT и CROSSWALK results. Значение `evidence_layer="PRIMARY"` использует итоговый primary grid. Можно отдельно выбрать `STRICT` или `CROSSWALK`.
+`build_sors_pivot` работает с основным регионально-классовым grid и сохраняет прежние ориентации «регион → классы» и «класс → регионы».
 
-`include_unidentified=False` фильтрует по `is_final_accepted`, а для старого strict-result — по `is_strict_fact`.
+`export_sors_workbook` может включать новые листы:
 
-`export_sors_workbook` для crosswalk-result умеет добавлять:
-
-- `Crosswalk_Facts`;
-- `Crosswalk_Bounds` и `Crosswalk_Scenarios`;
-- `Crosswalk_Edges` и `Crosswalk_Relations`.
+```text
+Fact_Ledger
+Current_Cell_Facts
+Cell_Target_Plan
+Cell_Attempts
+Cell_Subsystems
+Promotions
+Fixed_Point_Passes
+```
 
 Управление выполняется полями `SorsWorkbookRequest`:
 
 ```text
-include_crosswalk_facts
-include_crosswalk_bounds
-include_crosswalk_mapping
+include_fact_ledger
+include_cell_attempts
+include_cell_subsystems
+include_promotion_events
+include_fixed_point_passes
 ```
+
+Primary grid содержит `cell_resolution_status`, `cell_largest_horizon`, `cell_attempt_id` и `cell_subsystem_id` для трассировки происхождения метрики.

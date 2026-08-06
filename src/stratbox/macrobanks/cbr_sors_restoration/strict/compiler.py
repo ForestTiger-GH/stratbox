@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import inf, isfinite
 
 import numpy as np
@@ -17,6 +17,9 @@ from stratbox.macrobanks.cbr_sors_restoration.publication import (
     solver_lower_bound,
     solver_upper_bound,
 )
+from stratbox.macrobanks.cbr_sors_restoration.strict.cells import (
+    build_cell_target_catalog,
+)
 from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
     SorsQuantityGraph,
     component_quantity_id,
@@ -31,6 +34,7 @@ from stratbox.macrobanks.cbr_sors_restoration.strict.reduction import (
 class StrictCompilation:
     problem: SorsLinearProblem
     target_catalog_grid: pd.DataFrame
+    cell_target_catalog_grid: pd.DataFrame
 
 
 def _csr(rows: list[list[tuple[int, float]]], n_columns: int) -> CsrMatrixData:
@@ -265,7 +269,10 @@ def compile_strict_problem(
                         'constant': constant,
                     }
                 )
-    return StrictCompilation(problem, pd.DataFrame(target_rows))
+    cell_targets = build_cell_target_catalog(
+        bundle, quantities_grid, variables_grid
+    )
+    return StrictCompilation(problem, pd.DataFrame(target_rows), cell_targets)
 
 
 def linear_target_from_row(row) -> LinearTarget:
@@ -280,3 +287,38 @@ def linear_target_from_row(row) -> LinearTarget:
         coefficients=np.asarray(row.coefficients, dtype=float),
         constant=float(row.constant),
     )
+
+
+def refresh_strict_problem_bounds(
+    problem: SorsLinearProblem,
+    quantities_grid: pd.DataFrame,
+) -> SorsLinearProblem:
+    """Refresh active column bounds without rebuilding the sparse matrix."""
+
+    quantities = quantities_grid.set_index('quantity_id')
+    active = problem.variables_grid[
+        problem.variables_grid['solver_column'].notna()
+    ].copy()
+    active['solver_column'] = active['solver_column'].astype(int)
+    active = active.sort_values('solver_column')
+    lower = np.asarray(
+        [
+            solver_lower_bound(
+                float(quantities.loc[str(row.quantity_id), 'lower_bound']),
+                bool(quantities.loc[str(row.quantity_id), 'lower_attained']),
+            )
+            for row in active.itertuples(index=False)
+        ],
+        dtype=float,
+    )
+    upper = np.asarray(
+        [
+            solver_upper_bound(
+                float(quantities.loc[str(row.quantity_id), 'upper_bound']),
+                bool(quantities.loc[str(row.quantity_id), 'upper_attained']),
+            )
+            for row in active.itertuples(index=False)
+        ],
+        dtype=float,
+    )
+    return replace(problem, col_lower=lower, col_upper=upper)

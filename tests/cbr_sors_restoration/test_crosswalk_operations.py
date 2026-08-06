@@ -161,8 +161,6 @@ def _strict_with_bundle() -> SorsRestorationResult:
         closure_identified_facts=0,
         lp_identified_facts=0,
         strict_facts=0,
-        certification_targets_attempted=0,
-        certification_targets_completed=0,
     )
     return SorsRestorationResult(
         source_grid=regional,
@@ -174,7 +172,6 @@ def _strict_with_bundle() -> SorsRestorationResult:
         derivations_grid=empty,
         constraints_grid=empty,
         variables_grid=empty,
-        certification_plan_grid=empty,
         solver_runs_grid=empty,
         conflicts_grid=empty,
         audit_grid=empty,

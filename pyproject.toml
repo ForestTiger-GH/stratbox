@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stratbox"
-version = "0.5.0"
+version = "0.6.0"
 description = "Strategy Box core library with business domains and neutral infrastructure."
 requires-python = ">=3.10"
 dependencies = [
