@@ -42,6 +42,122 @@ class SorsCellProof:
         return self.unique_value is not None
 
 
+@dataclass(frozen=True)
+class _SessionLease:
+    session: HighsSession
+    reused: bool
+    pooled: bool
+    solver: str
+
+
+class SorsCellSolverPool:
+    """Reuse structurally identical global RKVS models across target proofs.
+
+    Local horizons remain short-lived because their projected matrices vary by
+    target. GLOBAL_CONNECTED subsystems usually share one connected-component
+    matrix; retaining that model avoids repeated matrix loading and lets HiGHS
+    reuse its internal state when only objective coefficients and bounds change.
+    """
+
+    def __init__(self, config: SorsCellResolutionConfig) -> None:
+        self.config = config
+        self._global_sessions: dict[
+            tuple[str, tuple[int, ...], tuple[int, ...]], HighsSession
+        ] = {}
+
+    def _new_session(self, subsystem: SorsTargetSubsystem, solver: str) -> HighsSession:
+        return HighsSession(
+            subsystem.problem,
+            time_limit_seconds=self.config.per_solve_time_limit_seconds,
+            threads=self.config.threads,
+            solver=solver,
+            run_crossover=self.config.run_crossover,
+        )
+
+    @staticmethod
+    def _session_key(
+        subsystem: SorsTargetSubsystem,
+        solver: str,
+    ) -> tuple[str, tuple[int, ...], tuple[int, ...]]:
+        return (
+            solver,
+            subsystem.original_solver_rows,
+            subsystem.original_solver_columns,
+        )
+
+    def acquire_primary(self, subsystem: SorsTargetSubsystem) -> _SessionLease:
+        solver = (
+            self.config.global_solver
+            if subsystem.horizon == 'GLOBAL_CONNECTED'
+            else self.config.local_solver
+        )
+        pooled = bool(
+            self.config.reuse_global_session
+            and subsystem.horizon == 'GLOBAL_CONNECTED'
+        )
+        if not pooled:
+            return _SessionLease(
+                session=self._new_session(subsystem, solver),
+                reused=False,
+                pooled=False,
+                solver=solver,
+            )
+        key = self._session_key(subsystem, solver)
+        session = self._global_sessions.get(key)
+        if session is None:
+            session = self._new_session(subsystem, solver)
+            self._global_sessions[key] = session
+            reused = False
+        else:
+            try:
+                session.update_column_bounds(
+                    subsystem.problem.col_lower,
+                    subsystem.problem.col_upper,
+                )
+                reused = True
+            except Exception:
+                session.close()
+                session = self._new_session(subsystem, solver)
+                self._global_sessions[key] = session
+                reused = False
+        return _SessionLease(
+            session=session,
+            reused=reused,
+            pooled=True,
+            solver=solver,
+        )
+
+    def invalidate_primary(
+        self,
+        subsystem: SorsTargetSubsystem,
+        solver: str,
+    ) -> None:
+        key = self._session_key(subsystem, solver)
+        session = self._global_sessions.pop(key, None)
+        if session is not None:
+            session.close()
+
+    def new_retry_session(self, subsystem: SorsTargetSubsystem) -> _SessionLease:
+        return _SessionLease(
+            session=self._new_session(subsystem, self.config.retry_solver),
+            reused=False,
+            pooled=False,
+            solver=self.config.retry_solver,
+        )
+
+    def close(self) -> None:
+        for session in self._global_sessions.values():
+            session.close()
+        self._global_sessions.clear()
+
+    def __enter__(self) -> 'SorsCellSolverPool':
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        self.close()
+        return False
+
+
 def _result_from_bound(value: float, direction: str) -> SolveResult:
     return SolveResult(
         success=True,
@@ -79,6 +195,8 @@ def _run_record(
     backend: str,
     version: str,
     basis_reused: bool,
+    session_reused: bool,
+    solver_algorithm: str,
     time_limit_seconds: float | None,
 ) -> dict[str, object]:
     return {
@@ -99,12 +217,23 @@ def _run_record(
         'ipm_iterations': result.ipm_iterations,
         'time_limit_seconds': time_limit_seconds,
         'basis_reused': basis_reused,
+        'session_reused': session_reused,
+        'solver_algorithm': solver_algorithm,
         'solver_backend': backend,
         'solver_version': version,
         'subsystem_variables': subsystem.problem.num_variables,
         'subsystem_constraints': subsystem.problem.num_constraints,
         'subsystem_nnz': subsystem.problem.matrix.nnz,
     }
+
+
+def _solve_direction(
+    lease: _SessionLease,
+    subsystem: SorsTargetSubsystem,
+    *,
+    maximize: bool,
+) -> SolveResult:
+    return lease.session.solve_target(subsystem.target, maximize=maximize)
 
 
 def prove_cell_uniqueness(
@@ -114,6 +243,7 @@ def prove_cell_uniqueness(
     *,
     point_tolerance: float,
     attempt_id: str,
+    solver_pool: SorsCellSolverPool | None = None,
 ) -> SorsCellProof:
     records: list[dict[str, object]] = []
     backend = 'column_bounds'
@@ -128,47 +258,37 @@ def prove_cell_uniqueness(
         upper = _result_from_bound(
             float(subsystem.problem.col_upper[index]), 'UPPER_BOUND'
         )
-        records.extend(
-            [
+        for solve_id, direction, result in (
+            (lower_solve_id, 'MIN_INTERNAL_UNIQUENESS', lower),
+            (upper_solve_id, 'MAX_INTERNAL_UNIQUENESS', upper),
+        ):
+            records.append(
                 _run_record(
-                    solve_id=lower_solve_id,
+                    solve_id=solve_id,
                     attempt_id=attempt_id,
                     subsystem=subsystem,
-                    direction='MIN_INTERNAL_UNIQUENESS',
-                    result=lower,
+                    direction=direction,
+                    result=result,
                     attempt_number=0,
                     backend=backend,
                     version=version,
                     basis_reused=False,
+                    session_reused=False,
+                    solver_algorithm='bounds',
                     time_limit_seconds=None,
-                ),
-                _run_record(
-                    solve_id=upper_solve_id,
-                    attempt_id=attempt_id,
-                    subsystem=subsystem,
-                    direction='MAX_INTERNAL_UNIQUENESS',
-                    result=upper,
-                    attempt_number=0,
-                    backend=backend,
-                    version=version,
-                    basis_reused=False,
-                    time_limit_seconds=None,
-                ),
-            ]
-        )
-    else:
-        session: HighsSession | None = None
-        try:
-            session = HighsSession(
-                subsystem.problem,
-                time_limit_seconds=config.per_solve_time_limit_seconds,
-                threads=config.threads,
+                )
             )
-            backend = session.backend
-            version = session.version
+    else:
+        owned_pool = solver_pool is None
+        pool = solver_pool or SorsCellSolverPool(config)
+        primary: _SessionLease | None = None
+        try:
+            primary = pool.acquire_primary(subsystem)
+            backend = primary.session.backend
+            version = primary.session.version
             lower_solve_id = f'{attempt_id}:{subsystem.horizon}:min:attempt1'
             upper_solve_id = f'{attempt_id}:{subsystem.horizon}:max:attempt1'
-            lower = session.solve_target(subsystem.target, maximize=False)
+            lower = _solve_direction(primary, subsystem, maximize=False)
             records.append(
                 _run_record(
                     solve_id=lower_solve_id,
@@ -179,11 +299,13 @@ def prove_cell_uniqueness(
                     attempt_number=1,
                     backend=backend,
                     version=version,
-                    basis_reused=False,
+                    basis_reused=primary.reused,
+                    session_reused=primary.reused,
+                    solver_algorithm=primary.solver,
                     time_limit_seconds=config.per_solve_time_limit_seconds,
                 )
             )
-            upper = session.solve_target(subsystem.target, maximize=True)
+            upper = _solve_direction(primary, subsystem, maximize=True)
             records.append(
                 _run_record(
                     solve_id=upper_solve_id,
@@ -194,51 +316,67 @@ def prove_cell_uniqueness(
                     attempt_number=1,
                     backend=backend,
                     version=version,
-                    basis_reused=True,
+                    basis_reused=lower.success,
+                    session_reused=True,
+                    solver_algorithm=primary.solver,
                     time_limit_seconds=config.per_solve_time_limit_seconds,
                 )
             )
+
+            if not (lower.success and upper.success) and primary.pooled:
+                pool.invalidate_primary(subsystem, primary.solver)
+
             if config.retry_failed_solve and not (lower.success and upper.success):
-                session.close()
-                session = HighsSession(
-                    subsystem.problem,
-                    time_limit_seconds=config.per_solve_time_limit_seconds,
-                    threads=config.threads,
-                )
-                backend = session.backend
-                version = session.version
-                lower_solve_id = f'{attempt_id}:{subsystem.horizon}:min:attempt2'
-                upper_solve_id = f'{attempt_id}:{subsystem.horizon}:max:attempt2'
-                lower = session.solve_target(subsystem.target, maximize=False)
-                records.append(
-                    _run_record(
-                        solve_id=lower_solve_id,
-                        attempt_id=attempt_id,
-                        subsystem=subsystem,
-                        direction='MIN_INTERNAL_UNIQUENESS',
-                        result=lower,
-                        attempt_number=2,
-                        backend=backend,
-                        version=version,
-                        basis_reused=False,
-                        time_limit_seconds=config.per_solve_time_limit_seconds,
-                    )
-                )
-                upper = session.solve_target(subsystem.target, maximize=True)
-                records.append(
-                    _run_record(
-                        solve_id=upper_solve_id,
-                        attempt_id=attempt_id,
-                        subsystem=subsystem,
-                        direction='MAX_INTERNAL_UNIQUENESS',
-                        result=upper,
-                        attempt_number=2,
-                        backend=backend,
-                        version=version,
-                        basis_reused=True,
-                        time_limit_seconds=config.per_solve_time_limit_seconds,
-                    )
-                )
+                retry = pool.new_retry_session(subsystem)
+                retry_lower_solved = False
+                try:
+                    backend = retry.session.backend
+                    version = retry.session.version
+                    if not lower.success:
+                        lower_solve_id = (
+                            f'{attempt_id}:{subsystem.horizon}:min:attempt2'
+                        )
+                        lower = _solve_direction(retry, subsystem, maximize=False)
+                        retry_lower_solved = lower.success
+                        records.append(
+                            _run_record(
+                                solve_id=lower_solve_id,
+                                attempt_id=attempt_id,
+                                subsystem=subsystem,
+                                direction='MIN_INTERNAL_UNIQUENESS',
+                                result=lower,
+                                attempt_number=2,
+                                backend=backend,
+                                version=version,
+                                basis_reused=False,
+                                session_reused=False,
+                                solver_algorithm=retry.solver,
+                                time_limit_seconds=config.per_solve_time_limit_seconds,
+                            )
+                        )
+                    if not upper.success:
+                        upper_solve_id = (
+                            f'{attempt_id}:{subsystem.horizon}:max:attempt2'
+                        )
+                        upper = _solve_direction(retry, subsystem, maximize=True)
+                        records.append(
+                            _run_record(
+                                solve_id=upper_solve_id,
+                                attempt_id=attempt_id,
+                                subsystem=subsystem,
+                                direction='MAX_INTERNAL_UNIQUENESS',
+                                result=upper,
+                                attempt_number=2,
+                                backend=backend,
+                                version=version,
+                                basis_reused=retry_lower_solved,
+                                session_reused=retry_lower_solved,
+                                solver_algorithm=retry.solver,
+                                time_limit_seconds=config.per_solve_time_limit_seconds,
+                            )
+                        )
+                finally:
+                    retry.session.close()
         except SorsSolverDependencyError as exc:
             backend = 'highspy'
             version = 'unavailable'
@@ -246,37 +384,31 @@ def prove_cell_uniqueness(
             upper_solve_id = f'{attempt_id}:{subsystem.horizon}:max:unavailable'
             lower = _unavailable_result(exc)
             upper = _unavailable_result(exc)
-            records.extend(
-                [
+            for solve_id, direction, result in (
+                (lower_solve_id, 'MIN_INTERNAL_UNIQUENESS', lower),
+                (upper_solve_id, 'MAX_INTERNAL_UNIQUENESS', upper),
+            ):
+                records.append(
                     _run_record(
-                        solve_id=lower_solve_id,
+                        solve_id=solve_id,
                         attempt_id=attempt_id,
                         subsystem=subsystem,
-                        direction='MIN_INTERNAL_UNIQUENESS',
-                        result=lower,
+                        direction=direction,
+                        result=result,
                         attempt_number=0,
                         backend=backend,
                         version=version,
                         basis_reused=False,
+                        session_reused=False,
+                        solver_algorithm='unavailable',
                         time_limit_seconds=config.per_solve_time_limit_seconds,
-                    ),
-                    _run_record(
-                        solve_id=upper_solve_id,
-                        attempt_id=attempt_id,
-                        subsystem=subsystem,
-                        direction='MAX_INTERNAL_UNIQUENESS',
-                        result=upper,
-                        attempt_number=0,
-                        backend=backend,
-                        version=version,
-                        basis_reused=False,
-                        time_limit_seconds=config.per_solve_time_limit_seconds,
-                    ),
-                ]
-            )
+                    )
+                )
         finally:
-            if session is not None:
-                session.close()
+            if primary is not None and not primary.pooled:
+                primary.session.close()
+            if owned_pool:
+                pool.close()
 
     lower_value = lower.objective_value if lower.success else None
     upper_value = upper.objective_value if upper.success else None

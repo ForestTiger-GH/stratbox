@@ -110,14 +110,22 @@ def compile_strict_problem(
     active_rows = components.loc[~fixed]
     active_lower = np.asarray(
         [
-            solver_lower_bound(row.lower_bound, bool(row.lower_attained))
+            solver_lower_bound(
+                row.lower_bound,
+                bool(row.lower_attained),
+                open_margin=point_tolerance,
+            )
             for row in active_rows.itertuples(index=False)
         ],
         dtype=float,
     )
     active_upper = np.asarray(
         [
-            solver_upper_bound(row.upper_bound, bool(row.upper_attained))
+            solver_upper_bound(
+                row.upper_bound,
+                bool(row.upper_attained),
+                open_margin=point_tolerance,
+            )
             for row in active_rows.itertuples(index=False)
         ],
         dtype=float,
@@ -146,8 +154,16 @@ def compile_strict_problem(
                     )
         semantic_lower = float(pub.lower_bound) - fixed_offset
         semantic_upper = float(pub.upper_bound) - fixed_offset
-        lower = solver_lower_bound(semantic_lower, bool(pub.lower_attained))
-        upper = solver_upper_bound(semantic_upper, bool(pub.upper_attained))
+        lower = solver_lower_bound(
+            semantic_lower,
+            bool(pub.lower_attained),
+            open_margin=point_tolerance,
+        )
+        upper = solver_upper_bound(
+            semantic_upper,
+            bool(pub.upper_attained),
+            open_margin=point_tolerance,
+        )
         items = [
             (column, coefficient)
             for column, coefficient in coefficient_by_column.items()
@@ -219,8 +235,11 @@ def compile_strict_problem(
         matrix=_csr(rows, len(active)),
         row_lower=np.asarray(row_lower, dtype=float),
         row_upper=np.asarray(row_upper, dtype=float),
-        col_lower=active['lower_bound'].astype(float).to_numpy(),
-        col_upper=active['upper_bound'].astype(float).to_numpy(),
+        # Use robust closed bounds for semantic open intervals.  Semantic
+        # endpoints remain in variables_grid; the LP moves unattained endpoints
+        # inward far enough to remain effective under Solver feasibility tolerance.
+        col_lower=active_lower,
+        col_upper=active_upper,
         objective=np.zeros(len(active), dtype=float),
         constraints_grid=pd.DataFrame(row_meta),
         variables_grid=variables_grid,
@@ -296,6 +315,7 @@ def refresh_strict_problem_bounds(
     """Refresh active column bounds without rebuilding the sparse matrix."""
 
     quantities = quantities_grid.set_index('quantity_id')
+    open_margin = float(problem.metadata.get('point_tolerance', 0.0))
     active = problem.variables_grid[
         problem.variables_grid['solver_column'].notna()
     ].copy()
@@ -306,6 +326,7 @@ def refresh_strict_problem_bounds(
             solver_lower_bound(
                 float(quantities.loc[str(row.quantity_id), 'lower_bound']),
                 bool(quantities.loc[str(row.quantity_id), 'lower_attained']),
+                open_margin=open_margin,
             )
             for row in active.itertuples(index=False)
         ],
@@ -316,6 +337,7 @@ def refresh_strict_problem_bounds(
             solver_upper_bound(
                 float(quantities.loc[str(row.quantity_id), 'upper_bound']),
                 bool(quantities.loc[str(row.quantity_id), 'upper_attained']),
+                open_margin=open_margin,
             )
             for row in active.itertuples(index=False)
         ],

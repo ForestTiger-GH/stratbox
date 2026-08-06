@@ -44,6 +44,8 @@ def run_strict_feasibility(
             problem,
             time_limit_seconds=config.per_solve_time_limit_seconds,
             threads=config.threads,
+            solver=config.global_solver,
+            run_crossover=config.run_crossover,
         ) as session:
             feasibility = session.solve_feasibility()
             backend = session.backend
@@ -66,6 +68,8 @@ def run_strict_feasibility(
         'ipm_iterations': feasibility.ipm_iterations,
         'time_limit_seconds': config.per_solve_time_limit_seconds,
         'basis_reused': False,
+        'session_reused': False,
+        'solver_algorithm': config.global_solver,
         'solver_backend': backend,
         'solver_version': version,
         'subsystem_variables': problem.num_variables,

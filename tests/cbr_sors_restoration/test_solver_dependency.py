@@ -99,3 +99,96 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
     assert int(result.regional_okved2_grid['is_final_accepted'].fillna(False).sum()) == int(
         small_result.regional_okved2_grid['is_strict_fact'].sum()
     )
+
+
+def test_highs_session_applies_solver_options_and_refreshes_bounds(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from stratbox.macrobanks.cbr_sors_restoration.linear import highs as highs_module
+
+    calls: dict[str, object] = {}
+
+    class FakeHighs:
+        def __init__(self) -> None:
+            calls['instance'] = self
+
+        def setOptionValue(self, name, value):
+            calls.setdefault('options', {})[name] = value
+            return 'kOk'
+
+        def passModel(self, model):
+            calls['model'] = model
+            return 'kOk'
+
+        def version(self):
+            return 'fake-1'
+
+        def changeColsBounds(self, count, indices, lower, upper):
+            calls['changed_bounds'] = (
+                count,
+                np.asarray(indices).copy(),
+                np.asarray(lower).copy(),
+                np.asarray(upper).copy(),
+            )
+            return 'kOk'
+
+    class FakeLp:
+        pass
+
+    class FakeSparse:
+        pass
+
+    fake_obj_sense = SimpleNamespace(kMinimize='minimize')
+    fake_matrix_format = SimpleNamespace(kRowwise='rowwise')
+    monkeypatch.setattr(
+        highs_module,
+        '_load_highs',
+        lambda: (
+            FakeHighs,
+            FakeLp,
+            FakeSparse,
+            fake_matrix_format,
+            fake_obj_sense,
+            object(),
+        ),
+    )
+    problem = SorsLinearProblem(
+        model_layer='TEST',
+        matrix=CsrMatrixData(
+            shape=(0, 2),
+            indptr=np.asarray([0], dtype=np.int64),
+            indices=np.asarray([], dtype=np.int32),
+            data=np.asarray([], dtype=float),
+        ),
+        row_lower=np.asarray([], dtype=float),
+        row_upper=np.asarray([], dtype=float),
+        col_lower=np.asarray([0.0, -np.inf], dtype=float),
+        col_upper=np.asarray([1.0, np.inf], dtype=float),
+        objective=np.zeros(2, dtype=float),
+        constraints_grid=pd.DataFrame(),
+        variables_grid=pd.DataFrame(),
+    )
+
+    session = highs_module.HighsSession(
+        problem,
+        time_limit_seconds=12.0,
+        threads=2,
+        solver='ipm',
+        run_crossover='choose',
+    )
+    session.update_column_bounds(
+        np.asarray([0.1, -np.inf]),
+        np.asarray([0.9, np.inf]),
+    )
+
+    assert calls['options']['solver'] == 'ipm'
+    assert calls['options']['run_crossover'] == 'choose'
+    assert calls['options']['threads'] == 2
+    assert calls['options']['time_limit'] == 12.0
+    count, indices, lower, upper = calls['changed_bounds']
+    assert count == 2
+    assert np.array_equal(indices, np.asarray([0, 1], dtype=np.int32))
+    assert lower[0] == 0.1
+    assert lower[1] == -1e30
+    assert upper[0] == 0.9
+    assert upper[1] == 1e30

@@ -41,7 +41,8 @@ class CrosswalkCompilation:
 
 
 class _SparseBuilder:
-    def __init__(self) -> None:
+    def __init__(self, *, open_bound_margin: float = 0.0) -> None:
+        self.open_bound_margin = float(open_bound_margin)
         self.rows: list[list[tuple[int, float]]] = []
         self.lower: list[float] = []
         self.upper: list[float] = []
@@ -59,8 +60,16 @@ class _SparseBuilder:
     ) -> None:
         semantic_lower = float(lower)
         semantic_upper = float(upper)
-        solver_lower = solver_lower_bound(semantic_lower, lower_attained)
-        solver_upper = solver_upper_bound(semantic_upper, upper_attained)
+        solver_lower = solver_lower_bound(
+            semantic_lower,
+            lower_attained,
+            open_margin=self.open_bound_margin,
+        )
+        solver_upper = solver_upper_bound(
+            semantic_upper,
+            upper_attained,
+            open_margin=self.open_bound_margin,
+        )
         combined: dict[int, float] = {}
         for column, coefficient in items:
             combined[int(column)] = combined.get(int(column), 0.0) + float(
@@ -121,7 +130,7 @@ class CrosswalkProblemBuilder(_SparseBuilder):
         config: SorsCrosswalkConfig,
         scenario_id: str,
     ) -> None:
-        super().__init__()
+        super().__init__(open_bound_margin=config.point_tolerance)
         self.bundle = bundle
         self.config = config
         self.scenario_id = scenario_id
@@ -454,7 +463,9 @@ class CrosswalkProblemBuilder(_SparseBuilder):
             return upper
         for (region, class_code, component), row in self.strict_bounds.iterrows():
             semantic_upper = solver_upper_bound(
-                float(row.upper_bound), bool(row.upper_attained)
+                float(row.upper_bound),
+                bool(row.upper_attained),
+                open_margin=self.config.point_tolerance,
             )
             if not isfinite(semantic_upper):
                 continue

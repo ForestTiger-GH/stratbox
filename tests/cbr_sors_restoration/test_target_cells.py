@@ -392,3 +392,195 @@ def test_solver_dependency_failure_has_auditable_proof_records(monkeypatch) -> N
     assert tuple(proof.solver_runs_grid['solve_id']) == proof.proof_ids
     assert set(proof.solver_runs_grid['status']) == {'SOLVER_UNAVAILABLE'}
     assert all(value.endswith(':unavailable') for value in proof.proof_ids)
+
+
+def _constrained_single_cell_subsystem(
+    *,
+    horizon: str = 'REGION_COMPONENT',
+) -> SorsTargetSubsystem:
+    base = _bounds_only_subsystem(0.0, 10.0)
+    problem = SorsLinearProblem(
+        model_layer=base.problem.model_layer,
+        matrix=CsrMatrixData(
+            shape=(1, 1),
+            indptr=np.asarray([0, 1], dtype=np.int64),
+            indices=np.asarray([0], dtype=np.int32),
+            data=np.asarray([1.0], dtype=float),
+        ),
+        row_lower=np.asarray([0.0], dtype=float),
+        row_upper=np.asarray([10.0], dtype=float),
+        col_lower=base.problem.col_lower.copy(),
+        col_upper=base.problem.col_upper.copy(),
+        objective=base.problem.objective.copy(),
+        constraints_grid=pd.DataFrame(
+            [{'constraint_id': 'c1', 'solver_row': 0}]
+        ),
+        variables_grid=base.problem.variables_grid.copy(),
+    )
+    return SorsTargetSubsystem(
+        subsystem_id=f'attempt:{horizon.lower()}',
+        target_id=base.target_id,
+        horizon=horizon,
+        problem=problem,
+        target=base.target,
+        original_solver_rows=(0,),
+        original_solver_columns=(0,),
+        supporting_constraint_ids=('c1',),
+    )
+
+
+def test_retry_repeats_only_failed_direction(monkeypatch) -> None:
+    from stratbox.macrobanks.cbr_sors_restoration.linear.highs import SolveResult
+    from stratbox.macrobanks.cbr_sors_restoration.strict import target_solver
+
+    created: list[str] = []
+
+    class FakeSession:
+        def __init__(
+            self,
+            problem,
+            *,
+            time_limit_seconds,
+            threads,
+            solver='simplex',
+            run_crossover='choose',
+        ) -> None:
+            self.backend = 'fake'
+            self.version = '1'
+            self.solver = solver
+            self.calls: list[bool] = []
+            created.append(solver)
+
+        def solve_target(self, target, *, maximize, include_values=False):
+            self.calls.append(maximize)
+            if self.solver == 'simplex' and maximize:
+                return SolveResult(
+                    success=False,
+                    status='TIME_LIMIT',
+                    raw_status='TIME_LIMIT',
+                    objective_value=None,
+                    values=None,
+                    runtime_seconds=1.0,
+                    simplex_iterations=10,
+                    ipm_iterations=0,
+                )
+            return SolveResult(
+                success=True,
+                status='OPTIMAL',
+                raw_status='OPTIMAL',
+                objective_value=10.0 if maximize else 0.0,
+                values=None,
+                runtime_seconds=0.1,
+                simplex_iterations=1,
+                ipm_iterations=1,
+            )
+
+        def update_column_bounds(self, lower, upper) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(target_solver, 'HighsSession', FakeSession)
+    proof = prove_cell_uniqueness(
+        _constrained_single_cell_subsystem(),
+        SorsCellResolutionConfig(
+            local_solver='simplex',
+            retry_solver='ipm',
+            retry_failed_solve=True,
+        ),
+        RoundingPolicy(step=1.0),
+        point_tolerance=1e-9,
+        attempt_id='attempt:retry',
+    )
+
+    runs = proof.solver_runs_grid
+    assert created == ['simplex', 'ipm']
+    assert list(runs['direction']) == [
+        'MIN_INTERNAL_UNIQUENESS',
+        'MAX_INTERNAL_UNIQUENESS',
+        'MAX_INTERNAL_UNIQUENESS',
+    ]
+    assert list(runs['attempt_number']) == [1, 1, 2]
+    assert tuple(proof.proof_ids) == (
+        'attempt:retry:REGION_COMPONENT:min:attempt1',
+        'attempt:retry:REGION_COMPONENT:max:attempt2',
+    )
+    assert proof.complete
+    assert proof.status == 'MULTIPLE_FEASIBLE_VALUES'
+
+
+def test_global_solver_pool_reuses_model_and_refreshes_bounds(monkeypatch) -> None:
+    from stratbox.macrobanks.cbr_sors_restoration.linear.highs import SolveResult
+    from stratbox.macrobanks.cbr_sors_restoration.strict import target_solver
+
+    sessions: list[object] = []
+
+    class FakeSession:
+        def __init__(
+            self,
+            problem,
+            *,
+            time_limit_seconds,
+            threads,
+            solver='simplex',
+            run_crossover='choose',
+        ) -> None:
+            self.backend = 'fake'
+            self.version = '1'
+            self.solver = solver
+            self.updated_bounds = 0
+            self.closed = False
+            sessions.append(self)
+
+        def solve_target(self, target, *, maximize, include_values=False):
+            return SolveResult(
+                success=True,
+                status='OPTIMAL',
+                raw_status='OPTIMAL',
+                objective_value=10.0 if maximize else 0.0,
+                values=None,
+                runtime_seconds=0.1,
+                simplex_iterations=0,
+                ipm_iterations=1,
+            )
+
+        def update_column_bounds(self, lower, upper) -> None:
+            self.updated_bounds += 1
+
+        def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(target_solver, 'HighsSession', FakeSession)
+    config = SorsCellResolutionConfig(
+        global_solver='ipm',
+        reuse_global_session=True,
+        retry_failed_solve=False,
+    )
+    subsystem = _constrained_single_cell_subsystem(horizon='GLOBAL_CONNECTED')
+    with target_solver.SorsCellSolverPool(config) as pool:
+        first = prove_cell_uniqueness(
+            subsystem,
+            config,
+            RoundingPolicy(step=1.0),
+            point_tolerance=1e-9,
+            attempt_id='attempt:global:1',
+            solver_pool=pool,
+        )
+        second = prove_cell_uniqueness(
+            subsystem,
+            config,
+            RoundingPolicy(step=1.0),
+            point_tolerance=1e-9,
+            attempt_id='attempt:global:2',
+            solver_pool=pool,
+        )
+
+    assert first.complete and second.complete
+    assert len(sessions) == 1
+    assert sessions[0].solver == 'ipm'
+    assert sessions[0].updated_bounds == 1
+    assert sessions[0].closed
+    second_runs = second.solver_runs_grid
+    assert second_runs['session_reused'].astype(bool).all()
+    assert set(second_runs['solver_algorithm']) == {'ipm'}

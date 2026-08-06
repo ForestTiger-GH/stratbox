@@ -95,3 +95,17 @@ def test_national_total_is_supported_as_optional_horizon() -> None:
         horizon_order=('CELL', 'NATIONAL_TOTAL', 'GLOBAL_CONNECTED')
     )
     assert config.horizon_order[1] == 'NATIONAL_TOTAL'
+
+
+def test_cell_solver_strategies_are_explicit_and_validated() -> None:
+    config = SorsCellResolutionConfig()
+    assert config.local_solver == 'simplex'
+    assert config.global_solver == 'ipm'
+    assert config.retry_solver == 'choose'
+    assert config.run_crossover == 'choose'
+    assert config.reuse_global_session
+
+    with pytest.raises(ValueError):
+        SorsCellResolutionConfig(global_solver='magic')
+    with pytest.raises(ValueError):
+        SorsCellResolutionConfig(run_crossover='magic')

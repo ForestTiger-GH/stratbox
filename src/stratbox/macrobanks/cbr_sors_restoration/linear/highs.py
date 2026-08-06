@@ -75,6 +75,8 @@ class HighsSession:
         *,
         time_limit_seconds: float | None,
         threads: int,
+        solver: str = 'simplex',
+        run_crossover: str = 'choose',
     ) -> None:
         (
             Highs,
@@ -91,8 +93,11 @@ class HighsSession:
         self.highs.setOptionValue('output_flag', False)
         self.highs.setOptionValue('threads', int(threads))
         self.highs.setOptionValue('presolve', 'on')
-        self.highs.setOptionValue('solver', 'simplex')
+        self.highs.setOptionValue('solver', str(solver))
+        self.highs.setOptionValue('run_crossover', str(run_crossover))
         self.highs.setOptionValue('random_seed', 0)
+        self.solver = str(solver)
+        self.run_crossover = str(run_crossover)
         if time_limit_seconds is not None:
             self.highs.setOptionValue('time_limit', float(time_limit_seconds))
         matrix = problem.matrix
@@ -124,6 +129,28 @@ class HighsSession:
             raise RuntimeError(f'HiGHS rejected SORS model: {status}')
         self.version = str(self.highs.version())
         self._current_indices = np.asarray([], dtype=np.int32)
+
+
+    def update_column_bounds(
+        self,
+        lower: np.ndarray,
+        upper: np.ndarray,
+    ) -> None:
+        lower = np.asarray(lower, dtype=float)
+        upper = np.asarray(upper, dtype=float)
+        if len(lower) != len(upper):
+            raise ValueError('Column lower/upper bound arrays must have equal length')
+        indices = np.arange(len(lower), dtype=np.int32)
+        effective_lower = np.where(np.isfinite(lower), lower, -1e30).astype(float)
+        effective_upper = np.where(np.isfinite(upper), upper, 1e30).astype(float)
+        status = self.highs.changeColsBounds(
+            int(len(indices)),
+            indices,
+            effective_lower,
+            effective_upper,
+        )
+        if 'kOk' not in str(status):
+            raise RuntimeError(f'HiGHS rejected updated column bounds: {status}')
 
     def _set_cost(self, indices: np.ndarray, coefficients: np.ndarray) -> None:
         indices = np.asarray(indices, dtype=np.int32)

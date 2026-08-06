@@ -10,6 +10,8 @@ from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS, TARGET_M
 _CELL_RESOLUTION_MODES = {'closure', 'targets', 'priority', 'all'}
 _CROSSWALK_MODES = {'disabled', 'feasibility', 'targets', 'all'}
 _CROSSWALK_SCENARIO_POLICIES = {'single', 'feasible_envelope'}
+_HIGHS_SOLVERS = {'choose', 'simplex', 'ipm'}
+_HIGHS_CROSSOVER_MODES = {'off', 'choose', 'on'}
 _DEFAULT_CELL_HORIZONS = (
     'CELL',
     'REGION_COMPONENT',
@@ -76,6 +78,11 @@ class SorsCellResolutionConfig:
     per_solve_time_limit_seconds: float | None = 30.0
     run_time_limit_seconds: float | None = None
     retry_failed_solve: bool = True
+    local_solver: str = 'simplex'
+    global_solver: str = 'ipm'
+    retry_solver: str = 'choose'
+    run_crossover: str = 'choose'
+    reuse_global_session: bool = True
     threads: int = 1
 
     def __post_init__(self) -> None:
@@ -100,6 +107,21 @@ class SorsCellResolutionConfig:
                 raise ValueError(f'{name} must be positive')
         if self.max_target_attempts is not None and self.max_target_attempts < 0:
             raise ValueError('max_target_attempts cannot be negative')
+        for name, value in (
+            ('local_solver', self.local_solver),
+            ('global_solver', self.global_solver),
+            ('retry_solver', self.retry_solver),
+        ):
+            if value not in _HIGHS_SOLVERS:
+                raise ValueError(
+                    f'Unsupported {name} {value!r}; expected one of '
+                    f'{sorted(_HIGHS_SOLVERS)}'
+                )
+        if self.run_crossover not in _HIGHS_CROSSOVER_MODES:
+            raise ValueError(
+                f'Unsupported run_crossover {self.run_crossover!r}; expected one of '
+                f'{sorted(_HIGHS_CROSSOVER_MODES)}'
+            )
         if self.mode == 'targets' and not (
             self.scope.region_codes
             or self.scope.region_names
@@ -186,7 +208,7 @@ class SorsRunConfig:
     as_of_date: str
     publication_step: float = 1.0
     point_tolerance: float = 1e-6
-    rules_version: str = 'sors-rkvs-2026.4'
+    rules_version: str = 'sors-rkvs-2026.5'
     cell_resolution: SorsCellResolutionConfig = field(
         default_factory=SorsCellResolutionConfig
     )

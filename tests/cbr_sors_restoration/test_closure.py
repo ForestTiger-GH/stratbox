@@ -64,3 +64,55 @@ def test_repeated_closure_preserves_existing_proof_metadata() -> None:
     row = repeated.quantities_grid.set_index('quantity_id').loc['a']
     assert row.last_derivation_id == 'derivation:00000001'
     assert row.last_derivation_pass == 1
+
+
+def test_negative_residual_lower_bound_keeps_attained_nonnegativity_zero() -> None:
+    graph = _graph(
+        ('parent', 0.0, 10.0, True, False),
+        [
+            ('a', 0.0, float('inf'), True, False),
+            ('b', 0.0, 5.0, True, False),
+        ],
+    )
+    result = run_deterministic_closure(graph)
+    a = result.quantities_grid.set_index('quantity_id').loc['a']
+
+    assert a.lower_bound == 0.0
+    assert a.lower_attained
+
+
+def test_exact_zero_strict_residual_excludes_zero() -> None:
+    graph = _graph(
+        ('parent', 5.0, 10.0, True, False),
+        [
+            ('a', 0.0, float('inf'), True, False),
+            ('b', 0.0, 5.0, True, False),
+        ],
+    )
+    result = run_deterministic_closure(graph)
+    a = result.quantities_grid.set_index('quantity_id').loc['a']
+
+    assert a.lower_bound == 0.0
+    assert not a.lower_attained
+
+
+def test_negative_child_upper_residual_is_reported_as_conflict() -> None:
+    from stratbox.macrobanks.cbr_sors_restoration.strict.closure import (
+        SorsClosureConflictError,
+    )
+
+    graph = _graph(
+        ('parent', 0.0, 3.0, True, True),
+        [
+            ('a', 0.0, float('inf'), True, False),
+            ('b', 4.0, 4.0, True, True),
+        ],
+    )
+
+    try:
+        run_deterministic_closure(graph)
+    except SorsClosureConflictError as exc:
+        assert not exc.conflicts_grid.empty
+        assert 'a' in set(exc.conflicts_grid['quantity_id'])
+    else:
+        raise AssertionError('Negative residual upper bound must be infeasible')

@@ -118,17 +118,42 @@ def published_bucket(
     )
 
 
-def solver_lower_bound(value: float, attained: bool) -> float:
-    """Convert a semantic lower endpoint to a closed floating-point bound."""
+def solver_lower_bound(
+    value: float,
+    attained: bool,
+    *,
+    open_margin: float = 0.0,
+) -> float:
+    """Convert a semantic lower endpoint to a robust closed solver bound.
+
+    ``nextafter`` preserves the mathematical open interval, but its one-ULP
+    shift is smaller than ordinary LP feasibility tolerances.  ``open_margin``
+    lets production compilers move the bound farther inside the semantic
+    interval while the default keeps the exact adjacent-float behaviour used
+    by low-level publication helpers.
+    """
+
     value = float(value)
     if attained or not isfinite(value):
         return value
-    return float(np.nextafter(value, inf))
+    if open_margin < 0:
+        raise ValueError('open_margin cannot be negative')
+    adjacent = float(np.nextafter(value, inf))
+    return max(adjacent, value + float(open_margin))
 
 
-def solver_upper_bound(value: float, attained: bool) -> float:
-    """Convert a semantic upper endpoint to a closed floating-point bound."""
+def solver_upper_bound(
+    value: float,
+    attained: bool,
+    *,
+    open_margin: float = 0.0,
+) -> float:
+    """Convert a semantic upper endpoint to a robust closed solver bound."""
+
     value = float(value)
     if attained or not isfinite(value):
         return value
-    return float(np.nextafter(value, -inf))
+    if open_margin < 0:
+        raise ValueError('open_margin cannot be negative')
+    adjacent = float(np.nextafter(value, -inf))
+    return min(adjacent, value - float(open_margin))

@@ -227,9 +227,13 @@ def run_deterministic_closure(
                 )
                 child_changed = False
                 if isfinite(upper[parent]):
-                    candidate_upper = max(
-                        0.0,
-                        float(upper[parent]) - (sum_lower - float(lower[child])),
+                    raw_candidate_upper = float(upper[parent]) - (
+                        sum_lower - float(lower[child])
+                    )
+                    candidate_upper = (
+                        0.0
+                        if abs(raw_candidate_upper) <= tolerance
+                        else raw_candidate_upper
                     )
                     other_lower_unattained = lower_unattained_count - int(
                         not bool(lower_attained[child])
@@ -246,15 +250,28 @@ def run_deterministic_closure(
                         if finite_upper[local_position]
                         else 0.0
                     )
-                    candidate_lower = max(0.0, float(lower[parent]) - other_upper)
+                    raw_candidate_lower = float(lower[parent]) - other_upper
+                    candidate_lower = max(0.0, raw_candidate_lower)
                     other_upper_unattained = upper_unattained_finite_count - int(
                         finite_upper[local_position]
                         and not bool(child_upper_flags[local_position])
                     )
+                    residual_lower_attained = bool(
+                        lower_attained[parent] and other_upper_unattained == 0
+                    )
+                    # If the algebraic residual lies strictly below zero, the
+                    # active lower bound is the independent non-negativity
+                    # constraint, whose endpoint zero is attained.  Only an
+                    # exactly-zero strict residual can exclude x = 0.
+                    candidate_lower_attained = (
+                        True
+                        if raw_candidate_lower < -tolerance
+                        else residual_lower_attained
+                    )
                     child_changed = apply_lower(
                         child,
                         candidate_lower,
-                        bool(lower_attained[parent] and other_upper_unattained == 0),
+                        candidate_lower_attained,
                     ) or child_changed
                 if child_changed:
                     changed_quantities.add(child)
