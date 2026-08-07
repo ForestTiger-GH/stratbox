@@ -38,21 +38,19 @@ class _FastZipFile(ZipFile):
 
 _PRIMARY_COLUMNS = (
     'as_of_date', 'region_code', 'class_code', 'metric',
-    'value', 'value_precision', 'identified_value',
-    'identified_value_precision', 'feasibility_confirmed',
-    'lower_bound', 'upper_bound', 'lower_attained', 'upper_attained',
-    'interval_width', 'identification_status', 'derivation_method',
-    'is_strict_fact', 'already_strict_fact', 'is_reconstructed', 'bounds_certified',
-    'value_identified', 'is_final_accepted', 'is_estimate',
-    'is_benchmark_estimate', 'benchmark_value', 'evidence_layer',
-    'evidence_profile', 'mapping_version', 'scenario_ids',
-    'scenario_coverage_complete', 'supporting_relation_ids',
-    'is_zero_at_published_precision', 'is_exact_zero', 'is_lp_certified',
-    'lp_lower_certified', 'lp_upper_certified',
-    'cell_resolution_status', 'cell_largest_horizon',
-    'cell_attempt_id', 'cell_subsystem_id',
-    'closure_pass', 'supporting_constraint_count',
+    'value', 'value_precision', 'published_value', 'exact_value',
+    'publication_status', 'latent_status', 'evidence_method', 'assumption_tier', 'evidence_strength', 'fact_id',
+    'feasibility_confirmed', 'lower_bound', 'upper_bound',
+    'lower_attained', 'upper_attained', 'interval_width',
+    'identification_status', 'derivation_method', 'is_primary_fact',
+    'is_reconstructed', 'bounds_certified', 'value_identified',
+    'is_final_accepted', 'is_estimate', 'is_benchmark_estimate',
+    'benchmark_value', 'evidence_layer', 'evidence_profile', 'mapping_version',
+    'scenario_ids', 'scenario_coverage_complete', 'source_observation_ids',
+    'supporting_partition_ids', 'supporting_relation_ids', 'supporting_fact_ids', 'proof_ids', 'is_zero_at_published_precision', 'is_exact_zero',
+    'is_lp_certified', 'lp_lower_certified', 'lp_upper_certified',
 )
+
 
 _REGION_COLUMNS = (
     'region_code', 'region_name', 'region_order',
@@ -195,12 +193,12 @@ def export_sors_workbook(
         if isinstance(result, SorsRestorationResult)
         else result._strict_result
     )
-    if request.include_strict_facts and strict_source is not None:
+    if request.include_restored_facts and strict_source is not None:
         columns = [
             column for column in _PRIMARY_COLUMNS
-            if column in strict_source.strict_facts_grid
+            if column in strict_source.restored_facts_grid
         ]
-        queue(strict_source.strict_facts_grid[columns], 'Strict_Facts')
+        queue(strict_source.restored_facts_grid[columns], 'Restored_Facts')
     if isinstance(result, SorsCrosswalkResult):
         if request.include_crosswalk_facts:
             columns = [
@@ -221,19 +219,28 @@ def export_sors_workbook(
     if request.include_source_grid and strict_source is not None:
         queue(strict_source.source_grid, 'SourceGrid')
     if request.include_components and strict_source is not None:
-        queue(strict_source.strict_components_grid, 'Components')
+        queue(strict_source.components_grid, 'Components')
     if request.include_fact_ledger and strict_source is not None:
         queue(strict_source.facts_ledger_grid, 'Fact_Ledger')
-        queue(strict_source.current_component_facts_grid, 'Current_Cell_Facts')
-        queue(strict_source.cell_target_plan_grid, 'Cell_Target_Plan')
-    if request.include_cell_attempts and strict_source is not None:
-        queue(strict_source.cell_attempts_grid, 'Cell_Attempts')
-    if request.include_cell_subsystems and strict_source is not None:
-        queue(strict_source.cell_subsystems_grid, 'Cell_Subsystems')
+        queue(strict_source.current_component_facts_grid, 'Current_Component_Facts')
+    if request.include_publication_partitions and strict_source is not None:
+        queue(strict_source.publication_partitions_grid, 'Publication_Partitions')
+    if request.include_publication_tokens and strict_source is not None:
+        queue(strict_source.publication_tokens_grid, 'Publication_Tokens')
+    if request.include_inheritance_events and strict_source is not None:
+        queue(strict_source.inheritance_events_grid, 'Inheritance_Events')
     if request.include_promotion_events and strict_source is not None:
         queue(strict_source.promotion_events_grid, 'Promotions')
     if request.include_fixed_point_passes and strict_source is not None:
         queue(strict_source.fixed_point_passes_grid, 'Fixed_Point_Passes')
+    if request.include_optimization_rounds and strict_source is not None:
+        queue(strict_source.optimization_rounds_grid, 'Optimization_Rounds')
+    if request.include_target_bounds and strict_source is not None:
+        queue(strict_source.target_bounds_grid, 'Target_Bounds')
+    if request.include_rounding_profiles and strict_source is not None:
+        queue(strict_source.rounding_profiles_grid, 'Rounding_Profiles')
+    if request.include_selection_attempts and strict_source is not None:
+        queue(strict_source.selection_attempts_grid, 'Selection_Attempts')
     if request.include_derivations:
         queue(result.derivations_grid, 'Derivations')
     if request.include_constraints:

@@ -92,6 +92,14 @@ def load_sors_sources(
             geography,
         )
 
+    # Portfolio scope is part of source identity/provenance, not merely a run
+    # option.  The current loader handles the total corporate SORS contour; future
+    # SME/IE adapters can emit their own scope without changing publication logic.
+    portfolio_scope = 'CORPORATE_TOTAL'
+    for frame in (regional, national_traditional, national_okved2, fd_okved2, history):
+        if not frame.empty:
+            frame['portfolio_scope'] = portfolio_scope
+
     frames = [regional, national_traditional, national_okved2, fd_okved2]
     if not history.empty:
         frames.append(history)

@@ -1,56 +1,49 @@
 # Result grids
 
-## Основной результат
+## `regional_okved2_grid`
 
-- `regional_okved2_grid` — шесть пользовательских метрик по регионам и классам;
-- `strict_facts_grid` — принятые STRICT-метрики;
-- `strict_components_grid` — четыре базовые РКВС-компоненты и их bounds;
-- `constraints_grid`, `variables_grid`, `solver_runs_grid` — математический proof trail.
+Главный GRID: region × class × metric. `value` берётся из текущего accepted Publication Fact Ledger.
 
-## Поклеточный контур
+Ключевые поля:
 
-### `facts_ledger_grid`
+```text
+value
+publication_status
+latent_status
+evidence_method
+assumption_tier
+evidence_strength
+lower_bound / upper_bound
+source_observation_ids
+supporting_partition_ids
+supporting_fact_ids
+proof_ids
+is_primary_fact
+is_final_accepted
+```
 
-Append-only история продвижений базовых РКВС. Содержит supersession, precision, uniqueness basis, horizon, proof IDs и supporting relations.
+## `restored_facts_grid`
 
-### `current_component_facts_grid`
+Подмножество primary grid, где `is_primary_fact=True`.
 
-Текущая лучшая версия каждого принятого компонента.
+## `facts_ledger_grid`
 
-### `cell_target_plan_grid`
+Append-only история facts, включая supersession более сильным доказательством той же publication value.
 
-Полный каталог 29 920 целей с bounds, scope, priority, cascade score, attempt count и skip reason.
+## `components_grid`
 
-### `cell_attempts_grid`
+Внутренние четыре component quantities с latent bounds, endpoint provenance и publication facts.
 
-Одна строка на попытку цели: статус, самый большой horizon, факт изменения bounds, число новых каскадных фактов и runtime.
+## Audit grids
 
-### `cell_subsystems_grid`
-
-Размер и происхождение каждой cumulative local system:
-
-- число constraints;
-- число variables;
-- nnz;
-- исходные solver rows/columns;
-- supporting constraint IDs.
-
-### `promotion_events_grid`
-
-События записи и улучшения фактов.
-
-### `fixed_point_passes_grid`
-
-Итоги каскадных проходов и причина остановки.
-
-## Ключевые статусы
-
-- `UNIQUE_FEASIBLE_VALUE`;
-- `UNIQUE_AT_PUBLISHED_PRECISION`;
-- `MULTIPLE_FEASIBLE_VALUES`;
-- `SOLVER_INCOMPLETE`;
-- `IDENTIFIED_BEFORE_SOLVER`;
-- `UNRESOLVED_AT_HORIZON`;
-- `UNRESOLVED_GLOBAL`.
-
-Поля `cell_lower_solve_id` и `cell_upper_solve_id` ссылаются на реальные `solve_id` в `solver_runs_grid`.
+- `publication_partitions_grid` — complete/disjoint partitions, через которые разрешена token-localization;
+- `publication_tokens_grid` — текущие supports и lineage Published Mass Tokens;
+- `inheritance_events_grid` — цепочки source-preserving наследования;
+- `promotion_events_grid` — все promotion/supersession событий ledger;
+- `fixed_point_passes_grid` — deterministic publication passes;
+- `optimization_rounds_grid` — outer Solver rounds;
+- `target_bounds_grid` — min/max по strict/publication-constrained и rounding-optimal surfaces;
+- `rounding_profiles_grid` — `tau*`, `L1*`, assumption tier;
+- `selection_attempts_grid` — common-witness joint-batch validation;
+- `solver_runs_grid` — feasibility/min/max/distortion/selection Solver runs;
+- `conflicts_grid` — infeasibility/audit conflicts.

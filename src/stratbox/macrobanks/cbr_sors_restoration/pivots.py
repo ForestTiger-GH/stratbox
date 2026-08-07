@@ -73,7 +73,7 @@ def build_sors_pivot(
         accepted_column = (
             'is_final_accepted'
             if 'is_final_accepted' in selected.columns
-            else 'is_strict_fact'
+            else 'is_primary_fact'
         )
         selected = selected[selected[accepted_column].astype(bool)]
     source_rows = len(selected)

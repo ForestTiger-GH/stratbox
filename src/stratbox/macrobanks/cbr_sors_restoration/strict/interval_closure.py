@@ -11,14 +11,14 @@ from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
 )
 
 
-class SorsClosureConflictError(ValueError):
+class SorsIntervalClosureConflictError(ValueError):
     def __init__(self, conflicts_grid: pd.DataFrame):
         super().__init__('Deterministic SORS interval closure found a conflict')
         self.conflicts_grid = conflicts_grid
 
 
 @dataclass(frozen=True)
-class SorsClosureResult:
+class SorsIntervalClosureResult:
     quantities_grid: pd.DataFrame
     derivations_grid: pd.DataFrame
     conflicts_grid: pd.DataFrame
@@ -26,13 +26,13 @@ class SorsClosureResult:
     bound_updates: int
 
 
-def run_deterministic_closure(
+def run_interval_closure(
     graph: SorsQuantityGraph,
     *,
     tolerance: float = 1e-9,
     max_passes: int = 100,
     seed_quantity_ids: tuple[str, ...] | None = None,
-) -> SorsClosureResult:
+) -> SorsIntervalClosureResult:
     quantities = graph.quantities_grid.copy().reset_index(drop=True)
     quantity_ids = tuple(quantities['quantity_id'].astype(str))
     positions = {quantity_id: i for i, quantity_id in enumerate(quantity_ids)}
@@ -40,14 +40,23 @@ def run_deterministic_closure(
     upper = quantities['upper_bound'].astype(float).to_numpy(copy=True)
     lower_attained = quantities['lower_attained'].astype(bool).to_numpy(copy=True)
     upper_attained = quantities['upper_attained'].astype(bool).to_numpy(copy=True)
+    lower_tier = (
+        quantities['lower_assumption_tier'].fillna(0).astype(int).to_numpy(copy=True)
+        if 'lower_assumption_tier' in quantities
+        else np.zeros(len(quantities), dtype=np.int16)
+    )
+    upper_tier = (
+        quantities['upper_assumption_tier'].fillna(0).astype(int).to_numpy(copy=True)
+        if 'upper_assumption_tier' in quantities
+        else np.zeros(len(quantities), dtype=np.int16)
+    )
 
     relations: list[dict[str, object]] = []
     adjacent: list[list[int]] = [[] for _ in quantity_ids]
     for relation_position, row in enumerate(graph.relations_grid.itertuples(index=False)):
         parent = positions[str(row.parent_quantity_id)]
-        children = np.asarray(
-            [positions[str(quantity_id)] for quantity_id in row.child_quantity_ids],
-            dtype=np.int32,
+        children = tuple(
+            positions[str(quantity_id)] for quantity_id in row.child_quantity_ids
         )
         relations.append(
             {
@@ -66,26 +75,47 @@ def run_deterministic_closure(
     conflicts: list[dict[str, object]] = []
     update_count = 0
 
-    def apply_lower(index: int, candidate: float, attained: bool) -> bool:
+    def apply_lower(index: int, candidate: float, attained: bool, tier: int) -> bool:
         current = float(lower[index])
+        current_attained = bool(lower_attained[index])
+        current_tier = int(lower_tier[index])
+        candidate_tier = int(tier)
         if candidate > current + tolerance:
             lower[index] = candidate
             lower_attained[index] = attained
+            lower_tier[index] = candidate_tier
             return True
-        if abs(candidate - current) <= tolerance and lower_attained[index] and not attained:
-            lower_attained[index] = False
-            return True
+        if abs(candidate - current) <= tolerance:
+            # Equal constraints intersect.  An open endpoint dominates a closed
+            # endpoint; otherwise the strongest independent proof may own the
+            # same numerical bound.
+            if current_attained and not attained:
+                lower_attained[index] = False
+                lower_tier[index] = candidate_tier
+                return True
+            if current_attained == attained and candidate_tier < current_tier:
+                lower_tier[index] = candidate_tier
+                return True
         return False
 
-    def apply_upper(index: int, candidate: float, attained: bool) -> bool:
+    def apply_upper(index: int, candidate: float, attained: bool, tier: int) -> bool:
         current = float(upper[index])
+        current_attained = bool(upper_attained[index])
+        current_tier = int(upper_tier[index])
+        candidate_tier = int(tier)
         if candidate < current - tolerance:
             upper[index] = candidate
             upper_attained[index] = attained
+            upper_tier[index] = candidate_tier
             return True
-        if abs(candidate - current) <= tolerance and upper_attained[index] and not attained:
-            upper_attained[index] = False
-            return True
+        if abs(candidate - current) <= tolerance:
+            if current_attained and not attained:
+                upper_attained[index] = False
+                upper_tier[index] = candidate_tier
+                return True
+            if current_attained == attained and candidate_tier < current_tier:
+                upper_tier[index] = candidate_tier
+                return True
         return False
 
     def record(
@@ -119,6 +149,8 @@ def run_deterministic_closure(
                 'previous_upper_attained': previous[3],
                 'new_lower_attained': bool(lower_attained[result_index]),
                 'new_upper_attained': bool(upper_attained[result_index]),
+                'new_lower_assumption_tier': int(lower_tier[result_index]),
+                'new_upper_assumption_tier': int(upper_tier[result_index]),
             }
         )
 
@@ -158,16 +190,61 @@ def run_deterministic_closure(
             relation = relations[relation_position]
             parent = int(relation['parent'])
             children = relation['children']
-            assert isinstance(children, np.ndarray)
+            assert isinstance(children, tuple)
 
-            child_lower = lower[children]
-            child_upper = upper[children]
-            child_lower_flags = lower_attained[children]
-            child_upper_flags = upper_attained[children]
-            sum_lower = float(child_lower.sum())
-            finite_upper = np.isfinite(child_upper)
-            upper_inf_count = int((~finite_upper).sum())
-            sum_finite_upper = float(child_upper[finite_upper].sum())
+            # Scalar accumulation is intentionally used here.  The relation graph
+            # contains tens of thousands of tiny (1/2/4-child) equations; creating
+            # NumPy slices and temporary arrays for every relation dominated real
+            # SORS runtime.  One O(edges) scalar scan is markedly faster and also
+            # gives us all flag/tier aggregates needed by residual propagation.
+            sum_lower = 0.0
+            sum_finite_upper = 0.0
+            upper_inf_count = 0
+            lower_unattained_count = 0
+            upper_unattained_finite_count = 0
+            max_lower_tier = 0
+            second_lower_tier = 0
+            max_lower_count = 0
+            max_upper_tier = 0
+            second_upper_tier = 0
+            max_upper_count = 0
+            parent_lower_attained = True
+            parent_upper_attained = True
+            for child in children:
+                lo = float(lower[child])
+                hi = float(upper[child])
+                lo_attained = bool(lower_attained[child])
+                hi_attained = bool(upper_attained[child])
+                lo_tier = int(lower_tier[child])
+                hi_tier = int(upper_tier[child])
+                sum_lower += lo
+                if not lo_attained:
+                    lower_unattained_count += 1
+                    parent_lower_attained = False
+                if isfinite(hi):
+                    sum_finite_upper += hi
+                    if not hi_attained:
+                        upper_unattained_finite_count += 1
+                        parent_upper_attained = False
+                else:
+                    upper_inf_count += 1
+                    parent_upper_attained = False
+                if lo_tier > max_lower_tier:
+                    second_lower_tier = max_lower_tier
+                    max_lower_tier = lo_tier
+                    max_lower_count = 1
+                elif lo_tier == max_lower_tier:
+                    max_lower_count += 1
+                elif lo_tier > second_lower_tier:
+                    second_lower_tier = lo_tier
+                if hi_tier > max_upper_tier:
+                    second_upper_tier = max_upper_tier
+                    max_upper_tier = hi_tier
+                    max_upper_count = 1
+                elif hi_tier == max_upper_tier:
+                    max_upper_count += 1
+                elif hi_tier > second_upper_tier:
+                    second_upper_tier = hi_tier
             sum_upper = inf if upper_inf_count else sum_finite_upper
 
             previous = (
@@ -179,12 +256,14 @@ def run_deterministic_closure(
             parent_changed = apply_lower(
                 parent,
                 sum_lower,
-                bool(child_lower_flags.all()),
+                parent_lower_attained,
+                max_lower_tier,
             )
             parent_changed = apply_upper(
                 parent,
                 sum_upper,
-                bool(upper_inf_count == 0 and child_upper_flags.all()),
+                bool(upper_inf_count == 0 and parent_upper_attained),
+                max_upper_tier,
             ) or parent_changed
             if parent_changed:
                 changed_quantities.add(parent)
@@ -204,21 +283,10 @@ def run_deterministic_closure(
                 )
                 check_interval(parent, str(relation['relation_id']))
 
-            child_lower = lower[children]
-            child_upper = upper[children]
-            child_lower_flags = lower_attained[children]
-            child_upper_flags = upper_attained[children]
-            sum_lower = float(child_lower.sum())
-            lower_unattained_count = int((~child_lower_flags).sum())
-            finite_upper = np.isfinite(child_upper)
-            upper_inf_count = int((~finite_upper).sum())
-            sum_finite_upper = float(child_upper[finite_upper].sum())
-            upper_unattained_finite_count = int(
-                ((~child_upper_flags) & finite_upper).sum()
-            )
-
-            for local_position, child_raw in enumerate(children):
-                child = int(child_raw)
+            # Use the snapshot aggregates above for every sibling in this
+            # relation.  Any child tightened below schedules the relation again in
+            # the next closure wave, matching the previous fixed-point semantics.
+            for child in children:
                 previous = (
                     float(lower[child]),
                     float(upper[child]),
@@ -238,23 +306,36 @@ def run_deterministic_closure(
                     other_lower_unattained = lower_unattained_count - int(
                         not bool(lower_attained[child])
                     )
+                    child_lower_tier = int(lower_tier[child])
+                    other_lower_max = (
+                        second_lower_tier
+                        if child_lower_tier == max_lower_tier and max_lower_count == 1
+                        else max_lower_tier
+                    )
+                    candidate_upper_tier = max(
+                        int(upper_tier[parent]),
+                        other_lower_max,
+                    )
                     child_changed = apply_upper(
                         child,
                         candidate_upper,
                         bool(upper_attained[parent] and other_lower_unattained == 0),
+                        candidate_upper_tier,
                     )
-                other_inf_count = upper_inf_count - int(not finite_upper[local_position])
+                child_upper_value = float(upper[child])
+                child_upper_finite = isfinite(child_upper_value)
+                other_inf_count = upper_inf_count - int(not child_upper_finite)
                 if other_inf_count == 0:
                     other_upper = sum_finite_upper - (
-                        float(child_upper[local_position])
-                        if finite_upper[local_position]
+                        child_upper_value
+                        if child_upper_finite
                         else 0.0
                     )
                     raw_candidate_lower = float(lower[parent]) - other_upper
                     candidate_lower = max(0.0, raw_candidate_lower)
                     other_upper_unattained = upper_unattained_finite_count - int(
-                        finite_upper[local_position]
-                        and not bool(child_upper_flags[local_position])
+                        child_upper_finite
+                        and not bool(upper_attained[child])
                     )
                     residual_lower_attained = bool(
                         lower_attained[parent] and other_upper_unattained == 0
@@ -268,10 +349,24 @@ def run_deterministic_closure(
                         if raw_candidate_lower < -tolerance
                         else residual_lower_attained
                     )
+                    if raw_candidate_lower < -tolerance:
+                        candidate_lower_tier = 0
+                    else:
+                        child_upper_tier = int(upper_tier[child])
+                        other_upper_max = (
+                            second_upper_tier
+                            if child_upper_tier == max_upper_tier and max_upper_count == 1
+                            else max_upper_tier
+                        )
+                        candidate_lower_tier = max(
+                            int(lower_tier[parent]),
+                            other_upper_max,
+                        )
                     child_changed = apply_lower(
                         child,
                         candidate_lower,
                         candidate_lower_attained,
+                        candidate_lower_tier,
                     ) or child_changed
                 if child_changed:
                     changed_quantities.add(child)
@@ -288,7 +383,7 @@ def run_deterministic_closure(
 
         if conflicts:
             conflict_grid = pd.DataFrame(conflicts).drop_duplicates('conflict_id')
-            raise SorsClosureConflictError(conflict_grid)
+            raise SorsIntervalClosureConflictError(conflict_grid)
         if not changed_quantities:
             break
         for quantity_index in changed_quantities:
@@ -303,6 +398,8 @@ def run_deterministic_closure(
     quantities['upper_bound'] = upper
     quantities['lower_attained'] = lower_attained
     quantities['upper_attained'] = upper_attained
+    quantities['lower_assumption_tier'] = lower_tier.astype(int)
+    quantities['upper_assumption_tier'] = upper_tier.astype(int)
     existing_id = (
         quantities['last_derivation_id'].copy()
         if 'last_derivation_id' in quantities
@@ -342,7 +439,7 @@ def run_deterministic_closure(
         quantities['last_derivation_id'] = existing_id
         quantities['last_derivation_pass'] = existing_pass
         quantities['last_derivation_support_count'] = existing_support
-    return SorsClosureResult(
+    return SorsIntervalClosureResult(
         quantities_grid=quantities,
         derivations_grid=pd.DataFrame(derivations),
         conflicts_grid=pd.DataFrame(conflicts),
@@ -351,7 +448,7 @@ def run_deterministic_closure(
     )
 
 
-class SorsClosureState:
+class SorsIntervalClosureState:
     """Persistent closure state for the RKVS fixed-point engine."""
 
     def __init__(
@@ -377,6 +474,61 @@ class SorsClosureState:
         if expected != received:
             raise ValueError('Closure state quantity ordering cannot change')
         self.quantities_grid = quantities_grid.copy()
+
+    def add_relations(self, relations_grid: pd.DataFrame) -> int:
+        """Add exact deterministic relations while preserving quantity identity.
+
+        Publication hierarchy equations are compiled only after source supports
+        have been validated as complete/disjoint.  Repeated publication fixed-point
+        waves may call this method again; relation IDs therefore make the operation
+        idempotent.
+        """
+
+        if relations_grid is None or relations_grid.empty:
+            return 0
+        required = {
+            'relation_id', 'relation_kind', 'parent_quantity_id',
+            'child_quantity_ids', 'source_observation_ids',
+        }
+        missing = sorted(required - set(relations_grid.columns))
+        if missing:
+            raise ValueError(f'Closure relation grid is missing columns: {missing}')
+        known_quantities = set(self.quantities_grid['quantity_id'].astype(str))
+        existing_ids = set(self._relations_grid['relation_id'].astype(str))
+        new_rows: list[dict[str, object]] = []
+        for row in relations_grid.itertuples(index=False):
+            relation_id = str(row.relation_id)
+            if relation_id in existing_ids:
+                continue
+            parent = str(row.parent_quantity_id)
+            children = tuple(str(value) for value in row.child_quantity_ids)
+            unknown = ({parent, *children} - known_quantities)
+            if unknown:
+                raise ValueError(
+                    f'Closure relation {relation_id} references unknown quantities: '
+                    f'{tuple(sorted(unknown))[:10]}'
+                )
+            new_rows.append(
+                {
+                    'relation_id': relation_id,
+                    'relation_kind': str(row.relation_kind),
+                    'parent_quantity_id': parent,
+                    'child_quantity_ids': children,
+                    'source_observation_ids': tuple(
+                        str(value)
+                        for value in (getattr(row, 'source_observation_ids', ()) or ())
+                    ),
+                }
+            )
+            existing_ids.add(relation_id)
+        if not new_rows:
+            return 0
+        self._relations_grid = pd.concat(
+            [self._relations_grid, pd.DataFrame(new_rows)],
+            ignore_index=True,
+            sort=False,
+        )
+        return len(new_rows)
 
     def _offset_derivations(
         self,
@@ -420,13 +572,13 @@ class SorsClosureState:
         self,
         *,
         seed_quantity_ids: tuple[str, ...] | None = None,
-    ) -> SorsClosureResult:
+    ) -> SorsIntervalClosureResult:
         graph = SorsQuantityGraph(
             self.quantities_grid,
             self._relations_grid,
             self._bindings_grid,
         )
-        result = run_deterministic_closure(
+        result = run_interval_closure(
             graph,
             tolerance=self.tolerance,
             max_passes=self.max_passes,
@@ -445,7 +597,7 @@ class SorsClosureState:
         self.conflicts_grid = result.conflicts_grid
         self.total_passes += result.passes
         self.total_bound_updates += result.bound_updates
-        return SorsClosureResult(
+        return SorsIntervalClosureResult(
             quantities_grid=self.quantities_grid.copy(),
             derivations_grid=derivations,
             conflicts_grid=result.conflicts_grid,

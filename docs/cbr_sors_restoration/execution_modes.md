@@ -1,49 +1,12 @@
-# Режимы выполнения
+# Режимы исполнения
 
-## `closure`
+Первый deterministic publication fixed point выполняется всегда. `optimization.mode` управляет только последующим Solver-поиском.
 
-Выполняются source validation, quantity graph, deterministic closure и глобальная feasibility. Поклеточные LP не запускаются. Это безопасный производственный режим по умолчанию.
+- `none` — deterministic fixed point + global feasibility; без min/max targets.
+- `targets` — только явно заданный `SorsTargetScope` по регионам/классам/метрикам.
+- `priority` — до `max_targets` наиболее перспективных unresolved targets; узкие finite ranges выше широких, user-facing metrics выше internal components.
+- `all` — exhaustive target catalog; `max_targets` должен быть `None`.
 
-## `targets`
+`include_internal_components=True` разрешает использовать компоненты как внутренние targets каскада. Основным объектом восстановления остаются шесть published metrics.
 
-Разрешаются только РКВС указанной области `SorsCellScope`. Требуется хотя бы один явный фильтр региона или класса. Компоненты можно ограничить отдельно.
-
-## `priority`
-
-Вся допустимая область ранжируется по:
-
-- минимальному числу нерешённых членов соседнего уравнения;
-- текущему числу публикационных buckets;
-- ожидаемому cascade score;
-- числу смежных отношений.
-
-Запускается ограниченный бюджет `max_target_attempts`.
-
-## `all`
-
-Исчерпывающая очередь всех ещё нерешённых базовых РКВС. Режим потенциально дорогой: каждая цель может пройти несколько horizons и две внутренние LP на horizon.
-
-## Лимиты и Solver strategy
-
-- `max_attempts_per_target` — повторные попытки цели после появления новых фактов;
-- `max_fixed_point_passes` — число каскадных кругов;
-- `per_solve_time_limit_seconds` — лимит одного Solver-запуска;
-- `run_time_limit_seconds` — общий лимит target engine;
-- `local_solver` — алгоритм HiGHS для локальных проекций, по умолчанию `simplex`;
-- `global_solver` — алгоритм для `GLOBAL_CONNECTED`, по умолчанию `ipm`;
-- `retry_solver` — алгоритм повторной попытки незавершённого направления;
-- `run_crossover` — политика crossover после IPM;
-- `reuse_global_session` — переиспользование одной загруженной глобальной модели между целями;
-- `retry_failed_solve` — повторяется только направление `MIN` или `MAX`, которое не завершилось. Уже успешное направление не пересчитывается.
-
-Глобальная Solver-сессия обновляет только column bounds после продвижения новых фактов. Sparse-матрица и identity колонок сохраняются. Локальные подсистемы остаются короткоживущими, поскольку их набор строк зависит от цели и горизонта.
-
-## Численная семантика открытых интервалов
-
-Публикационный интервал имеет открытый верхний endpoint. Обычная LP использует закрытые bounds, поэтому compiler сдвигает не достигнутый endpoint внутрь допустимого интервала на численный margin `point_tolerance`. Это исключает принятие Solver-точки на запрещённой границе при стандартной feasibility tolerance HiGHS.
-
-Semantic bounds и признаки `lower_attained` / `upper_attained` остаются в quantity и constraint grids. Solver-safe bounds существуют только в скомпилированной LP.
-
-## Crosswalk
-
-Crosswalk сохраняет собственные режимы и result-контракт. Он не включается в STRICT target engine автоматически.
+`SorsSelectionPolicy` управляет только последним controlled selection tier и никак не меняет numerical tolerance или официальный publication step.

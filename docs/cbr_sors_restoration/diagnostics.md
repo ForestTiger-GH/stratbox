@@ -1,36 +1,15 @@
 # Диагностика
 
-## Глобальный STRICT status
+При проверке расчёта идти сверху вниз:
 
-- `OPTIMAL` — feasibility подтверждена;
-- `INFEASIBLE` — несовместимость доказана;
-- `SOLVER_UNAVAILABLE` — официальный HiGHS недоступен;
-- `TIME_LIMIT`/`ITERATION_LIMIT` — доказательство не завершено.
+1. `summary.strict_status` и `conflicts_grid` — подтверждена ли latent feasibility.
+2. `fixed_point_passes_grid` — сколько bounds/facts дал deterministic cycle и почему остановился.
+3. `facts_ledger_grid` — точный `evidence_method`, `assumption_tier`, supersession и proof lineage.
+4. `publication_tokens_grid` — root source/fact, текущий region/class support, anchor quantities и supporting partitions одного Published Mass Token.
+5. `inheritance_events_grid` — локализации токена и singleton promotions; неизвестный child никогда не получает parent-value только из нулевых siblings.
+6. `target_bounds_grid` — диапазоны target на соответствующей evidence surface.
+7. `rounding_profiles_grid` — фактический масштаб unavoidable rounding distortion (`tau*`, `L1*`).
+8. `selection_attempts_grid` — какие common-witness joint batches были приняты/отклонены.
+9. `solver_runs_grid` — Solver status/runtime/iteration counts.
 
-Незавершённый статус не трактуется как infeasibility и блокирует продвижение Fact Ledger.
-
-## Поклеточные статусы
-
-`cell_attempts_grid` показывает, на каком horizon цель остановилась. `cell_subsystems_grid` позволяет проверить, какие официальные constraints вошли в локальную систему. `solver_runs_grid` содержит отдельные служебные MIN/MAX solve IDs.
-
-## Fixed point
-
-`fixed_point_passes_grid` содержит:
-
-- target attempts;
-- bound updates;
-- new facts;
-- resolved targets;
-- cumulative facts;
-- stop reason.
-
-Нормальные причины остановки:
-
-- `NO_NEW_BOUNDS_OR_FACTS`;
-- `TARGET_BUDGET_EXHAUSTED`;
-- `RUN_TIME_LIMIT`;
-- `FIXED_POINT_PASS_LIMIT`.
-
-## Crosswalk
-
-Crosswalk conflicts остаются в `SorsCrosswalkResult.conflicts_grid`. Они не влияют на официальный STRICT status.
+Если факт выглядит слишком сильным, прежде всего проверить `assumption_tier`: tier никогда не должен уменьшаться при выводе, который зависит от более слабой premise. Независимый более сильный proof может supersede старый факт и тогда tier законно снижается.

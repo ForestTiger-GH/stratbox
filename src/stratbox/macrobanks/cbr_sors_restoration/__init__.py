@@ -1,20 +1,25 @@
 """Evidence-preserving regional OKVED2 reconstruction from CBR SORS tables."""
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
-    SorsCellResolutionConfig,
-    SorsCellScope,
     SorsCrosswalkConfig,
+    SorsDeterministicConfig,
+    SorsOptimizationConfig,
     SorsPivotRequest,
     SorsRunConfig,
+    SorsSelectionPolicy,
     SorsSourceBundle,
     SorsSourceFiles,
     SorsTargetScope,
     SorsWorkbookRequest,
 )
-from stratbox.macrobanks.cbr_sors_restoration.crosswalk.operations import (
-    run_sors_crosswalk,
-)
+from stratbox.macrobanks.cbr_sors_restoration.crosswalk.operations import run_sors_crosswalk
 from stratbox.macrobanks.cbr_sors_restoration.export import export_sors_workbook
+from stratbox.macrobanks.cbr_sors_restoration.optimization import (
+    SorsOptimizationFixedPointLimitError,
+)
+from stratbox.macrobanks.cbr_sors_restoration.publication import (
+    SorsPublicationFixedPointLimitError,
+)
 from stratbox.macrobanks.cbr_sors_restoration.operations import run_sors_restoration
 from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
 from stratbox.macrobanks.cbr_sors_restoration.results import (
@@ -27,15 +32,18 @@ from stratbox.macrobanks.cbr_sors_restoration.results import (
 from stratbox.macrobanks.cbr_sors_restoration.sources import load_sors_sources
 
 __all__ = [
-    'SorsCellResolutionConfig',
-    'SorsCellScope',
     'SorsCrosswalkConfig',
     'SorsCrosswalkResult',
+    'SorsDeterministicConfig',
+    'SorsOptimizationConfig',
+    'SorsOptimizationFixedPointLimitError',
     'SorsPivotRequest',
+    'SorsPublicationFixedPointLimitError',
     'SorsPivotResult',
     'SorsRestorationResult',
     'SorsRunConfig',
     'SorsRunSummary',
+    'SorsSelectionPolicy',
     'SorsSourceBundle',
     'SorsSourceFiles',
     'SorsTargetScope',

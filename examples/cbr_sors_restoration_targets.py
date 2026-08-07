@@ -1,8 +1,8 @@
 from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsCellResolutionConfig,
-    SorsCellScope,
+    SorsOptimizationConfig,
     SorsRunConfig,
     SorsSourceFiles,
+    SorsTargetScope,
     run_sors_restoration,
 )
 
@@ -14,16 +14,19 @@ files = SorsSourceFiles(
 )
 config = SorsRunConfig(
     as_of_date='2026-06-01',
-    cell_resolution=SorsCellResolutionConfig(
+    optimization=SorsOptimizationConfig(
         mode='targets',
-        scope=SorsCellScope(
+        scope=SorsTargetScope(
             region_names=('Белгородская область',),
             class_codes=('01',),
-            components=('overdue_rub',),
+            metrics=('debt_rub', 'overdue_rub'),
         ),
+        max_targets=20,
     ),
 )
 result = run_sors_restoration(files, config)
-print(result.current_component_facts_grid)
-print(result.cell_attempts_grid)
-print(result.cell_subsystems_grid)
+print(result.regional_okved2_grid)
+print(result.facts_ledger_grid)
+print(result.fixed_point_passes_grid)
+print(result.target_bounds_grid)
+print(result.rounding_profiles_grid)

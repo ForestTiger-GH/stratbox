@@ -5,24 +5,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS, TARGET_METRICS
+from stratbox.macrobanks.cbr_sors_restoration.schema import TARGET_METRICS
 
-_CELL_RESOLUTION_MODES = {'closure', 'targets', 'priority', 'all'}
+_OPTIMIZATION_MODES = {'none', 'targets', 'priority', 'all'}
 _CROSSWALK_MODES = {'disabled', 'feasibility', 'targets', 'all'}
 _CROSSWALK_SCENARIO_POLICIES = {'single', 'feasible_envelope'}
 _HIGHS_SOLVERS = {'choose', 'simplex', 'ipm'}
 _HIGHS_CROSSOVER_MODES = {'off', 'choose', 'on'}
-_DEFAULT_CELL_HORIZONS = (
-    'CELL',
-    'REGION_COMPONENT',
-    'REGION_CROSS_METRIC',
-    'REGION_PARENT',
-    'FD_SECTION',
-    'FEDERAL_DISTRICT_TOTAL',
-    'NATIONAL_CLASS',
-    'GLOBAL_CONNECTED',
-)
-_KNOWN_CELL_HORIZONS = set(_DEFAULT_CELL_HORIZONS) | {'NATIONAL_TOTAL'}
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,8 +25,6 @@ class SorsSourceFiles:
 
 @dataclass(frozen=True, slots=True)
 class SorsTargetScope:
-    """Scope for six published metrics and the separate crosswalk API."""
-
     region_codes: tuple[str, ...] = ()
     region_names: tuple[str, ...] = ()
     class_codes: tuple[str, ...] = ()
@@ -50,98 +37,99 @@ class SorsTargetScope:
 
 
 @dataclass(frozen=True, slots=True)
-class SorsCellScope:
-    """Scope of base RKVS cells: region × OKVED2 class × money component."""
+class SorsDeterministicConfig:
+    """Cheap publication fixed point executed before and after Solver waves."""
 
-    region_codes: tuple[str, ...] = ()
-    region_names: tuple[str, ...] = ()
-    class_codes: tuple[str, ...] = ()
-    components: tuple[str, ...] = COMPONENTS
+    max_fixed_point_passes: int = 100
+    interval_closure_max_passes: int = 100
+    inheritance_enabled: bool = True
 
     def __post_init__(self) -> None:
-        unknown = sorted(set(self.components) - set(COMPONENTS))
-        if unknown:
-            raise ValueError(f'Unknown SORS RKVS components: {unknown}')
+        if self.max_fixed_point_passes <= 0:
+            raise ValueError('max_fixed_point_passes must be positive')
+        if self.interval_closure_max_passes <= 0:
+            raise ValueError('interval_closure_max_passes must be positive')
 
 
 @dataclass(frozen=True, slots=True)
-class SorsCellResolutionConfig:
-    """Target-centred fixed-point proof engine for individual RKVS cells."""
+class SorsSelectionPolicy:
+    """Controlled last-tier choice inside the rounding-optimal solution face."""
 
-    mode: str = 'closure'
-    scope: SorsCellScope = field(default_factory=SorsCellScope)
-    max_target_attempts: int | None = None
-    max_attempts_per_target: int = 3
-    max_fixed_point_passes: int = 20
-    horizon_order: tuple[str, ...] = _DEFAULT_CELL_HORIZONS
-    accept_published_bucket: bool = True
+    enabled: bool = True
+    max_selection_width_mln: float = 3.0
+    max_selection_width_ratio: float | None = 0.01
+    max_linf_degradation_mln: float = 1e-6
+    max_l1_degradation_mln: float = 1e-6
+    max_joint_selection_targets: int = 25
+
+    def __post_init__(self) -> None:
+        if self.max_selection_width_mln <= 0:
+            raise ValueError('max_selection_width_mln must be positive')
+        if (
+            self.max_selection_width_ratio is not None
+            and self.max_selection_width_ratio <= 0
+        ):
+            raise ValueError('max_selection_width_ratio must be positive when set')
+        if self.max_linf_degradation_mln < 0 or self.max_l1_degradation_mln < 0:
+            raise ValueError('rounding objective degradation budgets cannot be negative')
+        if self.max_joint_selection_targets <= 0:
+            raise ValueError('max_joint_selection_targets must be positive')
+
+
+@dataclass(frozen=True, slots=True)
+class SorsOptimizationConfig:
+    """Optimization waves after deterministic publication closure is exhausted."""
+
+    mode: str = 'none'
+    scope: SorsTargetScope = field(default_factory=SorsTargetScope)
+    max_targets: int | None = 250
+    max_fixed_point_rounds: int = 20
+    include_internal_components: bool = True
+    strict_minmax_enabled: bool = True
+    rounding_optimal_enabled: bool = True
+    selection: SorsSelectionPolicy = field(default_factory=SorsSelectionPolicy)
     per_solve_time_limit_seconds: float | None = 30.0
-    run_time_limit_seconds: float | None = None
-    retry_failed_solve: bool = True
-    local_solver: str = 'simplex'
-    global_solver: str = 'ipm'
-    retry_solver: str = 'choose'
+    solver: str = 'simplex'
+    rounding_solver: str = 'ipm'
     run_crossover: str = 'choose'
-    reuse_global_session: bool = True
     threads: int = 1
 
     def __post_init__(self) -> None:
-        if self.mode not in _CELL_RESOLUTION_MODES:
+        if self.mode not in _OPTIMIZATION_MODES:
             raise ValueError(
-                f'Unsupported SORS cell-resolution mode {self.mode!r}; '
-                f'expected one of {sorted(_CELL_RESOLUTION_MODES)}'
+                f'Unsupported SORS optimization mode {self.mode!r}; '
+                f'expected one of {sorted(_OPTIMIZATION_MODES)}'
             )
-        if not self.horizon_order:
-            raise ValueError('At least one RKVS expansion horizon is required')
-        unknown_horizons = sorted(set(self.horizon_order) - _KNOWN_CELL_HORIZONS)
-        if unknown_horizons:
-            raise ValueError(f'Unknown RKVS expansion horizons: {unknown_horizons}')
-        if len(set(self.horizon_order)) != len(self.horizon_order):
-            raise ValueError('RKVS expansion horizons must be unique')
-        for name, value in (
-            ('max_attempts_per_target', self.max_attempts_per_target),
-            ('max_fixed_point_passes', self.max_fixed_point_passes),
-            ('threads', self.threads),
+        if self.max_fixed_point_rounds <= 0 or self.threads <= 0:
+            raise ValueError('Optimization round limit and threads must be positive')
+        if self.max_targets is not None and self.max_targets < 0:
+            raise ValueError('max_targets cannot be negative')
+        if self.mode == 'targets' and not (
+            self.scope.region_codes or self.scope.region_names or self.scope.class_codes
         ):
-            if value <= 0:
-                raise ValueError(f'{name} must be positive')
-        if self.max_target_attempts is not None and self.max_target_attempts < 0:
-            raise ValueError('max_target_attempts cannot be negative')
+            raise ValueError('targets optimization requires an explicit region or class scope')
+        if self.mode == 'priority' and self.max_targets is None:
+            raise ValueError('priority optimization requires max_targets')
+        if self.mode == 'all' and self.max_targets is not None:
+            raise ValueError('all optimization is exhaustive; max_targets must be None')
         for name, value in (
-            ('local_solver', self.local_solver),
-            ('global_solver', self.global_solver),
-            ('retry_solver', self.retry_solver),
+            ('solver', self.solver),
+            ('rounding_solver', self.rounding_solver),
         ):
             if value not in _HIGHS_SOLVERS:
                 raise ValueError(
-                    f'Unsupported {name} {value!r}; expected one of '
-                    f'{sorted(_HIGHS_SOLVERS)}'
+                    f'Unsupported {name} {value!r}; expected one of {sorted(_HIGHS_SOLVERS)}'
                 )
         if self.run_crossover not in _HIGHS_CROSSOVER_MODES:
             raise ValueError(
                 f'Unsupported run_crossover {self.run_crossover!r}; expected one of '
                 f'{sorted(_HIGHS_CROSSOVER_MODES)}'
             )
-        if self.mode == 'targets' and not (
-            self.scope.region_codes
-            or self.scope.region_names
-            or self.scope.class_codes
+        if (
+            self.per_solve_time_limit_seconds is not None
+            and self.per_solve_time_limit_seconds <= 0
         ):
-            raise ValueError(
-                'targets cell resolution requires an explicit region or class scope'
-            )
-        if self.mode == 'priority' and self.max_target_attempts is None:
-            raise ValueError('priority cell resolution requires max_target_attempts')
-        if self.mode == 'all' and self.max_target_attempts is not None:
-            raise ValueError(
-                'all cell resolution is exhaustive; max_target_attempts must be None'
-            )
-        for name, value in (
-            ('per_solve_time_limit_seconds', self.per_solve_time_limit_seconds),
-            ('run_time_limit_seconds', self.run_time_limit_seconds),
-        ):
-            if value is not None and value <= 0:
-                raise ValueError(f'{name} must be positive when set')
+            raise ValueError('per_solve_time_limit_seconds must be positive when set')
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,14 +145,13 @@ class SorsCrosswalkConfig:
     per_solve_time_limit_seconds: float | None = 300.0
     batch_time_limit_seconds: float | None = None
     model_reset_interval: int = 25
-    retry_failed_solve: bool = True
     threads: int = 1
 
     def __post_init__(self) -> None:
         if self.mode not in _CROSSWALK_MODES:
             raise ValueError(
-                f'Unsupported SORS crosswalk mode {self.mode!r}; '
-                f'expected one of {sorted(_CROSSWALK_MODES)}'
+                f'Unsupported SORS crosswalk mode {self.mode!r}; expected one of '
+                f'{sorted(_CROSSWALK_MODES)}'
             )
         if not self.scenario_ids:
             raise ValueError('At least one crosswalk scenario is required')
@@ -182,19 +169,13 @@ class SorsCrosswalkConfig:
         if self.max_targets is not None and self.max_targets < 0:
             raise ValueError('Crosswalk max_targets cannot be negative')
         if self.mode == 'targets' and not (
-            self.scope.region_codes
-            or self.scope.region_names
-            or self.scope.class_codes
+            self.scope.region_codes or self.scope.region_names or self.scope.class_codes
         ):
-            raise ValueError(
-                'crosswalk targets mode requires an explicit region or class scope'
-            )
+            raise ValueError('crosswalk targets mode requires an explicit region or class scope')
         if self.mode == 'all' and self.max_targets is not None:
             raise ValueError('crosswalk all mode is exhaustive; max_targets must be None')
         if self.model_reset_interval <= 0 or self.threads <= 0:
-            raise ValueError(
-                'Crosswalk model_reset_interval and threads must be positive'
-            )
+            raise ValueError('Crosswalk model_reset_interval and threads must be positive')
         for name, value in (
             ('per_solve_time_limit_seconds', self.per_solve_time_limit_seconds),
             ('batch_time_limit_seconds', self.batch_time_limit_seconds),
@@ -208,16 +189,18 @@ class SorsRunConfig:
     as_of_date: str
     publication_step: float = 1.0
     point_tolerance: float = 1e-6
-    rules_version: str = 'sors-rkvs-2026.5'
-    cell_resolution: SorsCellResolutionConfig = field(
-        default_factory=SorsCellResolutionConfig
-    )
+    rules_version: str = 'sors-publication-fixed-point-2026.6'
+    portfolio_scope: str = 'CORPORATE_TOTAL'
+    deterministic: SorsDeterministicConfig = field(default_factory=SorsDeterministicConfig)
+    optimization: SorsOptimizationConfig = field(default_factory=SorsOptimizationConfig)
 
     def __post_init__(self) -> None:
         if self.publication_step <= 0:
             raise ValueError('publication_step must be positive')
         if self.point_tolerance <= 0:
             raise ValueError('point_tolerance must be positive')
+        if not self.portfolio_scope:
+            raise ValueError('portfolio_scope cannot be empty')
 
 
 @dataclass(frozen=True)
@@ -253,8 +236,7 @@ class SorsPivotRequest:
         class_selected = bool(self.class_code)
         if region_selected == class_selected:
             raise ValueError(
-                'Exactly one pivot selector is required: region_code/region_name '
-                'or class_code'
+                'Exactly one pivot selector is required: region_code/region_name or class_code'
             )
         unknown = sorted(set(self.metrics) - set(TARGET_METRICS))
         if unknown:
@@ -267,16 +249,21 @@ class SorsWorkbookRequest:
     overwrite: bool = False
     include_source_grid: bool = False
     include_primary_grid: bool = True
-    include_strict_facts: bool = True
+    include_restored_facts: bool = True
     include_crosswalk_facts: bool = True
     include_crosswalk_bounds: bool = False
     include_crosswalk_mapping: bool = False
     include_components: bool = False
     include_fact_ledger: bool = True
-    include_cell_attempts: bool = False
-    include_cell_subsystems: bool = False
+    include_publication_partitions: bool = False
+    include_publication_tokens: bool = False
+    include_inheritance_events: bool = False
     include_promotion_events: bool = False
     include_fixed_point_passes: bool = False
+    include_optimization_rounds: bool = False
+    include_target_bounds: bool = False
+    include_rounding_profiles: bool = False
+    include_selection_attempts: bool = False
     include_derivations: bool = False
     include_constraints: bool = False
     include_validation: bool = True
@@ -288,8 +275,5 @@ class SorsWorkbookRequest:
     pivots: tuple[SorsPivotRequest, ...] = ()
 
     def __post_init__(self) -> None:
-        if (
-            self.primary_grid_rows_per_sheet is not None
-            and self.primary_grid_rows_per_sheet <= 0
-        ):
+        if self.primary_grid_rows_per_sheet is not None and self.primary_grid_rows_per_sheet <= 0:
             raise ValueError('primary_grid_rows_per_sheet must be positive')

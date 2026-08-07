@@ -158,9 +158,9 @@ def _scope_targets(
         selected = selected[
             selected['metric'].astype(str).isin(scope.metrics)
         ]
-    strict_keys = set(
+    official_keys = set(
         strict_result.regional_okved2_grid.loc[
-            strict_result.regional_okved2_grid['is_strict_fact'].astype(bool),
+            strict_result.regional_okved2_grid['is_primary_fact'].astype(bool),
             ['region_code', 'class_code', 'metric'],
         ]
         .astype(str)
@@ -180,7 +180,7 @@ def _scope_targets(
         .agg(':'.join, axis=1)
     )
     selected = selected[
-        ~selected['_key'].isin(strict_keys | closure_keys)
+        ~selected['_key'].isin(official_keys | closure_keys)
     ].drop(columns='_key')
     selected = selected.sort_values(
         ['region_code', 'class_code', 'metric'], kind='stable'
@@ -225,7 +225,7 @@ def _base_scenario_grid(
         ['region_code', 'class_code', 'metric']
     )
     grid = strict_result.regional_okved2_grid.copy()
-    already_strict = grid['is_strict_fact'].astype(bool).copy()
+    already_official = grid['is_primary_fact'].astype(bool).copy()
     relation_ids = _supporting_relation_ids(compilation)
     grid['scenario_id'] = scenario_id
     grid['scenario_ids'] = [(scenario_id,)] * len(grid)
@@ -238,8 +238,8 @@ def _base_scenario_grid(
     )
     grid['evidence_layer'] = 'CROSSWALK'
     grid['evidence_profile'] = scenario_id
-    grid['already_strict_fact'] = already_strict
-    grid['is_strict_fact'] = False
+    grid['already_primary_fact'] = already_official
+    grid['is_primary_fact'] = False
     grid['is_reconstructed'] = False
     grid['is_estimate'] = False
     grid['is_benchmark_estimate'] = False
@@ -312,7 +312,7 @@ def _base_scenario_grid(
                 certification.value_precision
             )
             grid.at[index, 'value_identified'] = bool(feasibility_confirmed)
-            if feasibility_confirmed and not bool(already_strict.at[index]):
+            if feasibility_confirmed and not bool(already_official.at[index]):
                 grid.at[index, 'value'] = certification.value
                 grid.at[index, 'value_precision'] = certification.value_precision
                 grid.at[index, 'exact_value'] = certification.exact_value
@@ -328,7 +328,7 @@ def _base_scenario_grid(
                 )
             elif feasibility_confirmed:
                 grid.at[index, 'identification_status'] = (
-                    'CROSSWALK_REDUNDANT_WITH_STRICT_'
+                    'CROSSWALK_REDUNDANT_WITH_PRIMARY_'
                     f'{certification.identification_status}'
                 )
             else:
@@ -454,7 +454,7 @@ def _apply_target_results(
         if (
             certification.value is not None
             and bool(out.at[index, 'bounds_certified'])
-            and not bool(out.at[index, 'already_strict_fact'])
+            and not bool(out.at[index, 'already_primary_fact'])
         ):
             out.at[index, 'value'] = certification.value
             out.at[index, 'value_precision'] = certification.value_precision
@@ -463,10 +463,10 @@ def _apply_target_results(
             out.at[index, 'is_final_accepted'] = True
             out.at[index, 'is_reconstructed'] = True
         elif certification.value is not None and bool(
-            out.at[index, 'already_strict_fact']
+            out.at[index, 'already_primary_fact']
         ):
             out.at[index, 'identification_status'] = (
-                f'{status_prefix}REDUNDANT_WITH_STRICT_'
+                f'{status_prefix}REDUNDANT_WITH_PRIMARY_'
                 f'{certification.identification_status}'
             )
     return out
@@ -480,7 +480,7 @@ def _run_scenario(
     assert strict_result._source_bundle is not None
     compilation = compile_crosswalk_problem(
         strict_result._source_bundle,
-        strict_result.strict_components_grid,
+        strict_result.components_grid,
         config,
         scenario_id,
     )
@@ -614,7 +614,7 @@ def _run_scenario(
                 time_limit_seconds=config.per_solve_time_limit_seconds,
                 threads=config.threads,
             ) as session:
-                for position, row in enumerate(chunk.itertuples(index=False)):
+                for row in chunk.itertuples(index=False):
                     if (
                         config.batch_time_limit_seconds is not None
                         and perf_counter() - started
@@ -648,43 +648,6 @@ def _run_scenario(
                             model_id=model_id,
                         )
                     )
-                    if config.retry_failed_solve and not (
-                        lower.success and upper.success
-                    ):
-                        with HighsSession(
-                            compilation.problem,
-                            time_limit_seconds=config.per_solve_time_limit_seconds,
-                            threads=config.threads,
-                        ) as retry:
-                            lower = retry.solve_target(target, maximize=False)
-                            upper = retry.solve_target(target, maximize=True)
-                            retry_model = (
-                                f'{model_id}:retry:{position + 1:04d}'
-                            )
-                            records.append(
-                                _solve_record(
-                                    f'crosswalk:{scenario_id}:min:'
-                                    f'{target.target_id}:attempt2',
-                                    'MIN',
-                                    lower,
-                                    scenario_id=scenario_id,
-                                    target_id=target.target_id,
-                                    attempt=2,
-                                    model_id=retry_model,
-                                )
-                            )
-                            records.append(
-                                _solve_record(
-                                    f'crosswalk:{scenario_id}:max:'
-                                    f'{target.target_id}:attempt2',
-                                    'MAX',
-                                    upper,
-                                    scenario_id=scenario_id,
-                                    target_id=target.target_id,
-                                    attempt=2,
-                                    model_id=retry_model,
-                                )
-                            )
                     target_results[target.target_id] = (lower, upper)
         grid = _apply_target_results(
             grid,
@@ -761,8 +724,8 @@ def _robust_envelope(
         empty['is_final_accepted'] = False
         empty['is_benchmark_estimate'] = False
         empty['benchmark_value'] = None
-        empty['already_strict_fact'] = empty['is_strict_fact'].astype(bool)
-        empty['is_strict_fact'] = False
+        empty['already_primary_fact'] = empty['is_primary_fact'].astype(bool)
+        empty['is_primary_fact'] = False
         empty['is_reconstructed'] = False
         empty['value'] = None
         empty['identification_status'] = 'CROSSWALK_NOT_FEASIBLE'
@@ -821,8 +784,8 @@ def _robust_envelope(
             point_tolerance=point_tolerance,
         )
         value_identified = bounds_certified and certification.value is not None
-        already_strict_fact = bool(group['already_strict_fact'].astype(bool).all())
-        identified = value_identified and not already_strict_fact
+        already_primary_fact = bool(group['already_primary_fact'].astype(bool).all())
+        identified = value_identified and not already_primary_fact
         row.update(
             {
                 'region_code': key[0],
@@ -845,11 +808,11 @@ def _robust_envelope(
                 'interval_width': upper - lower,
                 'bounds_certified': bounds_certified,
                 'scenario_coverage_complete': scenario_coverage_complete,
-                'already_strict_fact': already_strict_fact,
+                'already_primary_fact': already_primary_fact,
                 'value_identified': value_identified,
                 'is_final_accepted': identified,
                 'is_reconstructed': identified,
-                'is_strict_fact': False,
+                'is_primary_fact': False,
                 'is_estimate': False,
                 'is_benchmark_estimate': False,
                 'benchmark_value': None,
@@ -867,10 +830,10 @@ def _robust_envelope(
                 ),
                 'identification_status': (
                     (
-                        'CROSSWALK_SCENARIO_ROBUST_REDUNDANT_WITH_STRICT_'
+                        'CROSSWALK_SCENARIO_ROBUST_REDUNDANT_WITH_PRIMARY_'
                         f'{certification.identification_status}'
                     )
-                    if value_identified and already_strict_fact
+                    if value_identified and already_primary_fact
                     else (
                         f'CROSSWALK_SCENARIO_ROBUST_'
                         f'{certification.identification_status}'
@@ -938,7 +901,7 @@ def _primary_grid(
         ['region_code', 'class_code', 'metric']
     )
     for index, row in strict.iterrows():
-        if bool(row.is_strict_fact):
+        if bool(row.is_primary_fact):
             continue
         key = (str(row.region_code), str(row.class_code), str(row.metric))
         if key not in crosswalk_index.index:

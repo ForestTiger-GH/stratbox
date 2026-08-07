@@ -98,7 +98,7 @@ def _acceptance_compilation(small_result) -> CrosswalkCompilation:
     exact_index = next(
         index
         for index, row in rows.iterrows()
-        if not bool(row.is_strict_fact)
+        if not bool(row.is_primary_fact)
     )
     lower[exact_index] = upper[exact_index] = 5.0
     problem = SorsLinearProblem(
@@ -156,7 +156,7 @@ def test_crosswalk_value_is_populated_only_for_identified_interval(small_result)
     assert len(exact) == 1
     assert bool(exact.iloc[0]['is_final_accepted'])
     unresolved = grid.drop(index=exact.index)
-    assert unresolved.loc[~unresolved['is_strict_fact'].astype(bool), 'value'].isna().all()
+    assert unresolved.loc[~unresolved['is_primary_fact'].astype(bool), 'value'].isna().all()
     assert not grid['is_benchmark_estimate'].astype(bool).any()
 
 
@@ -335,7 +335,7 @@ def test_one_sided_lp_tightening_can_safely_identify_bucket(small_result) -> Non
                     (small_result.regional_okved2_grid['region_code'].eq(row.region_code))
                     & (small_result.regional_okved2_grid['class_code'].eq(row.class_code))
                     & (small_result.regional_okved2_grid['metric'].eq(row.metric)),
-                    'is_strict_fact',
+                    'is_primary_fact',
                 ].iloc[0]
             ),
             axis=1,

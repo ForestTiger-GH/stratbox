@@ -1,10 +1,12 @@
 import pytest
 
 from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsCellResolutionConfig,
-    SorsCellScope,
     SorsCrosswalkConfig,
+    SorsDeterministicConfig,
+    SorsOptimizationConfig,
     SorsPivotRequest,
+    SorsSelectionPolicy,
+    SorsTargetScope,
 )
 
 
@@ -12,19 +14,48 @@ def test_crosswalk_is_disabled_by_default() -> None:
     assert SorsCrosswalkConfig().mode == 'disabled'
 
 
-def test_cell_resolution_mode_is_explicit() -> None:
-    config = SorsCellResolutionConfig()
-    assert config.mode == 'closure'
-    assert config.horizon_order[0] == 'CELL'
-    assert config.horizon_order[-1] == 'GLOBAL_CONNECTED'
+def test_deterministic_publication_fixed_point_is_explicit() -> None:
+    config = SorsDeterministicConfig()
+    assert config.inheritance_enabled
+    assert config.max_fixed_point_passes == 100
     with pytest.raises(ValueError):
-        SorsCellResolutionConfig(mode='magic')
+        SorsDeterministicConfig(max_fixed_point_passes=0)
 
 
-def test_cell_scope_accepts_only_base_components() -> None:
-    assert SorsCellScope(components=('overdue_rub',)).components == ('overdue_rub',)
+def test_optimization_is_disabled_by_default_and_modes_are_validated() -> None:
+    assert SorsOptimizationConfig().mode == 'none'
     with pytest.raises(ValueError):
-        SorsCellScope(components=('debt_total',))
+        SorsOptimizationConfig(mode='magic')
+
+
+def test_target_mode_requires_explicit_region_or_class_scope() -> None:
+    with pytest.raises(ValueError):
+        SorsOptimizationConfig(mode='targets')
+    config = SorsOptimizationConfig(
+        mode='targets',
+        scope=SorsTargetScope(region_names=('Белгородская область',), metrics=('debt_rub',)),
+    )
+    assert config.scope.metrics == ('debt_rub',)
+
+
+def test_all_mode_is_exhaustive() -> None:
+    with pytest.raises(ValueError):
+        SorsOptimizationConfig(mode='all', max_targets=100)
+    assert SorsOptimizationConfig(mode='all', max_targets=None).max_targets is None
+
+
+def test_selection_policy_is_separate_from_numerical_tolerance() -> None:
+    policy = SorsSelectionPolicy(max_selection_width_mln=2.5)
+    assert policy.max_selection_width_mln == 2.5
+    assert policy.max_selection_width_ratio == 0.01
+    with pytest.raises(ValueError):
+        SorsSelectionPolicy(max_selection_width_mln=0)
+
+
+def test_target_scope_accepts_only_published_metrics() -> None:
+    assert SorsTargetScope(metrics=('overdue_rub',)).metrics == ('overdue_rub',)
+    with pytest.raises(ValueError):
+        SorsTargetScope(metrics=('performing_rub',))
 
 
 def test_pivot_requires_exactly_one_axis_selector() -> None:
@@ -36,37 +67,20 @@ def test_pivot_requires_exactly_one_axis_selector() -> None:
 
 def test_nonpositive_solver_time_limits_are_rejected() -> None:
     with pytest.raises(ValueError):
-        SorsCellResolutionConfig(run_time_limit_seconds=0)
+        SorsOptimizationConfig(per_solve_time_limit_seconds=0)
     with pytest.raises(ValueError):
         SorsCrosswalkConfig(batch_time_limit_seconds=0)
 
 
-def test_target_cell_modes_require_unambiguous_scope_or_budget() -> None:
+def test_solver_strategies_are_explicit_and_validated() -> None:
+    config = SorsOptimizationConfig()
+    assert config.solver == 'simplex'
+    assert config.rounding_solver == 'ipm'
+    assert config.run_crossover == 'choose'
     with pytest.raises(ValueError):
-        SorsCellResolutionConfig(mode='targets')
+        SorsOptimizationConfig(rounding_solver='magic')
     with pytest.raises(ValueError):
-        SorsCellResolutionConfig(mode='priority')
-    with pytest.raises(ValueError):
-        SorsCellResolutionConfig(mode='all', max_target_attempts=100)
-
-
-def test_target_cell_mode_accepts_explicit_rkvs_scope() -> None:
-    config = SorsCellResolutionConfig(
-        mode='targets',
-        scope=SorsCellScope(
-            region_names=('Белгородская область',),
-            class_codes=('01',),
-            components=('overdue_rub',),
-        ),
-    )
-    assert config.scope.components == ('overdue_rub',)
-
-
-def test_cell_horizons_are_known_and_unique() -> None:
-    with pytest.raises(ValueError):
-        SorsCellResolutionConfig(horizon_order=('CELL', 'CELL'))
-    with pytest.raises(ValueError):
-        SorsCellResolutionConfig(horizon_order=('CELL', 'UNKNOWN'))
+        SorsOptimizationConfig(run_crossover='magic')
 
 
 def test_crosswalk_targets_require_explicit_scope() -> None:
@@ -80,32 +94,4 @@ def test_crosswalk_all_is_exhaustive_and_scenarios_are_explicit() -> None:
     with pytest.raises(ValueError):
         SorsCrosswalkConfig(scenario_ids=())
     with pytest.raises(ValueError):
-        SorsCrosswalkConfig(
-            scenario_ids=('core', 'broad'), scenario_policy='single'
-        )
-
-
-def test_crosswalk_closure_pass_limit_must_be_positive() -> None:
-    with pytest.raises(ValueError):
-        SorsCrosswalkConfig(closure_max_passes=0)
-
-
-def test_national_total_is_supported_as_optional_horizon() -> None:
-    config = SorsCellResolutionConfig(
-        horizon_order=('CELL', 'NATIONAL_TOTAL', 'GLOBAL_CONNECTED')
-    )
-    assert config.horizon_order[1] == 'NATIONAL_TOTAL'
-
-
-def test_cell_solver_strategies_are_explicit_and_validated() -> None:
-    config = SorsCellResolutionConfig()
-    assert config.local_solver == 'simplex'
-    assert config.global_solver == 'ipm'
-    assert config.retry_solver == 'choose'
-    assert config.run_crossover == 'choose'
-    assert config.reuse_global_session
-
-    with pytest.raises(ValueError):
-        SorsCellResolutionConfig(global_solver='magic')
-    with pytest.raises(ValueError):
-        SorsCellResolutionConfig(run_crossover='magic')
+        SorsCrosswalkConfig(scenario_ids=('core', 'broad'), scenario_policy='single')

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsCellResolutionConfig
+from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsOptimizationConfig
 from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import SorsLinearProblem
 from stratbox.macrobanks.cbr_sors_restoration.linear.highs import (
     HighsSession,
@@ -37,14 +37,14 @@ def _unavailable_result(exc: Exception) -> SolveResult:
 
 def run_strict_feasibility(
     problem: SorsLinearProblem,
-    config: SorsCellResolutionConfig,
+    config: SorsOptimizationConfig,
 ) -> StrictFeasibilityExecution:
     try:
         with HighsSession(
             problem,
             time_limit_seconds=config.per_solve_time_limit_seconds,
             threads=config.threads,
-            solver=config.global_solver,
+            solver=config.rounding_solver,
             run_crossover=config.run_crossover,
         ) as session:
             feasibility = session.solve_feasibility()
@@ -69,7 +69,7 @@ def run_strict_feasibility(
         'time_limit_seconds': config.per_solve_time_limit_seconds,
         'basis_reused': False,
         'session_reused': False,
-        'solver_algorithm': config.global_solver,
+        'solver_algorithm': config.rounding_solver,
         'solver_backend': backend,
         'solver_version': version,
         'subsystem_variables': problem.num_variables,

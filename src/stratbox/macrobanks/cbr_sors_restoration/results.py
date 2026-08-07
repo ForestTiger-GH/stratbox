@@ -23,18 +23,20 @@ class SorsRunSummary:
     regional_metric_rows: int
     raw_publication_observations: int
     unique_publication_constraints: int
-    closure_passes: int
-    closure_identified_facts: int
-    lp_identified_facts: int
-    strict_facts: int
-    cell_resolution_status: str = 'CLOSURE_COMPLETE'
-    fixed_point_passes: int = 0
-    cell_targets_attempted: int = 0
-    cell_targets_resolved: int = 0
-    cell_targets_resolved_by_local_system: int = 0
-    component_facts: int = 0
-    exact_component_facts: int = 0
-    published_component_facts: int = 0
+    deterministic_status: str
+    deterministic_passes: int
+    deterministic_bound_updates: int
+    publication_facts: int
+    publication_zero_facts: int
+    inherited_facts: int
+    strict_identified_facts: int
+    rounding_optimal_facts: int
+    rounding_selected_facts: int
+    optimization_status: str = 'DISABLED'
+    optimization_rounds: int = 0
+    optimization_targets_attempted: int = 0
+    tau_star_mln: float | None = None
+    l1_star_mln: float | None = None
 
 
 @dataclass(frozen=True)
@@ -43,8 +45,8 @@ class SorsRestorationResult:
     source_manifest_grid: pd.DataFrame
     validation_grid: pd.DataFrame
     regional_okved2_grid: pd.DataFrame
-    strict_components_grid: pd.DataFrame
-    strict_facts_grid: pd.DataFrame
+    components_grid: pd.DataFrame
+    restored_facts_grid: pd.DataFrame
     derivations_grid: pd.DataFrame
     constraints_grid: pd.DataFrame
     variables_grid: pd.DataFrame
@@ -54,11 +56,15 @@ class SorsRestorationResult:
     summary: SorsRunSummary
     facts_ledger_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
     current_component_facts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    cell_target_plan_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    cell_attempts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    cell_subsystems_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    publication_partitions_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    inheritance_events_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    publication_tokens_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
     promotion_events_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
     fixed_point_passes_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    optimization_rounds_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    target_bounds_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    rounding_profiles_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    selection_attempts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
     _source_bundle: object | None = None
     _strict_problem: object | None = None
 

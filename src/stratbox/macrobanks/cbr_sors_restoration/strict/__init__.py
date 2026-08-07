@@ -1,27 +1,32 @@
-from stratbox.macrobanks.cbr_sors_restoration.strict.closure import (
-    SorsClosureConflictError,
-    SorsClosureResult,
-    SorsClosureState,
-    run_deterministic_closure,
+"""Latent continuous SORS model.
+
+The package intentionally keeps its ``__init__`` lightweight.  Publication-level
+closure imports strict interval primitives, while optimization imports both layers;
+eager re-exports here would create a circular dependency between those domains.
+"""
+
+from stratbox.macrobanks.cbr_sors_restoration.strict.certification import (
+    IntervalCertification,
+    certify_interval,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.engine import (
-    SorsCellResolutionExecution,
-    run_cell_resolution,
+from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import (
+    SorsIntervalClosureConflictError,
+    SorsIntervalClosureResult,
+    SorsIntervalClosureState,
+    run_interval_closure,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.ledger import SorsFactLedger
 from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
     SorsQuantityGraph,
     build_quantity_graph,
 )
 
 __all__ = [
-    'SorsCellResolutionExecution',
-    'SorsClosureConflictError',
-    'SorsClosureResult',
-    'SorsClosureState',
-    'SorsFactLedger',
+    'IntervalCertification',
+    'SorsIntervalClosureConflictError',
+    'SorsIntervalClosureResult',
+    'SorsIntervalClosureState',
     'SorsQuantityGraph',
     'build_quantity_graph',
-    'run_cell_resolution',
-    'run_deterministic_closure',
+    'certify_interval',
+    'run_interval_closure',
 ]

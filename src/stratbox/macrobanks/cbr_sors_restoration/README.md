@@ -1,134 +1,116 @@
 # CBR SORS Restoration
 
-Домен восстанавливает доказуемую часть региональной статистики задолженности юридических лиц и ИП по классам ОКВЭД2 из пересекающихся публикаций Банка России.
+Домен восстанавливает региональную статистику корпоративного кредитного портфеля по классам ОКВЭД2 из пересекающихся публикаций Банка России.
 
-## Искомая РКВС
+Целевой объект — **таблица, которую ЦБ опубликовал бы в целых млн руб.**, а не неизвестные бухгалтерские суммы до рублей. При этом параллельно сохраняется latent-модель скрытых вещественных сумм, чтобы каждое восстановленное опубликованное значение оставалось совместимо с официальной точностью округления.
 
-Базовая неизвестная — одна ячейка:
-
-```text
-атомарный регион × класс ОКВЭД2 × денежный компонент
-```
-
-Четыре непересекающихся компонента:
-
-- `performing_rub`;
-- `overdue_rub`;
-- `performing_fx`;
-- `overdue_fx`.
-
-Шесть публикуемых метрик (`debt_rub`, `debt_fx`, `debt_total`, три вида просрочки) являются суммами этих компонентов.
-
-## Основной STRICT-контур
-
-Версия 0.6.1 использует целевой поклеточный движок:
+## Главная последовательность
 
 ```text
-единый официальный quantity graph
-→ детерминированное интервальное замыкание
-→ глобальная feasibility
-→ очередь нерешённых РКВС
-→ пошаговое расширение локальной системы цели
-→ внутреннее доказательство единственности значения
-→ Fact Ledger
-→ affected closure
-→ fixed point
+CBR books
+→ canonical source bundle
+→ latent quantity graph
+→ publication partition graph
+→ deterministic publication fixed point
+    interval closure
+    → zero / single-bucket facts
+    → source-preserving value inheritance
+    → inherited bucket back to latent bounds
+    → repeat until no latent bound changes
+→ global latent feasibility gate
+→ optimization fixed point
+    min/max on current feasible set
+    → deterministic publication fixed point
+    → minimum rounding distortion (L∞, then L1)
+    → min/max on rounding-optimal face
+    → deterministic publication fixed point
+    → optional jointly validated narrow-bucket selection
+    → deterministic publication fixed point
+→ final restored grid
+→ optional conditional legacy→ОКВЭД2 crosswalk
 ```
 
-Система не строит отдельную независимую модель с нуля для каждой клетки. Один раз компилируется глобальная sparse-матрица официальных ограничений. Для цели создаётся безопасная локальная проекция этой модели: из глобальной системы удаляются строки, а все переменные выбранных строк сохраняются. Поэтому локальное допустимое множество шире глобального. Значение, единственное даже в локальной системе, автоматически единственно и в полной системе.
+Ключевой принцип: publication-level факт `6` означает точное восстановленное значение `6 млн руб.`, но в latent-модели обычно возвращается как bucket `[5.5; 6.5)`, а не как `x = 6`.
 
-## Горизонты целевой системы
+## Доказательные уровни
 
-По умолчанию цель расширяется так:
+`evidence_method` различает источник результата:
 
-1. `CELL` — собственные column bounds;
-2. `REGION_COMPONENT` — региональная сумма той же компоненты;
-3. `REGION_CROSS_METRIC` — остальные денежные метрики региона;
-4. `REGION_PARENT` — составные географические публикации;
-5. `FD_SECTION` — федеральный округ × раздел ОКВЭД2;
-6. `FEDERAL_DISTRICT_TOTAL` — общий итог округа;
-7. `NATIONAL_CLASS` — национальный итог выбранного класса;
-8. `GLOBAL_CONNECTED` — полный связанный компонент строгой модели.
+- `SOURCE_PUBLISHED` — непосредственно опубликованная величина;
+- `LATENT_POINT_IDENTIFIED` — скрытая денежная величина доказана как точка;
+- `PUBLISHED_BUCKET_IDENTIFIED` — официальный latent-интервал целиком лежит в одном publication bucket;
+- `PUBLISHED_VALUE_INHERITED` — исходная опубликованная масса однозначно локализована по полному разбиению;
+- `PUBLICATION_CLOSURE_IDENTIFIED` — следствие source-preserving publication facts;
+- `ROUNDING_OPTIMUM_IDENTIFIED` / `ROUNDING_OPTIMUM_CLOSURE` — устойчиво на minimum-rounding-distortion face;
+- `ROUNDING_SELECTED` / `ROUNDING_SELECTED_CLOSURE` — контролируемый последний уровень выбора узкого bucket, совместно проверенный Solver.
 
-`NATIONAL_TOTAL` поддерживается как дополнительный пользовательский horizon, но исключён из default order: он сразу вовлекает почти весь куб и обычно слабее `NATIONAL_CLASS` и полного connected-компонента.
+Каждая lower/upper latent-граница несёт `assumption_tier`, поэтому более слабое предположение никогда не превращается после арифметического closure в якобы более сильный факт.
 
-После каждого горизонта система либо доказывает одну РКВС, либо добавляет следующий набор уравнений.
-
-## Что означает «единственное значение»
-
-Пользовательский результат содержит одну цифру либо остаётся пустым. Внутри движка выполняются две экстремальные проверки целевой координаты. Они служат сертификатом отсутствия альтернативного значения и не являются пользовательской моделью диапазонов.
-
-Допустимы два результата:
-
-- `UNIQUE_FEASIBLE_VALUE` — математически одна точка;
-- `UNIQUE_AT_PUBLISHED_PRECISION` — все допустимые значения округляются в один опубликованный миллион.
-
-При наличии нескольких допустимых опубликованных значений РКВС остаётся нерешённой.
-
-## Fact Ledger и каскад
-
-Каждая доказанная базовая РКВС записывается в append-only `Fact Ledger`. Затем:
-
-- её граница фиксируется в общем состоянии;
-- пересчитываются только затронутые уравнения;
-- выводятся новые остатки и singleton;
-- соседние РКВС получают новый приоритет;
-- проход повторяется до fixed point.
-
-Это дедуктивное замыкание. Система не превращает собственную оценку в новый официальный факт.
-
-## Crosswalk
-
-Crosswalk старой и новой классификаций остаётся отдельным evidence layer. Он подключается к восстановлению только после глобального доказательства совместимости конкретного mapping-сценария. Текущие сценарии `core/broad` не внедряются в STRICT автоматически: на реальных данных 01.06.2026 их жёсткие рёбра показали конфликты.
-
-## Основной API
+## API
 
 ```python
 from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsCellResolutionConfig,
-    SorsCellScope,
+    SorsOptimizationConfig,
     SorsRunConfig,
     SorsSourceFiles,
+    SorsTargetScope,
     run_sors_restoration,
 )
 
-result = run_sors_restoration(
-    SorsSourceFiles(
-        regional_traditional="01_05_A.xlsx",
-        national_okved2="01_02_C.xlsx",
-        federal_district_okved2="01_03_C.xlsx",
-        national_traditional="01_02_A.xlsx",
-    ),
-    SorsRunConfig(
-        as_of_date="2026-06-01",
-        cell_resolution=SorsCellResolutionConfig(
-            mode="targets",
-            scope=SorsCellScope(
-                region_names=("Белгородская область",),
-                class_codes=("01",),
-                components=("overdue_rub",),
-            ),
+files = SorsSourceFiles(
+    regional_traditional='01_05_A_Debt_corp_20260701.xlsx',
+    national_okved2='01_02_C_Debt_corp_by_activity.xlsx',
+    federal_district_okved2='01_03_C_Loans_corp_by_fd_activity_20260701.xlsx',
+    national_traditional='01_02_A_Debt_corp_by_activity.xlsx',
+    regional_totals_history='01_05_D_Debt_subj.xlsx',
+)
+
+config = SorsRunConfig(
+    as_of_date='2026-07-01',
+    optimization=SorsOptimizationConfig(
+        mode='targets',
+        scope=SorsTargetScope(
+            region_names=('г. Москва',),
+            class_codes=('66',),
+            metrics=('debt_rub', 'overdue_rub'),
         ),
+        max_targets=50,
     ),
 )
 
-result.current_component_facts_grid
-result.cell_attempts_grid
-result.cell_subsystems_grid
-result.promotion_events_grid
+result = run_sors_restoration(files, config)
+```
+
+Основные результаты:
+
+```python
+result.regional_okved2_grid       # финальный publication-level GRID
+result.restored_facts_grid        # только принятые восстановленные значения
+result.facts_ledger_grid          # полный ledger фактов и supersession
+result.components_grid     # latent component bounds + publication facts
+result.publication_partitions_grid
+result.publication_tokens_grid
+result.inheritance_events_grid
 result.fixed_point_passes_grid
+result.target_bounds_grid
+result.rounding_profiles_grid
+result.selection_attempts_grid
+result.solver_runs_grid
+result.conflicts_grid
 ```
 
-## Solver
+## Техническая структура
 
-Для глобальной feasibility и доказательства единственности требуется официальный `highspy`:
-
-```bash
-python -m pip install -e ".[sors-restoration]"
+```text
+sources/       — адаптеры книг ЦБ и canonical source bundle
+registries/    — география, ОКВЭД2, publication categories
+publication/   — rounding, ledger, partitions, inheritance, deterministic fixed point
+strict/        — latent quantity graph, interval closure, sparse compiler, feasibility
+optimization/  — targets, minimum rounding distortion, optimal-face proofs, selection
+linear/        — HiGHS contracts/session
+crosswalk/     — отдельный conditional evidence layer старой классификации
+result_grid.py — финальная publication-level выдача из Fact Ledger
+export.py      — Excel-аудит и pivots
 ```
 
-При его отсутствии парсинг, graph, closure и bounds доступны, но Fact Ledger не принимает факты без подтверждённой глобальной feasibility.
-
-Глобальный горизонт по умолчанию использует IPM и переиспользует одну загруженную модель между целями. Локальные горизонты используют simplex. Если одно направление доказательства не завершилось, retry повторяет только его.
-
-Открытые публикационные endpoints сохраняются в semantic GRID, а в LP переводятся в robust closed bounds со сдвигом внутрь интервала на `point_tolerance`. Это предотвращает принятие точки на запрещённой границе из-за Solver feasibility tolerance.
+`highspy>=1.11,<2` является production Solver backend. SciPy-внутренние bindings не используются библиотекой.

@@ -126,7 +126,7 @@ class CrosswalkProblemBuilder(_SparseBuilder):
     def __init__(
         self,
         bundle: SorsSourceBundle,
-        strict_components_grid: pd.DataFrame,
+        components_grid: pd.DataFrame,
         config: SorsCrosswalkConfig,
         scenario_id: str,
     ) -> None:
@@ -220,16 +220,16 @@ class CrosswalkProblemBuilder(_SparseBuilder):
                 'federal_district_code', sort=False
             )
         }
-        if strict_components_grid.empty:
+        if components_grid.empty:
             self.strict_bounds = pd.DataFrame()
         else:
             required = {'region_code', 'class_code', 'component'}
-            missing = required - set(strict_components_grid.columns)
+            missing = required - set(components_grid.columns)
             if missing:
                 raise ValueError(
                     f'Strict component grid is missing columns: {sorted(missing)}'
                 )
-            self.strict_bounds = strict_components_grid.set_index(
+            self.strict_bounds = components_grid.set_index(
                 ['region_code', 'class_code', 'component']
             )
 
@@ -567,13 +567,13 @@ class CrosswalkProblemBuilder(_SparseBuilder):
 
 def compile_crosswalk_problem(
     bundle: SorsSourceBundle,
-    strict_components_grid: pd.DataFrame,
+    components_grid: pd.DataFrame,
     config: SorsCrosswalkConfig,
     scenario_id: str,
 ) -> CrosswalkCompilation:
     return CrosswalkProblemBuilder(
         bundle,
-        strict_components_grid,
+        components_grid,
         config,
         scenario_id,
     ).build()

@@ -97,7 +97,7 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
     assert result.status == 'SOLVER_UNAVAILABLE'
     assert not result.crosswalk_facts_grid.shape[0]
     assert int(result.regional_okved2_grid['is_final_accepted'].fillna(False).sum()) == int(
-        small_result.regional_okved2_grid['is_strict_fact'].sum()
+        small_result.regional_okved2_grid['is_primary_fact'].sum()
     )
 
 

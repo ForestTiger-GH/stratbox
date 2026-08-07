@@ -1,6 +1,6 @@
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.strict.closure import run_deterministic_closure
+from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import run_interval_closure
 from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import SorsQuantityGraph
 
 
@@ -30,7 +30,7 @@ def test_publication_zero_propagates_without_becoming_exact_zero() -> None:
         ('parent', 0.0, 0.5, True, False),
         [('a', 0.0, float('inf'), True, False), ('b', 0.0, float('inf'), True, False)],
     )
-    result = run_deterministic_closure(graph)
+    result = run_interval_closure(graph)
     children = result.quantities_grid.set_index('quantity_id').loc[['a', 'b']]
     assert (children['upper_bound'] == 0.5).all()
     assert not children['upper_attained'].any()
@@ -41,7 +41,7 @@ def test_single_unknown_is_exact_residual() -> None:
         ('parent', 100.0, 100.0, True, True),
         [('a', 30.0, 30.0, True, True), ('b', 20.0, 20.0, True, True), ('c', 0.0, float('inf'), True, False)],
     )
-    result = run_deterministic_closure(graph)
+    result = run_interval_closure(graph)
     c = result.quantities_grid.set_index('quantity_id').loc['c']
     assert c.lower_bound == 50.0
     assert c.upper_bound == 50.0
@@ -53,8 +53,8 @@ def test_repeated_closure_preserves_existing_proof_metadata() -> None:
         ('parent', 0.0, 0.5, True, False),
         [('a', 0.0, float('inf'), True, False)],
     )
-    first = run_deterministic_closure(graph)
-    repeated = run_deterministic_closure(
+    first = run_interval_closure(graph)
+    repeated = run_interval_closure(
         SorsQuantityGraph(
             first.quantities_grid,
             graph.relations_grid,
@@ -74,7 +74,7 @@ def test_negative_residual_lower_bound_keeps_attained_nonnegativity_zero() -> No
             ('b', 0.0, 5.0, True, False),
         ],
     )
-    result = run_deterministic_closure(graph)
+    result = run_interval_closure(graph)
     a = result.quantities_grid.set_index('quantity_id').loc['a']
 
     assert a.lower_bound == 0.0
@@ -89,7 +89,7 @@ def test_exact_zero_strict_residual_excludes_zero() -> None:
             ('b', 0.0, 5.0, True, False),
         ],
     )
-    result = run_deterministic_closure(graph)
+    result = run_interval_closure(graph)
     a = result.quantities_grid.set_index('quantity_id').loc['a']
 
     assert a.lower_bound == 0.0
@@ -97,8 +97,8 @@ def test_exact_zero_strict_residual_excludes_zero() -> None:
 
 
 def test_negative_child_upper_residual_is_reported_as_conflict() -> None:
-    from stratbox.macrobanks.cbr_sors_restoration.strict.closure import (
-        SorsClosureConflictError,
+    from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import (
+        SorsIntervalClosureConflictError,
     )
 
     graph = _graph(
@@ -110,8 +110,8 @@ def test_negative_child_upper_residual_is_reported_as_conflict() -> None:
     )
 
     try:
-        run_deterministic_closure(graph)
-    except SorsClosureConflictError as exc:
+        run_interval_closure(graph)
+    except SorsIntervalClosureConflictError as exc:
         assert not exc.conflicts_grid.empty
         assert 'a' in set(exc.conflicts_grid['quantity_id'])
     else:

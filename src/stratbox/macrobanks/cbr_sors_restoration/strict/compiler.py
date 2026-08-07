@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from math import inf, isfinite
+from math import isfinite
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,6 @@ from stratbox.macrobanks.cbr_sors_restoration.publication import (
     solver_lower_bound,
     solver_upper_bound,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.cells import (
-    build_cell_target_catalog,
-)
 from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
     SorsQuantityGraph,
     component_quantity_id,
@@ -34,7 +31,6 @@ from stratbox.macrobanks.cbr_sors_restoration.strict.reduction import (
 class StrictCompilation:
     problem: SorsLinearProblem
     target_catalog_grid: pd.DataFrame
-    cell_target_catalog_grid: pd.DataFrame
 
 
 def _csr(rows: list[list[tuple[int, float]]], n_columns: int) -> CsrMatrixData:
@@ -61,6 +57,16 @@ def compile_strict_problem(
     *,
     point_tolerance: float,
 ) -> StrictCompilation:
+    """Compile the latent continuous model and all metric/component targets.
+
+    Publication facts constrain latent quantities through their bounds before
+    this function is called.  Any numerical point in the current latent state may
+    be eliminated from Solver columns as a fixed constant; the evidence strength of
+    that point is preserved separately by bound assumption tiers and the publication
+    ledger.  A normal publication bucket remains an interval and therefore stays
+    active when needed.
+    """
+
     quantities = quantities_grid.set_index('quantity_id', drop=False)
     components = quantities[
         quantities['quantity_kind'].eq('ATOMIC_COMPONENT')
@@ -80,8 +86,7 @@ def compile_strict_problem(
         (
             components['lower_bound'].astype(float)
             + components['upper_bound'].astype(float)
-        )
-        / 2.0,
+        ) / 2.0,
         np.nan,
     )
     active_ids = tuple(components.loc[~fixed, 'quantity_id'].astype(str))
@@ -96,16 +101,11 @@ def compile_strict_problem(
     binding_map = (
         graph.observation_bindings_grid.groupby('quantity_id', sort=False)[
             ['observation_id', 'source_series']
-        ]
-        .agg(tuple)
-        .to_dict('index')
+        ].agg(tuple).to_dict('index')
+        if not graph.observation_bindings_grid.empty
+        else {}
     )
 
-    rows: list[list[tuple[int, float]]] = []
-    row_lower: list[float] = []
-    row_upper: list[float] = []
-    row_meta: list[dict[str, object]] = []
-    row_columns: list[np.ndarray] = []
     fixed_values = components.set_index('quantity_id')['fixed_value'].to_dict()
     active_rows = components.loc[~fixed]
     active_lower = np.asarray(
@@ -131,6 +131,12 @@ def compile_strict_problem(
         dtype=float,
     )
 
+    rows: list[list[tuple[int, float]]] = []
+    row_lower: list[float] = []
+    row_upper: list[float] = []
+    row_meta: list[dict[str, object]] = []
+    row_columns: list[np.ndarray] = []
+
     for pub in publication.itertuples(index=False):
         relation = relation_lookup.loc[str(pub.quantity_id)]
         if isinstance(relation, pd.DataFrame):
@@ -140,11 +146,7 @@ def compile_strict_problem(
         for metric_quantity in relation.child_quantity_ids:
             _, region_code, class_code, metric = str(metric_quantity).split(':', 3)
             for component in METRIC_COMPONENTS[metric]:
-                component_id = component_quantity_id(
-                    region_code,
-                    class_code,
-                    component,
-                )
+                component_id = component_quantity_id(region_code, class_code, component)
                 column = column_by_quantity.get(component_id)
                 if column is None:
                     fixed_offset += float(fixed_values[component_id])
@@ -175,13 +177,21 @@ def compile_strict_problem(
             expression_lower = float(
                 np.dot(
                     coefficients,
-                    np.where(coefficients >= 0, active_lower[columns], active_upper[columns]),
+                    np.where(
+                        coefficients >= 0,
+                        active_lower[columns],
+                        active_upper[columns],
+                    ),
                 )
             )
             expression_upper = float(
                 np.dot(
                     coefficients,
-                    np.where(coefficients >= 0, active_upper[columns], active_lower[columns]),
+                    np.where(
+                        coefficients >= 0,
+                        active_upper[columns],
+                        active_lower[columns],
+                    ),
                 )
             )
         else:
@@ -190,20 +200,36 @@ def compile_strict_problem(
             expression_lower >= lower - point_tolerance
             and expression_upper <= upper + point_tolerance
         )
-        status = 'REDUNDANT_BY_COLUMN_BOUNDS' if redundant else 'ACTIVE'
+        # Keep a stable structural row whenever the aggregate has active latent
+        # variables, even when column bounds currently make it redundant.  A later
+        # deterministic publication cascade can tighten the aggregate itself; the
+        # next Solver wave must be able to activate that stronger row by changing
+        # bounds only, without rebuilding matrix/column identities.
         solver_row = None
-        if not redundant:
-            if not items:
-                raise ValueError(
-                    f'Publication constraint {pub.quantity_id} has no active variables '
-                    'and is not satisfied by fixed values'
-                )
+        if items:
             solver_row = len(rows)
             rows.append(items)
             row_lower.append(lower)
             row_upper.append(upper)
             row_columns.append(columns)
+            status = 'REDUNDANT_AT_COMPILE' if redundant else 'ACTIVE'
+        else:
+            if not redundant:
+                raise ValueError(
+                    f'Publication constraint {pub.quantity_id} has no active variables '
+                    'and is not satisfied by fixed values'
+                )
+            status = 'FIXED_EXPRESSION'
         binding = binding_map.get(str(pub.quantity_id), {})
+        representative = getattr(pub, 'published_representative', None)
+        representative_status = getattr(pub, 'published_representative_status', None)
+        stable_center = (
+            float(representative) - fixed_offset
+            if representative_status == 'STABLE'
+            and representative is not None
+            and not pd.isna(representative)
+            else None
+        )
         row_meta.append(
             {
                 'constraint_id': f'strict:{pub.quantity_id}',
@@ -219,9 +245,102 @@ def compile_strict_problem(
                 'solver_lower_bound': lower,
                 'solver_upper_bound': upper,
                 'fixed_offset': fixed_offset,
+                'published_representative': representative,
+                'published_representative_status': representative_status,
+                'published_center': stable_center,
                 'constraint_status': status,
                 'solver_row': solver_row,
                 'active_columns': len(items),
+                'expression_indices': columns,
+                'expression_coefficients': coefficients,
+            }
+        )
+
+    # Keep one structural Solver row for every user-facing regional/class
+    # metric.  Publication-level facts discovered *after* compilation constrain a
+    # sum of latent components; column bounds alone cannot preserve that
+    # correlation.  Stable dynamic rows let refresh_strict_problem_bounds() feed
+    # each new metric bucket back into subsequent LP waves without changing column
+    # identities or rebuilding target expressions.
+    regional_metrics = quantities[
+        quantities['quantity_kind'].eq('REGIONAL_CLASS_METRIC')
+    ].copy()
+    if not regional_metrics.empty:
+        regional_metrics = regional_metrics.sort_values(
+            ['region_code', 'class_code', 'metric']
+        )
+    for metric_row in regional_metrics.itertuples(index=False):
+        coefficient_by_column: dict[int, float] = {}
+        fixed_offset = 0.0
+        region_code = str(metric_row.region_code)
+        class_code = str(metric_row.class_code)
+        metric = str(metric_row.metric)
+        for component in METRIC_COMPONENTS[metric]:
+            component_id = component_quantity_id(region_code, class_code, component)
+            column = column_by_quantity.get(component_id)
+            if column is None:
+                fixed_offset += float(fixed_values[component_id])
+            else:
+                coefficient_by_column[column] = (
+                    coefficient_by_column.get(column, 0.0) + 1.0
+                )
+        items = [
+            (column, coefficient)
+            for column, coefficient in coefficient_by_column.items()
+            if coefficient
+        ]
+        columns = np.asarray([item[0] for item in items], dtype=np.int32)
+        coefficients = np.asarray([item[1] for item in items], dtype=float)
+        semantic_lower = float(metric_row.lower_bound) - fixed_offset
+        semantic_upper = float(metric_row.upper_bound) - fixed_offset
+        solver_row = None
+        if items:
+            solver_row = len(rows)
+            rows.append(items)
+            row_lower.append(
+                solver_lower_bound(
+                    semantic_lower,
+                    bool(metric_row.lower_attained),
+                    open_margin=point_tolerance,
+                )
+            )
+            row_upper.append(
+                solver_upper_bound(
+                    semantic_upper,
+                    bool(metric_row.upper_attained),
+                    open_margin=point_tolerance,
+                )
+            )
+            row_columns.append(columns)
+        row_meta.append(
+            {
+                'constraint_id': f'dynamic_metric:{metric_row.quantity_id}',
+                'quantity_id': str(metric_row.quantity_id),
+                'constraint_kind': 'REGIONAL_CLASS_METRIC_BOUND',
+                'model_layer': 'PUBLICATION_DYNAMIC',
+                'source_observation_ids': (),
+                'source_series': (),
+                'lower_bound': semantic_lower,
+                'upper_bound': semantic_upper,
+                'lower_attained': bool(metric_row.lower_attained),
+                'upper_attained': bool(metric_row.upper_attained),
+                'solver_lower_bound': (
+                    row_lower[solver_row] if solver_row is not None else semantic_lower
+                ),
+                'solver_upper_bound': (
+                    row_upper[solver_row] if solver_row is not None else semantic_upper
+                ),
+                'fixed_offset': fixed_offset,
+                'published_representative': None,
+                'published_representative_status': None,
+                'published_center': None,
+                'constraint_status': (
+                    'DYNAMIC_ACTIVE' if solver_row is not None else 'FIXED_EXPRESSION'
+                ),
+                'solver_row': solver_row,
+                'active_columns': len(items),
+                'expression_indices': columns,
+                'expression_coefficients': coefficients,
             }
         )
 
@@ -235,9 +354,6 @@ def compile_strict_problem(
         matrix=_csr(rows, len(active)),
         row_lower=np.asarray(row_lower, dtype=float),
         row_upper=np.asarray(row_upper, dtype=float),
-        # Use robust closed bounds for semantic open intervals.  Semantic
-        # endpoints remain in variables_grid; the LP moves unattained endpoints
-        # inward far enough to remain effective under Solver feasibility tolerance.
         col_lower=active_lower,
         col_upper=active_upper,
         objective=np.zeros(len(active), dtype=float),
@@ -250,48 +366,84 @@ def compile_strict_problem(
         },
     )
 
-    region_names = bundle.atomic_regions_grid.set_index('region_code')[
-        'region_name'
-    ].astype(str).to_dict()
+    region_meta = bundle.atomic_regions_grid.set_index('region_code').to_dict('index')
+    class_meta = bundle.okved2_classes_grid.set_index('class_code').to_dict('index')
+    connected_by_quantity = variables_grid.set_index('quantity_id')['connected_component_id'].to_dict()
+    ordered_regions = bundle.atomic_regions_grid.sort_values('region_order')
+    ordered_classes = bundle.okved2_classes_grid.sort_values('class_order')
     target_rows: list[dict[str, object]] = []
-    for region in bundle.atomic_regions_grid.sort_values('region_order').itertuples(index=False):
-        for activity in bundle.okved2_classes_grid.sort_values('class_order').itertuples(index=False):
+    for region in ordered_regions.itertuples(index=False):
+        region_code = str(region.region_code)
+        for activity in ordered_classes.itertuples(index=False):
+            class_code = str(activity.class_code)
             for metric in METRIC_COMPONENTS:
-                quantity_id = metric_quantity_id(
-                    str(region.region_code), str(activity.class_code), metric
-                )
+                quantity_id = metric_quantity_id(region_code, class_code, metric)
                 columns: list[int] = []
                 coefficients: list[float] = []
                 constant = 0.0
+                connected: set[str] = set()
                 for component in METRIC_COMPONENTS[metric]:
-                    component_id = component_quantity_id(
-                        str(region.region_code), str(activity.class_code), component
-                    )
+                    component_id = component_quantity_id(region_code, class_code, component)
                     column = column_by_quantity.get(component_id)
                     if column is None:
                         constant += float(fixed_values[component_id])
                     else:
                         columns.append(column)
                         coefficients.append(1.0)
+                        connected_component_id = connected_by_quantity.get(component_id)
+                        if connected_component_id is not None and pd.notna(connected_component_id):
+                            connected.add(str(connected_component_id))
                 target_rows.append(
                     {
-                        'target_id': (
-                            f'{region.region_code}:{activity.class_code}:{metric}'
-                        ),
+                        'target_id': f'metric:{region_code}:{class_code}:{metric}',
+                        'target_kind': 'METRIC',
                         'quantity_id': quantity_id,
-                        'region_code': str(region.region_code),
-                        'region_name': region_names[str(region.region_code)],
-                        'class_code': str(activity.class_code),
+                        'region_code': region_code,
+                        'region_name': str(region_meta[region_code]['region_name']),
+                        'class_code': class_code,
+                        'class_name': str(class_meta[class_code]['class_name']),
                         'metric': metric,
+                        'component': None,
                         'indices': np.asarray(columns, dtype=np.int32),
                         'coefficients': np.asarray(coefficients, dtype=float),
                         'constant': constant,
+                        'connected_component_ids': tuple(sorted(connected)),
                     }
                 )
-    cell_targets = build_cell_target_catalog(
-        bundle, quantities_grid, variables_grid
-    )
-    return StrictCompilation(problem, pd.DataFrame(target_rows), cell_targets)
+            for component in ('performing_rub', 'overdue_rub', 'performing_fx', 'overdue_fx'):
+                quantity_id = component_quantity_id(region_code, class_code, component)
+                column = column_by_quantity.get(quantity_id)
+                constant = float(fixed_values[quantity_id]) if column is None else 0.0
+                connected_component_id = connected_by_quantity.get(quantity_id)
+                connected = ()
+                if connected_component_id is not None and pd.notna(connected_component_id):
+                    connected = (str(connected_component_id),)
+                target_rows.append(
+                    {
+                        'target_id': f'component:{region_code}:{class_code}:{component}',
+                        'target_kind': 'COMPONENT',
+                        'quantity_id': quantity_id,
+                        'region_code': region_code,
+                        'region_name': str(region_meta[region_code]['region_name']),
+                        'class_code': class_code,
+                        'class_name': str(class_meta[class_code]['class_name']),
+                        'metric': component,
+                        'component': component,
+                        'indices': (
+                            np.asarray([], dtype=np.int32)
+                            if column is None
+                            else np.asarray([column], dtype=np.int32)
+                        ),
+                        'coefficients': (
+                            np.asarray([], dtype=float)
+                            if column is None
+                            else np.asarray([1.0], dtype=float)
+                        ),
+                        'constant': constant,
+                        'connected_component_ids': connected,
+                    }
+                )
+    return StrictCompilation(problem=problem, target_catalog_grid=pd.DataFrame(target_rows))
 
 
 def linear_target_from_row(row) -> LinearTarget:
@@ -312,35 +464,145 @@ def refresh_strict_problem_bounds(
     problem: SorsLinearProblem,
     quantities_grid: pd.DataFrame,
 ) -> SorsLinearProblem:
-    """Refresh active column bounds without rebuilding the sparse matrix."""
+    """Refresh every mutable bound of the persistent latent Solver model.
 
-    quantities = quantities_grid.set_index('quantity_id')
+    The deterministic publication fixed point can tighten three kinds of latent
+    objects between Solver waves:
+
+    * atomic components -> Solver column bounds;
+    * official published aggregates -> stable STRICT source rows;
+    * regional class metrics -> stable PUBLICATION_DYNAMIC rows.
+
+    All three are refreshed from one authoritative ``quantities_grid``.  Matrix
+    structure and column identities never change, so target expressions and the
+    persistent HiGHS model remain reusable.
+    """
+
     open_margin = float(problem.metadata.get('point_tolerance', 0.0))
+    quantities = quantities_grid.set_index('quantity_id', drop=False)
+
     active = problem.variables_grid[
         problem.variables_grid['solver_column'].notna()
-    ].copy()
+    ][['quantity_id', 'solver_column']].copy()
     active['solver_column'] = active['solver_column'].astype(int)
     active = active.sort_values('solver_column')
-    lower = np.asarray(
-        [
-            solver_lower_bound(
-                float(quantities.loc[str(row.quantity_id), 'lower_bound']),
-                bool(quantities.loc[str(row.quantity_id), 'lower_attained']),
-                open_margin=open_margin,
+    quantity_ids = active['quantity_id'].astype(str).to_numpy()
+    aligned = quantities.reindex(quantity_ids)
+    if aligned['quantity_id'].isna().any():
+        missing = tuple(quantity_ids[aligned['quantity_id'].isna().to_numpy()])
+        raise ValueError(
+            f'Unknown Solver quantity IDs while refreshing bounds: {missing[:10]}'
+        )
+
+    lower = aligned['lower_bound'].astype(float).to_numpy(copy=True)
+    upper = aligned['upper_bound'].astype(float).to_numpy(copy=True)
+    lower_attained = aligned['lower_attained'].astype(bool).to_numpy()
+    upper_attained = aligned['upper_attained'].astype(bool).to_numpy()
+
+    lower_open = (~lower_attained) & np.isfinite(lower)
+    upper_open = (~upper_attained) & np.isfinite(upper)
+    if lower_open.any():
+        adjacent = np.nextafter(lower[lower_open], np.inf)
+        lower[lower_open] = np.maximum(adjacent, lower[lower_open] + open_margin)
+    if upper_open.any():
+        adjacent = np.nextafter(upper[upper_open], -np.inf)
+        upper[upper_open] = np.minimum(adjacent, upper[upper_open] - open_margin)
+
+    row_lower = problem.row_lower.astype(float).copy()
+    row_upper = problem.row_upper.astype(float).copy()
+    constraints = problem.constraints_grid.copy()
+
+    refreshable = constraints[
+        constraints['quantity_id'].notna()
+        & constraints['constraint_kind'].astype(str).isin(
+            [
+                'REGIONAL_CLASS_METRIC_BOUND',
+                # Official rows keep their original relation kind, so model_layer
+                # rather than a fixed list identifies them below.
+            ]
+        )
+    ].copy()
+    official = constraints[
+        constraints['model_layer'].astype(str).eq('STRICT')
+        & constraints['quantity_id'].notna()
+    ].copy()
+    if not official.empty:
+        refreshable = pd.concat([refreshable, official], ignore_index=False).drop_duplicates(
+            'constraint_id', keep='first'
+        )
+
+    if not refreshable.empty:
+        # Refreshing rows one-by-one with a full-frame boolean mask is O(N²) on
+        # the production model (~46k mutable rows).  Constraint indices are
+        # stable structural identities, so align quantities once and update the
+        # complete row block vectorially.
+        refresh_indices = refreshable.index.to_numpy()
+        refresh_quantity_ids = refreshable['quantity_id'].astype(str).to_numpy()
+        refreshed_quantities = quantities.reindex(refresh_quantity_ids)
+        if refreshed_quantities['quantity_id'].isna().any():
+            missing = tuple(
+                refresh_quantity_ids[
+                    refreshed_quantities['quantity_id'].isna().to_numpy()
+                ]
             )
-            for row in active.itertuples(index=False)
-        ],
-        dtype=float,
-    )
-    upper = np.asarray(
-        [
-            solver_upper_bound(
-                float(quantities.loc[str(row.quantity_id), 'upper_bound']),
-                bool(quantities.loc[str(row.quantity_id), 'upper_attained']),
-                open_margin=open_margin,
+            raise ValueError(
+                'Unknown constraint quantities while refreshing Solver rows: '
+                f'{missing[:10]}'
             )
-            for row in active.itertuples(index=False)
-        ],
-        dtype=float,
+
+        fixed_offsets = (
+            pd.to_numeric(refreshable.get('fixed_offset', 0.0), errors='coerce')
+            .fillna(0.0)
+            .to_numpy(dtype=float)
+            if 'fixed_offset' in refreshable
+            else np.zeros(len(refreshable), dtype=float)
+        )
+        semantic_lower = (
+            refreshed_quantities['lower_bound'].to_numpy(dtype=float) - fixed_offsets
+        )
+        semantic_upper = (
+            refreshed_quantities['upper_bound'].to_numpy(dtype=float) - fixed_offsets
+        )
+        attained_lower = refreshed_quantities['lower_attained'].to_numpy(dtype=bool)
+        attained_upper = refreshed_quantities['upper_attained'].to_numpy(dtype=bool)
+
+        solver_lower = semantic_lower.copy()
+        solver_upper = semantic_upper.copy()
+        finite_lower = np.isfinite(solver_lower)
+        finite_upper = np.isfinite(solver_upper)
+        open_lower = finite_lower & ~attained_lower
+        open_upper = finite_upper & ~attained_upper
+        if open_lower.any():
+            adjacent = np.nextafter(solver_lower[open_lower], np.inf)
+            solver_lower[open_lower] = np.maximum(
+                adjacent, solver_lower[open_lower] + open_margin
+            )
+        if open_upper.any():
+            adjacent = np.nextafter(solver_upper[open_upper], -np.inf)
+            solver_upper[open_upper] = np.minimum(
+                adjacent, solver_upper[open_upper] - open_margin
+            )
+
+        constraints.loc[refresh_indices, 'lower_bound'] = semantic_lower
+        constraints.loc[refresh_indices, 'upper_bound'] = semantic_upper
+        constraints.loc[refresh_indices, 'lower_attained'] = attained_lower
+        constraints.loc[refresh_indices, 'upper_attained'] = attained_upper
+        constraints.loc[refresh_indices, 'solver_lower_bound'] = solver_lower
+        constraints.loc[refresh_indices, 'solver_upper_bound'] = solver_upper
+
+        solver_rows = pd.to_numeric(refreshable['solver_row'], errors='coerce')
+        active_rows = solver_rows.notna().to_numpy()
+        if active_rows.any():
+            row_indices = solver_rows.to_numpy(dtype=float)[active_rows].astype(int)
+            row_lower[row_indices] = solver_lower[active_rows]
+            row_upper[row_indices] = solver_upper[active_rows]
+
+    return replace(
+        problem,
+        col_lower=lower,
+        col_upper=upper,
+        row_lower=row_lower,
+        row_upper=row_upper,
+        constraints_grid=constraints,
     )
-    return replace(problem, col_lower=lower, col_upper=upper)
+

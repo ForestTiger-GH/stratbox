@@ -66,18 +66,11 @@ class RoundingPolicy:
         lower_index = floor(lower_value / self.step + 0.5)
         upper_scaled = upper_value / self.step + 0.5
         nearest = round(upper_scaled)
-        if (
-            not interval.upper_attained
-            and abs(upper_scaled - nearest) <= self.tolerance
-        ):
+        if not interval.upper_attained and abs(upper_scaled - nearest) <= self.tolerance:
             upper_index = int(nearest) - 1
         else:
             upper_index = floor(upper_scaled)
-        return (
-            float(lower_index) * self.step
-            if lower_index == upper_index
-            else None
-        )
+        return float(lower_index) * self.step if lower_index == upper_index else None
 
     def single_bucket(
         self,
@@ -118,21 +111,7 @@ def published_bucket(
     )
 
 
-def solver_lower_bound(
-    value: float,
-    attained: bool,
-    *,
-    open_margin: float = 0.0,
-) -> float:
-    """Convert a semantic lower endpoint to a robust closed solver bound.
-
-    ``nextafter`` preserves the mathematical open interval, but its one-ULP
-    shift is smaller than ordinary LP feasibility tolerances.  ``open_margin``
-    lets production compilers move the bound farther inside the semantic
-    interval while the default keeps the exact adjacent-float behaviour used
-    by low-level publication helpers.
-    """
-
+def solver_lower_bound(value: float, attained: bool, *, open_margin: float = 0.0) -> float:
     value = float(value)
     if attained or not isfinite(value):
         return value
@@ -142,14 +121,7 @@ def solver_lower_bound(
     return max(adjacent, value + float(open_margin))
 
 
-def solver_upper_bound(
-    value: float,
-    attained: bool,
-    *,
-    open_margin: float = 0.0,
-) -> float:
-    """Convert a semantic upper endpoint to a robust closed solver bound."""
-
+def solver_upper_bound(value: float, attained: bool, *, open_margin: float = 0.0) -> float:
     value = float(value)
     if attained or not isfinite(value):
         return value

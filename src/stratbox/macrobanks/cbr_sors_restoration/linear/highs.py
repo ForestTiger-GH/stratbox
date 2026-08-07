@@ -254,6 +254,30 @@ class HighsSession:
         if 'kOk' not in str(status):
             raise RuntimeError(f'HiGHS rejected objective cap: {status}')
 
+    def add_linear_constraint(
+        self,
+        indices: np.ndarray,
+        coefficients: np.ndarray,
+        *,
+        lower: float = -1e30,
+        upper: float = 1e30,
+    ) -> None:
+        indices = np.asarray(indices, dtype=np.int32)
+        coefficients = np.asarray(coefficients, dtype=float)
+        if len(indices) != len(coefficients):
+            raise ValueError('Constraint indices and coefficients must have equal length')
+        effective_lower = -1e30 if not np.isfinite(lower) else float(lower)
+        effective_upper = 1e30 if not np.isfinite(upper) else float(upper)
+        status = self.highs.addRow(
+            effective_lower,
+            effective_upper,
+            int(len(indices)),
+            indices,
+            coefficients,
+        )
+        if 'kOk' not in str(status):
+            raise RuntimeError(f'HiGHS rejected linear constraint: {status}')
+
     def close(self) -> None:
         self.highs = None
 

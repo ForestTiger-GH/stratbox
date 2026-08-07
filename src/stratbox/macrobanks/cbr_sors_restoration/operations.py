@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import replace
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -14,25 +13,30 @@ from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsSourceFiles,
 )
 from stratbox.macrobanks.cbr_sors_restoration.linear.elastic import diagnose_infeasibility
-from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
+from stratbox.macrobanks.cbr_sors_restoration.optimization import run_optimization_fixed_point
+from stratbox.macrobanks.cbr_sors_restoration.publication import (
+    RoundingPolicy,
+    SorsPublicationLedger,
+    build_publication_graph,
+    run_publication_fixed_point,
+)
+from stratbox.macrobanks.cbr_sors_restoration.result_grid import (
+    build_components_grid,
+    build_regional_okved2_grid,
+)
 from stratbox.macrobanks.cbr_sors_restoration.results import (
     SorsRestorationResult,
     SorsRunSummary,
 )
 from stratbox.macrobanks.cbr_sors_restoration.sources import load_sors_sources
-from stratbox.macrobanks.cbr_sors_restoration.strict.closure import SorsClosureState
+from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import SorsIntervalClosureState
 from stratbox.macrobanks.cbr_sors_restoration.strict.compiler import (
     compile_strict_problem,
     refresh_strict_problem_bounds,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.engine import run_cell_resolution
 from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
     attach_observation_bindings,
     build_quantity_graph,
-)
-from stratbox.macrobanks.cbr_sors_restoration.strict.result_grid import (
-    build_components_grid,
-    build_regional_okved2_grid,
 )
 from stratbox.macrobanks.cbr_sors_restoration.strict.solver import run_strict_feasibility
 
@@ -47,10 +51,7 @@ def _hash_payload(payload: object, length: int = 24) -> str:
     ).hexdigest()[:length]
 
 
-def _identities(
-    bundle: SorsSourceBundle,
-    config: SorsRunConfig,
-) -> tuple[str, str, str]:
+def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, str, str]:
     manifest = bundle.source_manifest_grid.sort_values('source_series')
     dataset_id = _hash_payload(
         {
@@ -63,11 +64,10 @@ def _identities(
     ]
     strict_model_id = _hash_payload(
         {
-            'dataset_sources': strict_manifest[
-                ['source_series', 'sha256']
-            ].to_dict('records'),
+            'dataset_sources': strict_manifest[['source_series', 'sha256']].to_dict('records'),
             'publication_step': config.publication_step,
             'rules_version': config.rules_version,
+            'portfolio_scope': config.portfolio_scope,
             'regions': tuple(bundle.atomic_regions_grid['region_code'].astype(str)),
             'classes': tuple(bundle.okved2_classes_grid['class_code'].astype(str)),
         }
@@ -75,17 +75,34 @@ def _identities(
     execution_run_id = _hash_payload(
         {
             'strict_model_id': strict_model_id,
-            'cell_resolution': config.cell_resolution,
+            'deterministic': config.deterministic,
+            'optimization': config.optimization,
             'package_version': _package_version(),
         }
     )
     return dataset_id, strict_model_id, execution_run_id
 
 
+def _concat(frames: list[pd.DataFrame]) -> pd.DataFrame:
+    usable = [frame.dropna(axis=1, how='all') for frame in frames if frame is not None and not frame.empty]
+    return pd.concat(usable, ignore_index=True, sort=False) if usable else pd.DataFrame()
+
+
 def run_sors_restoration(
     source: SorsSourceFiles | SorsSourceBundle,
     config: SorsRunConfig,
 ) -> SorsRestorationResult:
+    """Restore one CBR SORS publication slice.
+
+    Execution order is deliberate and methodologically significant:
+
+    1. latent interval graph;
+    2. zero/bucket + value-inheritance publication fixed point to exhaustion;
+    3. one global latent feasibility gate;
+    4. optimization waves, each returning new publication facts to the same
+       deterministic fixed point before another optimization wave starts.
+    """
+
     bundle = (
         source
         if isinstance(source, SorsSourceBundle)
@@ -95,135 +112,209 @@ def run_sors_restoration(
             publication_step=config.publication_step,
         )
     )
+    if 'portfolio_scope' not in bundle.source_grid:
+        raise ValueError(
+            'SORS source bundle must carry portfolio_scope in source provenance'
+        )
+    source_scopes = tuple(
+        sorted(set(bundle.source_grid['portfolio_scope'].dropna().astype(str)))
+    )
+    if source_scopes != (config.portfolio_scope,):
+        raise ValueError(
+            'SORS run portfolio_scope must match the source bundle exactly: '
+            f'config={config.portfolio_scope!r}, source={source_scopes}'
+        )
+
     dataset_id, strict_model_id, execution_run_id = _identities(bundle, config)
     policy = RoundingPolicy(step=config.publication_step)
 
     graph = build_quantity_graph(bundle)
     bundle = attach_observation_bindings(bundle, graph)
-    closure_state = SorsClosureState(
-        graph, tolerance=config.point_tolerance / 10.0
+    publication_graph = build_publication_graph(graph)
+    ledger = SorsPublicationLedger()
+    closure_state = SorsIntervalClosureState(
+        graph,
+        tolerance=config.point_tolerance / 10.0,
+        max_passes=config.deterministic.interval_closure_max_passes,
     )
-    closure_state.run()
+
+    deterministic = run_publication_fixed_point(
+        closure_state,
+        publication_graph,
+        ledger,
+        policy=policy,
+        point_tolerance=config.point_tolerance,
+        max_passes=config.deterministic.max_fixed_point_passes,
+        inheritance_enabled=config.deterministic.inheritance_enabled,
+    )
+
     compilation = compile_strict_problem(
         bundle,
         graph,
         closure_state.quantities_grid,
         point_tolerance=config.point_tolerance,
     )
-    feasibility = run_strict_feasibility(
-        compilation.problem, config.cell_resolution
-    )
-    solver_runs = feasibility.solver_runs_grid
-    conflicts = pd.DataFrame()
+    feasibility = run_strict_feasibility(compilation.problem, config.optimization)
     strict_status = feasibility.feasibility.status
+    conflicts = pd.DataFrame()
+    solver_frames = [feasibility.solver_runs_grid]
 
+    optimization = None
     if feasibility.feasibility.success:
-        cell_execution = run_cell_resolution(
-            bundle,
-            graph,
-            compilation,
-            closure_state,
-            config.cell_resolution,
-            policy,
-            point_tolerance=config.point_tolerance,
-            feasibility_confirmed=True,
-        )
-        if not cell_execution.solver_runs_grid.empty:
-            solver_runs = pd.concat(
-                [
-                    solver_runs.dropna(axis=1, how='all'),
-                    cell_execution.solver_runs_grid.dropna(axis=1, how='all'),
-                ],
-                ignore_index=True,
-                sort=False,
-            )
         strict_status = 'OPTIMAL'
-    else:
-        provisional_config = replace(config.cell_resolution, mode='closure')
-        cell_execution = run_cell_resolution(
+        ledger.confirm_feasibility(True)
+        optimization = run_optimization_fixed_point(
             bundle,
-            graph,
-            compilation,
+            publication_graph,
             closure_state,
-            provisional_config,
-            policy,
+            ledger,
+            compilation,
+            config.optimization,
+            policy=policy,
             point_tolerance=config.point_tolerance,
-            feasibility_confirmed=False,
+            deterministic_max_passes=config.deterministic.max_fixed_point_passes,
+            inheritance_enabled=config.deterministic.inheritance_enabled,
         )
+        if not optimization.solver_runs_grid.empty:
+            solver_frames.append(optimization.solver_runs_grid)
+        if optimization.status == 'PUBLICATION_FEASIBILITY_CONFLICT':
+            strict_status = 'PUBLICATION_FEASIBILITY_CONFLICT'
+            conflicts = pd.DataFrame([
+                {
+                    'conflict_id': 'publication:optimization:latent_infeasible',
+                    'conflict_status': 'PUBLICATION_FEASIBILITY_CONFLICT',
+                    'message': (
+                        'A publication fact promoted during optimization made the latent '
+                        'model infeasible. All publication facts were withdrawn from the '
+                        'accepted result surface.'
+                    ),
+                }
+            ])
+    else:
+        ledger.confirm_feasibility(False)
         if strict_status == 'INFEASIBLE':
-            conflicts, conflict_runs = diagnose_infeasibility(
-                compilation.problem,
-                time_limit_seconds=config.cell_resolution.per_solve_time_limit_seconds,
-                threads=config.cell_resolution.threads,
-            )
-            solver_runs = pd.concat(
-                [solver_runs, conflict_runs], ignore_index=True, sort=False
-            )
-        else:
-            conflicts = pd.DataFrame(
-                [
+            try:
+                conflicts, conflict_runs = diagnose_infeasibility(
+                    compilation.problem,
+                    time_limit_seconds=config.optimization.per_solve_time_limit_seconds,
+                    threads=config.optimization.threads,
+                )
+                solver_frames.append(conflict_runs)
+            except Exception as exc:
+                conflicts = pd.DataFrame([
                     {
-                        'conflict_id': 'strict:feasibility:incomplete',
-                        'constraint_id': None,
-                        'conflict_status': strict_status,
+                        'conflict_id': 'publication_fixed_point:latent_infeasible',
+                        'conflict_status': 'INFEASIBLE',
                         'message': (
-                            'Strict feasibility was not confirmed; this is not '
-                            'proof of infeasibility.'
+                            'The latent model became infeasible after publication-level '
+                            'promotion. Conflict localization could not complete.'
                         ),
+                        'details': str(exc),
                     }
-                ]
-            )
+                ])
+        else:
+            conflicts = pd.DataFrame([
+                {
+                    'conflict_id': 'strict:feasibility:incomplete',
+                    'conflict_status': strict_status,
+                    'message': (
+                        'Global latent feasibility was not confirmed. Publication facts '
+                        'remain provisional and are not emitted as accepted values.'
+                    ),
+                }
+            ])
 
     final_problem = refresh_strict_problem_bounds(
-        compilation.problem, cell_execution.quantities_grid
+        compilation.problem, closure_state.quantities_grid
     )
+    current_facts = ledger.facts_grid(current_only=True)
     primary_grid = build_regional_okved2_grid(
         bundle,
-        cell_execution.quantities_grid,
+        closure_state.quantities_grid,
+        ledger.facts_grid(),
         as_of_date=config.as_of_date,
         dataset_id=dataset_id,
         strict_model_id=strict_model_id,
         execution_run_id=execution_run_id,
-        policy=policy,
-        point_tolerance=config.point_tolerance,
-        feasibility_confirmed=feasibility.feasibility.success,
+        feasibility_confirmed=bool(ledger.feasibility_confirmed),
         rules_version=config.rules_version,
         solver_backend=feasibility.backend,
         solver_version=feasibility.version,
     )
     components_grid = build_components_grid(
         bundle,
-        cell_execution.quantities_grid,
+        closure_state.quantities_grid,
+        ledger.facts_grid(),
         as_of_date=config.as_of_date,
         dataset_id=dataset_id,
         strict_model_id=strict_model_id,
         execution_run_id=execution_run_id,
     )
-    strict_facts = primary_grid[primary_grid['is_strict_fact'].astype(bool)].copy()
-    component_facts = cell_execution.current_facts_grid
-    exact_components = (
-        int(component_facts['value_precision'].eq('EXACT').sum())
-        if not component_facts.empty
+    restored_facts = primary_grid[primary_grid['is_primary_fact'].astype(bool)].copy()
+    component_facts = (
+        current_facts[current_facts['quantity_kind'].astype(str).eq('ATOMIC_COMPONENT')].copy()
+        if not current_facts.empty
+        else pd.DataFrame()
+    )
+
+    accepted_current = (
+        current_facts[current_facts['is_accepted_fact'].astype(bool)]
+        if not current_facts.empty
+        else pd.DataFrame()
+    )
+    method_counts = (
+        accepted_current['evidence_method'].value_counts().to_dict()
+        if not accepted_current.empty
+        else {}
+    )
+    publication_zero_facts = (
+        int(accepted_current['published_value'].astype(float).eq(0.0).sum())
+        if not accepted_current.empty
         else 0
     )
-    published_components = (
-        int(component_facts['value_precision'].eq('PUBLISHED').sum())
-        if not component_facts.empty
-        else 0
-    )
-    closure_fact_count = int(
-        (
-            primary_grid['derivation_method'].eq('DETERMINISTIC_CLOSURE')
-            & primary_grid['identification_status'].astype(str).str.contains(
-                'IDENTIFIED', regex=False
-            )
-        ).sum()
-    )
-    solver_identified = int(
-        component_facts['uniqueness_basis'].eq('LOCAL_TARGET_SYSTEM').sum()
-        if not component_facts.empty
-        else 0
-    )
+    deterministic_passes = deterministic.passes
+    deterministic_bound_updates = deterministic.bound_updates
+    fixed_point_frames = [deterministic.passes_grid]
+    inheritance_frames = [deterministic.inheritance_events_grid]
+    token_frames = [deterministic.tokens_grid]
+    optimization_status = 'DISABLED'
+    optimization_rounds = 0
+    optimization_targets = 0
+    rounding_profiles = pd.DataFrame()
+    optimization_rounds_grid = pd.DataFrame()
+    target_bounds_grid = pd.DataFrame()
+    selection_attempts_grid = pd.DataFrame()
+    if optimization is not None:
+        optimization_status = optimization.status
+        optimization_rounds = optimization.rounds
+        optimization_targets = optimization.targets_attempted
+        fixed_point_frames.append(optimization.deterministic_passes_grid)
+        inheritance_frames.append(optimization.inheritance_events_grid)
+        token_frames.append(optimization.tokens_grid)
+        rounding_profiles = optimization.rounding_profiles_grid
+        optimization_rounds_grid = optimization.optimization_rounds_grid
+        target_bounds_grid = optimization.target_bounds_grid
+        selection_attempts_grid = optimization.selection_attempts_grid
+    all_fixed_point_passes = _concat(fixed_point_frames)
+    all_inheritance = _concat(inheritance_frames)
+    all_tokens = _concat(token_frames)
+    if not all_tokens.empty and 'token_id' in all_tokens:
+        all_tokens = all_tokens.drop_duplicates('token_id', keep='last').reset_index(drop=True)
+    solver_runs = _concat(solver_frames)
+    if not all_fixed_point_passes.empty:
+        deterministic_passes = len(all_fixed_point_passes)
+        deterministic_bound_updates = int(
+            all_fixed_point_passes.get('interval_bound_updates', pd.Series(dtype=float)).fillna(0).sum()
+        )
+
+    tau_star = None
+    l1_star = None
+    if not rounding_profiles.empty:
+        optimal_profiles = rounding_profiles[rounding_profiles['status'].eq('OPTIMAL')]
+        if not optimal_profiles.empty:
+            tau_star = float(optimal_profiles.iloc[-1].tau_star_mln)
+            l1_star = float(optimal_profiles.iloc[-1].l1_star_mln)
+
     summary = SorsRunSummary(
         dataset_id=dataset_id,
         strict_model_id=strict_model_id,
@@ -237,89 +328,99 @@ def run_sors_restoration(
         atomic_regions=len(bundle.atomic_regions_grid),
         okved2_classes=len(bundle.okved2_classes_grid),
         component_quantities=int(
-            cell_execution.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum()
+            closure_state.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum()
         ),
         regional_metric_rows=len(primary_grid),
-        raw_publication_observations=int(
-            graph.observation_bindings_grid['source_series'].astype(str).ne('01_05_D').sum()
+        raw_publication_observations=len(graph.observation_bindings_grid),
+        unique_publication_constraints=int(
+            compilation.problem.constraints_grid['model_layer'].astype(str).eq('STRICT').sum()
         ),
-        unique_publication_constraints=len(compilation.problem.constraints_grid),
-        closure_passes=closure_state.total_passes,
-        closure_identified_facts=closure_fact_count,
-        lp_identified_facts=solver_identified,
-        strict_facts=len(strict_facts),
-        cell_resolution_status=cell_execution.status,
-        fixed_point_passes=cell_execution.fixed_point_passes,
-        cell_targets_attempted=cell_execution.target_attempts,
-        cell_targets_resolved=cell_execution.target_values_resolved,
-        cell_targets_resolved_by_local_system=(
-            cell_execution.target_values_resolved_by_local_system
+        deterministic_status=deterministic.status,
+        deterministic_passes=deterministic_passes,
+        deterministic_bound_updates=deterministic_bound_updates,
+        publication_facts=len(accepted_current),
+        publication_zero_facts=publication_zero_facts,
+        inherited_facts=int(method_counts.get('PUBLISHED_VALUE_INHERITED', 0)),
+        strict_identified_facts=int(
+            method_counts.get('LATENT_POINT_IDENTIFIED', 0)
+            + method_counts.get('PUBLISHED_BUCKET_IDENTIFIED', 0)
         ),
-        component_facts=len(component_facts),
-        exact_component_facts=exact_components,
-        published_component_facts=published_components,
+        rounding_optimal_facts=int(method_counts.get('ROUNDING_OPTIMUM_IDENTIFIED', 0)),
+        rounding_selected_facts=int(method_counts.get('ROUNDING_SELECTED', 0)),
+        optimization_status=optimization_status,
+        optimization_rounds=optimization_rounds,
+        optimization_targets_attempted=optimization_targets,
+        tau_star_mln=tau_star,
+        l1_star_mln=l1_star,
     )
-    audit = pd.DataFrame(
-        [
-            {'key': 'created_at_utc', 'value': datetime.now(timezone.utc).isoformat()},
-            {'key': 'strategy_box_version', 'value': _package_version()},
-            {'key': 'dataset_id', 'value': dataset_id},
-            {'key': 'strict_model_id', 'value': strict_model_id},
-            {'key': 'execution_run_id', 'value': execution_run_id},
-            {'key': 'strict_status', 'value': strict_status},
-            {'key': 'cell_resolution_status', 'value': cell_execution.status},
-            {'key': 'publication_step', 'value': config.publication_step},
-            {'key': 'source_rows', 'value': len(bundle.source_grid)},
-            {'key': 'component_quantities', 'value': summary.component_quantities},
-            {'key': 'strict_variables', 'value': final_problem.num_variables},
-            {'key': 'strict_constraints', 'value': final_problem.num_constraints},
-            {'key': 'strict_nnz', 'value': final_problem.matrix.nnz},
-            {'key': 'closure_passes', 'value': closure_state.total_passes},
-            {'key': 'component_facts', 'value': len(component_facts)},
-            {'key': 'strict_metric_facts', 'value': len(strict_facts)},
-            {'key': 'cell_target_attempts', 'value': cell_execution.target_attempts},
-            {'key': 'cell_targets_resolved', 'value': cell_execution.target_values_resolved},
-            {
-                'key': 'cell_targets_resolved_by_local_system',
-                'value': cell_execution.target_values_resolved_by_local_system,
-            },
-            {
-                'key': 'target_architecture',
-                'value': (
-                    'persistent constraint graph → local RKVS horizons → '
-                    'internal uniqueness proof → fact ledger → affected closure'
-                ),
-            },
-            {
-                'key': 'crosswalk_relation_system',
-                'value': (
-                    'separate evidence layer; not injected into STRICT until '
-                    'its scenario is globally feasible'
-                ),
-            },
-        ]
-    )
+
+    audit = pd.DataFrame([
+        {'key': 'created_at_utc', 'value': datetime.now(timezone.utc).isoformat()},
+        {'key': 'strategy_box_version', 'value': _package_version()},
+        {'key': 'dataset_id', 'value': dataset_id},
+        {'key': 'strict_model_id', 'value': strict_model_id},
+        {'key': 'execution_run_id', 'value': execution_run_id},
+        {'key': 'rules_version', 'value': config.rules_version},
+        {'key': 'portfolio_scope', 'value': config.portfolio_scope},
+        {'key': 'strict_status', 'value': strict_status},
+        {'key': 'deterministic_status', 'value': deterministic.status},
+        {'key': 'optimization_status', 'value': optimization_status},
+        {'key': 'publication_step', 'value': config.publication_step},
+        {'key': 'strict_variables', 'value': final_problem.num_variables},
+        {'key': 'solver_constraints', 'value': final_problem.num_constraints},
+        {
+            'key': 'official_publication_constraints',
+            'value': int(
+                final_problem.constraints_grid['model_layer'].astype(str).eq('STRICT').sum()
+            ),
+        },
+        {'key': 'strict_nnz', 'value': final_problem.matrix.nnz},
+        {'key': 'publication_partitions', 'value': len(publication_graph.partitions_grid)},
+        {'key': 'publication_facts', 'value': summary.publication_facts},
+        {'key': 'publication_zero_facts', 'value': summary.publication_zero_facts},
+        {'key': 'inherited_facts', 'value': summary.inherited_facts},
+        {'key': 'rounding_tau_star_mln', 'value': tau_star},
+        {'key': 'rounding_l1_star_mln', 'value': l1_star},
+        {
+            'key': 'restoration_architecture',
+            'value': (
+                'latent interval graph → deterministic publication fixed point '
+                '(zero/bucket ↔ inheritance) → global feasibility → strict min/max '
+                '→ deterministic fixed point → minimum rounding distortion → '
+                'optimal-face certification/selection → deterministic fixed point'
+            ),
+        },
+        {
+            'key': 'crosswalk_relation_system',
+            'value': 'separate conditional evidence layer after the official publication fixed point',
+        },
+    ])
+
     return SorsRestorationResult(
         source_grid=bundle.source_grid,
         source_manifest_grid=bundle.source_manifest_grid,
         validation_grid=bundle.validation_grid,
         regional_okved2_grid=primary_grid,
-        strict_components_grid=components_grid,
-        strict_facts_grid=strict_facts,
-        derivations_grid=cell_execution.derivations_grid,
+        components_grid=components_grid,
+        restored_facts_grid=restored_facts,
+        derivations_grid=closure_state.derivations_grid,
         constraints_grid=final_problem.constraints_grid,
         variables_grid=final_problem.variables_grid,
         solver_runs_grid=solver_runs,
         conflicts_grid=conflicts,
         audit_grid=audit,
         summary=summary,
-        facts_ledger_grid=cell_execution.facts_ledger_grid,
-        current_component_facts_grid=cell_execution.current_facts_grid,
-        cell_target_plan_grid=cell_execution.cell_target_plan_grid,
-        cell_attempts_grid=cell_execution.cell_attempts_grid,
-        cell_subsystems_grid=cell_execution.cell_subsystems_grid,
-        promotion_events_grid=cell_execution.promotion_events_grid,
-        fixed_point_passes_grid=cell_execution.fixed_point_passes_grid,
+        facts_ledger_grid=ledger.facts_grid(),
+        current_component_facts_grid=component_facts,
+        publication_partitions_grid=publication_graph.partitions_grid,
+        inheritance_events_grid=all_inheritance,
+        publication_tokens_grid=all_tokens,
+        promotion_events_grid=ledger.promotion_events_grid(),
+        fixed_point_passes_grid=all_fixed_point_passes,
+        optimization_rounds_grid=optimization_rounds_grid,
+        target_bounds_grid=target_bounds_grid,
+        rounding_profiles_grid=rounding_profiles,
+        selection_attempts_grid=selection_attempts_grid,
         _source_bundle=bundle,
         _strict_problem=final_problem,
     )

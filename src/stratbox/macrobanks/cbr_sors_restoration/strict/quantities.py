@@ -68,6 +68,17 @@ def _intersection(records: pd.DataFrame) -> tuple[float, float, bool, bool]:
 def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
     regions = bundle.atomic_regions_grid.sort_values('region_order')
     classes = bundle.okved2_classes_grid.sort_values('class_order')
+    scopes = (
+        tuple(sorted(set(bundle.source_grid['portfolio_scope'].dropna().astype(str))))
+        if 'portfolio_scope' in bundle.source_grid
+        else ('CORPORATE_TOTAL',)
+    )
+    if len(scopes) != 1:
+        raise ValueError(
+            'One SORS quantity graph must represent exactly one portfolio scope; '
+            f'got {scopes}'
+        )
+    portfolio_scope = scopes[0]
     quantity_rows: list[dict[str, object]] = []
     relation_rows: list[dict[str, object]] = []
 
@@ -80,10 +91,13 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
                             str(region.region_code), str(activity.class_code), component
                         ),
                         'quantity_kind': 'ATOMIC_COMPONENT',
+                        'portfolio_scope': portfolio_scope,
                         'region_code': str(region.region_code),
                         'class_code': str(activity.class_code),
                         'component': component,
                         'metric': None,
+                        'support_region_codes': (str(region.region_code),),
+                        'support_class_codes': (str(activity.class_code),),
                         'lower_bound': 0.0,
                         'upper_bound': inf,
                         'lower_attained': True,
@@ -102,10 +116,13 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
                     {
                         'quantity_id': parent,
                         'quantity_kind': 'REGIONAL_CLASS_METRIC',
+                        'portfolio_scope': portfolio_scope,
                         'region_code': str(region.region_code),
                         'class_code': str(activity.class_code),
                         'component': None,
                         'metric': metric,
+                        'support_region_codes': (str(region.region_code),),
+                        'support_class_codes': (str(activity.class_code),),
                         'lower_bound': 0.0,
                         'upper_bound': inf,
                         'lower_attained': True,
@@ -151,14 +168,22 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
     for quantity_id, group in bound_source.groupby('_publication_quantity_id', sort=True):
         lower, upper, lower_attained, upper_attained = _intersection(group)
         first = group.iloc[0]
+        representatives = tuple(sorted(set(group['value'].astype(float))))
+        representative = representatives[0] if len(representatives) == 1 else None
+        representative_status = (
+            'STABLE' if representative is not None else 'MULTI_SOURCE_CONFLICT'
+        )
         quantity_rows.append(
             {
                 'quantity_id': str(quantity_id),
                 'quantity_kind': 'PUBLISHED_AGGREGATE',
+                'portfolio_scope': portfolio_scope,
                 'region_code': None,
                 'class_code': None,
                 'component': None,
                 'metric': str(first.metric),
+                'support_region_codes': (),
+                'support_class_codes': (),
                 'lower_bound': lower,
                 'upper_bound': upper,
                 'lower_attained': lower_attained,
@@ -167,6 +192,11 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
                 'initial_upper_bound': upper,
                 'initial_lower_attained': lower_attained,
                 'initial_upper_attained': upper_attained,
+                'published_representative': representative,
+                'published_representative_status': representative_status,
+                'published_representatives': representatives,
+                'source_observation_ids': tuple(group['observation_id'].astype(str)),
+                'source_series': tuple(group['source_series'].astype(str)),
             }
         )
         for row in group.itertuples(index=False):
@@ -210,6 +240,7 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
         for row in quantity_rows
         if row['quantity_kind'] == 'PUBLISHED_AGGREGATE'
     ]
+    publication_support: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
     for quantity_id in sorted(publication_ids):
         parts = quantity_id.split(':')
         metric = parts[-1]
@@ -231,6 +262,10 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
             kind = 'FD_SECTION'
         else:
             raise AssertionError(quantity_id)
+        publication_support[str(quantity_id)] = (
+            tuple(str(value) for value in region_codes),
+            tuple(str(value) for value in class_codes),
+        )
         children = tuple(
             metric_quantity_id(region_code, class_code, metric)
             for region_code in region_codes
@@ -247,6 +282,19 @@ def build_quantity_graph(bundle: SorsSourceBundle) -> SorsQuantityGraph:
         )
 
     quantities = pd.DataFrame(quantity_rows).sort_values('quantity_id').reset_index(drop=True)
+    if publication_support:
+        published_mask = quantities['quantity_kind'].astype(str).eq('PUBLISHED_AGGREGATE')
+        for index in quantities.index[published_mask]:
+            quantity_id = str(quantities.at[index, 'quantity_id'])
+            region_support, class_support = publication_support[quantity_id]
+            quantities.at[index, 'support_region_codes'] = region_support
+            quantities.at[index, 'support_class_codes'] = class_support
+    # Evidence provenance is carried by each active interval endpoint.  Tier 0
+    # means the bound follows only from official latent constraints.  Higher
+    # tiers are introduced only when publication-level reconstructed facts are
+    # fed back as buckets.
+    quantities['lower_assumption_tier'] = 0
+    quantities['upper_assumption_tier'] = 0
     relations = pd.DataFrame(relation_rows).sort_values('relation_id').reset_index(drop=True)
     bindings = pd.DataFrame(binding_rows).sort_values(
         ['quantity_id', 'observation_id']

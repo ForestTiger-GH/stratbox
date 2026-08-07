@@ -9,7 +9,7 @@ import pytest
 
 from stratbox.macrobanks.cbr_sors_restoration import (
     SorsCrosswalkConfig,
-    SorsCellResolutionConfig,
+    SorsOptimizationConfig,
     SorsRunConfig,
     SorsSourceFiles,
     SorsWorkbookRequest,
@@ -53,7 +53,8 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     structural_seconds = perf_counter() - started
     assert structural_seconds < 120
     assert len(result.regional_okved2_grid) == 44_880
-    assert result.summary.closure_identified_facts == 11_274
+    component_zeros = result.current_component_facts_grid
+    assert int(component_zeros['published_value'].astype(float).eq(0.0).sum()) == 11_274
 
     started = perf_counter()
     workbook = export_sors_workbook(
@@ -78,17 +79,16 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
         _files(),
         SorsRunConfig(
             as_of_date='2026-06-01',
-            cell_resolution=SorsCellResolutionConfig(
+            optimization=SorsOptimizationConfig(
                 mode='priority',
-                max_target_attempts=target_budget,
+                max_targets=target_budget,
                 per_solve_time_limit_seconds=30,
-                run_time_limit_seconds=1_800,
             ),
         ),
     )
     assert perf_counter() - started < maximum_seconds
     assert result.summary.strict_status == 'OPTIMAL'
-    assert result.summary.cell_targets_attempted <= target_budget
+    assert result.summary.optimization_targets_attempted <= target_budget
 
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')
