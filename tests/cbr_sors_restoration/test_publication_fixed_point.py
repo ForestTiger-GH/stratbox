@@ -27,10 +27,21 @@ def _row(
     representative=None,
     status=None,
 ):
+    publication_axis = None
+    if kind == 'PUBLISHED_AGGREGATE':
+        if 'national_total' in str(quantity_id):
+            publication_axis = 'NATIONAL_TOTAL'
+        elif 'geography:' in str(quantity_id):
+            publication_axis = 'GEOGRAPHY_TOTAL'
+        elif 'national_class:' in str(quantity_id):
+            publication_axis = 'NATIONAL_CLASS'
+        elif 'fd_section:' in str(quantity_id):
+            publication_axis = 'FD_SECTION'
     return {
         'quantity_id': quantity_id,
         'quantity_kind': kind,
         'portfolio_scope': 'CORPORATE_TOTAL',
+        'publication_axis': publication_axis,
         'region_code': region_code,
         'class_code': class_code,
         'component': None,

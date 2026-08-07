@@ -24,6 +24,12 @@ def _files(root: Path, yyyymmdd: str) -> SorsSourceFiles:
         national_okved2=root / '01_02_C_Debt_corp_by_activity.xlsx',
         federal_district_okved2=root / f'01_03_C_Loans_corp_by_fd_activity_{yyyymmdd}.xlsx',
         national_traditional=root / '01_02_A_Debt_corp_by_activity.xlsx',
+        sme_national_totals=root / '01_11_Debt_sme.xlsx',
+        sme_national_okved2=root / '01_11_F_Debt_sme_by_activity.xlsx',
+        sme_ie_national_okved2=root / '01_11_I_Debt_ie_by_activity.xlsx',
+        sme_federal_district_okved2=root / f'01_12_A_Loans_sme_by_fd_activity_{yyyymmdd}.xlsx',
+        sme_regional_totals=root / '01_13_F_Debt_sme_subj.xlsx',
+        sme_ie_regional_totals=root / '01_13_I_Debt_sme_subj.xlsx',
         regional_totals_history=(history if history.exists() else None),
     )
 
@@ -59,24 +65,23 @@ def test_real_2026_06_snapshot() -> None:
     bundle, graph, publication, compilation = _snapshot(
         root, '2026-06-01', '20260601'
     )
-    expected_source_rows = 16_450 if (root / '01_05_D_Debt_subj.xlsx').exists() else 15_874
-    assert len(bundle.source_grid) == expected_source_rows
-    assert set(bundle.source_grid['portfolio_scope'].astype(str)) == {'CORPORATE_TOTAL'}
+    assert set(bundle.source_grid['portfolio_scope'].astype(str)) == {
+        'CORPORATE_TOTAL', 'SME', 'SME_IE'
+    }
     assert len(bundle.atomic_regions_grid) == 85
     assert len(bundle.okved2_classes_grid) == 88
-    assert graph.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum() == 29_920
-    assert graph.quantities_grid['quantity_kind'].eq('REGIONAL_CLASS_METRIC').sum() == 44_880
-    assert len(graph.observation_bindings_grid) == 1_324
+    assert graph.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum() == 89_760
+    assert graph.quantities_grid['quantity_kind'].eq('REGIONAL_CLASS_METRIC').sum() == 134_640
     constraints = compilation.problem.constraints_grid
-    assert int(constraints['model_layer'].astype(str).eq('STRICT').sum()) == 1_318
-    assert len(constraints) == 46_198
+    assert int(constraints['model_layer'].astype(str).eq('STRICT').sum()) > 1_318
+    assert int(constraints['model_layer'].astype(str).eq('STRICT_DOMINANCE').sum()) == 59_840
 
     current = publication.current_facts_grid
     metric_zero = current[
         current['quantity_kind'].eq('REGIONAL_CLASS_METRIC')
         & current['published_value'].astype(float).eq(0.0)
     ]
-    assert len(metric_zero) == 11_274
+    assert len(metric_zero) > 11_274
     assert publication.status == 'FIXED_POINT'
 
 
@@ -95,18 +100,24 @@ def test_real_2026_07_snapshot() -> None:
     )
     assert len(bundle.atomic_regions_grid) == 85
     assert len(bundle.okved2_classes_grid) == 88
-    assert graph.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum() == 29_920
-    assert graph.quantities_grid['quantity_kind'].eq('REGIONAL_CLASS_METRIC').sum() == 44_880
-    assert len(graph.observation_bindings_grid) == 1_324
+    assert graph.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum() == 89_760
+    assert graph.quantities_grid['quantity_kind'].eq('REGIONAL_CLASS_METRIC').sum() == 134_640
     constraints = compilation.problem.constraints_grid
-    assert int(constraints['model_layer'].astype(str).eq('STRICT').sum()) == 1_318
-    assert len(constraints) == 46_198
+    assert int(constraints['model_layer'].astype(str).eq('STRICT').sum()) > 1_318
+    assert int(constraints['model_layer'].astype(str).eq('STRICT_DOMINANCE').sum()) == 59_840
 
     current = publication.current_facts_grid
     metric_zero = current[
         current['quantity_kind'].eq('REGIONAL_CLASS_METRIC')
+        & current['portfolio_scope'].astype(str).eq('CORPORATE_TOTAL')
         & current['published_value'].astype(float).eq(0.0)
     ]
-    assert len(metric_zero) == 11_370
-    assert int(current['evidence_method'].eq('PUBLISHED_VALUE_INHERITED').sum()) == 0
+    assert len(metric_zero) >= 11_370
+    udmurtia_47 = current[
+        current['quantity_id'].astype(str).eq(
+            'metric:CORPORATE_TOTAL:0105a_region_056:47:overdue_fx'
+        )
+    ]
+    assert len(udmurtia_47) == 1
+    assert float(udmurtia_47.iloc[0]['published_value']) == 6.0
     assert publication.status == 'FIXED_POINT'

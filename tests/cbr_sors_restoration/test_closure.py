@@ -116,3 +116,48 @@ def test_negative_child_upper_residual_is_reported_as_conflict() -> None:
         assert 'a' in set(exc.conflicts_grid['quantity_id'])
     else:
         raise AssertionError('Negative residual upper bound must be infeasible')
+
+
+def test_dominance_propagates_overdue_upper_and_debt_lower() -> None:
+    quantities = pd.DataFrame(
+        [
+            {
+                'quantity_id': 'debt',
+                'quantity_kind': 'TEST',
+                'lower_bound': 0.0,
+                'upper_bound': 10.0,
+                'lower_attained': True,
+                'upper_attained': True,
+                'lower_assumption_tier': 0,
+                'upper_assumption_tier': 0,
+            },
+            {
+                'quantity_id': 'overdue',
+                'quantity_kind': 'TEST',
+                'lower_bound': 7.0,
+                'upper_bound': 100.0,
+                'lower_attained': True,
+                'upper_attained': True,
+                'lower_assumption_tier': 0,
+                'upper_assumption_tier': 0,
+            },
+        ]
+    )
+    relations = pd.DataFrame(
+        [
+            {
+                'relation_id': 'dominance:overdue<=debt',
+                'relation_kind': 'DOMINANCE',
+                'dominance_kind': 'METRIC_MONOTONICITY',
+                'parent_quantity_id': 'debt',
+                'child_quantity_ids': ('overdue',),
+                'source_observation_ids': (),
+            }
+        ]
+    )
+    result = run_interval_closure(
+        SorsQuantityGraph(quantities, relations, pd.DataFrame())
+    )
+    q = result.quantities_grid.set_index('quantity_id')
+    assert q.loc['overdue', 'upper_bound'] == 10.0
+    assert q.loc['debt', 'lower_bound'] == 7.0

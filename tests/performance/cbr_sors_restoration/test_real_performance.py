@@ -40,6 +40,14 @@ def _files() -> SorsSourceFiles:
             root / '01_03_C_Loans_corp_by_fd_activity_20260601.xlsx'
         ),
         national_traditional=root / '01_02_A_Debt_corp_by_activity.xlsx',
+        sme_national_totals=root / '01_11_Debt_sme.xlsx',
+        sme_national_okved2=root / '01_11_F_Debt_sme_by_activity.xlsx',
+        sme_ie_national_okved2=root / '01_11_I_Debt_ie_by_activity.xlsx',
+        sme_federal_district_okved2=(
+            root / '01_12_A_Loans_sme_by_fd_activity_20260601.xlsx'
+        ),
+        sme_regional_totals=root / '01_13_F_Debt_sme_subj.xlsx',
+        sme_ie_regional_totals=root / '01_13_I_Debt_sme_subj.xlsx',
         regional_totals_history=root / '01_05_D_Debt_subj.xlsx',
     )
 

@@ -290,6 +290,9 @@ class SorsPublicationLedger:
     ) -> bool:
         if evidence_method not in {
             'ROUNDING_OPTIMUM_IDENTIFIED',
+            'ROUNDING_OPTIMUM_CLOSURE',
+            'ROUNDING_PREFERRED',
+            'ROUNDING_PREFERRED_CLOSURE',
             'ROUNDING_SELECTED',
             'ROUNDING_SELECTED_CLOSURE',
         }:
@@ -317,21 +320,45 @@ class SorsPublicationLedger:
         policy: RoundingPolicy,
         tolerance: float,
     ) -> tuple[pd.DataFrame, set[str]]:
+        """Intersect current publication facts with latent bounds in one array pass.
+
+        The multi-scope model can hold tens of thousands of current publication
+        facts.  Per-cell ``DataFrame.at`` access made every publication sweep scale
+        very poorly once SME/SME-IE were added.  Quantity identity is stable, so we
+        map it once and update NumPy arrays while preserving exactly the same
+        endpoint/tier semantics.
+        """
+
         out = quantities_grid.copy()
         if 'lower_assumption_tier' not in out:
             out['lower_assumption_tier'] = 0
         if 'upper_assumption_tier' not in out:
             out['upper_assumption_tier'] = 0
-        positions = {
-            str(value): index
-            for index, value in zip(out.index, out['quantity_id'], strict=True)
-        }
+
+        quantity_ids = tuple(out['quantity_id'].astype(str))
+        positions = {quantity_id: index for index, quantity_id in enumerate(quantity_ids)}
+        lower = out['lower_bound'].astype(float).to_numpy(copy=True)
+        upper = out['upper_bound'].astype(float).to_numpy(copy=True)
+        lower_attained = out['lower_attained'].astype(bool).to_numpy(copy=True)
+        upper_attained = out['upper_attained'].astype(bool).to_numpy(copy=True)
+        lower_tier = out['lower_assumption_tier'].fillna(0).astype(int).to_numpy(copy=True)
+        upper_tier = out['upper_assumption_tier'].fillna(0).astype(int).to_numpy(copy=True)
+        fact_ids = (
+            out['publication_fact_id'].astype(object).to_numpy(copy=True)
+            if 'publication_fact_id' in out
+            else __import__('numpy').full(len(out), None, dtype=object)
+        )
+        evidence = (
+            out['publication_evidence_method'].astype(object).to_numpy(copy=True)
+            if 'publication_evidence_method' in out
+            else __import__('numpy').full(len(out), None, dtype=object)
+        )
         changed: set[str] = set()
 
-        def intersect_lower(index, candidate, attained, tier):
-            old = float(out.at[index, 'lower_bound'])
-            old_attained = bool(out.at[index, 'lower_attained'])
-            old_tier = int(out.at[index, 'lower_assumption_tier'])
+        def lower_intersection(index: int, candidate: float, attained: bool, tier: int):
+            old = float(lower[index])
+            old_attained = bool(lower_attained[index])
+            old_tier = int(lower_tier[index])
             if candidate > old + tolerance:
                 return candidate, attained, tier, True
             if abs(candidate - old) <= tolerance:
@@ -341,10 +368,10 @@ class SorsPublicationLedger:
                     return old, old_attained, tier, True
             return old, old_attained, old_tier, False
 
-        def intersect_upper(index, candidate, attained, tier):
-            old = float(out.at[index, 'upper_bound'])
-            old_attained = bool(out.at[index, 'upper_attained'])
-            old_tier = int(out.at[index, 'upper_assumption_tier'])
+        def upper_intersection(index: int, candidate: float, attained: bool, tier: int):
+            old = float(upper[index])
+            old_attained = bool(upper_attained[index])
+            old_tier = int(upper_tier[index])
             if candidate < old - tolerance:
                 return candidate, attained, tier, True
             if abs(candidate - old) <= tolerance:
@@ -355,32 +382,36 @@ class SorsPublicationLedger:
             return old, old_attained, old_tier, False
 
         for quantity_id, record_index in self._current_by_quantity.items():
-            if quantity_id not in positions:
+            index = positions.get(str(quantity_id))
+            if index is None:
                 continue
             fact = self._records[record_index]
-            index = positions[quantity_id]
             fact_tier = int(fact.get('assumption_tier', 0))
             if fact['latent_constraint_mode'] == 'POINT' and fact['latent_value'] is not None:
                 candidate = float(fact['latent_value'])
-                new_lower, new_lower_attained, new_lower_tier, lower_changed = intersect_lower(
-                    index, candidate, True, STRICT_OFFICIAL_TIER
+                new_lower, new_lower_attained, new_lower_tier, lower_changed = (
+                    lower_intersection(index, candidate, True, STRICT_OFFICIAL_TIER)
                 )
-                new_upper, new_upper_attained, new_upper_tier, upper_changed = intersect_upper(
-                    index, candidate, True, STRICT_OFFICIAL_TIER
+                new_upper, new_upper_attained, new_upper_tier, upper_changed = (
+                    upper_intersection(index, candidate, True, STRICT_OFFICIAL_TIER)
                 )
             else:
                 interval = policy.interval(float(fact['published_value']))
-                new_lower, new_lower_attained, new_lower_tier, lower_changed = intersect_lower(
-                    index, interval.lower, interval.lower_attained, fact_tier
+                new_lower, new_lower_attained, new_lower_tier, lower_changed = (
+                    lower_intersection(
+                        index, interval.lower, interval.lower_attained, fact_tier
+                    )
                 )
-                new_upper, new_upper_attained, new_upper_tier, upper_changed = intersect_upper(
-                    index, interval.upper, interval.upper_attained, fact_tier
+                new_upper, new_upper_attained, new_upper_tier, upper_changed = (
+                    upper_intersection(
+                        index, interval.upper, interval.upper_attained, fact_tier
+                    )
                 )
+
             if new_lower > new_upper + tolerance:
                 raise SorsPublicationFactConflict(
                     f'Publication fact for {quantity_id} is incompatible with latent bounds '
-                    f'[{out.at[index, "lower_bound"]}, {out.at[index, "upper_bound"]}] '
-                    f'-> [{new_lower}, {new_upper}]'
+                    f'[{lower[index]}, {upper[index]}] -> [{new_lower}, {new_upper}]'
                 )
             endpoint_empty = (
                 abs(new_lower - new_upper) <= tolerance
@@ -391,15 +422,24 @@ class SorsPublicationLedger:
                     f'Publication fact for {quantity_id} creates an empty open point interval'
                 )
             if lower_changed or upper_changed:
-                out.at[index, 'lower_bound'] = new_lower
-                out.at[index, 'upper_bound'] = new_upper
-                out.at[index, 'lower_attained'] = new_lower_attained
-                out.at[index, 'upper_attained'] = new_upper_attained
-                out.at[index, 'lower_assumption_tier'] = int(new_lower_tier)
-                out.at[index, 'upper_assumption_tier'] = int(new_upper_tier)
-                out.at[index, 'publication_fact_id'] = fact['fact_id']
-                out.at[index, 'publication_evidence_method'] = fact['evidence_method']
-                changed.add(quantity_id)
+                lower[index] = new_lower
+                upper[index] = new_upper
+                lower_attained[index] = new_lower_attained
+                upper_attained[index] = new_upper_attained
+                lower_tier[index] = int(new_lower_tier)
+                upper_tier[index] = int(new_upper_tier)
+                fact_ids[index] = fact['fact_id']
+                evidence[index] = fact['evidence_method']
+                changed.add(str(quantity_id))
+
+        out['lower_bound'] = lower
+        out['upper_bound'] = upper
+        out['lower_attained'] = lower_attained
+        out['upper_attained'] = upper_attained
+        out['lower_assumption_tier'] = lower_tier.astype(int)
+        out['upper_assumption_tier'] = upper_tier.astype(int)
+        out['publication_fact_id'] = fact_ids
+        out['publication_evidence_method'] = evidence
         return out, changed
 
     def confirm_feasibility(self, confirmed: bool) -> None:
@@ -408,13 +448,31 @@ class SorsPublicationLedger:
             record['feasibility_confirmed'] = bool(confirmed)
             record['is_accepted_fact'] = bool(confirmed)
 
+    def current_zero_count(self) -> int:
+        """Count current publication-zero facts without materializing a DataFrame."""
+
+        return sum(
+            1
+            for index in self._current_by_quantity.values()
+            if float(self._records[index]['published_value']) == 0.0
+        )
+
     def facts_grid(self, *, current_only: bool = False) -> pd.DataFrame:
-        frame = pd.DataFrame(self._records)
-        if frame.empty:
-            return frame
+        """Materialize ledger rows in promotion order.
+
+        Records are append-only and therefore already ordered by
+        ``promotion_sequence``.  Building the complete frame and sorting/filtering
+        it on every publication pass became very expensive once multi-scope closure
+        produced ~90k facts.  Current rows can be selected by their record indices
+        directly, while the full ledger needs no sort at all.
+        """
+
+        if not self._records:
+            return pd.DataFrame()
         if current_only:
-            frame = frame[frame['is_current'].astype(bool)].copy()
-        return frame.sort_values('promotion_sequence', kind='stable').reset_index(drop=True)
+            indices = sorted(self._current_by_quantity.values())
+            return pd.DataFrame([self._records[index] for index in indices]).reset_index(drop=True)
+        return pd.DataFrame(self._records).reset_index(drop=True)
 
     def promotion_events_grid(self) -> pd.DataFrame:
         return pd.DataFrame(self._events)

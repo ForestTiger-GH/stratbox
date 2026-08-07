@@ -39,6 +39,7 @@ def _support_record(row) -> dict[str, object]:
         'quantity_kind': str(row.quantity_kind),
         'portfolio_scope': getattr(row, 'portfolio_scope', None),
         'metric': str(getattr(row, 'metric', '')),
+        'publication_axis': getattr(row, 'publication_axis', None),
         'regions': regions,
         'classes': classes,
         'cell_count': len(regions) * len(classes),
@@ -48,24 +49,30 @@ def _support_record(row) -> dict[str, object]:
     }
 
 
-def _source_family(quantity_id: str, region_count: int) -> str | None:
-    if quantity_id.startswith('publication:geography:') and region_count == 1:
+def _source_family(record: dict[str, object]) -> str | None:
+    axis = str(record.get('publication_axis') or '')
+    regions = record['regions']
+    assert isinstance(regions, frozenset)
+    if axis == 'GEOGRAPHY_TOTAL' and len(regions) == 1:
         return 'ATOMIC_GEOGRAPHY'
-    if quantity_id.startswith('publication:national_class:'):
+    if axis == 'NATIONAL_CLASS':
         return 'NATIONAL_CLASS'
-    if quantity_id.startswith('publication:fd_section:'):
+    if axis == 'FD_SECTION':
         return 'FD_SECTION'
     return None
 
 
-def _parent_allowed_families(quantity_id: str, region_count: int) -> tuple[str, ...]:
-    if quantity_id.startswith('publication:national_total'):
+def _parent_allowed_families(record: dict[str, object]) -> tuple[str, ...]:
+    axis = str(record.get('publication_axis') or '')
+    regions = record['regions']
+    assert isinstance(regions, frozenset)
+    if axis == 'NATIONAL_TOTAL':
         return ('ATOMIC_GEOGRAPHY', 'NATIONAL_CLASS', 'FD_SECTION')
-    if quantity_id.startswith('publication:geography:'):
-        if region_count <= 1:
+    if axis == 'GEOGRAPHY_TOTAL':
+        if len(regions) <= 1:
             return ()
         return ('ATOMIC_GEOGRAPHY', 'FD_SECTION')
-    if quantity_id.startswith('publication:national_class:'):
+    if axis == 'NATIONAL_CLASS':
         return ('FD_SECTION',)
     return ()
 
@@ -107,11 +114,11 @@ def _exact_cover_ids(
 
 
 def _validate_family_disjointness(
-    families: dict[tuple[str, str], tuple[dict[str, object], ...]]
+    families: dict[tuple[str, str, str], tuple[dict[str, object], ...]]
 ) -> None:
     """One cheap global guard replaces repeated pairwise checks per parent."""
 
-    for (metric, family), records in families.items():
+    for (scope, metric, family), records in families.items():
         seen: set[tuple[str, str]] = set()
         for record in records:
             regions = record['regions']
@@ -124,7 +131,7 @@ def _validate_family_disjointness(
                     if key in seen:
                         raise ValueError(
                             'Publication family is not disjoint: '
-                            f'metric={metric}, family={family}, cell={key}'
+                            f'scope={scope}, metric={metric}, family={family}, cell={key}'
                         )
                     seen.add(key)
 
@@ -132,13 +139,11 @@ def _validate_family_disjointness(
 def _published_hierarchy_partitions(
     published_records: tuple[dict[str, object], ...]
 ) -> list[dict[str, object]]:
-    families_mut: dict[tuple[str, str], list[dict[str, object]]] = {}
+    families_mut: dict[tuple[str, str, str], list[dict[str, object]]] = {}
     for record in published_records:
-        regions = record['regions']
-        assert isinstance(regions, frozenset)
-        family = _source_family(str(record['quantity_id']), len(regions))
+        family = _source_family(record)
         if family is not None:
-            families_mut.setdefault((str(record['metric']), family), []).append(record)
+            families_mut.setdefault((str(record['portfolio_scope']), str(record['metric']), family), []).append(record)
     families = {
         key: tuple(sorted(records, key=lambda item: str(item['quantity_id'])))
         for key, records in families_mut.items()
@@ -147,12 +152,10 @@ def _published_hierarchy_partitions(
 
     rows: list[dict[str, object]] = []
     for parent in published_records:
-        regions = parent['regions']
-        assert isinstance(regions, frozenset)
-        for family in _parent_allowed_families(str(parent['quantity_id']), len(regions)):
+        for family in _parent_allowed_families(parent):
             children = _exact_cover_ids(
                 parent,
-                families.get((str(parent['metric']), family), ()),
+                families.get((str(parent['portfolio_scope']), str(parent['metric']), family), ()),
             )
             if not children:
                 continue
@@ -212,6 +215,8 @@ def _relation_is_exact_target_cover(
         if child is None or child['quantity_kind'] != 'REGIONAL_CLASS_METRIC':
             return False
         if child['metric'] != parent['metric']:
+            return False
+        if child['portfolio_scope'] != parent['portfolio_scope']:
             return False
         regions = child['regions']
         classes = child['classes']

@@ -86,12 +86,12 @@ def small_result() -> SorsRestorationResult:
         dataset_id='dataset', strict_model_id='model', execution_run_id='run',
         as_of_date='2026-06-01', publication_step=1.0, strict_status='OPTIMAL', solver_backend='highspy',
         solver_version='test', source_rows=0, atomic_regions=2, okved2_classes=2,
-        component_quantities=16, regional_metric_rows=len(grid),
+        portfolio_scopes=('CORPORATE_TOTAL','SME','SME_IE'), primary_component_quantities=16, auxiliary_component_quantities=0, latent_component_quantities=16, regional_metric_rows=len(grid),
         raw_publication_observations=0, unique_publication_constraints=0,
         deterministic_status='FIXED_POINT', deterministic_passes=1,
         deterministic_bound_updates=0, publication_facts=2,
         publication_zero_facts=2, inherited_facts=0, strict_identified_facts=2,
-        rounding_optimal_facts=0, rounding_selected_facts=0,
+        rounding_optimal_facts=0, rounding_preferred_facts=0, rounding_selected_facts=0, auxiliary_publication_facts=0,
     )
     empty = pd.DataFrame()
     return SorsRestorationResult(

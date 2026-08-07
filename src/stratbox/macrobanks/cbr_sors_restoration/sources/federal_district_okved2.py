@@ -22,6 +22,10 @@ def parse_federal_district_okved2(
     path: str | Path,
     as_of_date: str,
     policy: RoundingPolicy,
+    *,
+    source_series: str = '01_03_C',
+    source_role: str = 'STRICT_FD_OKVED2',
+    portfolio_scope: str = 'CORPORATE_TOTAL',
 ) -> pd.DataFrame:
     actual = Path(path)
     digest = sha256_file(actual)
@@ -82,7 +86,7 @@ def parse_federal_district_okved2(
                         continue
                     rows.append(
                         {
-                            'source_series': '01_03_C',
+                            'source_series': source_series,
                             'source_file_actual': actual.name,
                             'source_file_logical': actual.name,
                             'source_sha256': digest,
@@ -105,6 +109,7 @@ def parse_federal_district_okved2(
                             'measure': measure,
                             'currency': 'total',
                             'value': float(value),
+                            'portfolio_scope': portfolio_scope,
                         }
                     )
     finally:
@@ -113,9 +118,9 @@ def parse_federal_district_okved2(
         raise ValueError('FD workbook does not contain a recognizable reporting date')
     out = pd.DataFrame(rows)
     if len(out) != 256:
-        raise ValueError(f'Expected 256 FD observations, got {len(out)}')
+        raise ValueError(f'Expected 256 {source_series} observations, got {len(out)}')
     return canonicalize_observations(
         out,
         policy,
-        source_role='STRICT_FD_OKVED2',
+        source_role=source_role,
     )

@@ -123,10 +123,7 @@ def run_publication_fixed_point(
 
         after_facts = len(ledger.current_quantity_ids)
         new_facts = after_facts - before_facts
-        zero_count = 0
-        current = ledger.facts_grid(current_only=True)
-        if not current.empty:
-            zero_count = int(current['published_value'].astype(float).eq(0.0).sum())
+        zero_count = ledger.current_zero_count()
         pass_rows.append(
             {
                 'publication_pass': pass_number,

@@ -14,6 +14,10 @@ from stratbox.macrobanks.cbr_sors_restoration.contracts import (
 )
 from stratbox.macrobanks.cbr_sors_restoration.linear.elastic import diagnose_infeasibility
 from stratbox.macrobanks.cbr_sors_restoration.optimization import run_optimization_fixed_point
+from stratbox.macrobanks.cbr_sors_restoration.portfolio import (
+    PORTFOLIO_SCOPES,
+    PRIMARY_PORTFOLIO_SCOPE,
+)
 from stratbox.macrobanks.cbr_sors_restoration.publication import (
     RoundingPolicy,
     SorsPublicationLedger,
@@ -60,14 +64,20 @@ def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, s
         }
     )
     strict_manifest = manifest[
-        manifest['source_series'].isin(['01_05_A', '01_02_A', '01_02_C', '01_03_C'])
+        manifest['source_series'].isin(
+            [
+                '01_05_A', '01_02_A', '01_02_C', '01_03_C',
+                '01_11', '01_11_F', '01_11_I', '01_12_A', '01_13_F', '01_13_I',
+            ]
+        )
     ]
     strict_model_id = _hash_payload(
         {
             'dataset_sources': strict_manifest[['source_series', 'sha256']].to_dict('records'),
             'publication_step': config.publication_step,
             'rules_version': config.rules_version,
-            'portfolio_scope': config.portfolio_scope,
+            'primary_portfolio_scope': config.primary_portfolio_scope,
+            'portfolio_scopes': PORTFOLIO_SCOPES,
             'regions': tuple(bundle.atomic_regions_grid['region_code'].astype(str)),
             'classes': tuple(bundle.okved2_classes_grid['class_code'].astype(str)),
         }
@@ -119,10 +129,15 @@ def run_sors_restoration(
     source_scopes = tuple(
         sorted(set(bundle.source_grid['portfolio_scope'].dropna().astype(str)))
     )
-    if source_scopes != (config.portfolio_scope,):
+    if config.primary_portfolio_scope != PRIMARY_PORTFOLIO_SCOPE:
         raise ValueError(
-            'SORS run portfolio_scope must match the source bundle exactly: '
-            f'config={config.portfolio_scope!r}, source={source_scopes}'
+            'SORS outward restoration target is fixed to CORPORATE_TOTAL; '
+            'SME and SME_IE are auxiliary constraint scopes only.'
+        )
+    if set(source_scopes) != set(PORTFOLIO_SCOPES):
+        raise ValueError(
+            'SORS multi-scope source bundle is incomplete: '
+            f'expected={PORTFOLIO_SCOPES}, source={source_scopes}'
         )
 
     dataset_id, strict_model_id, execution_run_id = _identities(bundle, config)
@@ -262,14 +277,28 @@ def run_sors_restoration(
         if not current_facts.empty
         else pd.DataFrame()
     )
-    method_counts = (
-        accepted_current['evidence_method'].value_counts().to_dict()
+    primary_accepted = (
+        accepted_current[
+            accepted_current['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
+        ]
         if not accepted_current.empty
+        else pd.DataFrame()
+    )
+    auxiliary_accepted = (
+        accepted_current[
+            ~accepted_current['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
+        ]
+        if not accepted_current.empty
+        else pd.DataFrame()
+    )
+    method_counts = (
+        primary_accepted['evidence_method'].value_counts().to_dict()
+        if not primary_accepted.empty
         else {}
     )
     publication_zero_facts = (
-        int(accepted_current['published_value'].astype(float).eq(0.0).sum())
-        if not accepted_current.empty
+        int(primary_accepted['published_value'].astype(float).eq(0.0).sum())
+        if not primary_accepted.empty
         else 0
     )
     deterministic_passes = deterministic.passes
@@ -309,11 +338,20 @@ def run_sors_restoration(
 
     tau_star = None
     l1_star = None
+    relaxed_l1_star = None
+    relaxed_linf_at_l1 = None
     if not rounding_profiles.empty:
         optimal_profiles = rounding_profiles[rounding_profiles['status'].eq('OPTIMAL')]
         if not optimal_profiles.empty:
-            tau_star = float(optimal_profiles.iloc[-1].tau_star_mln)
-            l1_star = float(optimal_profiles.iloc[-1].l1_star_mln)
+            profile_row = optimal_profiles.iloc[-1]
+            tau_star = float(profile_row.tau_star_mln)
+            l1_star = float(profile_row.l1_star_mln)
+            relaxed_l1_value = getattr(profile_row, 'relaxed_l1_star_mln', None)
+            relaxed_linf_value = getattr(profile_row, 'relaxed_linf_at_l1_mln', None)
+            if relaxed_l1_value is not None and not pd.isna(relaxed_l1_value):
+                relaxed_l1_star = float(relaxed_l1_value)
+            if relaxed_linf_value is not None and not pd.isna(relaxed_linf_value):
+                relaxed_linf_at_l1 = float(relaxed_linf_value)
 
     summary = SorsRunSummary(
         dataset_id=dataset_id,
@@ -327,7 +365,20 @@ def run_sors_restoration(
         source_rows=len(bundle.source_grid),
         atomic_regions=len(bundle.atomic_regions_grid),
         okved2_classes=len(bundle.okved2_classes_grid),
-        component_quantities=int(
+        portfolio_scopes=PORTFOLIO_SCOPES,
+        primary_component_quantities=int(
+            (
+                closure_state.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT')
+                & closure_state.quantities_grid['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
+            ).sum()
+        ),
+        auxiliary_component_quantities=int(
+            (
+                closure_state.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT')
+                & ~closure_state.quantities_grid['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
+            ).sum()
+        ),
+        latent_component_quantities=int(
             closure_state.quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT').sum()
         ),
         regional_metric_rows=len(primary_grid),
@@ -338,7 +389,7 @@ def run_sors_restoration(
         deterministic_status=deterministic.status,
         deterministic_passes=deterministic_passes,
         deterministic_bound_updates=deterministic_bound_updates,
-        publication_facts=len(accepted_current),
+        publication_facts=len(primary_accepted),
         publication_zero_facts=publication_zero_facts,
         inherited_facts=int(method_counts.get('PUBLISHED_VALUE_INHERITED', 0)),
         strict_identified_facts=int(
@@ -346,12 +397,22 @@ def run_sors_restoration(
             + method_counts.get('PUBLISHED_BUCKET_IDENTIFIED', 0)
         ),
         rounding_optimal_facts=int(method_counts.get('ROUNDING_OPTIMUM_IDENTIFIED', 0)),
-        rounding_selected_facts=int(method_counts.get('ROUNDING_SELECTED', 0)),
+        rounding_preferred_facts=int(
+            method_counts.get('ROUNDING_PREFERRED', 0)
+            + method_counts.get('ROUNDING_PREFERRED_CLOSURE', 0)
+        ),
+        rounding_selected_facts=int(
+            method_counts.get('ROUNDING_SELECTED', 0)
+            + method_counts.get('ROUNDING_SELECTED_CLOSURE', 0)
+        ),
+        auxiliary_publication_facts=len(auxiliary_accepted),
         optimization_status=optimization_status,
         optimization_rounds=optimization_rounds,
         optimization_targets_attempted=optimization_targets,
         tau_star_mln=tau_star,
         l1_star_mln=l1_star,
+        relaxed_l1_star_mln=relaxed_l1_star,
+        relaxed_linf_at_l1_mln=relaxed_linf_at_l1,
     )
 
     audit = pd.DataFrame([
@@ -361,7 +422,8 @@ def run_sors_restoration(
         {'key': 'strict_model_id', 'value': strict_model_id},
         {'key': 'execution_run_id', 'value': execution_run_id},
         {'key': 'rules_version', 'value': config.rules_version},
-        {'key': 'portfolio_scope', 'value': config.portfolio_scope},
+        {'key': 'primary_portfolio_scope', 'value': config.primary_portfolio_scope},
+        {'key': 'auxiliary_portfolio_scopes', 'value': ('SME', 'SME_IE')},
         {'key': 'strict_status', 'value': strict_status},
         {'key': 'deterministic_status', 'value': deterministic.status},
         {'key': 'optimization_status', 'value': optimization_status},
@@ -375,12 +437,19 @@ def run_sors_restoration(
             ),
         },
         {'key': 'strict_nnz', 'value': final_problem.matrix.nnz},
+        {'key': 'portfolio_scopes', 'value': PORTFOLIO_SCOPES},
+        {'key': 'primary_component_quantities', 'value': summary.primary_component_quantities},
+        {'key': 'auxiliary_component_quantities', 'value': summary.auxiliary_component_quantities},
+        {'key': 'latent_component_quantities', 'value': summary.latent_component_quantities},
         {'key': 'publication_partitions', 'value': len(publication_graph.partitions_grid)},
         {'key': 'publication_facts', 'value': summary.publication_facts},
+        {'key': 'auxiliary_publication_facts', 'value': summary.auxiliary_publication_facts},
         {'key': 'publication_zero_facts', 'value': summary.publication_zero_facts},
         {'key': 'inherited_facts', 'value': summary.inherited_facts},
         {'key': 'rounding_tau_star_mln', 'value': tau_star},
         {'key': 'rounding_l1_star_mln', 'value': l1_star},
+        {'key': 'rounding_relaxed_l1_star_mln', 'value': relaxed_l1_star},
+        {'key': 'rounding_relaxed_linf_at_l1_mln', 'value': relaxed_linf_at_l1},
         {
             'key': 'restoration_architecture',
             'value': (

@@ -122,13 +122,13 @@ def _matching_child(
 
 def _singleton_target_id(
     token: PublishedMassToken,
-    metric_target_lookup: dict[tuple[str, str, str], str],
+    metric_target_lookup: dict[tuple[str, str, str, str], str],
 ) -> str | None:
     if not token.support.is_single_cell:
         return None
     region_code = next(iter(token.support.region_codes))
     class_code = next(iter(token.support.class_codes))
-    return metric_target_lookup.get((region_code, class_code, token.metric))
+    return metric_target_lookup.get((str(token.portfolio_scope), region_code, class_code, token.metric))
 
 
 def _tokens_grid(tokens: dict[str, PublishedMassToken]) -> pd.DataFrame:
@@ -199,7 +199,7 @@ def run_value_inheritance(
         partitions_by_parent.setdefault(str(partition.parent_quantity_id), []).append(partition)
 
     metric_target_lookup = {
-        (str(row.region_code), str(row.class_code), str(row.metric)): str(row.quantity_id)
+        (str(row.portfolio_scope), str(row.region_code), str(row.class_code), str(row.metric)): str(row.quantity_id)
         for row in quantities_grid[
             quantities_grid['quantity_kind'].astype(str).eq('REGIONAL_CLASS_METRIC')
         ].itertuples(index=False)

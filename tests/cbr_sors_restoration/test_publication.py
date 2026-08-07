@@ -47,3 +47,42 @@ def test_unbounded_interval_has_no_publication_bucket() -> None:
     assert RoundingPolicy().single_bucket_interval(
         PublicationInterval(0.0, inf, True, False)
     ) is None
+
+
+def test_candidate_buckets_cover_accumulated_rounding_interval() -> None:
+    policy = RoundingPolicy(step=1.0)
+    assert policy.candidate_buckets(10.0, 12.0) == (10.0, 11.0, 12.0)
+    assert policy.candidate_buckets(0.0, 1.2) == (0.0, 1.0)
+    assert policy.candidate_buckets(5.5, 6.5, upper_attained=False) == (6.0,)
+
+
+def test_publication_ledger_accepts_rounding_preferred_evidence() -> None:
+    from types import SimpleNamespace
+
+    from stratbox.macrobanks.cbr_sors_restoration.publication.ledger import (
+        SorsPublicationLedger,
+    )
+
+    ledger = SorsPublicationLedger()
+    quantity = SimpleNamespace(
+        quantity_id='metric:CORPORATE_TOTAL:r1:01:debt_rub',
+        quantity_kind='REGIONAL_CLASS_METRIC',
+        portfolio_scope='CORPORATE_TOTAL',
+        region_code='r1',
+        class_code='01',
+        component=None,
+        metric='debt_rub',
+    )
+    assert ledger.promote_external_bucket(
+        quantity,
+        published_value=11.0,
+        evidence_method='ROUNDING_PREFERRED',
+        restoration_pass=0,
+        optimization_round=1,
+        proof_ids=('rounding:competition:000001', 'selection:preferred:000001'),
+        details='test',
+    )
+    row = ledger.current_record(quantity.quantity_id)
+    assert row is not None
+    assert row['evidence_method'] == 'ROUNDING_PREFERRED'
+    assert row['latent_constraint_mode'] == 'PUBLICATION_BUCKET'

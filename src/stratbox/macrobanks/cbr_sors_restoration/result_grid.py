@@ -4,6 +4,7 @@ import pandas as pd
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsSourceBundle
 from stratbox.macrobanks.cbr_sors_restoration.metrics import METRIC_NAMES_RU, METRIC_ORDER
+from stratbox.macrobanks.cbr_sors_restoration.portfolio import PRIMARY_PORTFOLIO_SCOPE
 from stratbox.macrobanks.cbr_sors_restoration.publication import PublicationInterval
 
 
@@ -51,6 +52,7 @@ def build_regional_okved2_grid(
 ) -> pd.DataFrame:
     metrics = quantities_grid[
         quantities_grid['quantity_kind'].eq('REGIONAL_CLASS_METRIC')
+        & quantities_grid['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
     ].copy()
     regions = bundle.atomic_regions_grid[
         [
@@ -213,6 +215,7 @@ def build_components_grid(
 ) -> pd.DataFrame:
     components = quantities_grid[
         quantities_grid['quantity_kind'].eq('ATOMIC_COMPONENT')
+        & quantities_grid['portfolio_scope'].astype(str).eq(PRIMARY_PORTFOLIO_SCOPE)
     ].copy()
     facts = _fact_lookup(facts_grid)
     if not facts.empty:

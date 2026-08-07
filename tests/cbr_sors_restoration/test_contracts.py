@@ -45,11 +45,11 @@ def test_all_mode_is_exhaustive() -> None:
 
 
 def test_selection_policy_is_separate_from_numerical_tolerance() -> None:
-    policy = SorsSelectionPolicy(max_selection_width_mln=2.5)
-    assert policy.max_selection_width_mln == 2.5
-    assert policy.max_selection_width_ratio == 0.01
+    policy = SorsSelectionPolicy(max_interval_width_mln=2.5)
+    assert policy.max_interval_width_mln == 2.5
+    assert policy.max_relative_interval_width == 0.25
     with pytest.raises(ValueError):
-        SorsSelectionPolicy(max_selection_width_mln=0)
+        SorsSelectionPolicy(max_interval_width_mln=0)
 
 
 def test_target_scope_accepts_only_published_metrics() -> None:

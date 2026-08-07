@@ -7,6 +7,7 @@ import pandas as pd
 
 from stratbox.macrobanks.cbr_sors_restoration.evidence import (
     ROUNDING_OPTIMAL_TIER,
+    ROUNDING_PREFERRED_TIER,
     ROUNDING_SELECTED_TIER,
 )
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
@@ -18,8 +19,7 @@ from stratbox.macrobanks.cbr_sors_restoration.optimization.distortion import (
     solve_rounding_profile,
 )
 from stratbox.macrobanks.cbr_sors_restoration.optimization.selection import (
-    build_selection_candidates,
-    validate_selection_clusters,
+    run_controlled_selection,
 )
 from stratbox.macrobanks.cbr_sors_restoration.optimization.targets import (
     apply_strict_minmax_bounds,
@@ -107,11 +107,12 @@ def _promote_rounding_optimal_buckets(
             continue
         quantity = lookup.loc[quantity_id]
         fact_tier = max(ROUNDING_OPTIMAL_TIER, int(model_assumption_tier))
-        method = (
-            'ROUNDING_OPTIMUM_IDENTIFIED'
-            if fact_tier < ROUNDING_SELECTED_TIER
-            else 'ROUNDING_SELECTED_CLOSURE'
-        )
+        if fact_tier <= ROUNDING_OPTIMAL_TIER:
+            method = 'ROUNDING_OPTIMUM_IDENTIFIED'
+        elif fact_tier == ROUNDING_PREFERRED_TIER:
+            method = 'ROUNDING_PREFERRED_CLOSURE'
+        else:
+            method = 'ROUNDING_SELECTED_CLOSURE'
         changed = ledger.promote_external_bucket(
             quantity,
             published_value=float(bucket),
@@ -142,20 +143,37 @@ def _promote_selected(
         quantity_id = str(row.quantity_id)
         if quantity_id not in lookup.index:
             continue
+        evidence_method = str(
+            getattr(row, 'selection_evidence_method', 'ROUNDING_SELECTED')
+        )
+        preferred = evidence_method == 'ROUNDING_PREFERRED'
+        proof_ids = tuple(
+            str(value)
+            for value in (
+                getattr(row, 'competition_attempt_id', None),
+                getattr(row, 'selection_attempt_id', None),
+            )
+            if value is not None and str(value) != 'nan'
+        )
         changed = ledger.promote_external_bucket(
             lookup.loc[quantity_id],
             published_value=float(row.selected_bucket),
-            evidence_method='ROUNDING_SELECTED',
+            evidence_method=evidence_method,
             restoration_pass=0,
             optimization_round=optimization_round,
-            proof_ids=(str(row.selection_attempt_id),)
-            if getattr(row, 'selection_attempt_id', None) is not None
-            else (),
+            proof_ids=proof_ids,
             details=(
-                'Benchmark publication bucket jointly validated without exceeding '
-                'configured L∞/L1 rounding-objective degradation budgets.'
+                'Publication bucket is decisively cheaper than alternative buckets by global '
+                'L1 source-rounding cost inside the hard official publication '
+                'intervals and is jointly validated inside the configured budget.'
+                if preferred
+                else
+                'Common-benchmark publication bucket jointly validated without exceeding the '
+                'configured relaxed-L1 budget and any optional L∞ cap.'
             ),
-            assumption_tier=ROUNDING_SELECTED_TIER,
+            assumption_tier=(
+                ROUNDING_PREFERRED_TIER if preferred else ROUNDING_SELECTED_TIER
+            ),
         )
         if changed:
             promoted.add(quantity_id)
@@ -371,7 +389,11 @@ def run_optimization_fixed_point(
                 'status': profile.status,
                 'tau_star_mln': profile.tau_star,
                 'l1_star_mln': profile.l1_star,
+                'relaxed_l1_star_mln': profile.relaxed_l1_star,
+                'relaxed_linf_at_l1_mln': profile.relaxed_linf_at_l1,
                 'distortion_constraints': int(profile.problem.metadata.get('distortion_variable_count', 0)),
+                'scope_linf_mln': profile.scope_linf_mln,
+                'scope_l1_mln': profile.scope_l1_mln,
                 'assumption_tier': model_assumption_tier,
             })
             if profile.status == 'SOLVER_UNAVAILABLE':
@@ -484,15 +506,9 @@ def run_optimization_fixed_point(
                     })
                     continue
 
-                candidates = build_selection_candidates(
+                selection = run_controlled_selection(
                     unresolved_targets,
                     optimal_exec.bounds_grid,
-                    profile,
-                    config,
-                    policy,
-                )
-                selection = validate_selection_clusters(
-                    candidates,
                     profile,
                     config,
                     policy,
@@ -503,6 +519,11 @@ def run_optimization_fixed_point(
                     selection_frames.append(frame)
                 if not selection.solver_runs_grid.empty:
                     solver_frames.append(selection.solver_runs_grid)
+                selected_methods = set(
+                    selection.accepted_grid.get(
+                        'selection_evidence_method', pd.Series(dtype=str)
+                    ).dropna().astype(str)
+                ) if not selection.accepted_grid.empty else set()
                 promoted_selected = _promote_selected(
                     selection.accepted_grid,
                     closure_state.quantities_grid,
@@ -529,7 +550,11 @@ def run_optimization_fixed_point(
                     )
                     if not det.passes_grid.empty:
                         frame = det.passes_grid.copy()
-                        frame['trigger'] = 'ROUNDING_SELECTED'
+                        frame['trigger'] = (
+                            'ROUNDING_PREFERRED'
+                            if selected_methods == {'ROUNDING_PREFERRED'}
+                            else 'ROUNDING_SELECTED'
+                        )
                         deterministic_frames.append(frame)
                     if not det.inheritance_events_grid.empty:
                         inheritance_frames.append(det.inheritance_events_grid)

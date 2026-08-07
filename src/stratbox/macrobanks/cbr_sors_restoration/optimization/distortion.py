@@ -21,11 +21,15 @@ class SorsRoundingProfile:
     l1_objective: np.ndarray
     tau_star: float | None
     l1_star: float | None
+    relaxed_l1_star: float | None
+    relaxed_linf_at_l1: float | None
     benchmark_values: np.ndarray | None
     solver_runs_grid: pd.DataFrame
     backend: str | None
     version: str | None
     status: str
+    scope_l1_mln: dict[str, float] | None = None
+    scope_linf_mln: dict[str, float] | None = None
 
 
 def _csr_rows(matrix: CsrMatrixData) -> list[list[tuple[int, float]]]:
@@ -133,6 +137,11 @@ def build_rounding_distortion_problem(strict_problem: SorsLinearProblem) -> tupl
             'distortion_variable_count': k,
             'tau_index': tau_index,
             'eligible_constraint_ids': tuple(eligible['constraint_id'].astype(str)),
+            'eligible_constraint_scopes': tuple(
+                eligible['portfolio_scope'].fillna('UNKNOWN').astype(str)
+                if 'portfolio_scope' in eligible
+                else pd.Series(['UNKNOWN'] * len(eligible), dtype=str)
+            ),
         },
     )
     return problem, tau_objective, l1_objective
@@ -154,12 +163,88 @@ def _run_row(solve_id: str, direction: str, result: SolveResult, backend: str, v
     }
 
 
+def distortion_linf_from_values(
+    problem: SorsLinearProblem, values: np.ndarray | None
+) -> float | None:
+    """Return the actual maximum absolute source residual in one witness.
+
+    The auxiliary ``tau`` column is authoritative only when it is itself being
+    minimized or capped. During relaxed L1 solves it is otherwise a free envelope
+    variable, so reading its column value can overstate the witness distortion.
+    The L1 objective minimizes every absolute-residual variable directly; their
+    maximum is therefore the meaningful L∞ diagnostic for that witness.
+    """
+
+    if values is None:
+        return None
+    n = int(problem.metadata.get('base_variable_count', 0))
+    k = int(problem.metadata.get('distortion_variable_count', 0))
+    if k <= 0:
+        return 0.0
+    residuals = np.asarray(values[n:n + k], dtype=float)
+    if residuals.size != k:
+        return None
+    return max(0.0, float(np.max(residuals)))
+
+
+def _scope_distortion_summary(
+    problem: SorsLinearProblem, values: np.ndarray | None
+) -> tuple[dict[str, float], dict[str, float]]:
+    if values is None:
+        return {}, {}
+    n = int(problem.metadata.get('base_variable_count', 0))
+    k = int(problem.metadata.get('distortion_variable_count', 0))
+    scopes = tuple(problem.metadata.get('eligible_constraint_scopes', ()))
+    if k <= 0 or len(scopes) != k:
+        return {}, {}
+    distortion = np.asarray(values[n:n + k], dtype=float)
+    l1: dict[str, float] = {}
+    linf: dict[str, float] = {}
+    for scope, value in zip(scopes, distortion, strict=True):
+        key = str(scope)
+        magnitude = max(0.0, float(value))
+        l1[key] = l1.get(key, 0.0) + magnitude
+        linf[key] = max(linf.get(key, 0.0), magnitude)
+    return l1, linf
+
+
+def configure_linf_face_session(
+    session: HighsSession,
+    profile: SorsRoundingProfile,
+    *,
+    linf_extra: float,
+) -> None:
+    """Restrict a session to the minimum-L∞ face without fixing L1.
+
+    Bucket competition needs this weaker face so every candidate bucket can be
+    scored by its own minimum L1 cost. Applying the global L1 optimum first would
+    make every slightly worse alternative infeasible and would therefore hide the
+    actual economic cost of choosing that bucket.
+    """
+
+    if profile.tau_star is None:
+        raise ValueError('Rounding profile has no L∞ optimum')
+    session.add_objective_cap(
+        profile.tau_objective, profile.tau_star + float(linf_extra)
+    )
+
+
 def solve_rounding_profile(
     strict_problem: SorsLinearProblem,
     config: SorsOptimizationConfig,
     *,
     point_tolerance: float,
 ) -> SorsRoundingProfile:
+    """Solve both the strict rounding optimum and the relaxed L1 baseline.
+
+    ``tau_star``/``l1_star`` define the strong lexicographic optimum used for
+    ROUNDING_OPTIMUM_IDENTIFIED.  ``relaxed_l1_star`` deliberately drops the
+    minimum-L∞ cap while keeping every official publication interval hard.  The
+    latter is the baseline for weak bucket competition: it lets accumulated target
+    uncertainty use the full legal source-rounding room without ever widening an
+    original CBR interval.
+    """
+
     problem, tau_objective, l1_objective = build_rounding_distortion_problem(strict_problem)
     records: list[dict[str, object]] = []
     try:
@@ -174,24 +259,62 @@ def solve_rounding_profile(
             tau = session.solve_objective(tau_objective)
             records.append(_run_row('rounding:linf', 'MIN_LINF', tau, backend, version))
             if not tau.success or tau.objective_value is None:
-                return SorsRoundingProfile(problem, tau_objective, l1_objective, None, None, None, pd.DataFrame(records), backend, version, tau.status)
+                return SorsRoundingProfile(
+                    problem=problem, tau_objective=tau_objective, l1_objective=l1_objective,
+                    tau_star=None, l1_star=None, relaxed_l1_star=None,
+                    relaxed_linf_at_l1=None, benchmark_values=None,
+                    solver_runs_grid=pd.DataFrame(records), backend=backend, version=version,
+                    status=tau.status, scope_l1_mln={}, scope_linf_mln={},
+                )
             tau_star = float(tau.objective_value)
+
+            relaxed_l1_star: float | None = None
+            relaxed_linf_at_l1: float | None = None
+            if config.selection.enabled:
+                relaxed = session.solve_objective(l1_objective, include_values=True)
+                records.append(
+                    _run_row(
+                        'rounding:l1_relaxed',
+                        'MIN_L1_WITH_OFFICIAL_INTERVALS',
+                        relaxed,
+                        backend,
+                        version,
+                    )
+                )
+                if relaxed.success and relaxed.objective_value is not None:
+                    relaxed_l1_star = float(relaxed.objective_value)
+                    if relaxed.values is not None:
+                        relaxed_linf_at_l1 = distortion_linf_from_values(
+                            problem, relaxed.values
+                        )
+
             session.add_objective_cap(tau_objective, tau_star + point_tolerance)
             l1 = session.solve_objective(l1_objective, include_values=True)
             records.append(_run_row('rounding:l1', 'MIN_L1_GIVEN_LINF', l1, backend, version))
             if not l1.success or l1.objective_value is None:
-                return SorsRoundingProfile(problem, tau_objective, l1_objective, tau_star, None, None, pd.DataFrame(records), backend, version, l1.status)
+                return SorsRoundingProfile(
+                    problem=problem, tau_objective=tau_objective, l1_objective=l1_objective,
+                    tau_star=tau_star, l1_star=None, relaxed_l1_star=relaxed_l1_star,
+                    relaxed_linf_at_l1=relaxed_linf_at_l1, benchmark_values=None,
+                    solver_runs_grid=pd.DataFrame(records), backend=backend, version=version,
+                    status=l1.status, scope_l1_mln={}, scope_linf_mln={},
+                )
+            scope_l1, scope_linf = _scope_distortion_summary(problem, l1.values)
             return SorsRoundingProfile(
                 problem=problem,
                 tau_objective=tau_objective,
                 l1_objective=l1_objective,
                 tau_star=tau_star,
                 l1_star=float(l1.objective_value),
+                relaxed_l1_star=relaxed_l1_star,
+                relaxed_linf_at_l1=relaxed_linf_at_l1,
                 benchmark_values=l1.values,
                 solver_runs_grid=pd.DataFrame(records),
                 backend=backend,
                 version=version,
                 status='OPTIMAL',
+                scope_l1_mln=scope_l1,
+                scope_linf_mln=scope_linf,
             )
     except SorsSolverDependencyError as exc:
         return SorsRoundingProfile(
@@ -200,6 +323,8 @@ def solve_rounding_profile(
             l1_objective=l1_objective,
             tau_star=None,
             l1_star=None,
+            relaxed_l1_star=None,
+            relaxed_linf_at_l1=None,
             benchmark_values=None,
             solver_runs_grid=pd.DataFrame([{
                 'solve_id': 'rounding:solver_unavailable',

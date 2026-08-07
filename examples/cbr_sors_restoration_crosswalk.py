@@ -12,6 +12,12 @@ files = SorsSourceFiles(
     national_okved2='01_02_C.xlsx',
     federal_district_okved2='01_03_C.xlsx',
     national_traditional='01_02_A.xlsx',
+    sme_national_totals='01_11.xlsx',
+    sme_national_okved2='01_11_F.xlsx',
+    sme_ie_national_okved2='01_11_I.xlsx',
+    sme_federal_district_okved2='01_12_A.xlsx',
+    sme_regional_totals='01_13_F.xlsx',
+    sme_ie_regional_totals='01_13_I.xlsx',
 )
 strict = run_sors_restoration(
     files,

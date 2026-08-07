@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from stratbox.macrobanks.cbr_sors_restoration.portfolio import PRIMARY_PORTFOLIO_SCOPE
 from stratbox.macrobanks.cbr_sors_restoration.schema import TARGET_METRICS
 
 _OPTIMIZATION_MODES = {'none', 'targets', 'priority', 'all'}
@@ -20,6 +21,12 @@ class SorsSourceFiles:
     national_okved2: str | Path
     federal_district_okved2: str | Path
     national_traditional: str | Path
+    sme_national_totals: str | Path
+    sme_national_okved2: str | Path
+    sme_ie_national_okved2: str | Path
+    sme_federal_district_okved2: str | Path
+    sme_regional_totals: str | Path
+    sme_ie_regional_totals: str | Path
     regional_totals_history: str | Path | None = None
 
 
@@ -53,25 +60,45 @@ class SorsDeterministicConfig:
 
 @dataclass(frozen=True, slots=True)
 class SorsSelectionPolicy:
-    """Controlled last-tier choice inside the rounding-optimal solution face."""
+    """Controlled publication-bucket choice after the rounding-optimal face.
+
+    Selection is based on the number of feasible publication buckets and on the
+    global rounding cost of each bucket.  Absolute interval width is only an
+    optional emergency guard; it is deliberately not the main criterion because
+    rounding uncertainty can accumulate through several independent aggregates.
+    """
 
     enabled: bool = True
-    max_selection_width_mln: float = 3.0
-    max_selection_width_ratio: float | None = 0.01
-    max_linf_degradation_mln: float = 1e-6
-    max_l1_degradation_mln: float = 1e-6
+    bucket_competition_enabled: bool = True
+    fallback_benchmark_selection_enabled: bool = True
+    max_candidate_buckets: int = 5
+    max_relative_interval_width: float | None = 0.25
+    max_interval_width_mln: float | None = None
+    min_preference_l1_gap_mln: float = 0.01
+    allow_zero_selection: bool = False
+    max_linf_degradation_mln: float | None = None
+    max_l1_degradation_mln: float = 1.0
     max_joint_selection_targets: int = 25
 
     def __post_init__(self) -> None:
-        if self.max_selection_width_mln <= 0:
-            raise ValueError('max_selection_width_mln must be positive')
+        if self.max_candidate_buckets <= 1:
+            raise ValueError('max_candidate_buckets must be greater than one')
         if (
-            self.max_selection_width_ratio is not None
-            and self.max_selection_width_ratio <= 0
+            self.max_relative_interval_width is not None
+            and self.max_relative_interval_width <= 0
         ):
-            raise ValueError('max_selection_width_ratio must be positive when set')
-        if self.max_linf_degradation_mln < 0 or self.max_l1_degradation_mln < 0:
-            raise ValueError('rounding objective degradation budgets cannot be negative')
+            raise ValueError('max_relative_interval_width must be positive when set')
+        if self.max_interval_width_mln is not None and self.max_interval_width_mln <= 0:
+            raise ValueError('max_interval_width_mln must be positive when set')
+        if self.min_preference_l1_gap_mln < 0:
+            raise ValueError('min_preference_l1_gap_mln cannot be negative')
+        if (
+            self.max_linf_degradation_mln is not None
+            and self.max_linf_degradation_mln < 0
+        ):
+            raise ValueError('max_linf_degradation_mln cannot be negative when set')
+        if self.max_l1_degradation_mln < 0:
+            raise ValueError('max_l1_degradation_mln cannot be negative')
         if self.max_joint_selection_targets <= 0:
             raise ValueError('max_joint_selection_targets must be positive')
 
@@ -189,8 +216,8 @@ class SorsRunConfig:
     as_of_date: str
     publication_step: float = 1.0
     point_tolerance: float = 1e-6
-    rules_version: str = 'sors-publication-fixed-point-2026.6'
-    portfolio_scope: str = 'CORPORATE_TOTAL'
+    rules_version: str = 'sors-multiscope-rounding-dominance-2026.7'
+    primary_portfolio_scope: str = 'CORPORATE_TOTAL'
     deterministic: SorsDeterministicConfig = field(default_factory=SorsDeterministicConfig)
     optimization: SorsOptimizationConfig = field(default_factory=SorsOptimizationConfig)
 
@@ -199,8 +226,11 @@ class SorsRunConfig:
             raise ValueError('publication_step must be positive')
         if self.point_tolerance <= 0:
             raise ValueError('point_tolerance must be positive')
-        if not self.portfolio_scope:
-            raise ValueError('portfolio_scope cannot be empty')
+        if self.primary_portfolio_scope != PRIMARY_PORTFOLIO_SCOPE:
+            raise ValueError(
+                'SORS restoration currently exports only the primary corporate cube; '
+                f'primary_portfolio_scope must be {PRIMARY_PORTFOLIO_SCOPE!r}'
+            )
 
 
 @dataclass(frozen=True)
@@ -210,6 +240,12 @@ class SorsSourceBundle:
     national_traditional_grid: pd.DataFrame
     national_okved2_grid: pd.DataFrame
     federal_district_okved2_grid: pd.DataFrame
+    sme_national_totals_grid: pd.DataFrame
+    sme_national_okved2_grid: pd.DataFrame
+    sme_ie_national_okved2_grid: pd.DataFrame
+    sme_federal_district_okved2_grid: pd.DataFrame
+    sme_regional_totals_grid: pd.DataFrame
+    sme_ie_regional_totals_grid: pd.DataFrame
     regional_totals_history_grid: pd.DataFrame
     geography_nodes_grid: pd.DataFrame
     atomic_regions_grid: pd.DataFrame

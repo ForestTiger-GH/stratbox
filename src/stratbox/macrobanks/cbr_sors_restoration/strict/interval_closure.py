@@ -26,16 +26,76 @@ class SorsIntervalClosureResult:
     bound_updates: int
 
 
+@dataclass(frozen=True)
+class _ClosureTopology:
+    quantity_ids: tuple[str, ...]
+    positions: dict[str, int]
+    relations: tuple[dict[str, object], ...]
+    adjacent: tuple[tuple[int, ...], ...]
+
+
+def _compile_closure_topology(
+    quantities_grid: pd.DataFrame,
+    relations_grid: pd.DataFrame,
+) -> _ClosureTopology:
+    """Compile immutable relation identities once for persistent closure waves.
+
+    Multi-scope SORS has hundreds of thousands of relations. Rebuilding the
+    quantity-id map and adjacency lists before every seeded fixed-point sweep was
+    pure overhead and made the publication cycle scale with ``passes × graph``
+    even when only a handful of quantities had changed.
+    """
+
+    quantity_ids = tuple(quantities_grid['quantity_id'].astype(str))
+    positions = {quantity_id: i for i, quantity_id in enumerate(quantity_ids)}
+    relations: list[dict[str, object]] = []
+    adjacent_mut: list[list[int]] = [[] for _ in quantity_ids]
+    for relation_position, row in enumerate(relations_grid.itertuples(index=False)):
+        parent_id = str(row.parent_quantity_id)
+        try:
+            parent = positions[parent_id]
+            children = tuple(
+                positions[str(quantity_id)] for quantity_id in row.child_quantity_ids
+            )
+        except KeyError as exc:  # pragma: no cover - graph construction contract
+            raise ValueError(
+                f'Closure relation {row.relation_id!r} references unknown quantity '
+                f'{exc.args[0]!r}'
+            ) from exc
+        relations.append(
+            {
+                'relation_id': str(row.relation_id),
+                'relation_kind': str(row.relation_kind),
+                'parent': parent,
+                'children': children,
+                'source_observation_ids': tuple(row.source_observation_ids),
+            }
+        )
+        adjacent_mut[parent].append(relation_position)
+        for child in children:
+            adjacent_mut[int(child)].append(relation_position)
+    return _ClosureTopology(
+        quantity_ids=quantity_ids,
+        positions=positions,
+        relations=tuple(relations),
+        adjacent=tuple(tuple(items) for items in adjacent_mut),
+    )
+
+
 def run_interval_closure(
     graph: SorsQuantityGraph,
     *,
     tolerance: float = 1e-9,
     max_passes: int = 100,
     seed_quantity_ids: tuple[str, ...] | None = None,
+    _topology: _ClosureTopology | None = None,
 ) -> SorsIntervalClosureResult:
     quantities = graph.quantities_grid.copy().reset_index(drop=True)
-    quantity_ids = tuple(quantities['quantity_id'].astype(str))
-    positions = {quantity_id: i for i, quantity_id in enumerate(quantity_ids)}
+    topology = _topology or _compile_closure_topology(quantities, graph.relations_grid)
+    quantity_ids = topology.quantity_ids
+    if quantity_ids != tuple(quantities['quantity_id'].astype(str)):
+        raise ValueError('Closure topology quantity ordering does not match state')
+    positions = topology.positions
     lower = quantities['lower_bound'].astype(float).to_numpy(copy=True)
     upper = quantities['upper_bound'].astype(float).to_numpy(copy=True)
     lower_attained = quantities['lower_attained'].astype(bool).to_numpy(copy=True)
@@ -51,27 +111,27 @@ def run_interval_closure(
         else np.zeros(len(quantities), dtype=np.int16)
     )
 
-    relations: list[dict[str, object]] = []
-    adjacent: list[list[int]] = [[] for _ in quantity_ids]
-    for relation_position, row in enumerate(graph.relations_grid.itertuples(index=False)):
-        parent = positions[str(row.parent_quantity_id)]
-        children = tuple(
-            positions[str(quantity_id)] for quantity_id in row.child_quantity_ids
-        )
-        relations.append(
-            {
-                'relation_id': str(row.relation_id),
-                'relation_kind': str(row.relation_kind),
-                'parent': parent,
-                'children': children,
-                'source_observation_ids': tuple(row.source_observation_ids),
-            }
-        )
-        adjacent[parent].append(relation_position)
-        for child in children:
-            adjacent[int(child)].append(relation_position)
+    relations = topology.relations
+    adjacent = topology.adjacent
 
-    derivations: list[dict[str, object]] = []
+    # Bound propagation can update the same quantity many times.  Keep the
+    # active *last* derivation in compact indexed arrays and materialize audit
+    # dictionaries only once after convergence.  This is materially faster for
+    # the multi-scope graph while preserving the provenance that survives into
+    # the final bounds.
+    derivation_indices: set[int] = set()
+    last_update_seq = np.zeros(len(quantity_ids), dtype=np.int64)
+    last_pass_number = np.zeros(len(quantity_ids), dtype=np.int32)
+    last_rule_id: list[str | None] = [None] * len(quantity_ids)
+    last_relation_id: list[str | None] = [None] * len(quantity_ids)
+    last_relation_kind: list[str | None] = [None] * len(quantity_ids)
+    last_support_ids: list[tuple[str, ...] | None] = [None] * len(quantity_ids)
+    last_support_count = np.zeros(len(quantity_ids), dtype=np.int32)
+    last_observation_ids: list[tuple[str, ...] | None] = [None] * len(quantity_ids)
+    last_previous_lower = np.zeros(len(quantity_ids), dtype=float)
+    last_previous_upper = np.zeros(len(quantity_ids), dtype=float)
+    last_previous_lower_attained = np.zeros(len(quantity_ids), dtype=bool)
+    last_previous_upper_attained = np.zeros(len(quantity_ids), dtype=bool)
     conflicts: list[dict[str, object]] = []
     update_count = 0
 
@@ -130,29 +190,19 @@ def run_interval_closure(
     ) -> None:
         nonlocal update_count
         update_count += 1
-        derivations.append(
-            {
-                'derivation_id': f'derivation:{update_count:08d}',
-                'pass_number': pass_number,
-                'rule_id': rule_id,
-                'relation_id': relation['relation_id'],
-                'relation_kind': relation['relation_kind'],
-                'result_quantity_id': quantity_ids[result_index],
-                'supporting_quantity_ids': support_ids,
-                'supporting_quantity_count': int(support_count),
-                'supporting_observation_ids': relation['source_observation_ids'],
-                'previous_lower': previous[0],
-                'previous_upper': previous[1],
-                'new_lower': float(lower[result_index]),
-                'new_upper': float(upper[result_index]),
-                'previous_lower_attained': previous[2],
-                'previous_upper_attained': previous[3],
-                'new_lower_attained': bool(lower_attained[result_index]),
-                'new_upper_attained': bool(upper_attained[result_index]),
-                'new_lower_assumption_tier': int(lower_tier[result_index]),
-                'new_upper_assumption_tier': int(upper_tier[result_index]),
-            }
-        )
+        derivation_indices.add(result_index)
+        last_update_seq[result_index] = update_count
+        last_pass_number[result_index] = pass_number
+        last_rule_id[result_index] = rule_id
+        last_relation_id[result_index] = str(relation['relation_id'])
+        last_relation_kind[result_index] = str(relation['relation_kind'])
+        last_support_ids[result_index] = support_ids
+        last_support_count[result_index] = int(support_count)
+        last_observation_ids[result_index] = tuple(relation['source_observation_ids'])
+        last_previous_lower[result_index] = previous[0]
+        last_previous_upper[result_index] = previous[1]
+        last_previous_lower_attained[result_index] = previous[2]
+        last_previous_upper_attained[result_index] = previous[3]
 
     def check_interval(index: int, relation_id: str) -> None:
         empty = lower[index] > upper[index] + tolerance
@@ -191,7 +241,57 @@ def run_interval_closure(
             parent = int(relation['parent'])
             children = relation['children']
             assert isinstance(children, tuple)
-
+    
+            if str(relation['relation_kind']) == 'DOMINANCE':
+                if len(children) != 1:
+                    raise ValueError(
+                        f'DOMINANCE relation {relation["relation_id"]} must have one child'
+                    )
+                child = int(children[0])
+                parent_previous = (
+                    float(lower[parent]), float(upper[parent]),
+                    bool(lower_attained[parent]), bool(upper_attained[parent]),
+                )
+                child_previous = (
+                    float(lower[child]), float(upper[child]),
+                    bool(lower_attained[child]), bool(upper_attained[child]),
+                )
+                child_changed = False
+                if isfinite(upper[parent]):
+                    child_changed = apply_upper(
+                        child, float(upper[parent]), bool(upper_attained[parent]),
+                        int(upper_tier[parent]),
+                    )
+                parent_changed = apply_lower(
+                    parent, float(lower[child]), bool(lower_attained[child]),
+                    int(lower_tier[child]),
+                )
+                if child_changed:
+                    changed_quantities.add(child)
+                    record(
+                        pass_number=pass_number,
+                        rule_id='DOMINANCE_PARENT_UPPER_TO_CHILD',
+                        relation=relation,
+                        result_index=child,
+                        previous=child_previous,
+                        support_ids=(quantity_ids[parent],),
+                        support_count=1,
+                    )
+                    check_interval(child, str(relation['relation_id']))
+                if parent_changed:
+                    changed_quantities.add(parent)
+                    record(
+                        pass_number=pass_number,
+                        rule_id='DOMINANCE_CHILD_LOWER_TO_PARENT',
+                        relation=relation,
+                        result_index=parent,
+                        previous=parent_previous,
+                        support_ids=(quantity_ids[child],),
+                        support_count=1,
+                    )
+                    check_interval(parent, str(relation['relation_id']))
+                continue
+    
             # Scalar accumulation is intentionally used here.  The relation graph
             # contains tens of thousands of tiny (1/2/4-child) equations; creating
             # NumPy slices and temporary arrays for every relation dominated real
@@ -246,7 +346,7 @@ def run_interval_closure(
                 elif hi_tier > second_upper_tier:
                     second_upper_tier = hi_tier
             sum_upper = inf if upper_inf_count else sum_finite_upper
-
+    
             previous = (
                 float(lower[parent]),
                 float(upper[parent]),
@@ -282,7 +382,7 @@ def run_interval_closure(
                     support_count=len(children),
                 )
                 check_interval(parent, str(relation['relation_id']))
-
+    
             # Use the snapshot aggregates above for every sibling in this
             # relation.  Any child tightened below schedules the relation again in
             # the next closure wave, matching the previous fixed-point semantics.
@@ -380,7 +480,7 @@ def run_interval_closure(
                         support_count=len(children),
                     )
                     check_interval(child, str(relation['relation_id']))
-
+    
         if conflicts:
             conflict_grid = pd.DataFrame(conflicts).drop_duplicates('conflict_id')
             raise SorsIntervalClosureConflictError(conflict_grid)
@@ -392,6 +492,34 @@ def run_interval_closure(
     else:
         raise RuntimeError(
             f'Deterministic closure did not converge in {max_passes} passes'
+        )
+
+    # Intermediate tightenings are counted in ``update_count``.  Materialize
+    # only the last active derivation per changed quantity.
+    derivations: list[dict[str, object]] = []
+    for index in sorted(derivation_indices):
+        derivations.append(
+            {
+                'derivation_id': f'derivation:{int(last_update_seq[index]):08d}',
+                'pass_number': int(last_pass_number[index]),
+                'rule_id': last_rule_id[index],
+                'relation_id': last_relation_id[index],
+                'relation_kind': last_relation_kind[index],
+                'result_quantity_id': quantity_ids[index],
+                'supporting_quantity_ids': last_support_ids[index] or (),
+                'supporting_quantity_count': int(last_support_count[index]),
+                'supporting_observation_ids': last_observation_ids[index] or (),
+                'previous_lower': float(last_previous_lower[index]),
+                'previous_upper': float(last_previous_upper[index]),
+                'new_lower': float(lower[index]),
+                'new_upper': float(upper[index]),
+                'previous_lower_attained': bool(last_previous_lower_attained[index]),
+                'previous_upper_attained': bool(last_previous_upper_attained[index]),
+                'new_lower_attained': bool(lower_attained[index]),
+                'new_upper_attained': bool(upper_attained[index]),
+                'new_lower_assumption_tier': int(lower_tier[index]),
+                'new_upper_assumption_tier': int(upper_tier[index]),
+            }
         )
 
     quantities['lower_bound'] = lower
@@ -461,6 +589,7 @@ class SorsIntervalClosureState:
         self._relations_grid = graph.relations_grid.copy()
         self._bindings_grid = graph.observation_bindings_grid.copy()
         self.quantities_grid = graph.quantities_grid.copy()
+        self._topology: _ClosureTopology | None = None
         self.derivations_grid = pd.DataFrame()
         self.conflicts_grid = pd.DataFrame()
         self.tolerance = float(tolerance)
@@ -528,6 +657,7 @@ class SorsIntervalClosureState:
             ignore_index=True,
             sort=False,
         )
+        self._topology = None
         return len(new_rows)
 
     def _offset_derivations(
@@ -578,11 +708,16 @@ class SorsIntervalClosureState:
             self._relations_grid,
             self._bindings_grid,
         )
+        if self._topology is None:
+            self._topology = _compile_closure_topology(
+                self.quantities_grid, self._relations_grid
+            )
         result = run_interval_closure(
             graph,
             tolerance=self.tolerance,
             max_passes=self.max_passes,
             seed_quantity_ids=seed_quantity_ids,
+            _topology=self._topology,
         )
         derivations, quantities = self._offset_derivations(
             result.derivations_grid, result.quantities_grid

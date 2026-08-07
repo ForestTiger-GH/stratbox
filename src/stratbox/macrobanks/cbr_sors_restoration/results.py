@@ -19,7 +19,10 @@ class SorsRunSummary:
     source_rows: int
     atomic_regions: int
     okved2_classes: int
-    component_quantities: int
+    portfolio_scopes: tuple[str, ...]
+    primary_component_quantities: int
+    auxiliary_component_quantities: int
+    latent_component_quantities: int
     regional_metric_rows: int
     raw_publication_observations: int
     unique_publication_constraints: int
@@ -31,12 +34,16 @@ class SorsRunSummary:
     inherited_facts: int
     strict_identified_facts: int
     rounding_optimal_facts: int
+    rounding_preferred_facts: int
     rounding_selected_facts: int
+    auxiliary_publication_facts: int
     optimization_status: str = 'DISABLED'
     optimization_rounds: int = 0
     optimization_targets_attempted: int = 0
     tau_star_mln: float | None = None
     l1_star_mln: float | None = None
+    relaxed_l1_star_mln: float | None = None
+    relaxed_linf_at_l1_mln: float | None = None
 
 
 @dataclass(frozen=True)

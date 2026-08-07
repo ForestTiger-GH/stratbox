@@ -29,11 +29,13 @@ def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
         rows.append(
             {
                 'quantity_id': component_quantity_id(
+                    'CORPORATE_TOTAL',
                     region_code,
                     class_code,
                     component,
                 ),
                 'quantity_kind': 'ATOMIC_COMPONENT',
+                'portfolio_scope': 'CORPORATE_TOTAL',
                 'region_code': region_code,
                 'class_code': class_code,
                 'component': component,
@@ -95,10 +97,10 @@ def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
     variables = compilation.problem.variables_grid.set_index('quantity_id')
 
     performing_rub = variables.loc[
-        component_quantity_id(region_code, class_code, 'performing_rub')
+        component_quantity_id('CORPORATE_TOTAL', region_code, class_code, 'performing_rub')
     ]
     overdue_fx = variables.loc[
-        component_quantity_id(region_code, class_code, 'overdue_fx')
+        component_quantity_id('CORPORATE_TOTAL', region_code, class_code, 'overdue_fx')
     ]
     performing_rub_col = int(performing_rub.solver_column)
     overdue_fx_col = int(overdue_fx.solver_column)
@@ -136,8 +138,9 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
     for component in COMPONENTS:
         rows.append(
             {
-                'quantity_id': component_quantity_id(region_code, class_code, component),
+                'quantity_id': component_quantity_id('CORPORATE_TOTAL', region_code, class_code, component),
                 'quantity_kind': 'ATOMIC_COMPONENT',
+                'portfolio_scope': 'CORPORATE_TOTAL',
                 'region_code': region_code,
                 'class_code': class_code,
                 'component': component,
@@ -148,11 +151,12 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
                 'upper_attained': False,
             }
         )
-    metric_id = metric_quantity_id(region_code, class_code, 'debt_rub')
+    metric_id = metric_quantity_id('CORPORATE_TOTAL', region_code, class_code, 'debt_rub')
     rows.append(
         {
             'quantity_id': metric_id,
             'quantity_kind': 'REGIONAL_CLASS_METRIC',
+                'portfolio_scope': 'CORPORATE_TOTAL',
             'region_code': region_code,
             'class_code': class_code,
             'component': None,
@@ -229,7 +233,7 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
     debt_components = {'performing_rub', 'overdue_rub'}
     variable_lookup = compilation.problem.variables_grid.set_index('quantity_id')
     expected_columns = {
-        int(variable_lookup.loc[component_quantity_id(region_code, class_code, c)].solver_column)
+        int(variable_lookup.loc[component_quantity_id('CORPORATE_TOTAL', region_code, class_code, c)].solver_column)
         for c in debt_components
     }
     assert set(dynamic.expression_indices.tolist()) == expected_columns
@@ -249,14 +253,15 @@ def test_refresh_updates_official_aggregate_row_after_deterministic_tightening()
 
     region_code = 'r1'
     class_code = '01'
-    metric_id = metric_quantity_id(region_code, class_code, 'debt_rub')
+    metric_id = metric_quantity_id('CORPORATE_TOTAL', region_code, class_code, 'debt_rub')
     publication_id = 'publication:national_total:debt_rub'
     rows: list[dict[str, object]] = []
     for component in COMPONENTS:
         rows.append(
             {
-                'quantity_id': component_quantity_id(region_code, class_code, component),
+                'quantity_id': component_quantity_id('CORPORATE_TOTAL', region_code, class_code, component),
                 'quantity_kind': 'ATOMIC_COMPONENT',
+                'portfolio_scope': 'CORPORATE_TOTAL',
                 'region_code': region_code,
                 'class_code': class_code,
                 'component': component,
@@ -272,6 +277,7 @@ def test_refresh_updates_official_aggregate_row_after_deterministic_tightening()
             {
                 'quantity_id': metric_id,
                 'quantity_kind': 'REGIONAL_CLASS_METRIC',
+                'portfolio_scope': 'CORPORATE_TOTAL',
                 'region_code': region_code,
                 'class_code': class_code,
                 'component': None,
@@ -284,6 +290,7 @@ def test_refresh_updates_official_aggregate_row_after_deterministic_tightening()
             {
                 'quantity_id': publication_id,
                 'quantity_kind': 'PUBLISHED_AGGREGATE',
+                'portfolio_scope': 'CORPORATE_TOTAL',
                 'region_code': None,
                 'class_code': None,
                 'component': None,

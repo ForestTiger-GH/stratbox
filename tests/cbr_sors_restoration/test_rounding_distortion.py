@@ -9,6 +9,7 @@ from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import (
 )
 from stratbox.macrobanks.cbr_sors_restoration.optimization.distortion import (
     build_rounding_distortion_problem,
+    distortion_linf_from_values,
 )
 
 
@@ -62,6 +63,16 @@ def _toy_problem() -> SorsLinearProblem:
         constraints_grid=pd.DataFrame(constraints),
         variables_grid=pd.DataFrame({'quantity_id': ['x', 'y']}),
     )
+
+
+def test_actual_linf_uses_residual_variables_not_free_tau_envelope() -> None:
+    strict = _toy_problem()
+    distortion, _, _ = build_rounding_distortion_problem(strict)
+    # x, y, three absolute residual auxiliaries, tau.  During a relaxed L1
+    # solve tau is not in the objective and may legally be slack.  Audit must
+    # therefore report max(d_i), not the arbitrary tau column.
+    values = np.asarray([6.0, 5.0, 0.1, 0.2, 0.3, 10.0])
+    assert distortion_linf_from_values(distortion, values) == pytest.approx(0.3)
 
 
 def test_rounding_distortion_builds_linf_model_and_recovers_one_third_million() -> None:

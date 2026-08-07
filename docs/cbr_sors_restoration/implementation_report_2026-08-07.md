@@ -1,177 +1,210 @@
 # SORS Restoration — implementation report 2026-08-07
 
-Версия Strategy Box: `0.7.0`  
-Версия архитектуры: deterministic publication fixed point + rounding-aware optimization.
+Версия Strategy Box: `0.8.0`  
+Версия архитектуры: multi-scope publication restoration + dominance + relaxed rounding selection.
 
-## Что внедрено
+## Цель волны
 
-Рефактор меняет не величину публикационного допуска, а саму постановку восстановления.
-Скрытая денежная величина (`latent`) и восстанавливаемое целочисленное значение
-официальной публикации (`publication`) теперь являются двумя разными уровнями.
+Волна развивает доказательную модель 0.7 в трёх направлениях:
 
-Реализовано:
+1. сделать практически доступным восстановление узких, но не single-bucket РКВС без ручного увеличения официального ±0.5;
+2. явно использовать монотонность `overdue <= debt`;
+3. подключить официальные SME и SME-IE книги как auxiliary constraint scopes для восстановления CORPORATE_TOTAL, не создавая отдельный пользовательский SME/IE restored GRID.
 
-- отдельный пакет `publication/`;
-- сохранение исходного published representative и source lineage внутри quantity graph;
-- first-class `portfolio_scope` (`CORPORATE_TOTAL` в текущем контуре);
-- complete/disjoint publication partition graph;
-- `PublishedMassToken` с region/class support;
-- source-preserving value inheritance;
-- самостоятельный deterministic fixed point
-  `interval closure ↔ publication facts ↔ token inheritance ↔ publication-bucket bounds`;
-- жёсткий запрет перехода к Solver, если deterministic fixed point не сошёлся;
-- assumption tiers для lower/upper bounds и propagation через residual arithmetic;
-- защита от provenance laundering: слабый published/rounding premise не становится
-  latent-exact фактом только из-за последующего interval closure;
-- unified target catalog для шести пользовательских `region × class × metric` и
-  четырёх внутренних component targets;
-- отдельный `optimization/` layer;
-- strict min/max как самый сильный Solver-tier;
-- minimum L∞ rounding distortion, затем L1 refinement;
-- min/max на rounding-optimal face;
-- optional controlled narrow-range selection через common-witness connected batches;
-- полный deterministic publication fixed point после каждой новой Solver-promotion;
-- повторный global latent-feasibility gate после publication cascades внутри optimization;
-- Fact-Ledger-driven final result grid;
-- отдельные audit surfaces для partitions, tokens, inheritance, promotions,
-  optimization rounds, target bounds, rounding profiles и selection attempts;
-- старый cell-resolution monolith и устаревшие compatibility contracts удалены.
+## Multi-scope hidden model
 
-## Критическое правило inheritance
-
-Inheritance **не** является арифметикой над округлёнными числами.
-
-Из:
+Один расчёт теперь содержит три скрытых куба:
 
 ```text
-parent = 6
-sibling A = 0
-sibling B = 0
-unknown child = ?
+SME_IE <= SME <= CORPORATE_TOTAL
 ```
 
-запрещено автоматически выводить `unknown child = 6`.
+Каждый куб имеет `85 × 88 × 4` atomic component quantities. Scope включён в identity всех component/metric/publication quantities.
 
-Published Mass Token локализуется через complete/disjoint same-metric partition только
-если:
+Published Mass Tokens строго локальны своему scope. Равные опубликованные числа разных scopes не наследуются друг в друга. Межscope-информация передаётся только hard DOMINANCE.
 
-1. один child уже имеет установленный publication fact, равный тому же `v`;
-2. каждый sibling уже имеет установленный publication-zero;
-3. локализация относится к тому же token/source mass;
-4. независимые локализации токена пересекают support;
-5. новое `region × class × metric = v` возникает только при singleton support.
+Solver targets и пользовательские `regional_okved2_grid/components_grid` остаются только `CORPORATE_TOTAL`; SME/SME_IE существуют как auxiliary latent variables and constraints.
 
-Поэтому кейс типа «Россия=6 → Удмуртия=6, остальные регионы=0» и независимо
-«Россия=6 → класс 47=6, остальные классы=0» корректно локализует одну и ту же
-видимую массу в `Удмуртия × 47`, а `parent=6 + zeros` без matching child ничего не
-легализует.
+## Новые официальные источники
 
-Наследованный `6` накладывает на latent quantity publication bucket `[5.5; 6.5)`,
-а не точку `x=6`.
+Помимо корпоративного контура подключены:
 
-## Реальная проверка на официальных книгах 01.07.2026
+- `01_11_Debt_sme.xlsx` — национальные SME и SME_IE totals;
+- `01_11_F_Debt_sme_by_activity.xlsx` — SME × class;
+- `01_11_I_Debt_ie_by_activity.xlsx` — SME_IE × class;
+- `01_12_A_Loans_sme_by_fd_activity_YYYYMMDD.xlsx` — SME × FD × section;
+- `01_13_F_Debt_sme_subj.xlsx` — SME × geography totals;
+- `01_13_I_Debt_sme_subj.xlsx` — SME_IE × geography totals.
 
-Проверка выполнена на переданном пользователем комплекте Банка России.
-МСП/ИП-книги в базовый corporate cube этой волны намеренно не включались.
+Для `01_12_A` используются только stock-листы задолженности/просрочки. Flow-лист `объем` в одно-периодный остаточный Solver не попадает.
+
+На реальном комплекте 01.07.2026 получено `18 266` official source observations и `55/55` source-validation checks PASS.
+
+## DOMINANCE
+
+Введён generic relation type `DOMINANCE`.
+
+Deterministic interval closure использует для `child <= parent`:
 
 ```text
-source rows (с 01_05_D):             16 450
+upper(child) <= upper(parent)
+lower(parent) >= lower(child)
+```
+
+Механизм применяется к:
+
+- overdue/debt монотонности;
+- SME_IE/SME/CORPORATE nesting;
+- сопоставимым published aggregates.
+
+Atomic scope nesting одновременно компилируется hard LP inequalities, поэтому deterministic и Solver слои имеют одну семантику.
+
+## Реальный контрольный результат 01.07.2026
+
+Ключевой testcase подтверждён на официальных книгах:
+
+```text
+SME      × Удмуртия × class 47 × overdue_fx = 6
+SME_IE   × Удмуртия × class 47 × overdue_fx = 6
+```
+
+Оба значения возникают source-preserving inheritance внутри собственных scopes.
+
+Далее scope dominance передаёт SME lower bound в общий рынок, а corporate региональный total Удмуртии ограничивает cell сверху. В результате:
+
+```text
+CORPORATE_TOTAL × Удмуртия × class 47 × overdue_fx = 6
+```
+
+получает `PUBLICATION_CLOSURE_IDENTIFIED` до оптимизационного выбора. В прежнем corporate-only контуре эта РКВС оставалась примерно `[0; 6.5)`.
+
+Это целевой доказательный эффект сегментных таблиц: наружу SME/IE детализация не восстанавливается, но их разреженные официальные маржи сужают общий рынок.
+
+## Реальный размер multi-scope graph 01.07.2026
+
+Проверенная структура:
+
+```text
+source observations:                 18 266
 atomic regions:                          85
 real OKVED2 classes:                     88
-quantities:                          76 118
-relations:                           46 198
-observation bindings:                 1 324
+latent atomic components:            89 760
+all quantities:                      228 098
+quantity relations:                 451 371
+publication partitions:               3 962
 
-publication partitions:               1 414
-  LATENT_TARGETS:                     1 318
-  PUBLISHED_HIERARCHY:                   96
-positive source mass tokens:          1 119
-inheritance localization events:          6
-positive inherited region×class facts:    0
-
-deterministic status:             FIXED_POINT
-publication fixed-point outer passes:     1
-atomic-component publication-zero:   11 370
-region×class×metric publication-zero:11 370
-source published aggregate facts:     1 318
-
-latent Solver variables:             29 920
-official publication constraints:     1 318
-dynamic region×class metric rows:    44 880
-total Solver rows:                   46 198
-metric/component targets:            74 800
+compiled latent LP variables:         89 760
+compiled Solver rows:                198 178
+compiled nnz:                      1 571 680
+corporate target expressions:         74 800
 ```
 
-Это содержательно ожидаемый результат для общего corporate cube: токены действительно
-локализуются в некоторых официальных разбиениях, но ни один положительный support не
-схлопывается до одной регионально-отраслевой клетки. Механизм поэтому не создаёт
-ненулевые факты искусственно. Известный пример `Удмуртия × 47 = 6` относится к
-разреженному МСП-кубу; МСП пока не примешивается к основному corporate Solver.
+После первого multi-scope deterministic wave ledger содержит десятки тысяч publication facts; performance-critical feedback из Fact Ledger в quantity bounds поэтому переведён с per-cell `DataFrame.at` на stable quantity indices + NumPy arrays.
 
-На текущем sandbox фактическое время последнего реального прогона было примерно:
+Профилированный 01.07 run после этой оптимизации показывал ориентировочно:
 
 ```text
-Excel/source loading:          19.5 s
-quantity graph:                 3.5 s
-publication graph:              0.7 s
-deterministic fixed point:      5.2 s
-strict model compilation:       2.3 s
-Solver-bound refresh:           0.1 s
-full public API (no highspy):  ~33.0 s
+source loading                ~3.1 s
+quantity graph               ~11.8 s
+publication graph             ~2.8 s
+first full interval closure  ~11.7 s
+subsequent seeded closure       ~1 s scale
 ```
 
-Это диагностические измерения конкретного окружения, а не performance SLA.
+Фактическое время sandbox нестабильно и не является SLA; цифры приведены только как regression-scale reference.
 
-Для независимой проверки каскадной устойчивости тот же deterministic engine прогнан
-на 01.06.2026:
+## Сильный rounding profile
+
+Официальный ±0.5 млн для каждой source publication остаётся HARD.
+
+Strong tier решает:
 
 ```text
-source rows:                         15 874
-publication partitions:              1 414
-deterministic status:            FIXED_POINT
-deterministic bound updates:       154 680
-atomic-component publication-zero:  11 274
-region×class×metric publication-zero:11 274
-positive inherited region×class facts: 0
-positive source mass tokens:         1 122
-inheritance localization events:         5
+tau_star = min max |A_j x - P_j|
+l1_star  = min sum |A_j x - P_j| при tau <= tau_star + numerical tolerance
 ```
 
-Таким образом, усиление publication hierarchy сохранило ранее проверенные июньские
-11 274 нуля и июльские 11 370 нулей; новый inheritance не создаёт положительные
-corporate-факты там, где support источника реально не локализуется до одной РКВС.
+`tau_star` рассчитывается из конкретного периода; это не заданный economic tolerance.
+
+## Relaxed rounding для накопленной target uncertainty
+
+Широкий целевой диапазон может естественно возникать через несколько aggregates/residuals. Система не умножает ±0.5 на длину пути и не увеличивает source tolerance.
+
+Для weak practical tier введён отдельный baseline:
+
+```text
+relaxed_l1_star = min sum |A_j x - P_j|
+```
+
+при тех же hard official source intervals, но без обязательного удержания на `tau_star`.
+
+Для каждого допустимого publication bucket целевой corporate РКВС Solver временно накладывает bucket и заново минимизирует whole-model L1. Если один bucket существенно дешевле альтернатив и укладывается в global budget относительно `relaxed_l1_star`, он получает `ROUNDING_PREFERRED`.
+
+`max_linf_degradation_mln=None` по умолчанию: weak tier может использовать весь законный source-rounding room. Опциональное значение добавляет cap выше strong `tau_star`.
+
+## Защита мелких РКВС
+
+Controlled weak selection по умолчанию имеет:
+
+```text
+allow_zero_selection = False
+```
+
+Если bucket `0` всё ещё математически возможен, weak selection target пропускает. Ноль может быть доказан deterministic, inheritance, strict min/max или strong optimal-face механизмом, но не выбирается слабой эвристикой из-за близости benchmark к нулю.
+
+## Rounding provenance
+
+Добавлены/используются уровни:
+
+- `ROUNDING_OPTIMUM_IDENTIFIED`;
+- `ROUNDING_PREFERRED`;
+- `ROUNDING_SELECTED`;
+- соответствующие closure descendants.
+
+Assumption tier всегда наследуется, поэтому preferred/selected premise не может после deterministic closure стать strict fact.
+
+`rounding_profiles_grid`, `summary` и audit теперь различают:
+
+- `tau_star_mln`;
+- strong `l1_star_mln`;
+- `relaxed_l1_star_mln`;
+- фактический `relaxed_linf_at_l1_mln` returned witness.
+
+Relaxed witness L∞ считается по actual absolute-residual variables, а не по свободной auxiliary `tau` column.
+
+## Производительные исправления
+
+Multi-scope граф выявил два hot spots, которые устранены без изменения математики:
+
+1. publication fact feedback переведён на NumPy bounds вместо десятков тысяч `DataFrame.at`;
+2. Fact Ledger больше не materialize/sort полный DataFrame на каждом publication pass только ради zero-count; current facts выбираются напрямую по stable record indices.
+
+Interval closure сохраняет persistent compiled topology и seeded waves после новых bucket bounds.
 
 ## Tests / repository checks
 
-На финальной кодовой версии перед сборкой patch-архива:
+Финальный кодовый контур этой волны:
 
-- `pytest -q tests/cbr_sors_restoration` → `60 passed`;
-- полный `pytest -q` → `84 passed, 6 skipped, 1 failed`;
-- единственный общий fail — существующий `stratbox.macrobanks.cbr_forms`, потому что
-  в sandbox отсутствует внешняя зависимость `dbfread`; SORS-код в stack trace этого
-  сбоя не участвует;
-- real/performance integration tests остаются opt-in через внешний каталог книг;
-- synthetic cascade regression проверяет цепочку
-  `inherited bucket → latent bound → новый publication-zero → новая token localization`;
-- отдельный regression запрещает ложное правило `parent=v + zero siblings → child=v`;
-- pass-limit regression проверяет, что незавершённый deterministic cycle блокирует
-  переход к Solver;
-- публичный `run_sors_restoration()` повторно прогнан на полном 01.07.2026:
-  deterministic status=`FIXED_POINT`, затем штатно возвращён `SOLVER_UNAVAILABLE` из-за
-  отсутствующего production `highspy`; 24 058 provisional current facts остались в
-  ledger для аудита, а в primary surface принято ровно 0 facts без feasibility gate;
-- rounding-distortion toy model независимо проверяется через SciPy/HiGHS test backend
-  и воспроизводит L∞ optimum `1/3 млн руб.` для publication representatives `6`, `5`
-  и агрегата `10`.
+- `pytest -q tests/cbr_sors_restoration` → `70 passed, 1 skipped`;
+- полный `pytest -q` → `94 passed, 7 skipped, 1 failed`;
+- единственный общий fail — существующий `stratbox.macrobanks.cbr_forms`, потому что в sandbox отсутствует `dbfread`; зависимость объявлена в `pyproject.toml`, SORS в stack trace не участвует;
+- `scripts/check_release_integrity.py` → PASS;
+- `scripts/check_internal_imports.py` → все доступные модули PASS, тот же внешний `cbr_forms/dbfread` fail;
+- real 01.07 fixture остаётся opt-in через `STRATBOX_SORS_REAL_20260701_DIR`.
+
+Unit regressions отдельно проверяют:
+
+- DOMINANCE propagation;
+- scope-aware identities/tokens;
+- candidate buckets для накопленного диапазона;
+- запрет weak-zero selection;
+- bucket competition preference;
+- relaxed L∞ audit через actual residual variables;
+- Fact Ledger acceptance of `ROUNDING_PREFERRED`;
+- source-preserving inheritance и provenance tiers.
 
 ## Production Solver caveat текущего sandbox
 
-Production backend библиотеки — `highspy>=1.11,<2`. В текущем sandbox `highspy`
-отсутствует, поэтому полный production путь
-`strict min/max → L∞/L1 → optimal face → controlled selection` нельзя было прогнать
-end-to-end именно через штатный persistent backend.
+Production backend — optional dependency `highspy>=1.11,<2`. В текущем sandbox `highspy` отсутствует, поэтому полный multi-scope production путь `feasibility → strict min/max → strong rounding → relaxed bucket competition` невозможно подтвердить end-to-end именно штатным persistent backend.
 
-Код сохраняет явную семантику `SOLVER_UNAVAILABLE`; provisional deterministic facts
-без успешного global feasibility gate не получают финальный accepted status. Solver
-математика и augmented distortion model покрыты unit tests, а deterministic часть
-проверена на полном официальном срезе 01.07.2026.
+Fail-closed semantics сохраняется: без успешного global feasibility provisional publication facts не становятся accepted user facts. Sparse compiler, augmented rounding mathematics and selection logic покрыты unit/structural tests; deterministic multi-scope semantics проверены на официальном 01.07.2026 set.

@@ -89,6 +89,64 @@ class RoundingPolicy:
             )
         )
 
+    def candidate_buckets(
+        self,
+        lower: float,
+        upper: float,
+        *,
+        lower_attained: bool = True,
+        upper_attained: bool = True,
+        max_buckets: int | None = None,
+    ) -> tuple[float, ...]:
+        """Return every published bucket intersecting a latent interval.
+
+        This is deliberately based on interval intersection rather than on the
+        number of arithmetic transformations that produced the bounds.  A target
+        can inherit several independent +/- half-step publication uncertainties;
+        the final feasible interval already contains that accumulated ambiguity.
+        """
+
+        interval = PublicationInterval(
+            float(lower),
+            float(upper),
+            lower_attained=bool(lower_attained),
+            upper_attained=bool(upper_attained),
+        )
+        if not (isfinite(interval.lower) and isfinite(interval.upper)):
+            return ()
+        if interval.upper < -self.tolerance:
+            return ()
+        lo = max(0.0, interval.lower)
+        hi = max(0.0, interval.upper)
+        start = max(0, int(floor(lo / self.step + 0.5)) - 1)
+        stop = max(start, int(floor(hi / self.step + 0.5)) + 1)
+        buckets: list[float] = []
+        for index in range(start, stop + 1):
+            bucket = float(index) * self.step
+            publication = self.interval(bucket)
+            left = max(interval.lower, publication.lower)
+            right = min(interval.upper, publication.upper)
+            if left < right - self.tolerance:
+                buckets.append(bucket)
+            elif abs(left - right) <= self.tolerance:
+                # A one-point intersection is feasible only when that endpoint is
+                # attained by both intervals. Publication upper endpoints are open.
+                target_attained = True
+                if abs(left - interval.lower) <= self.tolerance:
+                    target_attained = target_attained and interval.lower_attained
+                if abs(left - interval.upper) <= self.tolerance:
+                    target_attained = target_attained and interval.upper_attained
+                pub_attained = True
+                if abs(left - publication.lower) <= self.tolerance:
+                    pub_attained = pub_attained and publication.lower_attained
+                if abs(left - publication.upper) <= self.tolerance:
+                    pub_attained = pub_attained and publication.upper_attained
+                if target_attained and pub_attained:
+                    buckets.append(bucket)
+            if max_buckets is not None and len(buckets) > max_buckets:
+                return tuple(buckets)
+        return tuple(buckets)
+
 
 def publication_interval(value: float, step: float = 1.0) -> PublicationInterval:
     return RoundingPolicy(step=step).interval(value)
