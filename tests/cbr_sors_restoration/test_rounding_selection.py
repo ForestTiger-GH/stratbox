@@ -76,6 +76,7 @@ def test_rejected_cluster_does_not_block_independent_cluster(monkeypatch) -> Non
 
     assert calls == [('bad-a', 'bad-b'), ('good',)]
     assert tuple(execution.accepted_grid['target_id']) == ('good',)
+    assert tuple(execution.accepted_grid['selection_attempt_id']) == ('selection:batch:000002',)
     assert execution.status == 'PARTIAL'
     assert len(execution.attempts_grid) == 2
 
@@ -114,6 +115,11 @@ def test_large_connected_cluster_is_chunked_without_greedy_premises(monkeypatch)
 
     assert calls == [('a', 'b'), ('c',)]
     assert tuple(execution.accepted_grid['target_id']) == ('a', 'b', 'c')
+    assert tuple(execution.accepted_grid['selection_attempt_id']) == (
+        'selection:batch:000001',
+        'selection:batch:000001',
+        'selection:batch:000002',
+    )
     assert execution.status == 'ACCEPTED'
     assert tuple(execution.attempts_grid['validation_mode']) == (
         'COMMON_WITNESS_ATOMIC_BATCH',

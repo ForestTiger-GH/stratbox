@@ -145,7 +145,7 @@ def test_parent_plus_zero_siblings_does_not_invent_unknown_child_value() -> None
     )
     state = SorsIntervalClosureState(graph, tolerance=1e-9, max_passes=50)
     ledger = SorsPublicationLedger()
-    run_publication_fixed_point(
+    execution = run_publication_fixed_point(
         state,
         build_publication_graph(graph),
         ledger,
@@ -155,6 +155,10 @@ def test_parent_plus_zero_siblings_does_not_invent_unknown_child_value() -> None
     )
     assert ledger.current_record('Z')['published_value'] == 0
     assert ledger.current_record('X') is None
+    # A newly promoted publication fact is itself state change even when its
+    # bucket was already tighter than the latent interval; fixed point requires
+    # one further sweep that observes no new fact.
+    assert execution.passes == 2
 
 
 def test_equal_source_value_localized_by_independent_partitions_inherits_cell() -> None:

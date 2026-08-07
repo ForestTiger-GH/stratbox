@@ -148,7 +148,9 @@ def _promote_selected(
             evidence_method='ROUNDING_SELECTED',
             restoration_pass=0,
             optimization_round=optimization_round,
-            proof_ids=(),
+            proof_ids=(str(row.selection_attempt_id),)
+            if getattr(row, 'selection_attempt_id', None) is not None
+            else (),
             details=(
                 'Benchmark publication bucket jointly validated without exceeding '
                 'configured L∞/L1 rounding-objective degradation budgets.'

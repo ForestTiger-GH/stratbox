@@ -148,11 +148,16 @@ def run_publication_fixed_point(
             }
         )
 
-        if not fact_bound_changes:
-            pass_rows[-1]['stop_reason'] = 'NO_NEW_LATENT_BUCKET_BOUNDS'
+        if not fact_bound_changes and new_facts == 0:
+            pass_rows[-1]['stop_reason'] = 'NO_NEW_FACTS_OR_LATENT_BUCKET_BOUNDS'
             break
+        # New publication facts are themselves part of the fixed-point state.
+        # Even when their buckets do not further tighten latent bounds, run one
+        # additional cheap publication/inheritance sweep before declaring the
+        # deterministic phase exhausted.  An empty seed deliberately avoids a
+        # needless full interval-closure scan in that case.
         seed_quantity_ids = (
-            tuple(sorted(fact_bound_changes)) if fact_bound_changes else None
+            tuple(sorted(fact_bound_changes)) if fact_bound_changes else ()
         )
     else:
         if pass_rows:

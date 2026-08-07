@@ -7,6 +7,27 @@ from stratbox.macrobanks.cbr_sors_restoration.metrics import METRIC_NAMES_RU, ME
 from stratbox.macrobanks.cbr_sors_restoration.publication import PublicationInterval
 
 
+
+
+def _lp_proof_flags(
+    evidence_method: str, proof_ids: tuple[str, ...]
+) -> tuple[bool, bool, bool]:
+    """Return direct Solver-proof flags without inferring provenance from method names."""
+
+    is_lp_certified = bool(proof_ids)
+    has_two_sided_bounds = bool(
+        is_lp_certified
+        and len(proof_ids) >= 2
+        and evidence_method
+        in {
+            'LATENT_POINT_IDENTIFIED',
+            'PUBLISHED_BUCKET_IDENTIFIED',
+            'ROUNDING_OPTIMUM_IDENTIFIED',
+        }
+    )
+    return is_lp_certified, has_two_sided_bounds, has_two_sided_bounds
+
+
 def _fact_lookup(facts_grid: pd.DataFrame) -> pd.DataFrame:
     if facts_grid.empty:
         return pd.DataFrame()
@@ -71,6 +92,16 @@ def build_regional_okved2_grid(
             bool(row.lower_attained),
             bool(row.upper_attained),
         )
+        proof_ids = (
+            tuple(fact.proof_ids)
+            if fact is not None and isinstance(fact.proof_ids, (tuple, list))
+            else ()
+        )
+        (
+            has_solver_proof,
+            lp_lower_certified,
+            lp_upper_certified,
+        ) = _lp_proof_flags(evidence_method, proof_ids)
         value_precision = 'NONE'
         exact_value = None
         if accepted:
@@ -137,18 +168,9 @@ def build_regional_okved2_grid(
                 'is_exact_zero': bool(
                     accepted and latent_status == 'POINT' and exact_value == 0.0
                 ),
-                'is_lp_certified': evidence_method in {
-                    'LATENT_POINT_IDENTIFIED',
-                    'PUBLISHED_BUCKET_IDENTIFIED',
-                    'ROUNDING_OPTIMUM_IDENTIFIED',
-                    'ROUNDING_SELECTED',
-                },
-                'lp_lower_certified': evidence_method in {
-                    'LATENT_POINT_IDENTIFIED', 'PUBLISHED_BUCKET_IDENTIFIED'
-                },
-                'lp_upper_certified': evidence_method in {
-                    'LATENT_POINT_IDENTIFIED', 'PUBLISHED_BUCKET_IDENTIFIED'
-                },
+                'is_lp_certified': bool(has_solver_proof),
+                'lp_lower_certified': bool(lp_lower_certified),
+                'lp_upper_certified': bool(lp_upper_certified),
                 'source_observation_ids': (
                     tuple(fact.source_observation_ids)
                     if fact is not None and isinstance(fact.source_observation_ids, (tuple, list))
@@ -159,21 +181,16 @@ def build_regional_okved2_grid(
                     if fact is not None and isinstance(fact.supporting_partition_ids, (tuple, list))
                     else ()
                 ),
-                'supporting_relation_ids': (
-                    tuple(fact.supporting_partition_ids)
-                    if fact is not None and isinstance(fact.supporting_partition_ids, (tuple, list))
-                    else ()
-                ),
+                # Publication facts currently track publication partitions, not
+                # latent quantity-relation IDs.  Keep this field empty rather
+                # than mislabelling partition IDs as relation provenance.
+                'supporting_relation_ids': (),
                 'supporting_fact_ids': (
                     tuple(fact.supporting_fact_ids)
                     if fact is not None and isinstance(fact.supporting_fact_ids, (tuple, list))
                     else ()
                 ),
-                'proof_ids': (
-                    tuple(fact.proof_ids)
-                    if fact is not None and isinstance(fact.proof_ids, (tuple, list))
-                    else ()
-                ),
+                'proof_ids': proof_ids,
                 'rules_version': rules_version,
                 'solver_backend': solver_backend,
                 'solver_version': solver_version,

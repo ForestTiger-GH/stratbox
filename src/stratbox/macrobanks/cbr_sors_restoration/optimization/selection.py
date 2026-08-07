@@ -276,7 +276,9 @@ def validate_selection_clusters(
             if status == 'SOLVER_UNAVAILABLE':
                 unavailable = True
             if ok:
-                accepted_frames.append(batch)
+                accepted_batch = batch.copy()
+                accepted_batch['selection_attempt_id'] = attempt_id
+                accepted_frames.append(accepted_batch)
             else:
                 rejected += 1
             attempt_rows.append(
