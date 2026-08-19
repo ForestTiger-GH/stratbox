@@ -32,7 +32,7 @@ from tqdm.auto import trange
 
 from stratbox.base.filestore import make_workdir
 from stratbox.base.net.http import download_bytes
-from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
+from stratbox.macrobanks.cbr_forms.common.models import get_model_rows
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 from stratbox.macrobanks.cbr_forms.common.dbf import CBRFieldParser
 
@@ -210,23 +210,27 @@ def build_long(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig,
     show_progress: bool,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
-    fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
+    fdf = get_model_rows(model_df, kind="formula")
     if len(fdf) == 0:
-        raise RuntimeError("No formulas for form 102 in formulas_df.")
+        raise RuntimeError("No formulas for form 102 in model_df.")
 
-    indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+    indicator_order = {str(row["id"]): int(row["order"]) for _, row in fdf.iterrows()}
 
-    parsed: list[tuple[str, list[str]]] = []
+    parsed: list[tuple[str, str, str, str, str, list[str]]] = []
     for _, fr in fdf.iterrows():
+        indicator_id = str(fr["id"])
         name = str(fr["name"])
+        section = str(fr["section"])
+        measure = str(fr["measure"])
+        unit = str(fr["unit"])
         expr = str(fr["expression"])
-        # для 102 код обычно целочисленный, но оставим как \w+
+        # Для 102 код обычно целочисленный, но парсер сохраняет буквенные символы на будущее.
         tokens = re.findall(r"[A-Za-zА-Яа-я0-9]+|[+]{1}|[-]{1}", expr)
-        parsed.append((name, tokens))
+        parsed.append((indicator_id, name, section, measure, unit, tokens))
 
     banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
 
@@ -263,7 +267,7 @@ def build_long(
             lookup = _build_lookup_from_dbf(dbf_path)
 
             for bank_name, regn in banks:
-                for name, tokens in parsed:
+                for indicator_id, name, section, measure, unit, tokens in parsed:
                     acc = ""
                     for t in tokens:
                         if t in ["+", "-"]:
@@ -272,7 +276,19 @@ def build_long(
                             code = _norm_code(t)
                             acc += lookup.get((regn, code), "0")
                     out_rows.append(
-                        {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
+                        {
+                            "Форма": FORM,
+                            "Дата": date_str,
+                            "REGN": regn,
+                            "Банк": bank_name,
+                            "IndicatorId": indicator_id,
+                            "Код": "",
+                            "Показатель": name,
+                            "Раздел": section,
+                            "Measure": measure,
+                            "Значение": "=" + acc,
+                            "Единица": unit,
+                        }
                     )
 
         df_long = pd.DataFrame(out_rows)
@@ -290,9 +306,9 @@ def run(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig | None = None,
     show_progress: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
     cfg = cfg or RunnerConfig()
-    return build_long(dates=dates, banks_df=banks_df, formulas_df=formulas_df, cfg=cfg, show_progress=show_progress)
+    return build_long(dates=dates, banks_df=banks_df, model_df=model_df, cfg=cfg, show_progress=show_progress)

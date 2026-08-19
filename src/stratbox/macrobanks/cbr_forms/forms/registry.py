@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from stratbox.macrobanks.cbr_forms.forms import form101, form102, form123, form135, form805
+from stratbox.macrobanks.cbr_forms.forms import form101, form102, form123, form135, form802, form805
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,7 @@ FORM_REGISTRY: dict[str, CbrFormEntry] = {
     "102": CbrFormEntry(code="102", module=form102, title="0409102"),
     "123": CbrFormEntry(code="123", module=form123, title="0409123"),
     "135": CbrFormEntry(code="135", module=form135, title="0409135"),
+    "802": CbrFormEntry(code="802", module=form802, title="0409802"),
     "805": CbrFormEntry(code="805", module=form805, title="0409805"),
 }
 

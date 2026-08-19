@@ -1,67 +1,63 @@
 """
-Форма 135.
+Форма 0409135: текущий direct-dataset обязательных нормативов банка.
 
-Форма 0409135 содержит обязательные нормативы банка.
-Для нужного раздела используется DBF с полями:
-- REGN: регистрационный номер банка;
-- C1_3: код норматива;
-- C2_3: фактическое значение.
-
-Модуль является тонкой настройкой общего движка metric_form.py.
+Физическая структура раздела 3 задается в этом модуле, а семантический набор
+показателей — в ``models/form135.csv``. Архитектура допускает последующее
+добавление ``control_value``/``note`` и других dataset без изменения CSV-schema.
 """
 
 from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
-from stratbox.macrobanks.cbr_forms.common.metric_form import MetricFormSpec, run_metric_form
+from stratbox.macrobanks.cbr_forms.common.direct_form import (
+    DirectDatasetSpec,
+    normalize_code_metric,
+    run_direct_form,
+)
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 
 
 FORM = "135"
 
-DEFAULT_CANDIDATES = LayoutCandidates(
-    regn_candidates=["REGN"],
-    a_candidates=["C1_3"],
-    b_candidates=["C2_3"],
-)
-DEFAULT_PREFER = "135_3"
-
 
 def build_url(d: pd.Timestamp) -> str:
     """
-    Функция формирует ссылку на архив формы 135 за дату.
+    Функция формирует ссылку на архив формы 135 за отчетную дату.
     """
     ymd = pd.Timestamp(d).strftime("%Y%m%d")
     return f"https://www.cbr.ru/vfs/credit/forms/135-{ymd}.rar"
+
+
+DEFAULT_SPEC = DirectDatasetSpec(
+    form=FORM,
+    dataset="section3",
+    progress_desc="CBR 135",
+    build_url=build_url,
+    bank_fields=("REGN",),
+    code_fields=("C1_3",),
+    measure_fields={"actual": ("C2_3",)},
+    prefer_stem_contains="135_3",
+    code_normalizer=normalize_code_metric,
+)
 
 
 def run(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
-    candidates: LayoutCandidates | None = None,
-    prefer_stem_contains: str | None = None,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig | None = None,
     show_progress: bool = True,
-) -> tuple[pd.DataFrame, dict[str, int] | None]:
+) -> tuple[pd.DataFrame, dict[str, int]]:
     """
-    Функция запускает обработку формы 135 и возвращает long-таблицу.
+    Функция запускает текущий direct-dataset формы 135.
     """
-    spec = MetricFormSpec(
-        form=FORM,
-        progress_desc="CBR 135",
-        candidates=candidates or DEFAULT_CANDIDATES,
-        prefer_stem_contains=prefer_stem_contains or DEFAULT_PREFER,
-        build_url=build_url,
-    )
-    return run_metric_form(
+    return run_direct_form(
         dates=dates,
         banks_df=banks_df,
-        formulas_df=formulas_df,
-        spec=spec,
+        model_df=model_df,
+        spec=DEFAULT_SPEC,
         cfg=cfg,
         show_progress=show_progress,
     )

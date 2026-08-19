@@ -1,9 +1,9 @@
 """
-Модуль собирает wide-таблицы вида:
-  Показатель | Банк | <даты...>
+Модуль собирает Excel-friendly wide-таблицы отчетных форм Банка России.
 
-Это специфично под отчётные формы (macrobanks/cbr_forms),
-поэтому вынесено внутри задачи.
+Внутренняя идентичность строки строится по стабильному ``IndicatorId``, а не
+по русскому названию показателя. Поэтому одинаковые названия в форме 802 не
+создают коллизий при развороте таблицы.
 """
 
 from __future__ import annotations
@@ -17,52 +17,77 @@ def build_wide_table(
     indicator_order: dict[str, int] | None = None,
     date_col: str = "Дата",
     bank_col: str = "Банк",
+    indicator_id_col: str = "IndicatorId",
+    code_col: str = "Код",
     indicator_col: str = "Показатель",
     value_col: str = "Значение",
 ) -> pd.DataFrame:
     """
-    Строит wide-таблицу:
-      - строки: (Показатель, Банк)
-      - колонки: даты
-      - сортировка банков: df_banks.sort
-      - сортировка показателей: indicator_order (если задан)
+    Функция разворачивает canonical long в таблицу по датам.
 
-    Ожидается, что df_banks содержит:
-      - bank
-      - sort
+    Строка wide идентифицируется парой ``IndicatorId + Банк``. Код и русское
+    название используются только как отображаемые атрибуты.
     """
     if len(df_long) == 0:
         raise RuntimeError("df_long is empty; cannot build wide table.")
 
-    # список дат в правильном порядке
-    date_cols = sorted(df_long[date_col].unique().tolist(), key=lambda s: pd.to_datetime(s, dayfirst=True))
-    out_cols = [indicator_col, bank_col] + date_cols
+    required = {date_col, bank_col, indicator_id_col, indicator_col, value_col}
+    missing = required - set(df_long.columns)
+    if missing:
+        raise RuntimeError(f"df_long missing required wide columns: {sorted(missing)}")
 
-    df_out = pd.DataFrame(columns=out_cols)
+    work = df_long.copy()
+    if code_col not in work.columns:
+        work[code_col] = ""
 
-    bank_sort = {str(r["bank"]): int(r["sort"]) for _, r in df_banks.iterrows()}
+    duplicate_mask = work.duplicated(
+        subset=[indicator_id_col, bank_col, date_col],
+        keep=False,
+    )
+    if duplicate_mask.any():
+        sample = work.loc[
+            duplicate_mask,
+            [indicator_id_col, bank_col, date_col],
+        ].head(10)
+        raise RuntimeError(f"Duplicate long keys before wide pivot: {sample.to_dict('records')}")
 
-    indicators = df_long[indicator_col].dropna().astype(str).unique().tolist()
-    indicators = sorted(indicators, key=lambda x: indicator_order.get(x, 999) if indicator_order else x)
+    date_cols = sorted(
+        work[date_col].astype(str).unique().tolist(),
+        key=lambda value: pd.to_datetime(value, dayfirst=True),
+    )
 
-    banks = df_banks["bank"].astype(str).tolist()
+    meta = (
+        work[[indicator_id_col, code_col, indicator_col]]
+        .drop_duplicates(subset=[indicator_id_col], keep="first")
+        .set_index(indicator_id_col)
+    )
 
-    for ind in indicators:
-        for bank in banks:
-            sub = df_long[(df_long[indicator_col] == ind) & (df_long[bank_col] == bank)].copy()
-
-            row = {indicator_col: ind, bank_col: bank}
-            for dc in date_cols:
-                m = sub[sub[date_col] == dc]
-                row[dc] = m[value_col].iloc[0] if len(m) else ""
-            df_out.loc[len(df_out)] = row
-
-    # сортировка строк
-    df_out["_bank_sort"] = df_out[bank_col].map(bank_sort).fillna(9999).astype(int)
+    indicator_ids = meta.index.astype(str).tolist()
     if indicator_order:
-        df_out["_ind_sort"] = df_out[indicator_col].map(indicator_order).fillna(999).astype(int)
-        df_out = df_out.sort_values(["_ind_sort", "_bank_sort"]).drop(columns=["_ind_sort", "_bank_sort"]).reset_index(drop=True)
+        indicator_ids = sorted(
+            indicator_ids,
+            key=lambda value: (indicator_order.get(value, 10**9), value),
+        )
     else:
-        df_out = df_out.sort_values(["_bank_sort"]).drop(columns=["_bank_sort"]).reset_index(drop=True)
+        indicator_ids = sorted(indicator_ids)
 
-    return df_out
+    banks = df_banks.sort_values("sort", kind="stable")["bank"].astype(str).tolist()
+    row_index = pd.MultiIndex.from_product(
+        [indicator_ids, banks],
+        names=[indicator_id_col, bank_col],
+    )
+
+    matrix = work.set_index([indicator_id_col, bank_col, date_col])[value_col].unstack(date_col)
+    matrix = matrix.reindex(index=row_index, columns=date_cols)
+    matrix = matrix.where(matrix.notna(), "")
+
+    result = matrix.reset_index()
+    result.insert(0, indicator_col, result[indicator_id_col].map(meta[indicator_col]).fillna(""))
+    result.insert(0, code_col, result[indicator_id_col].map(meta[code_col]).fillna(""))
+
+    # Stable ID остается внутренним ключом. В Excel выводятся код, название и банк.
+    result = result.drop(columns=[indicator_id_col])
+    if not result[code_col].astype(str).str.strip().ne("").any():
+        result = result.drop(columns=[code_col])
+
+    return result.reset_index(drop=True)

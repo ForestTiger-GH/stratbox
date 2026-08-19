@@ -1,77 +1,69 @@
 """
-Форма 805.
+Форма 0409805: текущий direct-dataset обязательных нормативов банковской группы.
 
-Форма 0409805 содержит показатели банковской группы.
-Для раздела с обязательными нормативами используется DBF PN805ГГMM.dbf.
-
-Ключевые поля DBF:
-- REGN_GKO: регистрационный номер головной кредитной организации;
-- NAME_NORM: код норматива;
-- FAKT_ZN: фактическое значение.
-
-Модуль является тонкой настройкой общего движка metric_form.py.
+Сейчас модуль сохраняет прежний аналитический охват нормативов. Новый общий
+контракт моделей и direct-dataset позволяет далее добавлять остальные разделы
+0409805 как отдельные dataset без возврата к выражениям вида ``FIELD -> VALUE``.
 """
 
 from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
-from stratbox.macrobanks.cbr_forms.common.metric_form import MetricFormSpec, run_metric_form
+from stratbox.macrobanks.cbr_forms.common.direct_form import (
+    DirectDatasetSpec,
+    normalize_code_metric,
+    run_direct_form,
+)
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 
 
 FORM = "805"
 
-DEFAULT_CANDIDATES = LayoutCandidates(
-    regn_candidates=["REGN_GKO", "REGN"],
-    a_candidates=["NAME_NORM", "C1_3"],
-    b_candidates=["FAKT_ZN", "C2_3"],
-)
-DEFAULT_PREFER = "PN805"
-
-DEFAULT_CODE_ALIASES = {
-    "H20.2": "H20_2",
-    "H20.4": "H20_4",
-    "Н20.2": "H20_2",
-    "Н20.4": "H20_4",
-}
-
 
 def build_url(d: pd.Timestamp) -> str:
     """
-    Функция формирует ссылку на архив формы 805 за дату.
+    Функция формирует ссылку на архив формы 805 за отчетную дату.
     """
     ymd = pd.Timestamp(d).strftime("%Y%m%d")
     return f"https://www.cbr.ru/vfs/credit/forms/805-{ymd}.rar"
+
+
+DEFAULT_SPEC = DirectDatasetSpec(
+    form=FORM,
+    dataset="normatives",
+    progress_desc="CBR 805",
+    build_url=build_url,
+    bank_fields=("REGN_GKO", "REGN"),
+    code_fields=("NAME_NORM", "C1_3"),
+    measure_fields={"actual": ("FAKT_ZN", "C2_3")},
+    prefer_stem_contains="PN805",
+    code_normalizer=normalize_code_metric,
+    code_aliases={
+        "H20.2": "H20_2",
+        "H20.4": "H20_4",
+        "Н20.2": "H20_2",
+        "Н20.4": "H20_4",
+    },
+)
 
 
 def run(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
-    candidates: LayoutCandidates | None = None,
-    prefer_stem_contains: str | None = None,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig | None = None,
     show_progress: bool = True,
-) -> tuple[pd.DataFrame, dict[str, int] | None]:
+) -> tuple[pd.DataFrame, dict[str, int]]:
     """
-    Функция запускает обработку формы 805 и возвращает long-таблицу.
+    Функция запускает текущий direct-dataset формы 805.
     """
-    spec = MetricFormSpec(
-        form=FORM,
-        progress_desc="CBR 805",
-        candidates=candidates or DEFAULT_CANDIDATES,
-        prefer_stem_contains=prefer_stem_contains or DEFAULT_PREFER,
-        build_url=build_url,
-        code_aliases=DEFAULT_CODE_ALIASES,
-    )
-    return run_metric_form(
+    return run_direct_form(
         dates=dates,
         banks_df=banks_df,
-        formulas_df=formulas_df,
-        spec=spec,
+        model_df=model_df,
+        spec=DEFAULT_SPEC,
         cfg=cfg,
         show_progress=show_progress,
     )

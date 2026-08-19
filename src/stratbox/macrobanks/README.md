@@ -14,7 +14,7 @@
 
 ```text
 macrobanks/
-  cbr_forms/     # отчетные формы Банка России: 101, 102, 123, 135, 805
+  cbr_forms/     # отчетные формы Банка России: 101, 102, 123, 135, 802, 805
   cbr_industries/ # отраслевые таблицы ЦБ; первая серия: 01_05_A_Debt_corp
   escrow/        # счета эскроу: источники, history dataset, pivots, workbook export
   frg/           # файловый контур FRG: каталог, latest, зачистка, архивирование
@@ -68,7 +68,7 @@ from stratbox.macrobanks.cbr_forms import run_all_forms_to_xlsx
 out = run_all_forms_to_xlsx(
     date_from="2024-01-01",
     date_to="2024-03-01",
-    forms="101,102,135,805",
+    forms="101,102,135,802,805",
     out_dir="outputs/cbr_forms",
 )
 ```

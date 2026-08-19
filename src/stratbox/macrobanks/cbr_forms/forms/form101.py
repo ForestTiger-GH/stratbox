@@ -17,7 +17,7 @@
 
 Выход:
 - df_long: Дата | Банк | Показатель | Значение (Excel формула)
-- indicator_order: порядок показателей из formulas.csv
+- indicator_order: порядок показателей по стабильному IndicatorId из модели формы
 
 Прогресс:
 - trange по датам, бар исчезает (leave=False)
@@ -39,7 +39,7 @@ from tqdm.auto import trange
 
 from stratbox.base.filestore import make_workdir
 from stratbox.base.net.http import download_bytes
-from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
+from stratbox.macrobanks.cbr_forms.common.models import get_model_rows
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 
 
@@ -198,23 +198,23 @@ def _build_lookup_from_dbf(dbf_path: Path) -> tuple[dict[tuple[str, int, str], s
 
 
 # ----------------------------
-# Parse "extra" from formulas (a_p=1/2)
+# Разбор params модели 101 (a_p=1/2)
 # ----------------------------
 @dataclass(frozen=True)
-class Extra101:
+class Params101:
     a_p: int | None
 
 
-def _parse_extra(extra: Any) -> Extra101:
+def _parse_params(params: Any) -> Params101:
     # ожидаем строку вида: "a_p=1" или "a_p=2"
-    s = "" if extra is None else str(extra).strip()
+    s = "" if params is None else str(params).strip()
     if not s:
-        return Extra101(a_p=None)
+        return Params101(a_p=None)
 
     m = re.search(r"a_p\s*=\s*([12])", s)
     if m:
-        return Extra101(a_p=int(m.group(1)))
-    return Extra101(a_p=None)
+        return Params101(a_p=int(m.group(1)))
+    return Params101(a_p=None)
 
 
 # ----------------------------
@@ -224,24 +224,28 @@ def build_long(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig,
     show_progress: bool,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
-    fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
+    fdf = get_model_rows(model_df, kind="formula")
     if len(fdf) == 0:
-        raise RuntimeError("No formulas for form 101 in formulas_df.")
+        raise RuntimeError("No formulas for form 101 in model_df.")
 
-    indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+    indicator_order = {str(row["id"]): int(row["order"]) for _, row in fdf.iterrows()}
 
     # парсим формулы один раз
-    parsed: list[tuple[str, list[str], Extra101]] = []
+    parsed: list[tuple[str, str, str, str, str, list[str], Params101]] = []
     for _, fr in fdf.iterrows():
+        indicator_id = str(fr["id"])
         name = str(fr["name"])
+        section = str(fr["section"])
+        measure = str(fr["measure"])
+        unit = str(fr["unit"])
         expr = str(fr["expression"])
-        extra = _parse_extra(fr.get("extra"))
+        params = _parse_params(fr.get("params"))
         tokens = re.findall(r"\d+(?:\.\d+)?|[+]{1}|[-]{1}", expr)
-        parsed.append((name, tokens, extra))
+        parsed.append((indicator_id, name, section, measure, unit, tokens, params))
 
     # банки как список (быстрее)
     banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
@@ -281,20 +285,32 @@ def build_long(
 
             # расчёт по банкам и формулам
             for bank_name, regn in banks:
-                for name, tokens, extra in parsed:
+                for indicator_id, name, section, measure, unit, tokens, params in parsed:
                     acc = ""
                     for t in tokens:
                         if t in ["+", "-"]:
                             acc += t
                         else:
                             code = str(t)
-                            if extra.a_p in (1, 2):
-                                acc += lookup_ap.get((regn, extra.a_p, code), lookup_nap.get((regn, code), "0"))
+                            if params.a_p in (1, 2):
+                                acc += lookup_ap.get((regn, params.a_p, code), lookup_nap.get((regn, code), "0"))
                             else:
                                 acc += lookup_nap.get((regn, code), "0")
 
                     out_rows.append(
-                        {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
+                        {
+                            "Форма": FORM,
+                            "Дата": date_str,
+                            "REGN": regn,
+                            "Банк": bank_name,
+                            "IndicatorId": indicator_id,
+                            "Код": "",
+                            "Показатель": name,
+                            "Раздел": section,
+                            "Measure": measure,
+                            "Значение": "=" + acc,
+                            "Единица": unit,
+                        }
                     )
 
         df_long = pd.DataFrame(out_rows)
@@ -315,9 +331,9 @@ def run(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
     cfg: RunnerConfig | None = None,
     show_progress: bool = True,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
     cfg = cfg or RunnerConfig()
-    return build_long(dates=dates, banks_df=banks_df, formulas_df=formulas_df, cfg=cfg, show_progress=show_progress)
+    return build_long(dates=dates, banks_df=banks_df, model_df=model_df, cfg=cfg, show_progress=show_progress)

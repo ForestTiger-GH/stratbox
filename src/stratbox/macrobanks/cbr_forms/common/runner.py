@@ -23,8 +23,8 @@ import pandas as pd
 
 from stratbox.base.filestore import make_workdir
 from stratbox.base.net.http import download_bytes
-from stratbox.macrobanks.cbr_forms.common.dbf import read_dbf_to_df
-from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates, pick_dbf_and_layout
+from stratbox.macrobanks.cbr_forms.common.dbf import read_dbf_columns, read_dbf_to_df
+from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates, pick_dbf_and_layout, pick_dbf_fields
 
 
 @dataclass(frozen=True)
@@ -129,3 +129,64 @@ def run_dates_to_dbf_df(
             shutil.rmtree(work_dir, ignore_errors=True)
         except Exception:
             pass
+
+def run_dates_to_selected_dbf_df(
+    *,
+    dates: list[pd.Timestamp],
+    build_url: Callable[[pd.Timestamp], str],
+    field_candidates: dict[str, list[str] | tuple[str, ...]],
+    prefer_stem_contains: str | None,
+    cfg: RunnerConfig | None = None,
+    show_progress: bool = True,
+    progress_desc: str = "CBR periods",
+) -> list[tuple[str, pd.DataFrame]]:
+    """
+    Функция скачивает архивы и читает произвольный набор полей выбранного DBF.
+
+    Возвращаемые DataFrame используют канонические имена из ``field_candidates``.
+    Это расширяет старый трехколоночный режим REGN/A/B без его ломки.
+    """
+    cfg = cfg or RunnerConfig()
+    work_dir = Path(make_workdir(prefix="cbr_forms_selected_"))
+    out: list[tuple[str, pd.DataFrame]] = []
+
+    try:
+        iterator = trange(len(dates), desc=progress_desc, leave=False) if show_progress else range(len(dates))
+        for i in iterator:
+            date = pd.Timestamp(dates[i])
+            date_str = date.strftime("%d.%m.%Y")
+            url = build_url(date)
+
+            result = download_bytes(
+                url=url,
+                timeout=cfg.timeout,
+                retries=cfg.retries,
+                backoff=cfg.backoff,
+                min_bytes_ok=cfg.min_bytes_ok,
+                headers=None,
+            )
+            if not result.ok or not result.content:
+                continue
+
+            ymd = date.strftime("%Y%m%d")
+            rar_path = work_dir / f"tmp_{ymd}.rar"
+            rar_path.write_bytes(result.content)
+
+            extracted_dir = work_dir / f"ex_{ymd}"
+            _extract_rar(rar_path, extracted_dir)
+
+            dbf_path, field_map = pick_dbf_fields(
+                extracted_dir,
+                field_candidates=field_candidates,
+                prefer_stem_contains=prefer_stem_contains,
+            )
+            out.append((date_str, read_dbf_columns(str(dbf_path), field_map)))
+
+        print(f"[INFO] DBF dates processed: {len(out)}")
+        return out
+    finally:
+        try:
+            shutil.rmtree(work_dir, ignore_errors=True)
+        except Exception:
+            pass
+

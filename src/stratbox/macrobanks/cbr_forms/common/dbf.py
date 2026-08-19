@@ -100,3 +100,21 @@ def read_dbf_to_df(path: str, layout: DBFLayout) -> pd.DataFrame:
         b_list.append(rec.get(layout.b))
 
     return pd.DataFrame({"REGN": regn_list, "A": a_list, "B": b_list})
+
+def read_dbf_columns(path: str, field_map: dict[str, str]) -> pd.DataFrame:
+    """
+    Функция читает выбранные физические поля DBF в канонические колонки.
+
+    ``field_map`` задается как ``каноническое_имя -> физическое_поле_DBF``.
+    Это позволяет форме отделить физическую структуру источника от
+    семантической модели показателей.
+    """
+    dbf = DBF(path, parserclass=CBRFieldParser)
+    data: dict[str, list] = {name: [] for name in field_map}
+
+    for rec in dbf:
+        for name, physical_field in field_map.items():
+            data[name].append(rec.get(physical_field))
+
+    return pd.DataFrame(data)
+

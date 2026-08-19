@@ -94,3 +94,71 @@ def pick_dbf_and_layout(
 
     _, chosen, layout = best
     return chosen, layout
+
+
+def pick_dbf_fields(
+    extracted_dir: Path,
+    *,
+    field_candidates: dict[str, list[str] | tuple[str, ...]],
+    prefer_stem_contains: str | None = None,
+) -> tuple[Path, dict[str, str]]:
+    """
+    Функция выбирает DBF по произвольному набору обязательных полей.
+
+    ``field_candidates`` задается как ``каноническое_имя -> варианты поля DBF``.
+    Возвращаемый словарь содержит фактически найденные физические имена полей.
+    Такой механизм нужен формам с несколькими каналами значений, например 802.
+    """
+    dbfs = list_dbf_files(extracted_dir)
+    if not dbfs:
+        raise FileNotFoundError("No DBF found after extracting archive.")
+
+    best: tuple[int, Path, dict[str, str]] | None = None
+
+    for path in dbfs:
+        try:
+            dbf = DBF(str(path), parserclass=CBRFieldParser, load=False)
+            fields = {field.upper(): field for field in dbf.field_names}
+        except Exception:
+            continue
+
+        resolved: dict[str, str] = {}
+        for canonical_name, candidates in field_candidates.items():
+            real = next((fields[str(candidate).upper()] for candidate in candidates if str(candidate).upper() in fields), None)
+            if real is None:
+                resolved = {}
+                break
+            resolved[canonical_name] = real
+
+        if not resolved:
+            continue
+
+        score = 0
+        if prefer_stem_contains and prefer_stem_contains.lower() in path.stem.lower():
+            score += 20
+
+        # Первый кандидат считается предпочтительным физическим именем поля.
+        for canonical_name, candidates in field_candidates.items():
+            first = str(next(iter(candidates))).upper()
+            if resolved[canonical_name].upper() == first:
+                score += 1
+
+        candidate = (score, path, resolved)
+        if best is None or candidate[0] > best[0]:
+            best = candidate
+
+    if best is None:
+        diagnostics: list[str] = []
+        for sample in dbfs[:5]:
+            try:
+                dbf = DBF(str(sample), parserclass=CBRFieldParser, load=False)
+                diagnostics.append(f"{sample.name}: {list(dbf.field_names)}")
+            except Exception:
+                diagnostics.append(f"{sample.name}: <unreadable>")
+        raise RuntimeError(
+            "Could not pick DBF with required fields. "
+            f"Required={field_candidates}; samples={diagnostics}"
+        )
+
+    _, chosen, resolved = best
+    return chosen, resolved

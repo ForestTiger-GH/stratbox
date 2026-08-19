@@ -1,0 +1,4 @@
+form,order,id,kind,dataset,source_code,parent_code,measure,name,expression,section,unit,params
+123,1,capital_total,formula,capital,,,total,Собственные средства,000,DERIVED,thousand_rub,
+123,2,base_capital,formula,capital,,,total,Базовые средства,102,DERIVED,thousand_rub,
+123,3,main_capital,formula,capital,,,total,Основные средства,102+105,DERIVED,thousand_rub,

@@ -16,7 +16,7 @@ from tqdm.auto import trange
 
 from stratbox.common.time.periods import period_points
 from stratbox.macrobanks.cbr_forms.common.banks import load_legacy_banks
-from stratbox.macrobanks.cbr_forms.common.formulas import load_formulas
+from stratbox.macrobanks.cbr_forms.common.models import get_model_for, load_models
 from stratbox.macrobanks.cbr_forms.common.output import make_and_export_wide
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 from stratbox.macrobanks.cbr_forms.forms.registry import resolve_forms
@@ -54,7 +54,7 @@ def run_all_forms_to_xlsx(
         raise ValueError("Only banks_mode='legacy' is supported right now.")
     banks_df = load_legacy_banks()
 
-    formulas_df = load_formulas()
+    models_df = load_models()
     cfg = RunnerConfig(timeout=timeout, retries=retries, backoff=backoff, min_bytes_ok=min_bytes_ok)
 
     out_dir_p = Path(out_dir).resolve()
@@ -77,7 +77,7 @@ def run_all_forms_to_xlsx(
         df_long, indicator_order = module.run(
             dates=dates,
             banks_df=banks_df,
-            formulas_df=formulas_df,
+            model_df=get_model_for(models_df, form=code),
             cfg=cfg,
             show_progress=show_progress,
         )
@@ -92,6 +92,8 @@ def run_all_forms_to_xlsx(
             indicator_order=indicator_order,
             date_col="Дата",
             bank_col="Банк",
+            indicator_id_col="IndicatorId",
+            code_col="Код",
             indicator_col="Показатель",
             value_col="Значение",
         )

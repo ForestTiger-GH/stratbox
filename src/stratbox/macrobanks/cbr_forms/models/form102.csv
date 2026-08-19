@@ -1,0 +1,9 @@
+form,order,id,kind,dataset,source_code,parent_code,measure,name,expression,section,unit,params
+102,1,net_interest_income,formula,pnl,,,total,ЧПД,11000+12000+13000-31000-32000-33000-34000-35000-36000-44000+14000+16000+24000,DERIVED,thousand_rub,
+102,2,net_fee_income,formula,pnl,,,total,ЧКД,27000,DERIVED,thousand_rub,
+102,3,other_income,formula,pnl,,,total,Прочие доходы,22000+23000+24000+25000+26000+28050+29000-42000-43000-45000-46000-47050,DERIVED,thousand_rub,
+102,4,operating_expenses,formula,pnl,,,total,Операц. расходы,-48000,DERIVED,thousand_rub,
+102,5,reserves,formula,pnl,,,total,Резервы,15000+17000+21000-37000-38000-41000,DERIVED,thousand_rub,
+102,6,profit_before_tax,formula,pnl,,,total,Прибыль до налогов,01000-02000,DERIVED,thousand_rub,
+102,7,taxes,formula,pnl,,,total,Налоги,03000-04000,DERIVED,thousand_rub,
+102,8,net_profit,formula,pnl,,,total,Чистая прибыль,61101-61102,DERIVED,thousand_rub,

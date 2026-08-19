@@ -27,7 +27,7 @@ from tqdm.auto import trange
 
 from stratbox.common.time.periods import period_points
 from stratbox.macrobanks.cbr_forms.common.banks import load_legacy_banks
-from stratbox.macrobanks.cbr_forms.common.formulas import load_formulas, get_formulas_for
+from stratbox.macrobanks.cbr_forms.common.models import get_model_for, get_model_rows, load_models
 from stratbox.macrobanks.cbr_forms.common.output import make_and_export_wide
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig
 from stratbox.macrobanks.cbr_forms.forms import form101
@@ -59,9 +59,10 @@ def main() -> None:
     banks_df = load_legacy_banks()
     print(f"[INFO] Banks loaded: {len(banks_df)}")
 
-    # 2) Формулы
-    formulas_df = load_formulas()
-    print(f"[INFO] Formulas loaded: {len(formulas_df)}")
+    # 2) Семантическая модель формы
+    models_df = load_models()
+    model_df = get_model_for(models_df, form="101")
+    print(f"[INFO] Model rows loaded: {len(model_df)}")
 
     # 3) Конфиг сети
     cfg = RunnerConfig(timeout=60, retries=2, backoff=0.5, min_bytes_ok=512)
@@ -132,38 +133,56 @@ def main() -> None:
         print("\n[STEP] computing 101 long...")
         tc0 = time.perf_counter()
 
-        fdf = get_formulas_for(formulas_df, form="101", kind="formula")
+        fdf = get_model_rows(model_df, kind="formula")
         if len(fdf) == 0:
-            raise RuntimeError("No formulas for form 101 in formulas_df.")
-        indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+            raise RuntimeError("No formula rows for form 101 in model_df.")
+        indicator_order = {str(row["id"]): int(row["order"]) for _, row in fdf.iterrows()}
 
         # парсим формулы один раз (используем парсер формы)
         parsed = []
         for _, fr in fdf.iterrows():
+            indicator_id = str(fr["id"])
             name = str(fr["name"])
+            section = str(fr["section"])
+            measure = str(fr["measure"])
+            unit = str(fr["unit"])
             expr = str(fr["expression"])
-            extra = form101._parse_extra(fr.get("extra"))
+            params = form101._parse_params(fr.get("params"))
             tokens = __import__("re").findall(r"\d+(?:\.\d+)?|[+]{1}|[-]{1}", expr)
-            parsed.append((name, tokens, extra))
+            parsed.append((indicator_id, name, section, measure, unit, tokens, params))
 
         banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
 
         rows = []
         for date_str, lookup_ap, lookup_nap in date_lookup_list:
             for bank_name, regn in banks:
-                for name, tokens, extra in parsed:
+                for indicator_id, name, section, measure, unit, tokens, params in parsed:
                     acc = ""
                     for t in tokens:
                         if t in ["+", "-"]:
                             acc += t
                         else:
                             code = str(t)
-                            if extra.a_p in (1, 2):
-                                acc += lookup_ap.get((regn, extra.a_p, code), lookup_nap.get((regn, code), "0"))
+                            if params.a_p in (1, 2):
+                                acc += lookup_ap.get((regn, params.a_p, code), lookup_nap.get((regn, code), "0"))
                             else:
                                 acc += lookup_nap.get((regn, code), "0")
 
-                    rows.append({"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc})
+                    rows.append(
+                        {
+                            "Форма": "101",
+                            "Дата": date_str,
+                            "REGN": regn,
+                            "Банк": bank_name,
+                            "IndicatorId": indicator_id,
+                            "Код": "",
+                            "Показатель": name,
+                            "Раздел": section,
+                            "Measure": measure,
+                            "Значение": "=" + acc,
+                            "Единица": unit,
+                        }
+                    )
 
         df_long = pd.DataFrame(rows)
         tc1 = time.perf_counter()
@@ -180,6 +199,8 @@ def main() -> None:
             indicator_order=indicator_order,
             date_col="Дата",
             bank_col="Банк",
+            indicator_id_col="IndicatorId",
+            code_col="Код",
             indicator_col="Показатель",
             value_col="Значение",
         )

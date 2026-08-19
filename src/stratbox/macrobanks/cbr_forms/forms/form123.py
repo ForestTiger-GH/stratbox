@@ -11,7 +11,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from stratbox.macrobanks.cbr_forms.common.formulas import get_formulas_for
+from stratbox.macrobanks.cbr_forms.common.models import get_model_rows
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig, run_dates_to_dbf_df
 from stratbox.macrobanks.cbr_forms.common.dbf_picker import LayoutCandidates
 
@@ -53,25 +53,29 @@ def _value_to_str(v) -> str:
 def build_long(
     date_dbf_list: list[tuple[str, pd.DataFrame]],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, dict[str, int] | None]:
     """
     (дата, df_dbf) + банки + формулы -> df_long.
     """
-    fdf = get_formulas_for(formulas_df, form=FORM, kind="formula")
+    fdf = get_model_rows(model_df, kind="formula")
     if len(fdf) == 0:
-        raise RuntimeError("No formulas for form 123 in formulas_df.")
+        raise RuntimeError("No formulas for form 123 in model_df.")
 
     # порядок показателей
-    indicator_order = {row["name"]: i for i, row in fdf.iterrows()}
+    indicator_order = {str(row["id"]): int(row["order"]) for _, row in fdf.iterrows()}
 
     # парсим формулы один раз
-    parsed: list[tuple[str, list[str]]] = []
+    parsed: list[tuple[str, str, str, str, str, list[str]]] = []
     for _, fr in fdf.iterrows():
+        indicator_id = str(fr["id"])
         name = str(fr["name"])
+        section = str(fr["section"])
+        measure = str(fr["measure"])
+        unit = str(fr["unit"])
         expr = str(fr["expression"])
         tokens = re.findall(r"\d+|[+]{1}|[-]{1}", expr)
-        parsed.append((name, tokens))
+        parsed.append((indicator_id, name, section, measure, unit, tokens))
 
     # подготовим список банков (быстрее, чем iterrows каждый раз)
     banks = [(str(r["bank"]), str(int(r["regn"]))) for _, r in banks_df.iterrows()]
@@ -100,7 +104,7 @@ def build_long(
         for bank_name, regn_bank in banks:
             bm = reg_map.get(regn_bank, {})
 
-            for name, tokens in parsed:
+            for indicator_id, name, section, measure, unit, tokens in parsed:
                 acc = ""
                 for t in tokens:
                     if t in ["+", "-"]:
@@ -108,7 +112,19 @@ def build_long(
                     else:
                         acc += bm.get(int(t), "0")
                 rows.append(
-                    {"Дата": date_str, "Банк": bank_name, "Показатель": name, "Значение": "=" + acc}
+                    {
+                        "Форма": FORM,
+                        "Дата": date_str,
+                        "REGN": regn_bank,
+                        "Банк": bank_name,
+                        "IndicatorId": indicator_id,
+                        "Код": "",
+                        "Показатель": name,
+                        "Раздел": section,
+                        "Measure": measure,
+                        "Значение": "=" + acc,
+                        "Единица": unit,
+                    }
                 )
 
     df_long = pd.DataFrame(rows)
@@ -120,7 +136,7 @@ def run(
     *,
     dates: list[pd.Timestamp],
     banks_df: pd.DataFrame,
-    formulas_df: pd.DataFrame,
+    model_df: pd.DataFrame,
     candidates: LayoutCandidates | None = None,
     prefer_stem_contains: str | None = None,
     cfg: RunnerConfig | None = None,
@@ -139,4 +155,4 @@ def run(
         show_progress=show_progress,
         progress_desc="CBR 123",
     )
-    return build_long(date_dbf_list, banks_df, formulas_df)
+    return build_long(date_dbf_list, banks_df, model_df)

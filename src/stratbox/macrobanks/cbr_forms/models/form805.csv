@@ -1,0 +1,8 @@
+form,order,id,kind,dataset,source_code,parent_code,measure,name,expression,section,unit,params
+805,1,f805.h20.0,direct,normatives,H20.0,,actual,H20.0,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,2,f805.h20.1,direct,normatives,H20.1,,actual,H20.1,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,3,f805.h20.2,direct,normatives,H20_2,,actual,H20.2,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,4,f805.h20.4,direct,normatives,H20_4,,actual,H20.4,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,5,f805.h22,direct,normatives,H22,,actual,H22,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,6,f805.h26,direct,normatives,H26,,actual,H26,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
+805,7,f805.h28,direct,normatives,H28,,actual,H28,,IV. ОБЯЗАТЕЛЬНЫЕ НОРМАТИВЫ,percent,
