@@ -1,12 +1,14 @@
 """
 Форма 0409802 «Консолидированный балансовый отчет».
 
-Модуль отвечает только за физическую структуру публичного DBF Банка России:
-``REGN_GKO``, ``STR``, ``KORR_P``, ``KORR_M``, ``KORR_GR`` и ``VSEGO``.
+Модуль отвечает только за физическую структуру публичного DBF Банка России.
+Базовая историческая схема содержит ``REGN_GKO``, ``STR``, ``KORR_P``,
+``KORR_M`` и ``VSEGO``; поле ``KORR_GR`` присутствует только в более новых
+версиях схемы и поэтому читается как опциональное.
 Номенклатура 86 строк основного баланса хранится в ``models/form802.csv``.
 
 Стандартный long использует ``measure=total`` (поле ``VSEGO``), а ``run_raw``
-сохраняет все четыре физически доступных канала значений.
+сохраняет все доступные физические каналы в стабильном наборе колонок.
 """
 
 from __future__ import annotations
@@ -41,6 +43,8 @@ DEFAULT_SPEC = DirectDatasetSpec(
     code_fields=("STR",),
     measure_fields={
         "total": ("VSEGO",),
+    },
+    optional_measure_fields={
         "consolidation_plus": ("KORR_P",),
         "consolidation_minus": ("KORR_M",),
         "intragroup_adjustment": ("KORR_GR",),
@@ -56,7 +60,10 @@ def run_raw(
     show_progress: bool = True,
 ) -> list[tuple[str, pd.DataFrame]]:
     """
-    Функция возвращает normalized raw 802 со всеми полями корректировок и total.
+    Функция возвращает normalized raw 802 со всеми доступными корректировками и total.
+
+    Если историческая версия DBF не содержит ``KORR_GR``, колонка
+    ``intragroup_adjustment`` сохраняется и заполняется пустыми значениями.
     """
     return run_direct_dataset_raw(
         dates=dates,

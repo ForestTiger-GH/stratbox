@@ -243,18 +243,26 @@ https://www.cbr.ru/vfs/credit/forms/802-YYYYMMDD.rar
 PK802ГГММ.dbf
 ```
 
-Физические поля:
+Физическая схема 802 менялась во времени. Для стандартной витрины обязательны:
 
 ```text
 REGN_GKO
 STR
-KORR_P
-KORR_M
-KORR_GR
 VSEGO
 ```
 
-В `form802.py` они преобразуются в normalized raw:
+Поля корректировок читаются как дополнительные физические каналы, если они
+есть в конкретной версии DBF:
+
+```text
+KORR_P
+KORR_M
+KORR_GR
+```
+
+В частности, исторические DBF содержат `KORR_P` и `KORR_M`, но не содержат
+`KORR_GR`; в актуальной схеме с 01.04.2026 поле `KORR_GR` уже присутствует.
+В `form802.py` доступные поля преобразуются в normalized raw:
 
 ```text
 REGN
@@ -313,7 +321,7 @@ III. КАПИТАЛ
 measure=total -> VSEGO
 ```
 
-При этом physical normalized raw сохраняет:
+При этом physical normalized raw имеет стабильные колонки:
 
 ```text
 KORR_P  -> consolidation_plus
@@ -321,6 +329,10 @@ KORR_M  -> consolidation_minus
 KORR_GR -> intragroup_adjustment
 VSEGO   -> total
 ```
+
+Если какого-либо поля корректировки нет в конкретном историческом DBF, его
+каноническая raw-колонка остается пустой. Отсутствие дополнительной корректировки
+не блокирует выгрузку `measure=total`.
 
 Получить raw можно напрямую:
 

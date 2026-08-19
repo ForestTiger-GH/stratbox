@@ -100,18 +100,25 @@ def pick_dbf_fields(
     extracted_dir: Path,
     *,
     field_candidates: dict[str, list[str] | tuple[str, ...]],
+    optional_field_candidates: dict[str, list[str] | tuple[str, ...]] | None = None,
     prefer_stem_contains: str | None = None,
 ) -> tuple[Path, dict[str, str]]:
     """
-    Функция выбирает DBF по произвольному набору обязательных полей.
+    Функция выбирает DBF по обязательным полям и подхватывает опциональные.
 
-    ``field_candidates`` задается как ``каноническое_имя -> варианты поля DBF``.
-    Возвращаемый словарь содержит фактически найденные физические имена полей.
-    Такой механизм нужен формам с несколькими каналами значений, например 802.
+    ``field_candidates`` задает поля, без которых DBF не может быть выбран.
+    ``optional_field_candidates`` описывает физические поля, которые могут
+    отсутствовать в отдельных исторических версиях схемы Банка России.
+    Возвращаемый словарь содержит только фактически найденные поля.
     """
     dbfs = list_dbf_files(extracted_dir)
     if not dbfs:
         raise FileNotFoundError("No DBF found after extracting archive.")
+
+    optional_field_candidates = optional_field_candidates or {}
+    overlap = set(field_candidates) & set(optional_field_candidates)
+    if overlap:
+        raise ValueError(f"Fields cannot be both required and optional: {sorted(overlap)}")
 
     best: tuple[int, Path, dict[str, str]] | None = None
 
@@ -133,12 +140,23 @@ def pick_dbf_fields(
         if not resolved:
             continue
 
+        for canonical_name, candidates in optional_field_candidates.items():
+            real = next(
+                (fields[str(candidate).upper()] for candidate in candidates if str(candidate).upper() in fields),
+                None,
+            )
+            if real is not None:
+                resolved[canonical_name] = real
+
         score = 0
         if prefer_stem_contains and prefer_stem_contains.lower() in path.stem.lower():
             score += 20
 
         # Первый кандидат считается предпочтительным физическим именем поля.
-        for canonical_name, candidates in field_candidates.items():
+        all_candidates = {**field_candidates, **optional_field_candidates}
+        for canonical_name, candidates in all_candidates.items():
+            if canonical_name not in resolved:
+                continue
             first = str(next(iter(candidates))).upper()
             if resolved[canonical_name].upper() == first:
                 score += 1
@@ -157,7 +175,7 @@ def pick_dbf_fields(
                 diagnostics.append(f"{sample.name}: <unreadable>")
         raise RuntimeError(
             "Could not pick DBF with required fields. "
-            f"Required={field_candidates}; samples={diagnostics}"
+            f"Required={field_candidates}; optional={optional_field_candidates}; samples={diagnostics}"
         )
 
     _, chosen, resolved = best

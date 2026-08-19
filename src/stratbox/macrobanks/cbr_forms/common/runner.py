@@ -135,7 +135,8 @@ def run_dates_to_selected_dbf_df(
     dates: list[pd.Timestamp],
     build_url: Callable[[pd.Timestamp], str],
     field_candidates: dict[str, list[str] | tuple[str, ...]],
-    prefer_stem_contains: str | None,
+    optional_field_candidates: dict[str, list[str] | tuple[str, ...]] | None = None,
+    prefer_stem_contains: str | None = None,
     cfg: RunnerConfig | None = None,
     show_progress: bool = True,
     progress_desc: str = "CBR periods",
@@ -143,10 +144,16 @@ def run_dates_to_selected_dbf_df(
     """
     Функция скачивает архивы и читает произвольный набор полей выбранного DBF.
 
-    Возвращаемые DataFrame используют канонические имена из ``field_candidates``.
-    Это расширяет старый трехколоночный режим REGN/A/B без его ломки.
+    Возвращаемые DataFrame используют канонические имена обязательных и
+    опциональных полей. Если опционального физического поля нет в конкретной
+    версии DBF, соответствующая каноническая колонка заполняется ``pd.NA``.
     """
     cfg = cfg or RunnerConfig()
+    optional_field_candidates = optional_field_candidates or {}
+    overlap = set(field_candidates) & set(optional_field_candidates)
+    if overlap:
+        raise ValueError(f"Fields cannot be both required and optional: {sorted(overlap)}")
+
     work_dir = Path(make_workdir(prefix="cbr_forms_selected_"))
     out: list[tuple[str, pd.DataFrame]] = []
 
@@ -178,9 +185,15 @@ def run_dates_to_selected_dbf_df(
             dbf_path, field_map = pick_dbf_fields(
                 extracted_dir,
                 field_candidates=field_candidates,
+                optional_field_candidates=optional_field_candidates,
                 prefer_stem_contains=prefer_stem_contains,
             )
-            out.append((date_str, read_dbf_columns(str(dbf_path), field_map)))
+            frame = read_dbf_columns(str(dbf_path), field_map)
+            for canonical_name in optional_field_candidates:
+                if canonical_name not in frame.columns:
+                    frame[canonical_name] = pd.NA
+            ordered_columns = list(field_candidates) + list(optional_field_candidates)
+            out.append((date_str, frame.reindex(columns=ordered_columns)))
 
         print(f"[INFO] DBF dates processed: {len(out)}")
         return out

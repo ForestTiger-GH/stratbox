@@ -104,9 +104,11 @@ class DirectDatasetSpec:
     """
     Класс описывает физическую структуру одного логического dataset формы.
 
-    ``measure_fields`` задается как ``semantic_measure -> варианты поля DBF``.
-    Семантическая модель при этом содержит только имя measure, но не знает
-    конкретного физического поля источника.
+    ``measure_fields`` задает обязательные каналы ``measure -> поле DBF``.
+    ``optional_measure_fields`` описывает дополнительные физические каналы,
+    которые могут отсутствовать в отдельных версиях схемы источника.
+    Семантическая модель содержит только имя measure и не знает конкретного
+    физического имени поля.
     """
 
     form: str
@@ -116,6 +118,7 @@ class DirectDatasetSpec:
     bank_fields: tuple[str, ...]
     code_fields: tuple[str, ...]
     measure_fields: dict[str, tuple[str, ...]]
+    optional_measure_fields: dict[str, tuple[str, ...]] = field(default_factory=dict)
     prefer_stem_contains: str | None = None
     code_normalizer: Callable[[Any], str] = normalize_code_plain
     code_aliases: dict[str, str] = field(default_factory=dict)
@@ -152,9 +155,9 @@ def run_direct_dataset_raw(
     """
     Функция загружает физические данные dataset и возвращает normalized raw.
 
-    Каждый DataFrame содержит ``REGN``, ``CODE`` и все семантические measure,
-    заявленные в ``spec.measure_fields``. Пустые исходные значения не заменяются
-    нулями.
+    Каждый DataFrame содержит ``REGN``, ``CODE`` и стабильный набор обязательных
+    и опциональных measure. Отсутствующие опциональные физические поля становятся
+    пустыми колонками, а исходные пустые значения не заменяются нулями.
     """
     field_candidates: dict[str, list[str] | tuple[str, ...]] = {
         "REGN": spec.bank_fields,
@@ -162,10 +165,18 @@ def run_direct_dataset_raw(
     }
     field_candidates.update(spec.measure_fields)
 
+    overlap = set(spec.measure_fields) & set(spec.optional_measure_fields)
+    if overlap:
+        raise RuntimeError(
+            f"Physical measures cannot be both required and optional for "
+            f"form={spec.form}, dataset={spec.dataset}: {sorted(overlap)}"
+        )
+
     loaded = run_dates_to_selected_dbf_df(
         dates=dates,
         build_url=spec.build_url,
         field_candidates=field_candidates,
+        optional_field_candidates=spec.optional_measure_fields,
         prefer_stem_contains=spec.prefer_stem_contains,
         cfg=cfg,
         show_progress=show_progress,
@@ -198,7 +209,8 @@ def build_direct_long(
     if len(direct_model) == 0:
         raise RuntimeError(f"No direct model rows for form={spec.form}, dataset={spec.dataset}.")
 
-    unknown_measures = sorted(set(direct_model["measure"]) - set(spec.measure_fields))
+    physical_measures = {**spec.measure_fields, **spec.optional_measure_fields}
+    unknown_measures = sorted(set(direct_model["measure"]) - set(physical_measures))
     if unknown_measures:
         raise RuntimeError(
             f"Model {spec.form}/{spec.dataset} uses measures absent in physical spec: {unknown_measures}"
@@ -241,7 +253,7 @@ def build_direct_long(
                 code = str(source_row["CODE"])
                 codes[code] = {
                     measure: source_row.get(measure)
-                    for measure in spec.measure_fields
+                    for measure in physical_measures
                 }
             bank_map[str(regn)] = codes
 

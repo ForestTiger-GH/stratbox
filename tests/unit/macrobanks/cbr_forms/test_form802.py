@@ -56,6 +56,8 @@ def test_form802_url_and_physical_measures() -> None:
     assert form802.DEFAULT_SPEC.code_fields == ("STR",)
     assert form802.DEFAULT_SPEC.measure_fields == {
         "total": ("VSEGO",),
+    }
+    assert form802.DEFAULT_SPEC.optional_measure_fields == {
         "consolidation_plus": ("KORR_P",),
         "consolidation_minus": ("KORR_M",),
         "intragroup_adjustment": ("KORR_GR",),
