@@ -24,6 +24,9 @@ class CbrFormEntry:
     code: str
     module: Any
     title: str
+    excel_profile: str = "standard"
+    reporting_freq: str | None = None
+    reporting_anchor: str = "start"
 
 
 FORM_REGISTRY: dict[str, CbrFormEntry] = {
@@ -31,7 +34,14 @@ FORM_REGISTRY: dict[str, CbrFormEntry] = {
     "102": CbrFormEntry(code="102", module=form102, title="0409102"),
     "123": CbrFormEntry(code="123", module=form123, title="0409123"),
     "135": CbrFormEntry(code="135", module=form135, title="0409135"),
-    "802": CbrFormEntry(code="802", module=form802, title="0409802"),
+    "802": CbrFormEntry(
+        code="802",
+        module=form802,
+        title="0409802",
+        excel_profile="hierarchical_statement",
+        reporting_freq="Q",
+        reporting_anchor="start",
+    ),
     "805": CbrFormEntry(code="805", module=form805, title="0409805"),
 }
 

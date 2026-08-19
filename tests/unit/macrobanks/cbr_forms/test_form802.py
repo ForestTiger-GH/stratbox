@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
-from stratbox.macrobanks.cbr_forms.common.direct_form import build_direct_long, normalize_regn
+from stratbox.macrobanks.cbr_forms.common.direct_form import build_direct_long, normalize_code_plain, normalize_regn
 from stratbox.macrobanks.cbr_forms.common.models import get_model_for, load_models
 from stratbox.macrobanks.cbr_forms.common.wide import build_wide_table
 from stratbox.macrobanks.cbr_forms.forms import form802
@@ -95,3 +96,21 @@ def test_form802_wide_keeps_repeated_names_as_separate_rows() -> None:
     assert wide["Код"].tolist() == ["4.3", "5.4"]
     assert wide["Показатель"].tolist() == ["цифровые финансовые активы", "цифровые финансовые активы"]
     assert wide["01.04.2026"].tolist() == [0.0, 0.0]
+
+
+def test_plain_code_normalization_treats_pandas_missing_values_as_blank() -> None:
+    assert normalize_code_plain(pd.NA) == ""
+    assert normalize_code_plain(float("nan")) == ""
+    assert normalize_code_plain(" 2.1.1 ") == "2.1.1"
+
+
+def test_direct_long_fails_on_duplicate_physical_bank_code_keys() -> None:
+    model = get_model_for(load_models(), form="802")
+    duplicate_raw = pd.concat([_raw_snapshot(), _raw_snapshot().iloc[[0]]], ignore_index=True)
+    with pytest.raises(RuntimeError, match="Duplicate physical keys"):
+        build_direct_long(
+            date_raw_list=[("01.04.2026", duplicate_raw)],
+            banks_df=_banks(),
+            model_df=model,
+            spec=form802.DEFAULT_SPEC,
+        )

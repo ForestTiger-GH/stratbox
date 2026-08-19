@@ -24,6 +24,19 @@ from stratbox.macrobanks.cbr_forms.common.models import get_model_rows
 from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig, run_dates_to_selected_dbf_df
 
 
+def _is_missing_scalar(value: Any) -> bool:
+    """
+    Функция определяет пустое скалярное значение pandas/NumPy.
+    """
+    if value is None:
+        return True
+    try:
+        result = pd.isna(value)
+    except Exception:
+        return False
+    return bool(result) if isinstance(result, (bool, np.bool_)) else False
+
+
 def normalize_regn(value: Any) -> str:
     """
     Функция приводит регистрационный номер к строке из цифр.
@@ -54,14 +67,14 @@ def normalize_code_plain(value: Any) -> str:
     Такой режим используется для 802: коды ``2.1.1`` и ``31.3`` являются
     идентификаторами и не должны преобразовываться в числа.
     """
-    return "" if value is None else str(value).strip()
+    return "" if _is_missing_scalar(value) else str(value).strip()
 
 
 def normalize_code_metric(value: Any) -> str:
     """
     Функция нормализует коды нормативов, включая кириллическую/латинскую H.
     """
-    text = "" if value is None else str(value)
+    text = "" if _is_missing_scalar(value) else str(value)
     text = re.sub(r"\s+", "", text.strip().upper())
     return text.replace("Н", "H")
 
@@ -70,9 +83,7 @@ def _value_to_output(value: Any) -> float | str:
     """
     Функция сохраняет различие между пустым значением и настоящим нулем.
     """
-    if value is None:
-        return ""
-    if isinstance(value, (float, np.floating)) and np.isnan(value):
+    if _is_missing_scalar(value):
         return ""
     if isinstance(value, (int, float, np.integer, np.floating)):
         return float(value)
@@ -215,7 +226,13 @@ def build_direct_long(
     output_rows: list[dict[str, Any]] = []
     for date_str, raw in date_raw_list:
         frame = raw.copy()
-        frame = frame.drop_duplicates(subset=["REGN", "CODE"], keep="first")
+        duplicate_mask = frame.duplicated(subset=["REGN", "CODE"], keep=False)
+        if duplicate_mask.any():
+            sample = frame.loc[duplicate_mask, ["REGN", "CODE"]].head(10)
+            raise RuntimeError(
+                f"Duplicate physical keys for form={spec.form}, dataset={spec.dataset}: "
+                f"{sample.to_dict('records')}"
+            )
 
         bank_map: dict[str, dict[str, dict[str, Any]]] = {}
         for regn, group in frame.groupby("REGN", sort=False):
