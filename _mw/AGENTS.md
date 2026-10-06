@@ -1,18 +1,28 @@
-# stratbox Engineering Workspace Passport
+# Strategy Box Engineering Workspace Passport
 
 ## Engineering Subject
 
-`stratbox` — core-библиотека Strategy Box для прикладной аналитики, работы с внешними макроэкономическими и банковскими данными, нейтральной инфраструктуры доступа к данным и доменной бизнес-логики.
+Strategy Box — единый прикладной аналитический проект, состоящий из core и отдельных application/surface-реализаций.
 
-Рабочее пространство `_mw/` обслуживает развитие этого core. Оно не является частью библиотечного runtime и не владеет текущей продуктовой реализацией.
+Текущие implementation owners:
+
+- `stratbox` — core-библиотека: доменная бизнес-логика, нейтральная инфраструктура, данные, модели и вычислительные операции;
+- `stratbox-windows` — Windows application/surface Strategy Box;
+- будущие platform surfaces получают собственных implementation owners только после их фактического появления.
+
+Рабочее пространство `_mw/` является центральным Research/Work/provenance-контуром Strategy Box и физически размещено в репозитории `stratbox`. Размещение здесь материалов другого Strategy Box repository не переносит ownership его кода или текущей продуктовой семантики.
+
+AppDock — отдельный внешний проект. Strategy Box может зависеть от его контрактов и среды исполнения, однако AppDock не входит в Engineering Subject этого workspace. Здесь исследуется только граница интеграции, когда она материальна для Strategy Box.
 
 ## Governing basis
 
-- Human Commission: 2026-10-06 — минимально оформить `stratbox` по MADARAII-01 и MADARAII-02, создать рабочее пространство, первую эпоху и две Research-ветки.
-- Product baseline before workspace realization: `stratbox@72345991b2db272493e5d7c512c0f01ab32ca9b5`.
+- Human Commission: 2026-10-06 — минимально оформить инженерный workspace Strategy Box по MADARAII-01 и MADARAII-02, сохранить исторические материалы и сформировать свежий baseline.
+- Scope clarification: 2026-10-06 — один общий `_mw` используется для Research и Work по `stratbox` и `stratbox-windows`; дублирование каталогов и исследований между репозиториями не требуется.
+- Initial core baseline before workspace realization: `stratbox@72345991b2db272493e5d7c512c0f01ab32ca9b5`.
 - MADARAII basis: `ForestTiger-GH/MADARAII@main`, baseline `b000dc986b68fb441d43bdb0e4c817dc7d798f5c`.
 - Operating default: `MADARAII-EXAMPLES-DEFAULT@1`.
-- Repository product boundary: root `README.md`, `docs/architecture.md`, `docs/development.md`, `docs/plugin-integration.md` and current code.
+- Core product boundary: root `README.md`, `docs/`, `pyproject.toml`, `src/stratbox/`, `tests/` and `scripts/`.
+- Windows product boundary: current direct owners in repository `ForestTiger-GH/stratbox-windows`.
 
 ### Local specialization
 
@@ -24,25 +34,28 @@
 
 | Роль | Текущий владелец / маршрут | Семантика |
 | --- | --- | --- |
-| Core implementation | `src/stratbox/` | текущая библиотечная реализация |
-| Packaging and dependencies | `pyproject.toml` | текущая упаковка и dependency contract |
-| Product and engineering documentation | `README.md`, `docs/` | текущая опубликованная документация |
-| Verification | `tests/`, `scripts/` | проверки и evidence; сами по себе не определяют продуктовую семантику |
-| Engineering workspace | `_mw/` | Work/Research/provenance, отдельные от продукта |
-| Workspace passport and local Work Architecture | `_mw/AGENTS.md` | текущий маршрут, границы, архитектура Work-контура |
-| Workspace human overview | `_mw/README.md` | навигационная проекция, не отдельный владелец архитектуры |
+| Strategy Box core implementation | `stratbox/src/stratbox/` | текущая библиотечная реализация core |
+| Core packaging and dependencies | `stratbox/pyproject.toml` | текущая упаковка и dependency contract core |
+| Core product documentation | `stratbox/README.md`, `stratbox/docs/` | текущая опубликованная документация core |
+| Core verification | `stratbox/tests/`, `stratbox/scripts/` | проверки и evidence core |
+| Windows surface implementation | `ForestTiger-GH/stratbox-windows` | текущая реализация Windows application/surface |
+| Future Strategy Box surfaces | их собственные репозитории после материализации | platform-specific реализация |
+| Strategy Box engineering workspace | `stratbox/_mw/` | общий Work/Research/provenance, отдельный от product runtime |
+| Workspace passport and Work Architecture | `stratbox/_mw/AGENTS.md` | текущий маршрут, границы и архитектура Work-контура |
+| Workspace human overview | `stratbox/_mw/README.md` | навигационная проекция |
+| AppDock | внешний проект и его собственные owners | внешняя платформа; здесь владеем только Strategy Box-side integration questions |
 
-Внешние `stratbox-plugin`, `stratbox-windows` и AppDock surface — соседние контуры. Этот репозиторий не присваивает их продуктовую семантику и код.
+Один общий workspace не превращает `stratbox` в монорепозиторий и не делает его владельцем Windows-кода. Текущая продуктовая истина всегда разрешается через прямой owner соответствующего компонента.
 
 ## Active Development Epoch
 
 Ровно одна эпоха активна:
 
-`_mw/epochs-001-core-development/`
+`_mw/epochs-001-strategy-box-development/`
 
-**Purpose:** сформировать проверенную исходную картину `stratbox`, сохранить прежние материалы с честной provenance-семантикой и подготовить последующее развитие core на основе свежего исследования фактического репозитория.
+**Purpose:** сформировать проверенную исходную картину Strategy Box как системы, сохранить прежние материалы с честной provenance-семантикой и подготовить дальнейшее согласованное развитие core и application surfaces.
 
-**Current posture:** ACTIVE / BOOTSTRAPPED. Физическое рабочее пространство создано. Сам факт его создания не означает завершённого Research, принятого Product Decision или изменения core-кода.
+**Current posture:** ACTIVE / BOOTSTRAPPED. Workspace и первые baseline Research Results созданы. Сам факт их наличия не означает принятого Product Decision или изменения реализации.
 
 Повторное глобальное переоформление этой же работы не создаёт новую эпоху. Новая эпоха нужна при новом самостоятельном глобальном исходе или после явного закрытия текущей.
 
@@ -50,36 +63,44 @@
 
 Активный Research-контур находится в:
 
-`_mw/epochs-001-core-development/research/`
+`_mw/epochs-001-strategy-box-development/research/`
 
 ### 01-old-notes
 
-`_mw/epochs-001-core-development/research/01-old-notes/`
+`_mw/epochs-001-strategy-box-development/research/01-old-notes/`
 
-Роль: сохранить исторические заметки, прежние описания, ранние исследования и другие входы, возникшие до текущего формального workspace.
+Роль: сохранять исторические заметки, прежние описания, ранние исследования и другие входы Strategy Box, возникшие до текущего формального workspace.
 
 Материал здесь является source/provenance или историческим контекстом. Он не становится текущей архитектурой, текущим поведением или Product Decision из-за размещения в этой ветке.
 
 ### 02-base-study
 
-`_mw/epochs-001-core-development/research/02-base-study/`
+`_mw/epochs-001-strategy-box-development/research/02-base-study/`
 
-Роль: свежее базовое исследование фактического состояния текущего `stratbox`: устройство кода, доменные границы, инфраструктура, внешние интерфейсы, тестовое покрытие, документация, зависимости, наблюдаемые проблемы и возможные направления развития.
+Роль: свежее базовое исследование фактического состояния Strategy Box по его прямым implementation owners.
 
-Фактический репозиторий является основным baseline. `01-old-notes` может использоваться как дополнительный источник вопросов и гипотез, но не как автоматическая текущая истина.
+Текущий состав включает отдельные исследования:
+
+- core `stratbox`;
+- Windows surface `stratbox-windows`.
+
+Для каждого объекта первичный baseline — его фактический текущий репозиторий: код, упаковка, документация, тесты и инженерные проверки. `01-old-notes` используется как дополнительный источник вопросов и гипотез, но не как автоматическая текущая истина.
 
 Research Result остаётся Research Result до отдельного допустимого перехода в продуктовый код, документацию, Decision или иной текущий owner.
 
 ## Work architecture
 
 1. Текущие Product owners остаются вне `_mw/`; Work-история не дублирует их.
-2. Epoch-bound Research и будущие специализированные Work-артефакты живут внутри активной эпохи.
-3. Физическая вложенность не задаёт Authority, приоритет или истинность.
-4. Research-ветки именуются `NN-kebab-case`; числовой префикс даёт устойчивую навигацию, а не обязательную последовательность.
-5. Новая поверхность создаётся только при реальном отличии ответственности, жизненного цикла, потребителя, доступа, failure/recovery или maintenance.
-6. Исторический материал сохраняется; неизвестное наследие не удаляется ради чистоты.
-7. Один класс текущего продукта имеет один основной текущий маршрут. Производные описания и Research не конкурируют с продуктовым owner.
-8. Архитектура Work-контура остаётся в этом паспорте, пока для отдельного архитектурного документа не появится независимая ценность.
+2. Общие и межрепозиторные Research/Work Strategy Box живут в одном центральном workspace.
+3. Отдельный surface-репозиторий по умолчанию не получает дублирующий Research-контур только потому, что имеет собственный код.
+4. Epoch-bound Research и будущие специализированные Work-артефакты живут внутри активной эпохи.
+5. Физическая вложенность не задаёт Authority, приоритет или истинность.
+6. Research-ветки именуются `NN-kebab-case`; числовой префикс даёт устойчивую навигацию, а не обязательную последовательность.
+7. Новая поверхность создаётся только при реальном отличии ответственности, жизненного цикла, потребителя, доступа, failure/recovery или maintenance.
+8. Исторический материал сохраняется; неизвестное наследие не удаляется ради чистоты.
+9. Один класс текущего продукта имеет один основной текущий маршрут. Производные описания и Research не конкурируют с product owner.
+10. AppDock-side продуктовые решения остаются в собственном проекте AppDock; здесь фиксируется только Strategy Box-side интеграционная семантика.
+11. Архитектура Work-контура остаётся в этом паспорте, пока для отдельного архитектурного документа не появится независимая ценность.
 
 ## Authority and change boundaries
 
@@ -87,13 +108,14 @@ Human Commission определяет Work и может менять орган
 
 Research может устанавливать evidence, гипотезы, выводы и рекомендации в пределах своего Result, но само по себе не:
 
-- переписывает текущий core;
+- переписывает текущую реализацию core или surface;
 - меняет публичные/внешние контракты;
-- переносит ответственность между `stratbox`, plugin и surface-репозиториями;
+- переносит ответственность между Strategy Box repositories;
+- присваивает Strategy Box ownership внешним проектам;
 - превращает старую заметку в текущую архитектуру;
 - создаёт обязательный следующий Work.
 
-Изменение продуктовой реализации выполняется отдельным явно порученным Work с релевантной проверкой.
+Изменение продуктовой реализации выполняется отдельным явно порученным Work в репозитории фактического owner с релевантной проверкой.
 
 ## Interaction capabilities
 
@@ -106,11 +128,14 @@ Research может устанавливать evidence, гипотезы, вы�
 
 Для нового агента или нового чата:
 
-1. прочитать корневой `AGENTS.md`;
+1. прочитать корневой `AGENTS.md` репозитория `stratbox`;
 2. прочитать корневой `README.md`;
 3. открыть этот `_mw/AGENTS.md`;
-4. для работы с Research открыть README точной нужной ветки;
-5. затем читать только необходимые текущие code/docs/tests owners и нужные исследовательские материалы.
+4. для Research открыть README точной нужной ветки;
+5. определить фактический product owner исследуемого компонента;
+6. читать только необходимые текущие code/docs/tests owners этого компонента и нужные Research materials.
+
+Если задача касается `stratbox-windows`, текущая реализация читается из его собственного репозитория. Если задача касается интеграционной границы с AppDock, AppDock используется как внешний источник контракта; его внутренняя продуктовая архитектура не становится частью Strategy Box workspace.
 
 Для понимания текущего продукта не требуется читать всю `_mw/` или восстанавливать историю по старым заметкам.
 
@@ -118,13 +143,14 @@ Research может устанавливать evidence, гипотезы, вы�
 
 Если текущая роль разрешается в ноль, несколько конфликтующих current-path кандидатов, устаревший locator или несовместимые источники, не выбирай по имени файла или исторической близости.
 
-Для Product-состояния возвращайся к прямым owners из таблицы выше. Для Work/Research — к этому паспорту и точной активной ветке. Материальную неоднозначность поднимай как отдельную проблему вместо скрытого выбора.
+Для Product-состояния возвращайся к прямому owner соответствующего компонента. Для Work/Research — к этому паспорту и точной активной ветке. Материальную неоднозначность поднимай как отдельную проблему вместо скрытого выбора.
 
 ## Re-evaluation triggers
 
 Пересмотри этот паспорт и при необходимости повторно примени MADARAII-01/02, если:
 
-- меняется Engineering Subject или граница core/plugin/surface;
+- меняется Engineering Subject или граница core/application surface;
+- материализуется новый Strategy Box surface с собственным owner;
 - появляется новый самостоятельный глобальный outcome;
 - текущая эпоха закрывается или заменяется;
 - появляется самостоятельный Work State, Task/Result lifecycle, file-backed human interaction или иной новый owner;
