@@ -18,15 +18,17 @@ _mw/
     └── research/
         ├── 01-old-notes/
         │   └── README.md
-        └── 02-base-study/
-            ├── README.md
-            ├── stratbox_base_study_current_state_2026-10-06.md
-            └── stratbox-windows_current_state_full_research_2026-10-06.md
+        ├── 02-base-study/
+        │   ├── README.md
+        │   └── ... Research Results
+        └── 03-consolidation-research/
+            └── README.md
 ```
 
 `epochs-001-strategy-box-development` — единственная активная эпоха.
 
 - `01-old-notes` сохраняет исторические заметки и прежние материалы как provenance.
-- `02-base-study` собирает свежую базовую картину текущего Strategy Box по фактическим implementation owners. Исследования core и Windows surface находятся в одной ветке, потому что относятся к одному проекту и одной архитектурной программе.
+- `02-base-study` собирает свежую базовую картину текущего Strategy Box по фактическим implementation owners и тематические Research Results.
+- `03-consolidation-research` сводит накопленный Research corpus перед отдельным Knowledge assembly: согласует темы, термины, противоречия, provenance, устойчивые выводы и пробелы, оставаясь Research-контуром.
 
 Отдельные дублирующие Research-каталоги по каждому репозиторию Strategy Box по умолчанию не создаются. Новая поверхность появляется только при реальной отдельной ответственности, потребителе или жизненном цикле.
