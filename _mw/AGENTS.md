@@ -55,7 +55,7 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 
 **Purpose:** сформировать проверенную исходную картину Strategy Box как системы, сохранить прежние материалы с честной provenance-семантикой и подготовить дальнейшее согласованное развитие core и application surfaces.
 
-**Current posture:** ACTIVE / BOOTSTRAPPED. Workspace и первые baseline Research Results созданы. Сам факт их наличия не означает принятого Product Decision или изменения реализации.
+**Current posture:** ACTIVE / BOOTSTRAPPED. Workspace и baseline Research Results созданы; отдельная `03-consolidation-research` подготовлена для согласования накопленного Research перед последующим Knowledge assembly. Сам факт наличия Research или synthesis-материалов не означает принятого Product Decision, изменения реализации или admission в поддерживаемое Knowledge.
 
 Повторное глобальное переоформление этой же работы не создаёт новую эпоху. Новая эпоха нужна при новом самостоятельном глобальном исходе или после явного закрытия текущей.
 
@@ -87,6 +87,16 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 Для каждого объекта первичный baseline — его фактический текущий репозиторий: код, упаковка, документация, тесты и инженерные проверки. `01-old-notes` используется как дополнительный источник вопросов и гипотез, но не как автоматическая текущая истина.
 
 Research Result остаётся Research Result до отдельного допустимого перехода в продуктовый код, документацию, Decision или иной текущий owner.
+
+### 03-consolidation-research
+
+`_mw/epochs-001-strategy-box-development/research/03-consolidation-research/`
+
+Роль: консолидировать накопленный Research corpus перед отдельной сборкой поддерживаемого Knowledge.
+
+Ветка сводит темы и выводы между исследованиями, разрешает дублирование и противоречия, выравнивает терминологию и уровни абстракции, сохраняет provenance, отделяет текущее фактическое состояние от целевых гипотез и фиксирует UNKNOWN/пробелы. Основной вход — `02-base-study`; `01-old-notes` остаётся историческим source/provenance.
+
+Результаты этой ветки остаются Research Results / Research Syntheses. Они не являются Scientific Knowledge, Product Decision, Target WHAT или Target HOW и не меняют implementation owners. Последующий Knowledge assembly имеет отдельный контракт и admission boundary.
 
 ## Work architecture
 
