@@ -30,7 +30,8 @@ Workspace может содержать исследования несколь�
 Активная первая эпоха находится в `_mw/epochs-001-strategy-box-development/`. Текущие Research-ветки:
 
 - `01-old-notes` — исторические и исходные материалы;
-- `02-base-study` — свежее базовое исследование текущего Strategy Box, включая отдельные исследования core и Windows surface.
+- `02-base-study` — свежее базовое исследование текущего Strategy Box и тематические Research Results;
+- `03-consolidation-research` — консолидирующие исследования накопленного Research corpus перед отдельным Knowledge assembly.
 
 Материалы `_mw/` сами по себе не меняют текущую продуктовую семантику и не входят в библиотечный пакет.
 
