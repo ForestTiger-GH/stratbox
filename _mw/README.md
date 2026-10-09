@@ -23,6 +23,13 @@ _mw/
         │   └── ... Research Results
         └── 03-consolidation-research/
             └── README.md
+    └── consolidation/
+        ├── README.md
+        ├── CYCLE.md
+        ├── STATE.md
+        ├── BASELINE.md
+        ├── ARCHITECTURE.md
+        └── sources/SEED.md
 ```
 
 `epochs-001-strategy-box-development` — единственная активная эпоха.
@@ -32,3 +39,7 @@ _mw/
 - `03-consolidation-research` сводит накопленный Research corpus перед отдельным Knowledge assembly: согласует темы, термины, противоречия, provenance, устойчивые выводы и пробелы, оставаясь Research-контуром.
 
 Отдельные дублирующие Research-каталоги по каждому репозиторию Strategy Box по умолчанию не создаются. Новая поверхность появляется только при реальной отдельной ответственности, потребителе или жизненном цикле.
+
+## Подготовленный цикл Knowledge consolidation
+
+`consolidation/` — самостоятельный рабочий контур сведения значимого смысла из Research и архива документации в поддерживаемые `docs/science/`, `docs/what/`, `docs/current-how/`, `docs/how/`, `docs/architecture/`, `docs/ldd/`. Запускать следующий непрерывный цикл следует по `consolidation/README.md` и `CYCLE.md`, восстанавливая положение из `STATE.md`. Содержательное сведение **ещё не начато**.

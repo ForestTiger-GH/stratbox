@@ -16,11 +16,11 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 
 ## Governing basis
 
-- Human Commission: 2026-10-06 — минимально оформить инженерный workspace Strategy Box по MADARAII-01 и MADARAII-02, сохранить исторические материалы и сформировать свежий baseline.
+- Human Commission: 2026-10-06 — минимально оформить инженерный workspace Strategy Box, сохранить исторические материалы и сформировать свежий baseline.
+- Human Commission: 2026-10-09 — подготовить единый Knowledge Product и непрерывный агентный цикл, не начиная саму консолидацию.
 - Scope clarification: 2026-10-06 — один общий `_mw` используется для Research и Work по `stratbox` и `stratbox-windows`; дублирование каталогов и исследований между репозиториями не требуется.
 - Initial core baseline before workspace realization: `stratbox@72345991b2db272493e5d7c512c0f01ab32ca9b5`.
-- MADARAII basis: `ForestTiger-GH/MADARAII@main`, baseline `b000dc986b68fb441d43bdb0e4c817dc7d798f5c`.
-- Operating default: `MADARAII-EXAMPLES-DEFAULT@1`.
+- Methodological orientation: general MADAR engineering method; concrete external material pointers are deliberately omitted from the public work passport.
 - Core product boundary: root `README.md`, `docs/`, `pyproject.toml`, `src/stratbox/`, `tests/` and `scripts/`.
 - Windows product boundary: current direct owners in repository `ForestTiger-GH/stratbox-windows`.
 
@@ -36,7 +36,9 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 | --- | --- | --- |
 | Strategy Box core implementation | `stratbox/src/stratbox/` | текущая библиотечная реализация core |
 | Core packaging and dependencies | `stratbox/pyproject.toml` | текущая упаковка и dependency contract core |
-| Core product documentation | `stratbox/README.md`, `stratbox/docs/` | текущая опубликованная документация core |
+| Shared Strategy Box Knowledge Product | `stratbox/docs/` | будущие поддерживаемые Science / WHAT / Current HOW / HOW / Architecture / LDD; в данный момент bootstrap |
+| Historic core documents | `stratbox/docs_old/` | content-preserved archive, не текущая спецификация |
+| Knowledge consolidation Work | `stratbox/_mw/epochs-001-strategy-box-development/consolidation/` | отдельные циклы, census, source dispositions и checkpoints |
 | Core verification | `stratbox/tests/`, `stratbox/scripts/` | проверки и evidence core |
 | Windows surface implementation | `ForestTiger-GH/stratbox-windows` | текущая реализация Windows application/surface |
 | Future Strategy Box surfaces | их собственные репозитории после материализации | platform-specific реализация |
@@ -55,7 +57,7 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 
 **Purpose:** сформировать проверенную исходную картину Strategy Box как системы, сохранить прежние материалы с честной provenance-семантикой и подготовить дальнейшее согласованное развитие core и application surfaces.
 
-**Current posture:** ACTIVE / BOOTSTRAPPED. Workspace и baseline Research Results созданы; отдельная `03-consolidation-research` подготовлена для согласования накопленного Research перед последующим Knowledge assembly. Сам факт наличия Research или synthesis-материалов не означает принятого Product Decision, изменения реализации или admission в поддерживаемое Knowledge.
+**Current posture:** ACTIVE / CONSOLIDATION_PREPARED. Исследовательские ветки 01–03 существуют, а отдельный `consolidation/` готов к Human-commissioned непрерывной сборке знаний. Публичный `docs/` содержит пока только подготовительные маршруты; legacy-документы сохранены в `docs_old/`. Сам факт наличия Research или synthesis-материалов не означает принятого Product Decision, изменения реализации или admission в поддерживаемое Knowledge.
 
 Повторное глобальное переоформление этой же работы не создаёт новую эпоху. Новая эпоха нужна при новом самостоятельном глобальном исходе или после явного закрытия текущей.
 
@@ -110,7 +112,7 @@ Research Result остаётся Research Result до отдельного до�
 8. Исторический материал сохраняется; неизвестное наследие не удаляется ради чистоты.
 9. Один класс текущего продукта имеет один основной текущий маршрут. Производные описания и Research не конкурируют с product owner.
 10. AppDock-side продуктовые решения остаются в собственном проекте AppDock; здесь фиксируется только Strategy Box-side интеграционная семантика.
-11. Архитектура Work-контура остаётся в этом паспорте, пока для отдельного архитектурного документа не появится независимая ценность.
+11. Общая архитектура Work-контура остаётся в этом паспорте; специализированный контур Knowledge consolidation имеет отдельные STATE, BASELINE, ARCHITECTURE и CYCLE ввиду собственного жизненного цикла и объёма.
 
 ## Authority and change boundaries
 
@@ -141,7 +143,7 @@ Research может устанавливать evidence, гипотезы, вы�
 1. прочитать корневой `AGENTS.md` репозитория `stratbox`;
 2. прочитать корневой `README.md`;
 3. открыть этот `_mw/AGENTS.md`;
-4. для Research открыть README точной нужной ветки;
+4. для Research открыть README точной нужной ветки; для Knowledge consolidation открыть `consolidation/README.md`, `STATE.md`, `BASELINE.md`, `ARCHITECTURE.md`, `CYCLE.md`;
 5. определить фактический product owner исследуемого компонента;
 6. читать только необходимые текущие code/docs/tests owners этого компонента и нужные Research materials.
 
@@ -157,7 +159,7 @@ Research может устанавливать evidence, гипотезы, вы�
 
 ## Re-evaluation triggers
 
-Пересмотри этот паспорт и при необходимости повторно примени MADARAII-01/02, если:
+Пересмотри этот паспорт и при необходимости повторно обоснуй архитектуру и размещение Work-контура, если:
 
 - меняется Engineering Subject или граница core/application surface;
 - материализуется новый Strategy Box surface с собственным owner;
@@ -167,3 +169,9 @@ Research может устанавливать evidence, гипотезы, вы�
 - Research приводит к принятой новой Knowledge/Product topology;
 - cold entry перестаёт однозначно разрешать владельцев и безопасный следующий маршрут;
 - физическая структура начинает расходиться с описанной здесь семантикой.
+
+## Prepared Knowledge Consolidation
+
+Точка входа: `_mw/epochs-001-strategy-box-development/consolidation/README.md`. Там один текущий Work State и проверяемая процедура длительного последовательного сведения исходных Research, старой документации и прямых реализационных оснований в раздельные публикуемые роли. Подготовка маршрута не принимает содержательные обязательства продукта и не запускает автономную работу. Для запуска следующему агенту требуется отдельная Human Commission; в её рамках предусмотрено непрерывное исполнение с checkpoint/recovery без обязательных межэтапных запросов к пользователю.
+
+Ссылки на конкретные материалы внешней инженерной методологии и внешних когнитивных проектов в новом публичном корпусе и рабочих инструкциях не нужны. Общая методология MADAR и фундаментальные выводы доступны для применения в собственных предметных формулировках. Внешний ИИ-агент описывается нейтрально. Исторические исследовательские файлы остаются неизменными; охраняемые реализации расширений остаются вне открытого знания.
