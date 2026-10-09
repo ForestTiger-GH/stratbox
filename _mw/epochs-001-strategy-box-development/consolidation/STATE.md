@@ -1,22 +1,22 @@
 # Consolidation Work State
 
-- **State:** FILE_CENSUS_READY / CONTENT_ASSEMBLY_NOT_STARTED / WAITING_COMMISSION.
-- **Last checkpoint:** 2026-10-09, preparatory repository cutover.
-- **Engineering Subject:** one Strategy Box knowledge product with multiple implementation owners.
-- **Active epoch:** `_mw/epochs-001-strategy-box-development/`.
-- **File census source revision:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; census-only commit: `a23caa3b44755a4c7d55d75ffe90059835f80437`.
-- **Publication state:** `docs/` contains only preparatory section routers; NO ADMITTED SCIENCE, TARGET WHAT OR TARGET HOW.
-- **Legacy preservation:** 18 legacy files moved content-identically to `docs_old/`; semantic assimilation NOT STARTED.
-- **Pinned file coverage:** 553 valid records, `stratbox` 338/338, `stratbox-windows` 198/198, AppDock 17 selected contract files; included 4 older notes, 27 base studies, 10 syntheses and 18 original legacy documents.
-- **Material-unit coverage:** 553/553 `unaccounted`, all destinations pending; no completed Science/WHAT/HOW assembly.
-- **Authority:** this preparation authorizes repository routing and documentation cutover only; the full continuous assimilation requires the next explicit Human Commission.
-- **Blocking/unknown:** expanded source-universe admission (human attachment and external evidence), semantic-unit accounting, product Decision Authority over open choices, external platform maturity; existing pinned two-repository file census is complete.
-- **Method entry:** `METHOD-ROUTER.md` with MADARAII-specific Work, FOUNDATION/EXAMPLE, mandatory logical reset and governed rehydration.
+- **Commission:** Human full continuous documentation consolidation Commission, 2026-10-09; authorized documentation changes on `stratbox@main`, no changes to core/runtime/surfaces.
+- **Checkpoint state:** ACTIVE / KPA_CONTRACT_ADMITTED / PINNED_SOURCE_CENSUS_VERIFIED / MATERIAL_EXTRACTION_OPEN.
+- **Execution baseline before first write:** `stratbox@5cff9157460c2035aa42758b505cce65b7c53f47`.
+- **Methodology baseline:** `ForestTiger-GH/MADARAII@9c59312a780a7b214dbe26f3ecd432a4dc2fe9c7`; Examples default `MADARAII-EXAMPLES-DEFAULT@1`; no upstream method drift since preparation.
+- **Direct evidence revisions:** `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, `AppDock@a4d87c643e620e54e04083d4d0b8d867513e7065`; pinned core census tree `8459dc58922b7e8df853cf1d9e8131fa9e132580`.
+- **Completed Work, checkpoint 1:** KPA review/formulation (instruction 13 + matching example; accepted process assembly contract, no Product Decisions); source corpus accounting (instruction 09 + matching example; verification report `sources/CENSUS-VALIDATION-2026-10-09.md`).
+- **Coverage:** 553/553 recorded, exact pinned path/blob SHA verified; 553/553 semantic-unit status `unaccounted`; no lossless Science claims. Human Research source `SB-EXT-0001` separately bound, not yet fully extracted. AppDock 17 selected files only.
+- **Publication:** published `docs/` remains preparatory; Science, WHAT, Current HOW, HOW, Architecture and LDD **not admitted** at this checkpoint.
+- **Independent review:** unavailable during single-actor execution. Producer KPA was bound for this Commission; role-specific independent assurance remains unfulfilled.
+- **Context discipline:** checkpoint before next Work; `physical_reset_unavailable` in current tooling. Mandatory logical reset means re-open state, current instructions/EXAMPLE and direct sources, treating earlier thought as discovery only.
+- **Safety:** no closed-source detail or internal identity may be included in this public repo. Historical Research stays untouched.
+- **Blockers:** every original still requires material-unit extraction and disposition; Product Decision Authority for unsettled choices; exact code-backed Current HOW coverage; Research Amputation; independent Science/publication assessment.
+- **Next authorized Work:** rehydrate from this state; open full source/lineage evidence, perform bounded reconciliation (08↔09), reconstruct directly evidenced Current HOW slices where feasible, and develop user-authorized WHAT commitments independently of remaining Research, without promoting provisional claims.
+- **Closure guard:** publish only bounded independently checkable slices; if completion becomes impossible, write a durable partial-closure audit and the exact next permitted operation.
 
-## Next bounded action
+## Durable result locators
 
-After explicit full-cycle commission: verify/reuse the exact pinned 553-row census, admit additional public-safe inputs and establish bounded complete source coverage; build bidirectional source-use accounting; reconcile topic 08 against topic 09 and late changes; qualify assembly contract; run source-unit preservation and thematic Science compilation, then Current HOW, Product Commitment Census/WHAT, HOW, architecture, selective LDD, verification, and publication in one controlled execution.
-
-## Restart and checkpoint policy
-
-After every source batch or meaningful accepted document update, write processed paths/revisions, material-unit dispositions, verified destinations, blockers and the next exact action here or in a referenced uniquely-owned ledger. Never mark a batch complete before evidence is committed. If interrupted, resume from the last confirmed state; treat uncertain writes as unconfirmed and re-check. Explicitly report partial results instead of invented completion.
+- KPA: `ARCHITECTURE.md` (accepted scoped contract; no adopted target).
+- Census proof and supplementary carrier: `sources/CENSUS-VALIDATION-2026-10-09.md`.
+- The authoritative original census: `sources/CENSUS.csv` — 553 rows, stable IDs, unchanged.
