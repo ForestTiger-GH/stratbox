@@ -28,7 +28,8 @@
 - **Completed Work, checkpoint 15:** full original `SB-SRC-0027`, 42 provisional units `units/BASE-STUDY-0027.jsonl` and candidate alternatives/negative cases in `reconciliation/BASE-STUDY-ARTIFACTS.md`. `CENSUS.csv` only read flag updated.
 - **Completed Work, checkpoint 16:** fully read `SB-SRC-0028`, 38 provisional units in `units/BASE-STUDY-0028.jsonl`, and format/installation/security distinctions in `reconciliation/BASE-STUDY-FORMATS.md`. Only its census read-state advanced.
 - **Completed Work, checkpoint 17:** published two bounded independently readable Science modules on source identity and format capability, with direct current-code citations, counterexamples and limitations. Scientific orientation/source-use navigation and partial publication manifest updated in English. No target acceptance or total Science conservation claim.
-- **Next authorized Work:** verify revised docs navigation and restricted-identifier scan against new Git tree; then continue remaining source Research, prioritizing execution and observability. Global source-to-owner and owner-to-evidence assurance still OPEN.
+- **Completed Work, checkpoint 18:** evidence-route Markdown table repaired by separate producer publication edit; no source claim changed. Work record `gates/SCIENCE-SOURCE-ROUTE-REPAIR.md`.
+- **Next authorized Work:** inspect all maintained docs against exact next Git revision for local links, content policy and reader navigation, then continue remaining 02-base-study sources, especially execution, automation and observability.
 - **Closure guard:** publish only bounded independently checkable slices; if completion becomes impossible, write a durable partial-closure audit and the exact next permitted operation.
 
 ## Durable result locators
