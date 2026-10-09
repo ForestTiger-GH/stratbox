@@ -1,7 +1,7 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-09-R2`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
-**Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly input HEAD:** `b75617babba33ce126219fe89cbcec7b559dc7d6`; the exact revision of this manifest is its containing Git commit.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-09-R3`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly input HEAD:** `cfd21bf2fd7f0cf627687489eda40611f27b025f`; the exact revision of this manifest is its containing Git commit.
 
 ## Canonical maintained paths
 
@@ -12,6 +12,7 @@
 | Scientific topic: source identity | `docs/science/data-and-knowledge/source-identity-and-reproducibility.md` | bounded, primary-source backed |
 | Scientific topic: file format capability | `docs/science/data-and-knowledge/format-recognition-and-semantic-support.md` | bounded, primary-source backed |
 | Scientific topic: uncertain effects | `docs/science/trust-and-assurance/uncertain-outcome-vs-observed-error.md` | bounded, primary-source backed |
+| Scientific topic: reuse and external effects | `docs/science/trust-and-assurance/computation-reuse-and-external-effects.md` | bounded direct-source and formal model |
 | Source-use routes | `docs/science/sources/README.md` | selected source uses only |
 | Current HOW | `docs/current-how/README.md`, `docs/current-how/core-runtime-network.md`, `docs/current-how/windows-application.md` | two bounded static implementations |
 | Target WHAT | `docs/what/README.md`, `docs/what/strategy-box/*.md`, `docs/what/components/*.md` | mixed standing boundaries and unadmitted proposals |
@@ -22,14 +23,14 @@
 
 ## Source conservation and factual boundaries
 
-The frozen census contains **553 unique pinned entries** (338 core, 198 Windows, 17 selected external contracts), all verified at file/blob level. Historical original studies and other admitted source works remain present and unchanged. The master per-source `material_unit_state` is still **`unaccounted` for all 553 entries**: the new unit ledgers are qualified provisional extraction, not exhaustive independently verified conservation. At this edition, **12 source works have `read_state=full_read`**, and 326 provisional meaning units have been recorded in the current continuation; these are NOT counts of fully conserved source works. The supplementary user-supplied architectural study is independently bound as additional Research input and has not been exhaustively absorbed.
+The frozen census contains **553 unique pinned entries** (338 core, 198 Windows, 17 selected external contracts), all verified at file/blob level. Historical original studies and other admitted source works remain present and unchanged. The master per-source `material_unit_state` is still **`unaccounted` for all 553 entries**: the new unit ledgers are qualified provisional extraction, not exhaustive independently verified conservation. At this edition, **17 source works have `read_state=full_read`**, and 490 provisional meaning units have been recorded in the current continuation; these are NOT counts of fully conserved source works. The supplementary user-supplied architectural study is independently bound as additional Research input and has not been exhaustively absorbed.
 
 The scientific topics can be read without going through Research history, and their bounded claims link directly to exact code evidence or explicitly named reasoning assumptions. The entire research corpus still fails the global Research Amputation condition.
 
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- Earlier verified `docs/` link baseline was 27 Markdown files / 38 valid local links. This edition adds new material: navigation and token checks require a new source-tree scan at the resulting commit.
+- Earlier verified `docs/` link baseline was 29 Markdown files / 44 valid local links. This edition adds new material: navigation and token checks require a new source-tree scan at the resulting commit.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
