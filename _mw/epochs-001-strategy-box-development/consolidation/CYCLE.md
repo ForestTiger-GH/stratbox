@@ -4,12 +4,12 @@
 
 ## 1. Entry and scope
 
-Read `README.md`, `AGENTS.md`, `_mw/AGENTS.md`, `_mw/consolidation/{README,STATE,BASELINE,ARCHITECTURE,CYCLE}.md`. Resolve the user commission, allowed publication perimeter, direct code owners and exact revisions; compare source state with recorded checkpoints. The user may supply an additional previously prepared architectural study in the agent's next message: classify it as Research/input and reconcile it with source owners, rather than treating its suggested tree or links as automatically accepted.
+Read `README.md`, `AGENTS.md`, `_mw/AGENTS.md`, `_mw/epochs-001-strategy-box-development/consolidation/{README,STATE,BASELINE,ARCHITECTURE,CYCLE,METHOD-ROUTER}.md` and `sources/CENSUS.csv`. Resolve the user commission, allowed publication perimeter, direct code owners and exact revisions; compare source state with recorded checkpoints. Bind the selected MADARAII instruction, full FOUNDATION and matching EXAMPLE for every distinct substantive Work per `METHOD-ROUTER.md`. Perform logical context reset and authoritative rehydration before each Work; perform an actual physical reset where required and technically possible, or record the limitation honestly. The user may supply an additional previously prepared architectural study in the agent's next message: classify it as Research/input and reconcile it with source owners, rather than treating its suggested tree or links as automatically accepted.
 
 ## 2. Allowed continuous route
 
 0. **Bind contract.** Review and explicitly establish this Knowledge Product Architecture for the exact commission, consumers, permitted assertions, completeness boundary and stop conditions. Record revisions without gratuitous reorganization.
-1. **Census.** Enumerate every relevant research, historical and old-document source; identify exact path/revision, duplicates, transformed summaries, access limits and downstream consumers. Count source members exhaustively. Preserve late input separately.
+1. **Census.** Validate and reuse the existing 553-entry pinned `sources/CENSUS.csv`, complete for both core and Windows file trees and intentionally selecting 17 AppDock contract files. Bind additional admissible human and external inputs, scope/exclusions, lineage and late inputs before claiming the entire declared universe is complete. The census is file-level accounting; its semantic-unit statuses are still unaccounted.
 2. **Material extraction.** Read each admitted original in full and extract qualified semantic units with source spans, time/status, support, alternatives, negative results, limits, dependency and terminal destination proposal. Partition into durable batches; never treat one summary as a proxy for every underlying file.
 3. **Reconciliation.** Resolve topic overlaps, duplicate models, incompatible terminology, baseline drift and real conflicts; explicitly reconcile late standalone quality/safety study against earlier provisional system synthesis. Preserve open alternatives where evidence/authority is insufficient.
 4. **Science.** Compile problem-space modules, sources and typed source-use relations. Keep direct evidence and provenance. Prove source-unit disposition, cross-theme consistency and cold-reader independence from original Research. Do not claim losslessness while any admitted material unit is unaccounted.
@@ -32,7 +32,7 @@ Stages may loop locally; their numbers are navigation, not proof of automatic va
 
 ## 4. Public publication restriction
 
-In newly authored `docs/`, READMEs, work plans and published artifacts, do not include document-level links, file paths, repository addresses, citation codes, precise internal models or named instructions belonging to external methodology or cognition projects. A general methodological expression such as “в соответствии с методологией MADAR” is allowed. Describe future machine interfaces only as external permissioned AI agents / cognitive systems. Incorporate useful conceptual findings in self-contained Strategy Box terms.
+In newly authored maintained `docs/` and their README/manifest, do not include concrete links, paths, instruction IDs or technical details from external methodological or cognitive projects. **Narrow process exception:** `_mw/.../consolidation/METHOD-ROUTER.md` may link exact MADARAII instructions, FOUNDATION and matching EXAMPLES for agent execution only. A general methodological expression such as “в соответствии с методологией MADAR” is allowed. Describe future machine interfaces only as external permissioned AI agents / cognitive systems. Incorporate useful conceptual findings in self-contained Strategy Box terms.
 
 Keep already existing research documents as untouched historical inputs rather than scrubbing them. Do not publish specifics, names, internals or identifiable configuration of closed extensions. Do not import restricted files, excerpts, metadata or source identifiers into the open repository. If exact access-protected material is needed, preserve a safe abstract gap and route the protected original to its authorized owner.
 
@@ -40,7 +40,7 @@ Keep already existing research documents as untouched historical inputs rather t
 
 - Work in bounded source batches and semantic owners; stage content with exact citations and preserve source identities.
 - Persist complete item dispositions and destination text **before** marking their coverage `verified`.
-- At each checkpoint update `STATE.md` with committed revision, enumerated processed items, open blockers, verifiable gates, and next exact action. Use source/units/coverage ledgers only when actual contents exist.
+- At each checkpoint update `STATE.md` with committed revision, enumerated processed items, the active MADARAII work-kind and methodology baseline, open blockers, verifiable gates, and next exact action. Checkpoint before context compaction/reset; rehydrate from current authoritative owners. Use source/units/coverage ledgers only when actual contents exist.
 - Retry interrupted writes from last confirmed owner state, inspect uncertain intervals, never infer completed status from a planned step.
 - Run relevant document and release integrity checks; do not claim full platform/GUI or distribution verification without executing it.
 - Avoid editing application/core code in a documentation commission, except narrowly authorized documentation-path/build-check repairs needed for this cutover.

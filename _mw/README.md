@@ -26,6 +26,7 @@ _mw/
     └── consolidation/
         ├── README.md
         ├── CYCLE.md
+        ├── METHOD-ROUTER.md
         ├── STATE.md
         ├── BASELINE.md
         ├── ARCHITECTURE.md

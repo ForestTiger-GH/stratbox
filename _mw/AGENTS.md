@@ -20,7 +20,8 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 - Human Commission: 2026-10-09 — подготовить единый Knowledge Product и непрерывный агентный цикл, не начиная саму консолидацию.
 - Scope clarification: 2026-10-06 — один общий `_mw` используется для Research и Work по `stratbox` и `stratbox-windows`; дублирование каталогов и исследований между репозиториями не требуется.
 - Initial core baseline before workspace realization: `stratbox@72345991b2db272493e5d7c512c0f01ab32ca9b5`.
-- Methodological orientation: general MADAR engineering method; concrete external material pointers are deliberately omitted from the public work passport.
+- Methodological binding: continuous Knowledge Work использует применимые MADARAII instructions, FOUNDATION и matching EXAMPLES; точные процессные ссылки разрешены в `epochs-001-strategy-box-development/consolidation/METHOD-ROUTER.md`, а не в `docs/`.
+- Selected examples default: `MADARAII-EXAMPLES-DEFAULT@1`; `consolidation/` — локальная специализация действующей эпохи, не отдельный глобальный Work Architecture owner.
 - Core product boundary: root `README.md`, `docs/`, `pyproject.toml`, `src/stratbox/`, `tests/` and `scripts/`.
 - Windows product boundary: current direct owners in repository `ForestTiger-GH/stratbox-windows`.
 
@@ -174,4 +175,4 @@ Research может устанавливать evidence, гипотезы, вы�
 
 Точка входа: `_mw/epochs-001-strategy-box-development/consolidation/README.md`. Там один текущий Work State и проверяемая процедура длительного последовательного сведения исходных Research, старой документации и прямых реализационных оснований в раздельные публикуемые роли. Подготовка маршрута не принимает содержательные обязательства продукта и не запускает автономную работу. Для запуска следующему агенту требуется отдельная Human Commission; в её рамках предусмотрено непрерывное исполнение с checkpoint/recovery без обязательных межэтапных запросов к пользователю.
 
-Ссылки на конкретные материалы внешней инженерной методологии и внешних когнитивных проектов в новом публичном корпусе и рабочих инструкциях не нужны. Общая методология MADAR и фундаментальные выводы доступны для применения в собственных предметных формулировках. Внешний ИИ-агент описывается нейтрально. Исторические исследовательские файлы остаются неизменными; охраняемые реализации расширений остаются вне открытого знания.
+Ссылки на MADARAII допускаются только как процессный маршрут в `consolidation/METHOD-ROUTER.md`; опубликованная документация продукта остаётся автономной и не ссылается адресно на внешние методологические или когнитивные материалы. Общая методология MADAR и фундаментальные выводы доступны для применения в собственных предметных формулировках. Внешний ИИ-агент описывается нейтрально. Исторические исследовательские файлы остаются неизменными; охраняемые реализации расширений остаются вне открытого знания.
