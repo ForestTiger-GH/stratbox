@@ -1,14 +1,16 @@
 # Scientific Knowledge — Strategy Box
 
-**Статус:** BOUNDED SCIENTIFIC MODULES / GLOBAL SCIENCE LOSSLESS UNVERIFIED. Ни количество исследовательских файлов, ни эти первые статьи не являются доказательством сохранения всего объявленного корпуса.
+**Status:** bounded scientific modules available; global semantic conservation and Research Amputation remain **unverified**. The presence of these modules does not imply complete assimilation of the 553 registered source files.
 
-## Области, доступные для самостоятельного изучения
+## Independent study paths
 
-- [Доказательная семантика опубликованных и скрытых статистических величин](data-and-knowledge/publication-rounding-and-claim-strength.md) — интервал округления, ошибочная арифметика округлённых агрегатов, provenance tiers.
-- [Ошибка наблюдения и неопределённость эффекта](trust-and-assurance/uncertain-outcome-vs-observed-error.md) — почему повреждение истории отличается от пустой истории, а timeout от подтверждённого невыполнения.
+- [Published numbers, latent quantities and evidence strength](data-and-knowledge/publication-rounding-and-claim-strength.md) — statistical rounding, interval meaning, and provenance levels.
+- [Source identity and reproducible statistical inputs](data-and-knowledge/source-identity-and-reproducibility.md) — registry/source/snapshot distinctions, current mtime selection and revision evidence.
+- [File recognition versus analytical format support](data-and-knowledge/format-recognition-and-semantic-support.md) — five capability levels, codec asymmetry, failure and resource limits.
+- [Observation failure and uncertain effects](trust-and-assurance/uncertain-outcome-vs-observed-error.md) — why a failed history read differs from an empty history and why timeout may not determine an effect.
 
-[Прямые научные источники и их типы использования](sources/README.md).
+[Direct scientific evidence routes](sources/README.md).
 
-Это **научно-инженерное знание о системе**; пользовательские банковские данные и результаты расчётов принадлежат продуктовым данным. Каждая статья включает применимость, альтернативы, контрпримеры, ограничения, UNKNOWN и прямые доказательные маршруты. Research History — provenance для углублённой проверки, а не обязательный промежуточный источник.
+These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Ограничение публикации:** два модуля допущены только как точечные прямодоказательные представления. Семантический перенос 27 исследований, десяти синтезов, старых документов и реализации в полном объёме остаётся незавершённым. Для глобальной Research Amputation нет основания.
+**Publication limit:** four topics offer separately traced scientific understanding. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
