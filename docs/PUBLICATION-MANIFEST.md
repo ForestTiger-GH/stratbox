@@ -14,7 +14,7 @@
 | Scientific topic: uncertain effects | `docs/science/trust-and-assurance/uncertain-outcome-vs-observed-error.md` | bounded, primary-source backed |
 | Scientific topic: reuse and external effects | `docs/science/trust-and-assurance/computation-reuse-and-external-effects.md` | bounded direct-source and formal model |
 | Source-use routes | `docs/science/sources/README.md` | selected source uses only |
-| Current HOW | `docs/current-how/README.md`, `docs/current-how/core-runtime-network.md`, `docs/current-how/windows-application.md` | two bounded static implementations |
+| Current HOW | `docs/current-how/README.md`, `docs/current-how/core-runtime-network.md`, `docs/current-how/windows-application.md`, `docs/current-how/frg-cleanup-effects.md` | three bounded static implementation slices |
 | Target WHAT | `docs/what/README.md`, `docs/what/strategy-box/*.md`, `docs/what/components/*.md` | mixed standing boundaries and unadmitted proposals |
 | Target HOW | `docs/how/README.md`, `docs/how/execution/*.md`, `docs/how/application/*.md`, `docs/how/operations/*.md`, `docs/how/verification/*.md` | candidate-only |
 | Engineering Product Architecture | `docs/architecture/README.md` and three topical modules | candidate-only |
