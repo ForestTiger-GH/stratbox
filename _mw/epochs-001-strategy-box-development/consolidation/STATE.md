@@ -1,7 +1,7 @@
 # Consolidation Work State
 
 - **Commission:** Human full continuous documentation consolidation Commission, 2026-10-09; authorized documentation changes on `stratbox@main`, no changes to core/runtime/surfaces.
-- **Checkpoint state:** ACTIVE / KPA_CONTRACT_ADMITTED / PINNED_SOURCE_CENSUS_VERIFIED / BOUNDED_CURRENT_HOW_PUBLISHED / BOUNDED_SCIENCE_PUBLISHED / BOUNDED_TARGET_WHAT_CANDIDATE / CONDITIONAL_TARGET_HOW_ARCHITECTURE_LDD_DRAFTED / BOUNDED_DELTA_GAP_CHALLENGE / PUBLICATION_NAV_SECURITY_PATTERN_RECHECKED / LAST_CLOSURE_AUDIT_FAIL / HISTORICAL_BATCH_A_AND_B_EXTRACTED / CORE_BASE_STUDY_EXTRACTED / WINDOWS_BASE_STUDY_EXTRACTED / DESIGN_STUDY_EXTRACTED / SOURCE_GOVERNANCE_EXTRACTED / ARTIFACT_RESEARCH_EXTRACTED / FULL_ASSEMBLY_OPEN.
+- **Checkpoint state:** ACTIVE / KPA_CONTRACT_ADMITTED / PINNED_SOURCE_CENSUS_VERIFIED / BOUNDED_CURRENT_HOW_PUBLISHED / BOUNDED_SCIENCE_PUBLISHED / BOUNDED_TARGET_WHAT_CANDIDATE / CONDITIONAL_TARGET_HOW_ARCHITECTURE_LDD_DRAFTED / BOUNDED_DELTA_GAP_CHALLENGE / PUBLICATION_NAV_SECURITY_PATTERN_RECHECKED / LAST_CLOSURE_AUDIT_FAIL / HISTORICAL_BATCH_A_AND_B_EXTRACTED / CORE_BASE_STUDY_EXTRACTED / WINDOWS_BASE_STUDY_EXTRACTED / DESIGN_STUDY_EXTRACTED / SOURCE_GOVERNANCE_EXTRACTED / ARTIFACT_RESEARCH_EXTRACTED / FORMAT_RESEARCH_EXTRACTED / FULL_ASSEMBLY_OPEN.
 - **Execution baseline before first write:** `stratbox@5cff9157460c2035aa42758b505cce65b7c53f47`.
 - **Methodology baseline:** `ForestTiger-GH/MADARAII@9c59312a780a7b214dbe26f3ecd432a4dc2fe9c7`; Examples default `MADARAII-EXAMPLES-DEFAULT@1`; no upstream method drift since preparation.
 - **Direct evidence revisions:** `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, `AppDock@a4d87c643e620e54e04083d4d0b8d867513e7065`; pinned core census tree `8459dc58922b7e8df853cf1d9e8131fa9e132580`.
@@ -26,7 +26,8 @@
 - **Completed Work, checkpoint 13:** fully read `SB-SRC-0037` and registered 20 provisional meaning units in `units/BASE-STUDY-0037.jsonl`; `reconciliation/BASE-STUDY-PRODUCT-DESIGN.md` qualifies shared application/design responsibility, alternatives and derivative lineage. Only read state changed, no target admission.
 - **Completed Work, checkpoint 14:** fully read `SB-SRC-0035` (2353 lines); 46 qualified provisional units in `units/BASE-STUDY-0035.jsonl` and source/current code contrast in `reconciliation/BASE-STUDY-SOURCE-GOVERNANCE.md`. Direct mtime-based registry loader weakness confirmed by pinned implementation. Only exact census read flag changed.
 - **Completed Work, checkpoint 15:** full original `SB-SRC-0027`, 42 provisional units `units/BASE-STUDY-0027.jsonl` and candidate alternatives/negative cases in `reconciliation/BASE-STUDY-ARTIFACTS.md`. `CENSUS.csv` only read flag updated.
-- **Next authorized Work:** process `SB-SRC-0028` in full, preserving format-support levels and unsupported cases, with direct code/package checks; then return to source/artifact Scientific role if its declared narrow denominator is fully covered.
+- **Completed Work, checkpoint 16:** fully read `SB-SRC-0028`, 38 provisional units in `units/BASE-STUDY-0028.jsonl`, and format/installation/security distinctions in `reconciliation/BASE-STUDY-FORMATS.md`. Only its census read-state advanced.
+- **Next authorized Work:** continue original 02-base-study sources, prioritizing execution, automation and observational/diagnostic topics. Later perform cross-theme reconciliation of original material units and independent source-to-final-owner auditing. Do not equate a provisional material-unit count with proven conservation.
 - **Closure guard:** publish only bounded independently checkable slices; if completion becomes impossible, write a durable partial-closure audit and the exact next permitted operation.
 
 ## Durable result locators
