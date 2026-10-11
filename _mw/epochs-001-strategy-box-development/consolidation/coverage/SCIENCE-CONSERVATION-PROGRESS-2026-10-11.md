@@ -2,6 +2,16 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — Work-to-Execution original fully read and published
+
+**Current producer evidence:** 566 frozen source Git identities, **34 full-read substantive research originals**, **1,680 provisional source-positioned meaning units**, **23 bounded independently readable thematic Science modules**. Source certification remains **0/566**; material `unaccounted` remains **566/566**, with no independent bidirectional source-to-Science/Science-to-evidence certification, no Research Amputation pass and no security clearance.
+
+The newly full-read original `SB-SRC-0051` (`03-consolidation-research`, 1,439 lines, blob `2da168de6f5bd4f3b105f59b8ed194cd31abafc6`) yielded 69 provisional source-positioned units in `units/CONSOLIDATION-WORK-EXECUTION-0051.jsonl`. The independently useful thematic Science owner is `docs/science/work/admission-planning-resource-scheduling-and-recovery.md`. It preserves the 25 EX candidate invariants, 16 research conflicts, 24 unresolved decisions, four source-specific execution traces, admission/sealed-plan/retry/effect constraints and scope-limited current evidence. No current JobManager, host, storage backend or Product Decision is inferred.
+
+**Next:** examine the entire original 03 state/persistence/collaboration study `SB-SRC-0052` and map its otherwise easily lost details, including filtered event feeds, access scopes and backup, to existing or newly needed standalone Science; continue all older files and independently challenge all provisional mappings. Current full-lossless status remains **OPEN / PARTIAL**.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — canonical semantic identity source integrated
 
 **Observed producer status:** **566** pinned sources, **33** substantive originals fully read (19 inherited, 12 later 04, 2 consolidation-research originals), **1,611** provisional located meaning units, **22** bounded self-contained Science articles, **0** independently certified complete dispositions, **566** sources still unaccounted.
