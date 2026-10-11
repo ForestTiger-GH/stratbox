@@ -83,7 +83,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- In the latest bounded check (after the 51-theme additions), **53/53** Science Markdown files were read for bounded structural checks, **252** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
+- In the latest bounded check (after the 51-theme additions), **53/53** Science Markdown files were read for bounded structural checks, **257** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
