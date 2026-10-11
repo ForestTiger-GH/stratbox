@@ -4,6 +4,7 @@
 
 ## Independent study paths
 
+- [System quality threats and assurance fault gates](trust-and-assurance/system-quality-assurance-threats-and-failure-gates.md) — independent Topic 08 direct source with 50 proposed SB-Q invariants, 36 fault-injection scenarios, risk and permission/error semantics.
 - [Whole-system architecture profiles, decisions and evidence gates](architecture/system-architecture-profiles-decisions-and-evidence-gates.md) — logical owners, current drift, file-versus-SQL alternatives, 32 proposed invariants, physical packaging gates and dated Topic-08 limitation.
 - [Work-context navigation and authorized cross-client actions](surfaces/work-context-navigation-and-authorized-actions.md) — Thread/Work-centered UX, four logical destinations, Run/Explorer/Artifact views, safe forms, search and action scopes.
 - [Semantic design tokens, motion and accessibility](surfaces/semantic-design-tokens-motion-and-accessibility.md) — information-first visual roles, restrained animations, reduced motion, responsive typography, WCAG/device conformance questions.
@@ -40,4 +41,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** thirty-one topics offer separately traced scientific understanding. The twenty-six 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** thirty-two topics offer separately traced scientific understanding. The twenty-seven 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
