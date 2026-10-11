@@ -1,0 +1,122 @@
+# Work-context navigation, shared projections and authorized actions
+
+**Scientific question:** how a user returns to a long-running analytical task, chooses and launches a curated capability, sees trustworthy multi-run outcomes and navigates mutable files versus versioned results across Windows, browser and future Android. **Status:** a consolidated research interpretation of user goals and dated Windows source, not an approved navigation release or working Web/mobile client. A common domain/application authority remains a logical target, not an already deployed host.
+
+## 1. From Scenario chat to Work context: a product change, not a tab rename
+
+The pinned [Windows desktop](https://github.com/ForestTiger-GH/stratbox-windows/tree/959e9c4ce1441124af5111c1e025041714e04d3b) has a three-zone Qt shell, Scenario chat/projector, Explorer, contextual inspector, local Case/Event/Artifact history, parameter forms, background/presence/assignment scaffolds and a managed installation manifest. The manifest's `entry_view=scenario_chat` and the six existing entry modes reflect the application's **current scope**; the presence of a navigation icon is not proof of a durable Work backend.
+
+The research's **consolidated future direction** is a **Work/Thread-first experience** where a scenario is *one way to perform work*, not the compulsory root for every message, review, saved reference or action. This is neither an instruction to break the existing GUI immediately nor approval of new route names. It is a semantic choice that requires Product admission and usability testing.
+
+**Thread:** conversation/context and its permissioned participants/messages. **Work:** accountable goal, acceptance requirements and obligations. **Run:** one admitted execution of a frozen plan. **Job/Attempt:** scheduled unit and physical try when separately relevant. **Scenario:** curated repeatable user-facing capability. **Artifact:** versioned managed result, with separate materialization and access. One Thread may discuss many Works, one Work may have multiple Runs; a visible Case card should not silently become the sole authority for all five kinds.
+
+The desirable outcome is **returnability**: a user can open the same Work by an authorized stable reference tomorrow or on another device, see its latest confirmed state, and continue from the appropriate decision without the UI inventing a second Run or forgetting the old result. For a local-only foreground profile, detachment and UI shutdown guarantees may be weaker and must be honestly disclosed.
+
+## 2. Four information domains, not four mandatory tabs
+
+| Logical destination | Primary question | Main objects | Wrong role |
+| --- | --- | --- | --- |
+| **Work** | What am I investigating, and what needs my decision? | Thread, Work, pending reviews, messages, links to Runs and outputs | A live Node-wide log dump |
+| **Explorer** | Which permitted inputs, workspace objects and results can I locate? | Scoped FileRef, WorkspaceObject, ArtifactRef, provenance | Deciding whether Work is complete |
+| **Scenarios** | What can the product do, and how can I supply a correct request? | Curated Scenario/Capability, form schema, presets, applicability | Keeping its own Job history or effect authority |
+| **Runs** | What is executing, queued, waiting for me or in doubt? | Run/Job/Attempt projections, status, actions, diagnostics | A second Thread/message system |
+
+This **four-area model** replaces a research-stage proposal of six equally important Windows modes, but does not require four tabs on every device. A desktop may use a rail+list+main+inspector, Web may collapse secondary panels, and Android compact may show destinations or a nested task flow. Cascade is an optional composite/scenario presentation rather than a compulsory root; background is a mode, automation is a rule, participants and assignments are contextual until actual independent use justifies directories/inboxes.
+
+**Initial home** is another unapproved Product Decision. A plausible first Work home lists recent/pinned Threads and Works requiring input plus compact verified Run status; a returning user could restore an existing permitted context. An empty workspace should offer actions to start Work or invoke a Scenario. Remembered navigation state is client convenience, not a new Work mutation.
+
+## 3. The timeline is an editorial projection over authority
+
+A readable Work/Thread timeline displays substantive messages, accepted/rejected proposals, Work decisions, representative Run cards, important problems, published Artifacts, approvals, assignments and actual closure. It should **not** append every heartbeat, log line, temporary file, HTTP retry, progress tick or raw worker state mutation. Those observations remain available in an authorized inspector or diagnostic viewer.
+
+The [current Qt-free Scenario chat projector](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/common/scenario_chat/projector.py) demonstrates that semantic presentation logic can be separated from Qt rendering. It is **not yet** a multi-language JSON DTO nor a complete Thread/Work authority. Reusing a projector's semantic mapping is different from reusing its Python classes in browser TypeScript.
+
+The composer needs two explicitly different action paths:
+
+```text
+User free text / attachment → Message, question, intent or AI proposal
+Curated Scenario selected → structured RunDraft → validate params/rights/effects
+Explicit authorized Run command → accepted/rejected/needs-approval outcome
+```
+
+AI text saying “I have run it” is neither admission nor effect receipt. A saved Scenario default differs from a local unsent draft, a reusable preset and the immutable effective parameters bound to an accepted Run. Any approval for a dangerous plan is constrained by the actual effect target/revision, not a text button in chat.
+
+## 4. A Run has two useful representations, one identity
+
+A compact card in a Work timeline answers **“What happened to my task?”** A Runs list answers **“What is happening across the permitted scope?”** Both link to the **same Run ID, outcomes, Artifacts and event history**. The Run list can filter active, queued, waiting approval, completed, failed, partial and needs reconciliation. Its priority order may put actionable and active work ahead of recent history.
+
+Avoid misleading user states:
+- `100%` of computation does not imply Artifact publication or Work acceptance;
+- `cancel_requested` is not `cancelled`;
+- `unknown_effect` deserves inspection/reconciliation rather than a “Retry now” button;
+- a lost browser/Android connection is `stale/disconnected`, not `Job.FAILED`;
+- `Automation.enabled` does not mean a worker is currently active;
+- app-wide Qt `is_busy` is the present foreground limitation, not desired resource-level scheduling.
+
+Controls such as cancel, replay, download, approve, review or inspect logs are shown with eligibility and reason codes; the application reauthorizes at command/effect time. A user able to view another colleague's Run does not automatically gain permission to cancel it or inspect private full logs.
+
+## 5. Explorer unifies access while retaining two object types
+
+**Workspace FileRef** locates a permitted mutable file/folder in a managed resource scope. **ArtifactRef** names a committed versioned product result, linked to Run/source/algorithm/style and possibly several byte materializations. A workbook generated into a folder is not automatically a verified Artifact, and editing the original input does not silently rewrite a previously committed Artifact.
+
+Navigation could show permitted common Data, personal files, a managed result library, and links from the current Work. Temporary staging and system roots do not become ordinary editable user folders. A source category and a managed final result may appear near each other in Explorer while preserving their different access, deletion and retention policy.
+
+Native actions intentionally differ:
+- **Windows:** tree/breadcrumb/detail table, multiselect, keyboard, drag/drop where effect rules allow, local open/reveal.
+- **Web:** server-backed pagination, signed or authorized bounded upload/download/preview; never a raw host absolute path or open static workspace.
+- **Android:** scoped file picker, share/open-with, touch list/search and limited cache; complex bulk edit is not guaranteed.
+
+A destructive workspace action needs preview/plan/permission and truthful partial/unknown effects. Removing a visible row does not demonstrate that the storage backend applied an authorized delete.
+
+## 6. Inspector, search, preview and diagnostics serve selected objects
+
+A semantic **InspectorView** follows selection identity: a Work inspector shows goal, due review and Runs; a Run inspector shows steps/outcome/related Artifact/evidence; a Scenario inspector shows purpose, fields and last executions; an Artifact inspector shows producer, source versions, style and authorized output links. It may render as a Qt right pane, Web drawer, Android detail or bottom sheet. **Selection is a logical object reference**, not a widget index.
+
+A technical depth hierarchy is useful: short safe error/action in the card → details/steps/warnings in inspector → restricted logs/Problem evidence in a dedicated pane. These layers must not broadcast source credentials, private input paths or raw traceback to all Thread participants.
+
+One global search entry could federate authorized Work, Thread, Scenario, Run, File and Artifact queries, keeping result kinds and partial/unavailable states visible. Full-text index, ranking, ACL propagation, source file indexing, quota and performance remain **unknown**. Shortcut/command palette and contextual menu may expose the same stable ActionDescriptor, not duplicate business logic.
+
+Previews are separately authorized, size/format- and policy-bounded transformations. “Preview Excel on Android” requires testing actual workbook sizes, parser risk, memory and redaction; an open path is not a valid Web preview API.
+
+## 7. Notifications, assignments and read positions
+
+A domain Event is a recorded fact; a Notification is delivery to selected recipients; a Condition groups an ongoing problem; a technical log is diagnostic evidence. Their authors, retention, privacy and recovery differ. A shared Data-root impairment can produce one Condition and tailored warnings to affected Work owners without leaking any private traceback.
+
+Presence must be derived from actual Session/heartbeat TTL rather than a persistently true Boolean. Multiple devices for one human do not become multiple people. Read cursors and notification acknowledgements are per principal and scope, not a shared `unread` field on a message. Assignments create accountable human obligations; Approvals authorize bounded planned effects. An Android push may route a user to a secure approval view, but **must not itself execute a destructive approval**.
+
+**Attention budget:** unread, approval and true error badges should reflect independently meaningful action. A flood of badges on every navigation item conceals priority. Thread-card notices, global inbox and platform conditions need controlled audience and deduplication.
+
+## 8. Three contracts between state truth and screen pixels
+
+```text
+Application authority: durable Work/Run/permissions/Artifact and current revisions
+  → Authorized product projection: typed object summaries, actions, reasons, refs
+  → Surface adapter: navigation, local draft, OS file/share/clipboard/notifications
+  → Qt / DOM / Android renderer with device-specific layout and accessibility
+```
+
+A sample target **projection** can carry `view_kind`, stable object kind/ID, revision, permission-filtered data, an opaque feed cursor, `as_of`, freshness and permitted ActionDescriptors. `available_actions` is a display hint from verified scope, not an authorization token. A sample *command* can carry semantic Action ID, target reference, expected revision, idempotency key and typed parameters; the authenticated principal comes from actual session authority.
+
+Stable deep links identify kind+ID+optional revision and require Node/tenant routing, authentication, current ACL and handling of missing/archive/stale objects. A URI example such as `strategybox://work/…` is **illustrative** and not a registered scheme. Opaque feed cursors must not disclose the count of hidden private node events. See [authorized feeds](../collaboration/authorized-streams-read-cursors-and-private-work.md).
+
+Client cache state needs `current/stale/unknown` separate from actual Job status. The server commits a consistent permission-scoped snapshot+cursor; the client subscribes, deduplicates, handles gap, and resynchronizes. Offline personal drafts are not shared state and require schema/policy revalidation before submission. Mirroring window widths, selected tab and scroll across devices is optional and can be counterproductive.
+
+## 9. Alternative surfaces and the limits of parity
+
+A browser is a **real product client**, not a screenshot of Windows: dense keyboard tables/forms/search and usable without any AI actor. REST plus SSE is a reasonable first experimental command/query/event transport; WebSocket remains conditional on measured bidirectional demands. The actual authentication/CSRF/session/file boundary must be implemented and tested before Internet exposure.
+
+A first Android **remote-first companion** could show current Work, Runs, meaningful warnings, approvals, artifact previews, share and lightweight forms. A fully featured Explorer, huge graph editor, unrestricted offline executor and native push are **separate roadmap decisions**. Phone, foldable and tablet layouts should follow available window geometry rather than one universal “Android=single column” rule.
+
+A notification/tray/widget/CLI narrow surface may support just permitted read summaries and a safe deep link. When it lacks space to show an approval's actual destructive effect scope, it must defer to a full client, not weaken safety context.
+
+No Web server, Android binary, independent host, remote state store, SDK, cross-client authentication or true installed surface tests were produced by this research.
+
+## 10. Source conflict register and open design questions
+
+The original topic-07 research identified **18 C07 conflicts**: Scenario chat vs Work/Thread, six modes vs four logical destinations, auto-Scenario wrapping, Case/Work, background as area vs mode, Qt lifetime vs headless ownership, whether a separate design repository, UI theme vs artifact styles, arbitrary shell changes by extensions, desktop density vs mobile geometry, SSE/WebSocket, PySide/native Android, Settings info tabs, platform identity vs product collaboration, optimistic success vs unknown effect, presence directory, Artifact/CAS vs Explorer and pixel-identical multi-client navigation.
+
+Twelve particularly important unresolved questions are separate: server versus client construction of safe projections; deep-link routing; ACL-aware global search; Work inbox/unread priorities; preview formats/resource limits; multiwindow concurrency; first useful AI scope; slow PC/Android performance budgets; drafts and offline writes; actual screen-reader/locale acceptance; common-source UI library packaging; and integration of platform/provider/domain problems without duplicate warnings.
+
+The source's **29 proposed UX/conformance checks** cover Work/Run cardinalities, command/session identity, Form/Action parity, effects, source/result identity, stale/reconnect, keyboard/mobile a11y, virtualized 10,000-item lists, user themes and product security. They are **not passing tests**. Product decisions on four navigation areas, toolkit, first-run default, search, notification precedence, render preview and performance need actual user workflows and signed acceptance.
+
+**Verdict:** one semantic product can have multiple native, adaptive surfaces **only if** each display maps back to an authorized state/action truth. The target is coherent meaning and trustworthy continuation of Work, not identical widgets or a second execution world per device.
