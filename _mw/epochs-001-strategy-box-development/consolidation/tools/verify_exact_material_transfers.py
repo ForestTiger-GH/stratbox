@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks ten bounded source-ledgers (currently 568 items): exact original SHA/line,
+Checks ten bounded source-ledgers (currently 625 items): exact original SHA/line,
 maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
+EXPECTED_ITEMS = {"0018": 57, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -35,6 +35,7 @@ LEDGERS = (
     "BANK-MACRO-COMPARABILITY-EXACT-0019.jsonl",
     "TOPIC08-EXACT-QUALITIES-50-0047.jsonl",
     "QUALITY-08-NEGATIVE-36-ENGLISH-LOCATORS.jsonl",
+    "BACKGROUND-WORK-0018-ENGLISH-57.jsonl",
     "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
 )
 
@@ -176,6 +177,22 @@ def verify() -> dict:
                     ):
                         if original and normalized_for_markdown(original) not in row:
                             issues.append(f"{label}: unchanged exact original term missing")
+            elif source_id == "SB-SRC-0018":
+                original_id = item["original_research_id"]
+                source_handle = f"{source_id}/{original_id}"
+                row = source_english_row(source_handle)
+                if item.get("source_structure") == "markdown_two_column_research_case":
+                    if not source_here.startswith("| ") or source_here.count("|") < 3:
+                        issues.append(f"{label}: malformed original background scenario")
+                else:
+                    if f"**{original_id}.**" not in source_here:
+                        issues.append(f"{label}: named source acceptance check changed")
+                statement = item.get("english_interpretation")
+                expectation = item.get("english_expected")
+                if (not row or f"#L{first}" not in row or
+                        not statement or statement not in row or
+                        (expectation and expectation not in row)):
+                    issues.append(f"{label}: English Work source interpretation missing")
             elif source_id == "SB-SRC-0047":
                 original_id = item.get("research_id") or item.get("research_test_id")
                 row = source_english_row(original_id)
@@ -302,7 +319,7 @@ def verify() -> dict:
 
     return {
         "status": "PRODUCER_TRACE_CHECK_PASS" if not issues else "PRODUCER_TRACE_CHECK_FAIL",
-        "scope": "eleven mixed exact/English-translation ledgers, nine original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
+        "scope": "twelve mixed exact/English-translation ledgers, ten original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": science_files,
