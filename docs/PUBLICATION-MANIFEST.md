@@ -1,12 +1,18 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R26`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R27`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
 
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
+| Scientific topic: compiled domain capabilities and deoptimization | `docs/science/capabilities/compiled-domain-capabilities-validity-and-deoptimization.md` | Two primary original 02 sources 0031/0032 and direct core examples; 337 section locators, full unit-to-claim coverage and model integration unverified |
+| Scientific topic: multi-Work chat and cognitive actor scopes | `docs/science/collaboration/thread-work-memory-scopes-and-parallel-actors.md` | Primary 02 sources 0033/0034, 301 provisional locators, no real cognitive integration or multi-client trials |
+| Scientific topic: trusted provider faults and certification | `docs/science/extensions/trusted-provider-conformance-and-false-success-threats.md` | Primary original 0025, 247 provisional source locators; neutral provider contract and tests conditional |
+| Scientific topic: semantic ownership and proportionate methods | `docs/science/engineering/semantic-ownership-method-transfer-and-proportional-materialization.md` | Original 0019/0029 directly indexed, 550 provisional section locators, global material equivalence unverified |
+| Candidate LDD: neutral extension conformance test vectors | `docs/ldd/extensions/neutral-provider-conformance-vectors.md` | 98 exact preserved source test rows (46 general, 25 storage, 10 secret, 10 network, 7 style), all UNEXECUTED/NOT PRODUCT-ADMITTED |
+| Direct Current HOW: SORS inference evidence | `docs/current-how/sors-restoration-evidence-and-inference.md` | Pinned SORS source README + 12 direct Python implementations, no installed solver or end-to-end test pass |
 | Scientific topic: headless host, browser security and persistence | `docs/science/deployment/headless-host-web-security-and-persistence-tradeoffs.md` | Original 0038 fully primary-read; 236 provisional section locators; present Windows direct code checked; no host service, database, API, auth, fault or security deployment evidence; all selections conditional |
 | Scientific topic: Workroom, Explorer and operational UX | `docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md` | Original 0039 fully primary-read; 205 provisional section locators; four-area IA, accessibility and layout thresholds are candidates, with no user or installed GUI conformance |
 | Scientific topic: bounded AI routing and safe automation | `docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md` | Original 0041 fully primary-read; 170 safe provisional section locators; current Windows scaffold checked; no scheduler, autonomous agent, machine endpoint or independently tested execution policy |
@@ -73,7 +79,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- At exact tree `527dd205ba8bd558a8e11c7cb2a74975bc123503`, the latest bounded producer check read **42/42** Science Markdown files, checked **194** inline local relative file destinations with **0** missing targets, and found **0** selected narrow restricted-name patterns. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
+- In the later exact-tree producer check (post the 48-theme additions), **50/50** Science Markdown files were read for bounded structural checks, **249** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
