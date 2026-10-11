@@ -1,146 +1,146 @@
-# Аналитические возможности: определение, композиция, план и факт выполнения
+# Analytical capabilities: definitions, composition, plans and observed execution truth
 
-**Предмет:** как одна предметная аналитическая библиотека может обслуживать Python, пользовательские сценарии и разрешённые машинные вызовы без потери смысла источников, результатов, эффектов и полномочий. **Статус:** поддерживаемая концептуальная научно-инженерная модель с намеренно сохранёнными альтернативами; единая продуктовая онтология и будущий каталог capability пока **не приняты**.
+**Scope:** how one domain-analytical Python library can serve notebooks, human Scenarios and authorized machine callers without weakening source meaning, Results, effect boundaries or authorization. **Status:** maintained scientific/engineering conceptual model with competing interpretations deliberately retained. A universal Product ontology and future capability catalog have **not** been approved.
 
-## 1. Минимальная семантическая лестница
+## 1. The minimum semantic ladder
 
-Разговор об «операции» смешивает разные вещи, если не различать *возможность*, *запрос*, *план* и *наблюдаемый результат*. Полезна следующая схема объяснения, не являющаяся обязательной физической архитектурой:
+“Operation” becomes overloaded when capability definition, a concrete request, a resolved plan and observed effects are treated as the same thing. A useful **role model**, not a mandatory physical architecture, is:
 
 ```text
-Авторитетные входные источники / справочники / их точные версии
-        ↓
-Механизмы (файл, сеть, формат, парсер, численный метод)
-        ↓
-Предметный сервис и переиспользуемая аналитическая capability
-        ↓
-Кураторская операция с наблюдаемым контрактом
-        ↓
-Опциональная композиция / пользовательский Scenario / Scheme
-        ↓
-Конкретная invocation и разрешённый план
-        ↓
-Запуск / попытки / эффекты / артефакты / диагностические свидетельства
-        ↓
-Виды для человека, API, Python consumer или разрешённого агента
+Authoritative external sources and exact Registry editions
+    ↓
+Mechanisms: FileStore, HTTP, codec, parser, numerical solver
+    ↓
+Domain service and reusable analytical Capability
+    ↓
+Curated domain Operation with an observable contract
+    ↓
+Optional composition / user Scenario / machine Scheme
+    ↓
+Concrete Invocation, admitted and resolved ExecutionPlan
+    ↓
+Run / Attempts / Effects / Artifacts / diagnostics
+    ↓
+Qualified projections for human UI, direct Python, API or authorized agent
 ```
 
-**Определение операции** отвечает «что возможно выполнить и при каких входах». **Invocation** — «какой конкретный вызов с какими разрешёнными параметрами принят». **Resolved plan** — «какие шаги, входные версии, зависимости и эффекты будут использованы». **Run/Attempt** — «что фактически произошло и что наблюдалось». Один и тот же `OperationSpec` может иметь много запусков; один запуск нельзя восстановить из изменившегося описания операции или текущих пользовательских defaults.
+An **Operation definition** says what the capability means and which inputs it accepts. An **Invocation** specifies the actual call with resolved parameters and authority. A **resolved Plan** binds the steps, inputs/versions, dependencies and effects to be used. A **Run/Attempt** records what really happened and what was observed. One OperationSpec can have many Runs; the exact history of an earlier Run cannot be reconstructed safely from a later-mutated definition or current default settings.
 
-Эта схема — *рольвая карта*, а не требование завести восемь реестров. Для небольшой предметной функции достаточно обычного Python API. Долговременную идентичность и отдельную каталожную запись имеет смысл заводить там, где реально нужны самостоятельный consumer, планирование, permission, кэш, effect, версия или lifecycle.
+This ladder describes distinct roles, **not eight compulsory databases**. A small deterministic Python function may only need a regular function signature and a documented result. A separate stable catalog identity becomes useful when there is an independent consumer, versioned plan, authority boundary, reusable cache, effect, audit or lifecycle.
 
-## 2. Факты текущей реализации и границы обобщения
+## 2. Direct current implementation facts and extrapolation limits
 
-В `stratbox` уже существуют разные классы аналитической работы: загрузка официальных файлов, формы банковской отчётности, отраслевые ряды, эскроу, file-operational FRG и доказательное восстановление статистических величин. Одни домены предоставляют typed Request/Result и staged pipeline; другие используют более прямые функции и DataFrame. Это доказывает наличие предметных capabilities, **но не поставку универсального `CapabilityRegistry` или компилятора схем**. Конкретная логика [FRG cleanup](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/frg/cleanup.py) содержит плановые и фактические файловые эффекты; [escrow operations](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/escrow/operations.py) иллюстрируют разделение стадий domain pipeline. Эти механизмы могут быть типизированы на границе без принудительного переписывания всей внутренней реализации.
+The current `stratbox` core has multiple kinds of analytical work: retrieving official files, banking reporting forms, industry series, escrow statistics, file-related FRG procedures and SORS statistical reconstruction. Some domains already expose typed Request/Result and staged pipelines; others expose direct functions or DataFrames. This establishes usable domain behavior, **not a shipped universal `CapabilityRegistry` or Scheme compiler**. The pinned [FRG cleanup](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/frg/cleanup.py) contains plan/effectful file handling; [escrow operations](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/escrow/operations.py) illustrate domain pipeline stages. Typed boundaries may be introduced without forcing a full rewrite of every underlying calculation.
 
-В `stratbox-windows` существуют декларативные спецификации операций и сценариев, а [текущий runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py) выполняет последовательно упорядоченные шаги с передачей параметров и условием fail-fast. Это **не доказывает** доступность графа задач, параллельного планировщика, распределённой очереди, полноценной отмены или durable common authority. [Background store](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/background/store.py) описывает локальные статусы, а не автономный scheduler.
+In `stratbox-windows`, current operation and scenario definitions are declarative, while the pinned [runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py) executes ordered steps **sequentially** with parameter transfer and fail-fast behavior. This does **not** establish a DAG executor, parallel scheduler, distributed queue, fully effective cancellation or durable shared authority. The [BackgroundStore](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/background/store.py) maintains local flags/status, not an autonomous scheduler.
 
-Текущий Windows-клиент зависит от библиотечного ядра; Python/notebook consumer вправе использовать core напрямую. Машинный protocol adapter, UI-composer и notebook wrapper — разные формы доступа к содержанию, а не причины копировать финансовую формулу в каждый frontend.
+The Windows client depends on the analytical core; a Python/notebook consumer can invoke that core directly. Machine-protocol adapters, UI composers and notebook wrappers are different **access projections**, not a justification to copy banking formulas across frontends.
 
-## 3. Operation, Command, Scenario, Cascade, Scheme: реальное противоречие
+## 3. Command, Scenario, Cascade and Scheme: an actual ontological competition
 
-Конкурируют две исследовательские онтологии:
+At least three Research models compete:
 
-| Вариант | Сильная сторона | Слабая сторона / открытая граница |
+| Research model | Strength | Boundary, cost or counterargument |
 | --- | --- | --- |
-| **Command → Scenario → Cascade** | Видимая пользователю иерархия атомарного действия, сценария и более крупной композиции. Сильна при независимом именовании, сохранении и повторном использовании каскадов. | Может заставить весь Python core публиковать микрокоманды и создать отдельные жизненные циклы, если фактическая композиция мала. |
-| **Capability → Machine Scheme → Resolved Plan → Run** | Универсальная типизированная композиция, проверка зависимостей и версионированных входов; пользовательский Scenario может стать представлением. | Риск неясного соотношения со смыслом пользовательского Work/Case, правом запуска и самостоятельной историей; сложность DSL/planner. |
-| **Минимальный curated Operation + composed Scenario** | Соответствует нынешним разнородным доменным use cases и простому последовательному runner. | При растущих нуждах может оказаться недостаточно для независимых ресурсов, ветвления, вложенных сценариев и машинного planner. |
+| **Command → Scenario → Cascade** | Human-readable hierarchy of atomic action, Scenario and larger reusable composition; useful when Cascades have their own naming, saving and sharing lifecycle. | May expose every small Python helper as a pseudo-Command, and multiply lifecycle objects when actual composition needs are limited. |
+| **Capability → Machine Scheme → Resolved Plan → Run** | Typed composition, dependency checks and versioned source binding; user Scenario may become a presentation of a machine model. | Relation to user Work/Case, execution rights and independent history is uncertain; requires a type system, planner and perhaps a DSL. |
+| **Minimal curated Operation + composed Scenario** | Fits present heterogeneous banking use cases and the observed sequential Windows runner. | May become insufficient for branching, separately scheduled resources, nested compositions and machine planning. |
 
-Следовательно, **нельзя считать Scheme и Scenario тождественными или автоматически взаимоисключающими**. Логический план может быть внутри одного сценария; одно пользовательское Work может применять несколько разных версий плана. Самостоятельная карточка «Каскад» оправданна, если имеет собственные аудиторию, identity, жизненный цикл и возможности пользователя; это **не означает** необходимость второго исполнения DAG.
+**Scheme and Scenario are neither automatically identical nor automatically mutually exclusive.** A Scenario can contain a logical plan; one user Work may use several Scheme/Plan versions. A separate “Cascade” card makes sense if it has a genuine consumer, stable identity, versioned use and independent lifecycle; that does **not** imply a second DAG executor.
 
-Так же `Command` может означать узкое техническое действие planner-а, в то время как domain `Operation` означает полезную аналитическую задачу. Нормализация словаря допустима только после проверки потребителей и side-effect semantics; количество публикаций одной терминологии не доказывает её правильность.
+Likewise `Command` may mean a low-level technical planner action, while a domain `Operation` denotes an economically meaningful analytical task. Renaming objects before examining real consumers and side effects would merely move ambiguity around. Agreement between several related Research texts is not independent experimental validation.
 
-## 4. Качественные измерения capability-контракта
+## 4. Capability contracts: material dimensions, not maximal JSON
 
-При наличии отдельного durable каталожного контракта материален не столько формат JSON, сколько независимые роли: устойчивая identity и revision, человеческая цель, схема входов и результатов, preconditions, вариант текущей реализации, права, затрагиваемые ресурсы, детерминизм, сетевое/файловое воздействие, freshness входов, partial-failure policy, cancellation boundary, retry/idempotency scope, стоимость, provenance и способ проверить исход.
+Where a distinct durable capability contract is actually warranted, its meaningful dimensions include: stable semantic identity and definition revision, human-facing purpose, typed input/result meaning, preconditions/postconditions, concrete implementation binding, authority, touched resources, determinism, network/storage effects, source/Registry freshness, partial failure policy, cancel boundary, retry/idempotency semantics, computational cost, provenance and what outcome can be independently verified.
 
-`enabled`, `visible_to_ai`, `destructive` или `can_cancel` как поля описания **не осуществляют права и эффекты**. Декларативная видимость лишь помогает внешнему consumer спросить о разрешённом действии. Реальный authorizing owner должен ещё подтвердить актуального principal, target resource и policy revision, особенно перед destructive/network operation.
+Fields such as `enabled`, `visible_to_ai`, `destructive` and `can_cancel` **are not themselves enforcement**. Display/discovery only tells an external consumer what it might request. The actual execution authority still needs to verify current Principal, resolved target resource, policy/grant revision and effects, especially for destructive/network mutations.
 
-Безопасная машинная совместимость не требует открывать произвольное выполнение Python-кода. Для проверяемого плана предпочтительно ограниченное пространство разрешённых operations, строгие типы входов, версионированное разрешение references и проверяемые guard expressions. Пользовательский domain Python API по-прежнему может быть богатым; сериализуемый контрольный envelope полезен при реальной передаче между процессами.
+Safe machine composition does not require arbitrary remote Python-code execution. A bounded set of admitted operations, strict input types, version-pinned references and auditable guard expressions is preferable at a risky execution boundary. A direct local Python API can remain rich; serializable envelopes matter only when actual process/actor transport requires them.
 
-## 5. Rich result и транспортное представление — разные формы
+## 5. Rich domain Results and transport representations differ
 
-Предметный результат может содержать DataFrame, несколько long-таблиц, ошибки источников, подробные математические интервалы, rejected hypotheses, конфликты и справочники происхождения. Универсальный `{ok:true, file:path}` обрезает доказательность до уровня неприменимой для анализа «успешности».
+A domain Result may include DataFrames, several normalized tables, source errors, mathematical intervals, rejected hypotheses, conflicts and evidence references. Flattening all of that into `{ok: true, file: path}` would erase the uncertainty and analytical meaning behind “success.”
 
-С другой стороны, выдача огромного DataFrame через сериализуемый control plane делает план тяжёлым. Возможна составная форма: typed descriptor результата + валидированные metadata/metrics/provenance + ссылки на большие datasets/artifacts + подробный domain object в прямом Python consumption. Этот подход **не требует** пересобирать каждый domain Result в одну схемную универсальную сущность.
+On the other hand, transporting giant DataFrames through a generic control-plane API can be expensive. A reasonable alternative is a typed Result descriptor with validated metadata, metrics and provenance; separate dataset/Artifact references for bulky payloads; and native domain objects for direct Python callers. This **does not require** making every domain Result an identical generic object.
 
-В том числе:
-- отсутствие errors и absence of data нельзя сводить к пустому списку;
-- невычисленное значение не равно нулю;
-- partially successful pipeline может иметь ценные файлы и фактические ошибки;
-- `Run accepted` не равно `Run successful`;
-- созданный physical path не равен подтверждённому артефакту.
+Consequently:
+- absence of errors must not be conflated with absence of data;
+- an uncomputed observation is not numeric zero;
+- a partially successful pipeline may have valuable files **and** unresolved failures;
+- `Run admitted` is not the same as `Run succeeded`;
+- a physical path existing does not prove an Artifact is committed and available.
 
-См. [исходные статистические версии](../data-and-knowledge/source-identity-and-reproducibility.md) и [неизвестные исходы](../trust-and-assurance/uncertain-outcome-vs-observed-error.md).
+See [source editions and reproducibility](../data-and-knowledge/source-identity-and-reproducibility.md) and [unknown outcomes](../trust-and-assurance/uncertain-outcome-vs-observed-error.md).
 
-## 6. Композиция и система типов
+## 6. Composition has multiple relation types
 
-Планируемая композиция должна различать **dataflow** (значение шага A — вход B), **control-flow** (выполнить B после A), **authorization dependency** (право проверить до действия), **resource/exclusivity relation** (общий файл, каталог или ключ не пишется несогласованно) и **effect order** (что должно быть уже подтверждено до необратимого шага). Обозначение всех отношений одной стрелкой скрывает ошибки.
+A useful plan distinguishes **dataflow** (output of A feeds B), **control flow** (B executes after A), **authorization dependency** (rights are checked before effect), **resource/exclusivity conflict** (a file/path/key cannot be mutated concurrently without coordination), and **effect ordering** (what must be committed or verified before an irreversible step). Encoding them all as one generic edge can hide failures.
 
-Классическая типизированная DAG полезна для ациклических вычислений. Condition, retry, bounded loop, manual approval и long-lived event rule требуют иных semantics и специального ограничения выразительности. Изучение JSON Schema, workflow DAG, бизнес-процессов, планирования preconditions/effects, provenance и событий показывает разные частные сильные стороны, но **ни один тип стандарта сам по себе не задаёт все роли одновременно**. Выбор DSL/схемы/движка остаётся открытым.
+A typed DAG fits finite acyclic computation. Conditions, retries, bounded loops, manual approvals and enduring event-triggered rules require different semantics and explicit expressiveness limits. JSON Schema, workflow DAGs, business processes, AI planning with preconditions/effects and provenance/events each cover different useful subproblems; **no single borrowed standard automatically owns every role**. Syntax, DSL and engine selection remain open.
 
-**Контрпример компиляции:** два шага вычисляют одинаковую сумму из одного immutable source snapshot и допускают чистое разделение результата. Ресурсный planner может выполнить расчёт один раз. Но если каждый шаг намеренно пишет в отдельный выходной файл или отправляет уведомление двум разным адресатам, они **не эквивалентны как эффекты** даже при совпадении чисел.
+**Counterexample to unsafe compilation:** two pure steps compute the same sum from one immutable source snapshot. A compiler may share that calculation. If two other steps each intentionally write separate files or notify different recipients, they are **not effect-equivalent** merely because their numerical answers are equal. Effects, actor, target and required multiplicity remain part of semantics.
 
-## 7. Четыре разных типа повторного использования
+## 7. Four kinds of reuse have different proof conditions
 
-1. **Повторно использовать алгоритм** — разные вызовы исполняют один implementation без копирования кода.
-2. **In-plan dedup / common subexpression** — два эквивалентных запланированных чистых вычисления обслуживаются одним исполнением **в рамках этого плана**.
-3. **Cache reuse** — потребитель использует ранее вычисленный результат, что требует равенства snapshot, params, code/registry versions, policy и freshness.
-4. **Idempotent submission/retry** — повторное сообщение о *том же намерении* не создаёт вторую принятую работу; внешние эффекты требуют отдельной provider-side identity и receipt.
+1. **Algorithm reuse:** different calls invoke one implementation rather than duplicating source code.
+2. **In-plan deduplication / common subexpression:** equivalent *pure* computations within one resolved Plan share one execution.
+3. **Cache reuse:** a later consumer reuses an existing result only when input snapshot, parameters, implementation/Registry revisions, policy and freshness/applicability justify it.
+4. **Idempotent submission/retry:** a repeated message expressing the *same intent* does not admit duplicate Work/Job; external effects still require provider-side identity and independent receipts.
 
-Совпадение function name недостаточно ни для п. 2, ни для п. 3; совпадение `idempotency_key` внутри приложения не обеспечивает exactly-once внешний эффект без независимого протокола. Версии `latest` должны быть разрешены в concrete snapshot прежде, чем результат объявлен воспроизводимым. Ошибочная дедупликация опаснее повторного CPU: можно переиспользовать статистику за чужой отчётный период или пропустить требуемое действие.
+Matching function names is insufficient for steps 2–3. An application-scoped `idempotency_key` does not guarantee exactly-once external mutation without cooperation or reconciliation at the real effect owner. Resolve aliases such as `latest` to concrete versioned snapshots before claiming replay. An incorrect reuse can be more damaging than duplicate CPU work: it may apply another reporting period or skip a necessary side effect.
 
-Подробнее — [Science об эффектной эквивалентности](../trust-and-assurance/computation-reuse-and-external-effects.md).
+See [scientific analysis of computational and effect equivalence](../trust-and-assurance/computation-reuse-and-external-effects.md).
 
-## 8. Жизненные циклы не являются одним полем status
+## 8. Distinct lifecycles cannot be represented by one status flag
 
-Минимально различаются:
-- **Capability definition:** proposed, validated, available, deprecated/revoked — lifecycle опубликованного инструмента и доверия к его версии.
-- **User work/Case:** подготовлено, принято, наблюдается, ожидает человека, завершено — смысл пользовательского задания/проверки.
-- **Run/Attempt:** запущено, исполняется, interrupted, succeeded, failed, outcome unknown — факты конкретной попытки.
-- **Automation definition:** правило включено/выключено, расписание, policy; scheduled occurrence — конкретная причина новой попытки.
-- **Artifact:** planned, staged, verified/published, missing, retired — физический результат и его метаданные.
-- **Read/presence projection:** отметка на конкретного пользователя и краткоживущая доступность.
+At minimum distinguish:
+- **Capability definition:** proposed, validated, available, deprecated or revoked; this records published-tool meaning and trust in a revision.
+- **User Work/Case:** prepared, admitted, waiting on human input, under review, completed; this denotes the commissioned analytical task.
+- **Run/Attempt:** admitted, running, interrupted, succeeded, failed, outcome unknown; these are facts about actual execution and observations.
+- **Automation definition:** enabled/disabled rule, schedule and policy; an **Occurrence** is the concrete trigger of a potentially new execution.
+- **Artifact:** planned, staged, verified/published, missing or retired; physical output and meaning have distinct life cycles.
+- **Read/presence projection:** per-user read cursor and short-lived availability.
 
-Состояние `automation.enabled=true` ничего не говорит об активности worker. `cancel_requested` не означает `cancelled`; остановленный поток не откатывает уже совершённую внешнюю операцию. Истёкший lease не означает, что прежний worker прекратил исполняться, поэтому для опасных эффектов нужны fencing и проверка результата.
+`automation.enabled=true` does not prove a worker is running. `cancel_requested` is not `cancelled`; terminating a thread cannot roll back an already committed external action. Lease expiration does not prove the old worker has stopped; fencing and reconciliation matter for dangerous commits.
 
-При закрытии GUI локальный Job может быть прерван. Если появляется постоянный host authority, UI disconnect не должен автоматически прекращать Job. Эти варианты совместимы с одной моделью при явной identity исполнителя и сценарии восстановления. См. [Science сохранности](../state-and-recovery/authority-durability-and-recovery.md).
+Closing the local GUI may interrupt a locally owned Job. With an actually installed independent host authority, client disconnection should not automatically kill that host-owned Job. These two deployment profiles are compatible under explicit executor identity and recovery promises. See [Science of authority and durability](../state-and-recovery/authority-durability-and-recovery.md).
 
-## 9. Исполнение на разных поверхностях
+## 9. Domain meaning across different consumers
 
-Совместимая по смыслу capability может употребляться:
-- из Python notebook через живой typed Request/Result;
-- из desktop через form specs, scenario chat и местный execution adapter;
-- из будущего web/mobile через serializable command/result projections и permissions;
-- из разрешённого машинного consumer через ограниченное capability discovery и governed invocation.
+The same underlying capability may be consumed:
+- in a Python notebook through a native typed Request/Result;
+- on Windows through form definitions, scenario chat and a local execution adapter;
+- in a future Web/mobile client through serializable commands and access-scoped Result projections;
+- by an authorized machine consumer through limited discovery and governed invocation.
 
-Одинаковость **семантического контракта** не означает общий Qt Widgets, одинаковую FS path, одинаковые детали управления background job, обязательный мобильный полный интерфейс или уже работающий remote endpoint. Сейчас приложение имеет platform-specific Qt composition и ограниченное число операций. Отдельные host/server/mobile topology и доступные агенты остаются предложениями.
+A shared **semantic contract** does not mean shared Qt Widgets, identical filesystem paths, identical background-job controls, a full mobile UI or an already operational remote endpoint. The currently observed Qt client provides a fixed, limited operation set; server/client/agent topologies remain proposals.
 
-## 10. Проверочные вызовы, отрицательные результаты и изменения знания
+## 10. Negative conformance cases and knowledge changes
 
-Будущий conformance/assurance проход должен отвечать хотя бы на следующее:
+A later independent assurance cycle should investigate:
 
-| Вызов | Фальсифицирующая ситуация |
+| Boundary | Falsifying scenario |
 | --- | --- |
-| `definition -> invocation` | Изменение default после запуска ретроспективно изменяет параметры старого результата |
-| `plan -> run` | Красивый граф выдан за реально выполненные шаги |
-| `auth` | Внешнему consumer выдан write из одного флага видимости |
-| `effect` | Повторное удаление файла после timeout без проверки первого удаления |
-| `source` | Кэш 2026-07 используется как свежий 2026-08 по alias latest |
-| `typing` | Смешение JSON metadata и больших DataFrame ломает domain evidence |
-| `composition` | Дублирование output write исчезло по правилу дедупликации чистого вычисления |
-| `cancellation` | Пользователь видит «отменено», хотя необратимый effect завершился |
-| `shared` | Два UI считают одну локальную запись authoritative и затирают друг друга |
-| `lifecycle` | Включённая автоматизация отображается как действующий worker |
-| `provenance` | Готовый файл не указывает exact исходную версию и трансформацию |
-| `fidelity` | Нативный DataFrame parser ошибочно объявлен побайтной конверсией исходного DBF |
+| Definition → Invocation | A new default silently changes the stored parameters of an old Result. |
+| Plan → Run | A visually convincing planned DAG is presented as actual executed steps. |
+| Authorization | An external consumer gains write authority solely from discovery/visibility. |
+| External effects | A file deletion repeats after timeout without checking the first effect. |
+| Source version | Cached July 2026 data is presented as fresh August data through alias `latest`. |
+| Typed result | A generic JSON payload silently destroys domain DataFrame/evidence meaning. |
+| Composition | A required output write disappears because a planner deduplicated a pure calculation. |
+| Cancellation | The user sees “cancelled” even though an irreversible mutation committed. |
+| Shared-state authority | Two UIs both write the same local authoritative JSON without conflict checks. |
+| Lifecycle | Enabled automation is presented as an active worker despite no scheduler. |
+| Provenance | A finished workbook cannot identify its exact source bytes/revision and method. |
+| Fidelity | A decoded DataFrame is wrongly advertised as a byte-faithful DBF conversion. |
 
-**Существенный отрицательный результат:** исследовательский корпус ещё не предъявил работающий универсальный Scheme compiler, независимый multiuser/host/AI executor, подтверждённые API/permission contracts и измеренную стоимость глобального registry. Устойчивость терминологии в нескольких исследованиях может происходить от общего источника или пересказа; она не равна экспериментальной валидации. Отдельные исследования о fidelity/DBF задают дополнительные технические вопросы, но не доказывают выпуск полного source-preserving converter.
+**Material negative result:** the researched baseline does not establish a working universal Scheme compiler, independent multiuser/host/AI executor, complete accepted API/permission contracts or measured economics of a global source/Registry catalog. Several studies derive terminology from common earlier materials; agreement may be evidence of **shared lineage**, not independent validation. Research on raw DBF fidelity raises additional engineering questions without demonstrating a shipped universal source-preserving converter.
 
-## 11. Неутверждённые варианты и условия пересмотра
+## 11. Unadmitted alternatives and reopening conditions
 
-Открыты: самостоятельность Scheme и Cascade; форма Command для технических действий; критерий stable public operation; место pure planner и managed executor; необходимость resource scheduling и concurrency limits; синтаксис typed composition; сроки и область machine-facing API; доступные классы side effects; граница хранения artifacts/results; реальный Android/web scope; зрелость AppDock remote capabilities; политические и эксплуатационные гарантии.
+Still open: whether Scheme and Cascade need independent identities; Command semantics for technical steps; what merits a stable public Operation; the owner of pure planning versus managed execution; resource scheduler necessity/concurrency budget; typed composition syntax; machine-facing API scope/timeline; effect classes; Artifact/Result retention; true Web/Android consumer scope; tested external platform remote contracts; governance and operational assurances.
 
-**Безопасный порядок выбора** в качестве *исследовательской рекомендации*: определить реального consumer и пример end-to-end Work → извлечь устойчивые domain Request/Result → зафиксировать точные effects/source/permission boundaries → проверить одну необходимую композицию → лишь после испытания решать, нужен ли постоянный универсальный catalog/DSL/compiler. Это не продуктовый roadmap по умолчанию.
+**Research-favored but unapproved sequence:** identify one real consumer and end-to-end Work; extract stable domain Request/Result; determine exact source/effect/authorization boundaries; validate one necessary composition; then assess whether an always-on catalog/DSL/compiler earns its complexity. This is **not an automatically accepted Product roadmap**.
 
-**Источники фактической иллюстрации:** прямой [runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py), [локальные background states](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/background/store.py), [core FRG effects](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/frg/cleanup.py); формальные отрицательные примеры об effect/reuse являются условными рассуждениями, а не продакшн-инцидентами. Изменение прямых исходников, настоящие потребительские сценарии, независимый conformance и принятые Product Decisions требуют новой проверки.
+**Direct implementation witnesses:** [sequential Windows runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py), [local background flags](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/background/store.py), and [core FRG file effects](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/frg/cleanup.py). Formal negative effects/reuse examples remain **hypothetical countercases**, not deployed incidents. Changes to pinned implementations, real consumers, independent conformance findings and Product Decisions require renewed review.
