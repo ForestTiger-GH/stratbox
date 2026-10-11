@@ -371,10 +371,10 @@ def verify() -> dict:
                 if row and (not meaning or meaning not in row or not fixture or fixture not in row):
                     issues.append(f"{label}: Topic-09 English text changed")
             elif (source_id in ("SB-SRC-0013", "SB-SRC-0014", "SB-SRC-0015")
-                  and item.get("epistemic_status") ==
-                      "DATED_HISTORICAL_RESEARCH_OR_CHANGE_NOTE"
-                       or item.get("epistemic_status") ==
-                           "HISTORICAL_UX_PROPOSAL_NOT_CURRENT_IMPLEMENTATION"):
+                  and item.get("epistemic_status") in (
+                      "DATED_HISTORICAL_RESEARCH_OR_CHANGE_NOTE",
+                      "HISTORICAL_UX_PROPOSAL_NOT_CURRENT_IMPLEMENTATION",
+                  )):
                 row = source_english_row(destination_id)
                 meaning = item.get("english_research_meaning")
                 if not source_here.strip() or source_here.lstrip().startswith("<mark>"):
