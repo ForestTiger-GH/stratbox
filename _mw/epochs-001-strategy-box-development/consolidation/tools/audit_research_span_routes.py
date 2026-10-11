@@ -29,7 +29,7 @@ def git_blob(path: Path) -> str:
     ).stdout.strip()
 
 def source_locator(item: dict) -> str | None:
-    raw = item.get("source_span")
+    raw = item.get("source_span") or item.get("span")
     if raw:
         return str(raw)
     line = item.get("source_line")
@@ -37,7 +37,7 @@ def source_locator(item: dict) -> str | None:
 
 def destination(item: dict) -> str | None:
     raw = (item.get("science_destination") or item.get("science_topic")
-           or item.get("preserved_exact_test_row"))
+           or item.get("science_candidate_owner") or item.get("preserved_exact_test_row"))
     if not isinstance(raw, str):
         return None
     text = raw.split(" §", 1)[0].strip()
@@ -63,7 +63,8 @@ def exact_science_section_locator(item: dict) -> tuple[str, int] | None:
 
 def kind(item: dict, ledger: str) -> str:
     if (ledger.startswith(("SECTION-INDEX-", "RESEARCH-ORIGINAL-CANDIDATE-ROUTING-"))
-            or item.get("status") == "section_locator_only_semantic_equivalence_unverified"):
+            or item.get("status") == "section_locator_only_semantic_equivalence_unverified"
+            or item.get("material_status") == "producer_provisional_section_candidate"):
         return "section_or_route"
     if ledger.startswith(("PROVIDER-EXACT-", "TOPIC08-EXACT-", "BANK-MACRO-COMPARABILITY-EXACT-",
                           "COGNITION-FOUNDATION-EXACT-", "COGNITIVE-BOUNDARY-EXACT-",
@@ -174,6 +175,10 @@ def audit() -> dict:
         for broken in sorted(bad_destinations):
             structural_issues.append(f"{sid}: Science destination missing: {broken}")
         traced_nonblank = len(nonblank & observed)
+        section_nav_nonblank = len(nonblank & candidate)
+        any_span_nonblank = len(nonblank & (observed | candidate))
+        totals["nonblank_lines_with_section_locator_span"] += section_nav_nonblank
+        totals["nonblank_lines_with_any_ledger_span"] += any_span_nonblank
         total_nonblank = len(nonblank)
         totals["research_nonblank_source_lines"] += total_nonblank
         totals["nonblank_lines_with_some_nonrouting_ledger_span"] += traced_nonblank
@@ -186,6 +191,8 @@ def audit() -> dict:
             "source_blob_sha": r["blob_sha"], "source_lines": len(lines),
             "nonblank_lines": total_nonblank,
             "nonblank_lines_with_some_nonrouting_span": traced_nonblank,
+            "nonblank_lines_with_section_locator_span": section_nav_nonblank,
+            "nonblank_lines_with_any_ledger_span": any_span_nonblank,
             "coverage_ratio_not_semantic_preservation": (
                 round(traced_nonblank / total_nonblank, 4) if total_nonblank else None),
             "ledger_classes": dict(sorted(counts.items())),
@@ -210,7 +217,8 @@ def audit() -> dict:
         ],
         "research_sources_without_candidate_science_destination": sorted(x["source_id"] for x in detail if x["distinct_candidate_science_destinations"] == 0),
         "important_warning": (
-            "A line covered by a provisional ledger is NOT preserved meaning. "
+            "Section-only historical provisional units are treated as navigation, NOT material evidence. "
+            "A line covered by a nonrouting ledger is NOT preserved meaning. "
             "A line uncovered by ledger spans may be boilerplate, formatting or a real material omission. "
             "Repeated overlapping ledgers do not yield independent corroboration. "
             "Source and destination identity checks do not perform Science-to-ground semantic checking."
