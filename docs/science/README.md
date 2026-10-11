@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [State-driven motion, scrolling continuity and execution feedback](surfaces/state-driven-motion-scrolling-and-execution-feedback.md) — full motion source: truthful Run-state transitions, reduced-motion semantics, shared role catalog, scroll anchoring, bounded timing and unperformed stress probes.
+- [Atomic ArtifactStyleSet, resolution and multi-format conformance](artifacts/atomic-style-set-cross-format-resolution-and-conformance.md) — strict single effective style set, version/digest, compiled inheritance, provider/resource separation, XLSX/DOCX/PPTX/PDF projections and explicit historical ReportProfile revision.
 - [Visual token values, contrast and responsive layout profiles](surfaces/visual-token-values-contrast-and-layout-profiles.md) — dated token/palette tables, type and geometry metrics, reduced-motion roles, four original test families, and the explicitly unresolved density/settings difference.
 - [Settings admission, contextual controls and intentional preferences](application-state/settings-feature-admission-and-contextual-controls.md) — original 92-numbered-section user-settings research, elimination of UI debris, three real sections, first-run defaults, scoped reset and conditional notifications.
 - [Report formatting profiles, author metadata and evidence](artifacts/report-formatting-profiles-metadata-and-evidence.md) — semantic report profile selection, Office creator versus provenance actor, validated provider resources, explicit fallback and remote Run resolution.
@@ -47,4 +49,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** thirty-eight topics offer separately traced scientific understanding. The thirty-three 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** forty topics offer separately traced scientific understanding. The thirty-five 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
