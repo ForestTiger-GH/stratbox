@@ -1,190 +1,186 @@
-# Причинная наблюдаемость исполнения: события, прогресс, логи и достоверный исход
+# Causal execution observability: events, progress, logs and truthful outcomes
 
-**Область:** факты об исполнении аналитических операций, степень наблюдаемости прогресса, диагностическая сохранность, конкурирующие процессы, эффекты и согласование с внешней управляющей платформой. **Статус:** научно-инженерные выводы с прямой кодовой иллюстрацией и кандидатами технических контрактов; устойчивого общего JobManager, общей многопользовательской истории, полной платформенной регистрации проблем или UI-конформанс-теста в исследованном baseline **нет**. Смежные Science: [сохранность и восстановление](../state-and-recovery/authority-durability-and-recovery.md), [операции и исполнения](../capabilities/definitions-plans-and-execution-truth.md), [неизвестный исход](../trust-and-assurance/uncertain-outcome-vs-observed-error.md) и [совместно наблюдаемые проблемы](../collaboration/shared-conditions-and-log-access.md).
+**Scope:** observed facts about analytical execution, progress fidelity, durable diagnostics, concurrent workers, external effects and the boundary with a managed platform. **Status:** maintained scientific/engineering explanation supported by direct pinned code plus proposed contracts. The frozen baseline does **not** prove a common durable JobManager, synchronized multiuser history, complete external Problem registration or deployed UI conformance. Related Science: [durability](../state-and-recovery/authority-durability-and-recovery.md), [capability execution](../capabilities/definitions-plans-and-execution-truth.md), [unknown outcomes](../trust-and-assurance/uncertain-outcome-vs-observed-error.md), [shared problem scope](../collaboration/shared-conditions-and-log-access.md).
 
-## 1. Наблюдаемость — система связанных, но разных фактов
+## 1. Observability consists of several different kinds of evidence
 
-Обычный журнал Python не может самостоятельно ответить: кто поставил задание, в каком пользовательском контексте оно принято, какой шаг исполняется, закончился ли внешний эффект, какие bytes опубликованы и действительно ли ошибка принадлежит общему узлу. Чат тоже не должен превращаться в нескончаемый поток stack traces. Необходимы разные **источники истины** с устойчивыми причинными связями.
+A generic Python log cannot establish who admitted a Job, in which user context, which step is running, whether an external mutation committed, which bytes were published or which shared participants are affected. A Chat transcript should not become an endless stack-trace stream. Distinct **evidence authorities** need explicit causal links.
 
-| Класс | Вопрос пользователя или оператора | Чья это истина | Как выглядит |
+| Evidence class | Question answered | Truth owner | Appropriate representation |
 | --- | --- | --- | --- |
-| **ChatMessage / Thread** | Что обсуждали, кто просил, к какой работе вернуться? | Application conversation authority | Персонально или совместно видимая лента по правам |
-| **ExecutionEvent** | Что было принято, начато, выполнено, прервано? | Execution authority и достоверные producer receipts | Короткое durable событие и проверяемый outcome |
-| **ProgressUpdate** | Что делается именно сейчас? | Worker/domain producer, может устареть | Коалесцируемое текущие состояние, phase/count/heartbeat |
-| **DiagnosticFinding** | Почему данные или вывод не соответствуют ожиданию? | Domain validator/source/solver | Typed problem с контекстом результата/математическими доказательствами |
-| **ProblemOccurrence / Condition** | Какой отказ наблюдён, где, кто затронут? | Producer/diagnostic owner; внешний recorder только если подтвердил запись | Отдельные occurrences и агрегированное impact-состояние |
-| **TechnicalLog / Evidence** | Чем подтверждается цепочка exception/IO/process? | Execution host/platform | Защищённый физический файл/ссылка, не публичный текст |
-| **Metrics / Audit** | Какова нагрузка и был ли соблюдён контроль полномочий? | Monitor/policy owner | Агрегаты и отдельные записи о действиях, не синонимы ленты |
+| **ChatMessage / Thread** | What was discussed, who asked, how to return to it? | Conversation authority | Audience-permitted personal/shared timeline |
+| **ExecutionEvent** | What was admitted, begun, committed or interrupted? | Execution authority and trustworthy producer receipts | Compact durable event and qualified outcome |
+| **ProgressUpdate** | What is being worked on now? | Worker/domain producer; may become stale | Coalesced stage/count/heartbeat with observation time |
+| **DiagnosticFinding** | Why is the data or Result invalid/insufficient? | Domain validator, source parser or solver | Typed finding and analytical/mathematical evidence |
+| **ProblemOccurrence / Condition** | What particular fault was observed, where and whom does it affect? | Diagnostic owner; external recorder only if it actually acknowledged registration | Individual occurrences versus aggregated active impact |
+| **TechnicalLog / Evidence** | Why/where did exception, I/O or process failure occur? | Actual execution host / platform | Restricted physical file and authorized reference, not public prose |
+| **Metrics / Audit** | What is the resource load, and who exercised authority? | Monitoring and policy owners | Aggregates and protected decisions/approvals, not chat events |
 
-**Разные evidence planes** могут физически лежать в одних каталогах, но их запись, retention, доступ и recovery отличаются. Доменная СУБД не возникает из одного log JSONL, а platform health не вычисляет истинность банковского отчёта.
+Different evidence planes may use one physical directory yet retain distinct write policies, retention, access control and recovery. A JSONL trace is not automatically the operational database, and platform process health cannot determine the validity of a bank report.
 
-## 2. Чат, запуск, работа, попытка и trace не один идентификатор
+## 2. Thread, Work, Run, Attempt and Trace must not share one identity
 
-Устойчивые сущности полезно различать даже при первой локальной версии:
+Even a modest local system benefits from separating:
 
-- `node_id` — внешний managed context.
-- `participant_id/actor_ref` — устойчивая связь действия с участником; `nickname/display` меняются и могут совпадать.
-- `session_id` — конкретный вход/устройство, один participant может иметь несколько sessions.
-- `thread_id` — долгоживущий пользовательский разговор, чей заголовок может измениться без изменения ID.
-- `message_id` — отдельное сообщение.
-- `run_id` — один принятый эпизод выполнения. В одном Thread может одновременно существовать несколько Run.
-- `job_id` — очередь/исполнительная единица при наличии JobManager; не требуется при отсутствии такого owner.
-- `step_id` определяет часть definition, `step_run_id` — её конкретный экземпляр в одном исполнении.
-- `attempt_id` — одна попытка физического действия; при retry меняется независимо от step/operation name.
-- `event_id` — уникальный факт для повторной доставки и дедупликации.
-- `problem_ref` — полученная ссылка на запись от конкретного recorder; нельзя фабриковать при ошибке платформы.
-- `artifact_id/version` — опубликованный результат, а не равный ему абсолютный путь.
-- `trace_id/span_id` — опциональная распределённая причинная цепочка, не равная `thread_id`.
+- `node_id`: an externally managed node/scope when such a contract exists.
+- `participant_id / actor_ref`: durable actor link; nickname/display is mutable and may collide.
+- `session_id`: particular login/device/session; one participant may have several.
+- `thread_id`: persistent conversation identity, unaffected by rename.
+- `message_id`: one message.
+- `run_id`: one admitted execution episode; several Runs may appear in the same Thread.
+- `job_id`: schedulable unit **only where** a real Job authority exists.
+- `step_id` is a definition element; `step_run_id` is its concrete invocation.
+- `attempt_id`: one physical execution try; retry needs a new Attempt even for the same step.
+- `event_id`: unique causal event needed for deduplication and re-delivery.
+- `problem_ref`: reference from an actual acknowledged recorder, never fabricated on platform error.
+- `artifact_id / version`: published result identity separate from absolute path.
+- `trace_id / span_id`: optional transport trace, **not** the Thread ID.
 
-В пользовательском интерфейсе может быть достаточно одного короткого `run_ref`. Полные идентификаторы — для диагностики. Сам user actor-kind `ai` или отображаемое имя не дают права запускать чужие операции, читать чужие логи или отменять job.
+The UI may show one short `run_ref` while diagnostics retain complete IDs. Displaying actor kind `ai` or a friendly name grants no right to invoke another principal's operation, view raw logs or cancel their Work.
 
-**Порядок совместной ленты** определяется подтверждённым монотонным `sequence` authority, а не сортировкой по локальным часам разных устройств. Для event полезны `occurred_at_utc`, время получения у authority и `causation_event_id` (если применим). Sequence нужен даже если два пользователя создали чаты «Новый чат» одновременно; заголовок не identity. Внешний producer может принести собственный ID, но canonical event получает ID/sequence после admission.
+Shared timeline order comes from **an authoritative monotonic sequence**, not timestamps from separate devices' clocks. An event can additionally carry UTC occurred/received times and causation event. Two users may create identically titled `New chat` Threads simultaneously without identity collision. A foreign producer's IDs are evidence, but the canonical application event gets its identity/sequence at admission.
 
-## 3. Прямые пределы текущего Windows и core
+## 3. What the pinned Windows client and analytical core actually provide
 
-[Scenario runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py) последовательно вызывает steps, формирует `case_started` / `step_started` / success/failure, LogRecord и ArtifactRecord. Это рабочая модель локального исполнения, **не** доказательство долгой node-wide authority. [Qt coordinator](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/qt_desktop/scenario_coordinator.py) содержит одну пару `_thread`, `_active_case` и отклоняет второй submit при busy; так что параллельные чаты и одновременные команды в одной поставке пока **пожелание**, а не current capability.
+The [scenario runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py) executes ordered steps sequentially and emits `case_started`, `step_started`, success/failure, LogRecord and ArtifactRecord. This is observed local behavior, **not proof of a durable node-wide authority**. The [Qt coordinator](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/qt_desktop/scenario_coordinator.py) holds one `_thread`/`_active_case` pair and refuses second submission while busy. Therefore multiple parallel Chat commands are a stated user need, **not a delivered property of this revision**.
 
-[Operation execution runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/operations/execution/runner.py) открывает `logging.FileHandler` по имени вида `case__step__operation.log`, ловит exception, помещает `str(exc)` в пользовательский `OperationResult.details` и сообщение. Это две прямые границы риска: текст исключения может содержать чувствительный путь/URL, а повторная попытка с тем же case/step/operation будет использовать прежнюю filename без `attempt_id`, потенциально смешав физические доказательства. Даже без подтверждённой утечки в эксплуатации статическая семантика уже требует safe boundary. [Runtime logging](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/logging.py) использует обычный FileHandler без гарантированных rotation/retention policies.
+The [operation runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/operations/execution/runner.py) creates an ordinary `logging.FileHandler` under a filename shaped like `case__step__operation.log` and propagates `str(exc)` to an `OperationResult.details`/user-facing message on some failure paths. Static implications: exception text **might** include sensitive local path/URL content, and reused case/step/operation names lack unique Attempt identity in the log filename. These are possible confidentiality/forensic risks, **not verified real-world leaks**. [Runtime logging](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/logging.py) uses a FileHandler without a demonstrated universal rotation/retention guarantee.
 
-[HistoryPersistenceService](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py) отдельно сохраняет cases/events/artifacts/logs/assignments и при ошибке восстановления возвращает пустую коллекцию. Это наблюдение кодового пути, **не** зарегистрированный реальный инцидент. [Session runtime](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/session_runtime.py) передаёт последнюю/активную проекцию в platform state; одно `active_job` непригодно как список всех параллельных Jobs.
+[HistoryPersistenceService](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py) stores cases/events/artifacts/logs/assignments separately and on certain errors substitutes an empty collection. This is a specific code-flow fact, not a documented field incident. The [session runtime projection](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/session_runtime.py) reports local active/last state to an external platform; a single `active_job` cannot represent many genuinely parallel Jobs.
 
-В core предметные failures различаются: collector, escrow, cbr_forms, industries, FRG и SORS возвращают разную степень audit/validation. Богатый SORS proof ledger нельзя свести к `error: str` без потери доказательной информации. Общий minimal `ProgressSink` и `DiagnosticSink` или один typed callback с категориями — **кандидатный reusable порт**; core должен оставаться callable из notebook/Python без Chat/Qt/platform зависимостей. Инициируемая core доменная ошибка и её user-facing доступное объяснение принадлежат разным слоям.
+Core domains expose heterogeneous quality: collector, escrow, banking forms, industries, FRG and SORS produce different failure/evidence detail. A rich SORS mathematical proof ledger **cannot safely collapse** to `error: str`. A minimal `ProgressSink`/`DiagnosticSink`, or typed callbacks by category, is a **candidate neutral port**; core must remain callable directly from Python/notebooks without requiring Chat, Qt or an external managed runtime.
 
-## 4. События, прогресс и статус как три независимые роли
+## 4. Event, progress and status have distinct semantics
 
-Ограниченный набор значимых событий на практике достаточен для causal journal, если их смысл точен: `thread.created`, `thread.renamed`, `message.created`, `run.submitted`, `run.admitted`, `run.started`, `step.started`, `step.completed`, `artifact.published`, `problem.recorded`, `condition.raised/cleared`, `run.completed`, `run.recovery_required`, `run.reconciled`. Это **пример будущей taxonomy**, не гарантия текущего runtime.
+A useful **candidate** causal vocabulary includes `thread.created`, `thread.renamed`, `message.created`, `run.submitted`, `run.admitted`, `run.started`, `step.started`, `step.completed`, `artifact.published`, `problem.recorded`, `condition.raised/cleared`, `run.completed`, `run.recovery_required` and `run.reconciled`. This is **not** a list of already emitted system events.
 
-Lifecycle `prepared → admitted/queued → running → finalizing → terminal` отличается от outcome `SUCCESS | PARTIAL | CANCELLED | FAILURE | UNKNOWN`; отдельно существует `ready/degraded/unavailable/unknown` health. `PARTIAL` может означать 8/10 обработанных ресурсов при видимых ошибках; `UNKNOWN` — невозможность подтвердить эффект; `CANCELLED` требует реального согласованного прекращения, а не нажатой кнопки. `SUCCESS` Python-кода **не** равно опубликованному Excel с подтверждёнными bytes.
+Lifecycle `prepared → admitted/queued → running → finalizing → terminal` is distinct from outcome `SUCCESS | PARTIAL | CANCELLED | FAILURE | UNKNOWN`, and resource health `ready/degraded/unavailable/unknown` is a third axis. A `PARTIAL` outcome may mean 8/10 resources processed with listed residuals. `UNKNOWN` means the effect is not established; `CANCELLED` needs evidence that cancellation actually took effect, not only a button click. Python function success does **not** establish fully written/verified XLSX publication.
 
-Прогресс допускает три формы:
-1. **Подтверждённая стадия:** «загрузка», «проверка», «расчёт», «сохранение».
-2. **Счётчик `current/total` с units**, когда denominator реально известен. `8/10 files` не равны «80% оставшегося времени».
-3. **Неопределённая активность:** stage+spinner+last activity, без выдуманного процента и ETA.
+Three defensible progress types:
+1. **Observed phase** (acquiring, validating, calculating, publishing).
+2. **Actual numerator/denominator and units**, when the total is known. `8/10 files` is not necessarily “80% of time remaining.”
+3. **Indeterminate activity** with phase/last heartbeat, without fabricated percentage or ETA.
 
-Высокочастотные progress ticks полезно коалесцировать и ограничивать по скорости UI; они не должны заполнять долговечный journal. Terminal/effect events терять при throttling или trace sampling нельзя. Составной прогресс допустимо агрегировать по фиксированному плану только при доказанных весах/denominator, а не по числу кнопок.
+High-frequency progress updates can be throttled/coalesced for the UI rather than inserted unbounded into a durable log. Terminal and effect-relevant events must not be discarded by telemetry sampling. Weighted progress is only meaningful with defensible work weights/denominator; a count of buttons is not proof of time completion.
 
-Нейтральное событие может иметь `event_id`, `event_type`, `schema_version`, `node/thread/run/job/attempt/step` refs, `sequence`, UTC timestamps, causation, `safe_summary_code`, typed safe payload. Это **семантический эскиз**, не действующая Python dataclass; canonical envelope перед внешней передачей проходит разрешённую projection. `schema_version` события Strategy Box нельзя смешивать с version manifest внешней платформы.
+A possible neutral event envelope has `event_id`, `event_type`, `schema_version`, node/thread/run/job/attempt/step references, sequence, UTC timestamps, causation, safe summary code and typed sanitized payload. This is **research vocabulary**, not an installed dataclass. Filter by audience before transmission. Product event schema version and platform package-manifest version are separate axes.
 
-## 5. Ошибки: raw exception, outcome, Problem и condition
+## 5. Raw exceptions, execution outcome, Problem and Condition
 
-Фактическое исключение содержит техническую цепочку, иногда секреты и инфраструктурные имена. Оно может быть полезно в restricted evidence, но пользовательская карточка должна получать **устойчивый код** и подготовленное safe summary. Domain validation may be a finding without crashed worker. Сбой файлового sink не должен превращать успешный domain result в ложную неудачу; при обязательном аудите destructive effect отсутствие пригодного журнала может, напротив, быть причиной *отказать до effect*, согласно утверждённой политике.
-
-Поток квалификации:
+A raw exception may reveal environment identifiers, credentials or source details. It is useful restricted evidence, **not automatically a safe UI message**. Product surfaces need stable machine-readable code and prepared safe summary. Domain validation may fail without any worker crash. A failed optional telemetry sink need not turn a successful analytic result into FAILURE, while a **required** audit sink for destructive work may justify refusal **before** an effect under an admitted policy.
 
 ```text
 DomainFailure / ValidationFinding / TransportFailure / StorageFailure
-    → execution boundary determines Result and effect status
-    → durable application event / optional local problem
-    → platform ProblemDraft only if real recorder port exists
-    → actual confirmed ProblemRef or explicit local-only/pending status
-    → audience-safe summary and separately restricted evidence
+  -> execution boundary sets qualified Result and effect status
+  -> durable application event / possible local ProblemOccurrence
+  -> external ProblemDraft only if verified recorder API exists
+  -> actual acknowledged ProblemRef OR explicit local-only/pending/unknown
+  -> sanitized audience-specific summary + restricted technical evidence
 ```
 
-Регистрация на платформе может завершиться неизвестно или отказом. Нельзя изготовить `ProblemRef`, будто внешний journal записан; можно сохранить `local_problem_ref` и `registration_status` для последующей сверки. AppDock `ProblemRef` — не то же, что HTTP [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457.html), который описывает конкретный HTTP response.
+Do not manufacture an external `ProblemRef` when registration timed out or failed. A real local reference may remain with `registration_status=local_only/pending/unknown`. External managed-platform ProblemRef is conceptually distinct from [RFC 9457 HTTP Problem Details](https://www.rfc-editor.org/rfc/rfc9457.html), which describes an individual HTTP error response.
 
-Случаи требующие иной записи:
-- Ошибка сети до получения bytes: `FETCH_FAILED` и понятный пользовательский code.
-- Загрузили HTML вместо XLSX: format validation failure, не пустой dataset.
-- Упала запись event journal до подтверждения admission: Job не принят.
-- Worker умер после потенциального network/output effect: `UNKNOWN/reconciliation_required`.
-- Не сработало средство записи технического лога при успешном расчёте: результат сохранил success, diagnostics degraded (если аудит не блокирует).
-- Нет доступа к обязательным техническим доказательствам опасного действия: запуск потенциально блокируется *до* effect.
-- История повреждена: quarantine/read-only/diagnostics, не пустая «истинная» база.
+Different observed cases need different records:
+- Network download fails before bytes: FETCH_FAILED, not empty valid data.
+- HTML arrives instead of XLSX: format validation failure, not an empty economic series.
+- Durable admission journal fails **before** acknowledgment: Job was not admitted.
+- Worker disappears after possible external write: UNKNOWN and reconciliation required.
+- Optional log sink fails after successful domain work: actual Result stays successful, diagnostics degraded (unless mandatory audit policy applies).
+- Required evidence sink unavailable before destructive effect: deny/preflight rather than silently proceed.
+- Persisted history corrupt: quarantine/diagnostic/degraded, not new truthful empty authority.
 
-## 6. Один state authority, два пространства данных и конкуренция
+## 6. One state authority, distinct data planes and concurrency
 
-Смысловая граница:
-- **External control/runtime:** installation, package, Node/Session, root capability, process launch и platform health.
-- **Analytical data:** CSV/XLSX, source snapshots, outputs, cache и staged artifacts, с отдельным управляемым Data root.
-- **Product operational state:** Chat/Thread, accepted Run/Job, terminal outcome, read cursors и shared notices — owned by application authority в разрешённом системном storage.
-- **Diagnostics/evidence:** app technical logs, per-attempt trace, crash evidence и platform-owned problem journal, с двумя owners и управляемым мостом.
+Keep the ownership map explicit:
+- **External control/runtime:** installation, package, Node/Session, permitted roots, process launch and platform health.
+- **Analytical data:** source archives, CSV/XLSX, snapshots, outputs, caches and staging within user-authorized Data root.
+- **Product operational state:** Threads, admitted Work/Run/Job, outcomes, read cursors and shared notices under application authority and appropriate system storage.
+- **Diagnostics:** application technical logs, per-Attempt trace, emergency crash evidence and separately platform-owned incident/problem journal.
 
-**Выбор физического места хранения через платформу** (в рамках действующего managed root или будущего capability) не делает платформу автором Python/SQL схемы чатов. `StateStorageBinding` с типом `file_directory/sqlite/service`, locality, scope, atomic replace, flush, backup и retention может быть полезен в будущем — **на исследованном AppDock не подтверждён universal provider такого вида**. Внешняя платформа уже предоставляет roots/activation, которые можно честно проверять и использовать в переходном локальном профиле.
+Obtaining a physical storage directory from a managed platform **does not** make it owner of Strategy Box's Chat/Run SQL/JSON schema. A future `StateStorageBinding` might describe `file_directory/sqlite/service`, locality, scope, atomic replacement, flush, backup and retention, but **a universal provider of that form has not been verified in the pinned AppDock baseline**. Existing roots/activation can still be used honestly under their actual published contracts.
 
-При одновременном выполнении двух независимых задач можно иметь несколько workers и **одного сериализующего state writer**. Разные чаты — не разные write-lock namespaces: два Runs одного чата могут быть параллельны, два Runs разных чатов могут конфликтовать по одному output path. Ресурсные claims `read/write/exclusive` и run-scoped staging должны обслуживать реальные файлы/ресурсы, а не правило «одна работа на чат».
+Multiple independent worker computations can coexist with **one serialized authoritative state writer**. Different Threads are not mutually exclusive resource namespaces: Runs in one Thread might access independent files; Runs in two Threads may compete for the same output path. Schedule/lock real `read/write/exclusive` resource claims and run-scoped staging, not “one Job per chat” as a universal correctness rule.
 
-**Физические альтернативы для малого state:**
+### Competing storage models, no automatic winner
 
-| Подход | Преимущество | Недостаток | Правильный статус |
+| Physical model | Advantage | Counterargument | Correct status |
 | --- | --- | --- | --- |
-| Независимые пять JSON | Уже в codebase | Silent corruption, нет общей revision | Current / недостаточно для G2 |
-| **Один versioned atomic snapshot** | Один файл, один commit, проще восстановление для малого объёма | Целая перезапись, нет естественного append history, single writer; durability profile нужен | Кандидат позднего Research по persistence |
-| **Append-only JSONL + проверяемые snapshots** | Естественный causal sequence, ревизии, потенциальный replay | Торванный хвост, checksum framing, compaction, history growth, собственная recovery complexity | Кандидат позднего Research по observability |
-| SQLite host-local WAL | Транзакции и queries, зрелый механизм | Не готов внешний SQL-binding, нельзя shared WAL напрямую между компьютерами | Поздний candidate |
-| PostgreSQL/service | Серверная нагрузка и управление | Эксплуатационная цена; пока нет SLA | Для подтверждённого профиля |
-| Полный event sourcing / telemetry stack | Replay/централизованная диагностика в зрелой системе | Тяжёлая архитектура, сохранение sensitive данных, новые failure domains | Не исходное обязательство |
+| Five independently overwritten JSON files | Already present | No shared revision, silent corruption/empty projections | Current; insufficient for stronger G2 promise |
+| One atomic versioned snapshot | Simple small-state commit and recovery | Full rewrite, single writer, no natural append history | Candidate from persistence research |
+| Append-only JSONL with snapshots | Natural causal sequence, potential replay | Torn tail, framing/checksums, compaction and recovery/fencing complexity | Candidate from observability research |
+| Host-local SQLite WAL | Transactions, queries and mature tooling | Actual platform SQL binding unverified; network-shared WAL unsafe | Strong conditional candidate |
+| Managed PostgreSQL/service | Server concurrency and operations tooling | Network/host/security/administration cost | For proved server workload |
+| Full event sourcing or telemetry stack | Deep replay when justified | Complex projections, retention, privacy and extra failure domains | Not an initial obligation |
 
-**Важно:** тексты о persistence и observability расходятся в предпочтении snapshot-only vs append journal. Это сохраняемый конфликт **между двумя предварительными дизайнами**. Из обоих надёжно следует single-authority, честная запись, no shared-file multiwriter, fault injection; **выбор backend или гарантии его append/crash atomicity не принят**. Пользовательскому приложению не требуется ждать появления SQLite, но утверждать файловую сохранность без проверки target FS нельзя. Read-only аварийный режим корректнее ложного пустого restart.
+**Material research conflict:** persistence and observability research lean differently toward one versioned snapshot versus append-only journal. Preserve both as competing designs. Their common justified conditions are one truth authority, honest status, no direct shared-file multiwriter and fault injection. Neither backend nor append/crash durability has been Product approved. The app need not wait for SQLite, but must not promise untested filesystem guarantees. Diagnostic-only read mode is preferable to pretending corrupt history is empty.
 
-[SQLite WAL](https://www.sqlite.org/wal.html) и [isolation](https://www.sqlite.org/isolation.html) допускают многократное чтение и писателя на одном host, но нельзя открыть WAL-базу по network FS разными хостами как общую authority. **Host-local DB + authenticated API clients** — иной, условно жизнеспособный режим.
+[SQLite WAL](https://www.sqlite.org/wal.html) and [isolation](https://www.sqlite.org/isolation.html) support concurrent readers with one host writer; separate computers must **not** directly share a WAL database over a network folder as if it were one safe multiuser authority. Host-local DB behind an authenticated application API is a different potentially workable profile.
 
-## 7. Физические журналы и fatal evidence
+## 7. Physical logs and fatal evidence
 
-Различаются **четыре уровня физического следа**: product events; технический app log; per-attempt log; emergency/crash evidence. Они не взаимозаменяемы по retention и пользовательской аудитории.
+Four layers of physical trail: **product events, application technical log, per-Attempt log and emergency/crash evidence**. They differ in retention, access and authority.
 
-Минимальный structured technical record содержит `schema_version`, UTC, severity, component, stable code, node/process/session/run/step/attempt/event refs, prepared safe summary, restricted `traceback_ref` и diagnostic log scope. Вместо полного `str(params)` следует отдельно маркировать параметры по `public/private/secret` и действиям `display/log/persist`. Весь параметрический dict не надо копировать в UI или exception report.
+A candidate structured technical record contains `schema_version`, UTC time, severity, component, stable code, node/process/session/run/step/attempt/event links, sanitized summary and restricted `traceback_ref`. Parameters need field-level `public/private/secret` classification across `display/log/persist`; copying an entire `params` dictionary into shared logs is unsafe.
 
-Standard `logging.FileHandler` и `RotatingFileHandler` полезны в **одном процессе**, но многопроцессная конкурентная запись в один файл не гарантирована: официальный [Python Logging Cookbook](https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes) рекомендует централизованную очередь/Socket listener или отдельные process files. У каждого Run/Attempt — уникальный лог и bounded rotation/retention. На клиент отдавать `log_ref` + правомерный sanitised tail, а не абсолютный путь хоста.
+Python `logging.FileHandler` and `RotatingFileHandler` suit a **single process** but do not guarantee coherent multi-process writes to one physical file. The official [Python Logging Cookbook](https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes) favors a queue/socket listener or separate process files. Use unique Attempt log identity and bounded rotation/retention; pass a scoped `log_ref` and authorized sanitized tail rather than a host absolute path to clients.
 
-Вариант аварийного path: подготовить отдельный дескриптор файла до тяжёлой инициализации, включить [`faulthandler`](https://docs.python.org/3/library/faulthandler.html) и boundary `sys.excepthook` / `threading.excepthook` / Qt worker handlers. Это улучшает шанс получить evidence, **не гарантирует** файлы после process kill или отключения питания. `faulthandler` file descriptor нужно держать открытым; rotation/reuse FD требует осторожности. При следующем запуске сверять незавершённые attempts с process/effect receipts; отсутствие последнего сообщения не доказывает отмену.
+An optional emergency path can initialize an early file descriptor and enable [`faulthandler`](https://docs.python.org/3/library/faulthandler.html), `sys.excepthook`, `threading.excepthook` and UI-worker exception boundaries. These increase the chance of preserving a crash trace but **cannot guarantee one after kill/power loss**. `faulthandler` must keep its FD open; rotating/reusing a descriptor needs care. On subsequent restart, reconcile incomplete Runs and external effects instead of inferring cancellation from absent last log line.
 
-Сбой самого log sink — отдельный failure domain. Не нужно рекурсивно писать failure of log about failure of log в тот же неработающий sink; предусмотреть минимальный emergency channel и безопасную деградацию.
+The logging sink itself can fail. Do not recursively log failure-about-failure to the same broken sink; use a minimal emergency channel and safe degraded behavior.
 
-## 8. Чем внешний AppDock действительно может помочь
+## 8. What the external management platform has actually demonstrated
 
-Внешняя платформа управляет roots, activation, пакетом, Node/Session, process status и own problem semantics. В точном обследованном [`IMPLEMENTATION_STATUS` @ a4d87c6](https://github.com/ForestTiger-GH/AppDock/blob/a4d87c643e620e54e04083d4d0b8d867513e7065/docs/architecture/observability/IMPLEMENTATION_STATUS.md) **Milestone 5E source implementation complete, Windows certification pending**, а следующий 6A emergency sink ещё не был принят к исполнению. В этом baseline нельзя называть общим работающим SDK будущий recorder внешних продуктов или полный semantic event/incident/fleet service только по наличию Python типов. Подтверждённый `ProblemRef` возникает там, где owner действительно его вернул, а не по предположению приложения.
+An external platform owns its established roots, activation, packages, Node/Session and process-level conditions. At pinned [AppDock observability implementation status](https://github.com/ForestTiger-GH/AppDock/blob/a4d87c643e620e54e04083d4d0b8d867513e7065/docs/architecture/observability/IMPLEMENTATION_STATUS.md), **milestone 5E source implementation was marked complete while native Windows certification remained pending**; planned emergency-sink work was not a guaranteed all-consumer product recorder in that baseline. Do **not** infer a ready cross-product Event/Incident/Problem SDK merely because related types or future milestones appear in the repository.
 
-Платформа может знать, что process завершился, timeout или child killed. Это не делает её владельцем `run.completed` и не подтверждает, опубликован ли файл между `write` и потерянным acknowledgement. Точно так же успешная core операция не обязана менять platform Node health на ready. Обе модели обязаны сохранять независимость.
+The platform may observe that a process exited, timed out or was killed. That is not authoritative proof that Strategy Box's `run.completed` or external file publication occurred between a write and lost acknowledgment. Nor must one successful core calculation make a degraded platform Node healthy. Preserve distinct statuses and owners.
 
-Прежде чем рекомендовать новый platform SDK, нужны exact contract version/feature detection, permission to record, error semantics и тест installed Windows profile. До этого application-local diagnostic trace остаётся собственным надёжным минимумом.
+Before adopting a new external recorder interface, verify exact available contract/version, feature detection, authorization, error handling and actual installed Windows profile. Until then the application's local, protected diagnostic log remains an honest minimum.
 
-## 9. Внешние методические аналоги и отрицательный результат
+## 9. Relevant external engineering methods and negative findings
 
-[Google Dapper](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/) иллюстрирует ценность причинной корреляции; для локального Strategy Box это аргумент за `run→attempt→effect`, не за немедленный distributed tracing cluster. [OpenTelemetry Logs Data Model](https://opentelemetry.io/docs/specs/otel/logs/data-model/) предлагает timestamp/observed timestamp, severity, resources и optional trace IDs; [W3C Trace Context](https://www.w3.org/TR/trace-context/) — перенос trace IDs через доверенные HTTP границы. Внешним публичным сайтам **не нужно** раскрывать `thread_id`/пользователя/узел в tracing baggage. [CloudEvents](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md) — потенциальный adapter для внешних событий, не обязательный внутренний journal schema.
+[Google Dapper](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/) motivates causal correlation; it does not require a distributed tracing cluster for a small local app. [OpenTelemetry Logs Data Model](https://opentelemetry.io/docs/specs/otel/logs/data-model/) distinguishes time, observed time, severity, resources and optional trace links. [W3C Trace Context](https://www.w3.org/TR/trace-context/) transports trace IDs across trusted HTTP boundaries; do not leak user/Thread/node identifiers to external public sites in tracing baggage. [CloudEvents](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md) is a possible transport adapter, not mandatory internal journal schema.
 
-[OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) и [NIST SP 800-92](https://csrc.nist.gov/pubs/sp/800/92/final) поддерживают раздельную обработку sensitive log evidence и security/retention governance. [Google SRE four golden signals](https://sre.google/sre-book/monitoring-distributed-systems/) дают полезные условные агрегаты: latency, число admitted/running requests, ошибки с различением partial/unknown и загрузка workers/queue/storage. Однако отдельный high-cardinality `run_id/user_id` в metrics labels создаст нагрузку; лучше trace/log reference. Prometheus/Jaeger/OTel collector без реального host use case лишняя опора.
+[OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) and [NIST SP 800-92](https://csrc.nist.gov/pubs/sp/800/92/final) address protected log evidence and retention. [Google SRE golden signals](https://sre.google/sre-book/monitoring-distributed-systems/) offer latency, request throughput, errors and saturation as relevant groups, but domain analytics need separate PARTIAL/UNKNOWN distinctions. High-cardinality `run_id/user_id` metric labels can be expensive; trace/log references are better for individual correlation. Prometheus/Jaeger/OTel collectors without demonstrated host need can be overhead.
 
-**Неоднозначность стандартов:** ни один внешний формат не решает Product-политику общего чата, точность progress %, ответственность за Run outcome, показ traceback, размещение файлов, приоритет исправления текущего локального runner и соответствие AppDock version. Научные аналоги задают вопросы и объясняют границы, а не заменяют решения.
+No external format decides Chat privacy, accuracy of progress %, outcome authority, traceback audience, storage location, migration priority or platform contract version. Standards supply tested questions and options, **not ready Product Decisions**.
 
-## 10. Проверочная матрица достоверности исполнения
+## 10. Execution-truth negative test matrix (not run)
 
-Следующие проверки — **кандидатные тесты**, а не выполненный run:
-
-| Сценарий | Обязательное различие |
+| Scenario | Observable distinction required |
 | --- | --- |
-| Два Runs в двух чатах и два в одном чате | Отдельные Run/Attempt, chat только связывает, UI не блокируется |
-| Дублированный submit после reconnect | Тот же admitted Run по idempotency, без двойного external effect |
-| Retry после ошибки | Новый Attempt ID и отдельный физический лог |
-| Worker исчез после remote write | UNKNOWN и evidence reconciliation |
-| Закрыли GUI | Факт продолжающегося host Job или interruption зависит от реального профиля |
-| Telemetry queue переполнена | Progress может быть coalesced, terminal и effect events сохраняются |
-| JSONL torn tail | Не принимается как confirmed event; diagnostics |
-| Snapshot повреждён, journal цел | Возможна проверяемая реконструкция без false reset |
-| Повреждены journal и snapshot | Read-only/diagnostics вместо новой пустой authority |
-| Нет диска до durable submit | Job не объявляется принятым |
-| Sink логов упал после успешного расчёта | Business outcome остаётся success, diagnostics degraded |
-| Общий Data root пропал | Узловое condition, affected Run refs; scope по влиянию |
-| Пользователь ввёл неверный параметр | Safe локальная ошибка, без общей аварийной тревоги |
-| Exception содержит secret-sentinel | Нет sentinel в shared UI и support summary |
-| Прочтение чужого общего чата | Per-user read cursor сохраняет другому unread |
-| Два чата с одинаковым названием | Title не является identity |
-| Artifact вручную удалён | Исторический Run остаётся, locator недоступен |
-| Platform recorder unavailable | Только local problem, platform ref не фабрикуется |
-| Меняется разрешённый root | Migration/provision contract, не hardcoded path |
-| Android клиент запрашивает log без прав | Отказ до разрешения физического пути |
-| Файлы → SQLite | Verified import IDs, sequence, outcome, pointers; old source read-only |
-| Reopen после crash | Nonterminal Run проходит reconcile, stale heartbeat не live |
-| Устройства расходятся по времени | Canonical event sequence отделён от wall clocks |
-| Log retention сработал | Старый лог может отсутствовать, durable outcome остаётся |
-| Конкурентные writers одного output | Lock/unique staged destination; независимые outputs параллельны |
-| Platform health unavailable при успешном XLSX | Run success и platform degraded не смешиваются |
+| Two Runs across two Threads; two Runs within one Thread | Distinct Run/Attempt identities, Thread only links, no universal UI lock |
+| Duplicate submit after reconnect | Same admitted Run by idempotency, no repeated external effect |
+| Retry after error | New Attempt ID, distinct physical log |
+| Worker disappears after remote write | UNKNOWN and effect evidence reconciliation |
+| GUI closes | Host Job continuation versus local interruption according to deployed profile |
+| Telemetry/progress queue overloaded | Progress may coalesce, terminal/effect events persist |
+| JSONL append torn at tail | Tail not accepted as confirmed event; diagnostic recovery |
+| Snapshot corrupt, journal intact | Possible verified reconstruction without silent empty reset |
+| Journal and snapshot corrupt | Diagnostic-only/read-only, not newly empty authority |
+| No disk at durable submit | Run/Job not announced as admitted |
+| Log sink fails after successful domain operation | Business success retained; diagnostics degraded |
+| Shared Data root unavailable | Scoped Condition, affected Run links |
+| User supplies invalid parameter | Safe local problem, no universal emergency alert |
+| Exception contains secret sentinel | Secret absent in shared UI and support summary |
+| User marks shared Thread read | Per-user cursor, other users keep unread |
+| Two Threads share a title | Display title is not identity |
+| User manually deletes Artifact | Historical Run remains, file locator unavailable |
+| Platform recorder unavailable | Local Problem only; platform ProblemRef not fabricated |
+| Authorized root changes | Explicit migration/provisioning, no hardcoded absolute path |
+| Android asks for restricted host log | Denied before exposing physical path |
+| Files migrate to SQLite | Verified ID/sequence/outcome/reference import, old source read-only |
+| Restart after crash | Nonterminal Runs reconciled; stale heartbeat not live execution |
+| Devices disagree on local clocks | Canonical event sequence independent of wall clocks |
+| Physical log expired under retention | Durable outcome retained with honest unavailable log link |
+| Concurrent writers of same output | Resource lock/distinct staging; unrelated writes remain parallel |
+| Platform health degraded despite completed XLSX | Run SUCCESS and platform DEGRADED retained independently |
 
-Для claim crash durability нужны **fault injection** на границах journal append, fsync, snapshot replace, effect commit, lost ACK и последующего reopen с проверкой фактов; обычный чистый restart недостаточен. Должны быть проверены реакция UI, реальные bytes, журнальные IDs, user access и восстановление. Численные срок retention, размер логов и допустимая concurrent нагрузка остаются Product/Operations Decisions.
+Claims about crash durability require **fault injection** around journal append, fsync, snapshot replace, actual effect commit, lost ACK and restart/reopen inspection. A clean restart is insufficient. Observe actual file bytes/state, journal IDs, viewer permissions and UI presentation. Numeric retention limits, allowable concurrency and measured load remain Product/Operations decisions.
 
-## 11. Основные неразрешённые выборы
+## 11. Unresolved questions and reopening
 
-Что должно жить после GUI crash и в каком profile? Кто является node execution authority? Какое storage API реально предоставляет платформа сейчас и впоследствии? Кто имеет право читать raw logs и чужую историю? Когда общая ошибка превращается в предупреждение? Какие операции требуют обязательного аудита/подтверждения до эффекта? Когда считать stage progress измеримым, какой terminal event сохранять? Кто ведёт одноразовую migration из старых пяти JSON? Где метаданные независимых Run, кто обновляет read cursor, нужен ли full incident management?
+Open: which Work/Job survives local GUI crash and under which profile; execution authority placement; currently verified vs future external storage API; who can read protected logs and shared Threads; when a common incident warrants broadcast; which effects require audit before execution; when stage progress is measurable; terminal-event contract; safe one-time migration from five JSON files; per-Run metadata and read cursors; whether separate incident-management services or mobile push are actually necessary.
 
-Проверяемые code/protocol decisions, утверждённые requirements и независимые installed tests способны сузить альтернативы. Пока они отсутствуют, все предлагаемые интерфейсы и порядки этапов остаются **квалифицированными гипотезами**, а не production-ready contract.
+Only direct code/protocol decisions, admitted requirements and installed independent tests can narrow these alternatives. Until then, proposed types and implementation order remain **qualified hypotheses**, not a ready production contract.
 
-**Негативный вывод:** невозможно объявить наблюдаемость «готовой» наличием панельки логов, QR/ID-карточки или Python FileHandler. Точно так же полный event framework, SQLite, OTel или Web API без корректных Product outcome/effect и permission semantics будут избыточной инфраструктурой поверх неопределённой истины.
+**Negative conclusion:** observability is not complete merely because a log panel, trace ID card or Python FileHandler exists. Conversely, a full Event framework, SQLite, OTel or Web endpoint without actual reliable outcome, effect and authorization semantics would add complexity without establishing truth.
