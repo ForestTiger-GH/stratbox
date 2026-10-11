@@ -115,7 +115,58 @@ An `Artifact` is not only a file locator; a managed logical descriptor may link 
 
 A neutral extension may supply validated versioned style/template resources under public generic contracts, without publication of any closed implementation. Treating metadata authorship as merely a color setting would lose a substantive requirement.
 
-## 10. Contradictions, rejected simplifications and future assurance
+## 11. Two incompatible research reproducibility scales must not be merged
+
+The earlier Data→Knowledge synthesis proposed a **different R0–R4 taxonomy** from the later used-input source study. This is a true naming conflict, not five levels of one shared enum:
+
+| Label | Earlier synthesis (2026-10-08) | Later input-observation study (2026-10-10) |
+| --- | --- | --- |
+| R0 | Traceable source/method | Undocumented result |
+| R1 | Exact retained inputs and registry revisions | Traceable observed acquisition |
+| R2 | Environment/method ready for replay | Byte-verifiable identity, raw need not be retained |
+| R3 | Output-verifiable under declared validation | Replay-capable with actual retained dependencies |
+| R4 | Audited/accepted for a specified use | Actual replay executed and compared |
+
+The older study correctly warns that human acceptance and technical reproducibility are separate axes, but its R4 label mixes them. The later scale distinguishes technical integrity, replay readiness and semantic assurance explicitly. **Neither scale is a current product API or adopted Product Decision.** Reusing `R3`/`R4` without naming the scale and its version would falsely increase or decrease the claimed assurance. A future contract should use descriptive predicates or a separately adopted versioned taxonomy.
+
+## 12. Fine-grained unresolved questions from the semantic-data research
+
+The original source preserved **28 explicit unresolved questions**, many of which overlap the main argument but must not disappear when condensed. They have different Product/Engineering owners:
+
+| Area | Specific independent question still open |
+| --- | --- |
+| Source capture | Minimum cross-domain SourceSnapshot shape; which jobs must retain raw bytes; how to treat failed retrieval attempts distinctly |
+| Dataset | Minimum stable DatasetVersion identity; reported/derived/reconstructed classification; standard versus domain missingness; reversible semantic bridges and registry meaning |
+| Evidence | When cell-level lineage justifies its cost instead of Run-level; whether a ClaimStore is needed; what minimum EvidenceRef actually proves |
+| Statistical definitions | Versioning of measures and bank accounting perimeters; geography entity versus source-layout row; relation between source vintage and effective registry date |
+| Packaged sources | How many previous registry snapshots/wheels must survive; whether old source contents can actually be reconstructed |
+| Storage/objects | CAS necessity; physical artifact catalog location and indexing; blob/manifest/catalog commit barrier; directory/bundle part integrity |
+| Policy | Retention/legal hold ownership and deadlines; permission-safe provenance; access to historical files after user changes the workspace |
+| Applicability/currentness | Qualified currentness for different consumers; source- and method-specific invalidation; how to separate real-world event from publisher revision |
+| Format/performance | First certified formats, codec fidelity and optional dependencies; streaming/peak RSS and disk costs for large SORS datasets |
+| Workflow/effects | Cancel during stage/commit, separate backup/restore of metadata and output bytes; what automated or machine actors may revalidate/publish |
+| Authorship/export | Real output producer versus metadata author/approver; how evidence travels when an XLSX leaves Strategy Box |
+| Contradiction | How conflicting official publications survive normalization instead of being overwritten by a single canonical value |
+
+These groupings explicitly **retain** the 28 source concerns rather than settling them. Their resolution requires named experimental fixtures, authorization/retention decisions, or a real multi-domain consumer, not another invented `DataManager`.
+
+## 13. Verification vectors for actual data lineage
+
+The source's **22 candidate INV-DK checks** span distinct failure families:
+
+| IDs | Property to falsify |
+| --- | --- |
+| 01–03 | Same URL/new payload preserves both source versions; content digest survives rename; registry identity ignores mtime |
+| 04–06 | Unit/perimeter/vintage preserved, blank vs zero preserved, parser validation does not promote claim strength |
+| 07–09 | DatasetVersion pins used input/registry; Result differs from Artifact; committed Artifact cannot be silently overwritten |
+| 10–12 | Crash before catalog commit cannot show published success; path move preserves logical ref; UI projection is not sole evidence |
+| 13–15 | Historical source revisions remain distinguishable; weak SORS inference never becomes official; partial missing month is explicit |
+| 16–18 | Cache cleanup cannot invalidate promised replay; private source/path blocked by ACL; executor/author/reviewer separate |
+| 19–22 | Two concurrent Artifact commits are consistent; theme/style changes do not change numeric claim; format detection is not semantic interpretation; an unused source-period revision need not stale all Results |
+
+**These are unperformed acceptance hypotheses.** To substantiate an operational property the assessor needs actual pinned source bytes, controlled input mutations, measured memory/storage/clock/fault conditions, checked output bytes and UI state. No new runtime acceptance is implied by their presence in Science.
+
+## 14. Contradictions, rejected simplifications and future assurance
 
 Preserved technical conflicts:
 - **CAS immediately** versus pilot with content identity and verified manifests; physical CAS is unapproved without measured duplication/concurrency.
