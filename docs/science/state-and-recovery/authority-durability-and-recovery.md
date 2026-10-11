@@ -1,164 +1,160 @@
-# Состояние Strategy Box: авторитетность, сохранность, согласованность и восстановление
+# Strategy Box state: authority, durability, consistency and recovery
 
-**Научная область:** достоверность пользовательской истории и состояния аналитической системы при авариях, конкурентных действиях, публикации файлов и смене носителя. **Статус:** поддерживаемая объяснительная модель и квалифицированные технические альтернативы; выбор хранилища, эксплуатационного профиля и числовых гарантий остаётся Product Decision. **Прямой baseline текущей Windows-реализации:** [stratbox-windows @ 959e9c4](https://github.com/ForestTiger-GH/stratbox-windows/tree/959e9c4ce1441124af5111c1e025041714e04d3b). Статический разбор не равен испытанию на реальном устройстве.
+**Scientific scope:** truthful user history and analytical application state under crashes, concurrent mutations, file publication and storage migration. **Status:** maintained explanatory model and qualified implementation alternatives; physical backend, active deployment profile and numeric guarantees require Product decisions. **Direct Windows implementation baseline:** [stratbox-windows@959e9c4](https://github.com/ForestTiger-GH/stratbox-windows/tree/959e9c4ce1441124af5111c1e025041714e04d3b). Static reading does **not** substitute for a crash test on target hardware.
 
-## 1. Почему выбор базы данных начинается с семантики, а не с SQLite
+## 1. Begin with the meaning of state, not a choice of SQLite
 
-Предмет хранения — не набор JSON-файлов и не абстрактная «история чата». Система содержит **несколько разных видов истины** с разными владельцами, сроками жизни, допустимой потерей, участниками и последствиями ошибочного восстановления. Сначала определяются область полномочий, смысл подтверждённого изменения и последствия потери данных. Лишь затем подбирается физический носитель.
+Application state is neither merely a collection of JSON files nor an abstract “chat history.” It contains **different truth classes** with different owners, scopes, lifetimes, accepted loss budgets, audiences and consequences of recovery errors. First establish who may commit a fact and what must remain true after failure. Then choose the persistence mechanism.
 
-Шесть полезных координат состояния: **owner** (кто утверждает значение), **scope** (узел, пользователь, устройство, workspace, чат, Run или источник), **truth class** (каноническая запись, проекция, кэш, ephemeral), **lifetime**, **concurrency model** и **recovery route**. Совпадение физического каталога не объединяет логически разные координаты.
+Six useful state coordinates: **owner, scope, truth class, lifetime, concurrency model and recovery route**. Scope may be node, user, device, workspace, Thread, Run or source. Truth class may be authoritative record, projection, cache or ephemeral state. Physical directory co-location does not collapse these identities.
 
-Классификация по роли:
-
-| Группа | Семантический смысл | Допустимое восстановление |
+| Kind of state | Semantic ownership | Recovery appropriate to its role |
 | --- | --- | --- |
-| Установка, узел, activation, выделенные каталоги | Внешняя управляющая платформа; контракт окружения | Перечитать действующий контракт, preflight, ограничить работу при несовместимости |
-| Принятые команды, чаты, кейсы, Run/Attempt, поручения и подтверждения | Авторитетное прикладное состояние | Последняя доказанная revision, диагностика повреждения, reconcile незавершённого |
-| Параметры интерфейса, фильтр, размер панели, личные черновики | Персональное удобство и, частично, пользовательский труд | Восстановить персональную запись; некоторые представления допустимо сбросить с сообщением |
-| Read cursor конкретного пользователя | Индивидуальное прочтение общей истории | Восстановить per-user cursor, не перезаписывать общую запись чужим прочтением |
-| Presence, текущая позиция, progress redraw, next-run preview | Эфемерные или вычисляемые проекции | Истёкший presence объявить stale; вычисляемое перестроить |
-| Исходные снимки, reference registries и их hash/version | Доказательная основа аналитического расчёта | Повторно скачать лишь при допустимости **той же** версии; иначе сохранить исходный immutable snapshot |
-| Готовый XLSX/CSV/ZIP и его карточка | Физический файл и отдельное утверждение о нём | Проверить bytes/locator; сохранить исторический факт запуска даже при ручном удалении файла |
-| Кэш parser/pivot/search, технические логи | Вычисляемые данные и диагностика | Перестроить либо признать ограничение наблюдаемости; log не служит единственной записью outcome |
+| Installation, Node, activation and assigned roots | External managed platform and its verified contract | Re-read actual contract, perform preflight, degrade safely on mismatch |
+| Admitted commands, Threads, Cases, Runs/Attempts, assigned Work and approvals | Application execution/Work authority | Recover last provable revision, diagnose corruption, reconcile unfinished effects |
+| UI settings, filters, panel sizes and personal drafts | User preferences and possibly valuable individual work | Restore personal source; explicitly reset genuinely disposable projections where allowed |
+| Per-principal read cursor | Individual read status of shared history | Restore separately; one reader must not mutate another's record |
+| Presence, current selection, progress redraw and next-run preview | Ephemeral/derived projections | Mark expired presence stale, recompute from authoritative facts |
+| Raw source snapshots, Registry revisions and versions | Analytical evidence | Re-fetch only when **the same edition** is provably obtainable; otherwise retain required historic raw |
+| XLSX/CSV/ZIP and its Artifact card | Bytes and separate assertion about those bytes | Check current availability and identity; retain historical execution record even after manual file deletion |
+| Parser/pivot/search cache and technical logs | Derived data and diagnostic evidence | Rebuild when possible or disclose lost observability; a log file is not terminal-state authority |
 
-**Отрицательный случай:** при ошибке чтения истории подмена состояния пустой историей уничтожает различие между «работ ещё не было» и «их записи недоступны». Второй случай требует диагностики, запрета опасной записи в повреждённый authoritative scope и, при наличии, восстановления из доказанной копии.
+**Negative case:** returning an empty history after failed JSON reading conflates “no Work ever existed” with “authoritative state cannot be read.” The second needs diagnostics, prevention of dangerous new writes into a damaged authority scope, and a verified recovery route where available.
 
-## 2. Прямая текущая иллюстрация и пределы доказательности
+## 2. Current Windows evidence and its limits
 
-[Windows `HistoryPersistenceService`](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py) сериализует **пять отдельных коллекций**: cases, events, artifacts, logs, assignments. Каждая вызывается независимо через `Path.write_text`; `_load_list` возвращает `[]` при ошибке чтения или JSON-декодирования; некорректные элементы отдельных коллекций пропускаются. Это достаточное статическое доказательство трёх ограничений: нет общего атомарного commit пяти коллекций, corruption может отображаться как пустота, а последовательное восстановление не гарантирует один согласованный логический момент. Но оно **не доказывает**, что реальный пользователь уже потерял данные.
+The frozen [HistoryPersistenceService](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py) writes **five independent collections**—cases, events, artifacts, logs and assignments—via individual `Path.write_text` calls. `_load_list` returns `[]` for read/decode failures and some invalid payloads; malformed items may be skipped. Direct static conclusions: there is **no atomic commit across five collections**, damaged state can look empty, and sequential recovery cannot prove one common snapshot revision. That does **not** prove a real user has already suffered data loss.
 
-[Windows `runtime/config.py`](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/config.py) сохраняет `app.json` отдельно и при некорректном JSON бросает `AppConfigError`, то есть демонстрирует *другую* политику ошибки. Оба пути используют прямую перезапись файла. Из этого нельзя вывести степень переживания power loss без проверки целевых ОС/ФС. [Current HOW](../../current-how/windows-application.md) отдельно фиксирует исполнение сценариев и состояние фонового каркаса.
+[Windows runtime configuration](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/config.py) writes `app.json` separately and may raise `AppConfigError` for invalid JSON—a **different** failure policy. Both paths use direct replacement/overwrite patterns; survival of power loss depends on target OS, filesystem and testing. [Windows Current HOW](../../current-how/windows-application.md) separately describes case execution and the minimal background-status scaffold.
 
-Внешняя платформа может передавать разрешённые System/Node/Data roots и состояние activation; из этого **не следует** наличие публичного транзакционного `StateStore`, SQL API, durable job database или гарантий произвольного сетевого Data root. Платформенный health snapshot не заменяет прикладную истину о Run. Изолированное расчётное ядро `stratbox` владеет предметными вычислениями и provenance, но не должно автоматически становиться хранилищем чатов и полномочий интерфейсов.
+A managed platform may supply authorized System/Node/Data roots and activation context. That fact does **not** prove availability of a public transactional StateStore, SQL endpoint, persistent Job database or arbitrary network-root durability. Platform health is not an authoritative banking Run outcome. The standalone core owns domain calculations and source evidence but should not automatically become storage for UI conversations and grants.
 
-## 3. Четыре уровня требований к сохранности
+## 3. Four evidence/durability grades
 
-- **G0 / ephemeral:** утрата допустима без восстановления, например hover, временная подсветка.
-- **G1 / reconstructible:** данные можно корректно восстановить из актуальной авторитетной основы, например поиск, кэш, preview, TTL presence.
-- **G2 / durable record:** подтверждённая логическая запись должна пережить определённые отказы **в пределах явного storage profile**; нужны атомарность видимого commit, integrity check, writer ownership и policy резервирования.
-- **G3 / effect-coupled:** кроме G2 требуется сверка с независимо происходящим эффектом — записью файла, сетевым действием, удалением, передачей задания. Нужны intent, evidence о результате и отдельная ветка `OUTCOME_UNKNOWN`.
+- **G0 — ephemeral:** loss acceptable without reconstruction, e.g. hover position.
+- **G1 — reconstructible:** state recoverable from a current authoritative source, e.g. search indexes, cache, previews or TTL presence.
+- **G2 — durable record:** an acknowledged logical record must survive defined failures **within a declared storage profile**; atomic visible commit, integrity checks, writer ownership and backup policy matter.
+- **G3 — effect-coupled:** G2 plus reconciliation against independent file, network, delete or delegated effects; requires recorded intent, effect evidence and an `OUTCOME_UNKNOWN` path.
 
-G2 **не равен** RPO=0 при повреждении диска. Crash recovery, backup recovery и effect reconciliation — **три разных задачи**. RPO — допустимая точка потери данных, RTO — допустимое время восстановления; значения принадлежат эксплуатационному решению, а механизм записи сам по себе их не устанавливает ([NIST SP 800-34 Rev.1](https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final)).
+G2 does **not** imply RPO=0 after hardware destruction. **Crash recovery, backup recovery and effect reconciliation are three distinct tasks.** RPO sets permitted data-loss horizon; RTO sets recovery duration; neither follows from the name of the storage engine ([NIST SP 800-34 Rev.1](https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final)).
 
-## 4. Три независимых границы атомарности
+## 4. Three separate atomicity boundaries
 
-**Файл состояния.** При доказанных свойствах локального носителя схема `temp in same directory → flush/fsync → atomic replace → directory sync where supported` может обеспечить наблюдение целого старого либо нового snapshot. Дополнительная проверка нужна для ОС, ФС, питания, network mounts и конфигурации. Описание `os.replace` не доказывает durability любого backend-а ([Python](https://docs.python.org/3/library/os.html#os.replace), [OSDI 2014](https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai), [ASPLOS 2016](https://doi.org/10.1145/2872362.2872406)).
+**One state file:** under verified filesystem conditions, `temporary file in the same directory → flush/fsync → atomic replace → directory synchronization where supported` may give an observer either old or new complete snapshot. Claims still depend on OS, filesystem, mount, power-loss behavior and fault tests. Python [`os.replace`](https://docs.python.org/3/library/os.html#os.replace) alone does not certify durable semantics of every provider; see [OSDI 2014](https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai) and [ASPLOS 2016](https://doi.org/10.1145/2872362.2872406).
 
-**Принятие действия.** Чатовая запись, admission Run, его идентификатор и намерение внешнего эффекта должны продвинуться одним *логическим* commit/revision. При неясном ответе после commit повторный запрос ищет существующий `mutation_id` — он не создаёт новый Run по умолчанию. Вариант `commit(expected_revision, mutation_id, change)` — **предложение порта**, а не текущая API-функция.
+**Admission of a user action:** chat record, accepted Run, identity and external-effect intent may need one *logical* commit/revision. A lost response after commit should find the same `mutation_id` rather than admit a duplicate Run. `commit(expected_revision, mutation_id, change)` is a **candidate port signature**, not current code.
 
-**Внешний файл или действие.** Вычислить таблицу, создать staging bytes, проверить результат, опубликовать финальное имя и зафиксировать metadata — разные шаги, между ними обычно **нет общей распределённой транзакции**. Поэтому `artifact visible` и `artifact record committed` могут разойтись. Возможны orphan file, недоступная ссылка, повторённый эффект и `UNKNOWN`; для каждого нужен явный сценарий reconciliation. См. [семантику неизвестного эффекта](../trust-and-assurance/uncertain-outcome-vs-observed-error.md) и [модель staged publication (кандидат)](../../ldd/artifacts/staged-publication.md).
+**External file/effect:** computing values, writing staging bytes, validating, publishing a final filename and persisting metadata are distinct operations and usually **not one distributed transaction**. A published file and catalog row can disagree, yielding orphans, missing refs, duplicate effect or unknown outcome. [Unknown effects](../trust-and-assurance/uncertain-outcome-vs-observed-error.md) and [staged publication candidate](../../ldd/artifacts/staged-publication.md) address different parts.
 
-### Окна сбоя для одного snapshot
+### Crash windows for a single snapshot
 
-| В момент аварии | Что разрешено утверждать после перезапуска |
+| Crash point | Defensible claim after restart |
 | --- | --- |
-| До записи temp | Действует старая валидная revision |
-| Запись temp оборвалась | Частичный temp не является принятой revision; его можно изолировать |
-| Temp синхронизирован, до replace | Старый документ остаётся authority |
-| Replace выполнен, ACK caller потерян | Исход следует установить по revision/`mutation_id`; повтор не должен создавать новый эффект |
-| Сбой во время синхронизации каталога / power loss | Исход зависит от проверенной FS; нельзя выводить железную гарантию из последовательности Python-вызовов |
-| Доказанный commit прочитан после рестарта | Возобновить с подтверждённой revision; при corruption — диагностировать, а не обнулять |
+| Before creating temporary file | Prior verified revision remains authoritative |
+| During temporary write | Partial temporary object is not a committed revision; isolate it |
+| After syncing temp, before replace | Old document still governs |
+| Replace happened, caller ACK was lost | Inspect stored revision/`mutation_id`; no blind second effect |
+| During directory sync or power loss | Outcome depends on tested filesystem semantics, not Python call sequence |
+| Valid committed state re-read after restart | Resume from exact revision; detect corruption rather than reset to empty |
 
-## 5. Один владелец записи важнее языка SQL
+## 5. One authority for mutations matters more than choosing SQL
 
-**Application authority** — логическая сторона, уполномоченная принять окончательное изменение продукта. Для простого локального профиля она может жить внутри одного desktop-процесса. Для общего узла лучше одна принимающая служба на хосте; несколько Windows/Web/Android клиентов обращаются к ней через авторизованные команды, snapshots и уведомления. Это **не означает обязательный отдельный репозиторий, микросервис или СУБД**.
+**Application authority** is the logical owner allowed to accept final product-state changes. It can run within one local desktop process in a simple profile. For a shared node, one accepting host service may be preferable, with Windows/Web/Android clients using authenticated commands, snapshots and events. That does **not** require a new repository, microservice, or SQL engine in advance.
 
-Параллельное исполнение разных расчётов совместимо с сериализацией коротких state commit; параллельный доступ двух клиентов к общему JSON/SQLite-файлу через network folder — **совсем другой режим**, требующий lock/fencing и корректной failure semantics. Shared file path **не заменяет application API и authorization**.
+Parallel computation across independent tasks is compatible with serializing short state commits. By contrast, clients directly writing one common JSON/SQLite file through a network share constitutes a different and riskier concurrency model. A shared path is **not** equivalent to an application API and authorization.
 
-Рассогласование `expected_revision` предупреждает lost update при двух редакторах. `mutation_id` защищает от дублирования *принятия команды* при повторном сетевом запросе; он **не доказывает идемпотентность внешнего API** и не гарантирует отсутствия повторного XLSX/удаления без соответствующей effect discipline. После восстановления backup изменяется `store_generation`/`restore_epoch`, чтобы устаревшие писатели не вернулись к сохранению в новую authority.
+`expected_revision` detects lost updates; `mutation_id` may deduplicate **command admission**, not independently guarantee exactly-once mutation by a remote API. After restore or backup cloning, `store_generation`/`restore_epoch` should fence stale workers before accepting new writes under the restored identity.
 
-**Негативный пример:** общий `unread: true/false` на Case не может описать прочтение двумя пользователями. Нужны персонифицированные read cursors; временный `online` после reconnect не считается достоверным без свежего TTL/snapshot.
+A global `unread: bool` cannot encode two participants' independent read state; per-user cursors are necessary. A previous `online` status must be refreshed or TTL-qualified on reconnect.
 
-## 6. Два пространства хранения и непереходимая граница смысла
+## 6. Two storage planes with independent responsibility
 
-**Operational state** — права, версии, принятые действия, Run и история — нуждается в управляемом приватном namespace узла или подтверждённом сервисном storage. **Analytical Data** — входные файлы, архивы, таблицы и артефакты — принадлежит пользовательскому Data root/FileStore. На одном диске эти пространства могут соседствовать, но их гарантия и право вмешательства различаются.
+**Operational state** (rights, versions, accepted Work/Run, history) belongs in an application-authorized private/system scope. **Analytical Data** (input files, archives, tables, outputs) belongs in the Data root and FileStore. These may reside on one disk but still have different permissions, lifetimes and guarantees.
 
-Система может проверять отсутствие файла при клике и показывать «файл не найден». Она не обязана непрерывно искать вручную переименованные файлы и восстанавливать сознательно удалённые пользователем артефакты. При этом история о ранее проведённом расчёте сохраняет смысл независимо от существования файла.
+A user deliberately moving/deleting an XLSX can cause the old Artifact card to display “file not found” without obligating the app to scour all disks or restore the deleted file. The historical Run still happened. A platform-provided path is a **locator**, not an ACID guarantee. A future `StateStorageBinding` might report scope, locality, durability/transactions, permissions, quotas, backup and provider version, but no unverified external descriptor should be presented as an implemented platform contract.
 
-Предоставленный платформой путь — **locator**, а не обещание ACID. Для будущего `StateStorageBinding` важны scope, locality, durability/capabilities, atomic replace или transactions, права, volume, quota, backup, provider version. Нельзя оформлять гипотетический descriptor как уже существующий контракт платформы.
+## 7. Storage alternatives and operational cost
 
-## 7. Альтернативы носителей: где появляется реальная сложность
-
-| Способ | Существенное преимущество | Ограничение / сильный контраргумент | Статус |
+| Model | Material advantage | Counterargument/failure burden | Research disposition |
 | --- | --- | --- | --- |
-| Только RAM | Минимум инфраструктуры | Неприемлемо как единственный G2/G3 state | Негативный вариант |
-| Пять отдельно переписываемых JSON | Прозрачность и имеющаяся реализация | Неединая revision, torn write и silent empty recovery | Current HOW / дефект для stronger promise |
-| **Один атомарный versioned document** | Один commit для небольшого согласованного state, простой single-writer | Полная перезапись, высокая стоимость при больших объёмах, нет параллельных writer | **Кандидат начального профиля**, не принятый design |
-| Append-only segments + snapshot | Экономия перезаписей, история изменений | CRC/framing, рост, compaction, неполный хвост, corrupt middle, recovery и fencing делают собственный журнал сложным | Условный вариант |
-| SQLite на локальном storage authority | Транзакции связанных сущностей, индексы, WAL readers и один writer | Backup, locking, `synchronous`, локальность, миграции и provider ownership требуют проверки | Сильный кандидат по измерениям |
-| PostgreSQL как управляемая служба | Серверная конкуренция, backup/PITR, операционные средства | Хост, сопровождение, policy/network/security, цена | Для доказанной серверной потребности |
-| Document/NoSQL provider | Может соответствовать уже имеющейся платформенной инфраструктуре | Само название не гарантирует ACID, совместимость и recovery | Возможная альтернатива |
-| Полное event sourcing / распределённый log | Подробный replay при зрелом engine | Избыточные версии, projections, эволюция событий и дорогое восстановление | Не требуется без отдельного доказанного запроса |
+| RAM only | Minimal overhead | Not sufficient as the sole G2/G3 authority | Negative candidate |
+| Five separately overwritten JSON files | Transparent and already observed | No shared revision, torn writes, silent empty recovery | Current mechanism; insufficient for stronger promise |
+| **One atomic versioned document** | One small commit, simple single-writer model | Full rewrite cost as state grows; no multiwriter semantics | Possible simple initial profile |
+| Append-only segments plus snapshots | Reduces full rewrites, preserves history | Framing/CRC, compaction, partial tail, corrupt middle, replay, fencing | Conditional |
+| SQLite on local authority disk | Transactional relationships, indexes, WAL readers, one writer | Backup, locking, synchronous durability, ownership/migration must be measured | Strong conditional candidate |
+| Managed PostgreSQL | Server concurrency, PITR and established operational tools | Always-on host, network/security, administration and cost | For demonstrated server requirement |
+| Existing document/NoSQL provider | May use already provisioned infrastructure | Name alone proves neither ACID nor recovery | Alternative requiring actual contract |
+| Full event sourcing/distributed log | Fine-grained replay in a mature engine | Schema evolution, projections, retention, recovery complexity | Disproportionate without real consumer |
 
-Для файлового append-only journal важно различать **неполный хвост** (может быть отброшен при однозначном последнем принятом sequence) и **повреждение середины** (нельзя без сигнала пропустить запись и объявить историю целой). Snapshot такого журнала — его проекция, не второй самостоятельный owner. Если реализация превращается в свой мини-SQL, требуется переоценка стоимости.
+In a custom append-only log, a provably **partial trailing record** may be truncated at the last accepted sequence, but **mid-stream corruption** must not be silently skipped while claiming complete history. The snapshot is a projection of the one log authority, not a second owner. If building a journal turns into implementing a mini-SQL engine, reconsider its cost.
 
-По [SQLite WAL](https://www.sqlite.org/wal.html), [изоляции](https://www.sqlite.org/isolation.html) и [работе через сеть](https://www.sqlite.org/useovernet.html): WAL разрешает параллельные чтения при одном писателе, однако использовать один WAL-файл как shared database между разными компьютерами через файловую сеть нельзя. `synchronous=NORMAL` и `FULL` дают разное поведение при power loss; WAL не означает автоматического RPO=0 ([PRAGMA](https://www.sqlite.org/pragma.html)). SQLite может обслуживать удалённых клиентов **через API одного хостового владельца**, не через прямой общий доступ к файлу.
+[SQLite WAL](https://www.sqlite.org/wal.html), [transaction isolation](https://www.sqlite.org/isolation.html) and [SQLite over networks](https://www.sqlite.org/useovernet.html) establish that WAL can serve multiple readers with one writer, **not** multiple computers writing the same SQLite WAL database over a shared network filesystem. `synchronous=NORMAL` and `FULL` differ under power loss; WAL does not itself guarantee RPO=0 ([PRAGMA](https://www.sqlite.org/pragma.html)). Remote clients can access SQLite **through an API on one owning host**, rather than sharing its file.
 
-Вывод научного сравнения — выбирать меньшую сложность **при подтверждённой достаточности**. Нет общего доказательства «всегда JSON» или «всегда SQL».
+**Scientific conclusion:** choose the least complex mechanism that meets *verified actual requirements*. Neither “always JSON” nor “always SQL” is proven universally correct.
 
-## 8. Жизненный цикл, прерванная работа и общая история
+## 8. Execution lifecycle and human-facing history
 
-Чатовый текст не является журналом истинных состояний выполнения. Для принятого действия необходимы как минимум `command_id/run_id`, request snapshot, operation identity/version, status, timestamps, author, attempt/effect/artifact references и безопасное представление resolved parameters. При этом отдельный общий event-sourcing движок не обязателен: пользовательские сообщения могут быть проекциями канонической истории.
+Chat text is not the authoritative ledger of execution truth. A committed action needs at least a command/Run identity, exact Request and Operation revision, outcome, timestamps, actor, Attempt/Effect/Artifact refs and safely resolved parameters. A large event-sourcing engine is not automatically necessary; user messages can be projections of canonical Run history.
 
-**`Failed`, `Interrupted` и `OutcomeUnknown` различаются.** Прерванный исполнитель не доказывает, что внешний эффект не произошёл. После перезапуска следует прочитать целостный state, найти незавершённые Run, проверить достоверные worker/receipt факты, и только затем выставить обоснованное завершение или unknown. Автоматический retry разрушительных действий в `UNKNOWN` способен удвоить ущерб. В GUI-only модели закрытие клиента может завершать локальный worker, а в будущей host-модели клиент отсоединяется при продолжающем работать job. Долговечность **записи о выполнении** не равна долговечности самого процесса.
+`Failed`, `Interrupted` and `OutcomeUnknown` differ. Worker termination cannot prove a remote effect did not happen. On restart, inspect coherent state, find unfinished Runs, reconcile real worker/effect receipts, then record justified termination or UNKNOWN. Retrying destructive UNKNOWN actions can duplicate damage. GUI-only close may stop local workers; in a genuine host profile, client disconnect may leave authorized work running. **Persisting the fact of execution is different from keeping its process alive.**
 
-Для reconnect нужен snapshot с revision/cursor и разрешённые изменения; при разрыве последовательности получают новый snapshot. Потеря связи не превращает last-known в fresh. Offline collaborative editing/CRDT и HA consensus — отдельные гипотезы, не обязательное условие начального общего узла.
+A reconnecting client needs a revisioned snapshot and audience-filtered cursor/event delta. A stream gap requires resnapshot rather than pretending the last known state is fresh. Offline collaborative CRDTs and HA consensus remain distinct future options, not prerequisites for a small trusted node.
 
-## 9. Backup, восстановление, версия схемы и последствия clone
+## 9. Backup, restore, schema changes and cloned authority
 
-**Crash recovery** восстанавливает согласованное после прерывания. **Backup** нужен при уничтожении носителя или ошибочном удалении. **Reconciliation** сопоставляет файлы и внешние эффекты с историей. Каждый путь имеет собственный тест и ограничение.
+**Crash recovery** recovers consistent state after interruption. **Backup restore** covers media destruction/accidental deletion. **Reconciliation** links files and external effects to the recorded state. Each has different tests.
 
-Осмысленный backup set включает: каноническую state revision/schema/generation, подтверждённые artifact manifests и управляемые bytes в пределах принятой ответственности, незаменимые source snapshots и необходимые user/policy записи, плюс `BackupReceipt` с revision/hash/coverage/временем. Кэш, hover, stale presence и полный технический dump могут не входить. Backup metadata без внешних пользовательских файлов **не означает** backup самих файлов.
+A meaningful backup set may include canonical state revision/schema/generation, committed Artifact manifests and *managed* bytes, irreplaceable SourceSnapshots, policy/user records and a `BackupReceipt` identifying version, hash, coverage and time. Cache, transient presence and raw support logs may be excluded under explicit policy. A database backup **does not automatically back up unmanaged user files**.
 
-Протокол согласованной двухплоскостной копии (кандидат): короткий barrier либо стабильная revision → metadata snapshot → перечень необходимых immutable artifacts → копирование/проверка bytes или маркировка unmanaged refs → receipt → снятие барьера. Бэкап встроенной СУБД решает только вопрос согласованной **БД**, не внешних XLSX ([SQLite backup API](https://www.sqlite.org/backup.html), [PostgreSQL PITR](https://www.postgresql.org/docs/current/continuous-archiving.html)).
+A **candidate coherent two-plane backup**: establish short commit barrier or stable revision; snapshot metadata; enumerate referenced immutable Artifact bytes; copy/verify managed objects or explicitly label unmanaged refs; record backup coverage; release barrier. [SQLite backup API](https://www.sqlite.org/backup.html) and [PostgreSQL PITR](https://www.postgresql.org/docs/current/continuous-archiving.html) protect their databases, **not arbitrary XLSX outside the DB**.
 
-Восстановление: остановить прежнюю mutation authority; проверить backup и заявленный coverage; развернуть в staging; проверить integrity и ссылки; опубликовать новую store generation; заблокировать старые writer/leases; пересчитать derived данные; reconcile неясные эффекты; выполнить предметный smoke. Одновременный запуск восстановленного clone и оригинала с тем же identity и правом записи способен вызвать split brain.
+Restore should stop previous mutation authority, validate backup/coverage, stage the restoration, check integrity/references, publish a new store generation, fence old workers, rebuild derived projections, reconcile unknown external effects and run a domain smoke test. Simultaneously activating the original and an identically named restored clone with write privileges creates split-brain risk.
 
-**Отсутствие потребности поддерживать старые интерфейсы не отменяет ценности сохранённых данных.** Разовый проверяемый импорт из пяти JSON в новую схему должен учитывать malformed records, количества объектов, ID mapping, ссылочную целостность, read-back, rollback и atomic cutover. Постоянный dual-write в обе модели оставляет две конкурирующие истины и увеличивает риск.
+**Breaking API compatibility policy does not excuse loss of valuable persisted data.** A one-time verified import from existing five JSON files should account for malformed records, object counts, ID mapping, reference integrity, read-back, rollback and atomic cutover. Permanent dual-write between old and new stores risks two competing truth sources; a one-time controlled migration need not maintain the old public API.
 
-## 10. Проверочные контрпримеры и экспериментальная программа
+## 10. Negative cases and experimental program (not executed)
 
-| Сбой или испытание | Что обязана отличать модель |
+| Fault or injection | Truthful outcome needed |
 | --- | --- |
-| Kill во время записи JSON; disk-full | Старый/новый валидный state против corrupt; сообщение пользователю |
-| Сбой между case и artifact metadata | Согласованная revision либо обнаруженное расхождение |
-| Invalid JSON или неверная строка | Corrupt/quarantine против честно пустой истории |
-| Два писателя/две вкладки, одновременно изменившие чат | Revision conflict против lost update |
-| Ответ на запуск потерян после server commit | Тот же `mutation_id`/Run против двойного admission |
-| GUI закрылся во время network effect | Interrupted versus OutcomeUnknown по фактам |
-| XLSX не дописан / объект есть без index | Staging/verified/orphan и безопасный reconcile |
-| Карточка есть, файл вручную удалён | Missing bytes при сохранённой истории |
-| Network Data root отсоединён | Unavailable против empty directory |
-| Host жив при падении UI | Продолжающийся Job против локального завершённого worker |
-| Restore backup, затем старая сессия пишет | Store generation/fencing против недопустимого old writer |
-| Backup только metadata | Неполное покрытие artifacts, честная RestoreReceipt |
-| WAL/файлы на network FS | Недоказанная atomic/locking гарантия не выдаётся за успешно испытанную |
-| Отметка прочтения двумя людьми | Два user cursors против shared unread flag |
-| Journal corrupt middle / tail | Повреждение middle нельзя замолчать |
-| Crash на каждой стадии migration | Старая authority остаётся до успешного read-back и cutover |
+| Kill during JSON write, disk full | Old/new valid snapshot versus corruption, surfaced safely |
+| Crash between Case and Artifact metadata | Shared committed revision or explicit discrepancy |
+| Invalid JSON or malformed record | Corrupt/quarantine distinct from truly empty history |
+| Two writers/editors mutate same Thread | Revision conflict instead of silent lost update |
+| Submit ACK lost after server commit | Same `mutation_id`/Run rather than second admission |
+| GUI closes during network effect | Interrupted versus OutcomeUnknown based on actual facts |
+| XLSX partially written or orphan file | Staging/verified/orphan and safe reconciliation |
+| Artifact card remains, user deletes file | Bytes missing but historical Run retained |
+| Network Data root disconnects | Unavailable distinguished from empty directory |
+| Host survives UI crash | Continued hosted Job versus stopped local worker |
+| Old client writes after backup restore | New generation/fencing rejects stale authority |
+| Backup includes metadata only | Explicit incomplete Artifact coverage |
+| WAL/files placed on network FS | Unverified atomicity/locking never reported as proved |
+| Two people read same Thread | Independent read cursors, not shared unread flag |
+| Corrupt log middle versus trailing partial record | Mid-stream corruption cannot be silently skipped |
+| Crash at each migration stage | Old authority remains until verified read-back and cutover |
 
-При проверке требуются и *фактические bytes/state*, и корректное сообщение интерфейса. Такие сценарии — **критерии возможного будущего конформанс-теста**, а не отчёт о выполненных испытаниях. Для локального профиля дополнительно измеряются рост истории, время полного rewrite, startup и пределы хранилища; при shared профиле — два клиента, idempotent re-submit, reconnect, права и read cursors. 
+Passing requires both actual bytes/state and accurate UI explanation. These are **future test candidates**, not executed experiments. Local profile measurements should include history growth, full-rewrite time and startup; shared profile adds two principals, idempotent resubmit, reconnect, ACL and read cursors.
 
-## 11. Открытые решения, возражения и условия пересмотра
+## 11. Decisions, counterarguments and reopening
 
-Пока нет подтверждённых Product Decisions по: области единого owner на первой поставке; расположению и интерфейсу storage binding; обязательности managed DB; сроку хранения чатов, Run, логов и исходных снимков; составу сохраняемых параметров без секретов; семантике закрытия GUI/host; RPO/RTO и частоте backup; владельцу backup/restore; выбору direct/single-host API; моменту миграции JSON→SQLite; реакции на ручное удаление артефакта; объёму immutable audit; необходимости HA; clone/restore generation; допустимости remote user preferences. Предложенные defaults обоснованны для обсуждения, **но ещё не приняты**.
+**Open Product Decisions:** first authority scope, storage binding location/API, managed database necessity, retention for Threads/Runs/logs/sources, saved parameters without secrets, local-close versus host-detach semantics, RPO/RTO and backup cadence, restore ownership, direct/single-host API, timing of JSON→SQLite migration, manual Artifact deletion policy, immutable audit depth, HA, clone generation and remote user preferences.
 
-Самые сильные контраргументы и их границы:
+Seven strong counterarguments and their limits:
 
-1. **«БД автоматически исправит историю».** СУБД улучшает транзакции внутри своей границы, но не распределяет product authority, не подтверждает внешние файлы и не создаёт эксплуатационного backup сама по себе.
-2. **«Пять атомарных JSON достаточно».** Каждый файл может быть целым, но пять независимых revisions не дают согласованного набора Run/events/artifacts.
-3. **«Хранить всё в Data».** User Data root может быть перемещён/изменён, допускает ручные операции и иной storage lifecycle.
-4. **«После crash всё failed».** Близкий к успешному внешний эффект остаётся неизвестным до reconciliation.
-5. **«Event history требует event sourcing».** Отдельная связь сообщения и канонического Run достаточна, пока нет доказанной пользы полной event-replay модели.
-6. **«Постоянный compatibility layer нужен для миграции».** Достаточно одноразового проверяемого переноса пользовательских записей; поддержка старого API не следует из этого.
-7. **«Можно гарантировать сохранность через fsync в Python».** Гарантия зависит от filesystem/storage profile и fault-injection на целевой поставке.
+1. **“A DB automatically fixes history.”** Transactions within one DB do not define product authority, protect unrelated files or create backup operations.
+2. **“Five atomic JSON files are sufficient.”** Each file may be whole but five distinct revisions do not form a coherent Case/Event/Artifact set.
+3. **“Store everything under Data.”** The user-controlled Data root may be moved or modified and has a different retention/security lifecycle.
+4. **“Everything is failed after a crash.”** An external effect may have succeeded despite missing acknowledgment; UNKNOWN requires checking.
+5. **“Any event history requires event sourcing.”** Canonical Run records plus linked message projections can suffice until full event replay has an actual consumer.
+6. **“Old API compatibility is needed for migration.”** A one-time verified transfer of persisted user facts does not require permanent old API compatibility.
+7. **“Python fsync guarantees durability.”** Actual guarantees depend on filesystem, target storage profile and fault testing.
 
-**Условия пересмотра:** изменение кода persistence или API внешней платформы; появление постоянного host executor/общего узла; замер размера и частоты мутаций; подтверждённый crash/data-loss incident; новые security/privacy обязательства; испытанные RPO/RTO; проверенный выбор конкретного backend-а.
+**Reopen when:** persistence code or external platform contract changes, a durable host/shared node exists, state growth/mutation rates are measured, a verified crash/data-loss incident occurs, security/privacy requirements change, RPO/RTO targets are tested, or backend assumptions are independently demonstrated.
 
-## 12. Прямые опоры и граница знания
+## 12. Direct sources and the limits of knowledge
 
-**Прямые implementation-основания:** [Windows history persistence](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py), [Windows UI config](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/config.py), [Windows runtime composition](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/bootstrap.py), [Windows session projection](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/session_runtime.py). Их интерпретация относится только к названному commit и читаемым ветвям кода.
+**Exact implementation witnesses:** [Windows history persistence](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py), [UI config](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/config.py), [runtime composition](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/bootstrap.py), [session projection](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/session_runtime.py). Interpretations are limited to those frozen source branches.
 
-**Внешние первичные основания:** Python `os.replace`, документация SQLite WAL/isolation/backup/atomic commit, OSDI 2014, ASPLOS 2016, NIST SP 800-34 — ссылки приведены в тематических разделах и устанавливают только свои классы гарантий. Таблицы сценариев и разграничение state/effect authority — аналитические выводы и проверяемые предложения, а не результаты нового экспериментального стенда.
+**External primary references:** Python `os.replace`, SQLite WAL/isolation/backup/atomic-commit research, OSDI 2014, ASPLOS 2016 and NIST SP 800-34, each with its own applicability boundary. Tables and proposed effect/authority designs are analytical hypotheses and falsifiable future specifications, **not a newly executed experiment**.
 
-**За пределами доказанного:** фактические свойства Windows/Linux ФС в конкретной поставке, уже действующий generic storage provider внешней платформы, рабочая общая база, реальные host/remote execution и независимая эксплуатационная статистика отказов. Решения по backend, guarantees, privacy и retention принимает уполномоченный владелец продукта.
+**Not established:** behavior of exact Windows/Linux filesystems under deployed fault modes, an available generic external transactional StateStore, running shared database, deployed host/remote execution or independently sampled field-failure statistics. Backend, privacy, recovery and retention remain decisions of appropriate Product Authority.
