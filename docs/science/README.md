@@ -4,7 +4,7 @@
 
 ## Independent study paths
 
-- [Settings admission, contextual controls and intentional preferences](application-state/settings-feature-admission-and-contextual-controls.md) — original 91-section user-settings research, elimination of UI debris, three real sections, first-run defaults, scoped reset and conditional notifications.
+- [Settings admission, contextual controls and intentional preferences](application-state/settings-feature-admission-and-contextual-controls.md) — original 92-numbered-section user-settings research, elimination of UI debris, three real sections, first-run defaults, scoped reset and conditional notifications.
 - [Report formatting profiles, author metadata and evidence](artifacts/report-formatting-profiles-metadata-and-evidence.md) — semantic report profile selection, Office creator versus provenance actor, validated provider resources, explicit fallback and remote Run resolution.
 - [Extension configuration, catalog readiness and product-owned surfaces](extensions/configuration-catalog-readiness-and-surface-boundaries.md) — neutral provider inventory, permissioned activation, versioned declarative forms, bounded UI contributions and platform installation handoff.
 - [Strategy Box product system model, actors and repository boundaries](architecture/product-system-model-actors-and-repository-boundaries.md) — four distinct ownership planes, principled direct Python use, fifteen proposed invariants, historical options and open physical host tests.
