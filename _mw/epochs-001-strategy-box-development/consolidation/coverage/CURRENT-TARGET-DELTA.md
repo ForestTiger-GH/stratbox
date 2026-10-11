@@ -65,3 +65,7 @@
 | Platform node/session/runtime-state hint | Product-owned host Case/Job state and external platform-owned activation coexist | `AUTHORITY SEPARATION`: AppDock cannot become sole owner of domain effect truth | Platform feature availability version-bound |
 
 **Specific next verification:** [HC-01..HC-16](../../../../docs/ldd/hosting/host-client-attachment-boundary.md). **Open**: protocol, host process and package organization, network/identity/authorization profiles, data retention, AppDock manifest, target delivery priority and actual migration ownership. This delta does **not** select two Windows repositories or assert an adopted server framework. Global Roadmap still `NOT_READY`.
+
+## Host adoption: local-data provenance and authority cutover
+
+The admitted host product direction introduces a **cross-authority migration boundary** rather than automatically invalidating local Windows data. Existing locally run Cases and per-event unread flags correspond to historical local evidence; future host Cases and per-principal read positions are distinct owner-scoped state. Retained local XLSX files may be referenced as unavailable until explicitly verified/ingested by an authorized host. An observed Windows path does not become a remote-client open command. This is `SPLIT / RE-OWNED / HISTORICAL-QUALIFICATION`, with user-consent, migration and data-retention Decisions still open. See [host LDD transition HC-17..22](../../../../docs/ldd/hosting/host-client-attachment-boundary.md). No code migration or historic data mutation has been executed.
