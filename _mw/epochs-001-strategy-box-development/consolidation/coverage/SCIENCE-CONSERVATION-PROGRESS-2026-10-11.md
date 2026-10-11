@@ -2,6 +2,18 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — 03 state, collaboration and restore original fully read
+
+**Producer account:** 566 pinned Git sources; **35 fully read substantive Research originals** (19 inherited, 12 later 04, four 03); **1,744 provisional located units**, **26 bounded Science topical modules**. **All 566/566 material source dispositions remain unaccounted**, and **0/566 have independent bidirectional complete-conservation certification**. No public-security/Research Amputation/cold-reader pass or installed behavior certification.
+
+**New primary original:** `SB-SRC-0052`, `03-consolidation-research` State/Persistence/Collaboration, L1–L1229, exact blob `44f0c84f8dada7c241a66bdcc7075900ac61a30d`. Its 64 provisional units are located in `units/CONSOLIDATION-STATE-COLLAB-0052.jsonl` with direct source spans and thematic Science destinations. New English maintained destinations: `docs/science/collaboration/authorized-streams-read-cursors-and-private-work.md`, `docs/science/state-and-recovery/shared-state-backup-generation-and-retention.md`, and `docs/science/application-state/settings-policy-preferences-and-drafts.md`.
+
+**Important preservation:** one internally serialized node-event sequence and an ACL-filtered opaque client feed cursor are **not interchangeable**; exposing raw position gaps may leak hidden activity. Backup metadata and physical Artifact bytes need a coherent backup epoch and clone/store-generation fencing. An invalid historical JSON does not become empty accepted Work. Separate user preference, managed policy, editable draft and frozen Run parameter truth. The primary study's C05-01..14 conflicts, WS05-A..L gaps, nine traced failures and ST-01..22 candidate invariants remain explicit. The earlier SQLite-first physical choice conflicts with later approved-to-investigate file-first user constraints; neither backend was adopted by this research.
+
+**Next source and gates:** fully study remaining 03 originals, then 02/01 historical input and direct code/source/test corpus; challenge all 1,744 candidate units against exact Science destinations and every Science claim against direct authoritative evidence. Product Decisions, release check and security clearance remain open.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — Work-to-Execution original fully read and published
 
 **Current producer evidence:** 566 frozen source Git identities, **34 full-read substantive research originals**, **1,680 provisional source-positioned meaning units**, **23 bounded independently readable thematic Science modules**. Source certification remains **0/566**; material `unaccounted` remains **566/566**, with no independent bidirectional source-to-Science/Science-to-evidence certification, no Research Amputation pass and no security clearance.
