@@ -1,5 +1,7 @@
 # Human input carrier availability and reliance limits
 
+> **SUPERSEDED AVAILABILITY STATUS — later same-day source recovery.** This file is retained as a dated negative finding of the *earlier project-files-only search*. The mandatory architecture carrier `SB-EXT-0001` was subsequently recovered fully from the user Library and verified **byte-for-byte** against the frozen 141,617-byte SHA-256. The annotated ten-topic user carrier `SB-EXT-0002` was recovered for **complete primary text review**, but its raw DOCX bytes and declared SHA-256 remain unverified because binary materialization was disallowed. Do not read the `UNAVAILABLE` cells below as current state. See [current verified status](HUMAN-CARRIER-RECOVERY-AND-ASSURANCE-DELTA-2026-10-11.md) and [source/comment reconciliation](../reconciliation/HUMAN-ANNOTATED-EXECUTION-SCOPES-VS-RESEARCH-DEFAULTS-2026-10-11.md).
+
 **Producer checkpoint:** 2026-10-11. **Scope:** accessible project attachments and the separately recorded mandatory supplementary human input identities in `sources/INPUT-CLOSURE-2026-10-11.md`. **Status:** PARTIAL / BLOCKED on two mandatory carriers. No public source excerpt or protected implementation material is published by this log.
 
 ## Explicitly admitted mandatory originals
