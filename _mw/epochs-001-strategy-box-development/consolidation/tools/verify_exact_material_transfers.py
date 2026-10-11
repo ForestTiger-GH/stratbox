@@ -390,7 +390,7 @@ def verify() -> dict:
                     or not meaning or meaning not in row):
                     issues.append(f"{label}: English Settings classification/source line missing")
                 if item_id and item_id.startswith("CRITERION-"):
-                    if not re.match(r"\\d+\\. ", source_here):
+                    if not re.match(r"\d+\. ", source_here):
                         issues.append(f"{label}: original Settings eligibility item changed")
                 elif item_id and item_id.startswith("OWNER-"):
                     if not source_here.startswith("## 4."):
