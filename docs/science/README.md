@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [Interruption, cancellation, retry and verified checkpoints](execution-and-diagnostics/interruption-cancellation-retry-and-checkpoints.md) — local-close semantics, cooperative stopping, stage reuse, safe file publication and competing storage choices.
+- [Composition identity and human/machine projections](capabilities/composition-identity-and-user-machine-projections.md) — five ontology alternatives, independent Scenario/Scheme/Cascade tests, typed ports and catalog boundaries.
 - [Proportional assurance and Knowledge admission](engineering/proportional-assurance-and-knowledge-admission.md) — epistemic/scoped comparison against the dated MADAR draft, 44-point alignment without false conformance scores, risk and research-to-product decisions.
 - [End-to-end Work, effects, acceptance and closure](work/evidence-based-work-lifecycle-and-closure.md) — seven truths, 18 proposed invariants, failure cases, qualified Work completion and residual obligations.
 - [Semantic ownership and integration contracts](architecture/semantic-ownership-and-contract-boundaries.md) — five owner dimensions, deployment profiles, authority, effects and platform boundaries.
@@ -26,4 +28,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** seventeen topics offer separately traced scientific understanding. The twelve 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** nineteen topics offer separately traced scientific understanding. The fourteen 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
