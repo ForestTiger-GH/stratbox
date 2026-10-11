@@ -2,6 +2,27 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Latest verified producer checkpoint — 2026-10-11 (supersedes lower historical counts)
+
+| Measure | Current observed producer state | Interpretation |
+| --- | ---: | --- |
+| Pinned Git file identities | 566 | Exact census paths/blobs, not semantic closure |
+| Substantive original files read completely | **29** | 19 inherited + ten 04 topics |
+| Unread substantive late 04 originals | **2** | `SB-SRC-0554` and `SB-SRC-0555` |
+| Provisional source-addressed semantic units | **1,312** | 582 inherited + 730 late; no assured full material-unit denominator |
+| Maintained independent thematic Science papers | **17** | Five previous + twelve newly published producer Science papers |
+| Independently certified complete source dispositions | **0 / 566** | Not lossless, no Research Amputation pass |
+| Census `material_unit_state=unaccounted` | **566 / 566** | Explicit obligations remain for each source |
+| Product Decisions adopted during consolidation | **0** | All physical and behavioral target candidates remain conditional |
+
+**New source-to-topic slices since the previous checkpoint:** `SB-SRC-0560` 704 lines and 68 units → `docs/science/surfaces/semantic-portability-and-client-authority.md`; `SB-SRC-0563` 759 lines and 70 units → `docs/science/architecture/semantic-ownership-and-contract-boundaries.md`; `SB-SRC-0564` 892 lines and 75 units → `docs/science/work/evidence-based-work-lifecycle-and-closure.md`; `SB-SRC-0565` 625 lines and 71 units (including all 44 dated alignment-row identities) → `docs/science/engineering/proportional-assurance-and-knowledge-admission.md`. Exact source blob and original line spans reside in `units/LATE-04-{SURFACES-0560,OWNERSHIP-0563,ENDTOEND-0564,METHOD-0565}.jsonl`. Each remains `provisional_published_not_independently_bidirectionally_verified`.
+
+**Retained tensions:** file-first versus SQLite-first, a self-contained local foreground executor versus future persistent host, safe team visibility versus restricted technical evidence, and EOM/EWM/EKM methodological reasoning versus an approved Product schema. The cross-theme synthesis explicitly declines to select infrastructure by repetition of research proposals. No product code or confidential implementation was changed.
+
+**Next two immediate original reads:** full topic 01 (`SB-SRC-0554`) and topic 02 (`SB-SRC-0555`) with exact semantic ledgers and revisions to thematic Science; then the much larger historical/02/03 and implementation corpus must be processed and independently source challenged. No general publication or complete lossless declaration is permitted.
+
+## Historical progress record (below; figures no longer current)
+
 ## Distinct progress axes (end of bounded checkpoint)
 
 | Axis | Confirmed | Denominator | Meaning |
