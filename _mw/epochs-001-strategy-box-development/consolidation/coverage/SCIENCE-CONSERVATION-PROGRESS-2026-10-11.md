@@ -2,6 +2,22 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — full 03 Capability / Extension / Automation source conservation (producer stage)
+
+**Current counts:** 566 frozen Git sources; **36** substantive originals marked full-read (19 inherited + all twelve 04 + five 03); **1,864** located provisional source semantic units; **28** independently readable bounded topical Science documents. **0/566** independently certified source dispositions and **566/566** material states unaccounted. No overall lossless or Research Amputation certification.
+
+**Primary source:** `SB-SRC-0053`, 03 topic 06, L1–L1779, exact Git blob `c3689ec26afe9aeef80742ba2ab3f75bd2d721d5` read against `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`. Ledger: `units/CONSOLIDATION-CAPABILITY-AUTOMATION-0053.jsonl`, **120** provisional units (31 thematic source spans + original **CF-01..CF-25**, **U01..U32**, **CX-01..CX-32** as distinct locatable rows). The source-only `read_state` advanced to `full_read` while `material_unit_state=unaccounted` remains unchanged.
+
+**New English independent Science owners:**
+- `docs/science/extensions/provider-discovery-binding-readiness-and-conformance.md` — five logical catalogs; 8 applicability/authorization gates; provider/distribution/contribution trust; discovery/selection/activation/readiness; deterministic singleton/merge slots, fail-closed required bindings and synthetic conformance.
+- `docs/science/automation/trigger-occurrence-identity-and-governed-execution.md` — automation definition versus occurrence versus accepted Run; five trigger types, source-content revisions, IANA timezone/DST/misfire/catch-up, overlap, dedup, effect receipts and machine-invocation limits.
+
+**Retained contradictions:** current first-success provider selection vs explicit deterministic binding; implicit fallback vs fail-closed required provider; `enabled` background UI vs live scheduler; a universal plugin ABI vs typed per-kind conformance; full external host assumption vs local foreground evidence; early SQL-first vs later user-acceptable file-first state. All target alternatives remain unapproved.
+
+**Next:** independent Science link/prose/static confidentiality screening of the full 30-file `docs/science/` set, then complete remaining 03 original studies and older 02/01/code sources. Successful path integrity is not equivalent to semantic evidence or security clearance.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — 03 state, collaboration and restore original fully read
 
 **Producer account:** 566 pinned Git sources; **35 fully read substantive Research originals** (19 inherited, 12 later 04, four 03); **1,744 provisional located units**, **26 bounded Science topical modules**. **All 566/566 material source dispositions remain unaccounted**, and **0/566 have independent bidirectional complete-conservation certification**. No public-security/Research Amputation/cold-reader pass or installed behavior certification.
