@@ -29,7 +29,7 @@ jobs:
         if: always()
         run: |
           if [ -f research_span_audit.json ]; then
-            python3 -c 'import json; r=json.load(open("research_span_audit.json")); print({k:v for k,v in r.items() if k not in ("sources_lowest_structural_coverage", "structural_issues")}); print("LOWEST:", [(x["source_id"],x["coverage_ratio_not_semantic_preservation"]) for x in r.get("sources_lowest_structural_coverage", [])])'
+            python3 -c 'import json; r=json.load(open("research_span_audit.json")); print({k:v for k,v in r.items() if k not in ("sources_lowest_structural_coverage", "structural_issues")}); print("LOWEST:", [(x["source_id"],x["coverage_ratio_not_semantic_preservation"]) for x in r.get("sources_lowest_structural_coverage", [])]); print("ISSUES:", r.get("structural_issues", []))'
           fi
       - name: Show research coverage audit headline
         if: always()
