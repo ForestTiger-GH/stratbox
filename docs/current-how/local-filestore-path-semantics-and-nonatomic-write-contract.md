@@ -22,6 +22,12 @@ A command may require a simple 'file unavailable' status when an expert manually
 
 A direct `FileStore.write_bytes` call writes through a generic `open_write` (and `copy` uses the same path), so a consumer must not assume atomic, fully committed output or hard reset behavior after interruption. Whether a higher-level writer stages, validates, and publishes safely is **caller-specific and requires direct evidence**; it is not certified here.
 
+## Path resolution is not a sandbox
+
+[`LocalFileStore._abs`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/base/filestore/local.py#L25-L32) converts backslashes to forward slashes, expands the configured `root` only when the supplied path is relative, and returns a `Path`. It does **not** resolve and verify the final target against the configured root. Absolute paths bypass the relative-root prefix, and `..` segments may escape that root when used by a filesystem operation. It does not demonstrate symlink/junction containment.
+
+**Scope:** a general-purpose filesystem adapter is not necessarily intended as an authorization sandbox. Its path behavior becomes a security issue **if** a remote Web/AI/API capability treats `root` as a confinement guarantee or forwards an untrusted path without independent validation. A future server-side workspace access boundary should validate the principal, authorized workspace/Artifact reference, resolved target and allowed effect before invoking FileStore, with explicit symlink and race-condition policy. This is a conditional design obligation; no existing public endpoint vulnerability is asserted by the file adapter code alone.
+
 ## Direct Research reconciliation: Topics 08 and 09
 
 The frozen [Trust, Safety and System Qualities study #08](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/Strategy_Box_03_Topic_08_Trust_Safety_System_Qualities_2026-10-09.md#L310-L324) identifies the `listdir` empty/missing collision, and the [whole-system architecture study #09](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_09_whole_system_target_architecture_2026-10-09.md#L908-L919) records the broader false-success risk. The code confirms **this bounded current behavior**; proposed typed error/result classes and a universal managed artifact publication state are still candidates.
@@ -35,5 +41,6 @@ The frozen [Trust, Safety and System Qualities study #08](https://github.com/For
 5. Retry a destructive mutation after the response is lost. Preserve an unknown-outcome receipt and reconcile effects before repetition.
 6. Manually move an artifact. The user's existing chat link may become inactive without forcing a global filesystem search.
 7. Check source-directory discovery where `[]` would incorrectly pass a completeness gate; distinguish a known truly empty publication from a missing input root.
+8. Under a confined-workspace threat model, pass absolute paths, parent traversal, symlink/junction escapes and raced target replacement; authorize after canonicalization at the actual effect boundary.
 
 **Qualification:** neither CI nor a filesystem failure simulation was executed during this static review. A safer typed domain-level listing or source receipt is a proposed improvement, not an existing universal API. See [source download/registry Current HOW](source-download-receipts-registry-choice-and-coverage-limits.md) and the [Science of effects and outcome uncertainty](../science/execution-and-diagnostics/effect-receipts-and-unknown-outcomes.md).
