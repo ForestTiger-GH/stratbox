@@ -2,6 +2,20 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — independent Topic08 original read and directly conserved
+
+**Measured producer state:** **566** pinned source identities; **39** substantive originals fully read (19 inherited, 12 later 04, eight 03); **2,274** provisional source-positioned meaning units; **32** standalone English thematic Science papers (plus two guides). **0/566 independently certified complete source dispositions**; **566/566** `material_unit_state=unaccounted`. Whole-system lossless, broad confidentiality, Research Amputation, human-source and installed conformance gates remain OPEN.
+
+The full independent `SB-SRC-0047` Trust/Safety/System Qualities original, L1–L1250, exact blob `636c854e25bde15d380e757aa6e4762cf587b3b8`, was read directly against `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`. **174** provisional units saved in `units/CONSOLIDATION-TRUST-QUALITIES-0047.jsonl` preserve 24 source themes, **50 SB-Q invariants** (8 T,12 E,10 D,10 S,10 O), **20 C08 conflicts**, **18 R08 risks**, **36 F failure scenarios** and **26 G08 unresolved decisions**. New bounded English Science owner: `docs/science/trust-and-assurance/system-quality-assurance-threats-and-failure-gates.md`.
+
+**Direct-code nuance:** `LocalFileStore.listdir()` conflates nonexistence/wrong type with an empty list; this does not demonstrate blanket suppression of arbitrary permission/network errors. A root-prefixing helper in a general local library is not a proven Web resource sandbox. Whole-object file IO and public-neutral provider fallback require workload/managed-profile tests. Exact package/manifest/smoke version drift is static evidence, not an observed deployment crash.
+
+**Topic08/09 conflict resolved as provenance:** Topic09's author said on 2026-10-09 that separate Topic08 was unavailable and wrote provisional §12. Source 0047 actually exists in the frozen corpus; its own 50+36 assurance evidence is now separately read and published. This does not imply any proposed test passed. Physical file-first versus SQLite/PostgreSQL remains undecided in later user-focused Research.
+
+**Next:** independent semantic challenge per-source and Science reverse grounding, remaining 03 `0046/0048`, old 02/01, live implementation code, authorized human originals and post-addition structural link/privacy scans.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — Whole-System architecture source fully read, dated Topic08 caveat
 
 **Exact producer count:** **566** pinned census sources; **38** substantive Research originals fully read (19 inherited + 12 late 04 + seven 03); **2,100** provisional located semantic units; **31** bounded standalone Science articles plus two guides. **0/566 independently certified semantic dispositions**, **566/566 still material `unaccounted`**. No global Research Amputation or full public-security certification.
