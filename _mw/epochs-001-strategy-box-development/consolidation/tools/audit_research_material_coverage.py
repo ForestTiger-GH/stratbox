@@ -46,6 +46,7 @@ def main() -> dict:
     ledger_rows = Counter()
     kinds = Counter()
     destinations = defaultdict(set)
+    candidate_routes = defaultdict(set)
 
     for path in sorted((BASE / "units").glob("*.jsonl")):
         text = path.read_text(encoding="utf-8")
@@ -69,6 +70,7 @@ def main() -> dict:
             # Source-exact quotation and English translation are distinct
             # evidence classes. Both are line-addressed producer mappings,
             # neither is independent proof of semantic equivalence.
+            routing_only = path.name.startswith("RESEARCH-ORIGINAL-CANDIDATE-ROUTING-")
             english_row = path.name.startswith((
                 "WHOLE-SYSTEM-INV-TQ-ENGLISH-",
                 "QUALITY-08-NEGATIVE-",
@@ -86,6 +88,7 @@ def main() -> dict:
             ))
             direct_code = "read_status" in v
             kind = ("section_locator_only" if locator_only else
+                    "source_routing_only" if routing_only else
                     "source_row_traced_english" if english_row else
                     "exact_text_transcription" if exact_text else
                     "code_test_direct_read" if direct_code else
@@ -94,7 +97,14 @@ def main() -> dict:
             by_source[sid][kind] += 1
             if sid not in originals:
                 continue
-            if kind == "producer_provisional_semantic":
+            if kind == "source_routing_only":
+                route = v.get("route_candidate") or ""
+                if route:
+                    candidate_routes[sid].add(route)
+                for alt in v.get("related_destination_candidates") or ():
+                    candidate_routes[sid].add(alt)
+                dest = ""
+            elif kind == "producer_provisional_semantic":
                 dest = (v.get("science_destination") or "").split(" §")[0]
             elif kind in ("exact_text_transcription", "source_row_traced_english"):
                 dest = v.get("science_destination") or v.get("preserved_exact_test_row") or ""
@@ -115,6 +125,7 @@ def main() -> dict:
     no_exact = []
     no_source_row_trace = []
     no_destination = []
+    no_route = []
     pinned_bad = []
     read_by_role = Counter()
     for sid, row in originals.items():
@@ -138,6 +149,8 @@ def main() -> dict:
             no_source_row_trace.append(sid)
         if not destinations[sid]:
             no_destination.append(sid)
+        if not destinations[sid] and not candidate_routes[sid]:
+            no_route.append(sid)
     return {
         "status": "INVENTORY_INTEGRITY_PASS_NOT_SEMANTIC_ASSURANCE"
                   if not issues and not pinned_bad else "INVENTORY_NEEDS_REVIEW",
@@ -154,6 +167,8 @@ def main() -> dict:
         "research_originals_without_exact_transcriptions": sorted(no_exact),
         "research_originals_without_either_exact_or_english_source_row_trace": sorted(no_source_row_trace),
         "research_originals_without_destination": sorted(no_destination),
+        "research_originals_without_even_a_candidate_route": sorted(no_route),
+        "candidate_routes_are_not_material_destination_proofs": True,
         "unaccounted_git_source_records": sum(
             r["material_unit_state"] == "unaccounted" for r in all_rows
         ),
@@ -171,6 +186,7 @@ def main() -> dict:
                 "english_source_row": by_source[sid]["source_row_traced_english"],
                 "section_only": by_source[sid]["section_locator_only"],
                 "destination_count": len(destinations[sid]),
+                "candidate_route_count": len(candidate_routes[sid]),
             }
             for sid, original in sorted(originals.items())
         ],
