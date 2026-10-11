@@ -1,44 +1,46 @@
-# Семантическая модель Strategy Box и конкретные элементы целевого продукта
+# Strategy Box semantic target — concepts versus admitted product elements
 
-**Baseline:** `TW-SB-2026-10-09-CANDIDATE-1`, mixed acceptance. Словарь ниже отделяет **типы мыслимых элементов** от **существующих или заявленных элементов целевой поставки**.
+**Baseline:** `TW-SB-2026-10-09-CANDIDATE-1`, mixed admission. The vocabulary below intentionally distinguishes **possible semantic entities** from **existing, verified or explicitly promised capabilities**. A Research noun is not a mandate to add a table, class or network service.
 
-## Аналитическая ось
+## Data and analytical meaning
 
-**Предметные понятия:**
-- `Source`: независимый издатель/издание или семейство входов; `SourceSnapshot`: конкретная версия полученных байтов и метаданных.
-- `Registry`: версионированная интерпретация идентификаторов, принадлежности и классификации.
-- `Dataset/Observation`: нормализованные исходные наблюдения; `DerivedResult`: вычисленные или восстановленные значения с границей доказательной силы.
-- `Artifact`: потребляемый результат (например, Excel/CSV/документ/отчёт) с достаточной информацией для распознавания и проверки источников.
+Candidate domain concepts:
 
-**Конкретно существующее:** аналитическое ядро имеет семейства `cbr_forms`, `cbr_industries`, `escrow`, `cbr_file_collector`, `frg` и специализированное SORS restoration. Отдельные домены уже формируют data/result/artifacts, но общая унифицированная source registry и managed artifact identity в полном продуктовом масштабе **не установлены**. Общий каталог источников, evidence/registry version semantics, сохранность raw snapshot и обновляемость версий — `CANDIDATE` следующего продуктового уровня.
+- `Source`: a publisher/publication family or addressable source rule. `SourceSnapshot`: a particular observed byte revision with acquisition metadata.
+- `Registry`: a versioned interpretation of entity identifiers, accounting perimeters and official statistical classifications.
+- `Dataset/Observation`: canonical observations with period, unit, missingness, scope and evidence qualification. `DerivedResult`: computed or inferred values with their method and inference strength.
+- `Artifact`: a user-consumable output such as an XLSX/CSV/document/report, whose identity and availability are separate from the underlying economic result.
 
-## Операции и пользовательская работа
+**Current code witness:** the core contains distinct domain families `cbr_forms`, `cbr_industries`, `escrow`, `cbr_file_collector`, `frg` and specialized SORS restoration. Some produce structured results and files, but a single universal source registry, domain-wide provenance receipt, and complete managed Artifact identity have **not been verified as a shipped cross-domain product**. Source catalog, registry release identity and raw snapshot retention are **candidate mechanisms**, with proportional maintenance cost. Actual acquisition time for **used inputs**, rather than a compulsory global indicator catalog, is the source-supported near-term direction.
 
-- `Capability` — тип разрешённой возможности в контексте actor/данных/окружения.
-- `Operation` — предметный атомарный use case с входом/выходом и профильным эффектом.
-- `Scenario` — выбранная пользователем композиция операций.
-- `Scheme` — переиспользуемая формальная схема/композиция; отдельный публичный Scheme API пока **CANDIDATE**.
-- `Work` — долгоживущий пользовательский предмет/обязательство; `Run` — логический запуск; `Job` — управляемая единица исполнения; `Attempt` — конкретная попытка. Такое разделение — `CANDIDATE`, пока canonical contract не принят.
-- `Result` — исход вычисления и сведения о данных; `Event`, `Log`, `Error`, `Effect` имеют разные роли. Долговременная ownership/scope каждого класса — `CANDIDATE`.
+## Capabilities, work and execution
 
-**Существующий конкретный consumer:** Windows surface показывает сценарии и cases, располагает локальной историей, а конкретно запускает три зарегистрированные операции и композицию из двух бизнес-шагов в ранее исследованном baseline; фактический состав и ограничения определяет [Current HOW](../../current-how/windows-application.md). Новые `Work/Job` объекты и execution authority — предложение, а не уже реализованный сервис.
+- `Capability`: a subject-matter ability in an explicitly authorized actor/data/environment context, not a blanket user privilege.
+- `Operation`: an independently meaningful typed analytical or effect-bearing task.
+- `Scenario`: a human-facing use or composition of operations. `Scheme`: a reusable conceptual/machine projection of subject capabilities, with any distinct Scheme API **CANDIDATE**.
+- `Work`: a persistent commissioned task/goal; `Run`: one logical invocation/episode; `Job`: a schedulable execution unit; `Attempt`: one actual backend try. This distinct identity model is **CANDIDATE** until an authoritative implementation contract is admitted.
+- `Result`, `Event`, `Log`, `Problem` and `Effect` convey different evidence. Run completion, accepted analytical claim, artifact publication and observed external mutation are not interchangeable. Physical lifetime and storage owner of each remain candidate choices.
 
-## Участники и варианты
+**Current consumer:** at the pinned Windows baseline the UI presents scenarios/cases and locally stored history; it exposes a bounded fixed operation catalog and one sequential case coordinator. Exact behavior and limitations belong to [Windows Current HOW](../../current-how/windows-application.md). A full Work/Job authority, hosted scheduler and universal machine API are future proposals, **not** verified deployed features.
 
-`Actor` исполняет действие; `Principal` является основанием полномочий; `Participant` — участник взаимодействия; `Node` и `Session` — сведения платформенного жизненного цикла. Граница полномочий приложения обязана различаться от внешнего platform identity, однако конкретные роли и grant grammar не установлены.
+**Independent Python requirement:** the domain core should be callable from Python/notebook use without importing a desktop GUI; future clients and machine projections must not rewrite core business algorithms as UI-specific code. Which operations deserve stable machine-capability identities remains a separate admission question.
 
-Стандартная схема, которой могут пользоваться разные поверхности, должна по целевой гипотезе сохранять единый смысл состояния и требований, в то время как Windows/Android/Web представляют его собственными средствами. Поддержка реально доступного устройства объявляется только через конкретный профиль и его проверенные возможности.
+## Actors, authority and presentation surfaces
 
-## Статусы/инварианты, требующие утверждения
+`Actor` is the executing requester/automation, `Principal` supplies authorization, `Participant` joins collaboration, while `Node` and `Session` describe external platform lifecycle. These can be related but must not be treated as one implied grant. The exact principal-role vocabulary and policy enforcement for remote Web/host remain open.
 
-| Candidate ID | Предлагаемое наблюдаемое свойство | Admission |
+Future Windows/Web/Android clients may share **semantic presentation and status concepts** while retaining platform-native layout and interaction mechanics. A client's claim of support depends on actual installed capabilities, authorized host connectivity and tested execution owner, not the existence of a planned schema.
+
+## Candidate observable invariants requiring Product admission
+
+| Candidate | Possible independently testable property | Status |
 | --- | --- | --- |
-| `TW-C01` | Отсутствующее или неизвестное наблюдение не превращается в значение ноль | CANDIDATE |
-| `TW-C02` | Состояние выполнения отделено от предметной валидности результата и его принятия | CANDIDATE |
-| `TW-C03` | Отмена запроса отделена от уже совершённого внешнего эффекта | CANDIDATE |
-| `TW-C04` | Повтор не создаёт второе опасное действие без установленных условий идемпотентности | CANDIDATE |
-| `TW-C05` | Один пользователь не получает неразрешённые сведения другого | CANDIDATE, scoped only if shared multiuser profile activated |
-| `TW-C06` | Созданный артефакт не объявляется успешно опубликованным до проверки завершённой записи | CANDIDATE |
-| `TW-C07` | Общая семантика сценария доступна нескольким собственным UI surfaces без обязательного Qt desktop runtime | CANDIDATE |
+| `TW-C01` | A missing/unavailable/unknown observation is never silently substituted by numeric zero. | CANDIDATE |
+| `TW-C02` | Execution outcome is distinct from domain correctness, accepted Work and strength of evidence. | CANDIDATE |
+| `TW-C03` | Requesting cancellation is distinct from proving that an external effect was cancelled. | CANDIDATE |
+| `TW-C04` | Repeated commands cannot duplicate unsafe effects without verified idempotency/preconditions. | CANDIDATE |
+| `TW-C05` | Shared-node or remote clients cannot read another principal's unauthorized Work, events or artifacts. | CANDIDATE; conditional shared/remote profile |
+| `TW-C06` | Incomplete file bytes cannot be presented as a committed published Artifact. | CANDIDATE |
+| `TW-C07` | Common scenario meaning can reach more than one UI surface without requiring a Qt runtime in the core. | CANDIDATE |
 
-Эти идентификаторы — внутренние обозначения **предложений**, не действующие runtime API, не гарантия релиза и не утверждённые требования.
+These IDs label **draft product properties**, not implemented runtime APIs, accepted normative requirements or release guarantees.
