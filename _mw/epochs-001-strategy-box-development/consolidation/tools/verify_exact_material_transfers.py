@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18, "0563": 42}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -64,6 +64,8 @@ LEDGERS = (
     "LATE-CLIENTS-0560-ENGLISH-18.jsonl",
     "LATE-OBSERVABILITY-0561-ENGLISH-20.jsonl",
     "LATE-SOURCE-0562-ENGLISH-18.jsonl",
+    "LATE-OWNERSHIP-0563-ENGLISH-20.jsonl",
+    "LATE-OWNERSHIP-0563-TESTS-ENGLISH-22.jsonl",
 )
 
 
@@ -373,6 +375,28 @@ def verify() -> dict:
                         issues.append(f"{label}: quality source row differs from frozen original")
                 if not row or f"#L{first}" not in row:
                     issues.append(f"{label}: translated quality row or original line missing")
+            elif source_id == "SB-SRC-0563":
+                test_id = item.get("research_test_id")
+                if test_id:
+                    handle = f"SB-SRC-0563/{test_id}"
+                    row = source_english_row(handle)
+                    if not source_here.startswith(f"| {test_id} |"):
+                        issues.append(f"{label}: original Topic 10 test row differs")
+                    scenario = item.get("english_scenario")
+                    outcome = item.get("english_expected_property")
+                    if (not row or f"#L{first}" not in row
+                        or not scenario or scenario not in row
+                        or not outcome or outcome not in row):
+                        issues.append(f"{label}: English Topic 10 integration test is missing")
+                else:
+                    handle = item.get("science_id")
+                    row = source_english_row(handle)
+                    meaning = item.get("english_research_meaning")
+                    if (not row or f"#L{first}" not in row or not meaning
+                        or meaning not in row):
+                        issues.append(f"{label}: Topic 10 source-owner statement missing")
+                    if not source_here.strip():
+                        issues.append(f"{label}: empty original Topic 10 source line")
             elif source_id == "SB-SRC-0562":
                 # The original Topic 09 source contains proposed T01..T18
                 # fault fixtures as Russian three-column Markdown rows.
