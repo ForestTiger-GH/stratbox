@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18, "0563": 42, "0564": 50, "0565": 32, "0040": 24, "0044": 17, "0042": 22}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18, "0563": 42, "0564": 50, "0565": 32, "0040": 24, "0044": 17, "0042": 22, "0043": 23}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -73,6 +73,7 @@ LEDGERS = (
     "MOTION-0040-ENGLISH-24.jsonl",
     "SETTINGS-0044-ENGLISH-17.jsonl",
     "STYLESET-0042-ENGLISH-22.jsonl",
+    "VISUAL-0043-ENGLISH-23.jsonl",
 )
 
 
@@ -382,6 +383,18 @@ def verify() -> dict:
                         issues.append(f"{label}: quality source row differs from frozen original")
                 if not row or f"#L{first}" not in row:
                     issues.append(f"{label}: translated quality row or original line missing")
+            elif source_id == "SB-SRC-0043":
+                visual_id = item.get("source_item_id")
+                handle = f"SB-SRC-0043/{visual_id}"
+                row = source_english_row(handle)
+                meaning = item.get("english_meaning")
+                values = item.get("candidate_values")
+                if (not row or f"#L{first}" not in row
+                    or not meaning or meaning not in row
+                    or not values or values not in row):
+                    issues.append(f"{label}: translated visual profile source candidate missing")
+                if not source_here.startswith("| ") or "|" not in source_here[2:]:
+                    issues.append(f"{label}: original visual token table row changed")
             elif source_id == "SB-SRC-0042":
                 style_id = item.get("source_item_id")
                 handle = f"SB-SRC-0042/{style_id}"
