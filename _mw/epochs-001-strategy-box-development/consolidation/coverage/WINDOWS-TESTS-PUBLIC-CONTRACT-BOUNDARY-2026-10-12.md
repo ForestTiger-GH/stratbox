@@ -38,7 +38,7 @@ Pinned direct source paths: [test directory](https://github.com/ForestTiger-GH/s
 
 ## Trace routing and decision boundaries
 
-- These ten test witnesses and four platform contract dossiers route to [Windows Current HOW](../../../../../docs/current-how/windows-application.md) and [candidate activation LDD](../../../../../docs/ldd/integration/activation-contract-verification.md), with source/execution status preserved.
+- These ten test witnesses and four platform contract dossiers route to [Windows Current HOW](../../../../docs/current-how/windows-application.md) and [candidate activation LDD](../../../../docs/ldd/integration/activation-contract-verification.md), with source/execution status preserved.
 - Actual platform installation, manifest admission, native Windows verification and package-version resolution remain *external/implementation-owned evidence*, not a Product Decision made by documentation.
 - The logical reusable application layer is a candidate because current `runtime.bootstrap` still directly constructs a Qt coordinator. Its physical extraction or creation of a repository/service, Web/Android release and remotely durable host require explicit selection, not a smoke-test repair.
 - Restricted extension implementations and internal environment identities were not used or admitted.
