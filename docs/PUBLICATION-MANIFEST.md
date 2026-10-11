@@ -1,5 +1,13 @@
 # Strategy Box — Partial Publication Manifest
 
+## Controlling producer evidence delta — executed 568/568 row checks (2026-10-11)
+
+[Latest detailed evidence and residual gaps](../_mw/epochs-001-strategy-box-development/consolidation/coverage/PRODUCER-568-ROW-TRACE-AND-20-ROUTES-2026-10-11.md) supersede older **435/435 producer connector-only** statements. A real [GitHub Actions checkout run](https://github.com/ForestTiger-GH/stratbox/actions/runs/38174342407) **passed** the source/English-item/link verifier: **568 item mappings**, 53 Science Markdown files and **261** local Science links, 83 maintained docs and **325** relative doc links, zero reported errors. The subsequent [inventory CI run](https://github.com/ForestTiger-GH/stratbox/actions/runs/38174464629) confirmed **485 source-exact item transfers**, **83 source-row-traced English interpretations**, **3,849 provisional semantic candidates**, **1,435 section locators**, 21 direct code/test reads and **20 research-source candidate routes**, with no source SHA/inventory errors. These categories are deliberately **not an additive semantic completeness count**.
+
+No duplicate Science article was retained: **36 newly row-traced Topic 08 fault cases** were merged into the existing canonical quality-assurance article; 50 Topic 08 invariants and 47 Topic 09 invariants/tests already had canonical destinations. The resulting Science count remains **51 thematic articles + 2 guide/index files = 53**. Research-original primary-read denominator is **53 substantive originals + 3 orientation READMEs**; the previous “54 substantive” was a README misclassification. Total frozen Git records **566**, of which **77 full_read**, 10 governing, 479 pending source reads; all **566 material source dispositions still `unaccounted`**. Twenty older originals have proposed canonical destinations in an English JSONL locator but still lack full material Science transfer; **44 substantive originals** have no source-row-level exact/English trace yet.
+
+These CI checks do **not** independently verify translated meaning, scientific claims, original negative/counterargument completeness, installed software or Product acceptance. `SB-EXT-0001` exact original hash is confirmed; `SB-EXT-0002` is text-read but its original DOCX binary hash remains open. Publication continues in **English**, while frozen original-language Research is held as provenance. **Global lossless remains OPEN.**
+
 ## Authoritative latest delta — primary-source recovery, language and FileStore convergence (2026-10-11)
 
 **Publication language:** all newly authored or substantively revised repository materials in this continuation are **English**. Older frozen Research and previously published historical source wording retain their original language as evidence; user-authored original documents are not rewritten as research facts. The recovered [ten-topic user-intent admission page](what/strategy-box/research-annotated-user-goals-and-open-admission.md) and [Target WHAT index](what/README.md) are English.
@@ -16,7 +24,7 @@
 
 The following older manifest sections record **historical checkpoints**. Where their numbers or input-availability statements differ, this section is controlling for current status. Research originals, exact read evidence, and older failed/limited probes remain preserved for provenance.
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R34`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R35`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
