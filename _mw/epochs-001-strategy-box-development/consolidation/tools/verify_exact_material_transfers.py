@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 5 bounded original-source ledgers (currently 485 exact items),
+Checks 9 bounded original-source ledgers (currently 485 exact items),
 their original Git blob identities, text transfer and Science relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -240,7 +240,7 @@ def verify() -> dict:
 
     return {
         "status": "PRODUCER_EXACT_CHECK_PASS" if not issues else "PRODUCER_EXACT_CHECK_FAIL",
-        "scope": "fixed five source ledgers only; independent semantic audit not performed",
+        "scope": "nine fixed source-item ledgers, eight research originals; independent semantic audit not performed",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": file_count,
