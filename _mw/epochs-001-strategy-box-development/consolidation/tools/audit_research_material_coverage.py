@@ -66,6 +66,10 @@ def main() -> dict:
             if sha and sha != registered[sid]["blob_sha"]:
                 issues.append(f"{path.name}:{n} original frozen blob SHA mismatch")
             locator_only = v.get("status") == "section_locator_only_semantic_equivalence_unverified"
+    # These explicitly source-addressed English-rendered candidate rows are
+    # producer transcriptions, not scientific equivalence assessments.
+    # Classification must include both exact original-wording and translated
+    # line-pinned ledgers; otherwise the inventory mislabels coverage gaps.
             exact_text = (
                 path.name.startswith((
                     "BANK-MACRO-COMPARABILITY-EXACT-",
@@ -77,6 +81,8 @@ def main() -> dict:
                     "SEMANTIC-INVARIANTS-EXACT-",
                     "THREAD-WORK-UX-CHOICES-EXACT-",
                     "TOPIC08-EXACT-",
+                    "WHOLE-SYSTEM-INV-TQ-ENGLISH-",
+                    "QUALITY-08-NEGATIVE-",
                 ))
             )
             direct_code = "read_status" in v
