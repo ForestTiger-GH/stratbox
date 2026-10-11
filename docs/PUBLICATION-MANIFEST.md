@@ -1,6 +1,6 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R7`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R8`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -8,6 +8,7 @@
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
 | Scientific orientation | `docs/science/README.md` | bounded |
+| Scientific topic: artifact identity/publication | `docs/science/artifacts/output-identity-publication-and-availability.md` | newly published direct-code supported Science; artifact original's 64 units are provisional |
 | Scientific topic: execution observability | `docs/science/execution-and-diagnostics/causal-observability-and-failure-truth.md` | direct-code supported provisional thematic Science; late 04 observability source still awaits independent review |
 | Scientific topic: shared conditions and log access | `docs/science/collaboration/shared-conditions-and-log-access.md` | bounded multiuser and diagnostic visibility Science; current shared service absent |
 | Scientific topic: source observation and vintage replay | `docs/science/data-and-knowledge/source-observation-vintages-and-replay.md` | newly authored detailed primary-source-backed Science / 72 provisional units, independent check OPEN |
@@ -28,14 +29,14 @@
 
 ## Source conservation and factual boundaries
 
-The admitted frozen census now contains **566 indexed Git file sources** (553 original path/blob identities plus 12 late research papers and one research-series orientation). As of this publication: **22 substantive original files have `full_read` state** (19 inherited, three late 04 topics on state/recovery, source observation, and execution observability); **one additional 04 orientation README is marked `governing_read`**; **816 provisional meaning units** are located (582 inherited + 76 state/recovery + 72 source-vintage + 86 observability units); **0/566** source files have certified final material disposition. All **566** `material_unit_state` entries therefore remain `unaccounted`. These units are NOT a global count of exhaustively preserved corpus meaning. The three fully read late studies have public-safe topical destinations, but their 234 mappings are not independently reverse-certified; nine other late substantive studies still await full original-unit extraction. Source-level `full_read` means the source was read, not that all its meaning is already proven absorbed. The external human-supplied carriers retain separate authorized-access accounting.
+The admitted frozen census now contains **566 indexed Git file sources** (553 original path/blob identities plus 12 late research papers and one research-series orientation). As of this publication: **23 substantive original files have `full_read` state** (19 inherited and four late topics: state/recovery, source observation, execution observability, and artifacts); **one additional 04 orientation README is marked `governing_read`**; **880 provisional meaning units** are located (582 inherited + 76 state/recovery + 72 source-vintage + 86 observability + 64 artifact units); **0/566** source files have certified final material disposition. All **566** `material_unit_state` entries therefore remain `unaccounted`. These units are NOT a global count of exhaustively preserved corpus meaning. The four fully read late studies have public-safe topical destinations, but their 298 mappings are not independently reverse-certified; eight other late substantive studies still await full original-unit extraction. Source-level `full_read` means the source was read, not that all its meaning is already proven absorbed. The external human-supplied carriers retain separate authorized-access accounting.
 
 The scientific topics can be read without going through Research history, and their bounded claims link directly to exact code evidence or explicitly named reasoning assumptions. The entire research corpus still fails the global Research Amputation condition.
 
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds five Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
+- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds six Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
