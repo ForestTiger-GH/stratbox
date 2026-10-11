@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [Forecast vintages, conditionality and decision authority](data-and-knowledge/forecast-vintage-conditionality-and-decision-separation.md) — issued historical meaning, ex-ante information bounds, forecast evaluation, uncertainty and decision separation.
+- [Communication acts, protected claims and correction](surfaces/communication-acts-protected-claims-and-repair.md) — recipient-specific reliability, omitted qualifiers, institutional force, delivery versus acceptance and propagated repair.
 - [Compiled analytical capabilities, applicability and deoptimization](capabilities/compiled-domain-capabilities-validity-and-deoptimization.md) — semantic versus runtime ownership, typed schemes, validity guards, versioned admission and safe fallback.
 - [Thread, Work, memory scopes and concurrent actors](collaboration/thread-work-memory-scopes-and-parallel-actors.md) — message history versus durable Work, parallel activations, privacy, context and artifact projections.
 - [Trusted provider conformance and false-success threats](extensions/trusted-provider-conformance-and-false-success-threats.md) — staged activation, package trust, 98 proposed test vectors and destructive failure safeguards.
