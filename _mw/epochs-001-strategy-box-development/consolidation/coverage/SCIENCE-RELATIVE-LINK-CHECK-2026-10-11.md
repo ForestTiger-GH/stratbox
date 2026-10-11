@@ -1,5 +1,13 @@
 # Bounded Science publication integrity check — 2026-10-11
 
+## Latest completed check — 40 Science Markdown files
+
+**Exact Git tree:** `ForestTiger-GH/stratbox@6f421c4b604c7dcabea687c1fc2796e86f407e7b` (40 Science Markdown files: 38 topical articles and two guides). Read every file at that revision in disjoint **14 + 13 + 13** batches. Parsed **178** inline local relative file links (**99 + 27 + 52**); **zero** normalized target paths missing from the same tree. Narrow selected pattern checks `stratbox[-_.]plugin`, `private[-_]plugin`, and `lincore[-_]dock[-_]private` produced **zero** matches in these 40 Science files.
+
+**Verdict:** `BOUNDED_RELATIVE_FILE_PATHS_PASS_40_FILES_178_LINKS`. **Not tested:** relative heading fragments, reference links, HTML, external URLs, user access, source-to-claim meaning, complete confidentiality, brand/logo provenance, installed Windows/Android UI, WCAG/color measurements, cold-reader Research Amputation and independent source completeness. This is a bounded **producer check** only; `MADARAII-18` role-specific verification requires its own verifier and claim scope.
+
+---
+
 ## Latest structural check — 39 Science Markdown files
 
 **Exact pinned Git tree:** `ForestTiger-GH/stratbox@fc5c7e59a7efae7ebf924479507e70a870d848c8`. All **39** `docs/science/**/*.md` files (37 thematic Science articles and two guides) were fetched on this tree in **three disjoint batches of 13**. Inline local Markdown file-target links checked: **173 = 94 + 31 + 48**, with **zero** missing normalized destination files. A narrow case-insensitive screen of `stratbox[-_.]plugin`, `private[-_]plugin` and `lincore[-_]dock[-_]private` returned **zero hits** in those 39 files. The newer index-only wording correction did not move files or change the counted destinations.
