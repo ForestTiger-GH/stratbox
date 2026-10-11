@@ -43,7 +43,7 @@ Direct code evidence was pinned to core `8459dc58922b7e8df853cf1d9e8131fa9e13258
 
 ## IV. Bounded structural and public-lexical verification
 
-The full Science structural pass before the newest peer-delegation addition read **52** Science Markdown files and checked **251** relative links against an exact Git tree; all resolved, and the selected five restricted lexical patterns returned zero hits. The newest peer-delegation module contributes one indexed relative link, bringing the expected total to **252** across **53** Markdown files; a rerun on this exact tree must confirm the number before it is recorded as a passed structural gate. Structural read/link success says nothing about independent claim correctness, whole-publication confidentiality or lossless research assimilation.
+The full Science structural pass before the newest peer-delegation addition read **52** Science Markdown files and checked **251** relative links against an exact Git tree; all resolved, and the selected five restricted lexical patterns returned zero hits. The newest peer-delegation module contributes one indexed relative link plus five internal related-topic links, bringing the exact checked total to **257** across **53** Markdown files; the six new internal paths were checked against the same repository tree and all exist; this is a bounded link-presence check, not an independent semantic audit. Structural read/link success says nothing about independent claim correctness, whole-publication confidentiality or lossless research assimilation.
 
 ## V. Objective blockers and unclosed obligations
 
