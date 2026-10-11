@@ -139,151 +139,151 @@ Related maintained Science: [observation semantics](observation-semantics-compar
 
 ## 11. Original epistemic stress tests and status-preservation firewalls
 
-This appendix retains source material from the frozen [epistemic architecture original, #87 and #88](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3461-L3646), blob `00d738012f9dc85d80f89105c9ad71521097e221`. The **twenty proposed acceptance tests** and **thirty-eight distinction statements** are Research claims; none is a completed test or an accepted Product rule. Their applicability and verification depth should be proportional to the actual task, risk and material reliance.
+This appendix retains source material from the frozen [epistemic architecture original, #87 and #88](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3461-L3646), blob `00d738012f9dc85d80f89105c9ad71521097e221`. The **twenty proposed acceptance tests** (presented in faithful English translation) and **thirty-eight distinction statements** are Research claims; none is a completed test or an accepted Product rule. Their applicability and verification depth should be proportional to the actual task, risk and material reliance.
 
-### Twenty proposed tests: exact source questions and failure triggers
+### Twenty proposed tests: English translations of source questions and failure triggers
 
 #### 01. Reported vs restored — `SB-SRC-0019/TEST-01`
 
 Original [L3463–L3468](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3463-L3468).
 
-Может ли пользователь отличить официально опубликованное значение от восстановленного?
+Can the user distinguish an officially published amount from a reconstructed amount?
 
-Если нет — fail.
+If not, the proposed test fails.
 
 #### 02. Source trace — `SB-SRC-0019/TEST-02`
 
 Original [L3469–L3472](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3469-L3472).
 
-Можно ли от material result перейти к source snapshot/vintage?
+Can a material Result be traced back to the exact source snapshot and vintage?
 
 #### 03. Definition trace — `SB-SRC-0019/TEST-03`
 
 Original [L3473–L3476](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3473-L3476).
 
-Можно ли понять, что именно означает показатель?
+Can a reader establish exactly what the statistical indicator means?
 
 #### 04. Comparison bridge — `SB-SRC-0019/TEST-04`
 
 Original [L3477–L3480](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3477-L3480).
 
-Если сравниваются две series с разными perimeter/definitions, есть ли bridge или limitation?
+If two series have different reporting perimeters or definitions, is an explicit comparison bridge or limitation available?
 
 #### 05. Historical integrity — `SB-SRC-0019/TEST-05`
 
 Original [L3481–L3484](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3481-L3484).
 
-Новый source не переписывает старый Forecast/Analysis silently?
+Does a newly fetched source leave previously issued Forecasts and Analyses unchanged?
 
 #### 06. Currentness — `SB-SRC-0019/TEST-06`
 
 Original [L3485–L3488](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3485-L3488).
 
-Система понимает, что Result historically valid, но needs revalidation?
+Can the system distinguish historically valid Results that now require revalidation?
 
 #### 07. UNKNOWN — `SB-SRC-0019/TEST-07`
 
 Original [L3489–L3492](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3489-L3492).
 
-Не исчезает ли UNKNOWN через normalization/export/UI?
+Does UNKNOWN survive normalization, export and user-interface presentation?
 
 #### 08. Claim-strength preservation — `SB-SRC-0019/TEST-08`
 
 Original [L3493–L3498](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3493-L3498).
 
-Может ли summary/report превратить conditional claim в factual claim?
+Can a summary or report silently strengthen a conditional Claim into a factual assertion?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 09. Decision separation — `SB-SRC-0019/TEST-09`
 
 Original [L3499–L3504](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3499-L3504).
 
-Recommendation может быть отображена как Decision без Authority transition?
+Can a Recommendation be presented as an authorized Decision without the required Authority transition?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 10. Acceptance separation — `SB-SRC-0019/TEST-10`
 
 Original [L3505–L3510](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3505-L3510).
 
-Successful computation автоматически становится accepted Result?
+Does successful computation automatically become an accepted Result?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 11. Retry/effect — `SB-SRC-0019/TEST-11`
 
 Original [L3511–L3520](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3511-L3520).
 
-Если remote operation timed out, умеет ли Work выразить:
+If a remote operation times out, can the Work accurately represent:
 
 ```text
 effect unknown
 ```
 
-а не просто `failed`?
+rather than reducing the outcome to `failed`?
 
 #### 12. Dependency impact — `SB-SRC-0019/TEST-12`
 
 Original [L3521–L3524](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3521-L3524).
 
-При изменении registry/source можно определить зависимые Results без тотального refresh?
+When a source or registry changes, can dependent Results be identified without indiscriminate global refresh?
 
 #### 13. Artifact lineage — `SB-SRC-0019/TEST-13`
 
 Original [L3525–L3528](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3525-L3528).
 
-Можно ли из Excel понять, какой semantic Result он represents?
+Can a recipient identify the semantic Result represented by an Excel file?
 
 #### 14. AI authority — `SB-SRC-0019/TEST-14`
 
 Original [L3529–L3534](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3529-L3534).
 
-Может ли AI сам повысить статус своего вывода до accepted/decision?
+Can an AI actor promote its own output to accepted Result or authorized Decision without separate Authority?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 15. Shared lineage — `SB-SRC-0019/TEST-15`
 
 Original [L3535–L3540](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3535-L3540).
 
-Несколько derivative reports считаются независимыми evidence только из-за количества?
+Are multiple derivative reports counted as independent evidence merely because there are many of them?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 16. Forecast vintage — `SB-SRC-0019/TEST-16`
 
 Original [L3541–L3546](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3541-L3546).
 
-Historical Forecast может быть overwritten?
+Can a historically issued Forecast be overwritten?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 17. UI semantics — `SB-SRC-0019/TEST-17`
 
 Original [L3547–L3552](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3547-L3552).
 
-Цвет/позиция/notification способны скрыто изменить action availability или priority meaning?
+Can color, position or notifications silently change action availability or priority meaning?
 
-Если да — fail.
+If yes, the proposed test fails.
 
 #### 18. Recovery — `SB-SRC-0019/TEST-18`
 
 Original [L3553–L3556](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3553-L3556).
 
-После restart/actor replacement можно безопасно продолжить Work без чтения полного transcript?
+Can Work be safely resumed after restart or actor replacement without rereading the full conversation transcript?
 
 #### 19. Public boundary — `SB-SRC-0019/TEST-19`
 
 Original [L3557–L3560](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3557-L3560).
 
-Публичные core/surface contracts полностью нейтральны к конкретному закрытому окружению?
+Are public core/surface contracts fully neutral toward any particular private deployment environment?
 
 #### 20. Research amputation — `SB-SRC-0019/TEST-20`
 
 Original [L3561–L3566](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3561-L3566).
 
-После формирования Current Knowledge можно понять текущий result без обязательного чтения всей historical Research, сохранив forensic route назад?
+Once Current Knowledge is maintained, can a reader understand a current Result without first reading the full historical Research while preserving forensic links back to sources?
 
 ---
 
@@ -340,4 +340,4 @@ The “≠” statements are **boundaries on inference**, not claims that the te
 - A Job execution success, Artifact publication, Evaluation pass, authorized Decision and observed real-world effect remain distinct claims and must not inherit each other's status.
 - These distinctions do not demand a persisted global ontology for every user action. Materialize separate objects only where lifecycle, authority, independent reuse or auditable consequences justify them.
 
-**Preservation status:** **58 original material items** are now transcribed in full or exact wording and source-addressed in maintained Science. This producer transcription neither independently certifies their correctness nor closes all material propositions of the 3,884-line original.
+**Preservation status:** **58 original material item identities** are source-addressed in maintained Science; 20 complete original test bodies have been **translated into English**, while the 38 source distinctions retain their original English wording. The frozen original remains authoritative for exact wording. This producer transcription neither independently certifies their correctness nor closes all material propositions of the 3,884-line original.
