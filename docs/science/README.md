@@ -8,6 +8,7 @@
 - [Causal execution observability and failure truth](execution-and-diagnostics/causal-observability-and-failure-truth.md) — correlations, progress, safe errors, diagnostic logs, storage alternatives, and effect confirmation.
 - [Shared node conditions and protected logs](collaboration/shared-conditions-and-log-access.md) — shared chats, per-user read state, scoped warnings and restricted evidence.
 - [State authority, durability and recovery](state-and-recovery/authority-durability-and-recovery.md) — state classes, commit semantics, storage alternatives, recovery and failure matrices.
+- [Machine discovery, bindings and protocol adapters](capabilities/machine-discovery-bindings-and-adapters.md) — curated tools, seven invocation paths, typed transport, protocol boundaries, effects and versions.
 - [Capability definitions, compositions, plans and execution truth](capabilities/definitions-plans-and-execution-truth.md) — operation/command/scenario/scheme alternatives, source identity, effect-safe reuse and cross-client boundaries.
 - [Published numbers, latent quantities and evidence strength](data-and-knowledge/publication-rounding-and-claim-strength.md) — statistical rounding, interval meaning, and provenance levels.
 - [Observation, statistical vintages and replay](data-and-knowledge/source-observation-vintages-and-replay.md) — five time axes, same-URL source revisions, HTTP validation, actual used-byte receipts, evidence tiers R0–R4 and limits of full replay.
@@ -21,4 +22,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** twelve topics offer separately traced scientific understanding. The seven 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** thirteen topics offer separately traced scientific understanding. The eight 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
