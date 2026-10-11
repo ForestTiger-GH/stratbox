@@ -105,6 +105,7 @@ def main() -> dict:
                 "LATE-METHOD-0565-ENGLISH-",
                 "LATE-METHOD-0565-TESTS-ENGLISH-",
                 "MOTION-0040-ENGLISH-",
+                "SETTINGS-0044-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
