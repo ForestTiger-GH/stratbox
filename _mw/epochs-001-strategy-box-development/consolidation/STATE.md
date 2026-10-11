@@ -1,5 +1,7 @@
 # Consolidation Work State
 
+**Latest active corpus checkpoint (2026-10-11):** Research generation `04-ai-raised-topics` was frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97` and added as 12 complete research-file identities plus 1 orientation record. The active census is now **566 records (553 original + 13 additive)**; the prior 19 fully read and 582 provisional located units are preserved, and **all 566 file-source semantic finalization states remain `unaccounted`**. See `sources/INPUT-CLOSURE-2026-10-11.md` and `SCIENCE-LOSSLESS-PROGRAM.md`. This update is only input accounting and restart discipline, **not** actual Research-to-Science material absorption.
+
 - **Commission:** Human full continuous documentation consolidation Commission, 2026-10-09; authorized documentation changes on `stratbox@main`, no changes to core/runtime/surfaces.
 - **Checkpoint state:** ACTIVE / KPA_CONTRACT_ADMITTED / PINNED_SOURCE_CENSUS_VERIFIED / BOUNDED_CURRENT_HOW_PUBLISHED / BOUNDED_SCIENCE_PUBLISHED / BOUNDED_TARGET_WHAT_CANDIDATE / CONDITIONAL_TARGET_HOW_ARCHITECTURE_LDD_DRAFTED / BOUNDED_DELTA_GAP_CHALLENGE / PUBLICATION_NAV_SECURITY_PATTERN_RECHECKED / LAST_CLOSURE_AUDIT_FAIL / HISTORICAL_BATCH_A_AND_B_EXTRACTED / CORE_BASE_STUDY_EXTRACTED / WINDOWS_BASE_STUDY_EXTRACTED / DESIGN_STUDY_EXTRACTED / SOURCE_GOVERNANCE_EXTRACTED / ARTIFACT_RESEARCH_EXTRACTED / FORMAT_RESEARCH_EXTRACTED / BOUNDED_SOURCE_FORMAT_SCIENCE_PUBLISHED / OBSERVABILITY_RESEARCH_EXTRACTED / BACKGROUND_RESEARCH_EXTRACTED / EXECUTION_CONTROL_EXTRACTED / COMMAND_SCENARIO_RESEARCH_EXTRACTED / MULTIUSER_RESEARCH_EXTRACTED / EXECUTION_CROSS_THEME_RECONCILED_BOUNDED / FRG_CURRENT_HOW_SLICE_PUBLISHED / BOUNDED_EFFECT_SCIENCE_PUBLISHED / PORTABILITY_RESEARCH_EXTRACTED / MACHINE_SCHEME_RESEARCH_EXTRACTED / MACHINE_PORTABILITY_CROSS_THEME_RECONCILED_BOUNDED / LEDGER_AND_PUBLICATION_INTEGRITY_PASS / FULL_ASSEMBLY_OPEN.
 - **Execution baseline before first write:** `stratbox@5cff9157460c2035aa42758b505cce65b7c53f47`.
@@ -48,7 +50,7 @@
 - **Coverage:** 19 pinned source works `full_read`, 582 provisional meaning units across 15 JSONL Work ledgers; **all 553** source-level semantic finalization flags remain `unaccounted`.
 - **Completed Work, checkpoint 31:** established bounded seven-source machine-capability/portability/execution Research synthesis over 256 provisional units at `reconciliation/MACHINE-PORTABILITY-CROSS-THEME.md`. Explicitly retained Scheme/Scenario/Cascade and planner ownership alternatives, dependent evidence, source-fidelity and effect semantics. No new Product or maintained Science admission.
 - **Completed Work, checkpoint 32:** producer integrity audit at exact `c2a294f3b071bbdd23a434c7c33c82cfde380668`: 553 distinct census source IDs; 19 full-read; all 553 material flags unaccounted; 15 parseable JSONL ledgers; 582 unique located material units; 0022 and 0023 source span ranges complete and contiguous; selected prohibited terms absent from five new derived Work files. Publication R4 source status refreshed; audit `gates/CONTINUATION-INTEGRITY-2026-10-09.md`.
-- **Next authorized Work:** continue full original 02-base-study source reading (system settings, styling, artifact design, UI and automation where public-safe); then original synthesis 00–09, source-to-final-owner material preservation, independent cold-reader and security checks. No approval of Product/Target from Research.
+- **Next authorized Work (updated 2026-10-11):** rehydrate verified source census 566 and earlier 582 provisional units; first read and extract the twelve new 04 Research originals with fine-grained material-unit accounting, while progressing the remaining unread 02/03 originals. Then reconcile all original generations, establish complete self-contained Science and independently challenge source→Science conservation. Do not infer Product acceptance from Research.
 - **Closure guard:** publish only bounded independently checkable slices; if completion becomes impossible, write a durable partial-closure audit and the exact next permitted operation.
 
 ## Durable result locators
@@ -56,3 +58,11 @@
 - KPA: `ARCHITECTURE.md` (accepted scoped contract; no adopted target).
 - Census proof and supplementary carrier: `sources/CENSUS-VALIDATION-2026-10-09.md`.
 - The authoritative original census: `sources/CENSUS.csv` — 553 rows, stable IDs, unchanged.
+
+## Corpus extension checkpoint — 2026-10-11
+
+- Source additions: `SB-SRC-0554..0565` (twelve 04 Research studies) and `SB-SRC-0566` (04 branch README). Exact frozen Git path/blob SHA pairs and separate human attachment routes: `sources/INPUT-CLOSURE-2026-10-11.md`.
+- Coverage: **566 indexed**; **19 historical full reads retained**; **582 provisional located meaning units retained**; **0/566 certified source-level dispositions**; **zero** late 04 manuscripts have been fully extracted by this preparatory checkpoint.
+- New primary desired outcome: **all materially significant admitted unrestricted Research knowledge preserved in self-contained `docs/science/`**, with no unresolved material residue and independent reverse/cold-reader assurance. Strict procedure: `SCIENCE-LOSSLESS-PROGRAM.md`.
+- This checkpoint does not close the previous Work Program. The old producer-only closure audit remains a historical FAIL for the original scope, and no global lossless/independence verdict has been issued for the expanded scope.
+- **Immediate next operation:** full original reading, fine-grained located extraction and provisional Science destination mapping of one remaining 02/03 or new 04 substantive source, followed by cross-theme Science authoring and checkpoints; keep progressing until terminal coverage, rather than returning to early global closure reports.

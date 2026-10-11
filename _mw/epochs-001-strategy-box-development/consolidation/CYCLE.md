@@ -4,6 +4,8 @@
 
 ## 1. Entry and scope
 
+**Current continuation (2026-10-11):** after ordinary cold entry, read `SCIENCE-LOSSLESS-PROGRAM.md` and `sources/INPUT-CLOSURE-2026-10-11.md`. The correct source denominator is now **566** (unchanged original 553 + 13 registered late 04 items), plus separately identified authorized human carriers. This Commission explicitly prioritizes complete Research→Science material conservation; bounded papers and incomplete historical read flags must not be taken for global closure. The original program is resumed, never restarted as a second competing census.
+
 Read `README.md`, `AGENTS.md`, `_mw/AGENTS.md`, `_mw/epochs-001-strategy-box-development/consolidation/{README,STATE,BASELINE,ARCHITECTURE,CYCLE,METHOD-ROUTER}.md` and `sources/CENSUS.csv`. Resolve the user commission, allowed publication perimeter, direct code owners and exact revisions; compare source state with recorded checkpoints. Bind the selected MADARAII instruction, full FOUNDATION and matching EXAMPLE for every distinct substantive Work per `METHOD-ROUTER.md`. Perform logical context reset and authoritative rehydration before each Work; perform an actual physical reset where required and technically possible, or record the limitation honestly. The user may supply an additional previously prepared architectural study in the agent's next message: classify it as Research/input and reconcile it with source owners, rather than treating its suggested tree or links as automatically accepted.
 
 ## 2. Allowed continuous route
