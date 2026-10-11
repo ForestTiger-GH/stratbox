@@ -65,7 +65,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The previous exact-tree bounded check at `fc5c7e59a7efae7ebf924479507e70a870d848c8` covered **39** Science Markdown files and **173** inline relative links with zero missing destinations. The newest visual Science paper increases the tree to 40 files; that earlier check does not certify new links or any full scientific/publication assurance.
+- The latest bounded producer check at exact Git tree `6f421c4b604c7dcabea687c1fc2796e86f407e7b` read **40/40** Science Markdown files and verified **178** relative file destinations with **zero** missing and **zero** matches of selected narrow restricted-name patterns. This does not test heading anchors, all external resources, content completeness, full confidentiality, or independent Knowledge Product verification.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
