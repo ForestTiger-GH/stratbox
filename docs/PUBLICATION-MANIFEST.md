@@ -61,7 +61,7 @@ Both new papers distinguish responsibility consensus from physical repository/se
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- Previous bounded check covered 34 Science Markdown files and 130 inline relative links with zero unresolved file destinations. Two newly published Science topics and index updates require a new bounded structural check. The prior check does not establish heading anchors, external reachability, security or factual correctness.
+- At frozen Git tree `111595de58794dcf16dde650aef15e5dce42a93d`, a bounded check read 36/36 Science Markdown files and verified 152 local relative file links with zero missing destinations. Fragment anchors, external links, full content provenance and broader publication review remain outside this check.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
