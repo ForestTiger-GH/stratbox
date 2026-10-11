@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [Strategy Box product system model, actors and repository boundaries](architecture/product-system-model-actors-and-repository-boundaries.md) — four distinct ownership planes, principled direct Python use, fifteen proposed invariants, historical options and open physical host tests.
+- [Architectural convergence, competing concepts and supersession](architecture/architectural-convergence-conflicts-and-supersession.md) — seven overlapping evidence families, ten conflicting models, nineteen superseded alternatives, twenty proposed invariants and dated code gaps.
 - [System quality threats and assurance fault gates](trust-and-assurance/system-quality-assurance-threats-and-failure-gates.md) — independent Topic 08 direct source with 50 proposed SB-Q invariants, 36 fault-injection scenarios, risk and permission/error semantics.
 - [Whole-system architecture profiles, decisions and evidence gates](architecture/system-architecture-profiles-decisions-and-evidence-gates.md) — logical owners, current drift, file-versus-SQL alternatives, 32 proposed invariants, physical packaging gates and dated Topic-08 limitation.
 - [Work-context navigation and authorized cross-client actions](surfaces/work-context-navigation-and-authorized-actions.md) — Thread/Work-centered UX, four logical destinations, Run/Explorer/Artifact views, safe forms, search and action scopes.
@@ -41,4 +43,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** thirty-two topics offer separately traced scientific understanding. The twenty-seven 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** thirty-four topics offer separately traced scientific understanding. The twenty-nine 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
