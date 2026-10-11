@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [Work-context navigation and authorized cross-client actions](surfaces/work-context-navigation-and-authorized-actions.md) — Thread/Work-centered UX, four logical destinations, Run/Explorer/Artifact views, safe forms, search and action scopes.
+- [Semantic design tokens, motion and accessibility](surfaces/semantic-design-tokens-motion-and-accessibility.md) — information-first visual roles, restrained animations, reduced motion, responsive typography, WCAG/device conformance questions.
 - [Extension discovery, binding, readiness and conformance](extensions/provider-discovery-binding-readiness-and-conformance.md) — neutral contribution types, provider selection, staged activation, typed failures and source-conflict register.
 - [Automation trigger identity and governed execution](automation/trigger-occurrence-identity-and-governed-execution.md) — schedules, source-change watchers, real occurrences, retries and safe Job admission.
 - [Authorized streams, read cursors and private shared Work](collaboration/authorized-streams-read-cursors-and-private-work.md) — opaque access-scoped cursors, ACL changes, multiuser read/notification receipts and secure reconnect.
@@ -37,4 +39,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** twenty-eight topics offer separately traced scientific understanding. The twenty-three 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** thirty topics offer separately traced scientific understanding. The twenty-five 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
