@@ -1,6 +1,6 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R29`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R30`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -90,3 +90,9 @@
 - Independent Science verification and full public-security clearance remain unperformed.
 
 **Reopen:** revised direct source, changed package/dependency behavior, admitted Product Decision, newly accounted original Research units, verification defect or publication/relative link change. This manifest is the composition owner, while each topical file remains its canonical semantic owner; no generated complete edition is asserted.
+
+### Current bounded source-to-Science transcriptions (producer-only)
+
+The latest partial consolidation improved **four existing Science articles** without increasing the thematic document count. Exactly **225 further source-addressed research items** were transcribed from frozen originals `SB-SRC-0032` (70), `SB-SRC-0029` (60), `SB-SRC-0031` (37), and `SB-SRC-0019` (58), each with exact source line and original priority/epistemic status. Together with **98** previously preserved neutral conformance vectors from `SB-SRC-0025`, the bounded producer mechanical source/destination check matched **323/323** exact items across five originals and four Science destinations plus one candidate LDD. The original tests, MAY options and architectural invariants remain **Research proposals**, not approved Product rules or passed tests. See [323 exact-material reconciliation](../_mw/epochs-001-strategy-box-development/consolidation/coverage/PRODUCER-EXACT-MATERIAL-323-RECONCILIATION-2026-10-11.md) and the [source-owner contradiction](../_mw/epochs-001-strategy-box-development/consolidation/reconciliation/MACHINE-SCHEME-OWNER-AND-EXECUTION-PLAN-DIVERGENCE-2026-10-11.md).
+
+**Conservation limit:** 54 substantial original Research files were read, but no registered Git file has the all-material-disposition and independent reverse verification required for full source closure; `566/566` records remain `unaccounted`. Two mandatory exact human research carriers are unavailable. The new repeatable verifier is **checked in but not executed in an installed checkout**; the 323 successful checks were performed directly against GitHub source and destination content within the producer session. No global lossless claim is made.
