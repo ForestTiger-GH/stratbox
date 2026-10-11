@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/strategy-box-knowledge-evidence.yml'
-      - '_mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py'
+      - '_mw/epochs-001-strategy-box-development/consolidation/tools/**'
       - '_mw/epochs-001-strategy-box-development/consolidation/units/**'
       - '_mw/epochs-001-strategy-box-development/consolidation/sources/CENSUS.csv'
       - 'docs/science/**'
@@ -21,3 +21,11 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
+      - name: Audit research source coverage and distinguish evidence classes
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_material_coverage.py > research_coverage_audit.json
+      - name: Show research coverage audit headline
+        if: always()
+        run: |
+          if [ -f research_coverage_audit.json ]; then
+            python3 -c 'import json; j=json.load(open("research_coverage_audit.json")); print({k:v for k,v in j.items() if k not in ("source_detail",)})'
+          fi
