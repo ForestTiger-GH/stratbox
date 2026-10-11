@@ -43,16 +43,19 @@ class StructuralAuditBoundaryTests(unittest.TestCase):
         }
         self.assertEqual(audit.destination(x), "docs/science/extensions/example.md")
         self.assertIsNone(audit.destination({"preserved_exact_test_row": "docs/ldd/other.md"}))
+        self.assertEqual(audit.destination({"science_candidate_owner": "docs/science/automation/one.md"}), "docs/science/automation/one.md")
         self.assertIsNone(audit.destination({}))
 
     def test_frozen_line_and_explicit_span_take_distinct_routes(self):
         self.assertEqual(audit.source_locator({"source_line": 42}), "L42")
         self.assertEqual(audit.source_locator({"source_line": 42, "source_span": "L15-L27"}), "L15-L27")
+        self.assertEqual(audit.source_locator({"span": "L9-L12"}), "L9-L12")
         self.assertIsNone(audit.source_locator({"source_line": 0}))
 
     def test_section_locator_does_not_count_as_preserved_material(self):
         self.assertEqual(audit.kind({"source_span": "L2-L6"}, "SECTION-INDEX-0025.jsonl"), "section_or_route")
         self.assertEqual(audit.kind({"source_line": 5}, "PROVIDER-EXACT-VECTORS-0025.jsonl"), "source_exact_transfer")
+        self.assertEqual(audit.kind({"span": "L1-L20", "material_status": "producer_provisional_section_candidate"}, "BASE-STUDY-AUTOMATION-AI-0041.jsonl"), "section_or_route")
 
     def test_only_explicit_numeric_science_section_references_are_checked(self):
         self.assertEqual(
