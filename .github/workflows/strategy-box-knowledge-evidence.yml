@@ -1,0 +1,23 @@
+name: Strategy Box knowledge evidence (bounded)
+
+on:
+  push:
+    paths:
+      - '.github/workflows/strategy-box-knowledge-evidence.yml'
+      - '_mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py'
+      - '_mw/epochs-001-strategy-box-development/consolidation/units/**'
+      - '_mw/epochs-001-strategy-box-development/consolidation/sources/CENSUS.csv'
+      - 'docs/science/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-and-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify bounded source item transfers and local Science links
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
