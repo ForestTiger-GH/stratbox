@@ -7,13 +7,13 @@
 | Axis | Confirmed | Denominator | Meaning |
 | --- | ---: | ---: | --- |
 | Indexed exact Git files | 566 | 566 | Identity/path/blob accounting, **not** semantic conservation |
-| Substantive original files marked `full_read` | 24 | research-original subset, not all 566 Git files | Pre-existing 19 + fully read `SB-SRC-0556`, `SB-SRC-0562`, `SB-SRC-0561`, `SB-SRC-0557`, and `SB-SRC-0558`; does not mean independently proved complete extraction |
+| Substantive original files marked `full_read` | 25 | research-original subset, not all 566 Git files | Pre-existing 19 + fully read `SB-SRC-0556`, `SB-SRC-0562`, `SB-SRC-0561`, `SB-SRC-0557`, `SB-SRC-0558`, and `SB-SRC-0559`; does not mean independently proved complete extraction |
 | Late orientation README additionally `governing_read` | 1 | 1 new orientation | Fully read, orientation is not another substantive study |
-| Located provisional semantic units | 956 | Unknown full material-unit denominator | 582 earlier + 76 late state + 72 late source-vintage + 86 late observability + 64 artifact + 76 security units; units can be missed pending independent original challenge |
+| Located provisional semantic units | 1028 | Unknown full material-unit denominator | 582 earlier + 76 late state + 72 late source-vintage + 86 late observability + 64 artifact + 76 security + 72 machine interface units; units can be missed pending independent original challenge |
 | Sources with certified complete material disposition | **0** | **566** | No global source-level proof accepted |
 | File rows still `unaccounted` | **566** | **566** | Invariant retained deliberately |
-| Substantive late studies not yet marked `full_read` | **7** | 12 late studies | Includes operations, execution, artifacts, policy, machine capability, platform, observability, source versions, integration, end-to-end and alignment |
-| Maintained bounded Science thematic articles | **12** | No fixed article target | Five previous + seven newly authored; article count is not completeness metric |
+| Substantive late studies not yet marked `full_read` | **6** | 12 late studies | Includes operations, execution, artifacts, policy, machine capability, platform, observability, source versions, integration, end-to-end and alignment |
+| Maintained bounded Science thematic articles | **13** | No fixed article target | Five previous + eight newly authored; article count is not completeness metric |
 | Independent bidirectional conservation / cold-reader proof | **0 passed global** | Full declared corpus | Producer notes and direct-code examples cannot substitute independent assurance |
 | Adopted product choices from Research | **0 newly adopted** | Decisions belong to Product Authority | Target docs remain candidate where undecided |
 
@@ -29,6 +29,8 @@
 
 **Fifth late original and security publication:** `SB-SRC-0558`, original L1–L1206, blob `68e433f98e9f660c1c5738ef8a41e077ac738a95`, 76 provisional units in `units/LATE-04-SECURITY-0558.jsonl`. New thematic owner `docs/science/trust-and-assurance/identity-authorization-and-effect-boundaries.md` preserves trusted caller/actor/session, admission/effect checks, plan-bound approvals, access-scoped projections, OS confinement, delegation, cross-client risk profiles, alternatives and negative cases. Direct pinned Windows code showed operation visibility flags, freeform event parameters and unescaped HTML-like display rendering in the named method, **without claiming an observed exploit**. Independent semantic and runtime assurance remain OPEN.
 
+**Sixth late original and machine-interface publication:** `SB-SRC-0559` read in full (L1–L1166; exact blob `0d2cc9226bbc5791143a655c2e304341ef9b9e82`) and mapped to 72 provisional source units in `units/LATE-04-MACHINE-0559.jsonl`. New Science owner `docs/science/capabilities/machine-discovery-bindings-and-adapters.md` addresses direct Python, local/remote tool clients, independent/embedded agents, seven distinct paths, semantic capability vs binding vs tool projection, transport types/refs, machine discovery, revisions, admission/effects, benchmarks, explicit negative outcomes, protocol-version uncertainty and authorization. No machine endpoint or interoperability test was executed. Direct code checked against the three-operation Windows registry, local manifest and typed core collector.
+
 **Prior located Research:** 19 original studies previously full-read, 582 provisional units in 15 ledgers under `units/`. Cross-theme reconciliations of execution and machine capability previously bounded. New `docs/science/capabilities/definitions-plans-and-execution-truth.md` interprets this Research and direct core/Windows code as an independently readable Science discussion. It does **not** mark those 582 as finally conserved; their exact unit→paragraph mappings, substantial counterexamples and historical alternatives still require end-to-end review.
 
 **Original Research generations:** `01-old-notes`, `02-base-study`, `03-consolidation-research` and all `04-ai-raised-topics` remain the declared substantive source universe. Material `docs_old/` and direct code/tests/platform contract files have distinct roles and may need direct HOW/evidential rather than Science disposition. Five earlier Science topics remain with bounded direct-source routes. Excluded/confidential material stays at its protected owner; no access-protected source accounting is moved into this public Git ledger.
@@ -39,7 +41,7 @@ Available, but only provisional, demonstration: `SB-SRC-0556` → 76 addressable
 
 ## Direction 2 — Science claims → support
 
-Sample direct-evidence bridges are explicitly included in newly published Science: Windows `application/history/persistence.py` and `runtime/config.py` for five JSON writes and divergent failure semantics; Windows `application/scenarios/runner.py`, `application/background/store.py` and core FRG cleanup for composition/effect state; SQLite, Python and crash-consistency references for restricted theoretical claims. New Science articles label logical counterexamples and proposal status. **No exhaustive independent reverse review** of twelve Science papers, external reference freshness or runtime fault injection has been executed.
+Sample direct-evidence bridges are explicitly included in newly published Science: Windows `application/history/persistence.py` and `runtime/config.py` for five JSON writes and divergent failure semantics; Windows `application/scenarios/runner.py`, `application/background/store.py` and core FRG cleanup for composition/effect state; SQLite, Python and crash-consistency references for restricted theoretical claims. New Science articles label logical counterexamples and proposal status. **No exhaustive independent reverse review** of thirteen Science papers, external reference freshness or runtime fault injection has been executed.
 
 ## Cross-theme conflict / negative findings retained
 
@@ -50,13 +52,13 @@ Sample direct-evidence bridges are explicitly included in newly published Scienc
 
 ## Explicit obstacles before final lossless
 
-1. 7 late substantive original 04 studies require full primary reads and fine-grained unit extraction, reconciliation and publication.
+1. 6 late substantive original 04 studies require full primary reads and fine-grained unit extraction, reconciliation and publication.
 2. The rest of substantive 01/02/03 historical and research corpus requires equivalent treatment, including exact original claims already summarized derivatively.
-3. The 956 provisional units lack independently audited conservation and exact final dispositions. Its denominator may grow during primary review.
+3. The 1028 provisional units lack independently audited conservation and exact final dispositions. Its denominator may grow during primary review.
 4. Direct implementation, source assets, original old docs, platform interface sources and available human carrier originals need accurate role-based treatment; inaccessible or protected sources may only be handled at permitted boundaries and cannot be called publicly assimilated.
 5. Product Authority has not settled shared state, guarantees, users/rights, execution/retention, mobile/remote and external platform contract versions. Target HOW/Architecture/LDD remain conditional.
 6. Independent scientific, public-safety, Research Amputation, cold-reader and publication-quality gates are pending for the final tree.
 
 ## Next concrete operation
 
-After rehydrating `STATE.md`, `METHOD-ROUTER.md`, relevant `FOUNDATION + MADARAII-16 + EXAMPLE-16` and the exact 566-row census, read the **next substantive late 04 original** entirely (suggested `SB-SRC-0559` machine discovery and capability catalog), emit source-positioned material-unit ledger and thematic Science articles; repeat for all 04 and remaining 01/02/03. Reconcile all 956 previously located units with specific Science anchors and independent challenge. Do not change source-level `unaccounted` until verified. Maintain documentation-only scope and public-safe source boundary.
+After rehydrating `STATE.md`, `METHOD-ROUTER.md`, relevant `FOUNDATION + MADARAII-16 + EXAMPLE-16` and the exact 566-row census, read the **next substantive late 04 original** entirely (suggested `SB-SRC-0560` cross-platform application architecture), emit source-positioned material-unit ledger and thematic Science articles; repeat for all 04 and remaining 01/02/03. Reconcile all 1028 previously located units with specific Science anchors and independent challenge. Do not change source-level `unaccounted` until verified. Maintain documentation-only scope and public-safe source boundary.
