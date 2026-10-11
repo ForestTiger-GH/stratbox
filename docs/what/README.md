@@ -2,6 +2,8 @@
 
 **Baseline:** `TW-SB-2026-10-09-CANDIDATE-1`. **Admission:** PARTIAL. Source-grounded scope and ownership constraints are distinguished from unapproved future capabilities; no candidate automatically becomes a Product Decision. This is the target product model, **not** an account of presently deployed functions.
 
+**Authority-index addition:** [Product Commitment Census](strategy-box/commitment-census.md) distinguishes admitted host and independent-core boundaries from unsettled goals in the ten original questionnaire responses. The register remains `PARTIAL` until remaining source and owner admission gates close.
+
 ## Product navigation
 
 1. [Developer-annotated research goals and admission boundaries](strategy-box/research-annotated-user-goals-and-open-admission.md) — ten primary-text answers, interpretation boundaries and deployment-profile tensions; the original DOCX byte hash remains unverified.
