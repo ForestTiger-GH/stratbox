@@ -489,7 +489,7 @@ def verify() -> dict:
                 # unchanged for faithful traceability, but inspect only the
                 # reader-visible rendering of the English destination row.
                 visible_row = re.sub(
-                    r"\\]\\((?:https?|mailto):[^)]*\\)",
+                    r"\]\((?:https?|mailto):[^)]*\)",
                     "](SOURCE_LINK)",
                     row,
                 )
