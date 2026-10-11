@@ -38,3 +38,16 @@
 **No requested new low-level signature or manifest field is admitted here.** The design constrains an implementation/testing discussion; final validators, supported interpreter versions, package-version policy and release conditions remain with the respective owners. For shared application authority or remote hosting, a separate profile-specific LDD and Product Decision are necessary.
 
 **Reopen:** changed external contract revision, package graph, native Windows verification, actual host profile, accepted user requirement or a counterexample in fault testing.
+
+
+## Runtime continuity and interaction-negative extensions (source-first, no execution)
+
+| Vector | Failure setup | Exact question and necessary verdict |
+| --- | --- | --- |
+| AX-11 | Kill the process between runtime-state JSON truncation and write completion | Does next managed startup classify existing corrupted continuity data separately from a genuinely absent state file, without falsely claiming domain Job loss or success? |
+| AX-12 | Two active clients attempt concurrent runtime-state JSON read/modify/write | Detect conflict/lost updates or explicitly declare the single-writer constraint; do not claim atomicity for plain `write_text`. |
+| AX-13 | Project a stale `active_job` or `clean_shutdown` hint after client termination | Treat as continuity projection, **not** an authoritative durable Job state or proof of cancellation/completion. |
+| AX-14 | Construct `RuntimeInteraction` payload with fabricated `capability_refs` and `diagnostics_safe=true` | A successfully decoded DTO alone must not authorize a real effect; any dispatcher needs independently verified principal/resource/effect policy. |
+| AX-15 | Round-trip a Windows state payload through exact external `RuntimeState 1.0` and Windows `RuntimeStateRecord` | Compare strict required fields, optional unknown fields, extensions, warnings and safe path redaction; report compatibility failures, not silent migrations. |
+
+These are negative acceptance intentions derived from pinned [public contract code](https://github.com/ForestTiger-GH/AppDock/blob/a4d87c643e620e54e04083d4d0b8d867513e7065/src/appdock/contracts/runtime/runtime_state.py) and [Windows runtime-state consumer](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/session_runtime.py), **not an adopted live interaction API, executed test suite or confirmed host capability**. A Product Decision about shared authority and durability remains a prerequisite for stronger promises.
