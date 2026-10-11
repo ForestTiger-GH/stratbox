@@ -108,6 +108,14 @@ def main() -> dict:
                 "SETTINGS-0044-ENGLISH-",
                 "STYLESET-0042-ENGLISH-",
                 "VISUAL-0043-ENGLISH-",
+                "SYSTEM-OWNER-0046-ENGLISH-",
+                "CORPUS-MAP-0048-ENGLISH-",
+                "ONTOLOGY-0049-ENGLISH-",
+                "DATA-KNOWLEDGE-0050-ENGLISH-",
+                "EXECUTION-0051-ENGLISH-",
+                "STATE-0052-ENGLISH-",
+                "CAPABILITY-0053-ENGLISH-",
+                "SURFACES-0054-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
