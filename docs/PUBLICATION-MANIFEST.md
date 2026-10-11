@@ -1,6 +1,6 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R17`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R18`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -8,6 +8,8 @@
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
 | Scientific orientation | `docs/science/README.md` | bounded |
+| Scientific topic: neutral extension binding and conformance | `docs/science/extensions/provider-discovery-binding-readiness-and-conformance.md` | original 03 topic 06 full read, source-driven staged-provider readiness, conformance proposals; uncertified |
+| Scientific topic: automation occurrences and governed work | `docs/science/automation/trigger-occurrence-identity-and-governed-execution.md` | source-change/calendar/event triggers with bounded admission/unknown outcomes; no live scheduler |
 | Scientific topic: access-aware event streams | `docs/science/collaboration/authorized-streams-read-cursors-and-private-work.md` | derived from fully read 03 state/collaboration Research; security assessment pending |
 | Scientific topic: shared-state restore and retention | `docs/science/state-and-recovery/shared-state-backup-generation-and-retention.md` | cross-store backup/clone/generation and 22 future invariant candidates; untested |
 | Scientific topic: distinct settings state owners | `docs/science/application-state/settings-policy-preferences-and-drafts.md` | preferences, policy, drafts, immutable inputs and extension configuration; no approved settings UI |
@@ -44,14 +46,14 @@
 
 ## Source conservation and factual boundaries
 
-The frozen census contains **566 exact Git file identities** (553 prior, 12 late topical originals, one late orientation). **35 substantive Research original studies are marked `full_read`**: 19 inherited, 12 late `04-ai-raised-topics`, four `03-consolidation-research` studies including State/Persistence/Collaboration `SB-SRC-0052` (1,229 lines; exact blob `44f0c84f8dada7c241a66bdcc7075900ac61a30d`). **1,744 provisional located semantic units** exist (1,680 prior + 64 in `units/CONSOLIDATION-STATE-COLLAB-0052.jsonl`). **26 bounded independently readable thematic Science articles** have been published. The new state-related articles retain 12 distinct source white spots, 14 conflict identities, 22 proposed invariants and nine scenario tests; all are hypotheses, not passed checks. **0/566 source files have independently certified complete material disposition, and 566/566 remain `material_unit_state=unaccounted`.** The located units are an open producer register, not a verified full denominator. Historical 01/02 and remaining 03 studies, direct code/tests and authorized human-original carriers, publication security, cold-reader Research Amputation, independent source-to-Science/Science-to-primary evidence review and Product Decisions remain open.
+The frozen census contains **566 exact Git file identities** (553 earlier, twelve later topic studies, one orientation). **36 substantive Research originals** are marked `full_read`: nineteen inherited, all twelve late `04-ai-raised-topics`, and five `03-consolidation-research` studies through Capability/Extension/Automation `SB-SRC-0053` (1,779 lines; exact source blob `c3689ec26afe9aeef80742ba2ab3f75bd2d721d5`). **1,864 source-positioned provisional semantic units** have been registered (1,744 previously located + 120 in `units/CONSOLIDATION-CAPABILITY-AUTOMATION-0053.jsonl`). The 120 include 31 thematic source spans, all **25 CF conflicts**, **32 U questions** and **32 CX candidate invariants** with exact source row locators. **28 bounded self-contained thematic Science articles** are published (five pre-existing plus twenty-three added on 2026-10-11). **0/566** source files have independent certified complete material disposition, and **566/566 remain `material_unit_state=unaccounted`**. These mapped items are an unreviewed producer register, not an independently established complete semantic denominator. Historical 01/02 and remaining 03 research, code/tests, separately authorized human originals, bidirectional verification, Research Amputation and broad public-security clearance remain open; no Product Decisions or installed conformance were adopted.
 
 The scientific topics can be read without going through Research history, and their bounded claims link directly to exact code evidence or explicitly named reasoning assumptions. The entire research corpus still fails the global Research Amputation condition.
 
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds twenty-one Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
+- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds twenty-three Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
