@@ -52,3 +52,8 @@
 | Технология очереди, СУБД, процессная граница | BOUNDED_OPEN | Пока альтернативы не могут быть сузены без профиля и измерений |
 
 **Reopen:** изменённые Product commitments, протокол внешнего managed runtime, наблюдаемый новый executor, подтверждённый effect incident или fault-injection результат. Без снятия blocking choices этот кандидат не является пригодной к непосредственной production-реализации спецификацией.
+
+
+## Accepted host-scope correction — 2026-10-12
+
+The earlier `SB-Q-01` choice about **whether any shared host will exist** is now settled by [HOST-O1..O7](../../what/strategy-box/host-deployment-commitment.md): **host capability is planned** and two deployment profiles (Web/domain and Windows/AppDock host-client installations) are admitted as product direction. Host authority is **not yet implemented**. Remaining open questions include exact Job durability during host shutdown, the persistence/effect/authorization policies, where the host executes, and how clients attach. The [host-profile HOW](../hosting/host-and-client-deployment.md) owns the current bounded mechanism and LDD route. This clarification supersedes only the old conditional existence of a shared host; the preceding technical failure and policy cautions remain applicable.

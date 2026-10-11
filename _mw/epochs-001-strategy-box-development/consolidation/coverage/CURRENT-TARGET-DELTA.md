@@ -49,3 +49,19 @@
 | [External RuntimeState hint](../../../../docs/current-how/windows-application.md) | Application-side durable Job authority **only if adopted** | EXISTING external continuity **not** proof of domain Job/effect durability; no implied remote API | Public pinned AppDock contract, only versioned scopes |
 
 **Global readiness unchanged:** these are high-value bounded Current↔Target correspondences. The actual Product Commitment Census, production host scope, retention/access policy, authoritative source unit dispositions and independent verification remain missing; no roadmap or release may be inferred. 
+
+
+## Accepted new host scope — typed Current ↔ Target delta (2026-10-12)
+
+**Target product baseline changed:** [PD-SB-HOST-2026-10-12-01](../../../../docs/what/strategy-box/host-deployment-commitment.md) supersedes the earlier conditional host-existence field. The following delta is **current-source grounded and target-admitted**, but the full program's Current HOW, exact technology and migration still require further evidence.
+
+| Identity / actual owner | Admitted target meaning | Typed change and transition constraint | Evidence limit |
+| --- | --- | --- | --- |
+| Qt coordinator, in-process scenario run and recent local JSON views at pinned Windows revision | Application host serves attached clients without projecting Qt local history as authoritative shared Job truth | `RE-OWNED / MODIFIED`: move authoritative shared admission and execution semantics to a host role, retain local UI adapter | No actual host exists in inspected code; no native runtime test |
+| Current Windows AppDock managed foreground installation | Windows/AppDock installation may serve as host, while a separate Windows/AppDock installation connects | `ADDED DEPLOYMENT VARIANT`: host-capable vs connecting-client role, with one/two repo package choice explicitly open | Requires exact external platform contract and native two-installation test |
+| No demonstrated Web-accessible Strategy Box service at pinned baseline | Host serves browser by site/domain, supported Windows and Android clients | `ADDED PRODUCT PROFILE`: authorized Web endpoint, reliable case/artifact projections | Host and Web runtime implementation absent from inspected baseline |
+| Core Python analytics callable independent of Qt | Both host types consume same core operation semantics | `PRESERVED` and re-used; avoid copying domain methods into Windows or HTTP handlers | Core import tests still required for release |
+| Client disconnect vs existing local foreground exit | Hosted work truth remains with active host, while local-only work may end with UI | `SPLIT LIFECYCLE`: do not infer cancel or success on remote client exit | Host crash/storage guarantees are separate open Decision |
+| Platform node/session/runtime-state hint | Product-owned host Case/Job state and external platform-owned activation coexist | `AUTHORITY SEPARATION`: AppDock cannot become sole owner of domain effect truth | Platform feature availability version-bound |
+
+**Specific next verification:** [HC-01..HC-16](../../../../docs/ldd/hosting/host-client-attachment-boundary.md). **Open**: protocol, host process and package organization, network/identity/authorization profiles, data retention, AppDock manifest, target delivery priority and actual migration ownership. This delta does **not** select two Windows repositories or assert an adopted server framework. Global Roadmap still `NOT_READY`.

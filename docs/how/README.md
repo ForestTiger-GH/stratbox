@@ -1,10 +1,13 @@
 # Target HOW — механизмы Strategy Box
 
 **Candidate design baseline:** `TH-SB-2026-10-09-CANDIDATE-1` на ограниченной предметной модели [Target WHAT](../what/README.md), `TW-SB-2026-10-09-CANDIDATE-1`.  
+**2026-10-12 authority update:** [Host target](../what/strategy-box/host-deployment-commitment.md) is now **admitted as necessary and planned** for both Web/domain and Windows/AppDock-hosted connections. Host-specific HOW details remain candidate until deployment/security/storage choices are approved.
+
 **Admission:** только независимость аналитического ядра и правильное распределение действующих реализаций являются принятой границей. Механизмы долговременного исполнения, сохранности артефактов и совместной работы остаются **условным проектом**, поскольку связанные требования `TW-C01..07` и эксплуатационные профили ещё не получили Product Decision.
 
 Этот раздел разделяет техническую реализацию (**HOW-R**), правильное применение (**HOW-A**) и эксплуатацию/восстановление (**HOW-O**) как три связанные обязанности:
 
+- [Two host deployment and client attachment profiles](hosting/host-and-client-deployment.md) — scoped HOW-R/A/O candidate implementing admitted HOST-O1..O7.
 - [Исполнение, состояния и внешние эффекты](execution/execution-and-effects.md) — кандидатная модель HOW-R.
 - [Работа аналитика и внешнего разрешённого потребителя](application/invoke-and-interpret.md) — HOW-A, включая ошибки использования.
 - [Наблюдаемость, диагностика и восстановление](operations/diagnosis-and-recovery.md) — HOW-O, включая деградацию и ограничения.

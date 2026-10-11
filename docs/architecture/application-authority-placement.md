@@ -1,6 +1,6 @@
 # Application authority: logical portability before physical extraction
 
-**Status:** `PA-SB-2026-10-09-CANDIDATE-1` supplement; engineering hypothesis, **not** an accepted deployable `stratbox-application` repository, service, installer or AppDock manifest. The [responsibility allocation](responsibility-allocation.md) remains the parent boundary and [Windows Current HOW](../current-how/windows-application.md) remains dated direct evidence.
+**Status:** updated against [admitted HOST-O1..O7](../what/strategy-box/host-deployment-commitment.md); **host capability and both deployment profiles are planned**, while concrete physical placement remains engineering hypothesis, **not** an accepted deployable `stratbox-application` repository, service, installer or AppDock manifest. The [responsibility allocation](responsibility-allocation.md) remains the parent boundary and [Windows Current HOW](../current-how/windows-application.md) remains dated direct evidence.
 
 ## Problem and non-negotiable boundary
 
@@ -13,9 +13,9 @@ Future Windows, Web and Android clients may need the **same meaning** of operati
 | Model | Benefit | Cost/failure mode | Admission posture |
 | --- | --- | --- | --- |
 | A. Keep all application semantics in Windows, copy to each client | Fastest for a single local UI | Case identity, effect logic and recovery diverge across Web/mobile; duplicated security checks | Viable only while one independent local runtime is the accepted scope |
-| B. Extract toolkit-independent application module inside the existing Windows repo | Minimal distribution/packaging change; explicit ports and tests can prove separation | New consumers have repo/package ownership coupling; a Web host still needs an execution authority | **Preferred smallest pilot hypothesis**, conditional |
+| B. Extract toolkit-independent application module inside existing Windows code | Quick preliminary seam for local execution semantics | Alone it cannot satisfy planned host + separate client attachment | **Interim refactor option**, insufficient as entire target |
 | C. Shared installable `stratbox-application` package/repo | One reusable application API/version and tests across clients | New release owner, dependency graph, versioning and cross-repo coordination | Conditional on a real second consumer and stable contracts; no repo created |
-| D. Shared host service as application authority with remote clients | Durable jobs, access control, consistent outcomes and attachment | Authentication, storage, host lifecycle, ops/support and network failure economics | Conditional on accepted shared-node/Web work and actual provider contract |
+| D. Host authority attached to by separate clients | Admitted remote/shared execution semantics across Web/domain and Windows/AppDock-host profiles | Authentication, storage, process lifecycle, external platform and tested failure economics | **Host capability accepted as planned; physical host mechanism still open** |
 | E. Put application orchestration inside analytical `stratbox` or AppDock | Superficially fewer moving parts | Collapses domain independence or transfers product semantics to external platform | **Rejected as default responsibility allocation** |
 
 ## Decision tests before materialization
@@ -31,7 +31,7 @@ Future Windows, Web and Android clients may need the **same meaning** of operati
 
 `stratbox`: official source and domain facts, semantics, calculation, export, neutral FileStore/provider contracts. **Logical application authority (candidate):** user Work/scenarios, admitted Run/Attempt/Job if needed, lifecycle, effect accounting, app-level permissions and Artifact catalogue references. **Windows/Web/Android clients:** UI projection and platform-specific input/output without independently inventing authoritative case outcomes. **AppDock external:** source/install/node/session/activation/host readiness and publicly proved integration contracts.
 
-No physical `stratbox-application` host or repo is selected. A single-process module may be enough initially; a host service follows only when accepted requirements demand persistence across clients, central authorization, or remote execution. AppDock remote capabilities are verified per exact published version and deployment, not assumed from a conceptual feature list.
+The **host requirement is now accepted and planned**. No physical `stratbox-application` repository, service form or AppDock manifest has been selected. A local headless module remains a useful *interim* extraction but cannot by itself satisfy the admitted cross-installation attachment target. AppDock remote capabilities are verified per exact published version and deployment, not assumed from a conceptual feature list.
 
 **Product Decisions required:** which cross-client behaviors to ship, lifetime after client exit, user/node scopes, externally observable concurrency/cancel/retry promises, data retention and permissions, ownership/packaging/versioning, and host reliability targets. Maintain the candidate while these choices remain open; do not block source-first Science or current-state validation.
 
@@ -39,5 +39,7 @@ No physical `stratbox-application` host or repo is selected. A single-process mo
 
 
 ## Selected local seam design for review
+
+The [host attachment LDD](../ldd/hosting/host-client-attachment-boundary.md) now studies the accepted host goal with Windows-host and Web-addressable deployments; exactly one or two Windows repositories remains open.
 
 A [bounded application-orchestration LDD](../ldd/application/local-scenario-orchestration-boundary.md) traces actual Windows `run_scenario` callbacks, Qt worker admission/dispatch and current JSON history failure surfaces into a pure-semantic local proposal. This **strengthens model B**, without admitting a physical `stratbox-application` repo, hosted authority, wire API or durable Job. It identifies actual aggregate false-success, premature Artifact-card and unsanitized exception-message risks to be fixed under separate implementation authority.

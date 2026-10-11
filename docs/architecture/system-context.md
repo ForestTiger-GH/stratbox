@@ -2,6 +2,8 @@
 
 **Baseline:** Target WHAT `TW-SB-2026-10-09-CANDIDATE-1`; Target HOW `TH-SB-2026-10-09-CANDIDATE-1`; Architecture `PA-SB-2026-10-09-CANDIDATE-1`.
 
+**Authoritative target correction, 2026-10-12:** [Host capability](../what/strategy-box/host-deployment-commitment.md) is **planned**, in both a Web/domain host connected to browser/Windows/Android clients and a Windows/AppDock host attached to by a separate Windows/AppDock client. The following older local/conditional diagram is a predecision historical candidate, **not** a denial of the newly admitted host. Physical placement and exact connection technology remain open.
+
 ## Акторы и внешние контуры
 
 - **Аналитик** задаёт источники, периоды и параметры банковско-макроэкономических расчётов, интерпретирует данные/артефакты.

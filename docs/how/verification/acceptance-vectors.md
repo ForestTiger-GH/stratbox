@@ -20,3 +20,8 @@
 | V14 | TW-C01 | Округлённые банковские суммы не складываются по целым | Evidence сохраняет latent/publication distinction | Domain result contract |
 
 **Тестовая запись** после фактического исполнения должна содержать exact product, code, schema, data/fixtures, external contract, environment, step, timestamp, observed outputs, decision and gate status. Таблица — план верификации, **не** report о выполненном тестировании.
+
+
+## Host target acceptance vectors admitted as scope, not executed (2026-10-12)
+
+The target host capability is now an admitted product direction under [HOST-O1..O7](../../what/strategy-box/host-deployment-commitment.md), with **two** distinct attachment deployments. Their candidate concrete integration vectors and exact evidence requirements are recorded in [HC-01..HC-16](../../ldd/hosting/host-client-attachment-boundary.md). The key product falsifications are a Web host reachable through a configured site, separate Windows/AppDock host and connecting client installations, a client disconnect that does not invent a job outcome, and a shared authority that prevents accidental dual writes. All still require real test execution and host/identity/platform decisions.
