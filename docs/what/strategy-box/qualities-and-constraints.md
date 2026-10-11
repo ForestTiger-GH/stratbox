@@ -1,32 +1,34 @@
-# Качества, ограничения и открытые обязательства Target WHAT
+# Target WHAT — qualities, constraints and open commitments
 
-**Status:** mixed — явные границы `BOUNDARY_ACCEPTED`, качество runtime пока `CANDIDATE`. Читатель должен видеть, что именно сможет проверить после Product admission.
+**Admission:** mixed. Established purpose and independent ownership boundaries may be `BOUNDARY_ACCEPTED`; quality properties of an unbuilt or untested runtime remain `CANDIDATE`. Each potential release promise requires an applicable profile, accountable owner and observable acceptance evidence.
 
-## Подтверждённые направления и ограничения
+## Established directions and constraints
 
-1. **Headless аналитическая граница.** Предметные расчёты core не должны требовать Windows UI; их использование в Python остаётся самостоятельным.
-2. **Раздельный implementation ownership.** Windows UI и приложенческий слой не меняют семантику расчёта core через копию алгоритма. Внешние platform contracts не становятся кодом ядра.
-3. **Переносимость смыслового слоя.** Повторно используемые элементы application/surface проектируются отдельно от платформенно-зависимого рендеринга для будущих клиентов, включая Android.
-4. **Безопасность публичного знания.** Опубликованные контракты остаются нейтральными по среде и не распространяют защищённые сведения.
-5. **Отсутствие обязательства сохранять устаревший API.** Breaking changes допустимы по решению владельца; отдельная политика обработки существующих пользовательских данных, артефактов и сохранённого состояния определяется явно.
+1. **Headless analytical core:** banking and macroeconomic subject algorithms must remain usable from Python without requiring the Windows UI.
+2. **Separate responsibility owners:** Windows and other application layers should consume core domain semantics without duplicating or secretly changing the computations. An external platform's versioned contract is not core source code.
+3. **Portable application meaning:** reuse application contracts and semantic UI elements across future surfaces, including Android, while keeping Qt/browser/native rendering platform-specific.
+4. **Public-source protection:** publicly published knowledge and neutral extension interfaces must avoid environment-specific protected implementation information.
+5. **No legacy API compatibility requirement:** breaking API changes are permitted where authorized. Safe handling of **existing user data, valuable artifacts and persisted state** is a distinct policy, not an accidental waiver of data integrity.
 
-## Кандидатный реестр проверяемых качеств
+## Candidate measurable quality and failure cases
 
-| Область | Возможное product property / negative case | Решение |
+| Concern | Possible property / falsifying case | Gate |
 | --- | --- | --- |
-| Data trust | Версия source/registry и evidence tier доступны для существенного вывода; неверное превращение missing в zero выявляется | NEEDS PRODUCT DECISION |
-| Execution | Восстанавливаемый Run/Job status, корректный результат отмены и retry; сбой UI не создаёт ложный успех | NEEDS PRODUCT DECISION |
-| Data persistence | Повреждение авторитетного состояния даёт диагностируемый отказ/degraded, а не тихую перезапись | NEEDS PROFILE/OWNER |
-| Effects | Опасный effect требует полномочия, scoped confirmation и receipt; нет непроверенного destructive success | NEEDS RISK POLICY |
-| Collaboration | Фильтрация объектов и событий до публикации внешнему клиенту | CONDITIONAL shared-node profile |
-| Artifacts | Полная запись+проверка bytes перед terminal published status | NEEDS ARTIFACT POLICY |
-| Observability | User-safe problem conditions отдельно от защищённых raw logs | NEEDS PRIVACY/PLATFORM CONTRACT |
-| Performance | Диапазон размеров источников, время расчёта, память, GUI responsiveness заданы по профилям | NEEDS MEASUREMENT |
-| Accessibility | Keyboard/focus/contrast/readable state независимо от цвета/анимации | NEEDS TEST PROFILE |
-| Operability | Recovery test для state+files, честный RPO/RTO и контроль обновления | NEEDS DEPLOYMENT POLICY |
+| Data trust | Source/registry revision and evidence limitations are available for material claims; absent data is never silently converted to zero. | PRODUCT DECISION |
+| Execution | Job/Run status and cancel/retry outcomes are truthful; UI failure must not be reported as confirmed worker outcome. | PRODUCT DECISION / deployed profile |
+| Durable state | Corrupt authoritative Work data produces an explicit diagnosable condition rather than silent data loss or an empty history. | OWNER / deployment profile |
+| Effects | Dangerous operations require authority, scope-specific confirmation and verifiable receipts; incomplete/ambiguous mutation is not declared fully successful. | RISK POLICY |
+| Collaboration | A remote/shared client receives only records and events authorized for the relevant principal and audience. | CONDITIONAL multiuser profile |
+| Artifacts | Writing and content verification finish before the externally visible terminal publication state; a manually deleted file can still become a simple unavailable link. | ARTIFACT POLICY |
+| Observability | Concise user-safe conditions are separate from restricted raw technical logs; relevant incident routing is scoped. | PRIVACY AND PLATFORM CONTRACT |
+| Performance | Workload, source size, latency, memory and responsiveness limits are measured against actual target devices and execution profiles. | MEASUREMENT |
+| Accessibility | Keyboard operation, focus, text scaling, contrast and state interpretation remain usable without color or motion alone. | TESTED TARGET PROFILE |
+| Operations and recovery | Recovery of connected state+files, truthful RPO/RTO and controlled upgrades are exercised, not merely declared. | DEPLOYMENT POLICY |
 
-Таблица намеренно **не задаёт числовые пороги**: подходящий уровень должен опираться на реальные устройства, исследованные нагрузки, риск, операционный сценарий и подтверждённые внешние обязательства.
+**Numeric thresholds are deliberately not invented.** The right performance or durability guarantee depends on actual user hardware, source sizes, criticality, workload, host installation and independently demonstrated failure/recovery behavior.
 
-## Приёмка WHAT и зависимостей
+## Scope and admission
 
-На данном baseline доступны проверяемые общие границы и набор candidate properties, но **нет** полного Product Commitment Census для всех source decisions и профильного наблюдаемого поведения будущей системы. Поэтому этот набор пригоден для предметного обсуждения Target WHAT, а не для заявления о готовой полной спецификации. Решение, меняющее смысл продукта, заносится в полномочный target owner и только после этого создаёт обязательство HOW.
+The present baseline offers an independently readable list of purpose, risks and **candidate** qualities but is not a complete Product Commitment Census covering every historical user decision and every new operating profile. It is suitable for reviewing WHAT choices; it does not itself establish a released product specification.
+
+Before a candidate becomes binding, record the authorized product decision, applicable deployment and data profile, exact observable acceptance tests, known limitations, versioned external contracts and implementation owner. Only then may Target HOW select physical stores, schedulers, API protocols and client rendering choices without silently promoting Research into policy.
