@@ -1,6 +1,6 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R11`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R12`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -8,6 +8,9 @@
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
 | Scientific orientation | `docs/science/README.md` | bounded |
+| Scientific topic: proportional engineering assurance | `docs/science/engineering/proportional-assurance-and-knowledge-admission.md` | MADAR comparison and 44 crosswalk rows; methodological scope-only, 71 provisional units |
+| Scientific topic: Work closure and evidence | `docs/science/work/evidence-based-work-lifecycle-and-closure.md` | 75 provisional units, 18 candidate invariants, no runtime validation |
+| Scientific topic: semantic integration owners | `docs/science/architecture/semantic-ownership-and-contract-boundaries.md` | direct-code-qualified and 70 provisional source units, unapproved target options |
 | Scientific topic: client semantic portability | `docs/science/surfaces/semantic-portability-and-client-authority.md` | cross-platform original fully read; 68 provisional unit locators, independent review open |
 | Scientific topic: machine capability discovery | `docs/science/capabilities/machine-discovery-bindings-and-adapters.md` | six late full-read source with 72 provisional units, independent check open; protocols are target-only |
 | Scientific topic: identity and authorization | `docs/science/trust-and-assurance/identity-authorization-and-effect-boundaries.md` | source-qualified and code-backed provisional Science; no current multiuser security certification |
@@ -32,14 +35,14 @@
 
 ## Source conservation and factual boundaries
 
-The admitted frozen census now contains **566 indexed Git file sources** (553 original path/blob identities plus 12 late research papers and one research-series orientation). As of this publication: **26 substantive original files have `full_read` state** (19 inherited, seven late sources: state/recovery, source observation, observability, artifacts, security, machine interfaces and cross-platform architecture); **one additional 04 orientation README is marked `governing_read`**; **1096 provisional meaning units** are located (582 inherited + 76 state + 72 vintage + 86 observability + 64 artifacts + 76 security + 72 machine interfaces + 68 cross-platform); **0/566** source files have certified final material disposition. All **566** `material_unit_state` entries therefore remain `unaccounted`. These units are NOT a global count of exhaustively preserved corpus meaning. The seven fully read late studies have public-safe topical destinations, but their 514 mappings are not independently reverse-certified; five other late substantive studies still await full original-unit extraction. Source-level `full_read` means the source was read, not that all its meaning is already proven absorbed. The external human-supplied carriers retain separate authorized-access accounting.
+The frozen census contains **566 indexed Git files** (553 prior path/blob identities, 12 late topical Research originals and one orientation). **29 substantive source files carry `full_read`** (19 inherited + ten of twelve late topics). One late 04 orientation additionally carries `governing_read`; other governing/orientation entries in the census are independent read-state categories, not substantive studies. **1,312 provisional meaning-unit records** are located: 582 inherited plus late studies 76+72+86+64+76+72+68+70+75+71. **Two late substantive originals remain unread: `SB-SRC-0554` and `SB-SRC-0555`.** All **566/566** census entries retain `material_unit_state=unaccounted`, and **0/566** sources have independent final unit-conservation certification. Thus located units do not establish a complete denominator or full Science conservation. Human-supplied carriers retain separately restricted/authorized original-access accounting. The late ten mapped original studies contribute 730 located units, whose specific claims remain subject to independent source-to-destination and reverse validation.
 
 The scientific topics can be read without going through Research history, and their bounded claims link directly to exact code evidence or explicitly named reasoning assumptions. The entire research corpus still fails the global Research Amputation condition.
 
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds nine Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
+- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds twelve Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
