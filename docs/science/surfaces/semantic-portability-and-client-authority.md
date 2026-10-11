@@ -1,0 +1,158 @@
+# Semantic portability, client surfaces, and application authority
+
+**Problem domain:** reusing Strategy Box analytical and application meaning across a Windows desktop, a browser, and a prospective Android client without duplicating business rules, confusing presentation with execution authority, or treating a future platform capability as already deployed. **Status:** independently readable scientific/engineering analysis grounded in a pinned implementation baseline, direct user needs reported by the source research, and explicitly competing target alternatives. No web, Android, or standalone host release is certified here.
+
+## 1. A shared product does not imply shared widgets
+
+Three ambitions need separate tests:
+
+1. **Product-semantic equivalence:** the same permitted operation, parameter meaning, accepted Run, terminal outcome, source/provenance and artifact identity remain consistent across clients.
+2. **Source-code reuse:** a module or component is written once and consumed directly by multiple runtimes, or rendered from a shared, language-neutral contract.
+3. **Visual similarity:** layouts, dimensions and exact pixels match.
+
+The first is the essential consistency requirement. The second is an optimization that can fail when Windows is Python/Qt but Web uses TypeScript and Android uses Kotlin. The third may actively degrade browser tables, keyboard workflow, touchscreen ergonomics or accessibility. Shared **semantic tokens and actions** matter more than an identical screen.
+
+A reusable design therefore distinguishes **domain code**, **application use cases and authorization**, **portable read projections**, **protocol schemas**, **presentation semantics**, **OS/runtime adapters** and **deployment/activation binding**. The relevant distinction is who owns a fact and who can change it, not merely where a class is physically placed.
+
+## 2. The current baseline: reusable core, partially coupled Windows application
+
+At pinned [core revision](https://github.com/ForestTiger-GH/stratbox/tree/8459dc58922b7e8df853cf1d9e8131fa9e132580), the statistical Python domains, parsers, reports and FileStore operate without Qt. Direct Python/Colab use is meaningful, even though not every domain exposes an identical canonical operation specification.
+
+The pinned [Windows runtime bootstrap](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/bootstrap.py) imports the concrete Qt `ScenarioCoordinator`; the [Qt coordinator](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/qt_desktop/scenario_coordinator.py) owns one QThread/active Case. The [scenario runner](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/runner.py) sequences selected steps and emits local events/artifact records. The [semantic scenario-chat projector](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/common/scenario_chat/projector.py) shows a useful Qt-independent mapping from stored cases/events to presentation messages, but is not itself an interoperable TypeScript/Kotlin data contract.
+
+Other direct limitations:
+- [Five local history JSON files](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/history/persistence.py) are not a shared transactional authority; malformed histories can be read as empty.
+- Artifacts represented by native host paths are not directly usable as remotely authorized browser/phone file identities.
+- In the pinned Windows [deployment manifest](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/appdock/manifest.json), the declared working surface is local/foreground desktop, not a released host/web/mobile capability.
+- The cross-repository research observed version drift: core `pyproject.toml` at the studied snapshot reported `0.8.0`, while the Windows project and its manifest pinned `stratbox==0.2.1`; a Windows README reference to Connector `3.0` also differed from manifest `4.0`. Those are **dated static contract observations**, not successful package compatibility or installation tests.
+
+None of these facts says the existing desktop is useless; they identify specific seams that must be qualified before making remote-running guarantees.
+
+## 3. Competing architecture models
+
+| Model | Attraction | Failure / cost | Evidence-calibrated assessment |
+| --- | --- | --- | --- |
+| **Remote control of a Windows GUI** | Minimal initial replacement | UI lifetime becomes job lifetime, poor browser interaction, desktop-local history and identity | Prototype only; unsuitable as the promised product-semantic owner |
+| **Independent Windows/Web/Android application engines** | Every client can move fast with native language | Divergent permissions, parameters, effect retry and Run outcomes | Semantic duplication must be resisted |
+| **One logical application authority, several clients** | One accepted Run and permission decision with client-specific projections | Requires a real executor, state owner, API/session, availability and reconnection | Strong target model, **physical location unresolved** |
+
+The chosen logical role need not immediately become a separate repository or service. For a local-only Windows profile it might exist in-process behind neutral ports. To truthfully continue work after a remote browser closes, an actual host process with independent lifecycle is necessary. A separate `stratbox-host` repository becomes reasonable only when it has its own runnable entry point, release, API/persistence/authorization responsibility, tests and operational owner. An empty repository or shared code copied into each client has no equivalent value.
+
+**Cross-research conflict:** an earlier platform-portability analysis suggested local SQLite as the first durable host metadata store; later storage and observability research explicitly allowed atomic file state or append-only event journal first, with future storage provisioned through the external platform. Both insist on one logical authority and verified recovery. **The physical backend, storage guarantee and process packaging remain Product/Architecture Decisions.**
+
+## 4. A portability classification that follows authority
+
+| Responsibility | Canonical owner or common semantics | Surface-specific realization |
+| --- | --- | --- |
+| Statistical algorithms and source semantics | The existing `stratbox` domain core | Invoked locally in Python or on a host; not reimplemented in browser |
+| Operation IDs, typed parameters, output/effect semantics | Curated application/domain contract | Input controls, human labels, client-specific form rendering |
+| Scenario composition and resolved planning | One application use-case owner | Step graph editor or simple form |
+| Admission, durable Run/Attempt, effects and authorization | One local/host application authority when deployed | Submit buttons and progress cards |
+| Thread/Case/Run read models | Shared DTO identities, statuses and audience projections | Qt, DOM and Android layouts |
+| Artifact/resource identity | Logical refs with authorized file resolution | Native open/reveal, browser download, Android share |
+| Identity, membership and object permissions | Verified server/local authority | Login forms, session storage, profile menu |
+| Design semantics | Status roles, typography, density, spacing, icon/action meaning | QSS mapping, CSS variables, Compose/RN/Flutter theme |
+| Offline drafts and layout preferences | User/device scope, never shared execution truth | Browser storage, Windows settings, Android storage |
+| Root/activation/capabilities | Versioned external platform contract through adapter | OS/process-specific integration |
+| Notifications/clipboard/shortcuts | Semantic notification and action type | OS/browser-specific affordance |
+
+A Python class is not truly neutral if importing the application requires PySide6. A Python function reference inside `OperationSpec` may be valid for a host executor, but it is not a client-executable Web instruction. `Path`/`QDateTime` should not leak into cross-language DTOs. The external activation context, internal credentials and raw managed directory paths must not be serialized wholesale into browser responses.
+
+## 5. A small portable product boundary
+
+Two interfaces are substantively different:
+- **Domain Operation API:** Python Request/Result, source retrieval, statistical methods, domain audit and file processing; usable without any GUI.
+- **Product Application API:** authorized capability discovery, scenario form semantics, Run submission, lifecycle/status query, event cursor, artifact metadata/content, permissions and safe error projection.
+
+A **third** adapter reads external deployment/Node/Session/Data/root information, validates versions and constructs application-safe capabilities. It does not make deployment manifest values authoritative for an actual effect or user identity.
+
+A possible *illustrative* minimal external API has capability/form discovery, `submit_run(idempotency_key, typed_params)`, `get_run(run_id)`, snapshot/subscription with cursor, `get_artifact`, permitted `get_artifact_content` and session/node capability views. These are **roles**, not an existing route set or accepted wire signature. If a returned `RunProjection` includes `revision`, `as_of`, status, progress, author, artifact refs and `available_actions`, the last field is *advice for rendering*; every mutating command must re-check live permission/state.
+
+Transport semantics require distinguishing `accepted`, `rejected`, `needs_approval`, `conflict`, `failed`, `partial`, and `unknown_effect`. A network timeout after submit cannot prove rejection; retry with the same idempotency identity should retrieve the original admitted Run. HTTP [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html) offers a suitable *error representation*, not a replacement for domain Problem/Run status. [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/) provide interoperable descriptions; business effects and authorization still require live enforcement.
+
+## 6. Snapshot and event-stream reliability
+
+A minimal remote client may use request/response commands and queries plus [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) for live changes. WebSocket can be considered when truly bidirectional high-rate interaction is justified; using WebSocket does not in itself resolve reliability.
+
+Important sequence: **retrieve an authorized snapshot and cursor → subscribe after cursor → deduplicate by event ID → detect gaps/expired cursor → retrieve a new snapshot**. Disconnected or stale is the **client's synchronization condition**, not the Run's failure. High-rate progress can be coalesced, while terminal events and effect confirmations need durable semantics.
+
+A background browser tab, PWA service worker or Android Activity is not the authority for a long-running banking Job. In a local foreground profile, closing Windows may interrupt execution; in a true host profile, closing a client merely detaches it. The deployment must say which behavior is available, and reconnect must not fabricate fresh worker status from an expired heartbeat.
+
+## 7. Web and Android are distinct consumer profiles
+
+The user-backed direction in the dated research gives **Web explicit importance** (not merely optional Android portability). Initial Android use is **remote-first**, focusing on selecting a permitted task, checking multiple active Runs, submitting a manageable form, viewing verified results, receiving warnings and opening an artifact. Heavy offline computation and a full local Python/data estate were hypothetical future options. Those statements carry *user-intent* weight in the source Research, **not evidence of completed releases or approved scope dates**.
+
+A desktop browser needs tables, dense forms, keyboard/drag-and-drop and large-workspace navigation. A phone often needs concise cards, touch-size actions, share intents and compact state; a tablet may support more. Adaptive breakpoints should follow available window size rather than a simplistic platform label. A responsive Web/PWA can test mobile needs before commissioning a native APK; it does not guarantee native-equivalent background execution, notifications or OS integration.
+
+Three different offline promises must remain distinct:
+1. **Offline read-only view** of last-synced information, marked stale.
+2. **Offline personal drafts**, protected and revalidated at submit.
+3. **Offline analytical execution**, needing a separate local runtime and data/source profile.
+
+Automatically replaying queued *destructive* work after reconnect is unsafe because permissions, inputs or planned effects may have changed. Revalidation and new confirmation may be necessary.
+
+## 8. Semantic design system rather than widget copying
+
+A scalable visual system has four levels: **semantic roles** (success/warning/unknown etc.), **design tokens** (color, type, spacing, density, motion), **component semantics** (RunCard, ScenarioForm, ArtifactRow, ErrorSummary, NodeStatus, ApprovalAction), and **renderer** (Qt Widgets, Web HTML/CSS, Android Compose/RN/Flutter). The shared contract is the set of states and actions, not Qt stylesheet or DOM structure.
+
+A RunCard can render as a desktop row with inspector/menu, a browser ARIA-enabled responsive card, and an Android summary/bottom-sheet. They must agree on `run_id`, outcome, progress, author and available actions. Accessibility requirements such as keyboard focus, contrast, reduced motion, screen-reader semantics and touch targets should be checked in actual renderers; [WCAG 2.2](https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/) and [Android window-size guidance](https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes) are relevant standards, **not tests of this product**.
+
+Current technology alternatives with different strengths:
+- **React/TypeScript Web + Android Compose:** idiomatic browser/Android behavior, duplicated renderer source.
+- **React/TypeScript Web + React Native/Expo Android:** potential reuse of TS state/forms/hooks, with separate DOM/data-grid limitations.
+- **Flutter Web + Android:** high UI source reuse and strong mobile story, but browser semantics and accessibility need a concrete spike.
+- **Qt/Qt Quick on Android:** possible toolkit support, yet Windows Qt Widgets source and CPython wheels do not become automatically portable.
+- **Responsive Web/PWA first:** lower deployment cost and useful mobile learning, but native affordances remain conditional.
+
+There is **no measured winner** for Strategy Box. The current Qt desktop need not be rewritten merely for source reuse. Compare the same ScenarioForm + RunTimeline across candidate renderers using measurable build, a11y, input and latency criteria.
+
+## 9. Internet-accessible Web introduces a trust boundary
+
+A display nickname in a trusted local team is not identity for an Internet-exposed API. An initial small installation might use administrator-provisioned accounts rather than self-service email registration, but it still needs authentication and object-level authorization for each Run, Artifact and mutating action.
+
+Baseline safeguards for a real public deployment include TLS, protected credential storage (e.g. salted adaptive password hashes), secure session cookies or equivalent transport, CSRF/origin defenses for cookie-authenticated mutations, login rate limits, logout/revocation, and server-side checks. Credentials cannot be hard-coded into frontend code or a public manifest. The browser's submitted `author_id` is not the trusted author of a Run; the server binds it to the authenticated principal. Separate **principal_id**, **participant/display identity**, and **device/session identity**.
+
+This is a bounded security floor, not a request to build a custom enterprise IAM service. Later federation/OIDC is a possible adapter if demanded. See [authorization and effects](../trust-and-assurance/identity-authorization-and-effect-boundaries.md), [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) and [session/CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
+
+Shared visibility of team chats does **not** grant raw log download, arbitrary server filesystem access or permission to cancel another user's task. File responses must resolve logical references and deny traversal attempts such as `../` before touching host paths.
+
+## 10. Deployment/activation truth is layered
+
+The external platform's responsibilities must remain separate:
+1. **Source manifest** states partial product requirements and supported surface intentions; it is not a secret vault.
+2. **Authoring/resolved configuration** chooses permitted deployment and fills admissible installation-specific fields.
+3. **Release/installation truth** confirms what executable/API/assets and runtime dependencies were actually packaged and installed.
+4. **Activation/runtime** provides verified local Node/Data/Session/capability/endpoint bindings; the product tests real service readiness and current authorization.
+
+A manifest declaring `remote` cannot make an uninstalled host API operational. A platform role of `host` does not prove worker availability. `available_actions` on the client do not confer permissions. Until a versioned external contract is confirmed, use one narrow adapter and explicit `unsupported/unavailable`, rather than inventing remote SDK methods. The platform owns installation and runtime handoff; Strategy Box owns statistical methods, Run admission, effects and result semantics.
+
+For physical deployment, the *design space* includes local Windows authority, Windows remote client, host with Web assets and API, browser-only client, Android remote controller, and hypothetical Android local executor. In the pinned baseline only the local desktop profile is evidenced. Native/PWA packaging, host capability and remote authorization cannot be deduced from names in a manifest.
+
+## 11. Negative tests, operational costs and unanswered decisions
+
+Future acceptance probes should include:
+
+| Probe | What an incorrect result would expose |
+| --- | --- |
+| Import portable application without PySide6 | GUI package remains hidden mandatory dependency |
+| Python ↔ TypeScript/Kotlin DTO fixture round-trip | Inconsistent enum/date/path semantics |
+| Two clients launch independent Runs | UI-global busy flag is mistaken for resource scheduling |
+| Same idempotency key after lost response | Duplicate admitted Run or side effect |
+| Close browser during host Job | Frontend incorrectly owns execution |
+| Android resumes after offline | Old snapshot rendered as current status |
+| Permission removed between view and action | UI `available_actions` trusted instead of live authorization |
+| Input/form schema changed during a draft | Stale parameters/effects executed without revalidation |
+| Download an uncommitted Artifact | Publication inferred from file existence |
+| Move/delete host output | Wrong similarly named file served or history erased |
+| Host path traversal or unauthenticated browser command | Missing namespace/auth boundary |
+| Disconnected platform capability | Future hypothetical API treated as operational |
+| Change Windows managed root or update | Hard-coded paths break state/diagnostics |
+| Same UX on small phone and big desktop | Touch, data grid or keyboard tasks become unusable |
+| Huge history/20–200 MB download on slow hardware | Unmeasured latency or unsafe all-in-memory transfer |
+| PWA app moved to background | Browser mistakenly expected to run durable Python worker |
+
+These are candidate tests only; no measured scores, working browser host or mobile APK are demonstrated here. Product Decisions remain open for initial Web feature scope, exact Android responsibilities, host process/repository ownership, DTO/schema versions, authentication policy, state durability, SSE vs WebSocket, client toolkits, PWA-first deployment, source-version requirements, and offline behavior.
+
+**Strongest retained conflicts:** (a) desire for two new client repositories versus possible need for a separately owned host; (b) single UI codebase versus platform-native usability; (c) earlier SQL-first storage recommendation versus later platform-provisioned file-first profile; (d) local nicknames versus public Internet identity; (e) shared chats versus private artifacts/logs. Their common logical solution is not an already-approved infrastructure topology.
+
+**Conditions to revisit:** validated end-to-end host slice, actual installed external-platform remote binding, new user-accepted Web/Android scope, performance/accessibility spike results, new security requirements, and direct changes to pinned Windows/core source.
