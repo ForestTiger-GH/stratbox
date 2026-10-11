@@ -2,6 +2,16 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — canonical semantic identity source integrated
+
+**Observed producer status:** **566** pinned sources, **33** substantive originals fully read (19 inherited, 12 later 04, 2 consolidation-research originals), **1,611** provisional located meaning units, **22** bounded self-contained Science articles, **0** independently certified complete dispositions, **566** sources still unaccounted.
+
+The fully read 1,244-line `SB-SRC-0049` (exact source blob `c5d732e6a3ac36fc042894e2e30f848c26daa72c`) added **59** source-positioned provisional units in `units/CONSOLIDATION-SEMANTICS-0049.jsonl` and a new English thematic Science owner `docs/science/architecture/semantic-identities-lifecycles-and-projections.md`. It preserves 14 orthogonal identity/truth axes, six ID families, independent temporal coordinates, 22 conflict items S01–S22, 25 unresolved semantic questions, and 15 future conformance challenges.
+
+This is **producer publication**, not independent verification. Narrow primary implementation sources are linked; original 03 and 02 files, historical notes, all direct implementation/test sources and authorized human carrier evidence require more source-to-Science and reverse verification. Next original: `SB-SRC-0051` Work→Execution, unless independent challenge of 0049/0050 reveals an earlier omission.
+
+## Historical active checkpoint — superseded below
+
 ## Active checkpoint — first complete 03 Research-to-Science slice
 
 **Exact observed producer state:** 566 frozen Git sources, **32 substantive original full reads** (19 inherited + all twelve 04 + 03 data-to-knowledge `SB-SRC-0050`), **1,552 provisional located source-positioned units** (582 + 885 + 85), **21 self-contained bounded Science articles**, **0/566 independently certified sources**, **566/566 unaccounted source dispositions**.
