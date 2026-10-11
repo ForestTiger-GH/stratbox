@@ -80,6 +80,7 @@ def main() -> dict:
                 "REGISTRY-SOURCE-0035-ENGLISH-",
                 "ARTIFACT-0027-ENGLISH-",
                 "FORMAT-0028-ENGLISH-",
+                "SHARED-NODE-0036-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
