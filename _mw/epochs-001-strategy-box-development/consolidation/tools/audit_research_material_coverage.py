@@ -95,6 +95,8 @@ def main() -> dict:
                 "PORTABILITY-0023-ENGLISH-",
                 "LATE-ONTOLOGY-0554-ENGLISH-",
                 "LATE-LIFECYCLE-0555-ENGLISH-",
+                "LATE-STATE-0556-ENGLISH-",
+                "LATE-ARTIFACT-0557-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
