@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 5 bounded original-source ledgers (currently 323 exact items),
+Checks 5 bounded original-source ledgers (currently 353 exact items),
 their original Git blob identities, text transfer and Science relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58, "0033": 30}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -30,6 +30,7 @@ LEDGERS = (
     "SEMANTIC-INVARIANTS-EXACT-ITEMS-0029.jsonl",
     "COGNITIVE-BOUNDARY-EXACT-ITEMS-0031.jsonl",
     "EPISTEMIC-TESTS-AND-FIREWALLS-EXACT-0019.jsonl",
+    "THREAD-WORK-UX-CHOICES-EXACT-0033.jsonl",
 )
 
 
@@ -142,6 +143,23 @@ def verify() -> dict:
                     issues.append(f"{label}: stored test body differs from frozen original")
                 if item.get("original_exact_meaning") and lines[first - 1].strip() != expected:
                     issues.append(f"{label}: original firewall line changed")
+            elif source_id == "SB-SRC-0033":
+                if destination_id not in rendered:
+                    issues.append(f"{label}: original chat/Work item ID missing")
+                if item.get("original_heading"):
+                    heading = item["original_heading"]
+                    reason = item["original_explanation"]
+                    if heading not in lines[first - 1] or reason not in lines[first + 1]:
+                        issues.append(f"{label}: original source anti-pattern changed")
+                    if heading not in rendered or reason not in rendered:
+                        issues.append(f"{label}: chat/Work anti-pattern text missing")
+                else:
+                    question = item["original_question"]
+                    recommendation = item["original_recommendation"]
+                    if question not in lines[first - 1] or recommendation not in lines[first - 1]:
+                        issues.append(f"{label}: original source UX recommendation changed")
+                    if normalized_for_markdown(question) not in rendered or normalized_for_markdown(recommendation) not in rendered:
+                        issues.append(f"{label}: original UX recommendation missing")
             else:
                 if destination_id not in rendered:
                     issues.append(f"{label}: source-addressable item ID missing")
