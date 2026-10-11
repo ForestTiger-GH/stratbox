@@ -66,27 +66,27 @@ def main() -> dict:
             if sha and sha != registered[sid]["blob_sha"]:
                 issues.append(f"{path.name}:{n} original frozen blob SHA mismatch")
             locator_only = v.get("status") == "section_locator_only_semantic_equivalence_unverified"
-    # These explicitly source-addressed English-rendered candidate rows are
-    # producer transcriptions, not scientific equivalence assessments.
-    # Classification must include both exact original-wording and translated
-    # line-pinned ledgers; otherwise the inventory mislabels coverage gaps.
-            exact_text = (
-                path.name.startswith((
-                    "BANK-MACRO-COMPARABILITY-EXACT-",
-                    "COGNITION-FOUNDATION-EXACT-",
-                    "COGNITIVE-BOUNDARY-EXACT-",
-                    "EPISTEMIC-TESTS-AND-FIREWALLS-EXACT-",
-                    "MACHINE-READINESS-EXACT-",
-                    "PROVIDER-EXACT-",
-                    "SEMANTIC-INVARIANTS-EXACT-",
-                    "THREAD-WORK-UX-CHOICES-EXACT-",
-                    "TOPIC08-EXACT-",
-                    "WHOLE-SYSTEM-INV-TQ-ENGLISH-",
-                    "QUALITY-08-NEGATIVE-",
-                ))
-            )
+            # Source-exact quotation and English translation are distinct
+            # evidence classes. Both are line-addressed producer mappings,
+            # neither is independent proof of semantic equivalence.
+            english_row = path.name.startswith((
+                "WHOLE-SYSTEM-INV-TQ-ENGLISH-",
+                "QUALITY-08-NEGATIVE-",
+            ))
+            exact_text = path.name.startswith((
+                "BANK-MACRO-COMPARABILITY-EXACT-",
+                "COGNITION-FOUNDATION-EXACT-",
+                "COGNITIVE-BOUNDARY-EXACT-",
+                "EPISTEMIC-TESTS-AND-FIREWALLS-EXACT-",
+                "MACHINE-READINESS-EXACT-",
+                "PROVIDER-EXACT-",
+                "SEMANTIC-INVARIANTS-EXACT-",
+                "THREAD-WORK-UX-CHOICES-EXACT-",
+                "TOPIC08-EXACT-",
+            ))
             direct_code = "read_status" in v
             kind = ("section_locator_only" if locator_only else
+                    "source_row_traced_english" if english_row else
                     "exact_text_transcription" if exact_text else
                     "code_test_direct_read" if direct_code else
                     "producer_provisional_semantic")
@@ -96,7 +96,7 @@ def main() -> dict:
                 continue
             if kind == "producer_provisional_semantic":
                 dest = (v.get("science_destination") or "").split(" §")[0]
-            elif kind == "exact_text_transcription":
+            elif kind in ("exact_text_transcription", "source_row_traced_english"):
                 dest = v.get("science_destination") or v.get("preserved_exact_test_row") or ""
             else:
                 dest = v.get("route_candidate") or ""
@@ -113,6 +113,7 @@ def main() -> dict:
 
     no_semantic = []
     no_exact = []
+    no_source_row_trace = []
     no_destination = []
     pinned_bad = []
     read_by_role = Counter()
@@ -127,10 +128,14 @@ def main() -> dict:
             if blob != row["blob_sha"]:
                 pinned_bad.append([sid, "SOURCE_CHANGED_FROM_FROZEN_CENSUS", row["path"]])
         values = by_source[sid]
-        if values["producer_provisional_semantic"] == 0 and values["exact_text_transcription"] == 0:
+        if (values["producer_provisional_semantic"] == 0 and
+                values["exact_text_transcription"] == 0 and
+                values["source_row_traced_english"] == 0):
             no_semantic.append(sid)
         if values["exact_text_transcription"] == 0:
             no_exact.append(sid)
+        if values["exact_text_transcription"] == 0 and values["source_row_traced_english"] == 0:
+            no_source_row_trace.append(sid)
         if not destinations[sid]:
             no_destination.append(sid)
     return {
@@ -147,6 +152,7 @@ def main() -> dict:
         "number_of_ledgers": len(ledger_rows),
         "research_originals_without_semantic_provisional_or_exact": sorted(no_semantic),
         "research_originals_without_exact_transcriptions": sorted(no_exact),
+        "research_originals_without_either_exact_or_english_source_row_trace": sorted(no_source_row_trace),
         "research_originals_without_destination": sorted(no_destination),
         "unaccounted_git_source_records": sum(
             r["material_unit_state"] == "unaccounted" for r in all_rows
@@ -162,6 +168,7 @@ def main() -> dict:
                 "read_state": original["read_state"],
                 "provisional_semantic": by_source[sid]["producer_provisional_semantic"],
                 "exact_text": by_source[sid]["exact_text_transcription"],
+                "english_source_row": by_source[sid]["source_row_traced_english"],
                 "section_only": by_source[sid]["section_locator_only"],
                 "destination_count": len(destinations[sid]),
             }
