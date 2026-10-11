@@ -1,5 +1,13 @@
 # Bounded Science publication integrity check — 2026-10-11
 
+## Latest structural check — 39 Science Markdown files
+
+**Exact pinned Git tree:** `ForestTiger-GH/stratbox@fc5c7e59a7efae7ebf924479507e70a870d848c8`. All **39** `docs/science/**/*.md` files (37 thematic Science articles and two guides) were fetched on this tree in **three disjoint batches of 13**. Inline local Markdown file-target links checked: **173 = 94 + 31 + 48**, with **zero** missing normalized destination files. A narrow case-insensitive screen of `stratbox[-_.]plugin`, `private[-_]plugin` and `lincore[-_]dock[-_]private` returned **zero hits** in those 39 files. The newer index-only wording correction did not move files or change the counted destinations.
+
+**Pass scope:** `BOUNDED_RELATIVE_FILES_39_OF_39_173_OF_173`. This is a producer-side file-existence/selected-lexeme check, **not** independent verification under a separate context. It does not test heading anchors, reference-style/HTML links, external URI reachability, public anonymity, full confidential semantic content, current code facts, original Research meaning coverage, source lineage, edited docs outside Science or installed runtime behavior. Broader clearance and Research Amputation remain OPEN.
+
+---
+
 ## Latest bounded structural pass — 36 Science Markdown files
 
 **Inspected exact Git tree:** `ForestTiger-GH/stratbox@111595de58794dcf16dde650aef15e5dce42a93d` (after both new articles, updated source ledger and navigation/manifest; before this later report checkpoint). This pass supersedes the earlier 34-file measurement below.
