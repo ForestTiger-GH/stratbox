@@ -4,6 +4,7 @@
 
 ## Independent study paths
 
+- [Semantic identities, lifecycles and projections](architecture/semantic-identities-lifecycles-and-projections.md) — definition and occurrence IDs, 14 orthogonal semantics, five settings scopes, 22 conflicting conceptual claims and 15 test cases.
 - [Observation semantics, economic comparability and qualified claims](data-and-knowledge/observation-semantics-comparability-and-claims.md) — banking perimeters, missingness, geography, validation levels and evidence support.
 - [Dataset versions, lineage, currentness and evidence retention](data-and-knowledge/dataset-versions-lineage-currentness-and-retention.md) — snapshots, dataset identity, dependency revalidation, artifact style and explicit retention conflicts.
 - [Interruption, cancellation, retry and verified checkpoints](execution-and-diagnostics/interruption-cancellation-retry-and-checkpoints.md) — local-close semantics, cooperative stopping, stage reuse, safe file publication and competing storage choices.
@@ -30,4 +31,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** twenty-one topics offer separately traced scientific understanding. The sixteen 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** twenty-two topics offer separately traced scientific understanding. The seventeen 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
