@@ -1,15 +1,15 @@
 # Target WHAT — Strategy Box
 
-**Baseline:** `TW-SB-2026-10-09-CANDIDATE-1`. **Admission:** PARTIAL / source-bound identity and boundary constraints; all unapproved capability additions explicitly CANDIDATE. Это единая целевая предметная модель, а не описание реализованного приложения.
+**Baseline:** `TW-SB-2026-10-09-CANDIDATE-1`. **Admission:** PARTIAL. Source-grounded scope and ownership constraints are distinguished from unapproved future capabilities; no candidate automatically becomes a Product Decision. This is the target product model, **not** an account of presently deployed functions.
 
-## Чтение продукта
+## Product navigation
 
-0. [Проверяемые пользовательские цели из десяти аннотированных тем и границы допуска](strategy-box/research-annotated-user-goals-and-open-admission.md) — прямые ответы, исследовательские интерпретации и несовместимые профили эксплуатации; полный исходный текст доступен отдельно с непроверенным DOCX binary SHA.
-1. [Назначение, целевая область и исключения](strategy-box/identity-and-scope.md).
-2. [Семантическая модель и конкретный состав](strategy-box/semantic-target.md).
-3. [Качества, ограничения и открытые продуктовые обязательства](strategy-box/qualities-and-constraints.md).
-4. Компонентные представления: [аналитическое ядро](components/core.md), [Windows-клиент](components/windows.md), [будущие поверхности](components/future-surfaces.md).
+1. [Developer-annotated research goals and admission boundaries](strategy-box/research-annotated-user-goals-and-open-admission.md) — ten primary-text answers, interpretation boundaries and deployment-profile tensions; the original DOCX byte hash remains unverified.
+2. [Purpose, target scope and exclusions](strategy-box/identity-and-scope.md).
+3. [Semantic model and target elements](strategy-box/semantic-target.md).
+4. [Qualities, constraints and open commitments](strategy-box/qualities-and-constraints.md).
+5. Component projections: [analytical core](components/core.md), [Windows client](components/windows.md), [future surfaces](components/future-surfaces.md).
 
-**Состояния:** `BOUNDARY_ACCEPTED` — подтверждённая исходная роль или ограничение, которое следует сохранять; `CURRENT_OBSERVED` — факт текущего среза, не дополнительное целевое обещание; `CANDIDATE` — предмет предложения, требующий отдельного продуктового решения; `CONDITIONAL` — действует лишь после согласования указанного профиля. Редакционная публикация не повышает эти статусы до общего утверждения.
+**Evidence/admission states:** `BOUNDARY_ACCEPTED` indicates a defensible existing purpose or restriction; `CURRENT_OBSERVED` describes a dated implementation witness only; `CANDIDATE` requires product admission; `CONDITIONAL` applies only within its stated deployment profile. Publication or paraphrase never silently promotes these statuses.
 
-WHAT должен быть читаем независимо от Science и технического HOW. Ни выбор СУБД/очереди, ни точный API, ни репозиторий будущего сервиса здесь заранее не предписаны. Контракты внешней платформы действуют только в подтверждённых версиях и профилях.
+Target WHAT must stand independently of scientific exploration and implementation HOW. Database choice, queue technology, wire schema, future service/repository topology and detailed client toolkit remain separate decisions. External platform promises apply only for the verified contract, version and profile.
