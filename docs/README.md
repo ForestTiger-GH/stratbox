@@ -1,6 +1,6 @@
 # Strategy Box — maintained knowledge product
 
-**Publication status (2026-10-11): PARTIAL / UNDER CONSOLIDATION.** The published sections are self-contained **bounded** scientific topics, directly observed implementation slices and explicitly labelled target candidates. They are **not** proof of a complete lossless transfer of the frozen source corpus. The [publication manifest](PUBLICATION-MANIFEST.md) records exact study admissions, source baselines and remaining conditions; the working [consolidation state](../_mw/epochs-001-strategy-box-development/consolidation/STATE.md) owns current corpus metrics and verification obligations.
+**Publication status (2026-10-12): PARTIAL / UNDER CONSOLIDATION.** The published sections are self-contained **bounded** scientific topics, directly observed implementation slices and explicitly labelled target candidates. They are **not** proof of a complete lossless transfer of the frozen source corpus. The [publication manifest](PUBLICATION-MANIFEST.md) records exact study admissions, source baselines and remaining conditions; the working [consolidation state](../_mw/epochs-001-strategy-box-development/consolidation/STATE.md) owns current corpus metrics and verification obligations.
 
 | Entrance | Intended use | Evidence and admission |
 | --- | --- | --- |
@@ -9,7 +9,7 @@
 | [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Partial source-bound candidate; no new host, machine consumer, data service or UI promise accepted merely by publication |
 | [Target HOW](how/README.md) | Candidate realization, application and operations/recovery mechanisms | Conditional design awaiting relevant product decisions and deployment profile |
 | [Product Architecture](architecture/README.md) | Responsibility allocation among analytical core, application authority, clients and an external management boundary | Qualified logical owner candidates; no new deployable/repository or versioned API admitted |
-| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Two bounded candidates (staged Artifact publication and 98 neutral provider conformance vectors); other LDD areas remain open |
+| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Five bounded candidate design documents (staged Artifact publication; 98 neutral provider conformance vectors; local activation and binding checks; portable local scenario orchestration; used-source provenance); other LDD areas remain open |
 
 ## Meaning of evidence and admission
 
