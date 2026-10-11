@@ -1,12 +1,13 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R28`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R29`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
 
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
+| Scientific topic: bounded peer delegation and causal reconciliation | `docs/science/collaboration/bounded-delegation-peer-work-and-causal-reconciliation.md` | Source-original 0033/0034 primary read, candidate peer identity/WorkOffer/backpressure/partition semantics; no production federation or independently verified source conservation |
 | Scientific topic: forecast vintage, conditionality and decisions | `docs/science/data-and-knowledge/forecast-vintage-conditionality-and-decision-separation.md` | Strategy Box 0019/0029 + specialist Forecasting/Decision research; no implemented issuance/scoring/authority engine or independent full original conservation |
 | Scientific topic: communicative force, qualifiers and correction | `docs/science/surfaces/communication-acts-protected-claims-and-repair.md` | Strategy Box 0019/0039 and specialist Communication research; no accepted communication workflow or recipient experiment |
 | Direct Current HOW: CBR forms and missing periods | `docs/current-how/cbr-forms-semantic-model-and-missing-periods.md` | Pinned core direct form registry/API/parser/pivot/model; 86 total and 34 top-level 802 rows verified from CSV; missing-download `continue` identified; no live DBF run |
@@ -82,7 +83,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- In the latest bounded check (after the 50-theme additions), **52/52** Science Markdown files were read for bounded structural checks, **249** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
+- In the latest bounded check (after the 51-theme additions), **53/53** Science Markdown files were read for bounded structural checks, **252** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
