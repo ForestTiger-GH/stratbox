@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks source-ledger entries (currently 900 items): exact original SHA/line,
+Checks source-ledger entries (currently 926 items): exact original SHA/line,
 maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -50,6 +50,8 @@ LEDGERS = (
     "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
     "HISTORICAL-01-DETAIL-ENGLISH-30.jsonl",
     "HISTORICAL-UX-0013-ENGLISH-22.jsonl",
+    "WINDOWS-STATE-0020-ENGLISH-16.jsonl",
+    "CORE-SURVEY-0021-ENGLISH-10.jsonl",
 )
 
 
@@ -370,10 +372,12 @@ def verify() -> dict:
                 fixture = item.get("english_negative_fixture")
                 if row and (not meaning or meaning not in row or not fixture or fixture not in row):
                     issues.append(f"{label}: Topic-09 English text changed")
-            elif (source_id in ("SB-SRC-0013", "SB-SRC-0014", "SB-SRC-0015")
+            elif (source_id in ("SB-SRC-0013", "SB-SRC-0014", "SB-SRC-0015", "SB-SRC-0020", "SB-SRC-0021")
                   and item.get("epistemic_status") in (
                       "DATED_HISTORICAL_RESEARCH_OR_CHANGE_NOTE",
                       "HISTORICAL_UX_PROPOSAL_NOT_CURRENT_IMPLEMENTATION",
+                      "PINNED_WINDOWS_SOURCE_SURVEY_NOT_INSTALLED_RUNTIME_CERTIFICATION",
+                      "DATED_SECONDARY_CORE_IMPLEMENTATION_STUDY",
                   )):
                 row = source_english_row(destination_id)
                 meaning = item.get("english_research_meaning")
