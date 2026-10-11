@@ -165,7 +165,7 @@ def audit() -> dict:
                     file = ROOT / science_path
                     section_cache[science_path] = (
                         {int(v) for line in file.read_text(encoding="utf-8").splitlines()
-                         if (m := re.match(r"^##\\s+([0-9]+)\\.", line))
+                         if (m := re.match(r"^##\s+([0-9]+)\.", line))
                          for v in [m.group(1)]}
                         if file.is_file() else set()
                     )
