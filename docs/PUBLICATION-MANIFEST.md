@@ -8,7 +8,7 @@
 
 | Publication gate | Latest reproducible evidence | Limit of supported reliance |
 | --- | --- | --- |
-| Frozen file census | **566** source records: **124 full reads, 10 governing reads, 432 not-full reads**; **all 566 material dispositions `unaccounted`** | Read status does not attest semantic preservation or end-to-end implementation |
+| Frozen file census | **566** source records: **131 full reads, 10 governing reads, 425 not-full reads**; **all 566 material dispositions `unaccounted`** | Read status does not attest semantic preservation or end-to-end implementation |
 | Research originals | 53/53 substantive Research originals with provisional semantic routes and explicit Science destinations | Full unit-level material coverage and independent Source↔Science audit remain open |
 | Span geometry | **41,440/70,835** nonblank original Research lines overlap some nonrouting source ledger span; **2,439 candidate numbered Science section routes**, zero unresolved numbered routes | Geometry and correct links are not material or meaning equivalence; absence from ledgers may be boilerplate or material omission |
 | Narrow source-row tracing | 1,527/1,527 bounded source-to-text transfers previously passed in CI | Producer trace only; no independent methodological or scientific check |
@@ -18,6 +18,9 @@
 | Assurance | Prepared 14-question blind Research Amputation instrument and bounded producer challenges | Truly independent authorized reader/verifier unassigned; original annotated questionnaire DOCX raw SHA unverified |
 
 The authoritative current checkpoint is the [single STATE transition](../_mw/epochs-001-strategy-box-development/consolidation/STATE.md). Sections below remain **historical evidence, not controlling counts**, even where their original heading says “current” or “controlling”. Follow the accepted host WHAT for product commitments, direct Current HOW for code reality, and Science for hypotheses/counterarguments. A new host is planned but has not yet been implemented or successfully tested.
+
+
+**Latest direct implementation evidence:** [AppDock pinned launch code](current-how/appdock-activation-host-attachment-boundary.md) proves ordinary local process spawning but **explicit `BACKEND_UNAVAILABLE`** for `host_delegated`; a future app-host process might use an ordinary supported launch profile, but no deployed host/client listener or authorization has been verified. [Core neutral runtime evidence](current-how/core-runtime-network.md) shows local `getpass` fallback as a potential unattended-host risk; [HC-30..33](ldd/hosting/host-client-attachment-boundary.md) remain unexecuted. The [Knowledge CI run 38185971891](https://github.com/ForestTiger-GH/stratbox/actions/runs/38185971891) succeeded after the latest read-state and host LDD changes. No independent scientific assurance or real host acceptance has occurred.
 
 ### Current source-row mapping and full-lossless status (2026-10-11, controlling)
 
