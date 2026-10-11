@@ -1,110 +1,111 @@
-# Общие чаты, предупреждения узла и защищённая диагностика участников
+# Shared chats, node-wide conditions and protected participant diagnostics
 
-**Область:** причинная связь между персональным запуском, общей командной лентой, состоянием узла, техническим журналом и предупреждением других пользователей. **Статус:** объяснение конкурирующих scope/visibility моделей, основанное на текущем локальном Windows-коде и формальных failure cases; shared-node backend и правила доступа — целевые кандидаты, **не подтверждённая текущая функциональность**. Близкие разделы: [события и достоверные исходы](../execution-and-diagnostics/causal-observability-and-failure-truth.md), [состояние и восстановление](../state-and-recovery/authority-durability-and-recovery.md).
+**Scope:** causal relations between a user's command, a shared team feed, node/resource status, technical logs and warnings to other affected users. **Status:** comparison of competing scope and visibility models using observed local Windows code and falsifiable failure cases. A real shared-node backend and access policy are **target candidates, not verified deployed functionality**. See [causal execution evidence](../execution-and-diagnostics/causal-observability-and-failure-truth.md) and [state recovery](../state-and-recovery/authority-durability-and-recovery.md).
 
-## 1. Пользовательская потребность не означает публикацию всего технического содержимого
+## 1. A shared user need does not authorize sharing every technical detail
 
-При совместной работе на узле люди хотят видеть, **кто**, **когда**, **в каком чате** запустил аналитическую операцию, чем она закончилась и затронула ли ошибка остальных. Это полезно для координации нескольких параллельных сценариев. Но полная сеть exception chains, абсолютные пути, tokens, параметры и raw file bodies не становятся публичными данными команды лишь потому, что продукт располагает общей лентой.
+In a team workspace participants benefit from knowing **who** launched an analytical task, **when**, **in which Thread**, its outcome and whether a fault affects colleagues. This helps coordinate concurrent work. However, raw exception chains, absolute paths, bearer tokens, request parameters and original file bodies do **not** become team-visible simply because a common feed exists.
 
-Нужно различать как минимум три читательские аудитории:
+At least three different audiences are material:
 
-| Уровень | Что получает зритель | Основание |
+| Visibility plane | Appropriate information | Required basis |
 | --- | --- | --- |
-| **Shared product timeline** | Сообщение, автор, время, название задачи, значимые стадии, verified terminal outcome и permitted artifacts | Принятый scope чата/Run и проверенный доступ |
-| **Shared resource/node condition** | Понятная проблема общего хранилища/выполнителя/источника, область воздействия, актуальность и возможное безопасное действие | Наблюдённое влияние на нескольких потребителей и owner-сигнал |
-| **Restricted technical evidence** | Traceback, per-attempt логи, raw paths, HTTP errors, inputs, support bundle | Отдельное разрешение на диагностический доступ; физическое хранение у execution owner |
+| **Shared product timeline** | Message, attributed author and time, Work/Run description, significant progress, verified terminal outcome and authorized Artifacts | Admitted Thread/Run visibility and current resource authorization |
+| **Shared resource/node condition** | User-safe diagnosis of a common storage/execution/source issue, affected scope, freshness and possible safe next action | Observed multi-consumer impact, accountable resource-owner evidence |
+| **Restricted technical evidence** | Tracebacks, per-Attempt logs, raw filesystem paths, HTTP details, inputs, support bundles | Separate diagnostic permission and protected custody with the actual execution owner |
 
-Персональная ошибка неверного параметра способна отразиться в **доступной по правам** общей истории исходного чата, но это **не повод** отправлять всей команде срочный аварийный alert. Недоступность общего Data root — противоположный случай: одна проблема затрагивает несколько Runs и требует общего предупреждения.
+An analyst's invalid parameter may be visible in a Thread that colleagues are **permitted to read** but is not automatically a node-wide emergency. A shared Data root outage is different: it affects multiple Runs and may justify a scoped common warning.
 
-Принцип принадлежности evidence: origin device, execution node, state authority node, log custody и viewer device — **пять разных ролей**. Локальный ПК, с которого человек нажал «Запустить», не обязательно хранит логи выполнявшегося на будущем host расчёта. Поэтому клиенту передаётся разрешённый `log_ref`, а фактический path разрешается через host adapter с проверкой прав, не публикуется как универсальный URL.
+**Five different physical/semantic roles:** the originating device, execution node, durable-state authority node, technical-log custodian and viewing device. The laptop where a user pressed Run need not hold logs of a calculation performed by a future independent host. Expose an authorized `LogRef` and resolve its physical path only through the proper host adapter and permission check; do not publish absolute host paths as universal URLs.
 
-## 2. Один Thread — много Runs, один Run — много Attempt
+## 2. One Thread may contain multiple Runs; one Run may contain several Attempts
 
-Чат — контейнер общения, а не job queue. Один Thread может одновременно показывать два Run; два чата одного узла могут создаваться в один момент и иметь одинаковое название «Новый чат». Стабильный `thread_id` не зависит от заголовка, никнейма автора и времени создания. Изменение названия через контекстное меню сохраняет историю, запуск и идентичность. `run_id`, `attempt_id` и `event_id` связывают технические доказательства с карточками без размещения raw logs прямо в разговоре.
+Chat is a communication context, not the job queue. A Thread can display two concurrent Runs; two Threads on one node can be created at the same time with the same default title `New chat`. `thread_id` remains stable when its title, author's display name or creation metadata changes. Renaming the chat from a context menu changes presentation, not Work/Run identity. `run_id`, `attempt_id` and `event_id` connect user cards to technical evidence without embedding raw logs in conversation messages.
 
-Для совместного каталога важны `thread_id`, title, `created_by/at`, `last_activity_sequence`, `active_run_count`, visibility и **read cursor per participant**. Одно поле `unread:bool` внутри общего Case/Event неправильно отражает прочтение двумя разными людьми. Необходимы отдельные per-principal `last_seen_sequence` или read receipts — в пределах принятой политики. Никнейм можно редактировать, `actor_ref` остаётся стабильной identity, а права требуют отдельного authorizing owner.
+A shared catalog would likely need `thread_id`, title, `created_by/at`, `last_activity_sequence`, `active_run_count`, visibility and a **per-participant read cursor**. A global `unread: bool` attached to one shared Event misrepresents two users' different viewing histories. Separate per-principal `last_seen_sequence` or read receipts are candidates within a defined retention/access policy. A nickname is mutable presentation; actor and authorization identity are separate.
 
-Текущий [Windows case model](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/cases/models.py) и [проектирование scenario-chat](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/common/scenario_chat/projector.py) имеют author и incoming/outgoing UI, но *не* доказывают наличие сетевой общей истории. Нынешняя [presence model](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/presence/service.py) реконструирует локальных участников, не подтверждает real-time online других устройств. Сеанс с истёкшим heartbeat не должен рисоваться свежим. Временная доступность — TTL/snapshot, а не вечный bool из файла.
+The pinned [Windows case model](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/cases/models.py) and [scenario-chat projection](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/common/scenario_chat/projector.py) carry local author and incoming/outgoing UI fields but do **not** establish network-synchronized shared history. The [presence service](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/presence/service.py) reconstructs local participant projections; it does not prove actual online status of other devices. A stale heartbeat must not be represented as fresh presence; time-bound snapshots/TTL are distinct from permanent Boolean status.
 
-## 3. Событие ошибки и продолжающееся состояние ресурса
+## 3. A problem occurrence versus an ongoing resource condition
 
-**ProblemOccurrence** — конкретный факт о сбое, замеченном у attempt/process/probe. **Condition** — утверждение об актуальной ситуации с ресурсом, которое может иметь начало, обновления и окончание. Тридцать отказов от одного внешнего источника могут быть тридцатью Attempts/Problems, но одним активным user-facing условием `external_source_unavailable`.
+A **ProblemOccurrence** records a particular fault observed by an Attempt, process or probe. A **Condition** records an ongoing resource situation with start, updates and closure. Thirty failed requests against one external source may be thirty Attempt/Problem events but one current `external_source_unavailable` condition for affected users.
 
 ```text
 Attempt A1 -> Problem P1 ─┐
-Attempt A2 -> Problem P2 ─┼─> Condition C(node, affected resource, impact)
-Attempt A3 -> Problem P3 ─┘          └─ permitted warning to affected viewers
+Attempt A2 -> Problem P2 ─┼─> Condition C(node, resource, impact)
+Attempt A3 -> Problem P3 ─┘           └─ audience-filtered warning
 ```
 
-Безопасный candidate fingerprint condition: (`problem_code`, `affected_resource_ref`, `node_scope`, `schema_version`). Нельзя группировать по raw `str(exception)`, имени пользователя или секретному URL. Сохраняются first_seen, last_seen, occurrence count, affected Run IDs, last verified probe и close reason. Повторная доставка того же `event_id` не должна увеличивать count; grouping уведомлений **не удаляет** технические Attempts/Problem occurrences из журналов. Иначе дебаг после инцидента станет невозможен.
+A **candidate** grouping fingerprint is `(problem_code, affected_resource_ref, node_scope, schema_version)`. Do not fingerprint by raw `str(exception)`, user nickname or sensitive URL. Keep first/last observed timestamps, occurrence count, affected Run references, last verified probe and closure reason. Re-delivery of one `event_id` must not inflate the occurrence count; notification grouping must **not erase** the distinct technical Attempts and ProblemOccurrences needed for forensic investigation.
 
-Condition нельзя закрыть фактом скрытия баннера пользователем — это изменение локальной видимости. Закрытие condition требует health/factual observation от владельца ресурса. Severity, актуальность и порог повторных ошибок должны быть отдельными продуктово утверждёнными критериями; иначе постоянная общая тревога при любой ошибке парсера создаст alarm fatigue.
+Hiding a Condition banner is a user's local presentation preference, not proof that the resource recovered. The owning resource authority should close a Condition using factual health evidence. Severity, freshness and recurrence thresholds need a chosen product policy; escalating each parser error to a global alarm would create alert fatigue.
 
-Кандидатная scope-matrix:
+An illustrative visibility matrix:
 
-| Причина | Кто может видеть | Кому отправлять отдельное предупреждение |
+| Cause | Potential authorized viewers | Additional warning audience |
 | --- | --- | --- |
-| Пользовательский ввод некорректен | Автор и разрешённые читатели Case | Не нужно node-wide alert |
-| Один аналитический Run упал | Читатели его Thread и обработчик | Не нужно отдельный alert всем |
-| Общий каталог Data root недоступен | Затронутые Runs и участники | Всем фактически затронутым по выбранной политике |
-| Нельзя принять новые Jobs из-за повреждения state writer | Участники узла, которым доступна операция | Общий warning, только safe summary |
-| Официальный сайт временно не отвечает | Run-и, использующие источник | В общий condition при устойчивом повторном воздействии |
-| Нарушение permissions | Сообщение заинтересованному автору | Security/operator scope, без подробностей всем |
+| Invalid input parameter | Author and readers allowed to view that Case/Thread | No automatic node-wide alert |
+| One analytical Run failed | Its Thread viewers and accountable operator | Usually no emergency alert to all users |
+| Shared Data root unavailable | Affected Runs and permitted participants | Users whose Work actually depends on that resource |
+| Corrupt state writer prevents accepting Jobs | Users allowed to perform affected actions | Shared **safe summary** for affected users |
+| Official source website temporarily unavailable | Runs consuming that source | One scoped Condition after meaningful repeated impact |
+| Authorization denial | The affected requester | Security/operator scope, without exposing details to everyone |
 
-Это не допущение полного доступа всех людей ко всем байтам. Общие чаты и раздельные permissions на execution, raw log, output, approval, delete должны сосуществовать.
+Shared chats do not imply universal access to every byte. Rights to execute, view output, read raw logs, approve, delete or inspect user-specific data remain separately enforceable.
 
-## 4. Выдача технического доказательства и пределы прозрачности
+## 4. Evidence access, protected log custody and transparency limits
 
-Физические логи находятся там, где выполняется действие. Лог конкретной попытки связывается с `node/session/run/attempt/step/operation`, но в приложение попадает только опосредованный `LogRef` с scope и статусом доступности. Клиент Web/Android не может напрямую открыть Windows absolute path на хосте. Возврат пути из metadata не равен разрешению читать файл.
+Physical logs belong where the action actually executes. A log may be correlated by node/session/run/attempt/step/operation, but the app should expose an authorized `LogRef` with availability status. Web/Android clients cannot simply open a Windows absolute path on a host. Returning a path in metadata is not authorization to fetch the underlying bytes.
 
-Для поддержки полезны два представления:
-- **safe summary:** краткая локализованная проблема, stable machine code, последние подтверждённые действия, разрешённые параметры, `problem_ref` (только если реальный owner его создал);
-- **restricted evidence:** exception chain, трасса, исходные record IDs, private source path, подробности network IO, только после policy check и очистки секретов.
+Two useful representations have different rights:
 
-Никогда не следует копировать весь `params` или `str(exc)` в общий текст. Классификация `public/private/secret` должна действовать по полям и операциям `display/log/persist`; запрет на общее логирование относится к токенам, session IDs, паролям, защищённым путям и чувствительным данным (см. [OWASP guidance](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), [NIST SP 800-92](https://csrc.nist.gov/pubs/sp/800/92/final)).
+- **Safe summary:** localized explanation, stable machine code, last verified state, permitted parameters and a `problem_ref` **only if** an actual owner registered it.
+- **Restricted evidence:** exception chain, tracing, source record IDs, private source paths and network I/O detail, after an independent policy check and secret redaction.
 
-Наличие `ai_visibility`, `destructive` или отображаемого actor kind **не предоставляет** полномочий. Даже при полной общей timeline отдельный authorization endpoint должен проверять principal, resource, policy revision и current state перед effect и выдачей диагностических bytes.
+Never blindly copy the full `params` dictionary or `str(exc)` into a shared message. Field-level categories `public/private/secret` and separate `display/log/persist` processing matter for tokens, credentials, session IDs, protected paths and sensitive data. See [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) and [NIST SP 800-92](https://csrc.nist.gov/pubs/sp/800/92/final).
 
-## 5. Контрольное различие local problem и platform registration
+An `ai_visibility` flag, `destructive` label or displayed Actor kind is **not** a permission grant. Even when a shared timeline is visible, the actual authority must check principal, resource scope, current policy revision and effect preconditions before executing actions or returning restricted log bytes.
 
-Внешняя управляющая платформа может хранить собственный журнал ProblemOccurrences/Node Conditions и возвращать подтверждённый `ProblemRef`. Но конкретный исследованный [AppDock observability baseline](https://github.com/ForestTiger-GH/AppDock/blob/a4d87c643e620e54e04083d4d0b8d867513e7065/docs/architecture/observability/IMPLEMENTATION_STATUS.md) подтверждает лишь определённые milestone-и: source implementation 5E закончена, native Windows certification pending; external product recorder/semantic event/incident services в этом baseline не являются гарантированным всем потребителям контрактом.
+## 5. Local problem evidence versus external platform registration
 
-Поэтому программа должна поддерживать честное промежуточное состояние `local_problem_ref` с `registration_status=local_only/pending/unknown` и лишь после доказанной регистрации связывать с platform `ProblemRef`. Не следует дублировать owner-ы: одна запись в локальном журнале плюс отдельная подтверждённая связанная platform occurrence допустимы, но они не могут быть двумя конкурирующими «единственными истинными» Problem для одной области.
+An external management platform may maintain its own problem and node-condition records and return an authentic `ProblemRef`. However, the directly studied [AppDock observability baseline](https://github.com/ForestTiger-GH/AppDock/blob/a4d87c643e620e54e04083d4d0b8d867513e7065/docs/architecture/observability/IMPLEMENTATION_STATUS.md) establishes only specified milestones: the 5E source implementation is marked complete; native Windows certification remains pending, and generalized external recorder/event/incident services are **not proved as available to every consuming product** at that revision.
 
-**Platform Node health** говорит о доступности окружения, а не об успешности банковской вычислительной операции. При успешной генерации файла и деградированной платформенной telemetry сохраняются оба статуса: Run success, diagnostics degraded. При живом платформенном процессе и неверной статистической схеме — Node ready, domain validation failed. Данные с разными владельцами не должны автоматически заменять друг друга.
+A consumer should therefore distinguish local `ProblemRef` (or local problem identity) and `registration_status=local_only/pending/unknown` from a **confirmed** platform reference. A local record and a later linked platform occurrence may coexist with different ownership. They cannot both be treated as competing sole truth authorities over the same fact.
 
-## 6. Отдельный экран выполнений — дополнительная проекция
+**Platform Node health is not domain execution success.** A report can be validly generated while telemetry collection is degraded: Run successful, diagnostics degraded. A platform process can be alive while its statistical input schema is invalid: Node ready, domain validation failed. One owner's status must not silently overwrite the other owner's evidence.
 
-Полезная UX модель: список общих чатов с отражением running count; внутри Thread — компактные карточки Run, обновляемые по run identity и финализируемые одним durable terminal event; инспектор — overview/steps/verified artifacts/diagnostics/authorized log. Человек видит статус, автора и время, а не десятки внутренних UUID, но может скопировать короткий ID для поддержки.
+## 6. A separate Runs/Background view is another projection
 
-Отдельный центр «Выполнения/Фоновые» выводит `running / queued / requires_attention / recent` **из тех же Jobs** и связывает с исходными чатами. Для background не следует создавать второй executor, иную модель ошибок или видимость «выполняется» при `enabled=true` без scheduler. При переключении чата actual Job должен продолжаться или прерываться **только** согласно реальному deployment profile, а не свойству открытой вкладки.
+A potential UI pattern: a shared Thread list shows active Run counts; a Thread displays concise cards keyed by Run identity, updated by actual events and finalized by one durable terminal outcome; an inspector shows overview, steps, verified artifacts, diagnostics and authorized log references. The user sees author, time and status, with a short copyable ID for support rather than dozens of UUIDs in the primary surface.
 
-Частый прогресс UI обновляется/коалесцируется; terminal и problem-evidence остаются. Цвет статуса полезен, но надпись и доступный текст необходимы для разных экранов и людей; цвет не служит единственным критерием успеха. Пример экранной иллюстрации — предположение, не имеющаяся функциональность.
+A Runs/Background center can show `running / queued / requires_attention / recent` from the **same underlying Job authority**, linking each Run back to its originating Thread. A background panel must not invent a second executor, a second failure model, or report that work is running merely because a configuration flag `enabled=true` exists without a scheduler. Switching Thread may continue or interrupt execution **only according to the actually deployed profile**, not simply because a tab is visible.
 
-## 7. Отрицательные проверки и будущий conformance
+Frequent progress can be coalesced while terminal events and material Problem evidence remain durable. Color helps scanning but accessible text is required; animation or color cannot independently establish a verified outcome. These are **design candidates**, not deployed UI screenshots.
 
-| Проверка | Что обнаружит нарушение |
+## 7. Negative fixtures for future conformance (not executed)
+
+| Scenario | Falsifying outcome |
 | --- | --- |
-| Один пользователь ввёл неверный параметр | Другие получают лишнюю аварийную рассылку |
-| Общий Data root пропал | Другие affected пользователи не предупреждены или получают разные противоречивые статусы |
-| Два разных человека создали «Новый чат» | Перезаписался chat identity из-за имени |
-| Один человек прочёл Thread | Всем одновременно снялись unread флаги |
-| Два Attempts одной операции после retry | Файлы логов смешались и потеряли identity |
-| Несколько отказов от общего источника | Каждый раз новый шумный alert при одной active condition |
-| Condition баннер пользователь скрыл | Система ошибочно объявила ресурс восстановленным |
-| Один occurrence доставлен дважды | Alert counter увеличился дважды |
-| Exception содержит секрет | Секрет присутствует в shared event или support summary |
-| Один участник запросил чужой лог | Получен local absolute path/сырые bytes без разрешения |
-| Клиент сменил устройство | Состояние прочтения и события строятся из единого authority, не из локального cache |
-| Платформенный recorder недоступен | Неподтверждённый ProblemRef выдан как настоящий |
-| Physical log удалён retention | Исторический факт выполнения сохранился и ссылка честно стала unavailable |
-| Умерший host/executor | Его stale heartbeat не рисуется как running without reconciliation |
-| AI actor создал задачу | Проверены реальные права on_behalf_of, actor label не обошёл ACL |
+| User A submits an invalid parameter | Every teammate receives an irrelevant emergency alert |
+| Shared Data root becomes unavailable | Affected teammates receive no warning or conflicting terminal truths |
+| Two users create a Thread named `New chat` | Identity collision overwrites one Thread |
+| One person reads a Thread | Unread flags clear for all other participants |
+| An operation retries into two Attempts | Technical logs merge and lose per-Attempt identity |
+| One external source suffers many failures | Every Attempt creates a new global noisy alert instead of one scoped Condition |
+| A user dismisses a Condition banner | System marks the underlying resource as healthy |
+| One occurrence is delivered twice | Alert count increments twice |
+| Exception contains credentials | Shared event or support summary reveals secrets |
+| Participant requests another person's log | Restricted raw bytes or absolute path returned without authorization |
+| Client changes device | Read state depends only on device-local cache rather than authoritative cursor |
+| Platform problem recorder is unavailable | An unconfirmed ProblemRef is presented as successfully registered |
+| Physical log expires under retention | Historical Run fact also disappears, or link pretends the log is still accessible |
+| Host or worker dies | Stale heartbeat is displayed as active execution without reconciliation |
+| AI Actor launches a command | Its display label bypasses actual on-behalf-of rights and scoped policy |
 
-Такие тесты — **предлагаемая верификация**, не фактический успешный прогон. При изменении поставки необходим отдельный permission/security review, exact platform contract verification, fault injection и практика сквозного чтения из двух устройств.
+These are **proposed negative tests**, not reports of passing integration runs. Changes to a real release require additional permission/security review, exact external-platform contract verification, fault injection and a two-client end-to-end exercise.
 
-## 8. Исходная неопределённость и условия пересмотра
+## 8. Unknowns, cost and re-evaluation conditions
 
-Открыты: кто входит в доверенный узел и что «все видят всё» означает для private Threads; storage и сроки общих сообщений; per-user read receipts; кто может отменить/перезапустить чужое действие; scope узловых alerts; каналы notifications; кто разрешает host log ref; что является проблемой с приоритетом; как связывать локальную ошибку с будущим platform problem; нужны ли отдельный support/incident backend и mobile push; как ведётся миграция user state.
+Open: who is admitted into a trusted node; what “everyone sees everything” means for private Threads; message retention; per-user read receipts; rights to cancel/retry another participant's Work; node-wide alert thresholds; notification channels; who authorizes log-reference resolution; problem prioritization and platform registration; whether a distinct support/incident backend or mobile push is actually needed; and migration of existing per-user state.
 
-**Суть:** совместная наблюдаемость достигается единым owner событий и безопасными проекциями для каждой аудитории. Расширение области видимости *не* расширяет автоматически технические полномочия и не делает приватный traceback пользовательским сообщением. Сам факт наличия компонентов «Участники», «Поручения», «Фоновые» и чатовых фильтров в Windows UI не является доказательством работающей совместной службы.
+**Core conclusion:** credible shared observability requires one accountable event owner and safe audience-specific projections. Enlarging visibility must not enlarge technical permissions, nor turn raw private traceback into a chat message. The presence of navigation labels such as Participants, Assignments, Background and Chat filters in the existing Windows client is **not** evidence of a working network collaboration service.
