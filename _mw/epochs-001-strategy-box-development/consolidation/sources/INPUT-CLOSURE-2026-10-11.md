@@ -39,3 +39,11 @@ The full lossless Science acceptance route is maintained at [SCIENCE-LOSSLESS-PR
 ## Current checkpoint
 
 Old producer evidence remains **19 full-read file sources / 582 provisional located units / 0 fully certified file-level material dispositions** at this moment. The 13 added rows are a census extension only. No Source→Science conservation, independent verification or global Research Amputation has been certified by this change.
+
+## Additive 2026-10-11 human-source recovery verification
+
+The original admission above is frozen historical source scope, not a claim that the inputs remain absent. A later authorized user Library search made both named carriers' **text** readable. A complete 1,229-line reconstruction of the preparatory architectural Markdown `SB-EXT-0001` exactly reproduced all **141,617 bytes** and matched its registered SHA-256 `55566a99bd7efd3311b428a374273796a06634fd2a963475344001816d4a584b`. This carrier is therefore **EXACT ORIGINAL / PRIMARY READ / HASH VERIFIED** and is held only in the authorized working environment, not copied into the public source tree.
+
+The matching annotated topics document `SB-EXT-0002` is readable completely as indexed Library extracted text (**257 lines, ten annotated research topics**). The raw DOCX file is **not authorized for materialization** through the current file service; its registered original SHA-256 `1c3992086c5526f8d58c611e974231f9a01e1a19560db721bd3c50dc725fe994` **has not been verified**. Status is **PRIMARY TEXT READ / RAW-BYTE IDENTITY OPEN**; the materialized extracted text has a separate representational digest, which cannot replace the DOCX hash. Also, the later research includes two additional topics beyond the ten annotations, so those cannot be assumed human-authored from this document.
+
+The user-directed scope is now better evidenced, but **source-authenticity, research attribution, adoption as Product commitment and full semantic preservation are separate questions**. See `coverage/HUMAN-CARRIER-RECOVERY-AND-ASSURANCE-DELTA-2026-10-11.md`. No restricted or private user original bytes are published in this repository.
