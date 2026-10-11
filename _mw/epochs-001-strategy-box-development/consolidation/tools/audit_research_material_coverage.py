@@ -81,6 +81,7 @@ def main() -> dict:
                 "ARTIFACT-0027-ENGLISH-",
                 "FORMAT-0028-ENGLISH-",
                 "SHARED-NODE-0036-ENGLISH-",
+                "CORE-DESIGN-0037-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
