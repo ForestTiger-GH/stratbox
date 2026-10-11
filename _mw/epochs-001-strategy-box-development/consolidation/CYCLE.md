@@ -52,3 +52,7 @@ Keep already existing research documents as untouched historical inputs rather t
 ## 6. No background execution
 
 This contract supports a sustained **agent session** with durable recovery, not asynchronous or self-scheduling work. A future separate request starts the next execution; no preparatory step itself triggers an agent run.
+
+## 7. Authoring language for subsequent consolidation
+
+The owner explicitly requires **English for every future repository artifact, update, Science publication, extraction ledger, checkpoint and commit message**. Historical research originals must stay source-faithful and can remain in their original language. This instruction governs later continuations after cold re-entry; a discussion in another language does not override the English repository artifact requirement.
