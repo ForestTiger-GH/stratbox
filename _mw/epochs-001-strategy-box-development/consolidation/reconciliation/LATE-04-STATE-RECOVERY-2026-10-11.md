@@ -1,6 +1,6 @@
 # Состояние, storage и восстановление: согласование позднего исследования с прежним корпусом
 
-**Статус:** BOUNDED PRODUCER RECONCILIATION, не независимая проверка и не Product Decision. **Дата:** 2026-10-11. **Источник:** `SB-SRC-0556` (04 research, exact blob `f919df034a2e15ae8947d51aaec9cd564fe462ad`, frozen `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`), полный текст L1–L785. **Результат extraction:** 76 адресованных provisional material units `SB-U-0556-001..076` в [ledger](../units/LATE-04-STATE-0556.jsonl). Все единицы имеют предварительную тематическую публикационную цель в [Science](../../../../../docs/science/state-and-recovery/authority-durability-and-recovery.md); окончательная проверка source→Science остаётся OPEN.
+**Статус:** BOUNDED PRODUCER RECONCILIATION, не независимая проверка и не Product Decision. **Дата:** 2026-10-11. **Источник:** `SB-SRC-0556` (04 research, exact blob `f919df034a2e15ae8947d51aaec9cd564fe462ad`, frozen `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`), полный текст L1–L785. **Результат extraction:** 76 адресованных provisional material units `SB-U-0556-001..076` в [ledger](../units/LATE-04-STATE-0556.jsonl). Все единицы имеют предварительную тематическую публикационную цель в [Science](../../../../docs/science/state-and-recovery/authority-durability-and-recovery.md); окончательная проверка source→Science остаётся OPEN.
 
 ## Существенный хронологический конфликт
 
@@ -24,7 +24,7 @@
 
 Прочитан один 785-строчный первичный Research original. Подробная Science статья содержит механизм, аргументы, отвергнутые упрощения, матрицы отказов, внешние прямые технические опоры и статус альтернатив. 76 единиц получили `science_destination`; сам ledger признаёт `provisional_extracted_and_published_not_reverse_verified`. **Нельзя считать 76 равными заведомо исчерпывающему числу смысловых единиц**, пока отдельный reviewer не проверит исходник по строкам и каждую публикационную цель на полноту аргументации. Каждое упоминание человеческого комментария в исследовании остаётся вторичным carrier до отдельного точного чтения авторизованного DOCX; этот источник нельзя объявлять полностью ассимилированным по одному Research-пересказу.
 
-Смежные Research 02 о background, execution, multiuser, artifacts, formats и 03 topic 05 создают *зависимое* свидетельство; они не являются семью независимыми direct implementation checks. Дополнительный опубликованный Science [Capability definitions](../../../../../docs/science/capabilities/definitions-plans-and-execution-truth.md) использует ранее extracted темы, но их обратное распределение по всем смысловым единицам остаётся несертифицированным.
+Смежные Research 02 о background, execution, multiuser, artifacts, formats и 03 topic 05 создают *зависимое* свидетельство; они не являются семью независимыми direct implementation checks. Дополнительный опубликованный Science [Capability definitions](../../../../docs/science/capabilities/definitions-plans-and-execution-truth.md) использует ранее extracted темы, но их обратное распределение по всем смысловым единицам остаётся несертифицированным.
 
 ## Product route и незакрытые вопросы
 
