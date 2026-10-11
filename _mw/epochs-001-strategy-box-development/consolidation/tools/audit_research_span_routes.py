@@ -167,6 +167,7 @@ def audit() -> dict:
         "source_rows_entire_census": len(census),
         "research_originals_expected": len(study),
         "counts": dict(sorted(totals.items())),
+        "research_sources_without_candidate_science_destination": sorted(x["source_id"] for x in detail if x["distinct_candidate_science_destinations"] == 0),
         "important_warning": (
             "A line covered by a provisional ledger is NOT preserved meaning. "
             "A line uncovered by ledger spans may be boilerplate, formatting or a real material omission. "
