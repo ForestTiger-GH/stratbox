@@ -1,6 +1,22 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R33`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+## Authoritative latest delta — primary-source recovery, language and FileStore convergence (2026-10-11)
+
+**Publication language:** all newly authored or substantively revised repository materials in this continuation are **English**. Older frozen Research and previously published historical source wording retain their original language as evidence; user-authored original documents are not rewritten as research facts. The recovered [ten-topic user-intent admission page](what/strategy-box/research-annotated-user-goals-and-open-admission.md) and [Target WHAT index](what/README.md) are English.
+
+**Source recovery:** the preparatory architecture original `SB-EXT-0001` was reconstructed byte-for-byte at **141,617 bytes**, and its SHA-256 **matched the frozen fingerprint** `55566a99bd7efd3311b428a374273796a06634fd2a963475344001816d4a584b`. The annotated questionnaire `SB-EXT-0002` was read in full as **257 extracted lines, ten developer responses**, but raw DOCX bytes were not authorized for local materialization; the original DOCX SHA-256 therefore remains **unverified**. This replaces **any earlier live-status statement** that both user originals are unavailable.
+
+**Attribution:** all **30** existing late-04 human-intent unit rows have been checked against primary annotated text and classified. Results: 14 direct; 4 direct with engineering/security qualification; 8 Research interpretations; 2 unsupported technical specifics; one from a research question rather than the developer answer; one composite. Research and user goal are distinct evidence classes. All require separate Product Authority before a physical implementation or delivery promise becomes binding.
+
+**Current HOW:** **seven** static bounded slices now exist. Three further complete code-source reads of `base/filestore/{base,local,types}.py` are reflected in the frozen census and [one canonical LocalFileStore evidence page](current-how/local-filestore-missingness-and-publication-limits.md), with duplicate documentation consolidated. Direct evidence: absent/wrong-type/empty listings are conflated by the local adapter; plain byte writes may truncate; the generic root-prefix helper is not a security sandbox. These are **conditional and bounded** observations, not claims of a demonstrated remote exploit or tests having passed.
+
+**Census:** **566 Git sources**; currently **76 `full_read`**, **10 `governing_read`**, **480 `not_full_read`**. The 76 read rows consist of 54 substantive Research originals, one introductory source, **21 code/test sources**. **All 566 material dispositions remain `unaccounted`** as a global completeness gate. All independent whole-corpus source↔Science preservation, Research Amputation, user DOCX original-byte identity, physical deployment verification and Product admission remain **OPEN**. A scoped eight-question producer self-containment pass was recorded, but it is not independent certification.
+
+**Cross-study reconciliation:** the earlier [Quality 08 ↔ Whole-System 09](../_mw/epochs-001-strategy-box-development/consolidation/reconciliation/QUALITY-08-09.md) has a subsequent primary-source/code challenge: Topic 09's “08 not available” was a historical study-time statement, while dedicated Topic 08 is now in the frozen census. Important local-vs-host, trusted-team-vs-public-Web and light-provenance-vs-global-registry distinctions remain deployment-specific and **not auto-approved**. All newly written text in this section and the related material is English.
+
+The following older manifest sections record **historical checkpoints**. Where their numbers or input-availability statements differ, this section is controlling for current status. Research originals, exact read evidence, and older failed/limited probes remain preserved for provenance.
+
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R34`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -63,7 +79,7 @@
 | Scientific topic: uncertain effects | `docs/science/trust-and-assurance/uncertain-outcome-vs-observed-error.md` | bounded, primary-source backed |
 | Scientific topic: reuse and external effects | `docs/science/trust-and-assurance/computation-reuse-and-external-effects.md` | bounded direct-source and formal model |
 | Source-use routes | `docs/science/sources/README.md` | selected source uses only |
-| Current HOW | `docs/current-how/README.md`, `docs/current-how/core-runtime-network.md`, `docs/current-how/windows-application.md`, `docs/current-how/frg-cleanup-effects.md` | three bounded static implementation slices |
+| Current HOW | `docs/current-how/README.md` (seven code-observed slices, including bank forms and local FileStore) | Bounded static direct-source mechanisms; installed or fault-injected behavior not certified |
 | Target WHAT | `docs/what/README.md`, `docs/what/strategy-box/*.md`, `docs/what/components/*.md` | includes English future-surfaces clarification of user-expressed Web/Android direction; release scope unapproved |
 | Target HOW | `docs/how/README.md`, `docs/how/execution/*.md`, `docs/how/application/*.md`, `docs/how/operations/*.md`, `docs/how/verification/*.md` | candidate-only |
 | Engineering Product Architecture | `docs/architecture/README.md` and three topical modules | candidate-only |
