@@ -43,7 +43,7 @@ check source → qualified NO_CHANGE          → no new Run required
                                                    → notify intended recipients
 ```
 
-The watcher check itself is an observation, not proof that an economic time series has changed materially; schema evolution and value changes are different signals.
+The watcher check itself is an observation, not proof that an economic time series has changed materially; schema evolution and value changes are different signals. The [original staged source-validation proposal](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_automation_ai_research_2026-10-06.md#L1417-L1443) separates **format/schema, row-count, expected period and domain checks**, then **PASS / WARN / FAIL**: PASS may advance publication, WARN requires an expressly admitted review or qualified-publication policy, and FAIL stops affected downstream publication. This is a Research-proposed decision boundary, not a current source watcher or universal rule that warnings always publish.
 
 ## 4. Request replay, retry and dangerous effects
 
