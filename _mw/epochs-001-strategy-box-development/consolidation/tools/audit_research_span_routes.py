@@ -36,7 +36,8 @@ def source_locator(item: dict) -> str | None:
     return f"L{line}" if isinstance(line, int) and line > 0 else None
 
 def destination(item: dict) -> str | None:
-    raw = item.get("science_destination") or item.get("preserved_exact_test_row")
+    raw = (item.get("science_destination") or item.get("science_topic")
+           or item.get("preserved_exact_test_row"))
     if not isinstance(raw, str):
         return None
     text = raw.split(" §", 1)[0].strip()
