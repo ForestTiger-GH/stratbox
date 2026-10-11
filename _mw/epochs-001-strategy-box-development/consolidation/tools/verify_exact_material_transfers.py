@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks ten bounded source-ledgers (currently 751 items): exact original SHA/line,
+Checks ten bounded source-ledgers (currently 766 items): exact original SHA/line,
 maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -41,6 +41,7 @@ LEDGERS = (
     "REGISTRY-SOURCE-0035-ENGLISH-24.jsonl",
     "ARTIFACT-0027-ENGLISH-16.jsonl",
     "FORMAT-0028-ENGLISH-20.jsonl",
+    "SHARED-NODE-0036-ENGLISH-15.jsonl",
     "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
 )
 
@@ -182,6 +183,16 @@ def verify() -> dict:
                     ):
                         if original and normalized_for_markdown(original) not in row:
                             issues.append(f"{label}: unchanged exact original term missing")
+            elif source_id == "SB-SRC-0036":
+                original_id = item["unit_id"].replace("SB-MAT-0036-", "")
+                handle = f"SB-SRC-0036/{original_id}"
+                row = source_english_row(handle)
+                number = int(original_id.split("-")[-1])
+                if not source_here.startswith(f"## {number}. ") or item.get("original_heading") != source_here:
+                    issues.append(f"{label}: original shared-node criterion heading changed")
+                meaning = item.get("english_candidate_expectation")
+                if not row or f"#L{first}" not in row or not meaning or meaning not in row:
+                    issues.append(f"{label}: English shared-node criterion/source line missing")
             elif source_id == "SB-SRC-0028":
                 original_id = item["unit_id"].replace("SB-MAT-0028-", "")
                 handle = f"SB-SRC-0028/{original_id}"
@@ -399,7 +410,7 @@ def verify() -> dict:
 
     return {
         "status": "PRODUCER_TRACE_CHECK_PASS" if not issues else "PRODUCER_TRACE_CHECK_FAIL",
-        "scope": "seventeen mixed exact/English-translation ledgers, fifteen original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
+        "scope": "eighteen mixed exact/English-translation ledgers, sixteen original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": science_files,
