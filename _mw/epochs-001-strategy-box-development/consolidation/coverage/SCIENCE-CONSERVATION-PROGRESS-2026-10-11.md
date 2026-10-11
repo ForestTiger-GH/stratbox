@@ -2,6 +2,20 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — Product Surface Architecture original fully read and mapped
+
+**Producer totals:** 566 frozen source identities, **37** full-read Research originals, **1,948** provisional meaning-unit records, **30** bounded independent Science papers (32 Markdown files including navigation/source guide). **0/566** sources independently certified, **566/566 `material_unit_state=unaccounted`**, global lossless and Research Amputation still OPEN.
+
+**Exact source:** `SB-SRC-0054`, Topic 07 Product Surface Architecture, L1–L1414, frozen blob `1443b1b2f23172b1768603c416f7f4906ac1ac80` (research revision `8459dc58922b7e8df853cf1d9e8131fa9e132580`). **84** provisional units in `units/CONSOLIDATION-PRODUCT-SURFACE-0054.jsonl`: 28 thematic source spans, all **C07-01..18** original conflicts, all **12** explicitly described new gaps, all **26** checklist acceptance proposals. None has independent bilateral challenge.
+
+**New English thematic Science:** `docs/science/surfaces/work-context-navigation-and-authorized-actions.md` and `docs/science/surfaces/semantic-design-tokens-motion-and-accessibility.md`. Preserved UX Work/Thread-first versus existing Scenario chat, four logical Work/Explorer/Scenarios/Runs directions versus six current modes, clean file/Artifact identity, safe inspector/search/actions, UI theme versus report style, native adaptive layouts and untested keyboard/TalkBack/Reduced Motion/contrast/performance. Qt/host/Web/Android lifecycle and toolkit remain unapproved Product choices.
+
+A bounded Science link/path check previously passed for 30 Markdown files/125 inline local links; the two new papers and guide change warrant another run before reporting a fresh integrity pass. No Web/Android release, device a11y test, real source-to-client event protocol or end-to-end installed test was created.
+
+**Next original priorities:** remaining 03 `SB-SRC-0055` Whole-System Target Architecture plus earlier `0046/0047/0048` and all 02/01/code; independent Science→direct evidence and source→Science audits and restricted-content clearance remain required.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — full 03 Capability / Extension / Automation source conservation (producer stage)
 
 **Current counts:** 566 frozen Git sources; **36** substantive originals marked full-read (19 inherited + all twelve 04 + five 03); **1,864** located provisional source semantic units; **28** independently readable bounded topical Science documents. **0/566** independently certified source dispositions and **566/566** material states unaccounted. No overall lossless or Research Amputation certification.
