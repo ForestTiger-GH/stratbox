@@ -74,6 +74,7 @@ def main() -> dict:
             english_row = path.name.startswith((
                 "WHOLE-SYSTEM-INV-TQ-ENGLISH-",
                 "QUALITY-08-NEGATIVE-",
+                "BACKGROUND-WORK-0018-ENGLISH-",
             ))
             exact_text = path.name.startswith((
                 "BANK-MACRO-COMPARABILITY-EXACT-",
