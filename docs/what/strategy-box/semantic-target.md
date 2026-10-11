@@ -25,6 +25,10 @@ Candidate domain concepts:
 
 **Independent Python requirement:** the domain core should be callable from Python/notebook use without importing a desktop GUI; future clients and machine projections must not rewrite core business algorithms as UI-specific code. Which operations deserve stable machine-capability identities remains a separate admission question.
 
+## Admitted host capability (2026-10-12 Product Decision)
+
+The [host-deployment commitment](host-deployment-commitment.md) admits a shared application host as a necessary **planned** product capability with both Web/domain access and an AppDock-managed Windows host/client arrangement. A host is an application authority that connecting clients can reference; it is **not** a claim of deployed execution or a mandated `stratbox-application` repository. The local core's direct Python use remains independent. Physical data model, scheduler and specific API are still design variables, with host/client isolation and safe effect visibility now binding target concerns.
+
 ## Actors, authority and presentation surfaces
 
 `Actor` is the executing requester/automation, `Principal` supplies authorization, `Participant` joins collaboration, while `Node` and `Session` describe external platform lifecycle. These can be related but must not be treated as one implied grant. The exact principal-role vocabulary and policy enforcement for remote Web/host remain open.

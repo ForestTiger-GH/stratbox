@@ -11,3 +11,8 @@
 **Separation from core and other clients:** the Windows client may keep its native presentation toolkit while portable application semantics remain reusable by Web and prospective Android clients. A specific backend API, durable schema, device capability matrix, scheduling policy and host-mode lifecycle require separate Product and implementation admission.
 
 The Windows owner cannot guarantee remote-host background execution, cross-device synchronization or release-quality recovery simply by displaying corresponding navigation elements.
+
+
+## Admitted host/client Windows operating roles — 2026-10-12
+
+Per [host-deployment commitment](../strategy-box/host-deployment-commitment.md), a Windows/AppDock installation may serve as a **host**; a different Windows/AppDock installation may connect as a **client**. These are planned product roles, rather than a guarantee that the existing pinned Qt application already implements remote serving, or that two repositories are required. The host owns app-level execution/identity/state; the connecting Windows surface owns presentation and approved user interaction. Separate host/client process and installer semantics, AppDock manifests, product version compatibility and host-exit recovery remain implementation decisions.
