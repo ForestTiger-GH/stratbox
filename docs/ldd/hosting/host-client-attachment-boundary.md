@@ -92,3 +92,14 @@ The pinned public AppDock schema exposes *declarable* remote-attachment and dele
 | HC-29 | Host process exists but its identity/contract disagrees with second Windows client | Attach rejects/quarantines mismatch; PID is insufficient. |
 
 **No HC-23..29 were executed**. [Current public platform launch evidence](../../current-how/appdock-activation-host-attachment-boundary.md) is static source-only; the seven tests remain candidate verification work.
+
+## Generic core-runtime host failure vectors — unexecuted
+
+| ID | Injected condition | Candidate conformance |
+| --- | --- | --- |
+| HC-30 | Unattended host operation needs missing secret | Explicit safe configuration/permission failure; **no implicit `getpass` terminal prompt**. |
+| HC-31 | Distinct attached user contexts need distinct authorities | Per-principal authorization remains correct regardless of cached process-level providers. |
+| HC-32 | Approved runtime credential rotates during in-flight Jobs | Qualified snapshot/change handling; no secret appears in common Event/Case/Artifact text. |
+| HC-33 | Notebook invokes the same analytic core with explicitly allowed interactive credentials | Core works without running AppDock or host; application policy does not contaminate independent domain API. |
+
+These are planned host verification vectors grounded in [core Current HOW](../../current-how/core-runtime-network.md). They have no execution result. No real secrets or environment-specific extension internals belong in test fixtures or this LDD.
