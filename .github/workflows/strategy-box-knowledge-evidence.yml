@@ -7,7 +7,9 @@ on:
       - '_mw/epochs-001-strategy-box-development/consolidation/tools/**'
       - '_mw/epochs-001-strategy-box-development/consolidation/units/**'
       - '_mw/epochs-001-strategy-box-development/consolidation/sources/CENSUS.csv'
-      - 'docs/science/**'
+      - 'docs/**'
+      - '_mw/epochs-001-strategy-box-development/consolidation/coverage/**'
+      - '_mw/epochs-001-strategy-box-development/consolidation/STATE.md'
   workflow_dispatch:
 
 permissions:
@@ -19,6 +21,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Validate all maintained Knowledge publication links and host owner routing
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_publication_routes.py
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Audit research source coverage and distinguish evidence classes
