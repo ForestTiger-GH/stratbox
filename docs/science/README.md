@@ -4,6 +4,7 @@
 
 ## Independent study paths
 
+- [Semantic portability and client authority](surfaces/semantic-portability-and-client-authority.md) — one core and application truth across Windows, browser and future Android, DTOs, client-specific UI, real host and public Web boundaries.
 - [Artifact identity, publication and availability](artifacts/output-identity-publication-and-availability.md) — distinguishes computed results, physical content, stable catalog identity, verified publication, lazy availability, and permissions.
 - [Causal execution observability and failure truth](execution-and-diagnostics/causal-observability-and-failure-truth.md) — correlations, progress, safe errors, diagnostic logs, storage alternatives, and effect confirmation.
 - [Shared node conditions and protected logs](collaboration/shared-conditions-and-log-access.md) — shared chats, per-user read state, scoped warnings and restricted evidence.
@@ -22,4 +23,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** thirteen topics offer separately traced scientific understanding. The eight 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** fourteen topics offer separately traced scientific understanding. The nine 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
