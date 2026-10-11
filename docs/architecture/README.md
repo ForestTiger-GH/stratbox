@@ -1,11 +1,12 @@
 # Engineering Product Architecture — Strategy Box
 
-**Status:** `PA-SB-2026-10-09-CANDIDATE-1` — bounded cross-repository allocation candidate. Независимая роль доказана потребностью координации владельцев, но целевая физическая архитектура и распределённые гарантии требуют отдельных Product Decisions.
+**Status:** `PA-SB-2026-10-09-CANDIDATE-1`, bounded cross-repository responsibility-allocation candidate. The independent architecture role is warranted by distinct implementation owners; a physical service, repository split and distributed guarantees require their own Product Decisions.
 
-- [Контекст системы и границы](system-context.md).
-- [Распределение ответственности](responsibility-allocation.md).
-- [Направление зависимостей и варианты](dependency-direction.md).
+- [System context and boundaries](system-context.md).
+- [Responsibility allocation](responsibility-allocation.md).
+- [Dependency direction and failure semantics](dependency-direction.md).
+- [Application authority and portability placement options](application-authority-placement.md) — explicit `stratbox-application` logical hypothesis, competing locations, pilots and decision gates.
 
-Архитектура отвечает на вопрос **какая единица реализации владеет смыслом и интерфейсом**, а механизмы состояний, исполнения, восстановления и правила работы находятся в [Target HOW](../how/README.md). Здесь не создаются параллельные технические протоколы.
+Architecture determines which implementation role owns product meaning, interfaces and failure authority. Target HOW owns executable mechanisms, operational recovery and correct use. These documents intentionally do not establish parallel wire protocols. The current `stratbox` domain core and `stratbox-windows` Windows implementation remain independent owners, while AppDock remains an external managed-platform owner.
 
-**Исходная реализация:** core остаётся у `stratbox`, Windows surface у `stratbox-windows`, внешняя managed platform сохраняет самостоятельное владение. Логическая application authority — предмет будущего целевого распределения. Публикация архитектурного кандидата не утверждает нового репозитория, сервиса, API и не изменяет текущие контракты.
+**Important:** documenting a candidate does not create a package, service, remote host, Android/Web release, adopted API or new AppDock manifest. Confirmed current behavior belongs to Current HOW, and Product Decisions belong to their actual authority.

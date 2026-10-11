@@ -1,8 +1,9 @@
-# Low-Level Design — выборочные рисковые механизмы
+# Low-Level Design — selected risk-sensitive Strategy Box mechanisms
 
-**Status:** selected candidate LDD only. Дизайн не является действующим кодом и наследует `TW-SB-2026-10-09-CANDIDATE-1` / `TH-SB-2026-10-09-CANDIDATE-1` / `PA-SB-2026-10-09-CANDIDATE-1`.
+**Status:** bounded **candidate** specifications. They are not deployed code, not adopted external platform protocols and do not substitute for accepted Product Decisions. Design relations inherit conditional `TW-SB-2026-10-09-CANDIDATE-1`, `TH-SB-2026-10-09-CANDIDATE-1` and `PA-SB-2026-10-09-CANDIDATE-1` where relevant.
 
-- [Staged → Verified → Published artifact](artifacts/staged-publication.md) — локальная спецификация состояния и отказов файловой публикации.
-- [Neutral provider conformance vectors](extensions/neutral-provider-conformance-vectors.md) — 98 original-source-preserved, environment-neutral negative and contract test intents; candidate-only, not an implemented suite or certified provider.
+- [Staged → Verified → Published Artifact](artifacts/staged-publication.md) — candidate local publication states, recovery, tests and faults.
+- [Neutral provider conformance vectors](extensions/neutral-provider-conformance-vectors.md) — 98 source-preserved public-neutral test intentions; not an implemented or executed certification suite.
+- [Activation and package-binding conformance](integration/activation-contract-verification.md) — pinned Windows/AppDock local integration defects and proposed release/fault tests, without creating a new manifest.
 
-Эта спецификация достаточно конкретна для обсуждения тестов, но не замещает Product Decisions о хранении, подтверждении и пользователях. Остальные рисковые темы (durable Job, ACL, external health contract) пока не получили достаточного фиксированного предметного baseline для независимого LDD.
+LDD provides reproducible states, checks and failure vectors only where a real engineering consumer needs them. Unresolved durable Job, ACL, multi-user authority and hosted API semantics cannot be certified until their actual scope and product policies are admitted.
