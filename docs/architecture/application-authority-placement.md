@@ -29,7 +29,7 @@ Future Windows, Web and Android clients may need the **same meaning** of operati
 
 ## Conditional responsibility contract
 
-`stratbox`: official source and domain facts, semantics, calculation, export, neutral FileStore/provider contracts. **Logical application authority (candidate):** user Work/scenarios, admitted Run/Attempt/Job if needed, lifecycle, effect accounting, app-level permissions and Artifact catalogue references. **Windows/Web/Android clients:** UI projection and platform-specific input/output without independently inventing authoritative case outcomes. **AppDock external:** source/install/node/session/activation/host readiness and publicly proved integration contracts.
+`stratbox`: official source and domain facts, semantics, calculation, export, neutral FileStore/provider contracts. **Host logical application authority (planned accepted role):** user Work/scenarios, admitted Run/Attempt/Job if needed, lifecycle, effect accounting, app-level permissions and Artifact catalogue references. **Windows/Web/Android clients:** UI projection and platform-specific input/output without independently inventing authoritative case outcomes. **AppDock external:** source/install/node/session/activation/host readiness and publicly proved integration contracts.
 
 The **host requirement is now accepted and planned**. No physical `stratbox-application` repository, service form or AppDock manifest has been selected. A local headless module remains a useful *interim* extraction but cannot by itself satisfy the admitted cross-installation attachment target. AppDock remote capabilities are verified per exact published version and deployment, not assumed from a conceptual feature list.
 
