@@ -4,6 +4,9 @@
 
 ## Independent study paths
 
+- [Authorized streams, read cursors and private shared Work](collaboration/authorized-streams-read-cursors-and-private-work.md) — opaque access-scoped cursors, ACL changes, multiuser read/notification receipts and secure reconnect.
+- [Shared-state backup epochs, clone fencing and retention](state-and-recovery/shared-state-backup-generation-and-retention.md) — distinct metadata/bytes owner, twelve unresolved cross-store gaps, restore safety and 22 proposed invariants.
+- [Settings, policy, preferences and drafts](application-state/settings-policy-preferences-and-drafts.md) — seven state scopes, immutable Run parameters, policy precedence, sensitive drafts and extension configuration.
 - [Work admission, planning, resource scheduling and recovery](work/admission-planning-resource-scheduling-and-recovery.md) — distinct admission, sealed plans, resource claims, retry budgets, effect reconciliation and clock-aware automation.
 - [Semantic identities, lifecycles and projections](architecture/semantic-identities-lifecycles-and-projections.md) — definition and occurrence IDs, 14 orthogonal semantics, five settings scopes, 22 conflicting conceptual claims and 15 test cases.
 - [Observation semantics, economic comparability and qualified claims](data-and-knowledge/observation-semantics-comparability-and-claims.md) — banking perimeters, missingness, geography, validation levels and evidence support.
@@ -32,4 +35,4 @@
 
 These are self-contained, bounded explanations with alternatives, limitations, negative evidence and reopening conditions. Runtime banking statistics and produced results belong to product data, not to this scientific documentation.
 
-**Publication limit:** twenty-three topics offer separately traced scientific understanding. The eighteen 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
+**Publication limit:** twenty-six topics offer separately traced scientific understanding. The twenty-one 2026-10-11 modules are newly published producer work and have not yet passed independent preservation review. Historical studies, other original Research, code domains and inter-theme material are still being extracted. The complete product has **not** passed source-to-owner conservation, Research Amputation or independent verification.
