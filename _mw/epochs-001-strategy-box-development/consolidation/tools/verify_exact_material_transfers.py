@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 5 bounded original-source ledgers (currently 416 exact items),
+Checks 5 bounded original-source ledgers (currently 435 exact items),
 their original Git blob identities, text transfer and Science relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58, "0033": 30, "0034": 63}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -32,6 +32,7 @@ LEDGERS = (
     "EPISTEMIC-TESTS-AND-FIREWALLS-EXACT-0019.jsonl",
     "THREAD-WORK-UX-CHOICES-EXACT-0033.jsonl",
     "COGNITION-FOUNDATION-EXACT-ITEMS-0034.jsonl",
+    "BANK-MACRO-COMPARABILITY-EXACT-0019.jsonl",
 )
 
 
@@ -142,8 +143,12 @@ def verify() -> dict:
                     issues.append(f"{label}: original test body/firewall missing")
                 if item.get("full_source_test_body") and chr(10).join(lines[first:last]).strip() != expected:
                     issues.append(f"{label}: stored test body differs from frozen original")
-                if item.get("original_exact_meaning") and lines[first - 1].strip() != expected:
-                    issues.append(f"{label}: original firewall line changed")
+                if item.get("original_exact_meaning"):
+                    observed = lines[first - 1].strip()
+                    if item.get("material_kind") == "macro_series_qualifier":
+                        observed = observed.removeprefix("- ").strip()
+                    if observed != expected:
+                        issues.append(f"{label}: original source phrase changed")
             elif source_id == "SB-SRC-0033":
                 if destination_id not in rendered:
                     issues.append(f"{label}: original chat/Work item ID missing")
