@@ -4,6 +4,10 @@
 
 ## Independent study paths
 
+- [Compiled analytical capabilities, applicability and deoptimization](capabilities/compiled-domain-capabilities-validity-and-deoptimization.md) — semantic versus runtime ownership, typed schemes, validity guards, versioned admission and safe fallback.
+- [Thread, Work, memory scopes and concurrent actors](collaboration/thread-work-memory-scopes-and-parallel-actors.md) — message history versus durable Work, parallel activations, privacy, context and artifact projections.
+- [Trusted provider conformance and false-success threats](extensions/trusted-provider-conformance-and-false-success-threats.md) — staged activation, package trust, 98 proposed test vectors and destructive failure safeguards.
+- [Semantic ownership and proportional materialization](engineering/semantic-ownership-method-transfer-and-proportional-materialization.md) — method-to-product relations, Work/Knowledge/Authority firewalls, justified object materialization and domain cases.
 - [Headless host, browser security and persistence trade-offs](deployment/headless-host-web-security-and-persistence-tradeoffs.md) — detached Job authority, local versus server state, network authorization, SSE recovery, SQLite/PostgreSQL and concrete failure challenges.
 - [Explorer, workroom and operational desktop interaction](surfaces/explorer-workroom-and-operational-desktop-interaction.md) — four conceptual work areas, familiar Explorer behavior, Thread versus Run, truthful progress, keyboard/accessibility and layout alternatives.
 - [Semantic promotion firewalls and bounded reliance](data-and-knowledge/semantic-promotion-firewalls-and-bounded-reliance.md) — how source, observation, model, claim, validation, decision and artifact statuses retain their proper authority.
