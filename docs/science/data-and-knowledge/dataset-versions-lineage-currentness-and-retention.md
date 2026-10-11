@@ -183,7 +183,7 @@ Candidate falsification tests (not executed): same URL/new bytes; bank classifie
 
 **Open Product/Engineering decisions:** exact SourceSnapshot receipt and retention depth, required DatasetVersion identity, evidence ref granularity, common geography, linked ClaimStore and currentness policy, CAS versus ordinary managed files, artifact lifecycle/GC, user and legal holds, multi-file publication and backup, range of certified formats, cross-format style compatibility, privacy-safe metadata, Web/host read refs, and actual performance budgets. Use direct domain/packaging fault-injection fixtures rather than promoting conceptual model names to release guarantees.
 
-## 11. Original twenty-two Data-to-Knowledge invariants and negative fixtures
+## 15. Original twenty-two Data-to-Knowledge invariants and negative fixtures
 
 The frozen [Topic 03 consolidation original, §18](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_03_data_to_knowledge_consolidated_research_2026-10-08.md#L1264-L1291) specified **twenty-two proposed invariants**, each paired with an original fault scenario. Their English source-row interpretations are preserved below as **Research candidates**, not existing domain implementations, approved obligations or executed negative tests. Some imply optional higher-order services only for sufficiently demanding consumers; others concern fundamental evidence non-promotion and current code missingness.
 
