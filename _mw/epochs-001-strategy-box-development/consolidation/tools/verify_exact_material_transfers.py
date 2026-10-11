@@ -180,10 +180,24 @@ def verify() -> dict:
                 if source_id in ("SB-SRC-0032", "SB-SRC-0029", "SB-SRC-0034") and meaning not in lines[first - 1]:
                     issues.append(f"{label}: stored wording differs from source line")
                 if source_id == "SB-SRC-0031":
-                    name, sep, statement = meaning.partition(" — ")
-                    original_window = chr(10).join(lines[first - 1:first + 3])
-                    if not sep or name not in original_window or statement not in original_window:
-                        issues.append(f"{label}: host-boundary statement differs from original span")
+                    group = item.get("source_group")
+                    source_here = lines[first - 1].strip()
+                    if group == "BOUNDARY_CHECK":
+                        # Numbered original Research question (e.g. "1. ...").
+                        if meaning not in source_here:
+                            issues.append(f"{label}: readiness check differs from original")
+                    elif group == "BOUNDARY_ALARM":
+                        # Bullet original Research alarm (e.g. "- ...").
+                        if meaning not in source_here:
+                            issues.append(f"{label}: warning indicator differs from original")
+                    elif group == "HOST_INVARIANT":
+                        # Heading + following explanation are two distinct lines.
+                        name, sep, statement = meaning.partition(" — ")
+                        original_window = chr(10).join(lines[first - 1:first + 3])
+                        if not sep or name not in original_window or statement not in original_window:
+                            issues.append(f"{label}: host-boundary invariant differs from original")
+                    else:
+                        issues.append(f"{label}: unknown source group {group!r}")
             verified += 1
             by_source[source_id] = by_source.get(source_id, 0) + 1
 
