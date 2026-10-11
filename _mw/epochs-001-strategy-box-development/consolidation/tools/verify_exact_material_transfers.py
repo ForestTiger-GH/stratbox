@@ -483,8 +483,18 @@ def verify() -> dict:
             if source_id != "SB-SRC-0025":
                 row_key = item.get("original_test_id") or item.get("research_id") or destination_id
                 row = source_english_row(row_key)
-                if row and re.search(r"[А-Яа-яЁё]", row):
-                    issues.append(f"{label}: non-English maintained rendering")
+                # Source links necessarily contain original Russian filenames
+                # in their URL path. That is citation metadata, not visible
+                # translated article text. Keep source original filenames
+                # unchanged for faithful traceability, but inspect only the
+                # reader-visible rendering of the English destination row.
+                visible_row = re.sub(
+                    r"\\]\\((?:https?|mailto):[^)]*\\)",
+                    "](SOURCE_LINK)",
+                    row,
+                )
+                if visible_row and re.search(r"[А-Яа-яЁё]", visible_row):
+                    issues.append(f"{label}: non-English visible maintained rendering")
             verified += 1
             by_source[source_id] = by_source.get(source_id, 0) + 1
 
