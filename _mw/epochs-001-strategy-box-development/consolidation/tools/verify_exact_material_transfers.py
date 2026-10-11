@@ -138,7 +138,7 @@ def verify() -> dict:
                 expected = item.get("full_source_test_body") or item.get("original_exact_meaning")
                 if expected and expected not in rendered:
                     issues.append(f"{label}: original test body/firewall missing")
-                if item.get("full_source_test_body") and "\\n".join(lines[first:last]).strip() != expected:
+                if item.get("full_source_test_body") and chr(10).join(lines[first:last]).strip() != expected:
                     issues.append(f"{label}: stored test body differs from frozen original")
                 if item.get("original_exact_meaning") and lines[first - 1].strip() != expected:
                     issues.append(f"{label}: original firewall line changed")
@@ -156,7 +156,7 @@ def verify() -> dict:
                     issues.append(f"{label}: stored wording differs from source line")
                 if source_id == "SB-SRC-0031":
                     name, sep, statement = meaning.partition(" — ")
-                    original_window = "\\n".join(lines[first - 1:first + 3])
+                    original_window = chr(10).join(lines[first - 1:first + 3])
                     if not sep or name not in original_window or statement not in original_window:
                         issues.append(f"{label}: host-boundary statement differs from original span")
             verified += 1
