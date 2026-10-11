@@ -105,7 +105,7 @@ A source may authoritatively establish **what it published in a given revision**
 
 ```text
 Publisher publication → observed bytes → interpreted Observation
-                                        → qualified statement about publication
+ **Historical vintage remains addressable.** A historical analysis must be able to use the exact source vintage.
 
 Observation(s) + MeasureDefinition(s) + assumed model + method
   → DerivedResult / Inference → EvidenceArgument → QualifiedClaim
