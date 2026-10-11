@@ -1,37 +1,36 @@
-# Strategy Box — назначение, границы и варианты
+# Strategy Box — purpose, boundaries and operating profiles
 
-**Product baseline:** `TW-SB-2026-10-09-CANDIDATE-1`.  
-**Status:** `BOUNDARY_ACCEPTED` для исторически установленных задач и границ компонентов; расширенное функциональное обещание пока не допущено.
+**Product baseline:** `TW-SB-2026-10-09-CANDIDATE-1`. **Status:** `BOUNDARY_ACCEPTED` for the established mission and component responsibility boundaries; expanded functions and deployment promises are **not** automatically admitted.
 
-## Назначение
+## Purpose
 
-Strategy Box предназначен для прикладной обработки, проверки, моделирования и представления **внешней банковской и макроэкономической статистики**. Основные бенефициары — аналитик, разработчик предметных операций, пользователь клиентского приложения и оператор управляемой рабочей среды. Продукт должен обеспечивать путь от официальной публикации и структурированных входных данных к воспроизводимому аналитическому результату с понятной квалификацией источника, метода и ограничений.
+Strategy Box supports analysis, verification, modeling and presentation of **external banking and macroeconomic statistical data**. Its principal users and collaborators include financial analysts, domain-operation developers, client-application users and operators of a managed working environment. The intended analytical path is from an identifiable statistical publication and structured input data toward a qualified result whose source, method, assumptions and limitations remain intelligible.
 
-## Точный текущий/целевой состав
+## Present owners versus conditional product scope
 
-| Компонент / профиль | Статус | Предметная обязанность |
+| Component / operating profile | Admission | Responsibility |
 | --- | --- | --- |
-| `stratbox` analytical core | `BOUNDARY_ACCEPTED` | Предметные банковско-макроэкономические алгоритмы, форматы, канонизация, нейтральные порты и реестры |
-| Windows application/surface | `BOUNDARY_ACCEPTED` для отдельного ownership, `CURRENT_OBSERVED` для конкретных функций | Пользовательская организация сценариев и взаимодействие с аналитическими операциями core |
-| Managed platform integration | `CURRENT_OBSERVED` для существующего desktop-подключения; дальнейшее развитие `CONDITIONAL` | Получение предусмотренного внешним platform owner контекста установки/запуска, без владения его жизненным циклом |
-| Cross-platform reusable semantics | направление `BOUNDARY_ACCEPTED`; перенос конкретных алгоритмов `CANDIDATE` | Смысловые модели и типовые компоненты проектируются для последующего повторного использования |
-| Android/mobile companion | `CONDITIONAL` | Возможная будущая поверхность; состав и полномочия не утверждены |
-| Web/shared host | `CONDITIONAL` | Возможные будущие профили; сетевые полномочия, отказоустойчивость и выпуск не утверждены |
+| `stratbox` analytical core | `BOUNDARY_ACCEPTED` | Banking/macro domain methods, transformations, canonicalization, neutral infrastructure ports and registries. |
+| Windows application and surface | Separate ownership `BOUNDARY_ACCEPTED`; particular features `CURRENT_OBSERVED` | Discovering and composing user scenarios; mediating interactions with core analytical operations. |
+| Managed-platform integration | Existing desktop activation `CURRENT_OBSERVED`; future profiles `CONDITIONAL` | Consume verified external installation/session/runtime context, without inventing ownership of the external platform's lifecycle. |
+| Portable semantic application/surface concepts | Reuse direction `BOUNDARY_ACCEPTED`; specific common modules `CANDIDATE` | Define platform-neutral meaning separately from each platform's rendering and device-specific adapters. |
+| Future Android companion | `CONDITIONAL` | Potential remote-first client; actual release features, permissions and local-compute support remain open. |
+| Web and shared host | `CONDITIONAL` | Desired future operating profiles; authentication, deployment, resilience, data ownership and actual API availability require explicit admission. |
 
-Статус текущего desktop-исполнения определяется кодом и тестами его implementation owner, а не этим целевым текстом.
+The existing desktop implementation is established by its source code and tests at an exact revision, not by aspirational statements in this Target WHAT page.
 
-## Граница ответственности
+## Responsibility boundary
 
-Предметная достоверность и расчёт принадлежат аналитическому ядру. Пользовательская композиция, жизненный цикл выполнения и доступность операции должны иметь соответствующего application owner в каждой активированной поставке. Конкретная физическая реализация общей долговременной application authority пока открыта. Внешняя платформа владеет собственными contract/version/deployment capabilities, а Strategy Box — своими сторонами интеграции.
+Subject-matter correctness and statistical computation belong in the independent core. User-directed composition, execution lifecycle and capability availability require an application authority appropriate to each **actually deployed** profile. The placement and physical implementation of a shared durable application authority remain open. The external platform governs only the capabilities in its own verified versioned contracts; Strategy Box owns its side of those integrations.
 
-Разрешённые ИИ-агенты и когнитивные потребители могут быть **внешними пользователями ограниченного набора возможностей** при явном основании и проверяемых полномочиях. Наличие такого потребителя само по себе не определяет внутреннюю архитектуру Strategy Box и не обещает machine API в данном baseline.
+Authorized machine/AI consumers may become **clients of scoped capabilities** under appropriate identity and permission checks. Their possible existence is not evidence that a machine interface has already shipped or that the core's domain architecture must be driven by an AI framework.
 
-## Что не обещано этим baseline
+## What this baseline does not promise
 
-- Конкретный сервер, отдельный application service, распределённая очередь или отдельный репозиторий.
-- Android/Web production release, автономная работа mobile или доступ к удалённому хосту.
-- Строгие SLO/RPO/RTO и числовая performance guarantee без измерений и Product Decision.
-- Универсальная транзакционная сохранность всех текущих файлов, бесконечная история или выполнение опасной операции без подтверждения.
-- Автоматическое признание каждой исследовательской операции, расширения или идеи публично доступной capability.
+- A particular server, stand-alone application-service process, distributed queue or new repository.
+- Production Web/Android release, fully autonomous mobile execution or implemented remote host access.
+- Quantitative SLO, RPO, RTO or performance guarantees without tested workloads and Product decisions.
+- Automatic atomic durability for every current output, permanent retention of all source files or approval-free destructive actions.
+- Automatic promotion of any helper, research proposal, integration, third-party extension or AI feature into an available public capability.
 
-**Проверяемая граница принятия:** общепродуктовый WHAT должен сохранять независимость core и других implementation owners; дополнительные обещания проходят отдельное утверждение и квалификацию профиля. Здесь пока зафиксирован достаточный контур идентичности, не исчерпывающая продуктовая спецификация.
+**Acceptance boundary:** the target mission and separation of responsibilities are sufficiently stated for continued design; full Product commitments require admitted profiles and observed acceptance criteria. This identity page is not a complete product specification.
