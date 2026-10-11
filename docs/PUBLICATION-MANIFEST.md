@@ -1,12 +1,16 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R25`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R26`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
 
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
+| Scientific topic: headless host, browser security and persistence | `docs/science/deployment/headless-host-web-security-and-persistence-tradeoffs.md` | Original 0038 fully primary-read; 236 provisional section locators; present Windows direct code checked; no host service, database, API, auth, fault or security deployment evidence; all selections conditional |
+| Scientific topic: Workroom, Explorer and operational UX | `docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md` | Original 0039 fully primary-read; 205 provisional section locators; four-area IA, accessibility and layout thresholds are candidates, with no user or installed GUI conformance |
+| Scientific topic: bounded AI routing and safe automation | `docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md` | Original 0041 fully primary-read; 170 safe provisional section locators; current Windows scaffold checked; no scheduler, autonomous agent, machine endpoint or independently tested execution policy |
+| Scientific topic: semantic promotion and bounded reliance | `docs/science/data-and-knowledge/semantic-promotion-firewalls-and-bounded-reliance.md` | Partial primary review of outstanding original 0019 plus overlapping confirmed maintained Science; historical source remains NOT full-read and NOT completely accounted; requirements and ontology not product-admitted |
 | Scientific topic: motion semantics and scroll continuity | `docs/science/surfaces/state-driven-motion-scrolling-and-execution-feedback.md` | full original 0040 directly read; 257 provisional units; no installed timing, reduced-motion or frame-performance pass |
 | Scientific topic: strict atomic artifact styling | `docs/science/artifacts/atomic-style-set-cross-format-resolution-and-conformance.md` | full original 0042 directly read; 138 provisional units; ReportProfile lineage, cross-format and compiler claims are target candidates |
 | Scientific topic: visual token values and layout alternatives | `docs/science/surfaces/visual-token-values-contrast-and-layout-profiles.md` | source 0043 fully primary-read, 162 candidate units and explicit density/motion preference conflict; no installed visual/accessibility test |
