@@ -1,25 +1,18 @@
 # Bounded Science publication integrity check — 2026-10-11
 
-**Repository:** `ForestTiger-GH/stratbox@main`, source tree resolution returned `be09c5400566a452022fb7714c978c5a5fa6637c` during this producer-side check. **Scope:** all 28 Markdown files beneath `docs/science/`: 26 independently readable thematic papers plus the navigation and source-use README files.
+**Source tree observed:** `stratbox@c8664a0f9ad29134515c8eb6460ef104e57b6dec`. This check supersedes the previous 28-file/117-link snapshot after two Science modules were added.
 
-## Exact measured results
-
-| Check | Observed outcome |
+| Bounded property | Direct observed result |
 | --- | ---: |
-| Enumerated Markdown files under `docs/science/` | **28** |
-| Markdown relative link occurrences matched by the basic `[label](target)` pattern | **117** |
-| Missing file destinations after resolving `../`, `./` and relative paths against the Git tree | **0** |
-| Source files unavailable to read by the connected GitHub API | **0** |
-| Hits for selected restricted-name patterns `stratbox[-_]plugin` or `stratbox.plugin`, case-insensitive, among 28 files | **0** |
+| Science Markdown source files | **30** (28 standalone subject papers + 2 index/source-guide files) |
+| Fetched/read successfully at `main` | **30/30** |
+| Inline Markdown local relative file-link occurrences | **125** |
+| Missing relative file destinations after Git-tree path normalization | **0** |
+| Hits in these 30 files for selected restricted-name spellings (case-insensitive) | **0** |
+| Implementation/runtime tests executed by this check | **0** |
 
-**Procedure:** obtain the recursive Git tree of `main`; enumerate each `docs/science/**/*.md` blob; fetch actual file contents at `main`; parse visible Markdown inline relative links; normalize each link path and compare with exact enumerated Git-tree blob paths. Counts are from three disjoint batches of nine, nine and ten source files, with respectively 50, 18 and 49 local link occurrences. The selected restricted-name scan is a very narrow mechanical screen, not a full confidential-information clearance.
+The four disjoint read batches contained **8, 8, 8 and 6 Markdown files**, respectively, and **53, 11, 51 and 10** local relative links. Each visible `[label](target)` link with a non-URL, non-fragment target was normalized relative to its actual source file directory and compared against the complete Git-tree blob-path set at the observed tree revision. The restricted-name lexical screen looked for `stratbox[-_]plugin` and `stratbox.plugin` spellings in the retrieved Science body. This is a deliberately narrow confidentiality sanity check; no private implementation was analyzed as part of publication.
 
-## What this check does not establish
+**PASS, within bounded scope:** all 125 checked local relative file paths existed in the same observed tree, and no selected lexical hit appeared. **Not checked:** target anchors; reference-style Markdown; HTML links; external site reachability; factual accuracy; contract/commit/code source validity; all private-information classes; semantic source conservation; independent review; cold-reader Research Amputation; installed Python/Windows or host runtime. A structural link success is not a global publication-security or product-readiness certificate.
 
-- Section anchors, link fragments, unusual Markdown reference-style link syntax, encoded external URLs, embedded images and absolute links were **not** comprehensively resolved.
-- External websites, source commit freshness, publication authority, citation authenticity and link accessibility for a reader outside the authenticated connection were **not** revalidated.
-- The restricted-name search covers only specified lexical patterns. It does **not** prove absence of confidential concepts, accidental identifiers or indirect descriptions.
-- This is **not** independent Source→Science, Science→direct-evidence, cross-theme contradiction or cold-reader Research Amputation testing.
-- Code, installed Windows/AppDock, Python behavior, backups, actual filesystem crash safety and GUI/host/multiuser behavior were **not tested**.
-
-**Verdict:** `SCIENCE_MARKDOWN_RELATIVE_FILE_LINKS_PASS_BOUNDED`. This is a structural signal for the tested main-tree snapshot, not complete publication approval. Re-run on any later Science or documentation link change; pair with independent content, evidence, security and source-conservation checks before publishing a global Knowledge Product completeness claim.
+The producer should rerun this test after link/path modifications, independently inspect source→Science and Science→actual direct evidence, and obtain separate authorized security clearance before calling any global publication complete.
