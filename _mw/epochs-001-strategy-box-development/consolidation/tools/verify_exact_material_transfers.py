@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks ten bounded source-ledgers (currently 532 items): exact original SHA/line,
+Checks ten bounded source-ledgers (currently 568 items): exact original SHA/line,
 maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 50, "0055": 47}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -34,6 +34,7 @@ LEDGERS = (
     "COGNITION-FOUNDATION-EXACT-ITEMS-0034.jsonl",
     "BANK-MACRO-COMPARABILITY-EXACT-0019.jsonl",
     "TOPIC08-EXACT-QUALITIES-50-0047.jsonl",
+    "QUALITY-08-NEGATIVE-36-ENGLISH-LOCATORS.jsonl",
     "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
 )
 
@@ -176,12 +177,20 @@ def verify() -> dict:
                         if original and normalized_for_markdown(original) not in row:
                             issues.append(f"{label}: unchanged exact original term missing")
             elif source_id == "SB-SRC-0047":
-                original_id = item["research_id"]
-                invariant = item["source_exact_invariant"]
-                falsifier = item["source_exact_falsifier"]
-                if source_here != f"| **{original_id}** | {invariant} | {falsifier} |":
-                    issues.append(f"{label}: quality source row differs from frozen original")
+                original_id = item.get("research_id") or item.get("research_test_id")
                 row = source_english_row(original_id)
+                if item.get("research_test_id"):
+                    if not source_here.startswith(f"| {original_id} |"):
+                        issues.append(f"{label}: original source fixture ID/line changed")
+                    scenario = item.get("english_scenario")
+                    expected = item.get("english_expected_property")
+                    if not row or not scenario or scenario not in row or not expected or expected not in row:
+                        issues.append(f"{label}: negative fixture English rendering missing")
+                else:
+                    invariant = item["source_exact_invariant"]
+                    falsifier = item["source_exact_falsifier"]
+                    if source_here != f"| **{original_id}** | {invariant} | {falsifier} |":
+                        issues.append(f"{label}: quality source row differs from frozen original")
                 if not row or f"#L{first}" not in row:
                     issues.append(f"{label}: translated quality row or original line missing")
             elif source_id == "SB-SRC-0055":
@@ -293,7 +302,7 @@ def verify() -> dict:
 
     return {
         "status": "PRODUCER_TRACE_CHECK_PASS" if not issues else "PRODUCER_TRACE_CHECK_FAIL",
-        "scope": "ten mixed exact/English-translation ledgers, nine original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
+        "scope": "eleven mixed exact/English-translation ledgers, nine original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": science_files,
