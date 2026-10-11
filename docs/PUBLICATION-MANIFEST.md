@@ -64,7 +64,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The latest *completed* bounded structural check at Git tree `111595de58794dcf16dde650aef15e5dce42a93d` covered 36 Science Markdown files and 152 relative paths with zero missing destinations. The three new settings-related papers increase the Science tree to 39 files and require a fresh exact-tree check; the older result must not be described as an audit of these additions.
+- At exact tree `fc5c7e59a7efae7ebf924479507e70a870d848c8`, a new bounded producer-side check read **39/39** Science Markdown files and verified **173** inline relative file links with **zero** missing destinations and **zero** selected narrow lexical hits. This is structural screening only, not an independent content, confidentiality, or Research Amputation certificate.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
