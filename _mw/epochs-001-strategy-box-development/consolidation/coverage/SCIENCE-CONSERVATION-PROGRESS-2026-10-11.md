@@ -2,6 +2,21 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — first complete 03 Research-to-Science slice
+
+**Exact observed producer state:** 566 frozen Git sources, **32 substantive original full reads** (19 inherited + all twelve 04 + 03 data-to-knowledge `SB-SRC-0050`), **1,552 provisional located source-positioned units** (582 + 885 + 85), **21 self-contained bounded Science articles**, **0/566 independently certified sources**, **566/566 unaccounted source dispositions**.
+
+The newly fully read 1,498-line original `SB-SRC-0050` at `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580` has exact source blob `830289dadddcfed26ae4a23c2d5836eff34d62fd`. Its 85 provisional unit candidates and trace destinations are recorded in `units/CONSOLIDATION-DATA-KNOWLEDGE-0050.jsonl`. Two English Science owners now carry subject-specific meaning rather than a number-based study copy:
+
+- `docs/science/data-and-knowledge/observation-semantics-comparability-and-claims.md` (economic reporting perimeter, bank and region mappings, blank vs zero, validity gates, dependent evidence and qualified claims).
+- `docs/science/data-and-knowledge/dataset-versions-lineage-currentness-and-retention.md` (source/fetch/registry snapshots, DatasetDefinition/Version/Materialization, semantic lineage, subject-specific revalidation, retention, style versus data, 22 unperformed falsifiers and 28 unresolved source concerns).
+
+**Deliberately retained cross-generation contradiction:** the older study's R0–R4 labels referred to `traceable → input-identical → replayable → output-verifiable → audited/accepted`, whereas the later source study's R0–R4 refer to `undocumented → traceable → byte-verifiable → replay-capable → replay-verified`. The identical labels **cannot be treated as one adopted enum**. The historical universal Source Catalog/monitoring proposal also conflicts with the later explicit human wish for lightweight receipts of only genuinely used inputs; the publications preserve both as historical versions, not as equal implementation mandates.
+
+**Outstanding:** independent challenge that all of the original's material meaning is represented, reverse direct-source confirmation for every Science claim, older 03 `SB-SRC-0046/0049/0051–0055`, remaining 02 and historical originals, 522-ish code/other census source reads, authorized human input originals and full security/cold-reader gates. This checkpoint is **PARTIAL**, not proof of source certification or a product implementation test.
+
+## Historical checkpoint — superseded by the active one above
+
 ## Active checkpoint after completion of all twelve late topic primary reads
 
 - **566** frozen Git path/blob source identities, **31** substantive originals fully read (19 inherited + all twelve 04), **1,467** source-addressed provisional semantic units (582 inherited + 885 new), **19** independent bounded thematic Science modules (five previous + fourteen new).
