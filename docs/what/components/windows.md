@@ -1,11 +1,13 @@
-# Windows — компонентное целевое представление
+# Windows application — bounded component Target WHAT
 
-**Implementation owner:** `ForestTiger-GH/stratbox-windows`. **Status:** отдельное приложение подтверждено; перспективный shared execution `CANDIDATE`.
+**Implementation owner:** `ForestTiger-GH/stratbox-windows`. **Admission:** separate application ownership `BOUNDARY_ACCEPTED`; proposed shared-node execution capabilities and future client APIs `CANDIDATE`.
 
-**Назначение:** понятный пользовательский доступ к рабочему пространству, каталогам операций, сценариям, кейсам, логам, результатам и связанным действиям. Настоящие функции и ограничения зафиксированы отдельно в [Current HOW](../../current-how/windows-application.md).
+**User purpose:** provide approachable interaction with workspaces, domain operation catalogs, scenarios, execution cases, progress and diagnostics, results, artifacts and authorized follow-on actions. Concrete observed behavior and current omissions belong to [the pinned Windows Current HOW](../../current-how/windows-application.md).
 
-**Наблюдаемый компонент:** Windows Qt surface, управляемый activation context, сценарный chat/inspector, локальная JSON история и последовательное выполнение. Названия режимов «Фоновые», «Поручения» и «Участники» в UI сами по себе **не обещают** полноценный scheduler, сетевое взаимодействие или серверные права.
+**Observed baseline:** Qt desktop presentation, managed activation context, scenario/chat/inspector structures, locally persisted JSON history and a bounded sequential execution coordinator. UI labels such as 'Background', 'Assignments' or 'Participants' do **not** themselves prove a durable job scheduler, network collaboration or real server-side permissions.
 
-**Целевые candidate properties:** platform-neutral semantics для forms/operations/scenario projections; пользовательский статус не опережает подтверждённый run/effect outcome; UI не хранит единственный durable execution truth при переходе к shared-node; явные диагностика и восстановление; настройки только с понятным пользователю эффектом.
+**Target candidates:** share typed semantic definitions for forms, operations, scenario projections and meaningful status with future clients; prevent the UI from reporting success before an authoritative Run/Effect has been verified; maintain clear diagnostics and source/result visibility; assign durable shared execution truth to a real active application owner rather than an isolated Qt window; keep user settings minimal and behaviorally meaningful.
 
-**Поверхность/ядро:** Windows client может сохранять свой presentation toolkit, не навязывая его core и будущим поверхностям. Точный backend API, state schema и mode управления требуют отдельных решений и проверки.
+**Separation from core and other clients:** the Windows client may keep its native presentation toolkit while portable application semantics remain reusable by Web and prospective Android clients. A specific backend API, durable schema, device capability matrix, scheduling policy and host-mode lifecycle require separate Product and implementation admission.
+
+The Windows owner cannot guarantee remote-host background execution, cross-device synchronization or release-quality recovery simply by displaying corresponding navigation elements.
