@@ -1,35 +1,35 @@
-# Publication buckets, latent quantities и сила аналитического вывода
+# Publication buckets, latent quantities and strength of analytical claims
 
-**Область:** научно-инженерное понимание восстановления округлённой банковской статистики и управления доказательной силой вывода. **Статус:** самостоятельный ограниченный научный модуль с прямыми основаниями; глобальное сохранение всего Research-корпуса пока открыто.
+**Scope:** scientific and engineering interpretation of reconstruction from rounded banking statistics, preserving the difference between the publication and evidence about an underlying latent quantity. **Status:** bounded source-grounded Science article; complete preservation of the historical research corpus remains open.
 
-## Два разных объекта измерения
+## Two different measured objects
 
-Пусть `x` — скрытая неотрицательная исходная величина, `p` — округлённый для публикации представитель с шагом `h>0`. В действующем алгоритме SORS `p` соответствует интервалу
+Let `x` denote a nonnegative latent quantity, `p` its rounded published representative, and `h>0` the publishing step. In the current SORS algorithm, `p` corresponds to the interval
 
 \[
 I(p)=[\max(0,p-h/2),\,p+h/2).
 \]
 
-Верхняя граница открыта. Для `h=1` сообщение `p=6` допускает `5.5 \le x < 6.5`. Даже **точно определённая опубликованная цифра** `6` сама по себе **не идентифицирует точное латентное** `x=6`. Это прямо следует из [RoundingPolicy.interval](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/rounding.py) и различения `PublicationInterval.is_point`.
+The upper bound is **open**. With `h=1`, publication `p=6` admits `5.5 \le x < 6.5`. Even an **exactly identified published number** 6 does not thereby identify the **exact latent** `x=6`. This follows from the [implemented `RoundingPolicy.interval` and `PublicationInterval.is_point` contracts](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/rounding.py).
 
-### Почему арифметика опубликованных целых опасна
+### Why arithmetic on published integers can fail
 
-Предположим, скрытое отношение имеет вид `x_T=x_A+x_B`. Из него следует точная линейная связь латентных величин. Но независимо округлённые `p_T,p_A,p_B` могут удовлетворять `p_T \ne p_A+p_B`. Простой контрпример при `h=1`: `x_A=5.6`, `x_B=5.6`, `x_T=11.2`; тогда публикации `p_A=6`, `p_B=6`, `p_T=11`. Отклонение `6+6\ne11` не нарушает латентного закона суммирования. Следовательно, машинное вычитание опубликованных представителей как точных величин способно создавать ложные нули, отрицательные остатки и мнимые ошибки источника.
+Suppose latent quantities satisfy `x_T=x_A+x_B`. This is an exact latent linear constraint. Independently rounded representatives `p_T,p_A,p_B` need not satisfy `p_T=p_A+p_B`. For `h=1`, take `x_A=5.6`, `x_B=5.6`, `x_T=11.2`. Their published representatives can be `p_A=6`, `p_B=6`, `p_T=11`. Thus `6+6 \ne 11` does **not** violate the exact latent identity.
 
-Действующий quantity graph представляет сумму компонентов как `METRIC_COMPONENT_SUM`, ограничения доминирования отдельными связями, а несколько наблюдений одной опубликованной величины сначала пересекает по интервальным границам; пустое/открыто-точечное пересечение вызывает конфликт. [Прямая реализация quantity graph](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/quantities.py).
+Treating published representatives as exact measurements can therefore invent a zero, a negative residual or a purported source error. The current SORS quantity graph expresses component sums as `METRIC_COMPONENT_SUM`, models dominance constraints separately, and intersects interval bounds before reconciling multiple observations of one published quantity. An empty intersection or a zero-width point excluded by an open boundary triggers a conflict. See the [direct quantity-graph implementation](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/quantities.py).
 
-## Сила факта и его выбор как представителя
+## Evidence strength is separate from representative selection
 
-В коде evidence layer фактически различает пять `assumption tier` уровней, нумерованных от 0 до 4: `STRICT_OFFICIAL`, `SOURCE_PRESERVING`, `ROUNDING_OPTIMAL`, `ROUNDING_PREFERRED`, `ROUNDING_SELECTED`. Более высокий tier означает **более слабую опору**, а не большую числовую погрешность. Таблица `EVIDENCE_STRENGTH` отдельно ранжирует методы для выбора представителя при совпадающей опубликованной величине. Путать tier и strength — значит усиливать доказательство только потому, что выбран удобный результат. [Прямой evidence contract](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/evidence.py).
+The current evidence implementation distinguishes **five assumption tiers, 0–4**: `STRICT_OFFICIAL`, `SOURCE_PRESERVING`, `ROUNDING_OPTIMAL`, `ROUNDING_PREFERRED`, and `ROUNDING_SELECTED`. A numerically higher tier represents **weaker evidential support**, not necessarily a larger numerical error. A separate `EVIDENCE_STRENGTH` mapping ranks methods for choosing a representative within one publication bucket. Confusing assumption tier with strength of a preferred selection can inadvertently claim stronger evidence solely because an aesthetically convenient representative was selected. See the [implemented evidence contract](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/evidence.py).
 
-**Исторический дрейф:** сохранённая методология `docs_old/cbr_sors_restoration/methodology.md` излагает четырехуровневую схему (tiers 0–3); действующий исходный `evidence.py` имеет пять уровней. Для описания **текущего исполнения** приоритет у точного кода. Причины и момент разделения `PREFERRED` и `SELECTED` остаются исторически неустановленными; их не следует реконструировать догадкой.
+**Historical drift:** the older `docs_old/cbr_sors_restoration/methodology.md` explained **four tiers (0–3)**, whereas the frozen current `evidence.py` specifies **five**. For a CURRENT behavior claim, the exact implementation takes precedence. The historical reason and date of the `PREFERRED`/`SELECTED` separation have not been established; do not fabricate a migration narrative.
 
-## Альтернативы и границы применимости
+## Alternatives and applicability boundaries
 
-- **Принимать целое как точную сумму.** Вычислительно дёшево, но допустимо лишь когда издатель реально публикует точные значения либо отдельный контракт доказывает такую семантику.
-- **Работать только с интервалами.** Сохраняет строгую неопределённость, но не всегда даёт один удобный числовой представитель. Выдавать интервал за опубликованный ноль недопустимо.
-- **Оптимизационно выбирать представитель.** Может создать полезный числовой результат, но степень допущений и источник нового основания должны оставаться видимыми. Совместимость нескольких выбранных значений требует глобальной проверки, а не только их индивидуальных интервалов.
+- **Assume published integers are exact amounts.** Cheap computationally, but only justified when the publisher actually provides exact observations or a separately justified domain contract establishes that interpretation.
+- **Keep only intervals.** Preserves strict uncertainty but may not yield the single convenient numerical representative expected by a consuming analyst. An admissible latent interval is not a published zero.
+- **Choose representatives through optimization.** Useful when a particular number is required, but the assumptions, evidence tier and grounds for choosing it must remain visible. A collection of individually admissible representatives can still violate global constraints; joint feasibility must be tested.
 
-**UNKNOWN:** соответствуют ли все внешние статистические публикации одному шагу и одному правилу округления, актуальна ли каждая версия источника, каковы наблюдаемые характеристики оптимизатора на конкретной рабочей среде. Действующий `RoundingPolicy` доказывает контракт данной подсистемы, а не универсальное правило всех статистических ведомств.
+**UNKNOWN:** whether every external statistical publisher uses this rounding step and convention; whether all relevant source editions are current; optimizer reliability/performance in the actual target environment. `RoundingPolicy` establishes this subsystem's implementation contract, **not** a universal rule for all authorities.
 
-**Условия пересмотра:** изменение official rounding rule, `RoundingPolicy`, `EVIDENCE_TIER`, source registry, научной модели измерения, появление независимой первичной проверки либо контрпримера. Данный модуль объясняет доказательность, но **не утверждает продуктовую политику выбора и публикации**.
+**Reopen on:** change in an official rounding rule, `RoundingPolicy`, `EVIDENCE_TIER`, source registry or measurement model; independent source verification or a counterexample. This article explains epistemic strength but **does not adopt a Product policy for selecting or publishing estimates**.
