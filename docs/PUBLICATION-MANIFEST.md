@@ -1,6 +1,6 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R19`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R20`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
@@ -8,6 +8,7 @@
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
 | Scientific orientation | `docs/science/README.md` | bounded |
+| Scientific topic: whole-system architecture evidence gates | `docs/science/architecture/system-architecture-profiles-decisions-and-evidence-gates.md` | source 0055 fully read, 152 source-addressed provisional records including 43 decision candidates and 15 unperformed tests |
 | Scientific topic: Work-centered multi-surface information architecture | `docs/science/surfaces/work-context-navigation-and-authorized-actions.md` | original 03 topic 07 primary read, 18 conflicts and UX probes provisional |
 | Scientific topic: semantic visual tokens/motion/accessibility | `docs/science/surfaces/semantic-design-tokens-motion-and-accessibility.md` | dated user-interface hypotheses, no visual or WCAG device certification |
 | Scientific topic: neutral extension binding and conformance | `docs/science/extensions/provider-discovery-binding-readiness-and-conformance.md` | original 03 topic 06 full read, source-driven staged-provider readiness, conformance proposals; uncertified |
@@ -48,14 +49,14 @@
 
 ## Source conservation and factual boundaries
 
-The frozen census contains **566 exact Git source identities** (553 older, twelve later topical originals, one orientation). **37 substantive Research original studies** are marked `full_read`: nineteen inherited, all twelve late 04 and six `03-consolidation-research` originals through Product Surface Architecture `SB-SRC-0054` (L1–L1414; source blob `1443b1b2f23172b1768603c416f7f4906ac1ac80`). **1,948 provisional semantic units** are located: 1,864 previous + 84 in `units/CONSOLIDATION-PRODUCT-SURFACE-0054.jsonl`. Its 84 include 28 thematic spans, all 18 C07 conflict identities, twelve unresolved surface questions and 26 unperformed acceptance checks. **30 bounded independently readable thematic Science articles** are published, plus two Science guides/index files. **0/566** source files have independently certified complete material disposition; **566/566 still carry `material_unit_state=unaccounted`**. Producer reading and unit mapping remain provisional, not full-lossless or Research Amputation certification. Several original 03/02/01 studies, direct source code/tests and authorized human input carriers, security review, direct evidence reverse verification and Product Decisions remain open. A bounded 30-file/125-relative-link structural check passed before the latest two articles; revalidation is required after additions.
+The frozen census contains **566 exact Git source identities**. **38 substantive Research original studies** have `full_read`: 19 inherited, twelve `04-ai-raised-topics`, and seven of the `03-consolidation-research` originals. The newly read `SB-SRC-0055` Whole-System original has 1,465 lines and exact blob `00e38a158a4538052930e677cce3e9aff449b026`. **2,100 source-addressed provisional semantic units** are registered (1,948 previous + **152** in `units/CONSOLIDATION-WHOLE-SYSTEM-0055.jsonl`: 34 thematic spans, 32 INV, 28 CF, 43 unadmitted D questions and 15 unperformed TQ tests). **31 bounded standalone thematic Science papers** are now published, plus two Science guides. **Zero of 566** sources has been independently certified completely conserved; **566/566 retain `material_unit_state=unaccounted`**. An original dated Topic-09 declaration that separate Topic 08 was missing is preserved as a statement of the author's prior view; an actual separately indexed Topic-08 source now exists and remains to be studied directly. Full 01/02, remaining 03, implementation source, authorized human carriers, bidirectional source-to-Science verification, Research Amputation, comprehensive public-security review and runtime tests are OPEN. The last completed bounded 30-file/125-local-link structural check predates three new topical papers and must be rerun.
 
 The scientific topics can be read without going through Research history, and their bounded claims link directly to exact code evidence or explicitly named reasoning assumptions. The entire research corpus still fails the global Research Amputation condition.
 
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds twenty-five Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
+- The last recorded exhaustive documentation-tree check was for an earlier revision (31 Markdown files, 75 links, 49/49 local paths). This edition adds twenty-six Science owners and navigational changes; fresh full-tree and independent security/link-anchor/content review are **pending**, not inherited from the old check.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
