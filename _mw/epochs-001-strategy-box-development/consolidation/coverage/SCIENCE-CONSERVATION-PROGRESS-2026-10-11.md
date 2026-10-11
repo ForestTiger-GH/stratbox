@@ -2,6 +2,18 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint — Whole-System architecture source fully read, dated Topic08 caveat
+
+**Exact producer count:** **566** pinned census sources; **38** substantive Research originals fully read (19 inherited + 12 late 04 + seven 03); **2,100** provisional located semantic units; **31** bounded standalone Science articles plus two guides. **0/566 independently certified semantic dispositions**, **566/566 still material `unaccounted`**. No global Research Amputation or full public-security certification.
+
+`SB-SRC-0055` Whole-System Target Architecture: entire 1,465-line frozen source `00e38a158a4538052930e677cce3e9aff449b026`; **152** source-positioned units saved to `units/CONSOLIDATION-WHOLE-SYSTEM-0055.jsonl`: 34 thematic spans, every 32 `INV` proposed invariant, 28 `CF` conflict, 43 `D` unadmitted Product/Engineering decisions and 15 `TQ` unperformed test cases. New English thematic Science: `docs/science/architecture/system-architecture-profiles-decisions-and-evidence-gates.md`.
+
+**Time-sensitive conflict:** 2026-10-09 authoring note says Topic08 not yet found; frozen repository census today contains Topic08 original `SB-SRC-0047`, which has not been independently fully read. Topic09's provisional §12 does not replace Topic08. **Physical choice retained:** early SQL-first SQLite/PostgreSQL proposal versus later file-first user-acceptable profile; separate headless process versus independent Git repository; global CAS/ClaimStore versus bounded content identity and domain proof. No new physical topology, Product Decision or user-data migration policy adopted.
+
+**Next:** directly read `SB-SRC-0047` Trust/Safety/Qualities original; complete any omitted primary 03 `0046/0048` and direct older corpus; independently audit each source-unit→Science and Science→direct ground, then perform structural, audience and confidentiality checks. Latest 30-file relative-link check predates the new articles.
+
+## Historical checkpoint — superseded below
+
 ## Active checkpoint — Product Surface Architecture original fully read and mapped
 
 **Producer totals:** 566 frozen source identities, **37** full-read Research originals, **1,948** provisional meaning-unit records, **30** bounded independent Science papers (32 Markdown files including navigation/source guide). **0/566** sources independently certified, **566/566 `material_unit_state=unaccounted`**, global lossless and Research Amputation still OPEN.
