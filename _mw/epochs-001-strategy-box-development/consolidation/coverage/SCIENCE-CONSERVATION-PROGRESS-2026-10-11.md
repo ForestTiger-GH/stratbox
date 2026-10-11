@@ -2,6 +2,13 @@
 
 **State:** PARTIAL / INCOMPLETE. **Corpus baseline:** 566 pinned Git file identities (553 previous + 12 substantive late Research + one late orientation), under `sources/CENSUS.csv` with unchanged stable source identities and per-source blob pins. Separately admitted original human carriers remain independently tracked and may be unavailable to a Git-only reviewer. **This file is a progress projection, not a second source census or an independent Research Amputation pass.**
 
+## Active checkpoint after completion of all twelve late topic primary reads
+
+- **566** frozen Git path/blob source identities, **31** substantive originals fully read (19 inherited + all twelve 04), **1,467** source-addressed provisional semantic units (582 inherited + 885 new), **19** independent bounded thematic Science modules (five previous + fourteen new).
+- **All 12/12 late source files** were fully read and mapped to thematic Science. Latest: `SB-SRC-0554` (1,555 lines; 80 proposed units) → `docs/science/capabilities/composition-identity-and-user-machine-projections.md`; `SB-SRC-0555` (1,143 lines; 75 proposed units) → `docs/science/execution-and-diagnostics/interruption-cancellation-retry-and-checkpoints.md`. Both retain human-intent provenance and explicit semantic alternatives, particularly Scenario-vs-Scheme identity, Cascade projection and local-close-stops versus host-continues behavior.
+- **Zero** source-level complete material dispositions; **566/566** census entries remain `unaccounted`. No independent bidirectional or Research Amputation pass. The historical `01-old-notes`, remaining `02-base-study` and `03-consolidation-research`, code/tests/platform sources and authorized user carriers require original-to-Science review. The proposed unit count is not a verified full denominator.
+- Product code untouched, physical SQL/file and process/host topology undecided, no confidential implementation exposure, no installed or fault-injection test. **Release and full-lossless claims remain blocked.**
+
 ## Latest verified producer checkpoint — 2026-10-11 (supersedes lower historical counts)
 
 | Measure | Current observed producer state | Interpretation |
