@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Producer-only exact source→destination preservation check, not semantic assurance.
+"""Producer-only source identity, English destination presence and link check.
 
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 9 bounded original-source ledgers (currently 485 exact items),
-their original Git blob identities, text transfer and Science relative links.
+Checks ten bounded source-ledgers (currently 532 items): exact original SHA/line,
+maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
 """
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 50}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 50, "0055": 47}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -34,6 +34,7 @@ LEDGERS = (
     "COGNITION-FOUNDATION-EXACT-ITEMS-0034.jsonl",
     "BANK-MACRO-COMPARABILITY-EXACT-0019.jsonl",
     "TOPIC08-EXACT-QUALITIES-50-0047.jsonl",
+    "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
 )
 
 
@@ -131,84 +132,129 @@ def verify() -> dict:
                 destination_id = item["unit_id"].replace("SB-MAT-", "SB-SRC-", 1)
                 # Keep exact source groups as semantic handles, not arbitrary slugs.
                 destination_id = destination_id.replace(f"{source_id}-", f"{source_id}/", 1)
+            # Two orthogonal producer checks:
+            # (a) the ledger still describes the original frozen source;
+            # (b) the English Science destination retains ID, visible meaning
+            #     and a direct line link. This CANNOT certify translation meaning.
+            def source_english_row(identifier: str) -> str:
+                return next(
+                    (line for line in rendered.splitlines()
+                     if line.startswith("|") and f"`{identifier}`" in line),
+                    "",
+                )
+
+            source_here = lines[first - 1]
             if source_id == "SB-SRC-0025":
-                # For original Markdown tables, preserving the entire raw row
-                # is stronger and less ambiguous than string matching one cell.
-                if lines[first - 1] not in rendered:
-                    issues.append(f"{label}: exact original table row missing")
+                # Generic provider vectors use original markdown rows verbatim.
+                if source_here not in rendered:
+                    issues.append(f"{label}: exact original provider vector missing")
             elif source_id == "SB-SRC-0019":
                 if destination_id not in rendered:
-                    issues.append(f"{label}: original item ID missing in Science")
-                expected = item.get("full_source_test_body") or item.get("original_exact_meaning")
-                if expected and expected not in rendered:
-                    issues.append(f"{label}: original test body/firewall missing")
-                if item.get("full_source_test_body") and chr(10).join(lines[first:last]).strip() != expected:
-                    issues.append(f"{label}: stored test body differs from frozen original")
-                if item.get("original_exact_meaning"):
-                    observed = lines[first - 1].strip()
-                    if item.get("material_kind") == "macro_series_qualifier":
-                        observed = observed.removeprefix("- ").strip()
-                    if observed != expected:
-                        issues.append(f"{label}: original source phrase changed")
+                    issues.append(f"{label}: source item identity missing")
+                test_body = item.get("full_source_test_body")
+                if test_body:
+                    if chr(10).join(lines[first:last]).strip() != test_body:
+                        issues.append(f"{label}: ledger test body differs from original")
+                    if f"#L{first}" not in rendered:
+                        issues.append(f"{label}: exact original test line link missing")
+                    if f"`{destination_id}`" not in rendered:
+                        issues.append(f"{label}: English test identity missing")
+                else:
+                    original = item.get("original_exact_meaning")
+                    if original:
+                        observed = source_here.strip()
+                        if item.get("material_kind") == "macro_series_qualifier":
+                            observed = observed.removeprefix("- ").strip()
+                        if observed != original:
+                            issues.append(f"{label}: original study wording changed")
+                    row = source_english_row(destination_id)
+                    if not row or f"#L{first}" not in row:
+                        issues.append(f"{label}: evidence boundary/series rendering missing")
+                    if row and item.get("material_kind") not in (
+                        "banking_boundary",
+                    ):
+                        if original and normalized_for_markdown(original) not in row:
+                            issues.append(f"{label}: unchanged exact original term missing")
             elif source_id == "SB-SRC-0047":
                 original_id = item["research_id"]
-                original = lines[first - 1]
                 invariant = item["source_exact_invariant"]
                 falsifier = item["source_exact_falsifier"]
-                expected_row = f"| **{original_id}** | {invariant} | {falsifier} |"
-                if original != expected_row:
-                    issues.append(f"{label}: quality invariant/falsifier source row changed")
-                if original_id not in rendered or invariant not in rendered or falsifier not in rendered:
-                    issues.append(f"{label}: quality invariant/falsifier missing from Science")
+                if source_here != f"| **{original_id}** | {invariant} | {falsifier} |":
+                    issues.append(f"{label}: quality source row differs from frozen original")
+                row = source_english_row(original_id)
+                if not row or f"#L{first}" not in row:
+                    issues.append(f"{label}: translated quality row or original line missing")
+            elif source_id == "SB-SRC-0055":
+                original_id = item["original_test_id"]
+                if not source_here.startswith(f"| {original_id} |"):
+                    issues.append(f"{label}: original Topic-09 test/invariant row changed")
+                row = source_english_row(original_id)
+                if not row or f"#L{first}" not in row:
+                    issues.append(f"{label}: Topic-09 English destination/line missing")
+                meaning = item.get("english_research_meaning")
+                fixture = item.get("english_negative_fixture")
+                if row and (not meaning or meaning not in row or not fixture or fixture not in row):
+                    issues.append(f"{label}: Topic-09 English text changed")
             elif source_id == "SB-SRC-0033":
-                if destination_id not in rendered:
-                    issues.append(f"{label}: original chat/Work item ID missing")
+                if f"`{destination_id}`" not in rendered:
+                    issues.append(f"{label}: Chat/Work item identity missing")
                 if item.get("original_heading"):
                     heading = item["original_heading"]
                     reason = item["original_explanation"]
-                    if heading not in lines[first - 1] or reason not in lines[first + 1]:
-                        issues.append(f"{label}: original source anti-pattern changed")
-                    if heading not in rendered or reason not in rendered:
-                        issues.append(f"{label}: chat/Work anti-pattern text missing")
+                    if heading not in source_here or reason not in lines[first + 1]:
+                        issues.append(f"{label}: original research anti-pattern changed")
                 else:
                     question = item["original_question"]
                     recommendation = item["original_recommendation"]
-                    if question not in lines[first - 1] or recommendation not in lines[first - 1]:
-                        issues.append(f"{label}: original source UX recommendation changed")
-                    if normalized_for_markdown(question) not in rendered or normalized_for_markdown(recommendation) not in rendered:
-                        issues.append(f"{label}: original UX recommendation missing")
+                    if question not in source_here or recommendation not in source_here:
+                        issues.append(f"{label}: original research UX choice changed")
+                row = source_english_row(destination_id)
+                if not row or f"#L{first}" not in row:
+                    issues.append(f"{label}: English Chat/Work choice or source link missing")
             else:
-                if destination_id not in rendered:
-                    issues.append(f"{label}: source-addressable item ID missing")
-                meaning = (
+                if f"`{destination_id}`" not in rendered:
+                    issues.append(f"{label}: material source identity missing")
+                original = (
                     item.get("material_meaning")
                     or item.get("source_exact_meaning")
                     or item.get("meaning")
                     or item.get("original_exact_meaning")
                 )
-                if not meaning or normalized_for_markdown(meaning) not in rendered:
-                    issues.append(f"{label}: original exact wording missing")
-                if source_id in ("SB-SRC-0032", "SB-SRC-0029", "SB-SRC-0034") and meaning not in lines[first - 1]:
-                    issues.append(f"{label}: stored wording differs from source line")
+                if not original:
+                    issues.append(f"{label}: original wording absent from ledger")
+                if source_id in ("SB-SRC-0032", "SB-SRC-0029", "SB-SRC-0034"):
+                    if original and original not in source_here:
+                        issues.append(f"{label}: material wording differs from original")
                 if source_id == "SB-SRC-0031":
                     group = item.get("source_group")
-                    source_here = lines[first - 1].strip()
-                    if group == "BOUNDARY_CHECK":
-                        # Numbered original Research question (e.g. "1. ...").
-                        if meaning not in source_here:
-                            issues.append(f"{label}: readiness check differs from original")
-                    elif group == "BOUNDARY_ALARM":
-                        # Bullet original Research alarm (e.g. "- ...").
-                        if meaning not in source_here:
-                            issues.append(f"{label}: warning indicator differs from original")
+                    if group in ("BOUNDARY_CHECK", "BOUNDARY_ALARM"):
+                        if original not in source_here:
+                            issues.append(f"{label}: source list item differs from original")
                     elif group == "HOST_INVARIANT":
-                        # Heading + following explanation are two distinct lines.
-                        name, sep, statement = meaning.partition(" — ")
-                        original_window = chr(10).join(lines[first - 1:first + 3])
-                        if not sep or name not in original_window or statement not in original_window:
-                            issues.append(f"{label}: host-boundary invariant differs from original")
+                        title, delimiter, statement = original.partition(" — ")
+                        neighborhood = chr(10).join(lines[first - 1:first + 3])
+                        if not delimiter or title not in neighborhood or statement not in neighborhood:
+                            issues.append(f"{label}: source heading/body differs from original")
                     else:
-                        issues.append(f"{label}: unknown source group {group!r}")
+                        issues.append(f"{label}: unknown group {group!r}")
+                row = source_english_row(destination_id)
+                if not row or f"#L{first}" not in row:
+                    issues.append(f"{label}: maintained source item/line missing")
+                # Only the original English source rows of these groups remain
+                # verbatim; original Russian research rows were translated.
+                if (source_id == "SB-SRC-0029"
+                    or source_id == "SB-SRC-0032"
+                    and item.get("material_kind") != "research_acceptance_question"):
+                    if original and row and normalized_for_markdown(original) not in row:
+                        issues.append(f"{label}: original English source wording missing")
+
+            # Every article row must be in English, except source content
+            # which is retained verbatim only in the original frozen input.
+            if source_id != "SB-SRC-0025":
+                row_key = item.get("original_test_id") or item.get("research_id") or destination_id
+                row = source_english_row(row_key)
+                if row and re.search(r"[А-Яа-яЁё]", row):
+                    issues.append(f"{label}: non-English maintained rendering")
             verified += 1
             by_source[source_id] = by_source.get(source_id, 0) + 1
 
@@ -246,8 +292,8 @@ def verify() -> dict:
                 issues.append(f"{doc_rel}: broken relative link: {candidate}")
 
     return {
-        "status": "PRODUCER_EXACT_CHECK_PASS" if not issues else "PRODUCER_EXACT_CHECK_FAIL",
-        "scope": "nine exact item ledgers, eight original studies, all maintained docs relative paths; independent semantic audit not performed",
+        "status": "PRODUCER_TRACE_CHECK_PASS" if not issues else "PRODUCER_TRACE_CHECK_FAIL",
+        "scope": "ten mixed exact/English-translation ledgers, nine original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": science_files,
@@ -263,4 +309,4 @@ if __name__ == "__main__":
     except Exception as exc:
         result = {"status": "CHECKER_ERROR", "message": str(exc)}
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    sys.exit(0 if result["status"] == "PRODUCER_EXACT_CHECK_PASS" else 1)
+    sys.exit(0 if result["status"] == "PRODUCER_TRACE_CHECK_PASS" else 1)
