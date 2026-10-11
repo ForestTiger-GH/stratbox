@@ -22,6 +22,8 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58}
+
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
     "MACHINE-READINESS-EXACT-ITEMS-0032.jsonl",
@@ -63,6 +65,7 @@ def verify() -> dict:
     target_cache: dict[str, str] = {}
     by_source: dict[str, int] = {}
     verified = 0
+    seen_units: set[str] = set()
 
     for ledger in LEDGERS:
         ledger_path = BASE / "units" / ledger
@@ -71,6 +74,9 @@ def verify() -> dict:
                 continue
             item = json.loads(raw)
             label = item["unit_id"]
+            if label in seen_units:
+                issues.append(f"{label}: duplicate material unit ID")
+            seen_units.add(label)
             source_id = item["source_id"]
             census = catalog.get(source_id)
             if census is None:
@@ -132,6 +138,8 @@ def verify() -> dict:
                 expected = item.get("full_source_test_body") or item.get("original_exact_meaning")
                 if expected and expected not in rendered:
                     issues.append(f"{label}: original test body/firewall missing")
+                if item.get("full_source_test_body") and "\\n".join(lines[first:last]).strip() != expected:
+                    issues.append(f"{label}: stored test body differs from frozen original")
                 if item.get("original_exact_meaning") and lines[first - 1].strip() != expected:
                     issues.append(f"{label}: original firewall line changed")
             else:
@@ -144,8 +152,20 @@ def verify() -> dict:
                 )
                 if not meaning or normalized_for_markdown(meaning) not in rendered:
                     issues.append(f"{label}: original exact wording missing")
+                if source_id in ("SB-SRC-0032", "SB-SRC-0029") and meaning not in lines[first - 1]:
+                    issues.append(f"{label}: stored wording differs from source line")
+                if source_id == "SB-SRC-0031":
+                    name, sep, statement = meaning.partition(" — ")
+                    original_window = "\\n".join(lines[first - 1:first + 3])
+                    if not sep or name not in original_window or statement not in original_window:
+                        issues.append(f"{label}: host-boundary statement differs from original span")
             verified += 1
             by_source[source_id] = by_source.get(source_id, 0) + 1
+
+    for sid, expected in EXPECTED_ITEMS.items():
+        actual = by_source.get(f"SB-SRC-{sid}", 0)
+        if actual != expected:
+            issues.append(f"SB-SRC-{sid}: expected {expected} exact units, found {actual}")
 
     file_count = 0
     links = 0
