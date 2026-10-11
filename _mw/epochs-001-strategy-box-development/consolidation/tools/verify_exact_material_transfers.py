@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 5 bounded original-source ledgers (currently 435 exact items),
+Checks 5 bounded original-source ledgers (currently 485 exact items),
 their original Git blob identities, text transfer and Science relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 50}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -33,6 +33,7 @@ LEDGERS = (
     "THREAD-WORK-UX-CHOICES-EXACT-0033.jsonl",
     "COGNITION-FOUNDATION-EXACT-ITEMS-0034.jsonl",
     "BANK-MACRO-COMPARABILITY-EXACT-0019.jsonl",
+    "TOPIC08-EXACT-QUALITIES-50-0047.jsonl",
 )
 
 
@@ -149,6 +150,16 @@ def verify() -> dict:
                         observed = observed.removeprefix("- ").strip()
                     if observed != expected:
                         issues.append(f"{label}: original source phrase changed")
+            elif source_id == "SB-SRC-0047":
+                original_id = item["research_id"]
+                original = lines[first - 1]
+                invariant = item["source_exact_invariant"]
+                falsifier = item["source_exact_falsifier"]
+                expected_row = f"| **{original_id}** | {invariant} | {falsifier} |"
+                if original != expected_row:
+                    issues.append(f"{label}: quality invariant/falsifier source row changed")
+                if original_id not in rendered or invariant not in rendered or falsifier not in rendered:
+                    issues.append(f"{label}: quality invariant/falsifier missing from Science")
             elif source_id == "SB-SRC-0033":
                 if destination_id not in rendered:
                     issues.append(f"{label}: original chat/Work item ID missing")
