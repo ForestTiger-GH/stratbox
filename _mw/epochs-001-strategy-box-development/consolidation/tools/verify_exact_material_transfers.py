@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18, "0563": 42, "0564": 50, "0565": 32}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0027": 16, "0028": 20, "0036": 15, "0037": 10, "0038": 12, "0041": 15, "0039": 30, "0026": 15, "0030": 30, "0035": 24, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47, "0014": 10, "0015": 20, "0013": 22, "0020": 16, "0021": 10, "0016": 12, "0022": 16, "0023": 16, "0554": 16, "0555": 18, "0556": 15, "0557": 16, "0558": 20, "0559": 20, "0560": 18, "0561": 20, "0562": 18, "0563": 42, "0564": 50, "0565": 32, "0040": 24}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -70,6 +70,7 @@ LEDGERS = (
     "LATE-ENDTOEND-0564-TESTS-ENGLISH-30.jsonl",
     "LATE-METHOD-0565-ENGLISH-20.jsonl",
     "LATE-METHOD-0565-TESTS-ENGLISH-12.jsonl",
+    "MOTION-0040-ENGLISH-24.jsonl",
 )
 
 
@@ -379,6 +380,22 @@ def verify() -> dict:
                         issues.append(f"{label}: quality source row differs from frozen original")
                 if not row or f"#L{first}" not in row:
                     issues.append(f"{label}: translated quality row or original line missing")
+            elif source_id == "SB-SRC-0040":
+                motion_id = item.get("source_item_id")
+                handle = f"SB-SRC-0040/{motion_id}"
+                row = source_english_row(handle)
+                meaning = item.get("english_meaning")
+                if not row or f"#L{first}" not in row or not meaning or meaning not in row:
+                    issues.append(f"{label}: motion English item/source-line missing")
+                if motion_id and motion_id.startswith("DURATION-"):
+                    original_token = source_here.split("|")[1].strip()
+                    if not original_token.startswith("`motion."):
+                        issues.append(f"{label}: source duration token row changed")
+                elif motion_id and motion_id.startswith("STATE-"):
+                    if not source_here.startswith("| ") or not source_here.split("|")[1].strip():
+                        issues.append(f"{label}: source motion-state row changed")
+                else:
+                    issues.append(f"{label}: unknown source motion item family")
             elif source_id == "SB-SRC-0565":
                 test_id = item.get("research_test_id")
                 if test_id:
