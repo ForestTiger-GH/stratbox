@@ -23,6 +23,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Audit research source coverage and distinguish evidence classes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_material_coverage.py > research_coverage_audit.json
+      - name: Verify structural audit parser and boundary self-tests
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_audit_research_span_routes.py
       - name: Audit span-level Research routing without semantic certification
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_span_routes.py --top 8 > research_span_audit.json
       - name: Show structural source-span audit headline
