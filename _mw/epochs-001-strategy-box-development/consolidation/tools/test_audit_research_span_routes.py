@@ -54,6 +54,20 @@ class StructuralAuditBoundaryTests(unittest.TestCase):
         self.assertEqual(audit.kind({"source_span": "L2-L6"}, "SECTION-INDEX-0025.jsonl"), "section_or_route")
         self.assertEqual(audit.kind({"source_line": 5}, "PROVIDER-EXACT-VECTORS-0025.jsonl"), "source_exact_transfer")
 
+    def test_only_explicit_numeric_science_section_references_are_checked(self):
+        self.assertEqual(
+            audit.exact_science_section_locator({
+                "science_destination": "docs/science/data-and-knowledge/example.md §12"
+            }),
+            ("docs/science/data-and-knowledge/example.md", 12),
+        )
+        self.assertIsNone(audit.exact_science_section_locator({
+            "science_destination": "docs/science/example.md §§12-15"
+        }))
+        self.assertIsNone(audit.exact_science_section_locator({
+            "science_topic": "docs/science/example.md"
+        }))
+
     def test_holes_only_expose_candidates(self):
         lines = ["heading", "meaning", "", "counterexample", "alternative", "assumption", "unknown", "cost"]
         parts = audit.holes(lines, {1}, minimum=5)

@@ -43,6 +43,24 @@ def destination(item: dict) -> str | None:
     text = raw.split(" §", 1)[0].strip()
     return text if text.startswith("docs/science/") else None
 
+def exact_science_section_locator(item: dict) -> tuple[str, int] | None:
+    """Only explicit 'docs/science/...md §N' routes have this geometry.
+
+    A historical section number is a *navigation hint*, never a semantic
+    provenance proof. All richer/named anchors are intentionally excluded.
+    """
+    raw = item.get("science_destination")
+    if not isinstance(raw, str) or " §" not in raw:
+        return None
+    target, section = raw.rsplit(" §", 1)
+    target = target.strip()
+    if not target.startswith("docs/science/") or not target.endswith(".md"):
+        return None
+    if not section.isdecimal():
+        return None
+    return target, int(section)
+
+
 def kind(item: dict, ledger: str) -> str:
     if (ledger.startswith(("SECTION-INDEX-", "RESEARCH-ORIGINAL-CANDIDATE-ROUTING-"))
             or item.get("status") == "section_locator_only_semantic_equivalence_unverified"):
@@ -93,6 +111,9 @@ def audit() -> dict:
                 register[sid].append((path.name, row))
     totals = Counter()
     detail = []
+    section_cache: dict[str, set[int]] = {}
+    unresolved_section_routes: set[tuple[str, str, int]] = set()
+
     for sid, r in sorted(study.items()):
         source = ROOT / r["path"]
         if not source.is_file():
@@ -136,6 +157,20 @@ def audit() -> dict:
                 unique_destinations.add(dest)
                 if not (ROOT / dest).is_file():
                     bad_destinations.add(dest)
+            numeric_route = exact_science_section_locator(item)
+            if numeric_route:
+                science_path, section = numeric_route
+                totals["candidate_numeric_science_section_routes"] += 1
+                if science_path not in section_cache:
+                    file = ROOT / science_path
+                    section_cache[science_path] = (
+                        {int(v) for line in file.read_text(encoding="utf-8").splitlines()
+                         if (m := re.match(r"^##\\s+([0-9]+)\\.", line))
+                         for v in [m.group(1)]}
+                        if file.is_file() else set()
+                    )
+                if section not in section_cache[science_path]:
+                    unresolved_section_routes.add((sid, science_path, section))
         for broken in sorted(bad_destinations):
             structural_issues.append(f"{sid}: Science destination missing: {broken}")
         traced_nonblank = len(nonblank & observed)
@@ -168,6 +203,11 @@ def audit() -> dict:
         "source_rows_entire_census": len(census),
         "research_originals_expected": len(study),
         "counts": dict(sorted(totals.items())),
+        "unresolved_numeric_section_route_distinct_count": len(unresolved_section_routes),
+        "unresolved_numeric_section_route_examples": [
+            {"source_id": sid, "science_path": path, "section": number}
+            for sid, path, number in sorted(unresolved_section_routes)[:30]
+        ],
         "research_sources_without_candidate_science_destination": sorted(x["source_id"] for x in detail if x["distinct_candidate_science_destinations"] == 0),
         "important_warning": (
             "A line covered by a provisional ledger is NOT preserved meaning. "
