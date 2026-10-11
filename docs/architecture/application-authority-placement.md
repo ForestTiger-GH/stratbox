@@ -36,3 +36,8 @@ No physical `stratbox-application` host or repo is selected. A single-process mo
 **Product Decisions required:** which cross-client behaviors to ship, lifetime after client exit, user/node scopes, externally observable concurrency/cancel/retry promises, data retention and permissions, ownership/packaging/versioning, and host reliability targets. Maintain the candidate while these choices remain open; do not block source-first Science or current-state validation.
 
 **Reopen:** real second UI/host consumer, accepted WHAT/operation requirements, headless smoke failure, actual shared-state counterexample or changed external contract.
+
+
+## Selected local seam design for review
+
+A [bounded application-orchestration LDD](../ldd/application/local-scenario-orchestration-boundary.md) traces actual Windows `run_scenario` callbacks, Qt worker admission/dispatch and current JSON history failure surfaces into a pure-semantic local proposal. This **strengthens model B**, without admitting a physical `stratbox-application` repo, hosted authority, wire API or durable Job. It identifies actual aggregate false-success, premature Artifact-card and unsanitized exception-message risks to be fixed under separate implementation authority.
