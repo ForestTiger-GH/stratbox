@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks ten bounded source-ledgers (currently 661 items): exact original SHA/line,
+Checks ten bounded source-ledgers (currently 691 items): exact original SHA/line,
 maintained English rendering or source-exact destination and relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
+EXPECTED_ITEMS = {"0018": 57, "0024": 36, "0030": 30, "0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 77, "0033": 30, "0034": 63, "0047": 86, "0055": 47}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -37,6 +37,7 @@ LEDGERS = (
     "QUALITY-08-NEGATIVE-36-ENGLISH-LOCATORS.jsonl",
     "BACKGROUND-WORK-0018-ENGLISH-57.jsonl",
     "SCENARIO-CASCADE-0024-ENGLISH-36.jsonl",
+    "OBSERVABILITY-0030-ENGLISH-30.jsonl",
     "WHOLE-SYSTEM-INV-TQ-ENGLISH-47-0055.jsonl",
 )
 
@@ -178,6 +179,22 @@ def verify() -> dict:
                     ):
                         if original and normalized_for_markdown(original) not in row:
                             issues.append(f"{label}: unchanged exact original term missing")
+            elif source_id == "SB-SRC-0030":
+                research_id = item["unit_id"].replace("SB-MAT-0030-", "")
+                handle = f"SB-SRC-0030/{research_id}"
+                row = source_english_row(handle)
+                kind = item.get("original_research_row_type")
+                statement = item.get("english_research_meaning")
+                if kind == "source_fault_scenario":
+                    if source_here.strip() != statement:
+                        issues.append(f"{label}: original source fault scenario changed")
+                elif kind == "research_target_thesis":
+                    if not re.match(r"^\\d+\\. \\*\\*", source_here):
+                        issues.append(f"{label}: original enumerated observability thesis changed")
+                else:
+                    issues.append(f"{label}: unknown observability source row kind")
+                if not row or f"#L{first}" not in row or not statement or statement not in row:
+                    issues.append(f"{label}: English observability item or source link missing")
             elif source_id == "SB-SRC-0024":
                 original_id = item["unit_id"].replace("SB-MAT-0024-", "")
                 handle = f"SB-SRC-0024/{original_id}"
@@ -339,7 +356,7 @@ def verify() -> dict:
 
     return {
         "status": "PRODUCER_TRACE_CHECK_PASS" if not issues else "PRODUCER_TRACE_CHECK_FAIL",
-        "scope": "thirteen mixed exact/English-translation ledgers, eleven original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
+        "scope": "fourteen mixed exact/English-translation ledgers, twelve original studies; original SHA/line and destination ID/link checks only, NOT semantic equivalence proof",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
         "science_markdown_files": science_files,
