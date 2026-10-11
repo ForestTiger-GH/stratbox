@@ -57,7 +57,7 @@ The historical `Command/Operation` and `Scenario/Scheme/Cascade` investigations 
 
 ## 4. What late evidence displaced—and what it did not
 
-The source records **20 superseded/rejected** earlier directions. Their useful residues and caveats are important:
+The source records **19 superseded/rejected table rows** of earlier directions. Their useful residues and caveats are important:
 
 | Displaced direction | Retained usable meaning |
 | --- | --- |
