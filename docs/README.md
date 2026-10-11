@@ -4,12 +4,12 @@
 
 | Entrance | Intended use | Evidence and admission |
 | --- | --- | --- |
-| [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | **44 thematic bounded articles plus two navigation/guide Markdown files** at this checkpoint; global source conservation and independent verification remain open |
-| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Three limited static slices; repository-wide reconstruction, installed GUI and fault testing remain open |
+| [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | **48 thematic bounded articles plus two navigation/guide Markdown files** at this checkpoint; global source conservation and independent verification remain open |
+| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Four limited static slices; repository-wide reconstruction, installed GUI and fault testing remain open |
 | [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Partial source-bound candidate; no new host, machine consumer, data service or UI promise accepted merely by publication |
 | [Target HOW](how/README.md) | Candidate realization, application and operations/recovery mechanisms | Conditional design awaiting relevant product decisions and deployment profile |
 | [Product Architecture](architecture/README.md) | Responsibility allocation among analytical core, application authority, clients and an external management boundary | Qualified logical owner candidates; no new deployable/repository or versioned API admitted |
-| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | One bounded staged-artifact-publication candidate; other LDD areas remain open |
+| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Two bounded candidates (staged Artifact publication and 98 neutral provider conformance vectors); other LDD areas remain open |
 
 ## Meaning of evidence and admission
 
