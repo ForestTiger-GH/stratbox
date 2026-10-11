@@ -4,7 +4,7 @@
 Run from an ordinary checkout:
   python _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
 
-Checks 5 bounded original-source ledgers (currently 353 exact items),
+Checks 5 bounded original-source ledgers (currently 416 exact items),
 their original Git blob identities, text transfer and Science relative links.
 Does not test correctness of original research, cover all 566 sources,
 execute product code, certify privacy or substitute independent review.
@@ -22,7 +22,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[4]
 BASE = Path("_mw/epochs-001-strategy-box-development/consolidation")
 CENSUS = BASE / "sources/CENSUS.csv"
-EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58, "0033": 30}
+EXPECTED_ITEMS = {"0025": 98, "0032": 70, "0029": 60, "0031": 37, "0019": 58, "0033": 30, "0034": 63}
 
 LEDGERS = (
     "PROVIDER-EXACT-VECTORS-0025.jsonl",
@@ -31,6 +31,7 @@ LEDGERS = (
     "COGNITIVE-BOUNDARY-EXACT-ITEMS-0031.jsonl",
     "EPISTEMIC-TESTS-AND-FIREWALLS-EXACT-0019.jsonl",
     "THREAD-WORK-UX-CHOICES-EXACT-0033.jsonl",
+    "COGNITION-FOUNDATION-EXACT-ITEMS-0034.jsonl",
 )
 
 
@@ -167,10 +168,11 @@ def verify() -> dict:
                     item.get("material_meaning")
                     or item.get("source_exact_meaning")
                     or item.get("meaning")
+                    or item.get("original_exact_meaning")
                 )
                 if not meaning or normalized_for_markdown(meaning) not in rendered:
                     issues.append(f"{label}: original exact wording missing")
-                if source_id in ("SB-SRC-0032", "SB-SRC-0029") and meaning not in lines[first - 1]:
+                if source_id in ("SB-SRC-0032", "SB-SRC-0029", "SB-SRC-0034") and meaning not in lines[first - 1]:
                     issues.append(f"{label}: stored wording differs from source line")
                 if source_id == "SB-SRC-0031":
                     name, sep, statement = meaning.partition(" — ")
