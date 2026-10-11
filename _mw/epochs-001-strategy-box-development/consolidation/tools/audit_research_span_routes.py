@@ -100,7 +100,11 @@ def audit() -> dict:
         current_sha = git_blob(source)
         if current_sha != r["blob_sha"]:
             structural_issues.append(f"{sid}: frozen source blob differs: {current_sha}")
-        lines = source.read_text(encoding="utf-8").splitlines()
+        # The pinned source-span ledgers count the terminal empty field of a
+        # newline-terminated Git blob (text.split("\\n")), just as previous
+        # exact-source verifiers do. Using splitlines() drops that field and
+        # incorrectly flags up to one terminal boundary per study as invalid.
+        lines = source.read_text(encoding="utf-8").split("\\n")
         nonblank = {i for i, line in enumerate(lines, 1) if line.strip()}
         observed: set[int] = set()
         candidate: set[int] = set()
