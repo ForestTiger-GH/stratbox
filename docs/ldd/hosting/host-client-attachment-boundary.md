@@ -78,3 +78,17 @@ The pinned public AppDock schema exposes *declarable* remote-attachment and dele
 **Bounded transition gates (conditional, unexecuted):** (HC-17) attach new Windows remote client while legacy local read-only history remains intact; (HC-18) inject misleading local `success` record with failed step and verify it is labeled legacy/qualified rather than host success; (HC-19) old Artifact path points to missing or changed file and cannot be remotely opened without a verified hosted copy; (HC-20) import attempts of saved form values redact/deny unknown sensitive fields; (HC-21) reconnect after client crash cannot create a second host namespace or replay an old local command; (HC-22) host and old local UI cannot concurrently write the same shared case namespace without declared exclusive ownership.
 
 **Product decisions:** legacy data retention/import eligibility, user/admin consent, host storage/identity and retention policy, local mode after host rollout, continuity requirements and deprecation strategy. Compatibility of old **Python APIs** is not required by default, whereas authenticity, ownership and safe handling of retained **user files** still need explicit Product decisions. None of HC-17..22 or migration routines has run. The old Windows data remains current-source evidence, not assumed migrated content.
+
+## Additional launch versus hosted-service tests — public AppDock revision (unexecuted)
+
+| ID | Condition | Required qualified outcome |
+| --- | --- | --- |
+| HC-23 | `host_delegated` launch at pinned `a4d87c6` | Explicit `BACKEND_UNAVAILABLE`, never a fabricated host attachment. |
+| HC-24 | `dedicated_server` background child exits during initial startup grace | Startup failure, no host readiness claim. |
+| HC-25 | Background child passes startup grace but never exposes a listening authorized service | Launch may succeed; host readiness/attachment must fail independently. |
+| HC-26 | Detached wrapper exits 0 but actual host absent | Handoff success, not evidence of a surviving host or Job. |
+| HC-27 | Browser URL opens but remote site is unreachable or lacks authentication | Browser action is not host service readiness or application success. |
+| HC-28 | Manifest Boolean advertises remote/delegated support with no executable attach backend | Declaration cannot satisfy actual authenticated connection. |
+| HC-29 | Host process exists but its identity/contract disagrees with second Windows client | Attach rejects/quarantines mismatch; PID is insufficient. |
+
+**No HC-23..29 were executed**. [Current public platform launch evidence](../../current-how/appdock-activation-host-attachment-boundary.md) is static source-only; the seven tests remain candidate verification work.
