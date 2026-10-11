@@ -189,7 +189,7 @@ def verify() -> dict:
                     if source_here.strip() != statement:
                         issues.append(f"{label}: original source fault scenario changed")
                 elif kind == "research_target_thesis":
-                    if not re.match(r"^\\d+\\. \\*\\*", source_here):
+                    if not source_here.startswith(f"{int(research_id.split(chr(45))[-1])}. **"):
                         issues.append(f"{label}: original enumerated observability thesis changed")
                 else:
                     issues.append(f"{label}: unknown observability source row kind")
