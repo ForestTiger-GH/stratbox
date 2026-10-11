@@ -1,12 +1,15 @@
 # Strategy Box — Partial Publication Manifest
 
-**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R27`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
+**Edition:** `SB-KP-PUBLIC-PARTIAL-2026-10-11-R28`. **Status:** bounded maintained knowledge and clearly labelled target candidates; full Research preservation, Product admission, independent verification and public-security clearance remain OPEN.
 **Source baseline:** `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`, selected external platform contracts `a4d87c643e620e54e04083d4d0b8d867513e7065`. **Assembly:** existing bounded 2026-10-09 publication plus 2026-10-11 Science additions; the exact revision of this manifest is its containing Git commit. Late Research input is frozen at `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`.
 
 ## Canonical maintained paths
 
 | Group | Canonical owner path | Admission status |
 | --- | --- | --- |
+| Scientific topic: forecast vintage, conditionality and decisions | `docs/science/data-and-knowledge/forecast-vintage-conditionality-and-decision-separation.md` | Strategy Box 0019/0029 + specialist Forecasting/Decision research; no implemented issuance/scoring/authority engine or independent full original conservation |
+| Scientific topic: communicative force, qualifiers and correction | `docs/science/surfaces/communication-acts-protected-claims-and-repair.md` | Strategy Box 0019/0039 and specialist Communication research; no accepted communication workflow or recipient experiment |
+| Direct Current HOW: CBR forms and missing periods | `docs/current-how/cbr-forms-semantic-model-and-missing-periods.md` | Pinned core direct form registry/API/parser/pivot/model; 86 total and 34 top-level 802 rows verified from CSV; missing-download `continue` identified; no live DBF run |
 | Scientific topic: compiled domain capabilities and deoptimization | `docs/science/capabilities/compiled-domain-capabilities-validity-and-deoptimization.md` | Two primary original 02 sources 0031/0032 and direct core examples; 337 section locators, full unit-to-claim coverage and model integration unverified |
 | Scientific topic: multi-Work chat and cognitive actor scopes | `docs/science/collaboration/thread-work-memory-scopes-and-parallel-actors.md` | Primary 02 sources 0033/0034, 301 provisional locators, no real cognitive integration or multi-client trials |
 | Scientific topic: trusted provider faults and certification | `docs/science/extensions/trusted-provider-conformance-and-false-success-threats.md` | Primary original 0025, 247 provisional source locators; neutral provider contract and tests conditional |
@@ -79,7 +82,7 @@
 ## Integrity and assurance
 
 - This manifest records authored publication composition, not proof that all source units are covered.
-- In the later exact-tree producer check (post the 48-theme additions), **50/50** Science Markdown files were read for bounded structural checks, **249** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
+- In the latest bounded check (after the 50-theme additions), **52/52** Science Markdown files were read for bounded structural checks, **249** inline relative links were resolved against the same Git tree with **zero missing file targets**, and **zero** matches were found for the selected five restricted lexical patterns. This is a source-to-link existence and narrow lexical check, NOT an independent semantic or comprehensive confidentiality audit. Heading fragments, other link types, content provenance, complete public-confidentiality screening and independent semantic verification are outside this structural verdict.
 - Coding, package, GUI, security and fault-injection tests were **not executed**.
 - An existing public implementation/source boundary requires separate authorized remediation. No restricted identifiers or details are transferred into this publication.
 - Target WHAT/HOW and any extra application/server/design repository remain unapproved, even when a Research study recommends them.
