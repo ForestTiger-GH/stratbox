@@ -217,37 +217,45 @@ def verify() -> dict:
         if actual != expected:
             issues.append(f"SB-SRC-{sid}: expected {expected} exact units, found {actual}")
 
-    file_count = 0
-    links = 0
-    for doc in sorted((ROOT / "docs/science").rglob("*.md")):
-        file_count += 1
+    science_files = 0
+    science_links = 0
+    docs_files = 0
+    docs_links = 0
+    for doc in sorted((ROOT / "docs").rglob("*.md")):
         doc_rel = doc.relative_to(ROOT)
+        is_science = doc_rel.parts[:2] == ("docs", "science")
+        docs_files += 1
+        if is_science:
+            science_files += 1
         for candidate in re.findall(r"\]\(([^)]+)\)", doc.read_text(encoding="utf-8")):
             if candidate.startswith(("#", "https:", "http:", "mailto:", "data:")):
                 continue
             route = unquote(candidate.split("#", 1)[0])
             if not route:
                 continue
-            links += 1
+            docs_links += 1
+            if is_science:
+                science_links += 1
             target = (doc.parent / route).resolve()
             try:
                 target.relative_to(ROOT.resolve())
             except ValueError:
                 issues.append(f"{doc_rel}: link escapes repository: {candidate}")
                 continue
-            if not target.is_file():
+            if not target.exists():
                 issues.append(f"{doc_rel}: broken relative link: {candidate}")
 
     return {
         "status": "PRODUCER_EXACT_CHECK_PASS" if not issues else "PRODUCER_EXACT_CHECK_FAIL",
-        "scope": "nine fixed source-item ledgers, eight research originals; independent semantic audit not performed",
+        "scope": "nine exact item ledgers, eight original studies, all maintained docs relative paths; independent semantic audit not performed",
         "item_count_checked": verified,
         "by_source": dict(sorted(by_source.items())),
-        "science_markdown_files": file_count,
-        "science_local_links_checked": links,
+        "science_markdown_files": science_files,
+        "science_local_links_checked": science_links,
+        "maintained_docs_markdown_files": docs_files,
+        "maintained_docs_local_links_checked": docs_links,
         "issues": issues,
     }
-
 
 if __name__ == "__main__":
     try:
