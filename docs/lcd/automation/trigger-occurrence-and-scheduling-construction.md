@@ -138,11 +138,21 @@ class OccurrenceLedgerPort(Protocol):
     def attach_admission(self, identity: OccurrenceIdentity,
                          run_ref: str) -> None: ...
     def find_run_ref(self, identity: OccurrenceIdentity) -> str | None: ...
+    def find_confirmed_no_run_reason(self, identity: OccurrenceIdentity
+                                     ) -> str | None: ...
+    def record_confirmed_no_run(self, identity: OccurrenceIdentity,
+                                safe_reason: str) -> None: ...
 
 class AutomationAdmissionPort(Protocol):
     def request_run(self, rule: AutomationDefinition,
                     identity: OccurrenceIdentity,
-                    evidence: TriggerEvidence) -> tuple[str | None, str]: ...
+                    evidence: TriggerEvidence) -> tuple[str | None, str]:
+        """None requires an authenticated, definitive 'NO RUN ADMITTED' receipt.
+
+        Ambiguous/lost admission evidence must raise/return a separate unknown
+        classification; a null run reference alone is not authoritative.
+        """
+        ...
 
 class SourceChangeVerifierPort(Protocol):
     def compare_qualified_versions(self, previous: str, current: str
@@ -214,12 +224,25 @@ class TriggerOccurrenceService:
                 or identity.rule_revision != rule.rule_revision):
             return OccurrenceDecision(None, OccurrenceDisposition.BLOCKED,
                                       None, "OCCURRENCE_SCOPE_MISMATCH")
-        if not self.ledger.claim_unique(identity, evaluation.evidence):
-            existing = self.ledger.find_run_ref(identity)
+        try:
+            claimed = self.ledger.claim_unique(identity, evaluation.evidence)
+        except Exception:
+            # A failed claim call may have committed its unique occurrence.
+            # Do not submit to host until that identity is reconciled.
             return OccurrenceDecision(identity,
-                OccurrenceDisposition.REPLAY_EXISTING if existing is not None
-                else OccurrenceDisposition.UNKNOWN_ADMISSION,
-                existing, "DUPLICATE_OCCURRENCE_RECONCILE")
+                OccurrenceDisposition.UNKNOWN_ADMISSION, None,
+                "OCCURRENCE_CLAIM_UNCERTAIN")
+        if not claimed:
+            existing = self.ledger.find_run_ref(identity)
+            if existing is not None:
+                return OccurrenceDecision(identity, OccurrenceDisposition.REPLAY_EXISTING,
+                                          existing, "DUPLICATE_RUN_REPLAY")
+            rejected = self.ledger.find_confirmed_no_run_reason(identity)
+            if rejected is not None:
+                return OccurrenceDecision(identity, OccurrenceDisposition.BLOCKED,
+                                          None, rejected)
+            return OccurrenceDecision(identity, OccurrenceDisposition.UNKNOWN_ADMISSION,
+                                      None, "DUPLICATE_OCCURRENCE_RECONCILE")
         # The host must authorize real run-as grants, scenario version,
         # required resources, external effects and current overlapping jobs.
         # This is a logical admission port, not a direct domain execution.
@@ -233,12 +256,29 @@ class TriggerOccurrenceService:
                 OccurrenceDisposition.UNKNOWN_ADMISSION, None,
                 "HOST_ADMISSION_ACK_UNKNOWN")
         if accepted_ref is None:
+            # This branch is valid ONLY for an authenticated, definitive
+            # no-run-admitted rejection; see AutomationAdmissionPort.
+            try:
+                self.ledger.record_confirmed_no_run(identity, safe_code)
+            except Exception:
+                return OccurrenceDecision(identity,
+                    OccurrenceDisposition.UNKNOWN_ADMISSION, None,
+                    "NO_RUN_RECEIPT_PERSIST_UNCERTAIN")
             return OccurrenceDecision(identity, OccurrenceDisposition.BLOCKED,
                                       None, safe_code)
-        self.ledger.attach_admission(identity, accepted_ref)
+        try:
+            self.ledger.attach_admission(identity, accepted_ref)
+        except Exception:
+            # Host may already own a real Run. Keep its authentic identity
+            # and reconcile occurrence link; do not create another Run.
+            return OccurrenceDecision(identity,
+                OccurrenceDisposition.UNKNOWN_ADMISSION, accepted_ref,
+                "RUN_LINK_PERSIST_UNCERTAIN")
         return OccurrenceDecision(identity, OccurrenceDisposition.ADMISSION_REQUESTED,
                                   accepted_ref, "HOST_RUN_ACCEPTED")
 ~~~
+
+**Producer correction — the rejected/no-Run path:** the first candidate retained a claimed occurrence when the host definitively rejected the Run but left no durable reason, causing repeat evaluation to look like unbounded `UNKNOWN_ADMISSION`. The revised port records a *confirmed no-Run* decision separately and returns that qualified block on duplicate inspection. A `None` Run ref is permitted **only** when the actual trusted host adapter has an authentic no-Run admission receipt; an ACK loss remains `UNKNOWN_ADMISSION`. Ledger exceptions after a claim or host Run acceptance retain uncertainty and stable identity. This clarifies a fake-model behavior, **not** a reliable distributed transaction or approved rule-retry policy. If policy later allows retry after new grants or revised source evidence, it needs a separately authorized occurrence revision/new intention rather than overwriting the previous truth.
 
 **Crucial candidate hole:** \`claim_unique\`, host \`request_run\` and \`attach_admission\` are independent calls. A crash after claiming an occurrence but before recording a Run link can strand the occurrence. Replaying it must *not* blindly produce a second host Run: use a durable linked dispatch intent or query the host by a stable admission intention. A host admission ACK loss is \`UNKNOWN_ADMISSION\` pending authentic reconciliation; the example does not implement a complete transaction or guarantee exactly-once effects. The host still owns all effect-time approvals, actual Run/Attempt state and Artifact receipts.
 
