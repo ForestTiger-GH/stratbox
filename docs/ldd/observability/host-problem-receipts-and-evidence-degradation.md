@@ -62,6 +62,24 @@ Every vector below is **NOT RUN**. The expected property is a proposal for an ap
 | OB-15 | User hides a Condition banner while Node outage remains | Only viewer dismissal changes; condition remains ACTIVE until verified resource recovery |
 | OB-16 | Log retention expires before long-lived Case history | Preserve accurate outcome, mark `LogRef` unavailable and avoid invented evidence |
 
+
+## Windows-local source-backed additional conformance vectors
+
+The pinned [Windows direct Current HOW](../../current-how/windows-application.md) now covers twelve newly verified exact-source files for background/presence/assignment/log surfaces. These raise eight further **candidate tests, not executed**.
+
+| ID | Existing risk and counterexample | Required future-host result |
+| --- | --- | --- |
+| OB-17 | A locally enabled BackgroundProcess is announced as a live Job without any actual executor | Host shows `CONFIGURED` separately from `RUNNING`; no fabricated last execution/effect receipt |
+| OB-18 | Background `active_states()` includes an `error` status | True active count follows accepted running Jobs, while failures stay visible in their separate terminal/condition counters |
+| OB-19 | Imported legacy Assignment status is invalid and parser maps it to `active` | Reject/quarantine historical corruption or label it legacy-unverified; never create a new host obligation silently |
+| OB-20 | Invalid assignment creation timestamp is replaced by current wall-clock time | Retain original timestamp uncertainty; do not backdate or fabricate a fresh authoritative assignment |
+| OB-21 | Presence is inferred from Case author and local current-user seed | Do not show verified online peer without actual accepted session/heartbeat/TTL evidence |
+| OB-22 | Previewed local log is huge or `max_lines=0` | Enforce permissioned bounded bytes, lines, time and resource use *before* reading host evidence; no whole-file surprise |
+| OB-23 | A local log read error contains host absolute path or raw exception text | Safe user projection and separately authorized technical details; no cross-client path leakage |
+| OB-24 | A participant's display name enters a future rich-text builder | Escape/encode text for actual HTML rendering; the current inspected `QListWidgetItem` path is plain text, so do not assert a confirmed injection incident |
+
+These distinguish observed local code limitations from proposed host conformance; they create no additional current deployment claims or executable tests.
+
 ## Direct evidence and limits of external implementation
 
 The [direct public AppDock registration/query Current HOW](../../current-how/appdock-public-problem-contracts.md) distinguishes an implemented storage-neutral Python contract from an actually installed and authorized application bridge.
