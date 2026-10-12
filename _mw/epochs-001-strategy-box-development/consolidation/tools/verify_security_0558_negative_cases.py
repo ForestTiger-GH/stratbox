@@ -21,7 +21,7 @@ def check():
     body=LDD.read_text(encoding="utf-8")
     for i,row in enumerate(rows,1):
         sid=f"SEC-{i:02d}"; original=f"T05-{i:02d}"
-        assert row["unit_id"]==f"SB-MAT-0558-{sid}"
+        assert row["unit_id"]==f"SB-MAT-0558-T05-{i:02d}"
         assert row["source_id"]=="SB-SRC-0558" and row["source_commit"]==REV
         assert row["source_blob_sha"]==SHA and row["source_case_id"]==original
         assert row["source_span"]==f"L{1001+i}" and original in lines[1000+i]
