@@ -186,6 +186,8 @@ def audit() -> dict:
             "nonblank_lines_with_some_nonrouting_span": traced_nonblank,
             "nonblank_lines_with_section_locator_span": section_nav_nonblank,
             "nonblank_lines_with_any_ledger_span": any_span_nonblank,
+            "nonblank_lines_without_any_ledger_span": total_nonblank - any_span_nonblank,
+            "completely_unspanned_blocks": holes(lines, observed | candidate, minimum=1),
             "coverage_ratio_not_semantic_preservation": (
                 round(traced_nonblank / total_nonblank, 4) if total_nonblank else None),
             "ledger_classes": dict(sorted(counts.items())),
@@ -225,12 +227,20 @@ def audit() -> dict:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--top", type=int, default=15)
+    ap.add_argument("--unspanned", type=int, default=0, help="include top N sources with lines outside every ledger span, triage only")
     args = ap.parse_args()
     try:
         result = audit()
         # CI logs should give a compact, actionable head; full report is an
         # optional stdout redirect that can be retained as run evidence.
         result["sources_lowest_structural_coverage"] = result["source_detail"][:max(0, args.top)]
+        if args.unspanned:
+            focus = sorted(result["source_detail"], key=lambda x: (-x["nonblank_lines_without_any_ledger_span"], x["source_id"]))
+            result["completely_unspanned_candidate_geometry"] = [
+                {"source_id": v["source_id"], "unspanned_nonblank": v["nonblank_lines_without_any_ledger_span"],
+                 "blocks": v["completely_unspanned_blocks"][:12]}
+                for v in focus[:args.unspanned] if v["nonblank_lines_without_any_ledger_span"]
+            ]
         result.pop("source_detail")
     except Exception as e:
         result = {"status": "STRUCTURAL_AUDIT_ERROR", "error": repr(e)}

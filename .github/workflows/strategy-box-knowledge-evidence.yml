@@ -112,6 +112,10 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_audit_research_span_routes.py
       - name: Audit span-level Research routing without semantic certification
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_span_routes.py --top 8 > research_span_audit.json
+      - name: Summarize exact uncovered original Research geometry without claiming material loss
+        run: |
+          python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_span_routes.py --top 0 --unspanned 53 > original_span_gap_triage.json
+          python3 -c 'import json; a=json.load(open("original_span_gap_triage.json")); x=a.get("completely_unspanned_candidate_geometry",[]); print("UNSPANNED RESEARCH ORIGINALS:",len(x)); print("TOP GAPS:",[(z["source_id"],z["unspanned_nonblank"],[b["span"] for b in z["blocks"][:6]]) for z in x[:22]])'
       - name: Show structural source-span audit headline
         if: always()
         run: |
