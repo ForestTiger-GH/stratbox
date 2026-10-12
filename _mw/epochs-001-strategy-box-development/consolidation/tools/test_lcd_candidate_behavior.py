@@ -401,17 +401,108 @@ def probe_artifact_publication() -> dict:
             "evidence": "executed documented publisher with in-memory bytes, no OS storage"}
 
 
+def probe_trigger_occurrence() -> dict:
+    """Exercise only the documented conditional automation trigger algorithm."""
+    ref = "automation/trigger-occurrence-and-scheduling-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("TriggerKind", "EvaluationOutcome", "OccurrenceDisposition",
+                 "TriggerEvaluation", "OccurrenceDecision",
+                 "TriggerOccurrenceService", "source_change_evaluation"):
+        compile_definition(ref, name, d)
+    evaluation_kind = d["EvaluationOutcome"]
+    disposition = d["OccurrenceDisposition"]
+    rule = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                           enabled=True,
+                           trigger=SimpleNamespace(kind=d["TriggerKind"].SOURCE_VERSION_CHANGE))
+    evidence = SimpleNamespace(before_source_revision="v1",
+                               after_source_revision="v2")
+    evaluation = d["TriggerEvaluation"]("auto-1", "rev-1",
+                                       evaluation_kind.OBSERVED, evidence)
+    identity = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                               trigger_fingerprint="source-v1-v2")
+
+    class Ledger:
+        def __init__(self):
+            self.claimed = set()
+            self.attached = {}
+        def key(self, identity):
+            return (identity.automation_id, identity.rule_revision,
+                    identity.trigger_fingerprint)
+        def claim_unique(self, identity, evidence):
+            k = self.key(identity)
+            if k in self.claimed:
+                return False
+            self.claimed.add(k)
+            return True
+        def find_run_ref(self, identity):
+            return self.attached.get(self.key(identity))
+        def attach_admission(self, identity, run_ref):
+            self.attached[self.key(identity)] = run_ref
+
+    class Admission:
+        attempts = 0
+        fail = False
+        def request_run(self, rule, identity, evidence):
+            self.attempts += 1
+            if self.fail:
+                raise RuntimeError("host accepted but reply lost")
+            return "host-run-1", "HOST_ACCEPTED"
+
+    ledger, admit = Ledger(), Admission()
+    service = d["TriggerOccurrenceService"](ledger=ledger, admit=admit)
+    first = service.handle(rule, evaluation, identity)
+    assert first.disposition is disposition.ADMISSION_REQUESTED
+    assert first.run_ref == "host-run-1"
+    second = service.handle(rule, evaluation, identity)
+    assert second.disposition is disposition.REPLAY_EXISTING
+    assert second.run_ref == "host-run-1"
+    assert admit.attempts == 1
+    missing = d["TriggerEvaluation"]("auto-1", "rev-1",
+                                     evaluation_kind.UNAVAILABLE, evidence)
+    blocked = service.handle(rule, missing, None)
+    assert blocked.disposition is disposition.BLOCKED
+    rule.enabled = False
+    disabled = service.handle(rule, evaluation, identity)
+    assert disabled.disposition is disposition.SUPPRESSED
+    rule.enabled = True
+    wrong = SimpleNamespace(automation_id="auto-1", rule_revision="rev-old",
+                            trigger_fingerprint="x")
+    assert service.handle(rule, evaluation, wrong).disposition is disposition.BLOCKED
+
+    other = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                            trigger_fingerprint="other-valid-event")
+    admit.fail = True
+    uncertain = service.handle(rule, evaluation, other)
+    assert uncertain.disposition is disposition.UNKNOWN_ADMISSION
+    assert ledger.key(other) in ledger.claimed
+    retry = service.handle(rule, evaluation, other)
+    assert retry.disposition is disposition.UNKNOWN_ADMISSION
+    assert admit.attempts == 2  # never issued a second host request for the key
+
+    class SourceVerifier:
+        def compare_qualified_versions(self, old, new):
+            assert old == "v1" and new == "v2"
+            return evaluation_kind.UNAVAILABLE
+    source_result = d["source_change_evaluation"](rule, evidence, SourceVerifier())
+    assert source_result.outcome is evaluation_kind.UNAVAILABLE
+    return {
+        "conditional_trigger_occurrence_cases": 8,
+        "evidence": "real documented candidate service with fake occurrence ledger and source verifier",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
         "host_admission": probe_host_admission(),
         "problem_receipt": probe_problem_receipt(),
         "artifact_publication": probe_artifact_publication(),
+        "trigger_occurrence": probe_trigger_occurrence(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "four named LCD constructions executed with synthetic ports only",
+        "scope": "five named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
