@@ -147,5 +147,44 @@ class WindowsObservedSourceCases(TestCase):
                 internal_logger.removeHandler(h)
 
 
+class WindowsConfigAndProvenanceCases(TestCase):
+    def test_missing_git_repository_reports_unknown_not_installed_revision(self):
+        from stratbox_windows.runtime.version import get_version_info
+        with TemporaryDirectory() as tmp:
+            version = get_version_info(Path(tmp))
+        self.assertEqual(version.commit, "unknown")
+        self.assertEqual(version.branch, "unknown")
+        self.assertEqual(version.last_commit_time, "unknown")
+        self.assertFalse(version.dirty)
+
+    def test_saved_form_values_roundtrip_as_unredacted_local_json(self):
+        from stratbox_windows.runtime.config import (
+            AppUserConfig, load_user_config, save_user_config
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "app.json"
+            conf = AppUserConfig()
+            conf.scenario_form_values = {
+                "scenario.synthetic": {"synthetic_password": "SENTINEL_PRIVATE_VALUE"}
+            }
+            save_user_config(path, conf)
+            self.assertIn("SENTINEL_PRIVATE_VALUE", path.read_text(encoding="utf-8"))
+            loaded = load_user_config(path)
+        self.assertEqual(
+            loaded.scenario_form_values["scenario.synthetic"]["synthetic_password"],
+            "SENTINEL_PRIVATE_VALUE",
+        )
+
+    def test_malformed_saved_window_width_raises_unwrapped_value_error(self):
+        import json
+        from stratbox_windows.runtime.config import load_user_config
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "app.json"
+            path.write_text(json.dumps({"window": {"width": "bad-int"}}), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_user_config(path)
+
+
+
 if __name__ == "__main__":
     main(verbosity=2)
