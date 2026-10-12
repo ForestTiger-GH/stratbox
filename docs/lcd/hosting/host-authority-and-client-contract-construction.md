@@ -133,6 +133,16 @@ class ArtifactResult:
     media_type: str | None
 
 # CANDIDATE_DESIGN: application_authority/ports.py
+class CanonicalSubmissionPort(Protocol):
+    def seal(self, actor: Actor, untrusted: Submission) -> Submission:
+        """Trusted server-side schema, scope, effect and parameter normalization.
+
+        The returned payload_digest is server-computed from the complete
+        admitted actor/scope/definition/parameters semantics. The returned
+        parameters must be an immutable validated snapshot.
+        """
+        ...
+
 class PolicyPort(Protocol):
     def can_submit(self, actor: Actor, request: Submission) -> bool: ...
     def can_read_run(self, actor: Actor, run_ref: str) -> bool: ...
@@ -171,13 +181,29 @@ class HostApplicationPort(Protocol):
 # CANDIDATE_DESIGN: application_authority/admission.py
 class HostAdmission:
     def __init__(self, host: HostIdentity, policy: PolicyPort,
-                 ledger: LedgerPort, scheduler: ExecutionSchedulerPort):
+                 ledger: LedgerPort, scheduler: ExecutionSchedulerPort,
+                 canonicalizer: CanonicalSubmissionPort):
         self.host, self.policy = host, policy
         self.ledger, self.scheduler = ledger, scheduler
+        self.canonicalizer = canonicalizer
 
     def submit(self, actor: Actor, request: Submission) -> AdmissionReceipt:
         try:
-            permitted = self.policy.can_submit(actor, request)
+            qualified = self.canonicalizer.seal(actor, request)
+        except Exception:
+            # Definitive pre-ledger validation failure for this submission.
+            return AdmissionReceipt(AdmissionKind.REJECTED,
+                                    request.intention_key, None,
+                                    self.host.host_id, "REQUEST_QUALIFICATION_FAILED")
+        if (not isinstance(qualified, Submission)
+                or qualified.intention_key != request.intention_key
+                or not qualified.intention_key
+                or not qualified.payload_digest):
+            return AdmissionReceipt(AdmissionKind.REJECTED,
+                                    request.intention_key, None,
+                                    self.host.host_id, "REQUEST_QUALIFICATION_INVALID")
+        try:
+            permitted = self.policy.can_submit(actor, qualified)
         except Exception:
             # A permission-service failure cannot certify a historical Run
             # is absent, especially when this key was admitted previously.
@@ -188,10 +214,10 @@ class HostAdmission:
             return AdmissionReceipt(AdmissionKind.REJECTED,
                                     request.intention_key, None,
                                     self.host.host_id, "ACCESS_DENIED")
-        # Trusted request-schema/effect checks and a server-calculated canonical
-        # actor/operation/parameters digest MUST precede this ledger call.
+        # Ledger receives ONLY the qualified, server-digested request,
+        # never the untrusted client's caller-asserted payload digest.
         try:
-            receipt = self.ledger.admit_atomically(actor, request, self.host)
+            receipt = self.ledger.admit_atomically(actor, qualified, self.host)
         except Exception:
             # The ledger could have committed Run admission and lost its ACK.
             # Returning REJECTED (or allowing a new intention_key) would lie.
@@ -222,6 +248,8 @@ class HostAdmission:
                                     self.host.host_id, "DISPATCH_UNCERTAIN")
         return receipt
 ~~~
+
+**Source-first T05 anti-spoofing correction (candidate logic only):** a transport-supplied `Submission.payload_digest` is merely a caller claim. Earlier candidate admission forwarded it straight into the ledger, so a malicious or buggy consumer could change scenario parameters under the same key and repeat the same claimed digest. The Host construction now **requires** a `CanonicalSubmissionPort` in its constructor. Before policy evaluation and ledger access, this trusted port validates the actual operation/definition/parameters/scope and supplies an immutable normalized request with a **server-calculated semantic digest**. The ledger sees that qualified request only; a qualifier that raises or changes the original intention identity is rejected pre-ledger. This is still a typed port *obligation*, not a canonical JSON algorithm or identity-verification implementation. The true canonicalization, sensitive fields, dynamic default resolution, principal binding, parser versions and actor/session authentication are `LCD_BLOCKED` until the actual host owner implements and tests them. The source's same-key/different-payload conflict contract cannot be certified by trusting an input `payload_digest`.
 
 **Source-first ledger acknowledgment correction (Research Topic 12):** an earlier `HostAdmission.submit` guarded scheduler dispatch but allowed `LedgerPort.admit_atomically` exceptions to escape before returning a qualified admission result. If the ledger committed and its response was lost, a caller might infer "never admitted" from the exception and re-submit under a new intention key. The updated candidate treats an exception from ledger admission as **`OUTCOME_UNKNOWN` without inventing a Run ref**; a replay with the same trusted intention identity must reconcile against the authoritative ledger. It also checks typed returned receipt, exact intention/host identity, and accepted/replayed Run identity before scheduling. Provider-policy failures remain uncertain, while an explicit policy denial is a genuine pre-ledger rejection for **this attempt**, not proof an older Run with the same key never existed. The ledger still owns durable idempotency, canonical digest collision detection, signed/principal scoped identity, conflict handling and actual dispatch-outbox atomicity: these are not proven by a response dataclass. The mechanism is supported by the source's separation of `accepted`, `started` and `UNKNOWN`, not an accepted release decision.
 
