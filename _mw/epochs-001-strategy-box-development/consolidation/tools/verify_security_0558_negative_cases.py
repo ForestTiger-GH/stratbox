@@ -15,7 +15,7 @@ LEDGER=ROOT/"_mw/epochs-001-strategy-box-development/consolidation/units/SECURIT
 LDD=ROOT/"docs/ldd/security/scoped-authority-and-privacy-vectors.md"
 def check():
     lines=read_pinned_blob(ROOT,REV,SOURCE,SHA).decode("utf-8").splitlines()
-    assert len(lines)==1206
+    assert len(lines)==1205  # Python splitlines excludes the terminal empty line
     rows=[json.loads(x) for x in LEDGER.read_text(encoding="utf-8").splitlines() if x.strip()]
     assert len(rows)==30
     body=LDD.read_text(encoding="utf-8")
