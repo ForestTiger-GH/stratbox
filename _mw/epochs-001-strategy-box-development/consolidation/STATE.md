@@ -1,5 +1,13 @@
 # Consolidation Work State
 
+## Current Transition Package — 2026-10-12, seventeen exact Windows source-source provenance spans
+
+**Continuing same authorized Work Program:** entering `main@0e6f4e92667ad70fa7dfcab0b5f39662b47b1791`, [CI 38261812122](https://github.com/ForestTiger-GH/stratbox/actions/runs/38261812122) **SUCCESS** for metadata-only public reviewer-triage; no raw Research excerpt is exported on that verified revision. Producer reconciliation now registers **12 original 0020 dated P0–P2 recommendations** and **five §XXIII roadmap stages** as 17 exact source-heading/body span-addressed Work units, each tied to the already-published self-standing Science interpretation and countercase. [Work report](coverage/SOURCE-0020-SEVENTEEN-EXACT-STAGE-AND-PRIORITY-SOURCE-SPANS-2026-10-12.md), Work-only verification script and CI step added. The structural audit may reduce original 0020 unspanned geometry, but **source-semantic losslessness does not follow**. Check new HEAD CI and audit denominator.
+
+**Gates unchanged:** 566 source identities; 176 full / 10 governing / 380 not-full, Research 53 producer fully-read substantive originals; 566/566 independent material states `unaccounted`; 114 Knowledge Markdown, ten blocked LCD candidates, 22 independently unanswered source-hidden questions; external deployed host, Web/Android native tests, Product Decisions and Research Amputation remain OPEN. Physical context reset unavailable; logical rehydration performed. `PARTIAL / CONTINUING`.
+
+---
+
 ## Current Transition Package — 2026-10-12, source-text-free research triage export
 
 **Same continuing authorized Work Program:** incoming `main@cfe21601602490c595751aa5769e61fa09fb9ff4`, verified [CI 38261250984](https://github.com/ForestTiger-GH/stratbox/actions/runs/38261250984) **SUCCESS**, including fixed original Windows cross-document [4+5] and [5+12+1] route assertions. Reviewed original coverage audit showed **twelve** Research originals retain geometric unspanned portions: largest 0020 (307 nonblank), 0046 (62); the rest are small source/title/heading/prose envelopes. A public retained artifact had duplicated **raw original-source line text** and console excerpts. This checkpoint **hardens the existing triage exporter**: exact blob/span/count/shape metadata only, allowlisted block keys, and no verbatim/excerpt in new artifact or CI logs. [Original 0020/0046 Work report](coverage/ORIGINAL-0020-0046-UNSPANNED-GEOMETRY-TRIAGE-2026-10-12.md) records changed export scope. Prior retained Actions artifacts are unaffected and have their own access/retention policy. This is proactive minimization, **not a proven private-data breach** or certification of source security. Verify the new exact HEAD CI.
