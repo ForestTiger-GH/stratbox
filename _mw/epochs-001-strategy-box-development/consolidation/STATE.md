@@ -1,5 +1,9 @@
 # Consolidation Work State
 
+## Latest source independence & SORS acceptance packet — 2026-10-12
+
+**Latest previously green HEAD:** `a33b20c4ae78fbbcbb22a0a88a2bc7173929d856`, [CI 38200537689](https://github.com/ForestTiger-GH/stratbox/actions/runs/38200537689) SUCCESS. **Now added two original SORS historical documents:** [acceptance (25 numbered conditions) and architecture](coverage/SORS-ACCEPTANCE-ARCHITECTURE-READS-2026-10-12.md), nine exact source/qualification ledger rows, self-contained [SORS scientific conformance guide](../../../docs/science/data-and-knowledge/sors-evidence-surfaces-crosswalk-and-audit.md), direct pinned primary read and CI structure checker. `SB-SRC-0066/0067` changed to `full_read`; now **165 full-read, 10 governing-read, 391 not-full-read, and all 566 `material_unit_state=unaccounted`**. This latest packet must pass CI before accepted as green. **Independently certified lossless and publication-only Research Amputation still OPEN**; original DOCX LOST by owner direction; direct public documents are archive-independent.
+
 ## Latest continuation packet — standalone Science, six+three historic source reads (2026-10-12)
 
 **Verified previous HEAD:** `1887b022a48b8959868296fa35308eedb5d66bfd`, [CI 38200341705](https://github.com/ForestTiger-GH/stratbox/actions/runs/38200341705) SUCCESS, after correcting two producer test issues in the six-note SORS packet: valid one-line source span and explicit fixed-point definition. **Full exact branch CI on this new checkpoint must be obtained before treating this latest commit as green.**

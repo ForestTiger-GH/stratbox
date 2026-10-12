@@ -23,7 +23,7 @@ The 2026-10-12 one-time migration detached **1,962 legacy Research/Work hyperlin
 | [Architecture](architecture/README.md) | Logical responsibility and application/client boundaries | New repository/service decisions and verified platform-attach contracts |
 | [LDD](ldd/README.md) | Proportional negative test vectors around effects, provenance, publication, integration and diagnosis | Most target fault injection vectors remain `UNEXECUTED` |
 
-**Source population versus claims:** the separate frozen evidence program registered 566 Git file identities including 53 substantive Research originals and many auxiliary/current implementation files. At the last available audit, 163 files have been fully read, 10 governance-read and 393 pending broader inspection; **566 source-level material dispositions remained `unaccounted`** under independent-completeness criteria. These are evidence-accounting figures, not a proportion of published facts or a quality score. Their historical provenance ledger is separate and **not required to navigate this edition**.
+**Source population versus claims:** the separate frozen evidence program registered 566 Git file identities including 53 substantive Research originals and many auxiliary/current implementation files. At the last available audit, 165 files have been fully read, 10 governance-read and 391 pending broader inspection; **566 source-level material dispositions remained `unaccounted`** under independent-completeness criteria. These are evidence-accounting figures, not a proportion of published facts or a quality score. Their historical provenance ledger is separate and **not required to navigate this edition**.
 
 ## Explicitly excluded and unresolved inputs
 
