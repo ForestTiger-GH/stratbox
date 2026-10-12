@@ -1,6 +1,6 @@
 # Source ↔ Science producer residual challenge — historical interface 0013
 
-**Checkpoint basis:** original `SB-SRC-0013` at `8459dc58922b7e8df853cf1d9e8131fa9e132580`, blob `2f2b05d1a1af3401fb402bfb43c8cc36a907d9fe`; candidate Science owner revision before write `24bc2083db3349ab1ab8dd7335a7c0a4b95df90e`; date 2026-10-12. **Work:** source-first detailed re-read of the original 179-line UI proposal against the previously published 22 specific historic UX interpretations and competing current/target claims. This is producer verification only, with no claim of independent review.
+**Checkpoint basis:** original `SB-SRC-0013` at `8459dc58922b7e8df853cf1d9e8131fa9e132580`, blob `2f2b05d1a1af3401fb402bfb43c8cc36a907d9fe`; candidate Science owner revision before write `24bc2083db3349ab1ab8dd7335a7c0a4b95df90e`; date 2026-10-12. **Work:** source-first detailed re-read of the original 178-line UI proposal against the previously published 22 specific historic UX interpretations and competing current/target claims. This is producer verification only, with no claim of independent review.
 
 ## Actual bounded test
 

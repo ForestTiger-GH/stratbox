@@ -182,7 +182,7 @@ The earlier [interface design note](https://github.com/ForestTiger-GH/stratbox/b
 
 **Adversarial product distinction:** a smoothly animated Scenario card does not certify a durable Run or external effect; a per-user read check does not signify acknowledgement of a problem; an AI actor's wish to inspect the same logs does not override each principal's authority. A layout optimized for four-pane Windows does not define Android/Web navigation, while an isolated worker can legitimately expose fewer capabilities than a hosted, authenticated multi-user environment. Background monitoring being displayed near a Scenario does not make scheduled Occurrence and one-shot execution the same semantic identity. A future Product decision needs a tested journey, workload and implementation owner for each adopted surface.
 
-**Conservation limit:** these twenty-two addressable original propositions preserve a dated design alternative and known tensions, not the full meaning of all 179 original source lines or independent validation of preferred UI geometry. The source is retained for historical inspection; maintained Science remains the ordinary entry point.
+**Conservation limit:** these twenty-two addressable original propositions preserve a dated design alternative and known tensions, not the full meaning of all 178 physical original source lines or independent validation of preferred UI geometry. The source is retained for historical inspection; maintained Science remains the ordinary entry point.
 
 ## Residual concrete interaction claims from the original historical interface note — producer re-read
 
