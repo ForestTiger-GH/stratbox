@@ -1,5 +1,15 @@
 # Consolidation Work State
 
+## Current Transition Package — 2026-10-12, Windows staged semantics and direct public Git commit-diff provenance
+
+**Same continuing Work Program, exact incoming baseline:** `main@5ab0e2d93e5f62afe6e4f0143465e053540bf823`, [CI 38252982788](https://github.com/ForestTiger-GH/stratbox/actions/runs/38252982788) **SUCCESS**. That run also verified the preceding source 0020 twelve P0–P2 original-route test, after removal of an unjustified arbitrary keyword assertion. This package adds an exact original §XXIII **five-stage historical roadmap** with countercases and reordering arguments to existing portability Science; it separates Qt-for-Python Android packaging from semantic neutrality; and records **two directly inspected Windows Git commit diffs** in Current HOW showing that “New SORS method” and “Add SORS-SME optimization method” titles changed only bytecode/local dev-state files, not Python source. This is strictly a claim about those public commit diffs, not absence of algorithms elsewhere.
+
+**Producer evidence:** [source-specific report](coverage/SOURCE-0020-ROADMAP-AND-COMMIT-DIFF-PROVENANCE-2026-10-12.md); newly wired Work-only `verify_windows_0020_roadmap_and_commit_diffs.py` checks five original numbered stage headings, five Science interpretations and exact links (not Windows API calls or deployed behavior). **Its new HEAD CI is pending and must be verified at exact SHA.**
+
+**Unchanged:** 566 frozen rows; Research 53 substantive originals producer read; overall 176 full/10 governing/380 not-full; 566/566 `material_unit_state=unaccounted`; 114 maintained docs and 10 blocked LCD candidates; 22 review questions unanswered by a separate qualified reviewer; no native external-host/Web/Android execution, complete Product Decisions, independent losslessness, or Research Amputation. Continue substantive source→Science exception analysis; avoid artificial source-row counts and public disclosure of sensitive data. Logical reset performed; physical reset unavailable. Result `PARTIAL / CONTINUING`.
+
+---
+
 ## Current Transition Package — 2026-10-12, verified original 0020 structural route CI
 
 **Same continuing authorized Work Program:** incoming `main@f6dace76996ea4b9c47c15210d2cb7bb5140cf97`, [CI 38252599550](https://github.com/ForestTiger-GH/stratbox/actions/runs/38252599550) **SUCCESS** at the exact incoming commit. The previous historical Windows original-0020 P0/P1/P2 twelve-proposal section was published in existing System Model Science, but its transition text prematurely asserted its own verification tool was already wired; the previous commit had only structural link and normal publication checks. This increment **actually adds** a Work-only pinned Git source route test and workflow step, checking headings 71–82, P0/P1/P2 assignments and twelve Science rows `W20-P71..82`. See revised [original 0020 Work report](coverage/SOURCE-0020-TWELVE-HISTORIC-WINDOWS-P0-P2-BOUNDARIES-2026-10-12.md). Await this new commit's own CI; structural assertions are not independent semantic review or native Windows conformance.
