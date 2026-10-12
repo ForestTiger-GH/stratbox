@@ -163,7 +163,7 @@ def probe_local_run() -> dict:
 
 def probe_host_admission() -> dict:
     ref = "hosting/host-authority-and-client-contract-construction.md"
-    d = {"Enum": enum.Enum}
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
     for name in ("AdmissionKind", "AdmissionReceipt", "HostAdmission"):
         compile_definition(ref, name, d)
     kind, receipt = d["AdmissionKind"], d["AdmissionReceipt"]
@@ -218,7 +218,7 @@ def probe_host_admission() -> dict:
 
 def probe_problem_receipt() -> dict:
     ref = "observability/execution-evidence-and-problem-boundary-construction.md"
-    d = {"Enum": enum.Enum}
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
     for name in ("Audience", "RegistrationKind", "ProblemRegistration",
                  "OptionalProblemBridge"):
         compile_definition(ref, name, d)
