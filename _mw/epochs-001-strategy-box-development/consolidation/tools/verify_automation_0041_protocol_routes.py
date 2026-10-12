@@ -41,6 +41,15 @@ def verify() -> dict[str, object]:
                 "docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md",
             },
         ),
+        (
+            ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units/AUTOMATION-0041-CONTRACTS-OWNERSHIP-22.jsonl",
+            22,
+            {
+                "docs/science/capabilities/machine-discovery-bindings-and-adapters.md",
+                "docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md",
+                "docs/science/architecture/semantic-ownership-and-contract-boundaries.md",
+            },
+        ),
     )
     docs = {}
     seen = set()
