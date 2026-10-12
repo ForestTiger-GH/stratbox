@@ -61,7 +61,10 @@ class RunOutcome(str, Enum):
 class ArtifactAvailability(str, Enum):
     VERIFIED_AVAILABLE = "verified_available"
     STAGED = "staged"
-    UNAVAILABLE = "unavailable"
+    MISSING_CONFIRMED = "missing_confirmed"
+    BACKEND_UNAVAILABLE = "backend_unavailable"
+    CHANGED = "changed"
+    OUTCOME_UNKNOWN = "outcome_unknown"
     DENIED = "denied"
 
 @dataclass(frozen=True, slots=True)
@@ -116,11 +119,18 @@ class ArtifactIdentity:
     version: str
 
 @dataclass(frozen=True, slots=True)
-class ArtifactResult:
+class InternalArtifactRecord:
     availability: ArtifactAvailability
     content_digest: str | None
     media_type: str | None
-    host_handle: str | None  # internal opaque handle, NEVER client's local path
+    host_handle: str | None  # restricted storage capability; host-side ONLY
+
+@dataclass(frozen=True, slots=True)
+class ArtifactResult:
+    # This is safe metadata only; no backend handle, host path or bearer URL.
+    availability: ArtifactAvailability
+    content_digest: str | None
+    media_type: str | None
 
 # CANDIDATE_DESIGN: application_authority/ports.py
 class PolicyPort(Protocol):
@@ -140,7 +150,9 @@ class ExecutionSchedulerPort(Protocol):
     def schedule(self, run_ref: str) -> None: ...
 
 class ArtifactRepositoryPort(Protocol):
-    def resolve_verified(self, artifact: ArtifactIdentity) -> ArtifactResult: ...
+    # Returns host-private implementation handle to this service only.
+    def resolve_verified(self, artifact: ArtifactIdentity
+                         ) -> InternalArtifactRecord: ...
 
 class HostApplicationPort(Protocol):
     def identify(self, actor: Actor) -> HostIdentity: ...
@@ -240,10 +252,36 @@ class ScopedReads:
         return self.ledger.read_after(run_ref, after)
 
     def fetch(self, actor: Actor, ref: ArtifactIdentity) -> ArtifactResult:
-        if not self.policy.can_fetch(actor, ref):
-            return ArtifactResult(ArtifactAvailability.DENIED, None, None, None)
-        return self.artifacts.resolve_verified(ref)
+        # This candidate fetch is a safe metadata *inspection*, not a bytes
+        # stream. Permission must be checked AGAIN before real byte-open.
+        try:
+            permitted = self.policy.can_fetch(actor, ref)
+        except Exception:
+            return ArtifactResult(ArtifactAvailability.DENIED, None, None)
+        if permitted is not True:
+            return ArtifactResult(ArtifactAvailability.DENIED, None, None)
+        try:
+            internal = self.artifacts.resolve_verified(ref)
+        except Exception:
+            # Storage read failure is not proof the file was deleted.
+            return ArtifactResult(ArtifactAvailability.BACKEND_UNAVAILABLE,
+                                  None, None)
+        if (not isinstance(internal, InternalArtifactRecord)
+                or not isinstance(internal.availability, ArtifactAvailability)):
+            return ArtifactResult(ArtifactAvailability.OUTCOME_UNKNOWN,
+                                  None, None)
+        if internal.availability is ArtifactAvailability.VERIFIED_AVAILABLE:
+            # The backend handle is never projected, including in errors.
+            if (not internal.host_handle or not internal.content_digest
+                    or not internal.media_type):
+                return ArtifactResult(ArtifactAvailability.OUTCOME_UNKNOWN,
+                                      None, None)
+            return ArtifactResult(ArtifactAvailability.VERIFIED_AVAILABLE,
+                                  internal.content_digest, internal.media_type)
+        return ArtifactResult(internal.availability, None, None)
 ~~~
+
+**Source-first artifact projection correction (Topics 04/05/12):** the first typed `ArtifactResult` included a `host_handle` field and was *also the return value of a client-facing transport*. Even where that handle was described as opaque, passing it through the client DTO risked exposing an internal storage capability/path or suggesting that it was itself a valid download grant. The code now separates host-private `InternalArtifactRecord` from **client-safe metadata-only** `ArtifactResult`; no storage handle ever leaves `ScopedReads.fetch`. The intentionally renamed availability cases distinguish confirmed missing bytes, backend outage, changed version, unknown effect, staged bytes and permission denial. A broken backend response or a claimed verified record missing digest/media/host handle returns `OUTCOME_UNKNOWN` rather than false `VERIFIED_AVAILABLE`. Physical bytes still require an **additional authorized streaming/open operation**, proper generation and digest verification, scope-limited headers and current access recheck. This code is **NOT a deployed or security-certified download endpoint** and a dataclass/typed status is not sufficient evidence of issuer/backend authenticity.
 
 A client cannot turn a local absolute filesystem path into a remote accessible URL. A published Artifact needs a byte-verified record and separate access check at download time; technical logs are a different scope. Permission revocation during a stream requires reauthorization and stream termination. A stale cursor or missing event range must return a qualified resnapshot path, never imply continuous observation. On network loss, the client marks its state stale without changing the host-owned Run status.
 
