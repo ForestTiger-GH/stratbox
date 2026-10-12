@@ -147,3 +147,14 @@ jobs:
           if [ -f research_coverage_audit.json ]; then
             python3 -c 'import json; j=json.load(open("research_coverage_audit.json")); print({k:v for k,v in j.items() if k not in ("source_detail",)})'
           fi
+      - name: Publish bounded source accounting evidence for separate reviewers
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: strategy-box-research-audit-bounded
+          path: |
+            research_coverage_audit.json
+            research_span_audit.json
+            original_span_gap_triage.json
+          if-no-files-found: error
+          retention-days: 14
