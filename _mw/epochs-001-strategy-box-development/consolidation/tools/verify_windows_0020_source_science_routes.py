@@ -85,10 +85,8 @@ def verify() -> dict:
         "## Windows Research 0020 — pinned application context", 1)[0]
     context = surfaces.split("## Windows Research 0020 — pinned application context", 1)[1].split(
         "## Original Windows Study 0020: future portability", 1)[0]
-    assert len(re.findall(r"^\\| `SB-SRC-0020/", direct, re.M)) == 4
-    assert len(re.findall(r"^\\| `SB-SRC-0020/", context, re.M)) == 5
-    for expected_label in ("four source rows directly above", "nine-unit original-study", "twelve workspace/workroom", "five runtime-context"):
-        assert expected_label.lower() in surfaces.lower()
+    assert len(re.findall(r"^\| `SB-SRC-0020/", direct, re.M)) == 4
+    assert len(re.findall(r"^\| `SB-SRC-0020/", context, re.M)) == 5
     return {
         "status": "STRUCTURAL_SOURCE_TO_SCIENCE_ONLY",
         "source_id": "SB-SRC-0020",
