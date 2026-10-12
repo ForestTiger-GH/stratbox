@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [SORS evidence surfaces, crosswalk feasibility and audit](data-and-knowledge/sors-evidence-surfaces-crosswalk-and-audit.md) — historical and current reconstruction distinctions, qualified source consistency, fixed-point/solver scope, evidence tiers and source-independent diagnostic checks.
+
 - [Fourteen practical consumer failure cases](engineering/consumer-failure-cases-and-evidence-boundaries.md) — standalone answers about source replay, historical registries, Windows Run status, privacy, Artifacts, host clients, recovery and Product authority, with explicit unexecuted and uncertainty bounds.
 
 - [Bounded peer Work delegation and causal reconciliation](collaboration/bounded-delegation-peer-work-and-causal-reconciliation.md) — independent actors, scoped WorkOffers, effect receipts, deduplication, partitions and evidence-aware fan-in.
