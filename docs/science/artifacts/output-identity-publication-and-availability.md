@@ -331,6 +331,45 @@ The observed properties refine the proposed effect contract:
 
 **Boundary:** the candidate `StagingSeal` must be enforced by the **selected actual backend**, including all reads and the final conditional effect; matching a dataclass, path/mtime, ordinary FD or rename cannot substitute for it. A stable source hash also does not independently prove that the publisher is authentic, the XLSX semantically valid, or the recipient entitled to read the output. Host policy, file backend, conflict semantics and physical durability must be decided and tested by the relevant owners. These experiments do not close original-source independent semantic review or establish implementation readiness.
 
+## Original Topic 04 — twenty exact output/publication failure cases and five storage conformance profiles
+
+The frozen Artifact Research `SB-SRC-0557` §15 (L783–L824) proposed **twenty locally scoped `A01..A20` candidate checks**, then separate profiles for NTFS, Linux/POSIX, SMB/NAS, object storage and remote host/client. Previous source-aware Science preserved object identities, five-valued availability, per-output partial success and staging principles, but the precise **one-to-one test stimuli and expected distinctions** were distributed across articles. This table conserves each original identifier **without claiming the candidate host/filesystem has been tested**. All twenty are `SOURCE_RESEARCH_TEST_INTENTION / NATIVE_TARGET_UNEXECUTED`; a prior isolated core/Windows fake characterization is distinct evidence and cannot upgrade the whole row.
+
+| Frozen original test | Specific tested stimulus | Proposed discriminating evidence and falsifier |
+| --- | --- | --- |
+| `A01` | Normal XLSX export completes publication. | Ready file is actually reachable and its Artifact card is linked to the correct Run **and Step**; a successful domain DataFrame alone is insufficient. |
+| `A02` | Writer raises after opening/partially writing output. | Partially written output is **not** a ready Artifact; preserve error and staging/quarantine distinction. |
+| `A03` | Handler returns a success result with a path that never existed. | Publication must be denied/failed and no ready card generated merely from the returned path. |
+| `A04` | Failed Operation emits a useful diagnostic log file. | Diagnostic result can exist independently while **primary** analytical output is absent/failed; do not turn the log into a successful report. |
+| `A05` | One of several generated files fails publication. | Other individually verified files remain ready with their own receipts; failed output remains separately failed even if total Run is partial. |
+| `A06` | User renames published working file in native Explorer. | Old locator reports `MISSING` when checked, retains origin, and does **not** trigger an unauthorized filesystem-wide digest/name search. |
+| `A07` | User moves that file to a different folder. | Old location is `MISSING` while the logical Artifact's provenance persists; relocation is not automatically discovered. |
+| `A08` | User deletes the working file. | Artifact access is disabled/unavailable, and the system does not silently restore an unwanted file from an unapproved archive. |
+| `A09` | Backing storage or network share is temporarily unavailable. | Return `UNAVAILABLE`, not a confirmed `MISSING` or evidence of user deletion. |
+| `A10` | Object exists but current principal has no read permission. | Return `ACCESS_DENIED`, not `MISSING`; error payload must not reveal confidential path or protected existence. |
+| `A11` | Publisher attempts replacement while `overwrite=false`. | Existing bytes remain intact; any failed candidate is staging/error, not a destructive pre-delete. |
+| `A12` | Two workers concurrently publish to one requested path. | Compare-and-publish or deterministic distinct names yields a conflict; no hidden last-write-wins when overwrite is prohibited. |
+| `A13` | Crash after physical finalize, before catalog registration. | Recovery uses recorded publication intent and actual generation; no unproven ready card and no blind duplicate write. |
+| `A14` | Crash after durable catalog commit, before UI refresh. | Restart returns the already committed card/Artifact ID without publishing the same bytes again. |
+| `A15` | Persisted state JSON or ledger is corrupted. | Explicit diagnostic/recovery outcome rather than silently replacing legitimate historical work with an empty timeline. |
+| `A16` | Operation yields a legitimate result without a file. | A structured message/value/preview is possible, and physical Artifact ID is optional rather than invented. |
+| `A17` | One result is a directory containing many mutable files. | Directory/card identity does not falsely promise an immutable byte bundle; visibility/availability are per qualified resource policy. |
+| `A18` | File access tries `../` traversal or a symlink/reparse escape. | Verified root containment at actual mutation/open, not only string normalization or a pre-effect lexical check. |
+| `A19` | An output is opened through another Thread/Chat context. | Originating Run, Step and author/caller identity remain correct; read still requires the current recipient's authorization. |
+| `A20` | Two different Runs generate files bearing the same display filename. | Distinct logical Artifact identities survive name collision; location overwrite policy and per-Run history must not be conflated. |
+
+**Original §15.2 — storage-profile separation, still UNEXECUTED on installed targets:**
+
+| Profile | Original mechanism requiring independent native conformance |
+| --- | --- |
+| `NTFS/Windows` | Actual replace behavior with open Excel handles, sharing violations, antivirus locks, unexpected restart, reparse points and file permissions. |
+| `Linux/POSIX` | Same-filesystem rename, `fsync(file)` and `fsync(directory)`, symlink race and `EXDEV` across filesystems. |
+| `SMB/NAS` | Timeout/ACK loss, actual server-side rename guarantees and visibility, delete/rename permissions and streaming of large files. |
+| `Object storage` | Conditional create/overwrite and generation/ETag fencing, interrupted multipart upload, delete markers and version semantics. |
+| `Remote host/client` | Authorized Artifact read, streaming and per-client stale cache, reconnect deduplication, and the distinction between remote and local file availability. |
+
+**Scope of verification:** a source-row/owner-route check can confirm these exact twenty identities and the five distinct backend topics, but **cannot** test a physical disk, remote service, user authorization or the validity of a rendered banking report. Artifact identity, file availability, catalog intent, output role, failure status and independent Run completion remain different claims. No Product Decision presently chooses universal immutable file snapshots, desktop automatic recovery, mandatory cloud storage or a particular backend transaction engine.
+
 ## Historical refactor 0016 — domain-by-domain candidate operation boundaries
 
 A dated whole-product refactor proposal compared **existing reported domain APIs** and optional candidate changes. These Research statements are historical descriptions and design alternatives; the current `stratbox` codebase, tests and independently verified exports own present behavior. A candidate domain operation ID or type is not necessarily a shipped symbol or Product Decision. The original source contrasts proportionate canonical use cases with an indiscriminate global registry, and explicitly resists imposing a universal maximal metadata shape.
