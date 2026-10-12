@@ -52,6 +52,24 @@ A candidate per-rule policy should define:
 
 The **intended wall-clock occurrence**, resolved instant, evaluation time, accepted Run time and actual start time differ. Recording only `next_run_at` or a schedule label loses these distinctions. Existing occurrences remain bound to the original rule revision when automation settings change.
 
+### Missed-run strategies have materially different task-class consequences
+
+A detailed scheduling proposal distinguishes five possible missed-occurrence treatments, which are **competing Research-level policy options**, not a universal default or an accepted Strategy Box product setting:
+
+| Candidate policy | Meaning of a missed due instant | Counterexample or limiting condition |
+| --- | --- | --- |
+| `skip` | Discard stale invocations and calculate a future due instant; record skipped obligations rather than pretending they ran. | Incorrect where each omitted regulatory/statistical vintage requires independent processing or audit. |
+| `run_once_latest` | Collapse several overdue evaluations into one new run using a newly qualified latest-source/input basis. | A changed source, lost historical periods or historical as-of requirement may make latest-only invalid. It does not retroactively complete the missed occurrences. |
+| `catch_up_all_bounded(max_count, max_age)` | Retain eligible period-specific obligations within explicit number/age/resource limits, with a stable logical period key. | An unlimited backlog can overload CPU, publisher traffic and storage or cause duplicate effects after a restart. Bounds can leave explicitly unfulfilled periods. |
+| `manual_review` | Preserve the missing-period evidence and require an operator to decide whether a new run remains meaningful. | Human review delays recovery and is unsuitable as the silent default for every cheap, idempotent observation. |
+| `fail_closed` | Refuse autonomous late execution where old timing, changed inputs, authorization or effect preconditions make the operation unsafe. | A hard stop must remain visible and repairable; it should not become the misleading outcome `NO_CHANGE` or erase the original due instant. |
+
+The original workload examples are useful **heuristics with material defeaters**: source-publication watches may use one latest **verified** observation; heavy macroeconomic cascades may skip stale invocations or request human review according to freshness and cost; month-by-month historical ingestion may need individually identified bounded catch-up; and a destructive or externally consequential effect must not silently replay overdue actions without fresh authority for the actual source generation, target, time and permission. A read-only workspace check is categorically different from a repair: a schedule described as “check” cannot quietly trigger delete, overwrite or cleanup. The correct policy requires Product/Operations decisions per operation/effect class and concrete adverse tests.
+
+Civil-time choices have similarly distinct semantics: `skip_nonexistent` versus `shift_forward` for a spring gap, and `first_occurrence`, `second_occurrence` or exactly once under an autumn fold. A “working day” also needs an explicit calendar definition (weekday-only versus jurisdiction-specific holidays). Preserve the intended local timestamp, IANA zone, resolved UTC instant, rule revision and optionally timezone-data revision; a due-instant de-duplication key cannot be made from the client's current wall clock. No named option here is an adopted Python enum or mandatory future UI control.
+
+This material sharpens the existing generic `skip/latest_only/coalesce/bounded catch-up/review` account: **coalescing a watcher observation, merging accepted period obligations and retrying physical effects are three different operations**. Source-validation errors must never be reclassified as unchanged content merely to avoid a missed-run backlog. These examples remain a source-preserving scientific distinction; no scheduler, DST generator or native recovery test is demonstrated by this document.
+
 ## 5. Evaluation state and admission state must not be collapsed
 
 A candidate event flow:
