@@ -185,21 +185,53 @@ def probe_local_run() -> dict:
 
 
 def probe_host_admission() -> dict:
+    import hashlib
+    from types import MappingProxyType
     ref = "hosting/host-authority-and-client-contract-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass}
-    for name in ("AdmissionKind", "AdmissionReceipt", "HostAdmission"):
+    for name in ("AdmissionKind", "AdmissionReceipt", "Submission", "HostAdmission"):
         compile_definition(ref, name, d)
     kind, receipt = d["AdmissionKind"], d["AdmissionReceipt"]
     host = SimpleNamespace(host_id="host-1")
-    actor = SimpleNamespace(principal_ref="p1")
-    req = SimpleNamespace(intention_key="intent", payload_digest="good")
+    actor = SimpleNamespace(principal_ref="p1", scope_ref="workspace-A")
+    submission = d["Submission"]
+    def request(key="intent", period="2026-07", client_claim="FORGED-SAME-DIGEST"):
+        return submission(key, "bank.report", "revision-1",
+                          {"period": period}, client_claim)
+
+    class Canonicalizer:
+        def __init__(self):
+            self.calls = 0
+            self.mutate_intent_key = False
+        def seal(self, actor, untrusted):
+            self.calls += 1
+            if (not untrusted.intention_key or
+                    set(untrusted.parameters) != {"period"} or
+                    not isinstance(untrusted.parameters["period"], str)):
+                raise ValueError("schema rejected")
+            frozen = MappingProxyType(dict(untrusted.parameters))
+            canonical = json.dumps(
+                {"principal": actor.principal_ref, "scope": actor.scope_ref,
+                 "scenario": untrusted.scenario_id,
+                 "definition": untrusted.definition_revision,
+                 "params": dict(frozen)},
+                sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+            digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+            key = ("forged-other-key" if self.mutate_intent_key
+                   else untrusted.intention_key)
+            return submission(key, untrusted.scenario_id,
+                              untrusted.definition_revision, frozen, digest)
+
     class Policy:
         allow = True
         fault = False
+        seen_digest = None
         def can_submit(self, actor, req):
             if self.fault:
                 raise RuntimeError("policy service unavailable")
+            self.seen_digest = req.payload_digest
             return self.allow
+
     class Ledger:
         def __init__(self):
             self.calls = 0
@@ -233,6 +265,7 @@ def probe_host_admission() -> dict:
             if self.lose_ack_after_commit:
                 raise TimeoutError("ledger committed Run, lost ACK")
             return receipt(kind.ACCEPTED, request.intention_key, run, host.host_id)
+
     class Scheduler:
         fail = True
         calls = 0
@@ -241,49 +274,59 @@ def probe_host_admission() -> dict:
             if self.fail:
                 raise RuntimeError("lost ACK")
 
-    policy, ledger, scheduler = Policy(), Ledger(), Scheduler()
-    svc = d["HostAdmission"](host, policy, ledger, scheduler)
+    policy, ledger, scheduler, canonicalizer = (
+        Policy(), Ledger(), Scheduler(), Canonicalizer())
+    svc = d["HostAdmission"](host, policy, ledger, scheduler, canonicalizer)
+    req = request()
     first = svc.submit(actor, req)
     assert first.kind is kind.OUTCOME_UNKNOWN and first.run_ref == "run-1"
+    assert policy.seen_digest != req.payload_digest
+    assert ledger.seen["intent"][0] == policy.seen_digest
     replay = svc.submit(actor, req)
     assert replay.kind is kind.REPLAY and replay.run_ref == "run-1"
     assert scheduler.calls == 1
-    conflict = svc.submit(actor, SimpleNamespace(intention_key="intent",
-                                                  payload_digest="different"))
+    # A client can assert one digest for two different payloads; the trusted
+    # canonicalizer must make the ledger reject the second under the same key.
+    conflict = svc.submit(actor, request(period="2026-08"))
     assert conflict.kind is kind.REJECTED
+    scoped_actor = SimpleNamespace(principal_ref="p1", scope_ref="workspace-B")
+    cross_scope_conflict = svc.submit(scoped_actor, req)
+    assert cross_scope_conflict.kind is kind.REJECTED
     policy.allow = False
-    denied = svc.submit(actor, SimpleNamespace(intention_key="different",
-                                                payload_digest="good"))
+    denied = svc.submit(actor, request(key="different"))
     assert denied.kind is kind.REJECTED
     policy.allow = True
     policy.fault = True
-    unknown = svc.submit(actor, SimpleNamespace(intention_key="different",
-                                                 payload_digest="good"))
+    unknown = svc.submit(actor, request(key="different"))
     assert unknown.kind is kind.OUTCOME_UNKNOWN and unknown.run_ref is None
     policy.fault = False
+
+    calls_before_invalid = ledger.calls
+    invalid_schema = submission("invalid-schema", "bank.report", "revision-1",
+                                {"handler": "unregistered"}, "FORGED")
+    assert svc.submit(actor, invalid_schema).kind is kind.REJECTED
+    canonicalizer.mutate_intent_key = True
+    assert svc.submit(actor, request(key="modified-key")).kind is kind.REJECTED
+    canonicalizer.mutate_intent_key = False
+    assert ledger.calls == calls_before_invalid
+
     ledger.lose_ack_after_commit = True
-    second = SimpleNamespace(intention_key="intent-lost-ledger-ack",
-                             payload_digest="good")
+    second = request(key="intent-lost-ledger-ack")
     scheduled_before_ledger_ack_loss = scheduler.calls
     uncertain = svc.submit(actor, second)
     assert uncertain.kind is kind.OUTCOME_UNKNOWN and uncertain.run_ref is None
-    # Same intention and canonical digest is the ONLY admissible replay
-    # candidate here: lookup finds the admitted original Run, no dispatch.
-    assert ledger.seen[second.intention_key] == ("good", "run-1")
+    qualified_hash = canonicalizer.seal(actor, second).payload_digest
+    assert ledger.seen[second.intention_key] == (qualified_hash, "run-1")
     ledger.lose_ack_after_commit = False
     found = svc.submit(actor, second)
     assert found.kind is kind.REPLAY and found.run_ref == "run-1"
-    # IMPORTANT LIVENESS GAP, NOT A PASS: an admitted Run exists but neither
-    # initial submit nor replay scheduled it. A durable outbox/recovery
-    # dispatcher is required before any managed-host readiness claim.
+    # Liveness hole remains until persistent outbox/recovery exists.
     assert scheduler.calls == scheduled_before_ledger_ack_loss
-    assert second.intention_key in ledger.seen
     before = scheduler.calls
     for mode in ("null", "wrong_key", "wrong_host", "accepted_no_run",
                  "rejected_with_run", "wrong_enum"):
         ledger.bad_mode = mode
-        result = svc.submit(actor, SimpleNamespace(
-            intention_key="intent-malformed", payload_digest="good"))
+        result = svc.submit(actor, request(key="intent-malformed"))
         assert result.kind is kind.OUTCOME_UNKNOWN
         assert scheduler.calls == before
     ledger.bad_mode = None
@@ -350,7 +393,9 @@ def probe_host_admission() -> dict:
     repository.current = record_type(
         "verified_available", "sha256-safe", "application/vnd.report", "/internal")
     assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
-    return {"admission_duplicate_conflict_denial": 13,
+    return {"admission_duplicate_conflict_denial": 17,
+            "client_forged_digest_ignored": True,
+            "canonical_request_scope_bound": True,
             "client_safe_artifact_projection_cases": 10,
             "ledger_commit_without_dispatch_liveness_gap": "DEMONSTRATED_NOT_RESOLVED",
             "evidence": "literal HostAdmission and ScopedReads on fake ports; admission ACK gap strands a Run without an outbox, no real host/session/stream storage"}
