@@ -58,6 +58,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_state_0556_recovery_routes.py
       - name: Check unique host LDD HC vector IDs (structural)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_host_ldd_case_ids.py
+      - name: Route non-Research source roles without falsely disposing material
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_nonresearch_source_roles.py
       - name: Audit research source coverage and distinguish evidence classes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_material_coverage.py > research_coverage_audit.json
       - name: Verify structural audit parser and boundary self-tests
