@@ -264,6 +264,7 @@ def probe_host_admission() -> dict:
     ledger.lose_ack_after_commit = True
     second = SimpleNamespace(intention_key="intent-lost-ledger-ack",
                              payload_digest="good")
+    scheduled_before_ledger_ack_loss = scheduler.calls
     uncertain = svc.submit(actor, second)
     assert uncertain.kind is kind.OUTCOME_UNKNOWN and uncertain.run_ref is None
     # Same intention and canonical digest is the ONLY admissible replay
@@ -272,6 +273,11 @@ def probe_host_admission() -> dict:
     ledger.lose_ack_after_commit = False
     found = svc.submit(actor, second)
     assert found.kind is kind.REPLAY and found.run_ref == "run-1"
+    # IMPORTANT LIVENESS GAP, NOT A PASS: an admitted Run exists but neither
+    # initial submit nor replay scheduled it. A durable outbox/recovery
+    # dispatcher is required before any managed-host readiness claim.
+    assert scheduler.calls == scheduled_before_ledger_ack_loss
+    assert second.intention_key in ledger.seen
     before = scheduler.calls
     for mode in ("null", "wrong_key", "wrong_host", "accepted_no_run",
                  "rejected_with_run", "wrong_enum"):
@@ -346,7 +352,8 @@ def probe_host_admission() -> dict:
     assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
     return {"admission_duplicate_conflict_denial": 13,
             "client_safe_artifact_projection_cases": 10,
-            "evidence": "literal HostAdmission and ScopedReads on fake ports; no real host/session/stream storage"}
+            "ledger_commit_without_dispatch_liveness_gap": "DEMONSTRATED_NOT_RESOLVED",
+            "evidence": "literal HostAdmission and ScopedReads on fake ports; admission ACK gap strands a Run without an outbox, no real host/session/stream storage"}
 
 
 def probe_problem_receipt() -> dict:
