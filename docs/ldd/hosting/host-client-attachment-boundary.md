@@ -19,6 +19,25 @@ A **host-private file handle** must never appear in a client-facing Artifact met
 
 **Readiness:** all four are proposed native/host integration vectors. The producer's executable Markdown tests cover their **algorithmic fake-port shapes only**; real process crash, physical storage race, client/session ACL and stream-open effects remain `UNEXECUTED`.
 
+## Durable admission-to-dispatch liveness: a separate failure boundary
+
+A Run can be **durably admitted**, have its admission acknowledgment lost, and be discovered on a subsequent same-intention replay while the scheduler has **never received the Run**. Correct admission idempotency is therefore insufficient: **a stranded accepted Run is not a successful host execution lifecycle**. This exact failing producer scenario was preserved in the Host candidate; no configured real broker or host transaction is inferred.
+
+The [Host LCD](../../lcd/hosting/host-authority-and-client-contract-construction.md) now proposes an explicit **durable dispatch outbox**, recorded in the same proven transaction as the accepted logical Run, and a narrowly scoped `HostDispatchRecovery` that claims pending intents and calls a scheduler's `schedule_once(dispatch_ref)`. Its recovery claim is a **fenced delivery reservation**. The downstream Job reservation must be idempotent by the same dispatch reference; repeating a notification after a dropped ACK must never create a new logical Run or second logical Job. `DISPATCH_CONFIRMED` proves only that a Job reservation was acknowledged, not that the worker executed or that its effects succeeded. A restored pending claim after lease expiry must revalidate current actor/object/effect authority before irreversible work begins.
+
+| Liveness/vector | Injected condition | Required test and epistemic limit |
+| --- | --- | --- |
+| LD-01 | Run accepted and outbox intent committed; admission ledger ACK lost | Same-intention replay finds the original Run, recoverer independently finds dispatch intent; no new Run created |
+| LD-02 | Scheduler reserved Job for dispatch key, then its ACK was lost | Reclaimed dispatch uses same stable key and **one** Job reservation; physical worker start has separate guard |
+| LD-03 | Recovery observer loses the outbox claim lease while still running | Later lease owner can reclaim only under storage fencing; old owner cannot acknowledge or start conflicting effect |
+| LD-04 | Outbox status update ACK is lost after scheduler reservation | Reconciliation returns the already reserved Job, not a new reservation/Run |
+| LD-05 | In-memory dispatch succeeds but process crashes before durable scheduling | Ledger-backed recovery scans pending intents; a transient callback cannot be the sole source of liveness |
+| LD-06 | Grant revoked before queued worker begins destructive step | Admission remains historic truth; effect-time authorization rejects unauthorized mutation |
+| LD-07 | Run row persists but transactional dispatch intent is missing | **Contract failure**: the host cannot claim crash-recoverable admission and requires repair/quarantine |
+| LD-08 | Backend cannot guarantee atomic Run+outbox, fenced claims and scheduler dedup | Restrict to a proven simpler single-worker tier or block the hosted profile; neither CI fake nor documentation is durability proof |
+
+**Test grade:** the Work-only Python probe executes the literal `HostDispatchRecovery` on a synthetic outbox/deduplicating scheduler. It exercises acknowledgment loss, malformed claims, untyped scheduler ACK and a failing ledger. It does **not** execute the physical semantics in LD-01..08: no real database, crash/restart, leadership lease, resource arbitration, native file mutation or remote client was used. The mechanism requires a genuine approved implementation owner and security/operations Product Decisions before host release.
+
 ## Logical ownership and identity rules
 
 One running host owns the accepted logical Run/Case/Job within its served scope. Client instance, app installation, AppDock user/session, network connection, host installation and domain operation are **distinct identities**. The same authenticated user on Windows and browser might see the same authorized Case; another user might see only an audience-safe incident notice. Two host instances must never both claim write authority for one job namespace without a separately proved leadership/fencing protocol. Name of host type (Web or Windows/AppDock) must not change the canonical meaning of a Step, Artifact or effect outcome.
