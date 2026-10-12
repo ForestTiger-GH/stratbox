@@ -294,6 +294,53 @@ The original study described one **idealized transactional `SubmitRun`**: reserv
 
 The source's one-transaction `Case+Job+ChatEvent` formulation is itself a **design alternative**: later Work/Run/Case and cross-client authority models may split semantic Work and physical Job while maintaining an equivalent crash-safe ledger/outbox and permissioned Thread link. A transaction that saves Run but loses a volatile `schedule(run_ref)` callback still strands the physical Job unless durable dispatch intent and recovery scanner are proven. External file effects do not join the SQL transaction merely because the payload says `job.submitted`; unknown finalization receipts require reconciliation. The HTTP response `202 Accepted`, suggested `409 Conflict` for a stale Automation revision, and the route prefix `/api/v1` are **historical illustrative choices**, not adopted current release contracts. Backend identity, Web CSRF protections, source vintage, remote-grant expiry and typed outcome projection remain separately owned.
 
+
+### Historical defaults, open profile choices and vertical rollout — preserve the alternatives, not the roadmap
+
+The background-Work study proposed **thirteen defaults**, **seven questions requiring decisions**, and a **seven-slice order (0–6)**. These were a reasoned **2026 research proposal**, not a present user setting, accepted UX contract, physical host design, release roadmap or a hidden backwards-compatibility mandate. Several product roles were subsequently admitted at a *logical* level, while physical packaging and native availability remain open. The options below are retained because removing them would lose material explanations of why apparently simple user choices depend on workload, device profile and actual effect semantics.
+
+| Original proposal | Historical suggested direction | Required challenge / conditional status |
+| --- | --- | --- |
+| BG-DEF-01 — Manual detached launch | Use existing permitted Thread rather than manufacturing a new chat. | When source Thread was removed, a Task Center/Run link remains; personal permission still checked. |
+| BG-DEF-02 — Automated occurrence outside chat | Group successive Runs in a proposed per-rule/group journal. | Per-rule journal is not automatic public sharing and does not determine Work ownership. |
+| BG-DEF-03 — Elevate active Threads | Use one dynamic activity/attention bucket after user-pinned items. | Avoid chat jumping on progress ticks or replacing manual sorting choices. |
+| BG-DEF-04 — Enabled schedule indicator | Show clock/next evaluation rather than a running animation. | Rule enabled state cannot attest that a Job is actually active. |
+| BG-DEF-05 — Where to inspect all Jobs | Provide one authorized Task Center; Thread carries contextual references only. | Same Run can appear in two places without two copies or extra access grants. |
+| BG-DEF-06 — Background job lifetime | Prefer independent headless Host for detached execution. | A local foreground-only profile may stop on GUI close; laptop sleep prevents compute. |
+| BG-DEF-07 — Local durable store | Suggested local-disk SQLite/WAL for single-node. | Multi-host WAL on a network share is unsafe; no SQL engine is approved here. |
+| BG-DEF-08 — Scheduler engine | Suggested thin persisted calendar/trigger adapter. | It is not the state/effect authority; durable outbox and ownership still required. |
+| BG-DEF-09 — Heavy calculation isolation | Suggested supervised process worker. | Overhead/resource budget and crash evidence must be measured before choosing one. |
+| BG-DEF-10 — Cancellation | Cooperative safe-point cancellation; force control separately privileged. | Worker termination does not undo a published file or unknown remote effect. |
+| BG-DEF-11 — Missed refresh | Suggested latest-once/skip for ordinary freshness refresh. | Historical time series, destructive effects or required filings have different obligations. |
+| BG-DEF-12 — Persistent bottom activity strip | Only visible during real activity/attention, not for every enabled rule. | No invisible activity implication from an idle schedule. |
+| BG-DEF-13 — Fourth physical repository | Delay extraction until host separation is justified. | Logical host is accepted; the exact physical package/repository remains undecided. |
+
+The underlying distinction is **defaults versus constraints**. A proposed default may later change with evidence without changing the core meaning of `Run`, `Artifact`, `Occurrence`, authenticated execution or effect verification. The admitted necessity of an independent *logical* Strategy Box host for defined Web/Windows-host target profiles does not retroactively approve the original local SQLite/WAL, process supervisor, UI sort, installation package or fourth-repository recommendation.
+
+| Unresolved original question | Preservation of the actual decision boundary |
+| --- | --- |
+| BG-OPEN-01 — First shared Thread release | A single-node profile can be sufficient initially, but stable Node/User Thread identity must not be replaced by Python session identity. |
+| BG-OPEN-02 — Holiday calendar | A weekday label is not an official banking/market/business-day calendar; a calendar provider and vintage require admission. |
+| BG-OPEN-03 — Always-on laptop | A host service still depends on a powered, permitted device; installation settings must communicate this honestly. |
+| BG-OPEN-04 — Shared automation journal | One journal per rule does not confer reader rights; explicit sharing and scope checks are separate. |
+| BG-OPEN-05 — Resource budgets | Choose CPU/RAM/IO and concurrency thresholds from measured device/host workloads, not permanent core magic constants. |
+| BG-OPEN-06 — File commit diversity | Local, mounted, NAS and object storage have unequal atomic/CAS guarantees; stage, verify and disclose partial outcome. |
+| BG-OPEN-07 — Persistent rule after version changes | An automation's bound target revision must remain diagnosable/revalidatable after update; no obligation to support obsolete prototype API. |
+
+The original proposed the following **order of demonstration**, not a binding implementation plan or a demand to code every component before testing any:
+
+| Historical vertical slice | What its proof would need to establish before extending scope |
+| --- | --- |
+| BG-STAGE-0 | Resolve ChatThread, Case, Job, Automation/Trigger, policy and outcome identities; retire background-as-domain-kind in new target semantics. |
+| BG-STAGE-1 | Select and test one independent low-risk headless Job outside Qt: durable admission, live progress and actual restart. |
+| BG-STAGE-2 | Reassign Windows from authoritative Qt coordinator to typed host client; retain presentation-only projector semantics. |
+| BG-STAGE-3 | Introduce multiple Threads, filtered Case links, Task Center, read positions and stable active/attention projections. |
+| BG-STAGE-4 | Add durable calendar/occurrence rules after trusted actual scenario handlers exist; timezone, misfire and run-as are real gates. |
+| BG-STAGE-5 | Add effect-aware cancellation, quotas, leases/fencing, restart and retry only against certified physical stores. |
+| BG-STAGE-6 | Add conditional source/event monitoring and actual other-device Web/Android clients after host identity/security and platform contracts pass. |
+
+A later approved roadmap may reorder, combine, omit or deepen these slices. A source document's sequence **cannot** grant Product/Engineering Authority, approve backward compatibility, or make Web/Android and an installed managed Windows host real. The developer's no-legacy-backward-compatibility rule means the new *design* should be coherent immediately; it does not justify silently corrupting saved *future* automation rule identities after their owners have started relying on them. For each vertical slice, tests need exact owner/version, acceptance criteria, actual faults and measured outcomes, not merely existence of a class/module or a green documentation CI.
+
 ## 15. Source topic 02: eighteen lifecycle, retry and effects distinctions
 
 The dated Task Lifecycle and Execution Control Research distinguishes an analyst's Work goal, admitted Run, schedulable Job, physical Attempt and independently attested external Effect. Its proposed implementation priorities are **Research interpretations conditioned by a local versus hosted deployment profile**, not evidence that a durable scheduler, atomic journal or automatic retry engine already exists. The following **18 English source-row interpretations** preserve concrete counterexamples and material cost constraints beyond the inherited Work Science synopsis.

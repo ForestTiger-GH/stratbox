@@ -106,6 +106,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_execution_0555_failure_vectors.py
       - name: Verify original 0018 eighteen candidate HTTP routes without treating them as installed
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_background_0018_http_example_routes.py
+      - name: Verify original background-study 13 defaults, 7 questions, and 7 staged alternatives
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_background_0018_defaults_and_staged_alternatives.py
       - name: Verify five contract and twelve client Topic-07 source acceptance proposals
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_crossplatform_0560_acceptance_vectors.py
       - name: Verify all twenty-two original integration-owner contract acceptance vectors
