@@ -467,6 +467,7 @@ def probe_authorized_host_feed() -> dict:
         else:
             raise AssertionError("non-True permission granted")
         assert feed.calls == before
+    policy.permission = True
     from dataclasses import replace
     for bad_snapshot in (
         replace(snapshot, run_ref="private-other-run"),
