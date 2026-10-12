@@ -4,6 +4,12 @@
 **Publication status:** `PARTIAL / UNDER CONSOLIDATION`; **whole-corpus `LOSSLESS_PASS`: NOT ATTESTED**.  
 **Declared publication root:** `docs/`; **95 maintained Markdown documents** were inspected during the original link detachment; the current standalone edition contains **98 maintained Markdown documents**, including two subsequent source-independent consumer/science modules. Topic and folder indexes are inside this root.
 
+## Verified structural snapshot — 2026-10-12
+
+The latest completed scope-qualified [knowledge evidence run 38200938421](https://github.com/ForestTiger-GH/stratbox/actions/runs/38200938421) passed at exact Git commit `8b4af42f4c18a9dc37aca8d323c063bdc34f8d49`. A **copy of only the 98 maintained Knowledge Markdown documents** contained **483 local document links**, all resolving **inside the isolated publication**, with no historical Research, Work or old documentation present. The two historical bulk migrations were mechanically compared to their exact previous Git blobs: 52 documents had source backlinks detached and 41 received locator formatting normalization, with **zero unintended text differences**. This verifies **deletion-ready navigation and text-preserving link migration only**, not semantic completeness.
+
+The old report-stated SORS numerical performance and source-validation examples are dated evidence with explicit test blockers, while [Science](science/README.md) now explains their significance without requiring historical source files. In the separate source audit, **171/566 frozen Git files are full-read, 10 governing-read and 385 not-full-read**; all 566 source-level semantic dispositions remain unaccounted pending independent assurance. Real host/client conformance and a distinct original-to-Knowledge reviewer are still open.
+
 ## Publication independence
 
 This edition is an **independently navigable, bounded Knowledge Product**. Scientific explanations, directly observed implementation distinctions, negative cases, engineering alternatives and current admitted Product decisions live in `docs/` rather than behind a hyperlink into historical `research/`, `_mw/` or `docs_old/`.
