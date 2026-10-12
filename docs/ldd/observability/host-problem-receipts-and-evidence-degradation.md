@@ -99,3 +99,16 @@ The frozen original observability study §§36–44 (`#L1434-L1658`) supplies th
 | OB-27 | Repeated workspace-unavailable attempts while the process persists | No dangling file handlers or unbounded descriptor/memory growth; error remains diagnosable even when primary workspace is unavailable |
 
 No live data-leak report is asserted. The observed behavior is from synthetic local Python tests; real cross-principal enforcement, audit obligations, AppDock recorder delivery and native Windows resource limits remain unverified.
+
+## Additional public-milestone negative checks OB-28..31 (2026-10-12)
+
+Full direct reading of pinned AppDock Observability history is now reflected in [Current HOW](../../current-how/appdock-public-problem-contracts.md). **All four Strategy Box integration checks below are proposals, not executed tests or claims of a published external client bridge.**
+
+| ID | Injection | Required future observation |
+| --- | --- | --- |
+| OB-28 | Recorder acknowledges a real occurrence and the host attempts Session projection | Only the confirmed exact platform `ProblemRef` may be conducted in an authorized owner scope; Run outcome remains independently authoritative. |
+| OB-29 | Recorder returns `NOT_WRITTEN` or `OUTCOME_UNKNOWN`, or the task is cancelled | No confirmed Session reference or synthetic occurrence; an optional candidate remains unconfirmed pending authorized exact reconciliation. |
+| OB-30 | Required diagnostic check missing while another required check proves `FAIL` | Preserve `status=FAIL`, `completeness=PARTIAL` together; never compress coverage and status into one Boolean. |
+| OB-31 | 5E Linux source tests or earlier AppDock native certificates are presented as installed Strategy Box host certification | Reject the scope escalation until exact current 5E Windows evidence, real app interface, actor/access policy and installed fault tests are recorded separately. |
+
+**Status:** `CANDIDATE / UNEXECUTED / LCD_BLOCKED` for a cross-product adapter. AppDock's own 5E original source claims are separate from Strategy Box product authority.
