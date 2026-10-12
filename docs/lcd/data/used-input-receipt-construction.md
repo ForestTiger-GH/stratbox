@@ -54,6 +54,9 @@ class ValidationKind(str, Enum):
     INVALID = "invalid"
     INDETERMINATE = "indeterminate"
 
+class InputEvidenceMismatch(ValueError):
+    """Claimed acquired-byte digest differs from bytes about to be parsed."""
+
 @dataclass(frozen=True, slots=True)
 class OriginalByteIdentity:
     sha256: str
@@ -135,7 +138,14 @@ def capture_downloaded_payload(source_id: str, request_url_safe: str,
             AcquisitionKind.FAILED, result.status_code, None,
             "TRANSPORT_REJECTED", safe_url(result.final_url))
     # Existing generic HTTP success is only a TRANSPORT observation.
-    payload: bytes = result.content
+    # Seal a mutable provider buffer BEFORE calculating the claimed digest.
+    # bytes(existing_bytes) is cheap; bytearray/memoryview yields a copy.
+    if not isinstance(result.content, (bytes, bytearray, memoryview)):
+        return SourceAcquisition(
+            source_id, attempt_ref, request_url_safe, observed,
+            AcquisitionKind.FAILED, result.status_code, None,
+            "INVALID_PAYLOAD_TYPE", safe_url(result.final_url))
+    payload: bytes = bytes(result.content)
     identity = OriginalByteIdentity(sha256(payload).hexdigest(), len(payload))
     receipt = SourceAcquisition(
         source_id, attempt_ref, request_url_safe, observed,
@@ -153,8 +163,16 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     # Do not re-fetch, recopy from disk, or hash an unrelated second read.
     same_bytes = captured.content
     actual_identity = captured.acquisition.actual_bytes
-    if actual_identity is None:
-        raise ValueError("RECEIVED_INPUT_WITHOUT_BYTE_IDENTITY")
+    if (captured.acquisition.kind is not AcquisitionKind.RECEIVED
+            or actual_identity is None):
+        raise InputEvidenceMismatch("RECEIVED_INPUT_WITHOUT_BYTE_IDENTITY")
+    # The dataclass is intentionally a candidate value, not an unforgeable
+    # trusted capability. Verify the exact bytes at the consumption boundary.
+    # For a later streaming design, replace this second pass with a sealed
+    # one-read/hash-and-parse stream receipt; never relax equality.
+    if (len(same_bytes) != actual_identity.byte_count
+            or sha256(same_bytes).hexdigest() != actual_identity.sha256):
+        raise InputEvidenceMismatch("ACQUIRED_AND_CONSUMED_BYTES_DIFFER")
     parsed = decoder.parse(same_bytes)
     validation, validation_ref = validator.qualify(
         parsed, captured.acquisition.source_id)
@@ -173,7 +191,7 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     return parsed, used
 ~~~
 
-The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. Domain-dependent format and economic validation remain with the domain; the generic helper must not elevate bare HTTP 200 or ZIP container parsing to a correct banking figure. A production implementation must validate that captured.acquisition.actual_bytes is present and bind the same immutable bytes into the parser; the type model may be refined to a separate ReceivedAcquisition variant so that a nullable digest cannot reach this function. Memory and streaming policy are deliberately open because the current DownloadResult materializes bytes. For large datasets use a constrained stream/chunk capture with immutable open-handle identity; do not change domain semantics just for a universal abstraction.
+The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. The additional in-memory hash pass is deliberate for this pilot; a real streaming implementation should hash exactly the same byte stream supplied to the domain without duplicating a very large payload. Whether the chosen source uses a trusted zero-copy holder is a separate performance/security decision, not permission to falsely claim byte equality. Domain-dependent format and economic validation remain with the domain; the generic helper must not elevate bare HTTP 200 or ZIP container parsing to a correct banking figure. A production implementation must validate that captured.acquisition.actual_bytes is present and bind the same immutable bytes into the parser; the type model may be refined to a separate ReceivedAcquisition variant so that a nullable digest cannot reach this function. Memory and streaming policy are deliberately open because the current DownloadResult materializes bytes. For large datasets use a constrained stream/chunk capture with immutable open-handle identity; do not change domain semantics just for a universal abstraction.
 
 **Failure policy:** a successful acquisition followed by parser failure stays an acquisition success plus validation failure. Storage error after valid parsing cannot erase analytical evidence. A successful collector ZIP save does not imply the dataset was used by a banking computation. Form runner periods that were never reached after a fail-fast error must be classified as UNATTEMPTED, not ABSENT_FROM_SOURCE.
 
@@ -219,6 +237,19 @@ def test_unattempted_dates_are_not_mislabeled_missing_by_publisher(fake_period_r
 def test_same_digest_different_method_revision_stays_distinct(two_evaluations):
     assert two_evaluations.byte_identity == two_evaluations.repeated.byte_identity
     assert two_evaluations.parser_revision != two_evaluations.repeated.parser_revision
+
+def test_forged_or_changed_capture_rejected_before_parser(captured, spy_parser):
+    forged = replace(captured, content=b"changed after acquisition")
+    with raises(InputEvidenceMismatch):
+        decode_with_used_receipt(forged, spy_parser, validator, "scope", clock)
+    assert spy_parser.calls == 0
+
+def test_mutable_transport_buffer_is_sealed_before_receipt(fake_transport, clock):
+    producer_buffer = bytearray(b"official-source-bytes")
+    captured = capture_downloaded_payload("source", "safe", fake_transport(producer_buffer), clock)
+    producer_buffer[0] = 0
+    assert captured.content == b"official-source-bytes"
+    assert captured.acquisition.actual_bytes.sha256 == sha256(captured.content).hexdigest()
 
 def test_raw_retention_loss_preserves_historic_receipt(replay_store):
     replay_store.delete_raw_keep_receipt()
