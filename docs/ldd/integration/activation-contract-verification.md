@@ -80,3 +80,18 @@ These are negative acceptance intentions derived from pinned [public contract co
 | AX-26 | Use a legal `explicit` working-directory policy or string-valued env override which passes DTO validation | Validate final resolved host path, sandbox/confinement, reserved variables and secret handling at the execution boundary; decoder strictness is a distinct weaker gate. |
 
 **Readiness verdict:** AX-19..26 are a **candidate negative test catalogue**, `LCD_BLOCKED` for any actual remote/host/deployment integration until a Product Authority selects an executable trust/session/provenance contract, and **not** eight currently failed test cases. Native platform/Windows tests, authorization, byte custody, physical host and browser attachment remain independent evidence requirements.
+
+## Connector Manifest shape versus semantic admission: AX-27..32 (2026-10-12)
+
+**Primary owner limit:** pinned public AppDock `connector_manifest.schema.json` has external `$ref` dependencies; the frozen Windows JSON manifest is an application-owned declaration, not a signed or verified deployment. All tests below remain `PROPOSED / UNEXECUTED` on the genuine external schema resolver and installed platform. The limited required-field JSON-object comparison from Current HOW is not full schema validation.
+
+| Vector | Fixture or challenge | Acceptance proof needed |
+| --- | --- | --- |
+| AX-27 | Run the actual AppDock JSON Schema resolver on frozen Windows manifest and all required external URNs | Report the exact schema revision, referenced schema set, parser version and failures; accept neither a missing-ref shortcut nor mere top-level field checks as full PASS. |
+| AX-28 | Two distinct runtime binding objects carry the same `binding_id` but different package or environment | The semantic manifest validator must reject ambiguous logical IDs before a first-match consumer chooses an arbitrary binding; `uniqueItems` alone is insufficient. Repeat for source/package/surface logical IDs. |
+| AX-29 | A `default_surface_id`, `package_ref`, `source_id`, `required_by_surface_ids` or `depends_on` points at a nonexistent target | Resolve references against the admitted graph and reject a dangling edge rather than silently dropping it. |
+| AX-30 | Introduce a binding dependency cycle while maintaining distinct JSON objects | Prove the package/runtime graph validator rejects the cycle before environment materialization or execution. |
+| AX-31 | Declare `supports_remote_attach`, `supports_delegated_jobs` or `dedicated_server` in a schema-valid manifest without an installed supported backend | A declaration cannot make an unavailable host listener, authenticated attachment, durable Job or user authorization real. Check each runtime gate separately. |
+| AX-32 | Compare `stratbox 0.2.1` in the frozen Windows package declaration with a candidate installed package at another version | Record actual resolver decisions and distribution bytes/attested package ID, not just nominal `stratbox` import success; select supported dependency policy by owner. |
+
+**Decision and implementation freedom:** public platform owns semantic graph admission and manifest schema registry; Windows distribution owns its declared package/activation requirements and package compatibility; Strategy Box application owner must separately admit host/session authority. Specific real package, host and auth implementations remain `LCD_BLOCKED` without product/external decisions. These six vectors prescribe no private connector implementation, runtime production edit or new Strategy Box host API.
