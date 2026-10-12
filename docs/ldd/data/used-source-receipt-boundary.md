@@ -92,3 +92,21 @@ These are **illustrative evidence predicates, not a mandatory one-dimensional pe
 This file cannot set compulsory recording on *every* source, raw retention period, public/private provenance visibility, checksum cost budget, source classification policy, R3/R4 replay promise or application owner/host topology. They remain **Product/operational decisions**. The only present Current HOW claims are the exact cited code witnesses; code changes and external provider updates require separate engineering authority. Before a release can claim replay, test what survives process interruption, raw deletion and actual restoration; immutable hash without bytes is not replay.
 
 The relevant [scientific provenance model](../../science/data-and-knowledge/source-observation-vintages-and-replay.md) remains the analytical explanation and record of negative alternatives; this LDD is merely a bounded proposed technical seam for a first core-only consumer. **Author self-check ≠ independent verification.**
+
+
+## 7. Source-coverage and retry-accounting conformance vectors
+
+[The current core behavior](../../current-how/source-download-receipts-registry-choice-and-coverage-limits.md) is supported by four **executed offline characterization tests**, [CI 38187947796](https://github.com/ForestTiger-GH/stratbox/actions/runs/38187947796). Tests `PR-19..26` below are **different, unexecuted target verification proposals**; they do not certify a redesigned receipt or a real host.
+
+| ID | Injected case | Future admitted consumer requirement |
+| --- | --- | --- |
+| PR-19 | Empty registry produces current `ok=True`, no saved result | UI does not claim complete official dataset or published output solely from `ok` |
+| PR-20 | Three selected sources; first fails, fail-fast | Explicitly show one attempted failure and **two unattempted** identities |
+| PR-21 | Two retry rounds generate 16 case-variant network calls | Preserve rounds and physical calls as distinct dimensions where quotas/audit apply |
+| PR-22 | Sufficiently long JSON returned HTTP 200 under `.xlsx` name | Format/domain validation independently flags unsupported content |
+| PR-23 | Partial downloaded set saved, later source failed | Report selected/attempted/saved/failed/unattempted categories without treating partial as full |
+| PR-24 | Cancellation during retries/case variants | Keep authentic Attempt/effect evidence and unknowns, no synthetic full coverage |
+| PR-25 | Embedded 41-entry registry changes between runs | Pin actual selected registry/build and actually consumed source IDs per analytical Result |
+| PR-26 | Save step fails after valid downloads | Acquisition and Artifact publication retain separate terminal/uncertain statuses |
+
+**No PR-19..26 acceptance tests have been executed.** Source tests deliberately mock external HTTP and saving, and cannot establish current publisher data validity, retention or release security.
