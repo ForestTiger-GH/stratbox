@@ -95,7 +95,9 @@ class PlanEvidencePort(Protocol):
     def observe(self, scope_ref: str, relative_path: str) -> FileWitness: ...
     def recognized_source(self, scope_ref: str, path: str
                           ) -> tuple[str, str] | None: ...
-    def derive_plan_digest(self, actions: tuple[FrozenAction, ...]) -> str: ...
+    def derive_plan_digest(self, actions: tuple[FrozenAction, ...],
+                           scope_ref: str, revision: str,
+                           selected_source_revision: str) -> str: ...
 
 class FileEffectPort(Protocol):
     def prepare_copy_to_staging(self, source: FileWitness,
@@ -137,12 +139,58 @@ def freeze_cleanup_plan(catalog_rows: tuple[dict[str, object], ...],
     if not validated:
         raise ValueError("NO_ELIGIBLE_ACTIONS")
     actions = tuple(validated)
-    digest = evidence.derive_plan_digest(actions)
+    revision = "candidate-v1"
+    selected_revision = source_selection_revision(actions)
+    digest = evidence.derive_plan_digest(
+        actions, root_scope, revision, selected_revision)
     return FrozenCleanupPlan(
-        plan_id=create_stable_plan_ref(), revision="candidate-v1",
+        plan_id=create_stable_plan_ref(), revision=revision,
         scope_ref=root_scope, actions=actions,
         sorted_target_set_digest=digest,
-        selected_source_revision=source_selection_revision(actions))
+        selected_source_revision=selected_revision)
+
+# cleanup_plan_fingerprint.py -- CANDIDATE_DESIGN, pure functions
+from dataclasses import asdict
+import hashlib
+import json
+
+def canonical_cleanup_digest(actions: tuple[FrozenAction, ...],
+                             scope_ref: str, revision: str,
+                             selected_source_revision: str) -> str:
+    """Bind *content* and scope of an effect plan, not its display action IDs.
+
+    Backend authorizer must independently bind a trusted principal, approval
+    issuer, expiry and plan_id; this hash is not an approval signature.
+    """
+    ids = [action.action_id for action in actions]
+    if not actions or not scope_ref or not revision or not selected_source_revision:
+        raise ValueError("INCOMPLETE_PLAN_FINGERPRINT_INPUT")
+    if len(ids) != len(set(ids)) or not all(ids):
+        raise ValueError("DUPLICATE_OR_EMPTY_ACTION_ID")
+    message = {
+        "protocol": "frg-frozen-effects-v1",
+        "scope": scope_ref,
+        "revision": revision,
+        "selected_source_revision": selected_source_revision,
+        "actions": [asdict(action) for action in sorted(
+            actions, key=lambda item: item.action_id)],
+    }
+    raw = json.dumps(message, sort_keys=True, separators=(",", ":"),
+                     ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+def source_witness_matches(actual: FileWitness, planned: FileWitness) -> bool:
+    """Observation time is NOT a byte generation or a source identity."""
+    if not actual.exists or not planned.exists:
+        return False
+    if (actual.root_scope != planned.root_scope
+            or actual.relative_path != planned.relative_path):
+        return False
+    if not (planned.file_generation or planned.sha256):
+        return False
+    return (not planned.file_generation
+            or actual.file_generation == planned.file_generation) and (
+                not planned.sha256 or actual.sha256 == planned.sha256)
 
 # cleanup_effects.py -- CANDIDATE_DESIGN
 class CleanupExecutor:
@@ -159,7 +207,9 @@ class CleanupExecutor:
         if len(matches) != 1 or matches[0] != step:
             raise PermissionError("STEP_NOT_UNIQUE_MEMBER_OF_APPROVED_PLAN")
         if (not plan.sorted_target_set_digest
-                or self.evidence.derive_plan_digest(plan.actions)
+                or self.evidence.derive_plan_digest(
+                    plan.actions, plan.scope_ref, plan.revision,
+                    plan.selected_source_revision)
                     != plan.sorted_target_set_digest):
             raise PermissionError("PLAN_DIGEST_NOT_CURRENT")
         if (step.source is not None
@@ -225,6 +275,8 @@ class CleanupExecutor:
         return receipt
 ~~~
 
+**Fingerprint equivalence qualification:** an earlier producer-only fake `derive_plan_digest()` hashed **action IDs alone**, even though the LCD claimed a digest over the complete frozen target set. That is an unsafe test double: changing a file path, planned source revision, selected period or scope while retaining action IDs would keep the same alleged fingerprint. The source-addressed cleanup/frozen-approval requirement demands a canonical digest of **complete action content and exact selected-scope/revision metadata**. The revised candidate supplies pure `canonical_cleanup_digest()` over all typed action/witness fields and plan scope/revision/selected-source revision (sorted actions with deterministic JSON encoding, SHA-256), and the synthetic evidence adapter must call this exact pure function. The real `PlanEvidencePort` is required to use a matching canonical serializer. This digest is **not cryptographic actor authorization** or an externally attested Plan signature: trustworthy approval must independently check principal, plan ID/revision, target digest, issuer, expiry and current grant. The candidate also adds an explicit `source_witness_matches()` that compares source scope/path, existence and the frozen generation/hash **without requiring an equal observation timestamp**. Two identical observed byte generations at different acquisition times should not spuriously appear stale; a changed byte digest or generation must fail. Real backend identity and conditional effects are still necessary.
+
 **Source-first destructive-plan correction:** the first candidate called `auth.authorize(plan, step, ...)` without first checking whether `step` was **the unique exact action in the frozen plan**, whether the plan digest was still derived from its actual ordered action set, whether source/target scopes matched the plan, or whether a requested delete had any byte/generation witness. The delete branch additionally checked only that `recognized_source()` returned *some* recognized family: it omitted a current source witness comparison and could accept another family/period occupying the same path. The code now refuses these mismatches **before creating an effect intent**, and treats changed source bytes before deletion as `FAILED_NO_EFFECT`. These are conditions **necessary** for a trustworthy host caller; `normalize_and_validate`, canonical digest computation, authenticated plan approval, backend-safe path resolution and a genuine compare-and-delete storage primitive remain independently unimplemented. A malicious Python caller with the same OS rights can still call core I/O directly, outside an application host's access policy. Never represent this LCD as deployed permission enforcement.
 
 **Hard stops before production:** \`normalize_and_validate\`, \`create_stable_plan_ref\`, \`source_selection_revision\`, \`source_witness_matches\` and \`StalePlanError\` are deliberate design obligations, **not shipped definitions**. More importantly, \`record_result\` can fail after a confirmed physical effect; the actual implementation must preserve the pending receipt for reconciliation. Storage must guarantee a generation-checked finalize/delete or disclose a weaker, explicitly accepted local policy. A source may change after a precheck but before staging; staging must validate the bytes actually copied, and conditional finalization must be tied to the same immutable generation. An authorization check that happened before this code cannot replace an effect-time check.
@@ -242,6 +294,20 @@ For each action, preserve a causal chain: normalized plan revision → approved 
 ## 6. Proposed concrete negative tests — UNEXECUTED
 
 ~~~python
+def test_same_action_id_cannot_hide_changed_target_or_source_selection(
+        plan, canonical_cleanup_digest):
+    altered = replace(plan, actions=(
+        replace(plan.actions[0], target=other_file), *plan.actions[1:]))
+    assert canonical_cleanup_digest(
+        altered.actions, altered.scope_ref, altered.revision,
+        altered.selected_source_revision) != plan.sorted_target_set_digest
+
+def test_identical_bytes_reobserved_later_do_not_look_stale(source_witness_matches):
+    observed = replace(planned_source, observed_at_utc="later-utc")
+    assert source_witness_matches(observed, planned_source)
+    assert not source_witness_matches(
+        replace(observed, sha256="changed"), planned_source)
+
 def test_injected_action_row_cannot_bypass_frozen_cleanup_plan(executor, plan):
     forged = replace(plan.actions[0], source=other_sensitive_source)
     with raises(PermissionError):
