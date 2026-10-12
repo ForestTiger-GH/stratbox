@@ -153,19 +153,36 @@ class NeutralProviderResolver:
         if not self.compatibility.validate(chosen, required_major):
             return BindingResult(slot, chosen_id, BindingStatus.INCOMPATIBLE,
                                  "API_MAJOR_INCOMPATIBLE", chosen.capability_revision)
+        # A declared configuration requirement must not be silently promoted
+        # to a ready provider through an empty/default activation.
+        # Complete schema validation still belongs to the trusted activator.
+        if chosen.requires_configuration and not configuration:
+            return BindingResult(slot, chosen_id, BindingStatus.CONFIGURATION_REQUIRED,
+                                 "SCOPED_CONFIGURATION_REQUIRED",
+                                 chosen.capability_revision)
         try:
             instance = self.activation.activate(chosen, configuration)
             readiness = self.health.check(instance, policy.scope_ref)
         except Exception:
             return BindingResult(slot, chosen_id, BindingStatus.CONTRACT_FAILURE,
                                  "ACTIVATION_OR_HEALTH_FAILED", chosen.capability_revision)
-        return BindingResult(slot, chosen_id, readiness, "BOUND_WITH_CHECK",
-                             chosen.capability_revision)
+        if not isinstance(readiness, BindingStatus):
+            return BindingResult(slot, chosen_id, BindingStatus.CONTRACT_FAILURE,
+                                 "HEALTH_STATUS_CONTRACT_INVALID",
+                                 chosen.capability_revision)
+        if readiness is not BindingStatus.READY:
+            return BindingResult(slot, chosen_id, readiness,
+                                 "PROVIDER_NOT_READY",
+                                 chosen.capability_revision)
+        return BindingResult(slot, chosen_id, BindingStatus.READY,
+                             "BOUND_AND_HEALTHY", chosen.capability_revision)
 ~~~
 
 **Unresolved critical contract:** a \`BindingResult\` metadata record alone does not own the lifetime of \`instance\`, resource cleanup, concurrent call fencing, credential rotation, request-level availability or return a typed capability port for a caller. A production binding must include an exact context-managed instance/lease and cancellation/cleanup protocol, with validated capability-specific ports and error mapping. The result type above is a first *selection visibility* component, not a complete executor binding. An independently coded caller may not use a descriptor ID as a handler reference to import arbitrary modules on demand.
 
 **Fallback policy:** the chosen required provider must not silently fall back to a different provider when activation/readiness fails. Even for an optional slot, fallback requires an accepted compatible choice, observable provenance and a stability rule for in-flight operations. Some provider failures represent \`OUTCOME_UNKNOWN\` because an external write could have committed before a response was lost; these cannot turn into an empty successful list.
+
+**Producer fault-boundary correction:** an extension health function may return an arbitrary truthy object, string or Boolean despite the advertised `HealthPort.check() -> BindingStatus` type annotation. The first resolver blindly used that return as a status and labeled it `BOUND_WITH_CHECK`, which could mislead a consumer about readiness. The candidate now requires an actual `BindingStatus` instance and keeps every non-READY value explicitly non-ready. It also prevents activation on an explicitly `requires_configuration` descriptor if no scoped configuration was supplied. This **does not** validate the completeness or security of nonempty configurations, health probe authenticity, trustworthiness of installed package code, or authorization to call the bound capability. Such checks belong to approved provider contracts and actual domain/security owner ports.
 
 ## 5. Runtime and client-visible capability gates
 
@@ -202,6 +219,18 @@ def test_api_major_incompatible_rejected(resolver, incompatible_fixture):
     result = resolver.resolve(incompatible_fixture.policy, "file_bytes",
                               required_major=2, configuration={})
     assert result.status is BindingStatus.INCOMPATIBLE
+
+def test_health_truthy_value_cannot_become_ready(resolver, health):
+    health.return_value = True
+    result = resolver.resolve(policy, "file_bytes",
+                              required_major=1, configuration={})
+    assert result.status is BindingStatus.CONTRACT_FAILURE
+
+def test_required_scoped_configuration_blocks_empty_activation(resolver, activation):
+    result = resolver.resolve(configured_policy, "format_codec",
+                              required_major=1, configuration={})
+    assert result.status is BindingStatus.CONFIGURATION_REQUIRED
+    assert activation.calls == 0
 
 def test_optional_secret_provider_missing_is_noninteractive(headless_runtime):
     result = headless_runtime.resolve_credential("configured_scope")
