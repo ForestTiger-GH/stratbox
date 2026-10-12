@@ -67,7 +67,8 @@ class MachineInvocation:
     operation_id: str
     contract_revision: str
     params: Mapping[str, object]
-    caller_scope: str       # derived/validated, not client-granted trust
+    # Caller identity and resource scope are supplied by trusted host auth,
+    # not by this potentially untrusted transport request.
 
 @dataclass(frozen=True, slots=True)
 class DatasetRef:
@@ -113,6 +114,8 @@ class ApplicationInvocationPort(Protocol):
     def admit(self, trusted_principal_ref: str, request: MachineInvocation,
               normalized_params: Mapping[str, object]) -> MachineAdmission: ...
 ~~~
+
+**Producer correction:** transport inputs must not carry the authoritative caller/resource scope. The gateway obtains those from a trusted authenticated request context. The illustrated test uses a copied immutable request instead of mutating the `Mapping` field of a frozen request record. A real implementation must also freeze or hash validated parameters before admission to avoid mutable-input races.
 
 **Approval boundary:** actual descriptor titles and choices do not grant authority; \`dangerous\` and \`ai_visibility\` metadata in the existing Windows model are not a policy engine. A client-supplied \`caller_scope\` or \`handler\` field must never override a trusted actor identity or provider binding.
 
@@ -177,8 +180,10 @@ def test_unregistered_helper_cannot_be_discovered(gateway, actor):
         op.operation_id for op in gateway.discover(actor)}
 
 def test_client_handler_reference_is_not_accepted(gateway, request):
-    request.params["handler"] = "arbitrary.module:call"
-    response = gateway.invoke("trusted-actor", request)
+    from dataclasses import replace
+    unsafe = replace(request, params={**request.params,
+                                       "handler": "arbitrary.module:call"})
+    response = gateway.invoke("trusted-actor", unsafe)
     assert response.safe_code == "PARAMETER_SCHEMA_INVALID"
 
 def test_same_source_core_result_equivalence(direct_core, gateway, frozen_input):
