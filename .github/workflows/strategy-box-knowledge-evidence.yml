@@ -98,6 +98,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_source_vintage_0562_cases.py
       - name: Verify all twenty-eight observability fault-case source intentions
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_observability_0561_negative_cases.py
+      - name: Verify all twenty-two original integration-owner contract acceptance vectors
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_integration_0563_acceptance_vectors.py
       - name: Verify twenty-five dated machine-interface conformance intentions
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_machine_0559_acceptance_vectors.py
       - name: Verify full thirty source-spanned security negative-case proposals
