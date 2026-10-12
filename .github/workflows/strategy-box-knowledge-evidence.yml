@@ -31,6 +31,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_local_filestore_observed_safety.py
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
+      - name: Verify historical UI residual source-to-Science routes (structural only)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_ux_0013_residual_routes.py
       - name: Audit research source coverage and distinguish evidence classes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_material_coverage.py > research_coverage_audit.json
       - name: Verify structural audit parser and boundary self-tests
