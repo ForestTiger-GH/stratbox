@@ -281,8 +281,72 @@ def probe_host_admission() -> dict:
         assert result.kind is kind.OUTCOME_UNKNOWN
         assert scheduler.calls == before
     ledger.bad_mode = None
+    # Reuse this Host packet's existing probe group (do not inflate the
+    # unique LCD document count) to qualify client-facing Artifact metadata.
+    for name in ("ArtifactAvailability", "ArtifactIdentity",
+                 "InternalArtifactRecord", "ArtifactResult", "ScopedReads"):
+        compile_definition(ref, name, d)
+    availability = d["ArtifactAvailability"]
+    record_type = d["InternalArtifactRecord"]
+    class ReadPolicy:
+        permitted = True
+        fail = False
+        def can_fetch(self, actor, ref):
+            if self.fail:
+                raise RuntimeError("auth provider unreachable")
+            return self.permitted
+    class ArtifactRepo:
+        fail = False
+        current = record_type(availability.VERIFIED_AVAILABLE,
+                              "sha256-safe", "application/vnd.report",
+                              "/private/host/secret.xls")
+        def resolve_verified(self, ref):
+            if self.fail:
+                raise IOError("synthetic backend temporarily unreachable")
+            return self.current
+    read_policy, repository = ReadPolicy(), ArtifactRepo()
+    scoped = d["ScopedReads"](read_policy, ledger, repository)
+    art = d["ArtifactIdentity"]("artifact-A", "rev-A")
+    verified = scoped.fetch(actor, art)
+    assert verified.availability is availability.VERIFIED_AVAILABLE
+    assert verified.content_digest == "sha256-safe"
+    assert not hasattr(verified, "host_handle")
+    assert "/private/host" not in str(verified)
+    read_policy.permitted = False
+    denied = scoped.fetch(actor, art)
+    assert denied.availability is availability.DENIED
+    assert denied.content_digest is None and denied.media_type is None
+    read_policy.permitted = True
+    read_policy.fail = True
+    assert scoped.fetch(actor, art).availability is availability.DENIED
+    read_policy.fail = False
+    repository.fail = True
+    assert scoped.fetch(actor, art).availability is availability.BACKEND_UNAVAILABLE
+    repository.fail = False
+    repository.current = record_type(
+        availability.VERIFIED_AVAILABLE, None, "application/vnd.report", "handle")
+    assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
+    repository.current = record_type(
+        availability.VERIFIED_AVAILABLE, "sha256-safe", "application/vnd.report", None)
+    assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
+    repository.current = record_type(
+        availability.MISSING_CONFIRMED, None, None, "/internal-only")
+    missing = scoped.fetch(actor, art)
+    assert missing.availability is availability.MISSING_CONFIRMED
+    assert missing.content_digest is None
+    repository.current = record_type(
+        availability.CHANGED, "sha256-changed", "application/vnd.report", "/internal")
+    changed = scoped.fetch(actor, art)
+    assert changed.availability is availability.CHANGED
+    assert changed.content_digest is None
+    repository.current = None
+    assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
+    repository.current = record_type(
+        "verified_available", "sha256-safe", "application/vnd.report", "/internal")
+    assert scoped.fetch(actor, art).availability is availability.OUTCOME_UNKNOWN
     return {"admission_duplicate_conflict_denial": 13,
-            "evidence": "literal candidate HostAdmission on synthetic durable-ledger sketch; no actual persistence"}
+            "client_safe_artifact_projection_cases": 10,
+            "evidence": "literal HostAdmission and ScopedReads on fake ports; no real host/session/stream storage"}
 
 
 def probe_problem_receipt() -> dict:
