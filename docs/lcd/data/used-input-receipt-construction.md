@@ -152,6 +152,9 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
                              ) -> tuple[object, UsedInputReceipt]:
     # Do not re-fetch, recopy from disk, or hash an unrelated second read.
     same_bytes = captured.content
+    actual_identity = captured.acquisition.actual_bytes
+    if actual_identity is None:
+        raise ValueError("RECEIVED_INPUT_WITHOUT_BYTE_IDENTITY")
     parsed = decoder.parse(same_bytes)
     validation, validation_ref = validator.qualify(
         parsed, captured.acquisition.source_id)
@@ -160,7 +163,7 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     used = UsedInputReceipt(
         source_id=captured.acquisition.source_id,
         acquisition_ref=captured.acquisition.attempt_ref,
-        byte_identity=captured.acquisition.actual_bytes,
+        byte_identity=actual_identity,
         consumed_at_utc=clock.now_utc(),
         domain_scope=domain_scope,
         format_validation=ValidationKind.FORMAT_VALID,
