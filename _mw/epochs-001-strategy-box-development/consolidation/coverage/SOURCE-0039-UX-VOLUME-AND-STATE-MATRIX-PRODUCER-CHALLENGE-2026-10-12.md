@@ -1,0 +1,27 @@
+# Source-first qualification: Windows UX states, throughput, keyboard and approval semantics
+
+**Author:** ongoing Knowledge producer, 2026-10-12. **Assurance:** `PRODUCER_SCOPED_ORIGINAL_TO_SCIENCE_CHALLENGE` — **not** independent source losslessness, a released screen design, actual accessibility review or Qt performance benchmark.
+
+**Frozen original:** `SB-SRC-0039`, `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, blob `0668c3af7cec9862e638ad1b3f74b8f847404fca`, `_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_windows_interface_requirements_research_2026-10-07.md`, 2,289 physical lines. The low **numeric-section-locator ratio** for this original in the global structural audit is **not** a direct measure of semantic loss: the existing `docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md` already includes the basic four-surface alternatives, source-addressed 30 acceptance expectations, keyboard actions, responsive breakpoints and developer authority limits. The global gate still requires full independent source↔Science preservation.
+
+## Bounded original-first source challenge and actual delta
+
+| Original span | Original proposed distinction | Prior publication | Delta after direct review |
+| --- | --- | --- | --- |
+| L78–L222, L224–L406 | Workspace is neither dashboard nor IDE nor messenger; action before configuration; statuses are content; four logical surfaces are one alternative | Explorer/workroom Science §§1–3 and 10; current Windows HOW | Already conserved at analysis level; no UI redesign admitted |
+| L406–L553, L758–L1050 | Windows-like Explorer, Work timeline vs Run, bottom technical log panel, context-dependent views and shortcut proposals | Explorer/workroom Science §§4–7 and 10–11 | No duplicate overview necessary |
+| **L1495–L1536** | **Ten qualitatively different interface states**, including `PARTIAL`, `WAITING_FOR_USER`, `DEGRADED`, `OFFLINE/UNAVAILABLE`, `PERMISSION_DENIED` | §§6–9 previously explained operation results and error UI, but the ten-state interaction matrix was less directly testable | Added a ten-state falsifier matrix to the existing Science owner; distinguishes presentation predicate from domain/host outcome |
+| **L1541–L1565** | **Concrete scale/performance requirements**: incremental history, model/view virtualized Runs/files, low-cost log viewer, lazy artifact preview, throttled progress, nonblocking Qt UI; target SLO is *qualitative* | §8–9 mentioned slow machine risk and high-volume examples, but not the specific technique/consequence breakdown | Added actual source-proposed Qt component alternatives and eight high-volume/native/online/offline test challenges without inventing p95 measurements |
+| **L1566–L1650** | Accessibility and keyboard navigation; native shortcut map; authorization/effects for AI and destructive operations; redacted diagnostic logs | §9 accessibility and §4 Explorer shortcuts captured some; no specific hotkey-versus-persistent-Run effect warning | Added semantic keyboard, Escape, source-capability and effect-approval counterexamples, clearly Research-only |
+| L1672–L1896 | Minimal onboarding, Artifact as first-class identity, contextual assignments/presence, four logical directions, adaptive layout | Explorer/workroom Science §§2–3, 10; Artifact Science; shared conditions/collaboration and portability Science | Already conserved across distinct owners; source proposal not automatically a commitment |
+| L1896–L1985 | Acceptance groups: Navigation, Scenario, Error, Explorer, Chat/Work and Accessibility | Source-addressed original 30 acceptance expectations in Explorer/workroom Science | No invented test PASS; future physical QA remains required |
+
+**Publication change:** the scientific owner `docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md` now contains **“Original high-volume interaction and performance risks — frozen Windows UX Research 0039”**. The new prose explains test oracles and operator failure cases in English independently of the original Research file, without exposing source-work paths or confidential extensions in the public Knowledge. Other source-study topics remain distributed to their existing Science owners.
+
+## Resolved scope and blockers
+
+The source is a 2026-10-07 **research proposal**, not a granted Product Decision; the current pinned Windows runtime still has one local Scenario worker with Qt dependencies. The research gives **no verified latency threshold** or actual phone renderer conformance. Qt `QAbstractItemModel/QTableView`, `QPlainTextEdit`, and candidate keyboard shortcuts are platform-specific *means*, whereas Android/Web share only typed activity/permission/status semantics and adapt presentation to their device.
+
+A new navigation mode, generalized task manager or universal AI panel is **NOT_APPLICABLE by default** absent an approved consumer, though a real team approval queue could change that decision. Actual native Qt, filesystem, screen-reader and slow-PC experiments remain `UNEXECUTED`.
+
+**Disposition:** producer source challenge qualified and a real deeper semantic acceptance section published; do **not** promote `SB-SRC-0039` out of the census `material_unit_state=unaccounted`, because independent complete source conservation and publication-backward corroboration remain unmet. No runtime files, old source or confidential assets are modified.
