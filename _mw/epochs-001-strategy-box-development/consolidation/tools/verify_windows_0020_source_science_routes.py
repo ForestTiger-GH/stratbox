@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -38,9 +39,22 @@ def verify() -> dict:
     assert actual == SOURCE_SHA, f"Original blob identity mismatch: {actual}"
     source_lines = raw.decode("utf-8").splitlines()
     rows = []
+    expected_distributions = {
+        "WINDOWS-STUDY-0020-DIRECT-RECONCILIATION-09.jsonl": {
+            "docs/science/surfaces/semantic-portability-and-client-authority.md": 4,
+            "docs/science/engineering/proportional-assurance-and-knowledge-admission.md": 5,
+        },
+        "WINDOWS-STUDY-0020-RUNTIME-WORKROOM-18.jsonl": {
+            "docs/science/surfaces/semantic-portability-and-client-authority.md": 5,
+            "docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md": 12,
+            "docs/science/collaboration/shared-conditions-and-log-access.md": 1,
+        },
+    }
     for filename, expected in LEDGERS:
         entry_rows = [json.loads(line) for line in (UNITS_ROOT / filename).read_text(encoding="utf-8").splitlines() if line.strip()]
         assert len(entry_rows) == expected, filename
+        if filename in expected_distributions:
+            assert dict(Counter(row["science_destination"] for row in entry_rows)) == expected_distributions[filename], filename
         rows.extend(entry_rows)
     assert len(rows) == 54
     seen = set()
@@ -65,12 +79,25 @@ def verify() -> dict:
         assert row["english_research_meaning"] in text
         assert row["defeater_or_limit"] in text
         assert f"#L{a}-L{b}" in text
+    # Prevent producer ledger totals from being misrepresented as local table rows.
+    surfaces = (ROOT / "docs/science/surfaces/semantic-portability-and-client-authority.md").read_text(encoding="utf-8")
+    direct = surfaces.split("## Original Windows source study 0020: local UI preferences, assignments and portability", 1)[1].split(
+        "## Windows Research 0020 — pinned application context", 1)[0]
+    context = surfaces.split("## Windows Research 0020 — pinned application context", 1)[1].split(
+        "## Original Windows Study 0020: future portability", 1)[0]
+    assert len(re.findall(r"^\\| `SB-SRC-0020/", direct, re.M)) == 4
+    assert len(re.findall(r"^\\| `SB-SRC-0020/", context, re.M)) == 5
+    for expected_label in ("four source rows directly above", "nine-unit original-study", "twelve workspace/workroom", "five runtime-context"):
+        assert expected_label.lower() in surfaces.lower()
     return {
         "status": "STRUCTURAL_SOURCE_TO_SCIENCE_ONLY",
         "source_id": "SB-SRC-0020",
         "source_blob_sha": SOURCE_SHA,
         "physical_source_lines": len(source_lines),
         "addresses_checked": len(seen),
+        "direct_packet_routes": [4, 5],
+        "runtime_workroom_packet_routes": [5, 12, 1],
+        "local_science_table_rows": [4, 5],
         "material_state": "unaccounted",
         "independent_review": "OPEN",
     }

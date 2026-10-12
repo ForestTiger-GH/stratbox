@@ -29,3 +29,11 @@ No JSON runtime values, other repository interiors or release secrets were inspe
 **Unchanged gates:** 566 original/evidence rows, 176 full/10 governing/380 not-full; 53 fully producer-read substantive Research; 566/566 `material_unit_state=unaccounted`; 22 consumer-hidden questions have no distinct reviewer answers; no native Windows/Android/Web installation, real AppDock host or decision-complete low-code construction. Research Amputation and final program closure remain blocked.
 
 **Reset/recovery:** logical rehydration from governing files and exact main; physical context reset unavailable. No direct changes to `stratbox-windows` or implementation code.
+
+## Additional cross-document count falsifier — verified prior CI
+
+At incoming `stratbox@75f581bf89bab508a9104025b8a633dfa7299936`, [Actions 38260829165](https://github.com/ForestTiger-GH/stratbox/actions/runs/38260829165) **SUCCESS** for the newly published Windows roadmap/commit-diff routing. A further science-reader challenge found two misleading cardinalities in the Windows source-transfer text: “nine-row slice” seemed to describe a **four-row table**, and “18 items below” introduced a **five-row table**. The underlying Work source ledgers are **not erroneous**: the nine recorded source units map **4 to this Surface Science** and **5 to engineering assurance Science**; the eighteen original runtime/workroom units map **5 here**, **12 to Explorer Science** and **1 to collaboration Science**.
+
+Both statements are now corrected to give local visible row counts and explicit links to the other **maintained** Knowledge owners, without exposing the historical unit ledger in public `docs/`. The existing Work-only `verify_windows_0020_source_science_routes.py` was strengthened to validate the precise [4,5] and [5,12,1] source-route distributions, and to check four and five actual published table rows. This is a **producer-owned structural correction**, not an independent assessment that all underlying source material was interpreted correctly. It prevents conflating total cross-document source-unit accounting with a local table cardinality.
+
+**Evidence ceiling unchanged:** 566 unaccounted original material states; zero independent whole-Research lossless verdicts, real host/native Android/Web tests and full Product Decisions.
