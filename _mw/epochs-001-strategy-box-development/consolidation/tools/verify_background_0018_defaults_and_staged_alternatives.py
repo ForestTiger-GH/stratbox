@@ -40,7 +40,7 @@ def verify() -> dict:
     for prefix, count in (("BG-DEF", 13), ("BG-OPEN", 7), ("BG-STAGE", 7)):
         digits = 1 if prefix == "BG-STAGE" else 2
         ids = re.findall(r"^\| (" + prefix + r"-\d{" + str(digits) + r"})", segment, re.M)
-        expected = [f"{prefix}-{i:0{digits}d}" for i in range(count)] if digits == 2 else [
+        expected = [f"{prefix}-{i:0{digits}d}" for i in range(1, count + 1)] if digits == 2 else [
             f"{prefix}-{i}" for i in range(count)
         ]
         assert ids == expected, (prefix, ids, expected)
