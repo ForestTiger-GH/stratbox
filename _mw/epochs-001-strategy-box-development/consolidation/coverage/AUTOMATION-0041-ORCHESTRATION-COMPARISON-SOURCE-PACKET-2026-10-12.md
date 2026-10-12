@@ -1,0 +1,11 @@
+# Automation Research 0041 — runtime choices and roadmap are alternatives, not admission
+
+**Date:** 2026-10-12. **Classification:** `PARTIAL / PRODUCER SOURCE FIRST`. Original `SB-SRC-0041`, Git `8459dc58922b7e8df853cf1d9e8131fa9e132580`, exact blob `dee8958b16b3fe08042b5212d35fcc8424db28e3` (2,386 physical source lines). This packet retains **17** distinct original claims across L1446–1501, L2024–2186 and L2232–2305, using source-located English meaning and countercases. The source-internal framework comparisons and priority scheme are historical 2026-10-06 opinions; actual current packages and cloud services have not been benchmarked or deployment-tested.
+
+**Comparative models:** APScheduler is considered a possible local adapter rather than a durable workflow system; Celery a conditional broker/worker scale-up; Temporal a durable-execution exemplar; Dagster an asset/validated-dependency exemplar; Prefect a trigger-composition exemplar. These five choices have different ownership, resource and failure boundaries. Their naming in the original does not prove current service availability or establish product dependencies.
+
+**Roadmap and contradiction:** original sequence placed domain contracts and Job/Case engine before scheduler/artifact/AI work and remote host last. The later accepted Strategy Box host Product requirement changes the admissible host need, but not the status of the dated engineering rationale. The diagram and machine tool URI examples are nonbinding architecture and protocol proposals. Machine-facing adapters need current versioned specifications and granted effect authority, not invented endpoints.
+
+**Producer transfer:** [17-row ledger](../units/AUTOMATION-0041-FRAMEWORK-ROADMAP-17.jsonl) → ten topic-appropriate maintained Science owners. After checker extension this makes **70** explicitly source-positioned items for `SB-SRC-0041` (earlier 7 + 24 + 22 + 17). No actual independent verification, whole-original conservation, current host or release test, and all 566 Git source material dispositions remain `unaccounted`.
+
+**Reopen:** verified changed third-party framework behavior, accepted strategy/priority/host owner decision, future real workflow implementation, original paragraph omission or independent source↔Science reviewer finding.
