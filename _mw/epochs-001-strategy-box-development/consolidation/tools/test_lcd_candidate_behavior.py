@@ -354,7 +354,8 @@ def probe_host_admission() -> dict:
                 raise IOError("synthetic backend temporarily unreachable")
             return self.current
     read_policy, repository = ReadPolicy(), ArtifactRepo()
-    scoped = d["ScopedReads"](read_policy, ledger, repository)
+    scoped = d["ScopedReads"](read_policy, ledger, repository,
+                               SimpleNamespace(read_authorized=lambda *_: None))
     art = d["ArtifactIdentity"]("artifact-A", "rev-A")
     verified = scoped.fetch(actor, art)
     assert verified.availability is availability.VERIFIED_AVAILABLE
@@ -399,6 +400,115 @@ def probe_host_admission() -> dict:
             "client_safe_artifact_projection_cases": 10,
             "ledger_commit_without_dispatch_liveness_gap": "DEMONSTRATED_NOT_RESOLVED",
             "evidence": "literal HostAdmission and ScopedReads on fake ports; admission ACK gap strands a Run without an outbox, no real host/session/stream storage"}
+
+
+def probe_authorized_host_feed() -> dict:
+    """Execute candidate ScopedReads with a fake typed policy and safe feed."""
+    ref = "hosting/host-authority-and-client-contract-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("RunPhase", "RunOutcome", "RunSnapshot",
+                 "Observation", "ObservationPage", "ScopedReads"):
+        compile_definition(ref, name, d)
+    snapshot = d["RunSnapshot"]("run-A", 4, d["RunPhase"].RUNNING, None, 35, False)
+    observation = d["Observation"](
+        "run-A", "visible-opaque-id", 4, "SOURCE_UNAVAILABLE", "Source unavailable")
+    page_type = d["ObservationPage"]
+
+    class Policy:
+        permission, fail = True, False
+        def can_read_run(self, actor, run_ref):
+            if self.fail:
+                raise IOError("policy down")
+            return self.permission
+
+    class Ledger:
+        raw_reads = 0
+        def get(self, run_ref):
+            return snapshot
+        def read_after(self, *args):
+            self.raw_reads += 1
+            raise AssertionError("must not use raw ledger events")
+
+    class Feed:
+        mode = "valid"
+        calls = 0
+        def read_authorized(self, actor, run_ref, cursor):
+            self.calls += 1
+            if self.mode == "denied":
+                raise PermissionError("hidden")
+            if self.mode == "unavailable":
+                raise IOError("backend unavailable")
+            if self.mode == "wrong-run":
+                return page_type("run-B", "acl-v4", None, (observation,))
+            if self.mode == "raw-cursor":
+                return page_type("run-A", "acl-v4", 35, (observation,))
+            if self.mode == "untyped-event":
+                return page_type("run-A", "acl-v4", None, ("secret",))
+            if self.mode == "invalid-resync":
+                return page_type("run-A", "acl-v4", None, (observation,), True)
+            if self.mode == "resync":
+                return page_type("run-A", "acl-v5", None, (), True)
+            return page_type(run_ref, "acl-v4", "opaque-bound-cursor", (observation,))
+
+    policy, ledger, feed = Policy(), Ledger(), Feed()
+    reads = d["ScopedReads"](policy, ledger, SimpleNamespace(), feed)
+    actor = SimpleNamespace(principal_ref="p", scope_ref="node-A")
+    assert reads.read_run(actor, "run-A") == snapshot
+    assert reads.observe(actor, "run-A", None).observations == (observation,)
+    assert reads.observe(actor, "run-A", "opaque-bound-cursor").next_cursor
+    for not_true in (False, "false", 1, None):
+        policy.permission = not_true
+        before = feed.calls
+        try:
+            reads.observe(actor, "run-A", None)
+        except PermissionError:
+            pass
+        else:
+            raise AssertionError("non-True permission granted")
+        assert feed.calls == before
+    policy.permission, policy.fail = True, True
+    try:
+        reads.read_run(actor, "run-A")
+    except PermissionError as exc:
+        assert str(exc) == "RUN_ACCESS_UNCONFIRMED"
+    else:
+        raise AssertionError("policy outage did not deny")
+    policy.fail = False
+    for cursor in (35, "", True, {}):
+        try:
+            reads.observe(actor, "run-A", cursor)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("unscoped cursor accepted")
+    for mode in ("wrong-run", "raw-cursor", "untyped-event", "invalid-resync"):
+        feed.mode = mode
+        try:
+            reads.observe(actor, "run-A", None)
+        except RuntimeError as exc:
+            assert str(exc) == "AUTHORIZED_FEED_CONTRACT_INVALID"
+        else:
+            raise AssertionError("malformed projection accepted")
+    feed.mode = "denied"
+    try:
+        reads.observe(actor, "run-A", None)
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("feed denied but leaked")
+    feed.mode = "unavailable"
+    try:
+        reads.observe(actor, "run-A", None)
+    except RuntimeError as exc:
+        assert str(exc) == "AUTHORIZED_FEED_UNAVAILABLE"
+    else:
+        raise AssertionError("storage outage caused empty success")
+    feed.mode = "resync"
+    assert reads.observe(actor, "run-A", None).resync_required
+    assert ledger.raw_reads == 0
+    return {"authorized_feed_adverse_groups": 17,
+            "raw_ledger_reads": ledger.raw_reads,
+            "evidence": "literal ScopedReads/ObservationPage, synthetic feed; no native authenticated cursor or actual shared-node policy"}
 
 
 def probe_problem_receipt() -> dict:
@@ -1608,6 +1718,7 @@ def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
         "host_admission": probe_host_admission(),
+        "authorized_host_feed": probe_authorized_host_feed(),
         "host_dispatch_recovery": probe_host_dispatch_recovery(),
         "problem_receipt": probe_problem_receipt(),
         "artifact_publication": probe_artifact_publication(),
@@ -1624,7 +1735,7 @@ def main() -> dict:
     packet_to_probes = {
         "application/local-scenario-execution-construction.md": ("local_scenario",),
         "hosting/host-authority-and-client-contract-construction.md": (
-            "host_admission", "host_dispatch_recovery"),
+            "host_admission", "host_dispatch_recovery", "authorized_host_feed"),
         "artifacts/local-output-publication-construction.md": ("artifact_publication",),
         "data/used-input-receipt-construction.md": ("used_input_identity",),
         "observability/execution-evidence-and-problem-boundary-construction.md": ("problem_receipt",),
