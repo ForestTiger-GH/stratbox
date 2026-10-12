@@ -1091,9 +1091,12 @@ def probe_frg_cleanup_effects() -> dict:
     class StalePlanError(RuntimeError):
         pass
     d["StalePlanError"] = StalePlanError
-    d["source_witness_matches"] = lambda actual, expected: actual == expected
+    d["asdict"] = asdict
+    d["hashlib"] = hashlib
+    d["json"] = json
     for name in ("FileAction", "EffectTruth", "FileWitness",
                  "FrozenAction", "FrozenCleanupPlan", "EffectReceipt",
+                 "canonical_cleanup_digest", "source_witness_matches",
                  "CleanupExecutor"):
         compile_definition(ref, name, d)
     action, truth = d["FileAction"], d["EffectTruth"]
@@ -1108,17 +1111,23 @@ def probe_frg_cleanup_effects() -> dict:
     archive = d["FrozenAction"]("archive-1", action.CREATE_ARCHIVE,
                                  source, target, "financial-family",
                                  "2026-07", None, False)
-    plan = d["FrozenCleanupPlan"]("plan-1", "v1", "data", (copy, delete),
-                                  "copy-1:delete-1", "src-rev-2")
-    plan_with_archive = replace(plan, actions=(copy, delete, archive),
-                                sorted_target_set_digest="copy-1:delete-1:archive-1")
+    canonical = d["canonical_cleanup_digest"]
+    plan = d["FrozenCleanupPlan"](
+        "plan-1", "v1", "data", (copy, delete),
+        canonical((copy, delete), "data", "v1", "src-rev-2"), "src-rev-2")
+    plan_with_archive = replace(
+        plan, actions=(copy, delete, archive),
+        sorted_target_set_digest=canonical(
+            (copy, delete, archive), "data", "v1", "src-rev-2"))
     class Evidence:
         current = source
         recognized = True
         family = "financial-family"
-        def derive_plan_digest(self, actions):
-            # Deliberately fake digest, NOT a cryptographic/safe serializer.
-            return ":".join(item.action_id for item in actions)
+        def derive_plan_digest(self, actions, scope_ref, revision,
+                               selected_source_revision):
+            # Invoke the exact documented canonical fingerprint, not a fake
+            # action-ID-only implementation that masks same-ID substitutions.
+            return canonical(actions, scope_ref, revision, selected_source_revision)
         def observe(self, scope_ref, path):
             return self.current
         def recognized_source(self, scope_ref, path):
@@ -1228,19 +1237,54 @@ def probe_frg_cleanup_effects() -> dict:
         replace(plan, actions=(copy, archive), sorted_target_set_digest="copy-1:delete-1"), copy)
     cross_scope_source = replace(copy, source=replace(source, root_scope="system"))
     assert_pre_effect_rejected(
-        replace(plan, actions=(cross_scope_source, delete)),
+        replace(plan, actions=(cross_scope_source, delete),
+                sorted_target_set_digest=canonical(
+                    (cross_scope_source, delete), "data", "v1", "src-rev-2")),
         cross_scope_source)
     cross_scope_target = replace(copy, target=replace(target, root_scope="other"))
     assert_pre_effect_rejected(
-        replace(plan, actions=(cross_scope_target, delete)),
+        replace(plan, actions=(cross_scope_target, delete),
+                sorted_target_set_digest=canonical(
+                    (cross_scope_target, delete), "data", "v1", "src-rev-2")),
         cross_scope_target)
+    unidentified_delete = replace(
+        delete, source=replace(source, sha256=None, file_generation=None))
     assert_pre_effect_rejected(
-        replace(plan, actions=(
-            copy, replace(delete, source=replace(source,
-                sha256=None, file_generation=None))),
-            sorted_target_set_digest="copy-1:delete-1"),
-        replace(delete, source=replace(source, sha256=None, file_generation=None)))
+        replace(plan, actions=(copy, unidentified_delete),
+                sorted_target_set_digest=canonical(
+                    (copy, unidentified_delete), "data", "v1", "src-rev-2")),
+        unidentified_delete)
     assert not receipts.recorded
+
+    # A forged *same-ID* plan cannot keep a valid approved digest when any
+    # effect-bearing field, source revision, scope or plan revision changes.
+    forged_target = replace(copy, target=replace(
+        target, relative_path="reports/other-destination.xlsx"))
+    assert canonical((forged_target, delete), "data", "v1", "src-rev-2") != (
+        plan.sorted_target_set_digest)
+    assert canonical((copy, delete), "data", "v2", "src-rev-2") != (
+        plan.sorted_target_set_digest)
+    assert canonical((copy, delete), "data", "v1", "src-rev-3") != (
+        plan.sorted_target_set_digest)
+    assert canonical((copy, delete), "other", "v1", "src-rev-2") != (
+        plan.sorted_target_set_digest)
+    try:
+        canonical((copy, copy, delete), "data", "v1", "src-rev-2")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("duplicate IDs were signed into the plan")
+    # Reobservation is allowed when the *byte/generation identity* is stable
+    # while the observation timestamp has legitimately advanced.
+    matches = d["source_witness_matches"]
+    assert matches(replace(source, observed_at_utc="2026-10-12T10:10:00Z"), source)
+    assert not matches(replace(source, sha256="changed"), source)
+    assert not matches(replace(source, file_generation="gen-4"), source)
+
+    effects, auth, receipts, evidence, executor = fixture()
+    evidence.current = replace(source, observed_at_utc="2026-10-12T10:10:00Z")
+    result = executor.apply_one(plan, copy, "approved-plan")
+    assert result.truth is truth.VERIFIED
 
     effects, auth, receipts, evidence, executor = fixture()
     evidence.current = replace(source, sha256="unexpected-new-version")
@@ -1262,8 +1306,10 @@ def probe_frg_cleanup_effects() -> dict:
         raise AssertionError("unapproved FRG effect admitted")
     assert not receipts.pending and not effects.calls
     return {
-        "frg_cleanup_effect_cases": 17,
-        "evidence": "literal documented executor on synthetic evidence/effects; actual current FRG was previously tested separately",
+        "frg_cleanup_effect_cases": 25,
+        "fingerprint_uses_full_action_content": True,
+        "source_observation_time_excluded_from_byte_equality": True,
+        "evidence": "literal documented executor, canonical SHA256 plan fingerprint and byte-witness matcher on synthetic effects; no native FS proof",
     }
 
 
