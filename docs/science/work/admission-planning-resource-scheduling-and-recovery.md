@@ -103,6 +103,33 @@ Heartbeat loss alone cannot prove worker death. Expired lease alone cannot preve
 
 Different deployment profiles have different guarantees. A local foreground Windows close may stop actual computing, while a real independent host may continue after a client's browser closes. Host execution needs its own process, storage, activation/health and trust boundary. An external platform's Node/process health cannot certify domain Run completion.
 
+
+### Competing Run admission policies are not interchangeable
+
+A proposed resource-aware manager needs to distinguish at least five **alternative policy meanings** before turning a recurring or manually requested command into physical execution. They are scientific design options, not an admitted universal enum or a mandate to implement all five in the first host release:
+
+| Candidate concurrency choice | Accountable effect | Material counterexample |
+| --- | --- | --- |
+| `allow_parallel` | Admit separate Runs if semantic resources/effects and node budgets permit independent execution. | Different input periods can be parallel, but writing the same workbook path can destroy one result. |
+| `queue` | Preserve two distinct accepted intentions, deferring one behind conflicting resource ownership. | If source freshness expires before its turn, a queued intention needs revalidation or a new decision; order alone does not make execution safe. |
+| `skip_if_running` | Record an explicit skipped occurrence under its trigger/policy rather than inventing a new completed Run. | A required period obligation or audit filing must not vanish because an unrelated Run is active. |
+| `join_existing` | Link another authorized observer/request to a **genuinely equivalent** already accepted Run without creating a second physical effect. | Equal Scenario names or shared URL are insufficient; bind normalized parameters, source/vintage and freshness constraints, permissions and visibility, output destination, effect policy and intended postcondition. |
+| `replace_pending` | Supersede only a still-unstarted and demonstrably replaceable pending request with a fresher intention. | Replacing an already dispatched or possibly committed worker is not safe cancellation, rollback or overwrite authorization. |
+
+In-plan pure-computation deduplication, shared cache reuse, cross-Run joining and physical-effect idempotency are different equivalence relations. Two chats may have two separately authorized links to one Case without duplicating its terminal truth or revealing unauthorized parameters; a client's chat ID is **not** proof of safe Run join. Explicit fresh source-selection and grant checks are still necessary when a queued Run starts. This is a preservation of alternatives: no policy priority is universally correct, and disabled automation does not retroactively cancel an admitted Run.
+
+### Resource pressure, stale workers and actual effect fencing
+
+A proposed scheduler's workload budget is multi-dimensional: CPU, RAM, filesystem I/O, provider network limits, output locations, source versions, user/service quotas, local foreground/background slots, and competing claims from other users. A weighted fair queue or bounded priority classes were offered as heuristics for interactive responsiveness; **neither a particular algorithm nor a throughput guarantee has been approved or benchmarked**. A priority request cannot interrupt the atomic commit portion of another accepted effect. Diagnostic capacity must remain possible under resource exhaustion; an unbounded backlog can starve recovery.
+
+A worker's `lease_owner`, `lease_expires_at` and monotonically advancing `lease_generation` are proposed custody signals. An expired lease does **not** terminate its OS process or revoke external write authority. After failover, a stale worker can write again unless the **resource's actual commit boundary** rejects the old generation. A database lease plus an ordinary unfenced filesystem rename is not end-to-end fencing. If the physical output store cannot enforce generation/fencing, the candidate must restrict retries, use admissible conditional publication/receipts, or preserve `OUTCOME_UNKNOWN` for human or automatic evidence reconciliation; it cannot promise exactly-once effect.
+
+The original recovery alternative distinguishes single-node **local-disk SQLite/WAL** from a multi-host database such as PostgreSQL. WAL on a shared network filesystem is not a safe substitute for a coordinated multi-node database merely because two processes can see the same file. This was a reasoned example, **not** an admitted storage decision: a bounded single-writer local file-backed profile and a separately selected transactional host profile are still possible if their tested guarantees match the product's risk. The necessary semantic invariant is a single admitted state/effect authority per protected namespace, an unambiguous transition/receipt order, and recovery based on persisted evidence rather than optimistic memory.
+
+A candidate crash-restart procedure therefore has separate gates: validate persisted schema/owner and actual host identity; inspect incomplete commit intents/outbox; establish previous worker liveness and epoch; inspect `CLAIMED/RUNNING/FINALIZING` attempts, staging, source snapshots and external receipts; either prove a terminal effect, admit only a safe new Attempt, or hold an unresolved effect as unknown; recalculate missed occurrences under the accepted scheduling policy; finally serve an authorized snapshot and subsequent event cursor. A process restart, lost heartbeat or UI reconnect does **not** itself change an external effect's actual outcome. Clients can disagree about freshness of their observations while the host maintains one Run truth.
+
+These comparisons do not justify copying a sixteen-table sketch, adding a compulsory SQL platform, selecting an executor library, or creating separate Scenario species called Background/AI. The smallest physical architecture must be chosen from accepted profile guarantees, backed by real storage/network/OS fault tests and consequence-specific Product Decisions.
+
 ## 9. Automation is a stable definition with independent occurrences
 
 Five independent coordinates describe invocation: **origin** (human, scheduled, API, AI), **trigger** (manual, recurrence, event, source change), **client presence** (attached/detached), **backend placement** (desktop/host/remote), **work pattern** (one-off, composite, monitor, approval gated). Making `background` an alternate type of financial Scenario collapses these axes and duplicates execution.
