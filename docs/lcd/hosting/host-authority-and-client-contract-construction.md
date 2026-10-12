@@ -210,7 +210,11 @@ class HostAdmission:
             return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
                                     request.intention_key, None,
                                     self.host.host_id, "POLICY_STATUS_UNCERTAIN")
-        if not permitted:
+        if permitted is not True:
+            if permitted is not False:
+                return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                        request.intention_key, None,
+                                        self.host.host_id, "POLICY_RESULT_UNTYPED")
             return AdmissionReceipt(AdmissionKind.REJECTED,
                                     request.intention_key, None,
                                     self.host.host_id, "ACCESS_DENIED")
