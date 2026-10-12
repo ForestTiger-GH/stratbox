@@ -5,7 +5,7 @@
 - [Staged → Verified → Published Artifact](artifacts/staged-publication.md) — candidate local publication states, recovery, tests and faults.
 - [Neutral provider conformance vectors](extensions/neutral-provider-conformance-vectors.md) — 98 source-preserved public-neutral test intentions; not an implemented or executed certification suite.
 - [Used-source receipt and byte provenance](data/used-source-receipt-boundary.md) — first local Python-core conditional seam with 18 negative tests, storage/evidence boundary and no universal Source Catalog.
-- [Host attachment across Web and Windows/AppDock](hosting/host-client-attachment-boundary.md) — admitted planned host target, alternative Windows packaging and 33 unexecuted conformance vectors.
+- [Host attachment across Web and Windows/AppDock](hosting/host-client-attachment-boundary.md) — admitted planned host target, alternative Windows packaging and 51 unexecuted proposed host conformance vectors.
 - [Host problem receipts and evidence degradation](observability/host-problem-receipts-and-evidence-degradation.md) — qualified diagnostic registration, recorder ambiguity, mandatory-audit and bootstrap/support-bundle boundaries with 24 unexecuted negative cases.
 - [FRG cleanup plan trust, byte replacement and destructive-effects guards](application/frg-cleanup-effect-guards.md) — five *executed current-source fault characterizations* versus twelve **unexecuted** target admission vectors, scoped FileStore effects and stale archives.
 - [Local scenario execution without Qt-owned application truth](application/local-scenario-orchestration-boundary.md) — candidate extraction of the existing sequential runner's semantics, error classes, observation and projections before any physical service split.
