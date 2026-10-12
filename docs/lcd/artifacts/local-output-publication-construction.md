@@ -152,6 +152,7 @@ class LocalOutputPublisher:
         # no '..', absolute injection, symlink/junction traversal or racing open.
         staging_ref, stream = self.writer.create_unique_staging(intent)
         completed = False
+        finalization_started = False  # external finalize may outlive our receipt
         try:
             try:
                 produce(stream)              # may raise after partial bytes
@@ -184,6 +185,7 @@ class LocalOutputPublisher:
                 return PublicationReceipt(PublicationPhase.FAILED, intent,
                                           receipt, None, "PERMISSION_CHANGED",
                                           staging_ref)
+            finalization_started = True
             try:
                 final_ref = self.writer.finalize(intent, staging_ref, receipt)
             except Exception:
@@ -201,11 +203,14 @@ class LocalOutputPublisher:
             return PublicationReceipt(PublicationPhase.COMMITTED,
                                       intent, receipt, intent.target, None, None)
         except Exception:
-            # Preserve restricted technical trace elsewhere. A failure AFTER
-            # unknown side effects requires reconciliation, not blind delete.
-            return PublicationReceipt(PublicationPhase.FAILED, intent, None,
-                                      None, "STAGING_OR_METADATA_FAILED",
-                                      staging_ref)
+            # After finalization starts, catalog/inspection errors cannot prove
+            # absence of externally visible bytes. Preserve staging and intent.
+            phase = (PublicationPhase.OUTCOME_UNKNOWN if finalization_started
+                     else PublicationPhase.FAILED)
+            code = ("FINALIZE_OR_CATALOG_UNCERTAIN" if finalization_started
+                    else "STAGING_OR_METADATA_FAILED")
+            return PublicationReceipt(phase, intent, None,
+                                      None, code, staging_ref)
 ~~~
 
 **Important deliberate incompleteness:** this skeleton still has a possible ambiguous window between physical finalization and catalog commit. The actual accepted backend must prove a durable publish intent, stable generation/reconciliation, permissions at final open, and its particular atomic visibility/durability tier. Hashing and validating in two reads introduces a TOCTOU risk unless the staging object is sealed or immutable by generation; a production plan must tie both reads and finalization to the *same byte generation*. The injected UTC clock and verification must supply actual observations, not the literal placeholder shown. Callback, writer cleanup, quarantine retention and catalog conflict handling also require tested concrete implementations. This is a construction *prompt to eliminate ambiguity*, not deployable code.
