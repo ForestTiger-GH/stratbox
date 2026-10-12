@@ -108,5 +108,7 @@ The relevant [scientific provenance model](../../science/data-and-knowledge/sour
 | PR-24 | Cancellation during retries/case variants | Keep authentic Attempt/effect evidence and unknowns, no synthetic full coverage |
 | PR-25 | Embedded 41-entry registry changes between runs | Pin actual selected registry/build and actually consumed source IDs per analytical Result |
 | PR-26 | Save step fails after valid downloads | Acquisition and Artifact publication retain separate terminal/uncertain statuses |
+| PR-27 | Two XLSX containers encode the same numerical cells in different byte streams | Keep different **raw byte SHA** identities; assert semantic equivalence only after a specified parser, normalization profile, perimeter and schema comparison, with qualified proof | 
+| PR-28 | Collection times from two devices have skewed clocks or inconsistent zones | Record UTC observation timestamps with known clock/provenance capture points and explicit uncertainty; never use timestamp ordering as source or Run identity |
 
 **No PR-19..26 acceptance tests have been executed.** Source tests deliberately mock external HTTP and saving, and cannot establish current publisher data validity, retention or release security.
