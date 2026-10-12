@@ -156,6 +156,30 @@ The frozen Windows state survey at the October 6 baseline is itself **secondary 
 
 **Verification limit:** the 16 line-addressed English research meanings preserve selected material from the 1,742-line historical snapshot, not its entire contents or a verified current installed AppDock/Windows system. Testing remains a separate gate; reported tracked/generated files and packaging state require a fresh tree check before being used as claims about later versions. No closed integration-specific material is propagated here.
 
+
+## Original Windows Research 0020: twelve dated P0–P2 modernization choices
+
+The early direct Windows source survey proposed twelve priority-ranked cleanups around a dated, local foreground GUI, not around an already installed independent host. The **ranking labels P0/P1/P2 are historical researcher recommendations**, not an authorized modern Roadmap, ticket priority or instruction to change `stratbox-windows` under the present Knowledge-only Work Commission. They remain scientifically useful because they distinguish *declared GUI affordance*, *actual execution/persistence capability*, *deployment truth* and *cross-platform extraction cost*.
+
+| Frozen study item | Dated priority | Original modernization concern, qualified | Counterexample / evidence and authority limit |
+| --- | --- | --- | --- |
+| W20-P71 | P0 | Manifest, tests and written instructions must agree on real contract versions. | A green old test can encode an obsolete schema. Use exact version tuple and real source behavior. |
+| W20-P72 | P0 | Exclude generated runtime/cache/bytecode from tracked source package. | A tracked temporary file says little about correct domain behavior; check live Git tree and release build. |
+| W20-P73 | P0 | Keep public developer/setup material restricted to neutral, universally documentable interfaces. | Environment-specific installation details require separate protected administration, not public app documentation. |
+| W20-P74 | P1 | Separate Qt orchestration bootstrap from client-neutral application semantics. | A Python module importing Qt during bootstrap cannot be copied unchanged into Web/Android. |
+| W20-P75 | P1 | Foreground toggle/progress UX must disclose absence of real scheduler until a real host exists. | An enabled row cannot be called a working background process by itself. |
+| W20-P76 | P1 | Presence requires an authenticated participant/session provider, not local author-history projection. | A local online flag cannot establish remote presence or grant access to others' cases. |
+| W20-P77 | P1 | Assignments need real delivery/ownership/retention to become shared team obligations. | Creating a local review reminder does not deliver a remote task or establish acceptance. |
+| W20-P78 | P1 | Introduce effect-aware cancellation/job control before promising Stop or Resume. | Terminal cancelled vocabulary alone does not interrupt a physical worker or roll back a file write. |
+| W20-P79 | P1 | Treat historic five-JSON persistence as inadequate for transactional hosted authority. | Atomic per-file replacement still cannot transactionally commit linked Run/outbox across files. |
+| W20-P80 | P2 | Scale curated operation registry via defined neutral module/provider contracts when workload warrants. | Installing an extension is not binding selection, authorized execution or provider health. |
+| W20-P81 | P2 | Separate packaged/activation revision provenance from developer-only local Git probing. | Production installs may lack .git; an unknown commit is not evidence of build identity. |
+| W20-P82 | P2 | Remove or formally implement disconnected/unreachable standalone profile alternatives. | Dead config modes should not be silently treated as available user capabilities. |
+
+**Cross-check against direct implementation:** the pinned Qt bootstrap imports its current ScenarioCoordinator; the background toggle and local participant state lack the corresponding durable remote services. Local Git-only version probing returns an unknown version on a Git-free product directory, independently characterized with a synthetic test. Existing JSON file operations do not prove transactional Case/Run/outbox publication. These are dated facts about the inspected source, not automatically defects in a different current repository revision.
+
+**Do not silently turn proposals into Product Decisions.** The target application owner and logical host are distinct from a particular physical service and release build. Some earlier source ideas (for example, a simplistic per-file atomic write upgrade or a common Python runtime for every mobile platform) require revision before implementation. Public docs should specify neutral supported contracts; user permissions and operational configuration belong to their admitted owners. All twelve original change suggestions remain **historical proposals / target checks UNEXECUTED**. Their numbered presence does not certify the original research's entire meaning or authoritatively reprioritize today's engineering backlog.
+
 ## Original topic 10: twenty ownership and integration contract boundaries
 
 The dated Responsibility and Integration Contracts research separated semantic responsibility from the physical placement of code and from deployment-platform services. The **twenty line-addressed English interpretations** below preserve the competing local, library-reuse and headless-host approaches with their costs. The source's preference for a common logical application authority is **not** an accepted Product Decision or evidence of an installed host process. Platform-provided runtime facts are used only within their actual verified versioned contract.
