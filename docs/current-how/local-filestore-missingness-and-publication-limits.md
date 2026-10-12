@@ -19,7 +19,7 @@ The user's admitted goal permits a manually moved/deleted output file to become 
 
 ## Relation to competing original studies
 
-Earlier whole-system architecture Topic 09 (\`#L896-L919\`) explicitly marked its quality block as provisional while specialized Topic 08 was absent from its original evidence cutoff. Later Topic 08, §4.3 (\`#L310-L324\`) identified the narrower current behavior, now verified against direct implementation. The later work refines the earlier provisional risk analysis; it does not automatically approve a new storage API.
+Earlier whole-system architecture Topic 09 (`#L896-L919`) explicitly marked its quality block as provisional while specialized Topic 08 was absent from its original evidence cutoff. Later Topic 08, §4.3 (`#L310-L324`) identified the narrower current behavior, now verified against direct implementation. The later work refines the earlier provisional risk analysis; it does not automatically approve a new storage API.
 
 Proposed negative fixtures: existing empty directory versus missing directory versus regular file; missing after workspace change; denied listing; interruption after destination was opened for writing; attempted publication of incomplete bytes. **None has been executed here.** The future strict result/status profile remains a Product/Implementation decision tied to risk. See also [source receipts](source-download-receipts-registry-choice-and-coverage-limits.md) and [Artifact publication](../science/artifacts/output-identity-publication-and-availability.md).
 

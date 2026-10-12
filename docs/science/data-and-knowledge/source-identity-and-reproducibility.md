@@ -49,34 +49,34 @@ This article supports a reader's understanding of source truth without depending
 
 ## Source-governance Research: nine anti-patterns and fifteen proposed choices (24 pinned items)
 
-The frozen 2026-10-07 registry/source-governance study, §§48–49 (\`#L2105-L2164\`), blob `0d2a15a8b3630805a65b00dbba2e324cd2e7accf`, proposed nine pitfalls and fifteen implementation directions. The English items below preserve their **source identity, original line and research-proposal status**, not an approved global catalog architecture.
+The frozen 2026-10-07 registry/source-governance study, §§48–49 (`#L2105-L2164`), blob `0d2a15a8b3630805a65b00dbba2e324cd2e7accf`, proposed nine pitfalls and fifteen implementation directions. The English items below preserve their **source identity, original line and research-proposal status**, not an approved global catalog architecture.
 
 | Original research item | English material finding or candidate | Frozen source line |
 | --- | --- | --- |
-| `SB-SRC-0035/RISK-01` | A single giant registry module conflates banks, geography, source URLs, formats and operations | L2107 (\`#L2107\`) |
-| `SB-SRC-0035/RISK-02` | Selecting a 'latest' source solely by local file mtime is a weak production identity guarantee | L2111 (\`#L2111\`) |
-| `SB-SRC-0035/RISK-03` | Bank/industry/geographic entities need stable official or canonical IDs, not a translated display label | L2115 (\`#L2115\`) |
-| `SB-SRC-0035/RISK-04` | Official source publication must remain separate from user aliases, organizational labels and selection policy | L2119 (\`#L2119\`) |
-| `SB-SRC-0035/RISK-05` | Geographical totals/aggregates are not automatically region observations | L2123 (\`#L2123\`) |
-| `SB-SRC-0035/RISK-06` | Embedding Git write credentials into the end-user application would add excessive risk and complexity | L2127 (\`#L2127\`) |
-| `SB-SRC-0035/RISK-07` | Implicitly refreshing packaged registries on application startup changes reproducible calculations | L2131 (\`#L2131\`) |
-| `SB-SRC-0035/RISK-08` | Silently falling back to outdated registry after update failure misrepresents selected version | L2135 (\`#L2135\`) |
-| `SB-SRC-0035/RISK-09` | Stable filenames do not establish version identity when source bytes can change | L2139 (\`#L2139\`) |
-| `SB-SRC-0035/RECOMMENDATION-01` | Keep general reference registries owned by the domain core | L2147 (\`#L2147\`) |
-| `SB-SRC-0035/RECOMMENDATION-02` | Treat external acquisition catalogs/source snapshots as a separate semantic family | L2148 (\`#L2148\`) |
-| `SB-SRC-0035/RECOMMENDATION-03` | Separate common bank/classification/geography reference data from domain-specific FRG, forms and solver rule registries | L2149 (\`#L2149\`) |
-| `SB-SRC-0035/RECOMMENDATION-04` | Replace purely mtime-selected release choice with an explicit manifest where material | L2150 (\`#L2150\`) |
-| `SB-SRC-0035/RECOMMENDATION-05` | Give registry editions stable identity, digest and source metadata | L2151 (\`#L2151\`) |
-| `SB-SRC-0035/RECOMMENDATION-06` | Separate official bank entities, names/aliases and curated entity sets | L2152 (\`#L2152\`) |
-| `SB-SRC-0035/RECOMMENDATION-07` | Do not perpetuate a redundant legacy registry compatibility path once active consumers have migrated | L2153 (\`#L2153\`) |
-| `SB-SRC-0035/RECOMMENDATION-08` | Model canonical geography entities and source-specific aliases; preserve aggregate publication nodes | L2154 (\`#L2154\`) |
-| `SB-SRC-0035/RECOMMENDATION-09` | Consider moving hardcoded regulated-source acquisition lists to a maintained source catalog if demand warrants | L2155 (\`#L2155\`) |
-| `SB-SRC-0035/RECOMMENDATION-10` | Author or review registry updates through controlled versioned source changes | L2156 (\`#L2156\`) |
-| `SB-SRC-0035/RECOMMENDATION-11` | Treat packaged runtime registry resources as immutable for a given release | L2157 (\`#L2157\`) |
-| `SB-SRC-0035/RECOMMENDATION-12` | Expose only status and allowed source/registry links to ordinary client surfaces | L2158 (\`#L2158\`) |
-| `SB-SRC-0035/RECOMMENDATION-13` | Connect actually used registry/source editions to significant analytical Result provenance | L2159 (\`#L2159\`) |
-| `SB-SRC-0035/RECOMMENDATION-14` | Use content hashes for safe change detection and cache eligibility | L2160 (\`#L2160\`) |
-| `SB-SRC-0035/RECOMMENDATION-15` | Consider a reviewed updater/PR workflow instead of mutating package reference assets silently during runtime | L2161 (\`#L2161\`) |
+| `SB-SRC-0035/RISK-01` | A single giant registry module conflates banks, geography, source URLs, formats and operations | L2107 (`#L2107`) |
+| `SB-SRC-0035/RISK-02` | Selecting a 'latest' source solely by local file mtime is a weak production identity guarantee | L2111 (`#L2111`) |
+| `SB-SRC-0035/RISK-03` | Bank/industry/geographic entities need stable official or canonical IDs, not a translated display label | L2115 (`#L2115`) |
+| `SB-SRC-0035/RISK-04` | Official source publication must remain separate from user aliases, organizational labels and selection policy | L2119 (`#L2119`) |
+| `SB-SRC-0035/RISK-05` | Geographical totals/aggregates are not automatically region observations | L2123 (`#L2123`) |
+| `SB-SRC-0035/RISK-06` | Embedding Git write credentials into the end-user application would add excessive risk and complexity | L2127 (`#L2127`) |
+| `SB-SRC-0035/RISK-07` | Implicitly refreshing packaged registries on application startup changes reproducible calculations | L2131 (`#L2131`) |
+| `SB-SRC-0035/RISK-08` | Silently falling back to outdated registry after update failure misrepresents selected version | L2135 (`#L2135`) |
+| `SB-SRC-0035/RISK-09` | Stable filenames do not establish version identity when source bytes can change | L2139 (`#L2139`) |
+| `SB-SRC-0035/RECOMMENDATION-01` | Keep general reference registries owned by the domain core | L2147 (`#L2147`) |
+| `SB-SRC-0035/RECOMMENDATION-02` | Treat external acquisition catalogs/source snapshots as a separate semantic family | L2148 (`#L2148`) |
+| `SB-SRC-0035/RECOMMENDATION-03` | Separate common bank/classification/geography reference data from domain-specific FRG, forms and solver rule registries | L2149 (`#L2149`) |
+| `SB-SRC-0035/RECOMMENDATION-04` | Replace purely mtime-selected release choice with an explicit manifest where material | L2150 (`#L2150`) |
+| `SB-SRC-0035/RECOMMENDATION-05` | Give registry editions stable identity, digest and source metadata | L2151 (`#L2151`) |
+| `SB-SRC-0035/RECOMMENDATION-06` | Separate official bank entities, names/aliases and curated entity sets | L2152 (`#L2152`) |
+| `SB-SRC-0035/RECOMMENDATION-07` | Do not perpetuate a redundant legacy registry compatibility path once active consumers have migrated | L2153 (`#L2153`) |
+| `SB-SRC-0035/RECOMMENDATION-08` | Model canonical geography entities and source-specific aliases; preserve aggregate publication nodes | L2154 (`#L2154`) |
+| `SB-SRC-0035/RECOMMENDATION-09` | Consider moving hardcoded regulated-source acquisition lists to a maintained source catalog if demand warrants | L2155 (`#L2155`) |
+| `SB-SRC-0035/RECOMMENDATION-10` | Author or review registry updates through controlled versioned source changes | L2156 (`#L2156`) |
+| `SB-SRC-0035/RECOMMENDATION-11` | Treat packaged runtime registry resources as immutable for a given release | L2157 (`#L2157`) |
+| `SB-SRC-0035/RECOMMENDATION-12` | Expose only status and allowed source/registry links to ordinary client surfaces | L2158 (`#L2158`) |
+| `SB-SRC-0035/RECOMMENDATION-13` | Connect actually used registry/source editions to significant analytical Result provenance | L2159 (`#L2159`) |
+| `SB-SRC-0035/RECOMMENDATION-14` | Use content hashes for safe change detection and cache eligibility | L2160 (`#L2160`) |
+| `SB-SRC-0035/RECOMMENDATION-15` | Consider a reviewed updater/PR workflow instead of mutating package reference assets silently during runtime | L2161 (`#L2161`) |
 
 **Material alternative:** the same original study argues against immediately building a separate registry server or new data package: this would impose network availability, independent API/version contracts and additional ownership/packaging costs without demonstrated need. Packaged small immutable reference snapshots remain a serious default for direct offline Python analytics. The later developer-annotated source explicitly prefers **actual-used-source timestamp evidence and expert judgment**, not permanent monitoring of every statistical indicator. Therefore a central Source Catalog, per-entity registry database, automatic pull-request updater or always-on service is an *admission-dependent option*, not a user-approved baseline.
 
@@ -88,25 +88,25 @@ The dated Source Data, Versions and Reproducibility study separates source publi
 
 | Source ID | Qualified original claim | Disposition | Frozen line |
 | --- | --- | --- | --- |
-| `SB-SRC-0562/SOURCE-01` | Publisher identity is not a fetch address; one authority can publish many independently revised file families. | `PUBLISHER_SOURCE` | L102 (\`#L102\`) |
-| `SB-SRC-0562/SOURCE-02` | SourceDefinition describes acquisition/discovery, not the bytes obtained on one attempt. | `FETCH_RULE_NOT_SNAPSHOT` | L103 (\`#L103\`) |
-| `SB-SRC-0562/SOURCE-03` | FetchReceipt is one observed source access attempt, with observed time, actual locator and outcome, not the accepted statistical content. | `RECEIPT_OBSERVATION` | L104 (\`#L104\`) |
-| `SB-SRC-0562/SOURCE-04` | SourceSnapshot identifies actual accepted bytes and their digest, distinct from the download attempt and publisher semantics. | `BYTE_REVISION` | L105 (\`#L105\`) |
-| `SB-SRC-0562/SOURCE-05` | RegistryRevision binds actual reference-table content and effective semantics, which may change independently of raw observations. | `REFERENCE_VERSION` | L106 (\`#L106\`) |
-| `SB-SRC-0562/SOURCE-06` | TransformationRevision identifies algorithmic/method interpretation and significant configuration beyond the package import name. | `METHOD_REVISION` | L107 (\`#L107\`) |
-| `SB-SRC-0562/SOURCE-07` | Acquisition timestamp is distinct from publisher release date, economic reference period, classifier effective dates and computed/exported time. | `FIVE_TIME_AXES` | L140 (\`#L140\`) |
-| `SB-SRC-0562/SOURCE-08` | Matching SHA-256 supports byte identity, not official publisher authenticity or economic correctness. | `BYTE_HASH_LIMIT` | L153 (\`#L153\`) |
-| `SB-SRC-0562/SOURCE-09` | Semantic equivalence of two differently packaged XLSX files requires a separate measurement comparison, not just ZIP-byte hashes. | `SEMANTIC_EQUIVALENCE` | L154 (\`#L154\`) |
-| `SB-SRC-0562/SOURCE-10` | An HTTP 304 allows reuse only when the prior content snapshot actually remains available and identified. | `HTTP_304_GUARD` | L185 (\`#L185\`) |
-| `SB-SRC-0562/SOURCE-11` | A server 304 with no retained previous payload cannot count as a successful new statistical data download. | `HTTP_304_WITH_MISSING_BYTES` | L197 (\`#L197\`) |
-| `SB-SRC-0562/SOURCE-12` | Source byte hash does not certify origin: publisher identity, safe redirects/TLS and optional authoritative signatures are different evidence. | `ORIGIN_AUTHENTICITY` | L206 (\`#L206\`) |
-| `SB-SRC-0562/SOURCE-13` | R0–R4 proposed reproducibility tiers distinguish undocumented results, observed provenance, byte verification, replay-ready and replay-tested outputs. | `REPLAY_LADDER_CANDIDATE` | L297 (\`#L297\`) |
-| `SB-SRC-0562/SOURCE-14` | Integrity, replay readiness and semantic correctness are separate axes; a successful deterministic replay may repeat a wrong bank interpretation. | `REPLAY_NOT_TRUTH` | L311 (\`#L311\`) |
-| `SB-SRC-0562/SOURCE-15` | Retained digests may prove historical bytes differed without enabling replay if the original bytes were later deleted. | `HASH_NOT_RETENTION` | L317 (\`#L317\`) |
-| `SB-SRC-0562/SOURCE-16` | Exact Python build may be insufficient for sensitive numerical replay without selected library, solver, locale, seed and registry versions. | `NUMERICAL_ENVIRONMENT_VINTAGE` | L321 (\`#L321\`) |
-| `SB-SRC-0562/SOURCE-17` | A registry used for bank classification should pin the actual read asset bundle rather than selecting an arbitrary newest resource mtime. | `REGISTRY_BUNDLE_IDENTITY` | L417 (\`#L417\`) |
-| `SB-SRC-0562/SOURCE-18` | For a mutable file, the checksum must cover the exact bytes actually consumed, not an earlier stat observation susceptible to TOCTOU. | `HASH_CONSUMED_BYTES` | L547 (\`#L547\`) |
-| `SB-SRC-0562/SOURCE-19` | Default provenance should remain scoped to actually used inputs; globally retaining every source byte and continuously polling all statistical series has material cost. | `PROPORTIONAL_CAPTURE` | L555 (\`#L555\`) |
+| `SB-SRC-0562/SOURCE-01` | Publisher identity is not a fetch address; one authority can publish many independently revised file families. | `PUBLISHER_SOURCE` | L102 (`#L102`) |
+| `SB-SRC-0562/SOURCE-02` | SourceDefinition describes acquisition/discovery, not the bytes obtained on one attempt. | `FETCH_RULE_NOT_SNAPSHOT` | L103 (`#L103`) |
+| `SB-SRC-0562/SOURCE-03` | FetchReceipt is one observed source access attempt, with observed time, actual locator and outcome, not the accepted statistical content. | `RECEIPT_OBSERVATION` | L104 (`#L104`) |
+| `SB-SRC-0562/SOURCE-04` | SourceSnapshot identifies actual accepted bytes and their digest, distinct from the download attempt and publisher semantics. | `BYTE_REVISION` | L105 (`#L105`) |
+| `SB-SRC-0562/SOURCE-05` | RegistryRevision binds actual reference-table content and effective semantics, which may change independently of raw observations. | `REFERENCE_VERSION` | L106 (`#L106`) |
+| `SB-SRC-0562/SOURCE-06` | TransformationRevision identifies algorithmic/method interpretation and significant configuration beyond the package import name. | `METHOD_REVISION` | L107 (`#L107`) |
+| `SB-SRC-0562/SOURCE-07` | Acquisition timestamp is distinct from publisher release date, economic reference period, classifier effective dates and computed/exported time. | `FIVE_TIME_AXES` | L140 (`#L140`) |
+| `SB-SRC-0562/SOURCE-08` | Matching SHA-256 supports byte identity, not official publisher authenticity or economic correctness. | `BYTE_HASH_LIMIT` | L153 (`#L153`) |
+| `SB-SRC-0562/SOURCE-09` | Semantic equivalence of two differently packaged XLSX files requires a separate measurement comparison, not just ZIP-byte hashes. | `SEMANTIC_EQUIVALENCE` | L154 (`#L154`) |
+| `SB-SRC-0562/SOURCE-10` | An HTTP 304 allows reuse only when the prior content snapshot actually remains available and identified. | `HTTP_304_GUARD` | L185 (`#L185`) |
+| `SB-SRC-0562/SOURCE-11` | A server 304 with no retained previous payload cannot count as a successful new statistical data download. | `HTTP_304_WITH_MISSING_BYTES` | L197 (`#L197`) |
+| `SB-SRC-0562/SOURCE-12` | Source byte hash does not certify origin: publisher identity, safe redirects/TLS and optional authoritative signatures are different evidence. | `ORIGIN_AUTHENTICITY` | L206 (`#L206`) |
+| `SB-SRC-0562/SOURCE-13` | R0–R4 proposed reproducibility tiers distinguish undocumented results, observed provenance, byte verification, replay-ready and replay-tested outputs. | `REPLAY_LADDER_CANDIDATE` | L297 (`#L297`) |
+| `SB-SRC-0562/SOURCE-14` | Integrity, replay readiness and semantic correctness are separate axes; a successful deterministic replay may repeat a wrong bank interpretation. | `REPLAY_NOT_TRUTH` | L311 (`#L311`) |
+| `SB-SRC-0562/SOURCE-15` | Retained digests may prove historical bytes differed without enabling replay if the original bytes were later deleted. | `HASH_NOT_RETENTION` | L317 (`#L317`) |
+| `SB-SRC-0562/SOURCE-16` | Exact Python build may be insufficient for sensitive numerical replay without selected library, solver, locale, seed and registry versions. | `NUMERICAL_ENVIRONMENT_VINTAGE` | L321 (`#L321`) |
+| `SB-SRC-0562/SOURCE-17` | A registry used for bank classification should pin the actual read asset bundle rather than selecting an arbitrary newest resource mtime. | `REGISTRY_BUNDLE_IDENTITY` | L417 (`#L417`) |
+| `SB-SRC-0562/SOURCE-18` | For a mutable file, the checksum must cover the exact bytes actually consumed, not an earlier stat observation susceptible to TOCTOU. | `HASH_CONSUMED_BYTES` | L547 (`#L547`) |
+| `SB-SRC-0562/SOURCE-19` | Default provenance should remain scoped to actually used inputs; globally retaining every source byte and continuously polling all statistical series has material cost. | `PROPORTIONAL_CAPTURE` | L555 (`#L555`) |
 
 **Strong counterarguments and non-implications:** An observed timestamp is useful context, not an evidence-based historical data vintage. Matching URL, byte hash, economic data or calculation result are four noninterchangeable equality relations. A replayed calculation can remain semantically wrong, while a missing historical source payload may make byte-identical rerun impossible despite preserved digests. Exhaustive versioned storage is expensive and often unwarranted for disposable inputs; a small source-used manifest can improve actual auditability without becoming a global master-data platform. Publisher legitimacy and currentness still need domain-level checks beyond transport metadata.
 

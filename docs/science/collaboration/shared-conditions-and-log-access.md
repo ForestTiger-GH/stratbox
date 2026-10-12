@@ -116,7 +116,7 @@ Open: who is admitted into a trusted node; what “everyone sees everything” m
 
 | Research address and evidential status | Material meaning | Challenge / limiting countercase | Original lines |
 | --- | --- | --- | --- |
-| `SB-SRC-0020/UI-04` · `HISTORICAL_PRESENTATION_CANDIDATE` | The study described All/Mine/In progress/Success/Errors/Unread chat filters and a Qt-independent semantic message projection. | A client filter cannot grant read access, correct a misleading aggregate Case success or prove a shared per-principal unread cursor. | L837–L850 (\`#L837-L850\`) |
+| `SB-SRC-0020/UI-04` · `HISTORICAL_PRESENTATION_CANDIDATE` | The study described All/Mine/In progress/Success/Errors/Unread chat filters and a Qt-independent semantic message projection. | A client filter cannot grant read access, correct a misleading aggregate Case success or prove a shared per-principal unread cursor. | L837–L850 (`#L837-L850`) |
 
 **Public projection principle:** filter mode, author placement and unread flags are UI properties until a verified shared authority and recipient-specific projection enforce object-scoped access and cursor state. A filter cannot sanitize raw params or filesystem paths that have already entered the message model.
 
@@ -128,7 +128,7 @@ Open: who is admitted into a trusted node; what “everyone sees everything” m
 
 | Address · epistemic role | Original material proposal or observation | Counterexample / limit | Original span |
 | --- | --- | --- | --- |
-| `SB-SRC-0020/FUT-08` · `HISTORICAL_COLLABORATION_POTENTIAL` | Presence, Assignments, authored Cases and incoming/outgoing presentation were framed as seeds for collaboration, comments, approvals, audit and remote Case ownership. | Local presentation actor labels and JSON records cannot substantiate shared live presence, verified remote authority or consent by an assigned colleague. | L1504–L1516 (\`#L1504-L1516\`) |
+| `SB-SRC-0020/FUT-08` · `HISTORICAL_COLLABORATION_POTENTIAL` | Presence, Assignments, authored Cases and incoming/outgoing presentation were framed as seeds for collaboration, comments, approvals, audit and remote Case ownership. | Local presentation actor labels and JSON records cannot substantiate shared live presence, verified remote authority or consent by an assigned colleague. | L1504–L1516 (`#L1504-L1516`) |
 
 **Evidence status:** a future AI actor label, mobile sketch, host execution backend or artifact field list cannot establish the relevant implementation or rights. This packet is a **producer source transfer**; independent review, complete source accounting and host/client release tests remain open. All frozen source dispositions are still `unaccounted`.
 
@@ -138,8 +138,8 @@ Open: who is admitted into a trusted node; what “everyone sees everything” m
 
 | Original position and evidence role | Primary material interpretation | Failing or limiting case | Original lines |
 | --- | --- | --- | --- |
-| `SB-SRC-0020/RUN-08` · `DIRECT_CODE_CORROBORATED_LOCAL_CASE` | The ScenarioRunCase model includes author, params, stages, Step results, output paths, timestamp and unread flag for local chat projection. | Local Case contains display and execution hints; it is not necessarily an accepted future Work, canonical host Job or permission-scoped durable event stream. | L689–L705 (\`#L689-L705\`) |
-| `SB-SRC-0020/RUN-09` · `DIRECT_CODE_VOCABULARY_NOT_SERVICE` | Pinned EventKind and ActorKind enums include AI, host-user and background labels as current presentation vocabulary. | An AI/host_user enum does not establish an installed agent, authenticated remote actor, verified peer presence or remote message delivery. | L707–L735 (\`#L707-L735\`) |
+| `SB-SRC-0020/RUN-08` · `DIRECT_CODE_CORROBORATED_LOCAL_CASE` | The ScenarioRunCase model includes author, params, stages, Step results, output paths, timestamp and unread flag for local chat projection. | Local Case contains display and execution hints; it is not necessarily an accepted future Work, canonical host Job or permission-scoped durable event stream. | L689–L705 (`#L689-L705`) |
+| `SB-SRC-0020/RUN-09` · `DIRECT_CODE_VOCABULARY_NOT_SERVICE` | Pinned EventKind and ActorKind enums include AI, host-user and background labels as current presentation vocabulary. | An AI/host_user enum does not establish an installed agent, authenticated remote actor, verified peer presence or remote message delivery. | L707–L735 (`#L707-L735`) |
 
 **Status:** producer source-to-Science text preservation only, not accepted fixes, a host execution proof or independent semantic review. Static original source properties and successfully executed negative tests supply different evidence strengths. Source-wide `SB-SRC-0020` material state is `unaccounted` and no whole-file Research Amputation passed.
 
@@ -149,6 +149,6 @@ Open: who is admitted into a trusted node; what “everyone sees everything” m
 
 | Original unit and role | Source-supported meaning | Rejected inference / countercase | Exact source span |
 | --- | --- | --- | --- |
-| `SB-SRC-0557/ALT-10` · `RESEARCH_PERMISSION_MATRIX` | Shared chat-card visibility, file-byte reading, consuming as input, overwrite, export and delete are different grants checked when acting at the host owner, including for machine consumers. | Knowing an Artifact ID or seeing a filename in a chat is not permission to open an absolute host path, consume sensitive bytes or reveal technical logs. | L599–L627 (\`#L599-L627\`) |
+| `SB-SRC-0557/ALT-10` · `RESEARCH_PERMISSION_MATRIX` | Shared chat-card visibility, file-byte reading, consuming as input, overwrite, export and delete are different grants checked when acting at the host owner, including for machine consumers. | Knowing an Artifact ID or seeing a filename in a chat is not permission to open an absolute host path, consume sensitive bytes or reveal technical logs. | L599–L627 (`#L599-L627`) |
 
 **Scientific limit:** creation history, current availability, byte retention, publication status, run completion and recipient authorization are separate evidence roles. This packet does not guarantee source-wide original losslessness, external filesystem semantics, implemented storage providers or independent semantic validation. The source remains `unaccounted`.

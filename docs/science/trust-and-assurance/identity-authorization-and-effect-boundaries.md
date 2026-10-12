@@ -197,26 +197,26 @@ The dated Permissions, Security and Collaboration source evaluates closed-user, 
 
 | Original item | Materially distinct interpretation | Research disposition | Source line |
 | --- | --- | --- | --- |
-| `SB-SRC-0558/SEC-01` | Permission strength should follow the actual threat profile, not a generic claim that the application is internal. | `DEPLOYMENT_THREAT_SCOPE` | L165 (\`#L165\`) |
-| `SB-SRC-0558/SEC-02` | A trusted small team still needs stable principal IDs and object/action checks; nickname collisions and shared file writes are meaningful risks. | `KNOWN_TEAM_NOT_UNBOUNDED_TRUST` | L170 (\`#L170\`) |
-| `SB-SRC-0558/SEC-03` | A public Web endpoint needs independent authenticated sessions, CSRF/XSS/object authorization and bounded request rates beyond internal nickname UX. | `PUBLIC_WEB_DIFFERENT_GUARANTEE` | L172 (\`#L172\`) |
-| `SB-SRC-0558/SEC-04` | An AI/machine caller needs scoped delegation and effect admission rather than unconditional script or filesystem access. | `AGENT_DELEGATION_LIMIT` | L173 (\`#L173\`) |
-| `SB-SRC-0558/SEC-05` | An attacker with host administrator powers or arbitrary in-process trusted Python is outside the protection of an application-only role table. | `OS_PROCESS_BOUNDARY` | L175 (\`#L175\`) |
-| `SB-SRC-0558/SEC-06` | Membership in the internal network is not sufficient proof of individual/device trust or permission to perform specific actions. | `NETWORK_TRUST_NONIMPLICATION` | L179 (\`#L179\`) |
-| `SB-SRC-0558/SEC-07` | A user-selected display name is presentation metadata, not a secure principal identity. | `DISPLAY_NAME_NOT_SECURITY_KEY` | L245 (\`#L245\`) |
-| `SB-SRC-0558/SEC-08` | A publicly reachable client requires authentication and revocable sessions; nickname-only login is an incorrect authority shortcut. | `REMOTE_IDENTITY_PROFILE` | L249 (\`#L249\`) |
-| `SB-SRC-0558/SEC-09` | Admission should check the actual authenticated principal and exact requested operation/resource scope before execution. | `ADMISSION_AUTHORIZATION` | L265 (\`#L265\`) |
-| `SB-SRC-0558/SEC-10` | Long-running effectful work may need authorization rechecked at the actual mutation boundary, after queued policy changes. | `EFFECT_TIME_AUTHORIZATION` | L275 (\`#L275\`) |
-| `SB-SRC-0558/SEC-11` | Capability applicability is independent of access grant: technically possible operations can still be unauthorized. | `APPLICABILITY_PERMISSION_SEPARATION` | L293 (\`#L293\`) |
-| `SB-SRC-0558/SEC-12` | UI flags such as enabled or dangerous are descriptor hints and cannot enforce policy against another client/API path. | `UI_METADATA_NOT_ENFORCEMENT` | L299 (\`#L299\`) |
-| `SB-SRC-0558/SEC-13` | Revoking a grant after enqueue cannot be ignored for a later shared-file mutation; the actual effect right has separate timing. | `REVOKED_RIGHT_RECHECK` | L308 (\`#L308\`) |
-| `SB-SRC-0558/SEC-14` | Approval must bind an exact destructive plan and relevant versions; authorizing three deletes does not authorize a later hundred-file plan. | `PLAN_BOUND_APPROVAL` | L320 (\`#L320\`) |
-| `SB-SRC-0558/SEC-15` | Shared-team incident notifications should convey safe participant/action/stage information without broadcasting full diagnostic dumps. | `SCOPED_ERROR_NOTIFICATION` | L483 (\`#L483\`) |
-| `SB-SRC-0558/SEC-16` | Detailed error evidence and logs stay in an appropriately permissioned operational store rather than in every shared chat. | `RESTRICTED_DIAGNOSTICS` | L484 (\`#L484\`) |
-| `SB-SRC-0558/SEC-17` | Rendering untrusted display-name text into rich HTML is a conditional future injection risk, not proof of an observed current remote exploit. | `CONDITIONAL_RENDERING_RISK` | L596 (\`#L596\`) |
-| `SB-SRC-0558/SEC-18` | String-prefix checks on a workspace path do not establish resolved filesystem containment under traversal or symlink races. | `PATH_AUTHORIZATION_FENCE` | L685 (\`#L685\`) |
-| `SB-SRC-0558/SEC-19` | Run-specific output names and controlled compare-and-replace avoid shared file-write races more cheaply than global arbitrary Python locking. | `CONCURRENT_EFFECT_POLICY` | L702 (\`#L702\`) |
-| `SB-SRC-0558/SEC-20` | Internal diagnostics must distinguish missing, denied and unavailable data even if a public endpoint deliberately hides private object existence. | `INNER_OUTER_ERROR_PROJECTION` | L712 (\`#L712\`) |
+| `SB-SRC-0558/SEC-01` | Permission strength should follow the actual threat profile, not a generic claim that the application is internal. | `DEPLOYMENT_THREAT_SCOPE` | L165 (`#L165`) |
+| `SB-SRC-0558/SEC-02` | A trusted small team still needs stable principal IDs and object/action checks; nickname collisions and shared file writes are meaningful risks. | `KNOWN_TEAM_NOT_UNBOUNDED_TRUST` | L170 (`#L170`) |
+| `SB-SRC-0558/SEC-03` | A public Web endpoint needs independent authenticated sessions, CSRF/XSS/object authorization and bounded request rates beyond internal nickname UX. | `PUBLIC_WEB_DIFFERENT_GUARANTEE` | L172 (`#L172`) |
+| `SB-SRC-0558/SEC-04` | An AI/machine caller needs scoped delegation and effect admission rather than unconditional script or filesystem access. | `AGENT_DELEGATION_LIMIT` | L173 (`#L173`) |
+| `SB-SRC-0558/SEC-05` | An attacker with host administrator powers or arbitrary in-process trusted Python is outside the protection of an application-only role table. | `OS_PROCESS_BOUNDARY` | L175 (`#L175`) |
+| `SB-SRC-0558/SEC-06` | Membership in the internal network is not sufficient proof of individual/device trust or permission to perform specific actions. | `NETWORK_TRUST_NONIMPLICATION` | L179 (`#L179`) |
+| `SB-SRC-0558/SEC-07` | A user-selected display name is presentation metadata, not a secure principal identity. | `DISPLAY_NAME_NOT_SECURITY_KEY` | L245 (`#L245`) |
+| `SB-SRC-0558/SEC-08` | A publicly reachable client requires authentication and revocable sessions; nickname-only login is an incorrect authority shortcut. | `REMOTE_IDENTITY_PROFILE` | L249 (`#L249`) |
+| `SB-SRC-0558/SEC-09` | Admission should check the actual authenticated principal and exact requested operation/resource scope before execution. | `ADMISSION_AUTHORIZATION` | L265 (`#L265`) |
+| `SB-SRC-0558/SEC-10` | Long-running effectful work may need authorization rechecked at the actual mutation boundary, after queued policy changes. | `EFFECT_TIME_AUTHORIZATION` | L275 (`#L275`) |
+| `SB-SRC-0558/SEC-11` | Capability applicability is independent of access grant: technically possible operations can still be unauthorized. | `APPLICABILITY_PERMISSION_SEPARATION` | L293 (`#L293`) |
+| `SB-SRC-0558/SEC-12` | UI flags such as enabled or dangerous are descriptor hints and cannot enforce policy against another client/API path. | `UI_METADATA_NOT_ENFORCEMENT` | L299 (`#L299`) |
+| `SB-SRC-0558/SEC-13` | Revoking a grant after enqueue cannot be ignored for a later shared-file mutation; the actual effect right has separate timing. | `REVOKED_RIGHT_RECHECK` | L308 (`#L308`) |
+| `SB-SRC-0558/SEC-14` | Approval must bind an exact destructive plan and relevant versions; authorizing three deletes does not authorize a later hundred-file plan. | `PLAN_BOUND_APPROVAL` | L320 (`#L320`) |
+| `SB-SRC-0558/SEC-15` | Shared-team incident notifications should convey safe participant/action/stage information without broadcasting full diagnostic dumps. | `SCOPED_ERROR_NOTIFICATION` | L483 (`#L483`) |
+| `SB-SRC-0558/SEC-16` | Detailed error evidence and logs stay in an appropriately permissioned operational store rather than in every shared chat. | `RESTRICTED_DIAGNOSTICS` | L484 (`#L484`) |
+| `SB-SRC-0558/SEC-17` | Rendering untrusted display-name text into rich HTML is a conditional future injection risk, not proof of an observed current remote exploit. | `CONDITIONAL_RENDERING_RISK` | L596 (`#L596`) |
+| `SB-SRC-0558/SEC-18` | String-prefix checks on a workspace path do not establish resolved filesystem containment under traversal or symlink races. | `PATH_AUTHORIZATION_FENCE` | L685 (`#L685`) |
+| `SB-SRC-0558/SEC-19` | Run-specific output names and controlled compare-and-replace avoid shared file-write races more cheaply than global arbitrary Python locking. | `CONCURRENT_EFFECT_POLICY` | L702 (`#L702`) |
+| `SB-SRC-0558/SEC-20` | Internal diagnostics must distinguish missing, denied and unavailable data even if a public endpoint deliberately hides private object existence. | `INNER_OUTER_ERROR_PROJECTION` | L712 (`#L712`) |
 
 **Counterarguments:** a fully featured Internet IAM stack is disproportionate for single-user local analytics; a local OS user identity and a closed-team principal enrollment may suffice for their real threat models. By contrast, a public remote service cannot rely on UI-only disabling or nicknames. Authorization and confirmation of a particular harmful effect are distinct even when issued by the same user. A hidden per-user artifact may require an intentionally vague public 404-like response, while internal diagnosis must retain the real permission/availability cause. In-process execution of untrusted code cannot be safely restricted by a descriptive capability flag alone; any credible isolation claim requires separate operating-system enforcement and tests. Policy choices, platform contracts and observed end-to-end conformance remain open.
 

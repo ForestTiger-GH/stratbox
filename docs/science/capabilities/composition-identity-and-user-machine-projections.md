@@ -158,46 +158,46 @@ Still open: canonical Operation granularity and who maintains catalog IDs, how C
 
 ## 11. Frozen Command/Scenario/Cascade research decisions and rejected shortcuts (36 source items)
 
-The October 7 source study on Commands, Scenarios and Cascades (\`#L1579-L1887\`) proposed several distinct execution outcomes and visual/catalog choices. These **36 source-line-traced English interpretations** are preserved to avoid losing negative decisions when only the headline `Command → Scenario → Cascade` is remembered. They are **not approved Product WHAT**, existing machine APIs, proof that every library helper should be public, or authorization to create a new physical Scheme service. The original user annotation supported intuitive grouping but did not independently approve the exact proposed three-level ontology.
+The October 7 source study on Commands, Scenarios and Cascades (`#L1579-L1887`) proposed several distinct execution outcomes and visual/catalog choices. These **36 source-line-traced English interpretations** are preserved to avoid losing negative decisions when only the headline `Command → Scenario → Cascade` is remembered. They are **not approved Product WHAT**, existing machine APIs, proof that every library helper should be public, or authorization to create a new physical Scheme service. The original user annotation supported intuitive grouping but did not independently approve the exact proposed three-level ontology.
 
 | Research-group ID | Proposed semantic distinction, risk or design option | Frozen source |
 | --- | --- | --- |
-| `SB-SRC-0024/FAILURE_MODE-01` | Stop dependent future work after a material failure | L1586 (\`#L1586\`) |
-| `SB-SRC-0024/FAILURE_MODE-02` | Continue independent graph branches but block failed dependencies | L1587 (\`#L1587\`) |
-| `SB-SRC-0024/FAILURE_MODE-03` | Continue steps with currently satisfied preconditions | L1588 (\`#L1588\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-01` | All qualified required goals completed | L1606 (\`#L1606\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-02` | Completed with explicit user-relevant warnings | L1607 (\`#L1607\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-03` | Some branches succeeded and other results/residuals remain visible | L1608 (\`#L1608\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-04` | Required condition failed | L1609 (\`#L1609\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-05` | Confirmed cancellation under admitted effect policy | L1610 (\`#L1610\`) |
-| `SB-SRC-0024/CASCADE_OUTCOME-06` | Outcome cannot be inferred from available execution/receipt evidence | L1611 (\`#L1611\`) |
-| `SB-SRC-0024/REUSE_KIND-01` | Executed afresh during this Run | L1640 (\`#L1640\`) |
-| `SB-SRC-0024/REUSE_KIND-02` | Coalesced equivalent commands inside one plan | L1641 (\`#L1641\`) |
-| `SB-SRC-0024/REUSE_KIND-03` | Reused an eligible previously cached result | L1642 (\`#L1642\`) |
-| `SB-SRC-0024/REUSE_KIND-04` | Reused a prior Case result subject to eligibility and evidence checks | L1643 (\`#L1643\`) |
-| `SB-SRC-0024/ANTIPATTERN-01` | Do not show every technical Command as a primary navigation object | L1754 (\`#L1754\`) |
-| `SB-SRC-0024/ANTIPATTERN-02` | Do not merge all semantic levels into one giant ScenarioSpec | L1755 (\`#L1755\`) |
-| `SB-SRC-0024/ANTIPATTERN-03` | Do not deduplicate solely by command identifier | L1756 (\`#L1756\`) |
-| `SB-SRC-0024/ANTIPATTERN-04` | Do not make background execution a separate parallel workflow system | L1757 (\`#L1757\`) |
-| `SB-SRC-0024/ANTIPATTERN-05` | Do not hide plan optimization and its provenance | L1758 (\`#L1758\`) |
-| `SB-SRC-0024/ANTIPATTERN-06` | Do not model Cascade as a mere list of Commands, erasing Scenario identity | L1759 (\`#L1759\`) |
-| `SB-SRC-0024/ANTIPATTERN-07` | Do not restrict one Scenario to membership of just one Cascade | L1760 (\`#L1760\`) |
-| `SB-SRC-0024/ANTIPATTERN-08` | Do not confuse a UI file-opening action with a domain data workflow | L1761 (\`#L1761\`) |
-| `SB-SRC-0024/ANTIPATTERN-09` | Do not let an AI actor bypass discovered contracts and authorization | L1762 (\`#L1762\`) |
-| `SB-SRC-0024/ARCH_CHOICE-01` | Keep technical Commands out of main user navigation | L1871 (\`#L1871\`) |
-| `SB-SRC-0024/ARCH_CHOICE-02` | One Scenario may have multiple constituent Commands | L1872 (\`#L1872\`) |
-| `SB-SRC-0024/ARCH_CHOICE-03` | One Scenario can belong to several Cascades | L1873 (\`#L1873\`) |
-| `SB-SRC-0024/ARCH_CHOICE-04` | Cascade should not be conflated with the Scenario identity | L1874 (\`#L1874\`) |
-| `SB-SRC-0024/ARCH_CHOICE-05` | Background is an execution mode, not a Scenario type | L1875 (\`#L1875\`) |
-| `SB-SRC-0024/ARCH_CHOICE-06` | Assignment is a task/ownership relation, not a Scenario type | L1876 (\`#L1876\`) |
-| `SB-SRC-0024/ARCH_CHOICE-07` | Build a candidate ExecutionPlan before execution | L1877 (\`#L1877\`) |
-| `SB-SRC-0024/ARCH_CHOICE-08` | Never deduplicate solely by command_id | L1878 (\`#L1878\`) |
-| `SB-SRC-0024/ARCH_CHOICE-09` | Perform equivalent-work deduplication in a planner | L1879 (\`#L1879\`) |
-| `SB-SRC-0024/ARCH_CHOICE-10` | Preserve planner deduplication decisions for inspection | L1880 (\`#L1880\`) |
-| `SB-SRC-0024/ARCH_CHOICE-11` | Planner may parallelize when dependencies and policies allow | L1881 (\`#L1881\`) |
-| `SB-SRC-0024/ARCH_CHOICE-12` | Expose raw Commands to AI only through a separately admitted capability | L1882 (\`#L1882\`) |
-| `SB-SRC-0024/ARCH_CHOICE-13` | Publish high-level Scenario/Cascade and service actions at an external platform boundary | L1883 (\`#L1883\`) |
-| `SB-SRC-0024/ARCH_CHOICE-14` | Future Android semantic client must not depend on Qt/Windows specifics | L1884 (\`#L1884\`) |
+| `SB-SRC-0024/FAILURE_MODE-01` | Stop dependent future work after a material failure | L1586 (`#L1586`) |
+| `SB-SRC-0024/FAILURE_MODE-02` | Continue independent graph branches but block failed dependencies | L1587 (`#L1587`) |
+| `SB-SRC-0024/FAILURE_MODE-03` | Continue steps with currently satisfied preconditions | L1588 (`#L1588`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-01` | All qualified required goals completed | L1606 (`#L1606`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-02` | Completed with explicit user-relevant warnings | L1607 (`#L1607`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-03` | Some branches succeeded and other results/residuals remain visible | L1608 (`#L1608`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-04` | Required condition failed | L1609 (`#L1609`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-05` | Confirmed cancellation under admitted effect policy | L1610 (`#L1610`) |
+| `SB-SRC-0024/CASCADE_OUTCOME-06` | Outcome cannot be inferred from available execution/receipt evidence | L1611 (`#L1611`) |
+| `SB-SRC-0024/REUSE_KIND-01` | Executed afresh during this Run | L1640 (`#L1640`) |
+| `SB-SRC-0024/REUSE_KIND-02` | Coalesced equivalent commands inside one plan | L1641 (`#L1641`) |
+| `SB-SRC-0024/REUSE_KIND-03` | Reused an eligible previously cached result | L1642 (`#L1642`) |
+| `SB-SRC-0024/REUSE_KIND-04` | Reused a prior Case result subject to eligibility and evidence checks | L1643 (`#L1643`) |
+| `SB-SRC-0024/ANTIPATTERN-01` | Do not show every technical Command as a primary navigation object | L1754 (`#L1754`) |
+| `SB-SRC-0024/ANTIPATTERN-02` | Do not merge all semantic levels into one giant ScenarioSpec | L1755 (`#L1755`) |
+| `SB-SRC-0024/ANTIPATTERN-03` | Do not deduplicate solely by command identifier | L1756 (`#L1756`) |
+| `SB-SRC-0024/ANTIPATTERN-04` | Do not make background execution a separate parallel workflow system | L1757 (`#L1757`) |
+| `SB-SRC-0024/ANTIPATTERN-05` | Do not hide plan optimization and its provenance | L1758 (`#L1758`) |
+| `SB-SRC-0024/ANTIPATTERN-06` | Do not model Cascade as a mere list of Commands, erasing Scenario identity | L1759 (`#L1759`) |
+| `SB-SRC-0024/ANTIPATTERN-07` | Do not restrict one Scenario to membership of just one Cascade | L1760 (`#L1760`) |
+| `SB-SRC-0024/ANTIPATTERN-08` | Do not confuse a UI file-opening action with a domain data workflow | L1761 (`#L1761`) |
+| `SB-SRC-0024/ANTIPATTERN-09` | Do not let an AI actor bypass discovered contracts and authorization | L1762 (`#L1762`) |
+| `SB-SRC-0024/ARCH_CHOICE-01` | Keep technical Commands out of main user navigation | L1871 (`#L1871`) |
+| `SB-SRC-0024/ARCH_CHOICE-02` | One Scenario may have multiple constituent Commands | L1872 (`#L1872`) |
+| `SB-SRC-0024/ARCH_CHOICE-03` | One Scenario can belong to several Cascades | L1873 (`#L1873`) |
+| `SB-SRC-0024/ARCH_CHOICE-04` | Cascade should not be conflated with the Scenario identity | L1874 (`#L1874`) |
+| `SB-SRC-0024/ARCH_CHOICE-05` | Background is an execution mode, not a Scenario type | L1875 (`#L1875`) |
+| `SB-SRC-0024/ARCH_CHOICE-06` | Assignment is a task/ownership relation, not a Scenario type | L1876 (`#L1876`) |
+| `SB-SRC-0024/ARCH_CHOICE-07` | Build a candidate ExecutionPlan before execution | L1877 (`#L1877`) |
+| `SB-SRC-0024/ARCH_CHOICE-08` | Never deduplicate solely by command_id | L1878 (`#L1878`) |
+| `SB-SRC-0024/ARCH_CHOICE-09` | Perform equivalent-work deduplication in a planner | L1879 (`#L1879`) |
+| `SB-SRC-0024/ARCH_CHOICE-10` | Preserve planner deduplication decisions for inspection | L1880 (`#L1880`) |
+| `SB-SRC-0024/ARCH_CHOICE-11` | Planner may parallelize when dependencies and policies allow | L1881 (`#L1881`) |
+| `SB-SRC-0024/ARCH_CHOICE-12` | Expose raw Commands to AI only through a separately admitted capability | L1882 (`#L1882`) |
+| `SB-SRC-0024/ARCH_CHOICE-13` | Publish high-level Scenario/Cascade and service actions at an external platform boundary | L1883 (`#L1883`) |
+| `SB-SRC-0024/ARCH_CHOICE-14` | Future Android semantic client must not depend on Qt/Windows specifics | L1884 (`#L1884`) |
 
 **Counterargument:** the original flat `Command → Scenario → Cascade` proposal helps user discoverability but a domain-only library consumer may need a typed reusable composition without a separate application Scenario. Other Research proposes `OperationDefinition`, `SchemeSpec` and `Work` with different owner boundaries. Do not resolve those by aliasing every term or creating a new package for every noun. The substantive design test is whether a composition has independent user meaning, versioning, effect authority, reuse, scheduling or accepted results. Identity and lifecycle boundaries must follow actual consumer needs.
 
@@ -209,22 +209,22 @@ The dated Topic 01 source explicitly compared **five competing ontology/engine m
 
 | Source ID | Source-preserving English interpretation | Qualification | Frozen research line |
 | --- | --- | --- | --- |
-| `SB-SRC-0554/ONT-01` | Model A keeps operations as direct Python functions and human scripts; its low maintenance cost is real, while machine discovery and stable identity remain unprovided. | `ALTERNATIVE_A` | L214 (\`#L214\`) |
-| `SB-SRC-0554/ONT-02` | Model B assigns independent identities/lifecycles to five overlapping Command/Operation/Scenario/Cascade/Scheme types; repeated semantics and owner drift make this costly. | `ALTERNATIVE_B` | L222 (\`#L222\`) |
-| `SB-SRC-0554/ONT-03` | Model C lets human Scenario and Cascade own composition and treats Scheme as AI description; it is near the current UI but risks making machine procedure depend on changing UI definitions. | `ALTERNATIVE_C` | L230 (\`#L230\`) |
-| `SB-SRC-0554/ONT-04` | Model D favors one subject-capability owner, reusable composition and separate human/AI projections, while requiring typed binding discipline. | `ALTERNATIVE_D_PREFERRED_BY_RESEARCH` | L238 (\`#L238\`) |
-| `SB-SRC-0554/ONT-05` | Model E treats a full external workflow engine/formalism as ontology; rich scheduling trades off platform dependency and overhead for simple Python analytics. | `ALTERNATIVE_E` | L246 (\`#L246\`) |
-| `SB-SRC-0554/ONT-06` | The five-model comparison was explicitly qualitative expert judgment, NOT an executed benchmark or an established ranking from measured user workloads. | `EVALUATION_LIMIT` | L254 (\`#L254\`) |
-| `SB-SRC-0554/ONT-07` | A Python import/function name and a stable domain Operation ID are different identities; module refactoring need not change analytical meaning. | `SEMANTIC_STABILITY` | L337 (\`#L337\`) |
-| `SB-SRC-0554/ONT-08` | A large Cascade UI category does not inherently require a third execution engine beyond reusable compositions. | `ENGINE_NONSEQUITUR` | L341 (\`#L341\`) |
-| `SB-SRC-0554/ONT-09` | Machine discoverability never grants execution authorization; schema description, principal privileges and effects must be checked separately. | `SECURITY_BOUNDARY` | L343 (\`#L343\`) |
-| `SB-SRC-0554/ONT-10` | A simple AI-facing Scheme projection of an Operation ordinarily needs no separate Scheme identity; changing button wording does not change economic method revision. | `SCHEME_PROJECTION_CASE` | L532 (\`#L532\`) |
-| `SB-SRC-0554/ONT-11` | A Scheme identity can be justified by independently reusable method/policy semantics, tests and governance beyond merely rendering one Operation differently. | `SCHEME_INDEPENDENT_OWNER_CASE` | L549 (\`#L549\`) |
-| `SB-SRC-0554/ONT-12` | A Cascade used only as a named navigational grouping is a collection, not a runnable composition. | `CASCADE_CATALOG_CASE` | L615 (\`#L615\`) |
-| `SB-SRC-0554/ONT-13` | An executable Cascade can be a shared composition of operations, not an intrinsically different solver or executor. | `CASCADE_COMPOSITION_CASE` | L617 (\`#L617\`) |
-| `SB-SRC-0554/ONT-14` | A program-level Cascade with delegated independent Work and human reviews would require separate owner/lifecycle evidence; the source called it premature for topic 01. | `CASCADE_PROGRAM_CASE` | L619 (\`#L619\`) |
-| `SB-SRC-0554/ONT-15` | AI-facing read-only/tool metadata is a declaration, not enforcement of actual effects or permissions at runtime. | `MACHINE_METADATA_NONIMPLICATION` | L781 (\`#L781\`) |
-| `SB-SRC-0554/ONT-16` | An agent-authored plan is not an admitted execution plan; binding must validate actual capability, input schema, permissions, versions and risk limits. | `AGENT_PLAN_ADMISSION_BOUNDARY` | L791 (\`#L791\`) |
+| `SB-SRC-0554/ONT-01` | Model A keeps operations as direct Python functions and human scripts; its low maintenance cost is real, while machine discovery and stable identity remain unprovided. | `ALTERNATIVE_A` | L214 (`#L214`) |
+| `SB-SRC-0554/ONT-02` | Model B assigns independent identities/lifecycles to five overlapping Command/Operation/Scenario/Cascade/Scheme types; repeated semantics and owner drift make this costly. | `ALTERNATIVE_B` | L222 (`#L222`) |
+| `SB-SRC-0554/ONT-03` | Model C lets human Scenario and Cascade own composition and treats Scheme as AI description; it is near the current UI but risks making machine procedure depend on changing UI definitions. | `ALTERNATIVE_C` | L230 (`#L230`) |
+| `SB-SRC-0554/ONT-04` | Model D favors one subject-capability owner, reusable composition and separate human/AI projections, while requiring typed binding discipline. | `ALTERNATIVE_D_PREFERRED_BY_RESEARCH` | L238 (`#L238`) |
+| `SB-SRC-0554/ONT-05` | Model E treats a full external workflow engine/formalism as ontology; rich scheduling trades off platform dependency and overhead for simple Python analytics. | `ALTERNATIVE_E` | L246 (`#L246`) |
+| `SB-SRC-0554/ONT-06` | The five-model comparison was explicitly qualitative expert judgment, NOT an executed benchmark or an established ranking from measured user workloads. | `EVALUATION_LIMIT` | L254 (`#L254`) |
+| `SB-SRC-0554/ONT-07` | A Python import/function name and a stable domain Operation ID are different identities; module refactoring need not change analytical meaning. | `SEMANTIC_STABILITY` | L337 (`#L337`) |
+| `SB-SRC-0554/ONT-08` | A large Cascade UI category does not inherently require a third execution engine beyond reusable compositions. | `ENGINE_NONSEQUITUR` | L341 (`#L341`) |
+| `SB-SRC-0554/ONT-09` | Machine discoverability never grants execution authorization; schema description, principal privileges and effects must be checked separately. | `SECURITY_BOUNDARY` | L343 (`#L343`) |
+| `SB-SRC-0554/ONT-10` | A simple AI-facing Scheme projection of an Operation ordinarily needs no separate Scheme identity; changing button wording does not change economic method revision. | `SCHEME_PROJECTION_CASE` | L532 (`#L532`) |
+| `SB-SRC-0554/ONT-11` | A Scheme identity can be justified by independently reusable method/policy semantics, tests and governance beyond merely rendering one Operation differently. | `SCHEME_INDEPENDENT_OWNER_CASE` | L549 (`#L549`) |
+| `SB-SRC-0554/ONT-12` | A Cascade used only as a named navigational grouping is a collection, not a runnable composition. | `CASCADE_CATALOG_CASE` | L615 (`#L615`) |
+| `SB-SRC-0554/ONT-13` | An executable Cascade can be a shared composition of operations, not an intrinsically different solver or executor. | `CASCADE_COMPOSITION_CASE` | L617 (`#L617`) |
+| `SB-SRC-0554/ONT-14` | A program-level Cascade with delegated independent Work and human reviews would require separate owner/lifecycle evidence; the source called it premature for topic 01. | `CASCADE_PROGRAM_CASE` | L619 (`#L619`) |
+| `SB-SRC-0554/ONT-15` | AI-facing read-only/tool metadata is a declaration, not enforcement of actual effects or permissions at runtime. | `MACHINE_METADATA_NONIMPLICATION` | L781 (`#L781`) |
+| `SB-SRC-0554/ONT-16` | An agent-authored plan is not an admitted execution plan; binding must validate actual capability, input schema, permissions, versions and risk limits. | `AGENT_PLAN_ADMISSION_BOUNDARY` | L791 (`#L791`) |
 
 **Falsifiers and costs:** a common compositional definition is worthwhile only when it has real reused consumers and independent semantic constraints. A single notebook can directly invoke domain functions without a graph database. Five parallel semantic registries can create drift, while a prematurely installed full workflow platform can impose high costs for a one-step calculation. If an AI describes a capability it still does not obtain authorization, and a UI Cascade folder must not be mistaken for scheduled Work. A more powerful Scheme identity requires independent tests, lifecycle and use that justify its storage and governance. Each option remains reviewable under a real product Work scenario.
 

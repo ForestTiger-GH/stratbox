@@ -151,18 +151,18 @@ Four original historical files are research/forensic evidence, **not contemporar
 
 | Historical source item | Meaning or dated claim, with qualifications | Exact original line |
 | --- | --- | --- |
-| `SB-SRC-0013/HIST-0003` | Historical scenario-oriented workbench and messenger-like concept | L3 (\`#L3\`) |
-| `SB-SRC-0013/HIST-0011` | Early quiet blue-gray visual language and restrained motion | L11 (\`#L11\`) |
-| `SB-SRC-0013/HIST-0056` | Central scenario-conversation timeline was proposed | L56 (\`#L56\`) |
-| `SB-SRC-0013/HIST-0122` | Workspace file Explorer is a distinct user navigation concern | L122 (\`#L122\`) |
-| `SB-SRC-0014/HIST-0001` | Historical standalone launcher/virtualenv setup design, not current managed deployment | L1 (\`#L1\`) |
-| `SB-SRC-0014/HIST-0021` | Historical app bootstrap from analytical source repository, subject to later platform replacement | L21 (\`#L21\`) |
-| `SB-SRC-0015/HIST-0003` | Historical May reporting-form and presentation-format change claims | L3 (\`#L3\`) |
-| `SB-SRC-0015/HIST-0015` | Historical FRG family/period selection and cleanup evolution claims | L15 (\`#L15\`) |
-| `SB-SRC-0015/HIST-0047` | Historical escrow source parsing and workbook formatting change claims | L47 (\`#L47\`) |
-| `SB-SRC-0015/HIST-0080` | Historical downloaded statistics file archiving and collection claims | L80 (\`#L80\`) |
-| `SB-SRC-0016/HIST-0005` | Historical three-layer concept: reusable domain Python, application adapter and platform-facing boundary | L5 (\`#L5\`) |
-| `SB-SRC-0016/HIST-0024` | Reusable domain operations were proposed instead of UI-coupled scripts and tiny ungoverned helpers | L24 (\`#L24\`) |
+| `SB-SRC-0013/HIST-0003` | Historical scenario-oriented workbench and messenger-like concept | L3 (`#L3`) |
+| `SB-SRC-0013/HIST-0011` | Early quiet blue-gray visual language and restrained motion | L11 (`#L11`) |
+| `SB-SRC-0013/HIST-0056` | Central scenario-conversation timeline was proposed | L56 (`#L56`) |
+| `SB-SRC-0013/HIST-0122` | Workspace file Explorer is a distinct user navigation concern | L122 (`#L122`) |
+| `SB-SRC-0014/HIST-0001` | Historical standalone launcher/virtualenv setup design, not current managed deployment | L1 (`#L1`) |
+| `SB-SRC-0014/HIST-0021` | Historical app bootstrap from analytical source repository, subject to later platform replacement | L21 (`#L21`) |
+| `SB-SRC-0015/HIST-0003` | Historical May reporting-form and presentation-format change claims | L3 (`#L3`) |
+| `SB-SRC-0015/HIST-0015` | Historical FRG family/period selection and cleanup evolution claims | L15 (`#L15`) |
+| `SB-SRC-0015/HIST-0047` | Historical escrow source parsing and workbook formatting change claims | L47 (`#L47`) |
+| `SB-SRC-0015/HIST-0080` | Historical downloaded statistics file archiving and collection claims | L80 (`#L80`) |
+| `SB-SRC-0016/HIST-0005` | Historical three-layer concept: reusable domain Python, application adapter and platform-facing boundary | L5 (`#L5`) |
+| `SB-SRC-0016/HIST-0024` | Reusable domain operations were proposed instead of UI-coupled scripts and tiny ungoverned helpers | L24 (`#L24`) |
 
 **Source-currentness challenge:** an old dedicated bootstrap/launcher diagram does not prove that present desktop activation has the same lifecycle or ownership; those observations belong to pinned implementation and external platform evidence. Scenario-first and proposed visual motifs compete with later workbench, Chat-first and epistemic navigation research; no historical sketch alone determines Product IA. May-2026 domain patch notes are **historical assertions**, not independently re-executed current-code tests. Reusable Python business operations remain a functional direction, but old repository/package boundaries should be chosen only after actual consumers and system-level ownership evidence are established.
 
@@ -174,36 +174,36 @@ The following **30** source-row-traced English interpretations preserve concrete
 
 | Source-origin identity | Source-grounded English claim, preserving its historical force | Disposition | Exact frozen original line |
 | --- | --- | --- | --- |
-| `SB-SRC-0014/HIST-DETAIL-01` | Historical launcher chose a user-writable local installation folder with optional user override; this was an installation approach, not a current AppDock requirement. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L7 (\`#L7\`) |
-| `SB-SRC-0014/HIST-DETAIL-02` | Bootstrap configuration was proposed under per-user local application data, with install/repository/runtime paths, branch, update behavior and active data profile. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L9 (\`#L9\`) |
-| `SB-SRC-0014/HIST-DETAIL-03` | Standalone bootstrap would clone/update a user-selected branch on startup and fall back to the last local revision after network failure. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L11 (\`#L11\`) |
-| `SB-SRC-0014/HIST-DETAIL-04` | The historical launcher would create and maintain its own Python virtual environment and then import/start application UI from the downloaded repository. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L13 (\`#L13\`) |
-| `SB-SRC-0014/HIST-DETAIL-05` | An in-app manual repository-update action would expose the commit and request restart when GUI code changed. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L15 (\`#L15\`) |
-| `SB-SRC-0014/HIST-DETAIL-06` | The older tray model interpreted window close as hide while the process continued, explicitly at odds with a later local-foreground interruption preference. | `SOURCE_CONFLICT_PROFILE_REQUIRED` | L17 (\`#L17\`) |
-| `SB-SRC-0014/HIST-DETAIL-07` | The original FileStore abstraction targeted both mounted and local physical paths, retaining the same domain functions across environments. | `RETAINED_SEMANTIC_MOTIVE` | L29 (\`#L29\`) |
-| `SB-SRC-0014/HIST-DETAIL-08` | Local, mounted and speculative home-server data profiles were proposed with reachability and read/write checks; concrete path letters were examples, not portable contracts. | `HISTORICAL_PROFILE_CONDITIONAL` | L31 (\`#L31\`) |
-| `SB-SRC-0014/HIST-DETAIL-09` | Monitoring functions were proposed to remain callable manually and by an external scheduler; the GUI need not itself own continuous execution. | `CANDIDATE_SEPARATE_EXECUTION_OWNER` | L35 (\`#L35\`) |
-| `SB-SRC-0014/HIST-DETAIL-10` | The then-proposed packaging placed UI and domain logic inside one source repository, with a stable independent executable launcher. | `HISTORICAL_REPOSITORY_TOPOLOGY_SUPERSEDED` | L37 (\`#L37\`) |
-| `SB-SRC-0015/HIST-DETAIL-11` | A May 2026 change note reports adding regulatory form 805 and sharing a prudential-indicator handling path between forms 135 and 805. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L5 (\`#L5\`) |
-| `SB-SRC-0015/HIST-DETAIL-12` | The same dated note reports expanded indicator catalogs and resilient letter-code normalization across case and alphabet variants. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L7 (\`#L7\`) |
-| `SB-SRC-0015/HIST-DETAIL-13` | The note describes standardized abbreviated uppercase bank display labels in default export tables, a presentation choice distinct from source identifier. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L9 (\`#L9\`) |
-| `SB-SRC-0015/HIST-DETAIL-14` | The note describes a thousands separator for numeric Excel presentation, not a change to stored economic value. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L11 (\`#L11\`) |
-| `SB-SRC-0015/HIST-DETAIL-15` | An FRG discovery stage was described as inventorying a directory, recognizing file families and periods, then selecting the latest eligible file per family. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L19 (\`#L19\`) |
-| `SB-SRC-0015/HIST-DETAIL-16` | FRG regional family selection was changed to reject obsolete layouts after a shift in mortgage breakout schema. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L27 (\`#L27\`) |
-| `SB-SRC-0015/HIST-DETAIL-17` | Within a month, FRG weekly-file discovery was described as filtering obsolete older weeks. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L29 (\`#L29\`) |
-| `SB-SRC-0015/HIST-DETAIL-18` | FRG accepted both publisher names and normalized internal names; selection of one physical file cannot be inferred from naming convention alone. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L31 (\`#L31\`) |
-| `SB-SRC-0015/HIST-DETAIL-19` | Unrecognized or incidental FRG directory files were explicitly designated as out of cleanup scope. | `HISTORICAL_SAFETY_GUARD` | L35 (\`#L35\`) |
-| `SB-SRC-0015/HIST-DETAIL-20` | The FRG cleanup operation was described as copy/rename of selected files and deletion limited to eligible obsolete files; destructive effects need current code evidence. | `HISTORICAL_SAFETY_GUARD` | L37 (\`#L37\`) |
-| `SB-SRC-0015/HIST-DETAIL-21` | Escrow extraction was described as a staged link acquisition, source download, parse, canonical-long, pivot and Excel-or-ZIP export pipeline. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L50 (\`#L50\`) |
-| `SB-SRC-0015/HIST-DETAIL-22` | Escrow row recognition distinguished federal districts, constituent regions and Russia-wide totals to avoid aggregation/perimeter conflation. | `HISTORICAL_SEMANTIC_GUARD` | L54 (\`#L54\`) |
-| `SB-SRC-0015/HIST-DETAIL-23` | Escrow output preserved publisher source row order through a display-order field rather than using an arbitrary alphabetical arrangement. | `HISTORICAL_PRESENTATION_GUARD` | L55 (\`#L55\`) |
-| `SB-SRC-0015/HIST-DETAIL-24` | Stable derived workbook sheet labels were introduced to reduce breakage of downstream links after a header wording change. | `HISTORICAL_PRESENTATION_GUARD` | L57 (\`#L57\`) |
-| `SB-SRC-0015/HIST-DETAIL-25` | Escrow parsing explicitly recognized old, intermediate and newer publication layouts; success for one layout does not establish support for unseen revisions. | `HISTORICAL_FORMAT_COMPATIBILITY` | L67 (\`#L67\`) |
-| `SB-SRC-0015/HIST-DETAIL-26` | Known escrow indicator columns could be absent for particular reporting dates without making the entire source unusable. | `HISTORICAL_MISSINGNESS_SEMANTICS` | L71 (\`#L71\`) |
-| `SB-SRC-0015/HIST-DETAIL-27` | The resulting workbook was described as keeping the complete worksheet catalog even if some indicators were unavailable in specific vintages. | `HISTORICAL_PRESENTATION_GUARD` | L72 (\`#L72\`) |
-| `SB-SRC-0015/HIST-DETAIL-28` | Statistical files in the May collector were meant to be stored as downloaded bytes, without parsing or restructuring by the collector. | `HISTORICAL_SOURCE_FIDELITY_CLAIM` | L94 (\`#L94\`) |
-| `SB-SRC-0015/HIST-DETAIL-29` | Duplicate downloaded filenames were reported to be disambiguated before saving, consistent with the later directly observed public collector path. | `HISTORICAL_IMPLEMENTATION_CLAIM_CURRENT_WITNESS` | L98 (\`#L98\`) |
-| `SB-SRC-0015/HIST-DETAIL-30` | The collector offered partial-success behavior with failed source addresses recorded while remaining downloads continued. | `HISTORICAL_ERROR_HANDLING_CLAIM` | L100 (\`#L100\`) |
+| `SB-SRC-0014/HIST-DETAIL-01` | Historical launcher chose a user-writable local installation folder with optional user override; this was an installation approach, not a current AppDock requirement. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L7 (`#L7`) |
+| `SB-SRC-0014/HIST-DETAIL-02` | Bootstrap configuration was proposed under per-user local application data, with install/repository/runtime paths, branch, update behavior and active data profile. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L9 (`#L9`) |
+| `SB-SRC-0014/HIST-DETAIL-03` | Standalone bootstrap would clone/update a user-selected branch on startup and fall back to the last local revision after network failure. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L11 (`#L11`) |
+| `SB-SRC-0014/HIST-DETAIL-04` | The historical launcher would create and maintain its own Python virtual environment and then import/start application UI from the downloaded repository. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L13 (`#L13`) |
+| `SB-SRC-0014/HIST-DETAIL-05` | An in-app manual repository-update action would expose the commit and request restart when GUI code changed. | `HISTORICAL_PROPOSAL_SUPERSEDED` | L15 (`#L15`) |
+| `SB-SRC-0014/HIST-DETAIL-06` | The older tray model interpreted window close as hide while the process continued, explicitly at odds with a later local-foreground interruption preference. | `SOURCE_CONFLICT_PROFILE_REQUIRED` | L17 (`#L17`) |
+| `SB-SRC-0014/HIST-DETAIL-07` | The original FileStore abstraction targeted both mounted and local physical paths, retaining the same domain functions across environments. | `RETAINED_SEMANTIC_MOTIVE` | L29 (`#L29`) |
+| `SB-SRC-0014/HIST-DETAIL-08` | Local, mounted and speculative home-server data profiles were proposed with reachability and read/write checks; concrete path letters were examples, not portable contracts. | `HISTORICAL_PROFILE_CONDITIONAL` | L31 (`#L31`) |
+| `SB-SRC-0014/HIST-DETAIL-09` | Monitoring functions were proposed to remain callable manually and by an external scheduler; the GUI need not itself own continuous execution. | `CANDIDATE_SEPARATE_EXECUTION_OWNER` | L35 (`#L35`) |
+| `SB-SRC-0014/HIST-DETAIL-10` | The then-proposed packaging placed UI and domain logic inside one source repository, with a stable independent executable launcher. | `HISTORICAL_REPOSITORY_TOPOLOGY_SUPERSEDED` | L37 (`#L37`) |
+| `SB-SRC-0015/HIST-DETAIL-11` | A May 2026 change note reports adding regulatory form 805 and sharing a prudential-indicator handling path between forms 135 and 805. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L5 (`#L5`) |
+| `SB-SRC-0015/HIST-DETAIL-12` | The same dated note reports expanded indicator catalogs and resilient letter-code normalization across case and alphabet variants. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L7 (`#L7`) |
+| `SB-SRC-0015/HIST-DETAIL-13` | The note describes standardized abbreviated uppercase bank display labels in default export tables, a presentation choice distinct from source identifier. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L9 (`#L9`) |
+| `SB-SRC-0015/HIST-DETAIL-14` | The note describes a thousands separator for numeric Excel presentation, not a change to stored economic value. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L11 (`#L11`) |
+| `SB-SRC-0015/HIST-DETAIL-15` | An FRG discovery stage was described as inventorying a directory, recognizing file families and periods, then selecting the latest eligible file per family. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L19 (`#L19`) |
+| `SB-SRC-0015/HIST-DETAIL-16` | FRG regional family selection was changed to reject obsolete layouts after a shift in mortgage breakout schema. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L27 (`#L27`) |
+| `SB-SRC-0015/HIST-DETAIL-17` | Within a month, FRG weekly-file discovery was described as filtering obsolete older weeks. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L29 (`#L29`) |
+| `SB-SRC-0015/HIST-DETAIL-18` | FRG accepted both publisher names and normalized internal names; selection of one physical file cannot be inferred from naming convention alone. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L31 (`#L31`) |
+| `SB-SRC-0015/HIST-DETAIL-19` | Unrecognized or incidental FRG directory files were explicitly designated as out of cleanup scope. | `HISTORICAL_SAFETY_GUARD` | L35 (`#L35`) |
+| `SB-SRC-0015/HIST-DETAIL-20` | The FRG cleanup operation was described as copy/rename of selected files and deletion limited to eligible obsolete files; destructive effects need current code evidence. | `HISTORICAL_SAFETY_GUARD` | L37 (`#L37`) |
+| `SB-SRC-0015/HIST-DETAIL-21` | Escrow extraction was described as a staged link acquisition, source download, parse, canonical-long, pivot and Excel-or-ZIP export pipeline. | `HISTORICAL_IMPLEMENTATION_CLAIM` | L50 (`#L50`) |
+| `SB-SRC-0015/HIST-DETAIL-22` | Escrow row recognition distinguished federal districts, constituent regions and Russia-wide totals to avoid aggregation/perimeter conflation. | `HISTORICAL_SEMANTIC_GUARD` | L54 (`#L54`) |
+| `SB-SRC-0015/HIST-DETAIL-23` | Escrow output preserved publisher source row order through a display-order field rather than using an arbitrary alphabetical arrangement. | `HISTORICAL_PRESENTATION_GUARD` | L55 (`#L55`) |
+| `SB-SRC-0015/HIST-DETAIL-24` | Stable derived workbook sheet labels were introduced to reduce breakage of downstream links after a header wording change. | `HISTORICAL_PRESENTATION_GUARD` | L57 (`#L57`) |
+| `SB-SRC-0015/HIST-DETAIL-25` | Escrow parsing explicitly recognized old, intermediate and newer publication layouts; success for one layout does not establish support for unseen revisions. | `HISTORICAL_FORMAT_COMPATIBILITY` | L67 (`#L67`) |
+| `SB-SRC-0015/HIST-DETAIL-26` | Known escrow indicator columns could be absent for particular reporting dates without making the entire source unusable. | `HISTORICAL_MISSINGNESS_SEMANTICS` | L71 (`#L71`) |
+| `SB-SRC-0015/HIST-DETAIL-27` | The resulting workbook was described as keeping the complete worksheet catalog even if some indicators were unavailable in specific vintages. | `HISTORICAL_PRESENTATION_GUARD` | L72 (`#L72`) |
+| `SB-SRC-0015/HIST-DETAIL-28` | Statistical files in the May collector were meant to be stored as downloaded bytes, without parsing or restructuring by the collector. | `HISTORICAL_SOURCE_FIDELITY_CLAIM` | L94 (`#L94`) |
+| `SB-SRC-0015/HIST-DETAIL-29` | Duplicate downloaded filenames were reported to be disambiguated before saving, consistent with the later directly observed public collector path. | `HISTORICAL_IMPLEMENTATION_CLAIM_CURRENT_WITNESS` | L98 (`#L98`) |
+| `SB-SRC-0015/HIST-DETAIL-30` | The collector offered partial-success behavior with failed source addresses recorded while remaining downloads continued. | `HISTORICAL_ERROR_HANDLING_CLAIM` | L100 (`#L100`) |
 
 **Adversarial constraints:** The earlier executable/bootstrap-owned repository sync and virtual-environment lifecycle must not be reintroduced as an implicit current requirement when managed installation is observed through a distinct platform. The historical tray-close model conflicts with a later user-stated local interruption expectation; different deployment profiles and tested actual execution ownership are necessary before interpreting either as universally binding. The same bank form name, FRG family or escrow workbook layout can change across revisions; reporting that a May patch once asserted its support does not prove present regulatory schema compatibility or numerical accuracy. Staged local cleanup and raw statistical collector controls must retain their separate source identity and effect-policy requirements. No confidential integration-specific historical passage is reproduced here.
 
@@ -211,29 +211,29 @@ The following **30** source-row-traced English interpretations preserve concrete
 
 ## Corpus Map source register: twenty dated preliminary system-wide boundaries
 
-The frozen 2026-10-08 Corpus Map, §15 (\`#L1276-L1299\`) records twenty **preliminary** boundary statements, prior to the dedicated later quality/architecture studies. They remain dated Research candidates, not implemented guarantees or independent formal assurance. Their English interpretations are preserved individually with frozen original line links; some are conditional on a real shared-node/host deployment.
+The frozen 2026-10-08 Corpus Map, §15 (`#L1276-L1299`) records twenty **preliminary** boundary statements, prior to the dedicated later quality/architecture studies. They remain dated Research candidates, not implemented guarantees or independent formal assurance. Their English interpretations are preserved individually with frozen original line links; some are conditional on a real shared-node/host deployment.
 
 | Research item | English proposed boundary and qualification | Exact original row |
 | --- | --- | --- |
-| `SB-SRC-0048/PRELIM-01` | Transport failure cannot be silently treated as a valid empty result. | L1280 (\`#L1280\`) |
-| `SB-SRC-0048/PRELIM-02` | UI is a representation, not the owner of durable Work/Job truth. | L1281 (\`#L1281\`) |
-| `SB-SRC-0048/PRELIM-03` | Closing a client window does not by itself cancel a host-owned Job. | L1282 (\`#L1282\`) |
-| `SB-SRC-0048/PRELIM-04` | Foreground/background/scheduled/remote/AI initiators share applicable authorized execution semantics. | L1283 (\`#L1283\`) |
-| `SB-SRC-0048/PRELIM-05` | A late cancel request cannot erase an already committed terminal outcome. | L1284 (\`#L1284\`) |
-| `SB-SRC-0048/PRELIM-06` | An unknown external effect remains UNKNOWN until reconciliation. | L1285 (\`#L1285\`) |
-| `SB-SRC-0048/PRELIM-07` | Retry depends on a proven idempotency and effect scope. | L1286 (\`#L1286\`) |
-| `SB-SRC-0048/PRELIM-08` | Partial destructive effects cannot masquerade as fully successful. | L1287 (\`#L1287\`) |
-| `SB-SRC-0048/PRELIM-09` | Physical file path is not a managed Artifact's durable identity. | L1288 (\`#L1288\`) |
-| `SB-SRC-0048/PRELIM-10` | Committed Artifact bytes cannot silently mutate; replacement requires a new identity/version. | L1289 (\`#L1289\`) |
-| `SB-SRC-0048/PRELIM-11` | SourceSnapshot, canonical observation and derived Result differ in identity. | L1290 (\`#L1290\`) |
-| `SB-SRC-0048/PRELIM-12` | Source and registry revision identity belongs in provenance. | L1291 (\`#L1291\`) |
-| `SB-SRC-0048/PRELIM-13` | A presentation cannot strengthen domain confidence or evidence tier. | L1292 (\`#L1292\`) |
-| `SB-SRC-0048/PRELIM-14` | Public core uses neutral contracts and avoids deployment-specific private details. | L1293 (\`#L1293\`) |
-| `SB-SRC-0048/PRELIM-15` | An installed extension is not necessarily an active binding. | L1294 (\`#L1294\`) |
-| `SB-SRC-0048/PRELIM-16` | AI discovery cannot grant authority beyond explicit capability and policy. | L1295 (\`#L1295\`) |
-| `SB-SRC-0048/PRELIM-17` | Raw logs are diagnostic evidence, not canonical Work/Job state. | L1296 (\`#L1296\`) |
-| `SB-SRC-0048/PRELIM-18` | Per-user unread cannot be a mutable shared-node flag. | L1297 (\`#L1297\`) |
-| `SB-SRC-0048/PRELIM-19` | Resource conflicts are scoped to actual resources rather than universal one-Job serial execution. | L1298 (\`#L1298\`) |
-| `SB-SRC-0048/PRELIM-20` | Native toolkit widgets must not own analytical execution semantics. | L1299 (\`#L1299\`) |
+| `SB-SRC-0048/PRELIM-01` | Transport failure cannot be silently treated as a valid empty result. | L1280 (`#L1280`) |
+| `SB-SRC-0048/PRELIM-02` | UI is a representation, not the owner of durable Work/Job truth. | L1281 (`#L1281`) |
+| `SB-SRC-0048/PRELIM-03` | Closing a client window does not by itself cancel a host-owned Job. | L1282 (`#L1282`) |
+| `SB-SRC-0048/PRELIM-04` | Foreground/background/scheduled/remote/AI initiators share applicable authorized execution semantics. | L1283 (`#L1283`) |
+| `SB-SRC-0048/PRELIM-05` | A late cancel request cannot erase an already committed terminal outcome. | L1284 (`#L1284`) |
+| `SB-SRC-0048/PRELIM-06` | An unknown external effect remains UNKNOWN until reconciliation. | L1285 (`#L1285`) |
+| `SB-SRC-0048/PRELIM-07` | Retry depends on a proven idempotency and effect scope. | L1286 (`#L1286`) |
+| `SB-SRC-0048/PRELIM-08` | Partial destructive effects cannot masquerade as fully successful. | L1287 (`#L1287`) |
+| `SB-SRC-0048/PRELIM-09` | Physical file path is not a managed Artifact's durable identity. | L1288 (`#L1288`) |
+| `SB-SRC-0048/PRELIM-10` | Committed Artifact bytes cannot silently mutate; replacement requires a new identity/version. | L1289 (`#L1289`) |
+| `SB-SRC-0048/PRELIM-11` | SourceSnapshot, canonical observation and derived Result differ in identity. | L1290 (`#L1290`) |
+| `SB-SRC-0048/PRELIM-12` | Source and registry revision identity belongs in provenance. | L1291 (`#L1291`) |
+| `SB-SRC-0048/PRELIM-13` | A presentation cannot strengthen domain confidence or evidence tier. | L1292 (`#L1292`) |
+| `SB-SRC-0048/PRELIM-14` | Public core uses neutral contracts and avoids deployment-specific private details. | L1293 (`#L1293`) |
+| `SB-SRC-0048/PRELIM-15` | An installed extension is not necessarily an active binding. | L1294 (`#L1294`) |
+| `SB-SRC-0048/PRELIM-16` | AI discovery cannot grant authority beyond explicit capability and policy. | L1295 (`#L1295`) |
+| `SB-SRC-0048/PRELIM-17` | Raw logs are diagnostic evidence, not canonical Work/Job state. | L1296 (`#L1296`) |
+| `SB-SRC-0048/PRELIM-18` | Per-user unread cannot be a mutable shared-node flag. | L1297 (`#L1297`) |
+| `SB-SRC-0048/PRELIM-19` | Resource conflicts are scoped to actual resources rather than universal one-Job serial execution. | L1298 (`#L1298`) |
+| `SB-SRC-0048/PRELIM-20` | Native toolkit widgets must not own analytical execution semantics. | L1299 (`#L1299`) |
 
 **Counterargument and historical limit:** a simple pure Python execution can legitimately have no durable Work/Job database; a closed desktop session can stop local compute. The stronger host-only rules require explicit deployment admission. Later contrary or narrower evidence supersedes target proposals only with a traceable reason, never by erasing historical input. These **20 source rows** do not constitute entire preservation of the 1,510-line original.

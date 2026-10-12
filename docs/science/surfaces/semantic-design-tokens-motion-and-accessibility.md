@@ -144,40 +144,40 @@ No actual Qt a11y regression, Web WCAG pass, Android screen-reader/device compar
 
 ## 10. Frozen motion-source tokens and sixteen state-driven behavior candidates
 
-The dated desktop motion Research (\`#L519-L717\`) proposed an eight-token duration vocabulary and sixteen state-specific animation profiles. The exact **numbers are Research candidate tokens, not calibrated values, approved settings or code already in Windows**. The more durable insight is **motion follows the authoritative state and its meaning**; a spinner cannot establish an actually admitted Job, a file publication or an external source download.
+The dated desktop motion Research (`#L519-L717`) proposed an eight-token duration vocabulary and sixteen state-specific animation profiles. The exact **numbers are Research candidate tokens, not calibrated values, approved settings or code already in Windows**. The more durable insight is **motion follows the authoritative state and its meaning**; a spinner cannot establish an actually admitted Job, a file publication or an external source download.
 
 ### Eight original temporal tokens (candidates)
 
 | Original research item | Proposed time | English intention and limitation | Original source line |
 | --- | ---: | --- | --- |
-| `SB-SRC-0040/DURATION-01` — `motion.instant` | 0 ms | Reduced-motion/disabled/structural snap; keep state meaning visible without transition. | L527 (\`#L527\`) |
-| `SB-SRC-0040/DURATION-02` — `motion.xfast` | 80 ms | Immediate press, focus, tiny opacity feedback. | L528 (\`#L528\`) |
-| `SB-SRC-0040/DURATION-03` — `motion.fast` | 160 ms | Hover settle, insertion or closing a small item. | L529 (\`#L529\`) |
-| `SB-SRC-0040/DURATION-04` — `motion.normal` | 240 ms | A panel/content replacement transition. | L530 (\`#L530\`) |
-| `SB-SRC-0040/DURATION-05` — `motion.slow` | 320 ms | Larger but still restrained structural transition. | L531 (\`#L531\`) |
-| `SB-SRC-0040/DURATION-06` — `motion.emphasis` | 480 ms | Rare connected transition demanding visual continuity, not default navigation. | L532 (\`#L532\`) |
-| `SB-SRC-0040/DURATION-07` — `motion.ambient.fast` | 1400 ms | Compact periodic indicator for genuinely ongoing work, subject to attention budget. | L533 (\`#L533\`) |
-| `SB-SRC-0040/DURATION-08` — `motion.ambient.normal` | 1800 ms | Subtle low-attention process animation, not proof of actual computation. | L534 (\`#L534\`) |
+| `SB-SRC-0040/DURATION-01` — `motion.instant` | 0 ms | Reduced-motion/disabled/structural snap; keep state meaning visible without transition. | L527 (`#L527`) |
+| `SB-SRC-0040/DURATION-02` — `motion.xfast` | 80 ms | Immediate press, focus, tiny opacity feedback. | L528 (`#L528`) |
+| `SB-SRC-0040/DURATION-03` — `motion.fast` | 160 ms | Hover settle, insertion or closing a small item. | L529 (`#L529`) |
+| `SB-SRC-0040/DURATION-04` — `motion.normal` | 240 ms | A panel/content replacement transition. | L530 (`#L530`) |
+| `SB-SRC-0040/DURATION-05` — `motion.slow` | 320 ms | Larger but still restrained structural transition. | L531 (`#L531`) |
+| `SB-SRC-0040/DURATION-06` — `motion.emphasis` | 480 ms | Rare connected transition demanding visual continuity, not default navigation. | L532 (`#L532`) |
+| `SB-SRC-0040/DURATION-07` — `motion.ambient.fast` | 1400 ms | Compact periodic indicator for genuinely ongoing work, subject to attention budget. | L533 (`#L533`) |
+| `SB-SRC-0040/DURATION-08` — `motion.ambient.normal` | 1800 ms | Subtle low-attention process animation, not proof of actual computation. | L534 (`#L534`) |
 
 ### Sixteen original state/projection motion candidates
 
 | Research item | Original state | English user-facing effect and budget | Source line |
 | --- | --- | --- | --- |
-| `SB-SRC-0040/STATE-01` | `idle` | Static; No continuous motion. | L702 (\`#L702\`) |
-| `SB-SRC-0040/STATE-02` | `hover` | Fast fill/color change; Transient only. | L703 (\`#L703\`) |
-| `SB-SRC-0040/STATE-03` | `pressed` | Tiny scale/shade; Transient only. | L704 (\`#L704\`) |
-| `SB-SRC-0040/STATE-04` | `selected` | Border/fill settle; Transient only. | L705 (\`#L705\`) |
-| `SB-SRC-0040/STATE-05` | `prepared` | Item entry or insertion; No continuous motion. | L706 (\`#L706\`) |
-| `SB-SRC-0040/STATE-06` | `queued` | Static queue marker, optional tiny flow indicator; At most minimal ongoing indication. | L707 (\`#L707\`) |
-| `SB-SRC-0040/STATE-07` | `running unknown` | Soft indeterminate process indication; May animate while authoritative state says running. | L708 (\`#L708\`) |
-| `SB-SRC-0040/STATE-08` | `running known` | Determinate progress fill; Animate only on actual observed progress update. | L709 (\`#L709\`) |
-| `SB-SRC-0040/STATE-09` | `waiting user` | One-time attention transition, then static; No continuous distraction. | L710 (\`#L710\`) |
-| `SB-SRC-0040/STATE-10` | `waiting external` | Very subtle waiting indication; Limited ongoing motion, factual external-wait state needed. | L711 (\`#L711\`) |
-| `SB-SRC-0040/STATE-11` | `success` | One-time status settle; No continuous success animation. | L712 (\`#L712\`) |
-| `SB-SRC-0040/STATE-12` | `warning` | One-time accent transition; No perpetual warning pulse. | L713 (\`#L713\`) |
-| `SB-SRC-0040/STATE-13` | `error` | One-time accent transition; No perpetual error pulse. | L714 (\`#L714\`) |
-| `SB-SRC-0040/STATE-14` | `cancelled` | Short fade toward neutral; No continuous motion. | L715 (\`#L715\`) |
-| `SB-SRC-0040/STATE-15` | `disabled` | Static disabled state; No continuous motion. | L716 (\`#L716\`) |
-| `SB-SRC-0040/STATE-16` | `offline` | Static offline indicator; reconnect activity only; No animation except actual reconnect attempt. | L717 (\`#L717\`) |
+| `SB-SRC-0040/STATE-01` | `idle` | Static; No continuous motion. | L702 (`#L702`) |
+| `SB-SRC-0040/STATE-02` | `hover` | Fast fill/color change; Transient only. | L703 (`#L703`) |
+| `SB-SRC-0040/STATE-03` | `pressed` | Tiny scale/shade; Transient only. | L704 (`#L704`) |
+| `SB-SRC-0040/STATE-04` | `selected` | Border/fill settle; Transient only. | L705 (`#L705`) |
+| `SB-SRC-0040/STATE-05` | `prepared` | Item entry or insertion; No continuous motion. | L706 (`#L706`) |
+| `SB-SRC-0040/STATE-06` | `queued` | Static queue marker, optional tiny flow indicator; At most minimal ongoing indication. | L707 (`#L707`) |
+| `SB-SRC-0040/STATE-07` | `running unknown` | Soft indeterminate process indication; May animate while authoritative state says running. | L708 (`#L708`) |
+| `SB-SRC-0040/STATE-08` | `running known` | Determinate progress fill; Animate only on actual observed progress update. | L709 (`#L709`) |
+| `SB-SRC-0040/STATE-09` | `waiting user` | One-time attention transition, then static; No continuous distraction. | L710 (`#L710`) |
+| `SB-SRC-0040/STATE-10` | `waiting external` | Very subtle waiting indication; Limited ongoing motion, factual external-wait state needed. | L711 (`#L711`) |
+| `SB-SRC-0040/STATE-11` | `success` | One-time status settle; No continuous success animation. | L712 (`#L712`) |
+| `SB-SRC-0040/STATE-12` | `warning` | One-time accent transition; No perpetual warning pulse. | L713 (`#L713`) |
+| `SB-SRC-0040/STATE-13` | `error` | One-time accent transition; No perpetual error pulse. | L714 (`#L714`) |
+| `SB-SRC-0040/STATE-14` | `cancelled` | Short fade toward neutral; No continuous motion. | L715 (`#L715`) |
+| `SB-SRC-0040/STATE-15` | `disabled` | Static disabled state; No continuous motion. | L716 (`#L716`) |
+| `SB-SRC-0040/STATE-16` | `offline` | Static offline indicator; reconnect activity only; No animation except actual reconnect attempt. | L717 (`#L717`) |
 
 **Challenges and limits:** reduced-motion settings must provide a static accessible equivalent; a loop should never imply progress without actual observation; animation must cease or be throttled when offscreen or idle; desktop and Android implementations may differ physically while carrying the same semantic role. Token values require actual device, accessibility and UX tests before Product admission. No native Qt/Android code or test result is claimed by preserving this table. It covers **24 exact-source locations** of a much larger motion original; complete source meaning remains unverified.

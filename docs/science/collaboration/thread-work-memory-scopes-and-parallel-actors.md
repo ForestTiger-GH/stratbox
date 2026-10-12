@@ -133,47 +133,47 @@ Related Science: [Work-context navigation](../surfaces/work-context-navigation-a
 
 ## 11. Original competing chat-first proposals and anti-patterns (30 exact study items)
 
-The original Chat / Work / Scheme study (\`#L2504-L2864\`), blob `fe99e04aa38ac7b59fbf8419fa29d6018028ae80`, concluded that a cognitive-first future interface should be Thread/Chat-first while the semantic application remained Work-first. It also explicitly rejected nine failure patterns. These precise propositions and candidate design choices are preserved below as **research findings/proposals, not accepted navigation, actor-cardinality, permission, runtime or protocol requirements**. In particular, a competing operational-first navigation model and an epistemic navigation model are preserved in the documented architecture disagreement.
+The original Chat / Work / Scheme study (`#L2504-L2864`), blob `fe99e04aa38ac7b59fbf8419fa29d6018028ae80`, concluded that a cognitive-first future interface should be Thread/Chat-first while the semantic application remained Work-first. It also explicitly rejected nine failure patterns. These precise propositions and candidate design choices are preserved below as **research findings/proposals, not accepted navigation, actor-cardinality, permission, runtime or protocol requirements**. In particular, a competing operational-first navigation model and an epistemic navigation model are preserved in the documented architecture disagreement.
 
 ### Nine original research anti-patterns with English-rendered reasons
 
 | Item | Source heading | Reason translated into English | Original line |
 | --- | --- | --- | --- |
-| `SB-SRC-0033/ANTIPATTERN-01` | Scenario-first forever | The user is forced to understand internal machine taxonomy before doing work. | L2506–L2508 (\`#L2506-L2508\`) |
-| `SB-SRC-0033/ANTIPATTERN-02` | Chat = source of truth | Material state lives only inside chat messages. | L2510–L2512 (\`#L2510-L2512\`) |
-| `SB-SRC-0033/ANTIPATTERN-03` | One global agent loop | All commands pass sequentially through one active model session. | L2514–L2516 (\`#L2514-L2516\`) |
-| `SB-SRC-0033/ANTIPATTERN-04` | One busy flag | Any Run blocks the entire interface. | L2518–L2520 (\`#L2518-L2520\`) |
-| `SB-SRC-0033/ANTIPATTERN-05` | Shared mutable AI memory | All parallel agents mutate the same shared scratch state. | L2522–L2524 (\`#L2522-L2524\`) |
-| `SB-SRC-0033/ANTIPATTERN-06` | One Case = all semantics | Case expands into a combined Thread, Work, Run and Artifact container. | L2526–L2528 (\`#L2526-L2528\`) |
-| `SB-SRC-0033/ANTIPATTERN-07` | Clone agent = independent evidence | Identical agent copies are incorrectly counted as independent experts. | L2530–L2532 (\`#L2530-L2532\`) |
-| `SB-SRC-0033/ANTIPATTERN-08` | Every event creates chat | Background processes create unnecessary Chat threads and clutter the UI. | L2534–L2536 (\`#L2534-L2536\`) |
-| `SB-SRC-0033/ANTIPATTERN-09` | Schemes hidden completely | Manual supervision and debugging of Schemes become impossible. | L2538–L2540 (\`#L2538-L2540\`) |
+| `SB-SRC-0033/ANTIPATTERN-01` | Scenario-first forever | The user is forced to understand internal machine taxonomy before doing work. | L2506–L2508 (`#L2506-L2508`) |
+| `SB-SRC-0033/ANTIPATTERN-02` | Chat = source of truth | Material state lives only inside chat messages. | L2510–L2512 (`#L2510-L2512`) |
+| `SB-SRC-0033/ANTIPATTERN-03` | One global agent loop | All commands pass sequentially through one active model session. | L2514–L2516 (`#L2514-L2516`) |
+| `SB-SRC-0033/ANTIPATTERN-04` | One busy flag | Any Run blocks the entire interface. | L2518–L2520 (`#L2518-L2520`) |
+| `SB-SRC-0033/ANTIPATTERN-05` | Shared mutable AI memory | All parallel agents mutate the same shared scratch state. | L2522–L2524 (`#L2522-L2524`) |
+| `SB-SRC-0033/ANTIPATTERN-06` | One Case = all semantics | Case expands into a combined Thread, Work, Run and Artifact container. | L2526–L2528 (`#L2526-L2528`) |
+| `SB-SRC-0033/ANTIPATTERN-07` | Clone agent = independent evidence | Identical agent copies are incorrectly counted as independent experts. | L2530–L2532 (`#L2530-L2532`) |
+| `SB-SRC-0033/ANTIPATTERN-08` | Every event creates chat | Background processes create unnecessary Chat threads and clutter the UI. | L2534–L2536 (`#L2534-L2536`) |
+| `SB-SRC-0033/ANTIPATTERN-09` | Schemes hidden completely | Manual supervision and debugging of Schemes become impossible. | L2538–L2540 (`#L2538-L2540`) |
 
 ### Twenty-one explicit design recommendations (historical candidate, not universal target)
 
 | Item | Original question/choice translated | English-rendered research recommendation | Original line |
 | --- | --- | --- | --- |
-| `SB-SRC-0033/UX-CANDIDATE-01` | Primary user-facing object | Thread / Chat | L2844 (\`#L2844\`) |
-| `SB-SRC-0033/UX-CANDIDATE-02` | Primary semantic object | Work | L2845 (\`#L2845\`) |
-| `SB-SRC-0033/UX-CANDIDATE-03` | One concrete execution | Run | L2846 (\`#L2846\`) |
-| `SB-SRC-0033/UX-CANDIDATE-04` | Reusable machine procedure | Scheme | L2847 (\`#L2847\`) |
-| `SB-SRC-0033/UX-CANDIDATE-05` | Atomic capability | Operation | L2848 (\`#L2848\`) |
-| `SB-SRC-0033/UX-CANDIDATE-06` | Persistent cognitive actor identity | Actor | L2849 (\`#L2849\`) |
-| `SB-SRC-0033/UX-CANDIDATE-07` | Parallel local cognition | Independent Activations | L2850 (\`#L2850\`) |
-| `SB-SRC-0033/UX-CANDIDATE-08` | Durable output | Artifact | L2851 (\`#L2851\`) |
-| `SB-SRC-0033/UX-CANDIDATE-09` | The Cascades section | Remove as a separate top-level concept | L2852 (\`#L2852\`) |
-| `SB-SRC-0033/UX-CANDIDATE-10` | The Scenarios section | Move to a capability library / picker | L2853 (\`#L2853\`) |
-| `SB-SRC-0033/UX-CANDIDATE-11` | Right-hand inspector | Retain and enhance for Artifacts and Work | L2854 (\`#L2854\`) |
-| `SB-SRC-0033/UX-CANDIDATE-12` | List of Chats | Persistent side panel, preferably the existing left secondary panel | L2855 (\`#L2855\`) |
-| `SB-SRC-0033/UX-CANDIDATE-13` | Global busy composer state | Remove | L2856 (\`#L2856\`) |
-| `SB-SRC-0033/UX-CANDIDATE-14` | One request necessarily creates a new Chat | No | L2857 (\`#L2857\`) |
-| `SB-SRC-0033/UX-CANDIDATE-15` | One Chat is necessarily one Work | No | L2858 (\`#L2858\`) |
-| `SB-SRC-0033/UX-CANDIDATE-16` | One Work is necessarily one Scheme | No | L2859 (\`#L2859\`) |
-| `SB-SRC-0033/UX-CANDIDATE-17` | One Scheme is necessarily one agent | No | L2860 (\`#L2860\`) |
-| `SB-SRC-0033/UX-CANDIDATE-18` | Same Scheme across N copies | N Runs / Activations | L2861 (\`#L2861\`) |
-| `SB-SRC-0033/UX-CANDIDATE-19` | Shared mutable AI memory | Disallow by default | L2862 (\`#L2862\`) |
-| `SB-SRC-0033/UX-CANDIDATE-20` | Multi-user organization | Federation of Actors | L2863 (\`#L2863\`) |
-| `SB-SRC-0033/UX-CANDIDATE-21` | A2A relationship | Transport adapter, not internal domain model | L2864 (\`#L2864\`) |
+| `SB-SRC-0033/UX-CANDIDATE-01` | Primary user-facing object | Thread / Chat | L2844 (`#L2844`) |
+| `SB-SRC-0033/UX-CANDIDATE-02` | Primary semantic object | Work | L2845 (`#L2845`) |
+| `SB-SRC-0033/UX-CANDIDATE-03` | One concrete execution | Run | L2846 (`#L2846`) |
+| `SB-SRC-0033/UX-CANDIDATE-04` | Reusable machine procedure | Scheme | L2847 (`#L2847`) |
+| `SB-SRC-0033/UX-CANDIDATE-05` | Atomic capability | Operation | L2848 (`#L2848`) |
+| `SB-SRC-0033/UX-CANDIDATE-06` | Persistent cognitive actor identity | Actor | L2849 (`#L2849`) |
+| `SB-SRC-0033/UX-CANDIDATE-07` | Parallel local cognition | Independent Activations | L2850 (`#L2850`) |
+| `SB-SRC-0033/UX-CANDIDATE-08` | Durable output | Artifact | L2851 (`#L2851`) |
+| `SB-SRC-0033/UX-CANDIDATE-09` | The Cascades section | Remove as a separate top-level concept | L2852 (`#L2852`) |
+| `SB-SRC-0033/UX-CANDIDATE-10` | The Scenarios section | Move to a capability library / picker | L2853 (`#L2853`) |
+| `SB-SRC-0033/UX-CANDIDATE-11` | Right-hand inspector | Retain and enhance for Artifacts and Work | L2854 (`#L2854`) |
+| `SB-SRC-0033/UX-CANDIDATE-12` | List of Chats | Persistent side panel, preferably the existing left secondary panel | L2855 (`#L2855`) |
+| `SB-SRC-0033/UX-CANDIDATE-13` | Global busy composer state | Remove | L2856 (`#L2856`) |
+| `SB-SRC-0033/UX-CANDIDATE-14` | One request necessarily creates a new Chat | No | L2857 (`#L2857`) |
+| `SB-SRC-0033/UX-CANDIDATE-15` | One Chat is necessarily one Work | No | L2858 (`#L2858`) |
+| `SB-SRC-0033/UX-CANDIDATE-16` | One Work is necessarily one Scheme | No | L2859 (`#L2859`) |
+| `SB-SRC-0033/UX-CANDIDATE-17` | One Scheme is necessarily one agent | No | L2860 (`#L2860`) |
+| `SB-SRC-0033/UX-CANDIDATE-18` | Same Scheme across N copies | N Runs / Activations | L2861 (`#L2861`) |
+| `SB-SRC-0033/UX-CANDIDATE-19` | Shared mutable AI memory | Disallow by default | L2862 (`#L2862`) |
+| `SB-SRC-0033/UX-CANDIDATE-20` | Multi-user organization | Federation of Actors | L2863 (`#L2863`) |
+| `SB-SRC-0033/UX-CANDIDATE-21` | A2A relationship | Transport adapter, not internal domain model | L2864 (`#L2864`) |
 
 ### Boundary notes on the original candidate design
 

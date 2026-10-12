@@ -187,13 +187,13 @@ These are **research-proposed tests**, not a passed local MCP/A2A interoperabili
 
 | Source unit | Preserved original proposition and status | Failure boundary or contrary case | Exact frozen research witness |
 | --- | --- | --- | --- |
-| `SB-SRC-0041/MCP-DETAIL-01` | The research relates typed MCP tool input/output schemas to typed domain Request/Result contracts; this is a transport-projection opportunity, not an existing Strategy Box tool server. | JSON schema checks transport structure, not CBR data meaning, model acceptance or tool execution rights. | L964–970 (\`#L964-L970\`) |
-| `SB-SRC-0041/MCP-DETAIL-02` | The MCP read-only, destructive, idempotent and open-world annotations were explicitly described as client hints, never an authorization or safety enforcement mechanism. | A false or missing annotation cannot override actual effect policy; the application-side enforcement still needs execution tests. | L972–983 (\`#L972-L983\`) |
-| `SB-SRC-0041/MCP-DETAIL-03` | The research proposed projecting long-running tool calls to an MCP task handle while keeping product Job/Case state internal and authoritative. | An MCP task identity is not necessarily the application's one Run/Job identity and its outcome is not a receipt for domain-side effects. | L985–1004 (\`#L985-L1004\`) |
-| `SB-SRC-0041/MCP-DETAIL-04` | The research identified additional-input pauses for approval, user choice, authentication and conflict resolution during machine invocation. | An input-needed state is not an accepted user approval, delegated authority, authorization success or completion. | L1006–1010 (\`#L1006-L1010\`) |
-| `SB-SRC-0041/MCP-DETAIL-05` | The illustrative cleanup sequence places permission evaluation before user approval, then resumes the same logical work rather than executing a dangerous operation immediately. | The sketch alone cannot choose whether a host waits synchronously, uses an asynchronous task, or must replan after changed parameters/rights. | L1012–1028 (\`#L1012-L1028\`) |
-| `SB-SRC-0041/MCP-DETAIL-06` | The October 2026 original cites the MCP 2026-07-28 deprecation of standalone roots/sampling/logging and recommends avoiding those old back-channel assumptions as the foundation for Strategy Box. | Deprecated does not mean removed or unavailable; version negotiation and migration obligations depend on actual client/server support. | L1030–1038 (\`#L1030-L1038\`) |
-| `SB-SRC-0041/MCP-DETAIL-07` | The older paper proposed a wide platform-owned AI/MCP/permission/scheduler/remote gateway role, but this remains a historical option superseded where it conflicts with the accepted logical Strategy Box host authority. | Only verified external platform capabilities can be relied upon; no bundled MCP server, scheduler, AI host or operational bridge is evidenced. | L1044–1058 (\`#L1044-L1058\`) |
+| `SB-SRC-0041/MCP-DETAIL-01` | The research relates typed MCP tool input/output schemas to typed domain Request/Result contracts; this is a transport-projection opportunity, not an existing Strategy Box tool server. | JSON schema checks transport structure, not CBR data meaning, model acceptance or tool execution rights. | L964–970 (`#L964-L970`) |
+| `SB-SRC-0041/MCP-DETAIL-02` | The MCP read-only, destructive, idempotent and open-world annotations were explicitly described as client hints, never an authorization or safety enforcement mechanism. | A false or missing annotation cannot override actual effect policy; the application-side enforcement still needs execution tests. | L972–983 (`#L972-L983`) |
+| `SB-SRC-0041/MCP-DETAIL-03` | The research proposed projecting long-running tool calls to an MCP task handle while keeping product Job/Case state internal and authoritative. | An MCP task identity is not necessarily the application's one Run/Job identity and its outcome is not a receipt for domain-side effects. | L985–1004 (`#L985-L1004`) |
+| `SB-SRC-0041/MCP-DETAIL-04` | The research identified additional-input pauses for approval, user choice, authentication and conflict resolution during machine invocation. | An input-needed state is not an accepted user approval, delegated authority, authorization success or completion. | L1006–1010 (`#L1006-L1010`) |
+| `SB-SRC-0041/MCP-DETAIL-05` | The illustrative cleanup sequence places permission evaluation before user approval, then resumes the same logical work rather than executing a dangerous operation immediately. | The sketch alone cannot choose whether a host waits synchronously, uses an asynchronous task, or must replan after changed parameters/rights. | L1012–1028 (`#L1012-L1028`) |
+| `SB-SRC-0041/MCP-DETAIL-06` | The October 2026 original cites the MCP 2026-07-28 deprecation of standalone roots/sampling/logging and recommends avoiding those old back-channel assumptions as the foundation for Strategy Box. | Deprecated does not mean removed or unavailable; version negotiation and migration obligations depend on actual client/server support. | L1030–1038 (`#L1030-L1038`) |
+| `SB-SRC-0041/MCP-DETAIL-07` | The older paper proposed a wide platform-owned AI/MCP/permission/scheduler/remote gateway role, but this remains a historical option superseded where it conflicts with the accepted logical Strategy Box host authority. | Only verified external platform capabilities can be relied upon; no bundled MCP server, scheduler, AI host or operational bridge is evidenced. | L1044–1058 (`#L1044-L1058`) |
 
 ### The two kinds of input waiting must not be conflated
 
@@ -215,26 +215,26 @@ The dated Machine Interfaces and Capability Catalog study distinguishes domain O
 
 | Source-origin item | Distinct English proposition | Source status | Exact source line |
 | --- | --- | --- | --- |
-| `SB-SRC-0559/MACHINE-01` | An importable Python helper is not automatically a stable remotely callable subject-matter Operation. | `HELPER_NOT_REMOTE_API` | L129 (\`#L129\`) |
-| `SB-SRC-0559/MACHINE-02` | OperationDefinition describes a subject-matter request/result/effects contract rather than a UI button or MCP message. | `DOMAIN_OPERATION_ID` | L130 (\`#L130\`) |
-| `SB-SRC-0559/MACHINE-03` | CapabilityDefinition may outlive or have multiple implementations; installed code and caller permission are separate predicates. | `CAPABILITY_NOT_BINDING` | L131 (\`#L131\`) |
-| `SB-SRC-0559/MACHINE-04` | ToolProjection is one authorized protocol-specific view of an underlying semantic capability, not a new business algorithm. | `PROTOCOL_PROJECTION` | L132 (\`#L132\`) |
-| `SB-SRC-0559/MACHINE-05` | ExecutionPlan refers to one version-resolved request with bound resources and policy, not an AI's unaccepted textual plan. | `PLAN_ADMISSION` | L134 (\`#L134\`) |
-| `SB-SRC-0559/MACHINE-06` | A single enabled=True flag cannot encode capability existence, installed binding, data readiness and caller authorization. | `FALSE_READY_FLAG` | L145 (\`#L145\`) |
-| `SB-SRC-0559/MACHINE-07` | Before machine registration, require meaningful use, contract, effects, execution conditions and an actual consumer rather than cataloguing utilities speculatively. | `CATALOG_PROPORTIONALITY` | L194 (\`#L194\`) |
-| `SB-SRC-0559/MACHINE-08` | Illustrative operation IDs in a suggested MVP are proposed names; they do not prove that corresponding code or endpoints are released. | `EXAMPLE_NOT_IMPLEMENTATION` | L210 (\`#L210\`) |
-| `SB-SRC-0559/MACHINE-09` | An agent-to-agent task protocol is not automatically a one-to-one transport for one Python Operation. | `A2A_TASK_SCOPE` | L235 (\`#L235\`) |
-| `SB-SRC-0559/MACHINE-10` | The first catalog descriptor should be small but fail closed on missing dangerous-action details instead of equating absent metadata with safety. | `MINIMAL_CONTRACT_WITH_SAFETY` | L251 (\`#L251\`) |
-| `SB-SRC-0559/MACHINE-11` | Trusted server-side bindings select executable modules; an untrusted client must not choose Python import paths or physical host secrets. | `SERVER_BINDING_AUTHORITY` | L319 (\`#L319\`) |
-| `SB-SRC-0559/MACHINE-12` | Availability requires qualified blocked/unknown reasons, rather than only a Boolean; cached status must be rechecked at admission. | `DYNAMIC_AVAILABILITY` | L333 (\`#L333\`) |
-| `SB-SRC-0559/MACHINE-13` | Portable JSON Schema belongs at a boundary, while Python Decimal, DataFrame, periods and source semantic types can remain richer internally. | `RICH_TYPE_PRESERVATION` | L351 (\`#L351\`) |
-| `SB-SRC-0559/MACHINE-14` | Large binary outputs should travel by authorized ArtifactRef/metadata rather than filling an LLM context with entire file bytes. | `LARGE_ARTIFACT_REF` | L365 (\`#L365\`) |
-| `SB-SRC-0559/MACHINE-15` | Thousands of tiny tools and one unrestricted run-anything tool are competing discovery failures. | `TWO_EXTREMES_REJECTED` | L645 (\`#L645\`) |
-| `SB-SRC-0559/MACHINE-16` | A small stable catalog-search/describe/submit surface can coexist with a few popular domain tools as projections of one authoritative catalog. | `TIERED_DISCOVERY_PROPOSAL` | L660 (\`#L660\`) |
-| `SB-SRC-0559/MACHINE-17` | A network timeout or HTTP error after submission is not evidence that an external write failed; admission, pending and known/unknown outcome need separate status. | `TRANSPORT_NOT_EFFECT` | L695 (\`#L695\`) |
-| `SB-SRC-0559/MACHINE-18` | Successful domain calculation is distinct from verified file publishing and optional human acceptance of that published artifact. | `RESULT_PUBLICATION_REVIEW` | L735 (\`#L735\`) |
-| `SB-SRC-0559/MACHINE-19` | Operation semantic ID, contract, installed code, catalog, source/registry and wire protocol are distinct version axes. | `VERSION_AXIS_SEPARATION` | L873 (\`#L873\`) |
-| `SB-SRC-0559/MACHINE-20` | A Run that spans installation revision changes must pin its actual executable binding or record interruption, not silently switch code mid-attempt. | `RUN_VERSION_INTEGRITY` | L900 (\`#L900\`) |
+| `SB-SRC-0559/MACHINE-01` | An importable Python helper is not automatically a stable remotely callable subject-matter Operation. | `HELPER_NOT_REMOTE_API` | L129 (`#L129`) |
+| `SB-SRC-0559/MACHINE-02` | OperationDefinition describes a subject-matter request/result/effects contract rather than a UI button or MCP message. | `DOMAIN_OPERATION_ID` | L130 (`#L130`) |
+| `SB-SRC-0559/MACHINE-03` | CapabilityDefinition may outlive or have multiple implementations; installed code and caller permission are separate predicates. | `CAPABILITY_NOT_BINDING` | L131 (`#L131`) |
+| `SB-SRC-0559/MACHINE-04` | ToolProjection is one authorized protocol-specific view of an underlying semantic capability, not a new business algorithm. | `PROTOCOL_PROJECTION` | L132 (`#L132`) |
+| `SB-SRC-0559/MACHINE-05` | ExecutionPlan refers to one version-resolved request with bound resources and policy, not an AI's unaccepted textual plan. | `PLAN_ADMISSION` | L134 (`#L134`) |
+| `SB-SRC-0559/MACHINE-06` | A single enabled=True flag cannot encode capability existence, installed binding, data readiness and caller authorization. | `FALSE_READY_FLAG` | L145 (`#L145`) |
+| `SB-SRC-0559/MACHINE-07` | Before machine registration, require meaningful use, contract, effects, execution conditions and an actual consumer rather than cataloguing utilities speculatively. | `CATALOG_PROPORTIONALITY` | L194 (`#L194`) |
+| `SB-SRC-0559/MACHINE-08` | Illustrative operation IDs in a suggested MVP are proposed names; they do not prove that corresponding code or endpoints are released. | `EXAMPLE_NOT_IMPLEMENTATION` | L210 (`#L210`) |
+| `SB-SRC-0559/MACHINE-09` | An agent-to-agent task protocol is not automatically a one-to-one transport for one Python Operation. | `A2A_TASK_SCOPE` | L235 (`#L235`) |
+| `SB-SRC-0559/MACHINE-10` | The first catalog descriptor should be small but fail closed on missing dangerous-action details instead of equating absent metadata with safety. | `MINIMAL_CONTRACT_WITH_SAFETY` | L251 (`#L251`) |
+| `SB-SRC-0559/MACHINE-11` | Trusted server-side bindings select executable modules; an untrusted client must not choose Python import paths or physical host secrets. | `SERVER_BINDING_AUTHORITY` | L319 (`#L319`) |
+| `SB-SRC-0559/MACHINE-12` | Availability requires qualified blocked/unknown reasons, rather than only a Boolean; cached status must be rechecked at admission. | `DYNAMIC_AVAILABILITY` | L333 (`#L333`) |
+| `SB-SRC-0559/MACHINE-13` | Portable JSON Schema belongs at a boundary, while Python Decimal, DataFrame, periods and source semantic types can remain richer internally. | `RICH_TYPE_PRESERVATION` | L351 (`#L351`) |
+| `SB-SRC-0559/MACHINE-14` | Large binary outputs should travel by authorized ArtifactRef/metadata rather than filling an LLM context with entire file bytes. | `LARGE_ARTIFACT_REF` | L365 (`#L365`) |
+| `SB-SRC-0559/MACHINE-15` | Thousands of tiny tools and one unrestricted run-anything tool are competing discovery failures. | `TWO_EXTREMES_REJECTED` | L645 (`#L645`) |
+| `SB-SRC-0559/MACHINE-16` | A small stable catalog-search/describe/submit surface can coexist with a few popular domain tools as projections of one authoritative catalog. | `TIERED_DISCOVERY_PROPOSAL` | L660 (`#L660`) |
+| `SB-SRC-0559/MACHINE-17` | A network timeout or HTTP error after submission is not evidence that an external write failed; admission, pending and known/unknown outcome need separate status. | `TRANSPORT_NOT_EFFECT` | L695 (`#L695`) |
+| `SB-SRC-0559/MACHINE-18` | Successful domain calculation is distinct from verified file publishing and optional human acceptance of that published artifact. | `RESULT_PUBLICATION_REVIEW` | L735 (`#L735`) |
+| `SB-SRC-0559/MACHINE-19` | Operation semantic ID, contract, installed code, catalog, source/registry and wire protocol are distinct version axes. | `VERSION_AXIS_SEPARATION` | L873 (`#L873`) |
+| `SB-SRC-0559/MACHINE-20` | A Run that spans installation revision changes must pin its actual executable binding or record interruption, not silently switch code mid-attempt. | `RUN_VERSION_INTEGRITY` | L900 (`#L900`) |
 
 **Countermodels and verification costs:** a direct notebook should not need a network JobManager, while a remote destructive caller requires authorized Plan and effect receipts. Publishing every Python helper as a tool overloads discovery and exposes internal implementation; publishing only a generic 'run anything' shifts too much semantic validation to untrusted clients. Protocol annotations such as read-only remain advisory unless tests and effect controls enforce them. A JSON serialization cannot erase exact monetary, missingness, reporting period, source-vintage or bank/perimeter meaning. Source study priority ranking and referenced protocols require present-day version check before implementation.
 
@@ -242,42 +242,42 @@ The dated Machine Interfaces and Capability Catalog study distinguishes domain O
 
 ## Consolidation Topic 06: thirty-two candidate capability, extension and automation gates
 
-The frozen Topic 06 consolidation Research, §17 (\`#L1489-L1526\`) lists **thirty-two candidate system-level acceptance gates**, each with a source test stimulus. These English original-row interpretations preserve **neutral public extension/capability contracts** and do not mention any private implementation. They are not executed tests, a guaranteed machine protocol or an adopted Product Decision; source definitions and activation/admission/enforcement remain distinct.
+The frozen Topic 06 consolidation Research, §17 (`#L1489-L1526`) lists **thirty-two candidate system-level acceptance gates**, each with a source test stimulus. These English original-row interpretations preserve **neutral public extension/capability contracts** and do not mention any private implementation. They are not executed tests, a guaranteed machine protocol or an adopted Product Decision; source definitions and activation/admission/enforcement remain distinct.
 
 | Source candidate | English scientific intent and boundary | Exact original row |
 | --- | --- | --- |
-| `SB-SRC-0053/CX-01` | Public domain OperationDefinition remains independent of Qt widgets, deployment activation paths and machine-agent protocols. | L1495 (\`#L1495\`) |
-| `SB-SRC-0053/CX-02` | Python-native invocation and managed clients use equivalent domain meaning on the same qualified input. | L1496 (\`#L1496\`) |
-| `SB-SRC-0053/CX-03` | Capability definition, domain operation, provider binding and execution backend retain distinct identities. | L1497 (\`#L1497\`) |
-| `SB-SRC-0053/CX-04` | Installed/discovered extensions are not automatically activated, admitted or authorized. | L1498 (\`#L1498\`) |
-| `SB-SRC-0053/CX-05` | Pure discovery performs no hidden external network/file/secret access effects. | L1499 (\`#L1499\`) |
-| `SB-SRC-0053/CX-06` | Singleton provider selection is deterministic or conflicts explicitly, not incidental enumeration order. | L1500 (\`#L1500\`) |
-| `SB-SRC-0053/CX-07` | Duplicate contribution identifiers are rejected or diagnosed, rather than silently overwritten. | L1501 (\`#L1501\`) |
-| `SB-SRC-0053/CX-08` | A failed required provider in a managed profile cannot silently masquerade as unrelated local success. | L1502 (\`#L1502\`) |
-| `SB-SRC-0053/CX-09` | Every fallback must preserve promised guarantees or visibly downgrade outcome/capability. | L1503 (\`#L1503\`) |
-| `SB-SRC-0053/CX-10` | Catalog visibility/availability does not grant right to execute an effect. | L1504 (\`#L1504\`) |
-| `SB-SRC-0053/CX-11` | Destructive commands declare effects and require current applicable authorization/approval. | L1505 (\`#L1505\`) |
-| `SB-SRC-0053/CX-12` | New provider and style/source/operation contributions pass only their claimed conformance profile. | L1506 (\`#L1506\`) |
-| `SB-SRC-0053/CX-13` | Machine-facing API cannot accept arbitrary module:function, shell or secret-bearing access from untrusted prompts. | L1507 (\`#L1507\`) |
-| `SB-SRC-0053/CX-14` | Machine/AI calls do not bypass ordinary admission, permissions or execution policy. | L1508 (\`#L1508\`) |
-| `SB-SRC-0053/CX-15` | Scenario, Scheme, Automation and Job have distinct source and lifecycle versions. | L1509 (\`#L1509\`) |
-| `SB-SRC-0053/CX-16` | Foreground/background/agent/remote initiators do not own divergent business execution engines. | L1510 (\`#L1510\`) |
-| `SB-SRC-0053/CX-17` | Scheduler retains occurrence identity and NO_CHANGE/SKIPPED/FAILED observations. | L1511 (\`#L1511\`) |
-| `SB-SRC-0053/CX-18` | Disabling Automation stops future triggers, not a running Job without separate control action. | L1512 (\`#L1512\`) |
-| `SB-SRC-0053/CX-19` | Scheduled execution pins the source/registry/binding snapshot applicable to its admitted occurrence. | L1513 (\`#L1513\`) |
-| `SB-SRC-0053/CX-20` | Nested trigger and retry paths do not duplicate an externally committed effect. | L1514 (\`#L1514\`) |
-| `SB-SRC-0053/CX-21` | Lost acknowledgment after an effect results in UNKNOWN and reconciliation. | L1515 (\`#L1515\`) |
-| `SB-SRC-0053/CX-22` | Each Job has only one authoritative committed terminal outcome receipt. | L1516 (\`#L1516\`) |
-| `SB-SRC-0053/CX-23` | Resource locks and worker leases have different ownership and expiration semantics. | L1517 (\`#L1517\`) |
-| `SB-SRC-0053/CX-24` | ArtifactStyleSet identity/version is separate from current UI light/dark theme. | L1518 (\`#L1518\`) |
-| `SB-SRC-0053/CX-25` | Artifact links producer operation/Run, input sources and resolved style/evidence choices. | L1519 (\`#L1519\`) |
-| `SB-SRC-0053/CX-26` | Changing active contributions creates a new verified binding revision, not an in-place mutation of running Run. | L1520 (\`#L1520\`) |
-| `SB-SRC-0053/CX-27` | Package/runtime contract drift blocks incompatible execution before effect. | L1521 (\`#L1521\`) |
-| `SB-SRC-0053/CX-28` | Provider errors appear as safely scoped structured diagnostics without leaking restricted context. | L1522 (\`#L1522\`) |
-| `SB-SRC-0053/CX-29` | Different clients can observe one authoritative shared-node Job with correct reconnect semantics. | L1523 (\`#L1523\`) |
-| `SB-SRC-0053/CX-30` | Unavailable, unauthorized, absent, unknown and genuinely empty data are not silently conflated. | L1524 (\`#L1524\`) |
-| `SB-SRC-0053/CX-31` | Published core/clients retain neutral interface contracts and synthetic public test examples only. | L1525 (\`#L1525\`) |
-| `SB-SRC-0053/CX-32` | API changes may drop unused aliases while protecting real user data via deliberate export/migration plans. | L1526 (\`#L1526\`) |
+| `SB-SRC-0053/CX-01` | Public domain OperationDefinition remains independent of Qt widgets, deployment activation paths and machine-agent protocols. | L1495 (`#L1495`) |
+| `SB-SRC-0053/CX-02` | Python-native invocation and managed clients use equivalent domain meaning on the same qualified input. | L1496 (`#L1496`) |
+| `SB-SRC-0053/CX-03` | Capability definition, domain operation, provider binding and execution backend retain distinct identities. | L1497 (`#L1497`) |
+| `SB-SRC-0053/CX-04` | Installed/discovered extensions are not automatically activated, admitted or authorized. | L1498 (`#L1498`) |
+| `SB-SRC-0053/CX-05` | Pure discovery performs no hidden external network/file/secret access effects. | L1499 (`#L1499`) |
+| `SB-SRC-0053/CX-06` | Singleton provider selection is deterministic or conflicts explicitly, not incidental enumeration order. | L1500 (`#L1500`) |
+| `SB-SRC-0053/CX-07` | Duplicate contribution identifiers are rejected or diagnosed, rather than silently overwritten. | L1501 (`#L1501`) |
+| `SB-SRC-0053/CX-08` | A failed required provider in a managed profile cannot silently masquerade as unrelated local success. | L1502 (`#L1502`) |
+| `SB-SRC-0053/CX-09` | Every fallback must preserve promised guarantees or visibly downgrade outcome/capability. | L1503 (`#L1503`) |
+| `SB-SRC-0053/CX-10` | Catalog visibility/availability does not grant right to execute an effect. | L1504 (`#L1504`) |
+| `SB-SRC-0053/CX-11` | Destructive commands declare effects and require current applicable authorization/approval. | L1505 (`#L1505`) |
+| `SB-SRC-0053/CX-12` | New provider and style/source/operation contributions pass only their claimed conformance profile. | L1506 (`#L1506`) |
+| `SB-SRC-0053/CX-13` | Machine-facing API cannot accept arbitrary module:function, shell or secret-bearing access from untrusted prompts. | L1507 (`#L1507`) |
+| `SB-SRC-0053/CX-14` | Machine/AI calls do not bypass ordinary admission, permissions or execution policy. | L1508 (`#L1508`) |
+| `SB-SRC-0053/CX-15` | Scenario, Scheme, Automation and Job have distinct source and lifecycle versions. | L1509 (`#L1509`) |
+| `SB-SRC-0053/CX-16` | Foreground/background/agent/remote initiators do not own divergent business execution engines. | L1510 (`#L1510`) |
+| `SB-SRC-0053/CX-17` | Scheduler retains occurrence identity and NO_CHANGE/SKIPPED/FAILED observations. | L1511 (`#L1511`) |
+| `SB-SRC-0053/CX-18` | Disabling Automation stops future triggers, not a running Job without separate control action. | L1512 (`#L1512`) |
+| `SB-SRC-0053/CX-19` | Scheduled execution pins the source/registry/binding snapshot applicable to its admitted occurrence. | L1513 (`#L1513`) |
+| `SB-SRC-0053/CX-20` | Nested trigger and retry paths do not duplicate an externally committed effect. | L1514 (`#L1514`) |
+| `SB-SRC-0053/CX-21` | Lost acknowledgment after an effect results in UNKNOWN and reconciliation. | L1515 (`#L1515`) |
+| `SB-SRC-0053/CX-22` | Each Job has only one authoritative committed terminal outcome receipt. | L1516 (`#L1516`) |
+| `SB-SRC-0053/CX-23` | Resource locks and worker leases have different ownership and expiration semantics. | L1517 (`#L1517`) |
+| `SB-SRC-0053/CX-24` | ArtifactStyleSet identity/version is separate from current UI light/dark theme. | L1518 (`#L1518`) |
+| `SB-SRC-0053/CX-25` | Artifact links producer operation/Run, input sources and resolved style/evidence choices. | L1519 (`#L1519`) |
+| `SB-SRC-0053/CX-26` | Changing active contributions creates a new verified binding revision, not an in-place mutation of running Run. | L1520 (`#L1520`) |
+| `SB-SRC-0053/CX-27` | Package/runtime contract drift blocks incompatible execution before effect. | L1521 (`#L1521`) |
+| `SB-SRC-0053/CX-28` | Provider errors appear as safely scoped structured diagnostics without leaking restricted context. | L1522 (`#L1522`) |
+| `SB-SRC-0053/CX-29` | Different clients can observe one authoritative shared-node Job with correct reconnect semantics. | L1523 (`#L1523`) |
+| `SB-SRC-0053/CX-30` | Unavailable, unauthorized, absent, unknown and genuinely empty data are not silently conflated. | L1524 (`#L1524`) |
+| `SB-SRC-0053/CX-31` | Published core/clients retain neutral interface contracts and synthetic public test examples only. | L1525 (`#L1525`) |
+| `SB-SRC-0053/CX-32` | API changes may drop unused aliases while protecting real user data via deliberate export/migration plans. | L1526 (`#L1526`) |
 
 **Architecture and cost counterarguments:** an analytic library may expose only direct Python functions and explicit pure adapter entry points; it does not need a permanent scheduler or arbitrary agent-host runtime. Networked execution and live provider installation require their own trust and failure evidence. Stronger guarantees about atomic moves, secret handling, idempotency, catalog ACL, source currentness and published Artifacts cannot be inferred from a provider label. The thirty-two source locations are preserved as **Research proposals, not product-owned commitments**.
 
@@ -287,12 +287,12 @@ The frozen Topic 06 consolidation Research, §17 (\`#L1489-L1526\`) lists **thir
 
 | Original unit / epistemic role | Material original distinction | Countercase and permitted inference | Source |
 | --- | --- | --- | --- |
-| `SB-SRC-0041/CT-01` · `HISTORICAL_DECLARATIVE_SCHEMA` | An early OperationDescriptor dataclass grouped semantic request/result schemas with read-only/destructive/idempotent/open-world hints, network/storage needs, risk/approval/visibility, asynchronous/cancel flags and Artifact kinds. | Bundling hints into one Python dataclass neither enforces rights nor justifies each field in a minimal curated catalog. | L1507–1533 (\`#L1507-L1533\`) |
-| `SB-SRC-0041/CT-02` · `HISTORICAL_SCENARIO_SCHEMA` | A distinct ScenarioDescriptor sketched typed inputs, ordered steps, background/cancel capability, risk class and AI visibility. | The field supports_background cannot prove a detached executor or canonical Scheme identity. | L1535–1550 (\`#L1535-L1550\`) |
-| `SB-SRC-0041/CT-03` · `HISTORICAL_RULE_SCHEMA` | The AutomationSpec sketch paired an enabled trigger/target and parameters with misfire, overlap, retry, notification and approval policies plus timezone. | Every possible field is not necessarily required in one physical table; enabled does not mean executing. | L1552–1572 (\`#L1552-L1572\`) |
-| `SB-SRC-0041/CT-04` · `HISTORICAL_JOB_SCHEMA` | An early Job model retained target kind, origin, principal, idempotency key, backend, priority and timestamps/status. | A principal_id claim or priority value cannot establish verified permission, fairness or durable Job admission. | L1574–1595 (\`#L1574-L1595\`) |
-| `SB-SRC-0041/CT-05` · `HISTORICAL_ADAPTER_SHAPE` | A minimal ExecutionBackend protocol suggested submit/get/cancel over local, managed host and remote-node variants. | Method signatures alone cannot distinguish request acceptance from cancellation outcome or unknown external effect. | L1597–1612 (\`#L1597-L1612\`) |
-| `SB-SRC-0041/CT-06` · `HISTORICAL_EVENT_PROJECTION` | A single event vocabulary was proposed across automation/job/case/artifact/approval/agent/source and subscribed Windows/Android/AI/notification consumers. | Names are not validated event schemas or an implemented cross-client stream; stream permissions and reliability remain open. | L1618–1656 (\`#L1618-L1656\`) |
+| `SB-SRC-0041/CT-01` · `HISTORICAL_DECLARATIVE_SCHEMA` | An early OperationDescriptor dataclass grouped semantic request/result schemas with read-only/destructive/idempotent/open-world hints, network/storage needs, risk/approval/visibility, asynchronous/cancel flags and Artifact kinds. | Bundling hints into one Python dataclass neither enforces rights nor justifies each field in a minimal curated catalog. | L1507–1533 (`#L1507-L1533`) |
+| `SB-SRC-0041/CT-02` · `HISTORICAL_SCENARIO_SCHEMA` | A distinct ScenarioDescriptor sketched typed inputs, ordered steps, background/cancel capability, risk class and AI visibility. | The field supports_background cannot prove a detached executor or canonical Scheme identity. | L1535–1550 (`#L1535-L1550`) |
+| `SB-SRC-0041/CT-03` · `HISTORICAL_RULE_SCHEMA` | The AutomationSpec sketch paired an enabled trigger/target and parameters with misfire, overlap, retry, notification and approval policies plus timezone. | Every possible field is not necessarily required in one physical table; enabled does not mean executing. | L1552–1572 (`#L1552-L1572`) |
+| `SB-SRC-0041/CT-04` · `HISTORICAL_JOB_SCHEMA` | An early Job model retained target kind, origin, principal, idempotency key, backend, priority and timestamps/status. | A principal_id claim or priority value cannot establish verified permission, fairness or durable Job admission. | L1574–1595 (`#L1574-L1595`) |
+| `SB-SRC-0041/CT-05` · `HISTORICAL_ADAPTER_SHAPE` | A minimal ExecutionBackend protocol suggested submit/get/cancel over local, managed host and remote-node variants. | Method signatures alone cannot distinguish request acceptance from cancellation outcome or unknown external effect. | L1597–1612 (`#L1597-L1612`) |
+| `SB-SRC-0041/CT-06` · `HISTORICAL_EVENT_PROJECTION` | A single event vocabulary was proposed across automation/job/case/artifact/approval/agent/source and subscribed Windows/Android/AI/notification consumers. | Names are not validated event schemas or an implemented cross-client stream; stream permissions and reliability remain open. | L1618–1656 (`#L1618-L1656`) |
 
 **Status after producer reconciliation:** material meanings are addressable in this maintained Science module, and the original counter-options remain traceable. There is **no independent semantic-verification PASS** for these items, no whole-source `LOSSLESS_PASS`, and no actual cross-device release conformance. The source-wide material census remains `unaccounted`.
 
@@ -302,7 +302,7 @@ The frozen Topic 06 consolidation Research, §17 (\`#L1489-L1526\`) lists **thir
 
 | Material address and epistemic role | Source-defined proposition | Defeater, cost, competing choice | Primary lines |
 | --- | --- | --- | --- |
-| `SB-SRC-0041/ROAD-06` · `HISTORICAL_PROTOCOL_PHASE_PROPOSAL` | The MCP phase proposed projecting capabilities as tools, catalogs/artifacts as resources, templates as prompts, long Jobs as tasks and scoped approvals into an adapter. | Exact MCP task/input-required semantics are version-specific, and a hypothetical gateway is neither a deployed endpoint nor a domain Job authority. | L2085–L2093 (\`#L2085-L2093\`) |
-| `SB-SRC-0041/SCHEMA-02` · `HISTORICAL_PROTOCOL_SURFACE_EXAMPLES` | The Appendix B illustrated names for machine tools, case/artifact resource URIs, reusable prompts and long-running task projection onto internal Job/Case. | Example URI and operation labels are not released APIs or permission grants; task handles, artifact bytes and interaction-required states need exact provider-version verification. | L2271–L2305 (\`#L2271-L2305\`) |
+| `SB-SRC-0041/ROAD-06` · `HISTORICAL_PROTOCOL_PHASE_PROPOSAL` | The MCP phase proposed projecting capabilities as tools, catalogs/artifacts as resources, templates as prompts, long Jobs as tasks and scoped approvals into an adapter. | Exact MCP task/input-required semantics are version-specific, and a hypothetical gateway is neither a deployed endpoint nor a domain Job authority. | L2085–L2093 (`#L2085-L2093`) |
+| `SB-SRC-0041/SCHEMA-02` · `HISTORICAL_PROTOCOL_SURFACE_EXAMPLES` | The Appendix B illustrated names for machine tools, case/artifact resource URIs, reusable prompts and long-running task projection onto internal Job/Case. | Example URI and operation labels are not released APIs or permission grants; task handles, artifact bytes and interaction-required states need exact provider-version verification. | L2271–L2305 (`#L2271-L2305`) |
 
 **Conservation limit:** this is a producer source-first packet; independent reverse review, empirical release tests and whole-original material accounting remain open. The current accepted Strategy Box host requirement supersedes only conflicting historical ownership/timing assumptions, not the original's record as a real alternative.

@@ -135,64 +135,64 @@ These gates are **a research-proposed ordering**, not a set of completed milesto
 
 ## 11. Exact-addressed translated Topic 09 matrices: thirty-two invariants and fifteen probes
 
-The frozen original Whole-System Topic 09, §12–13 (\`#L987\`) lists **15 proposed threat/operability probes** (`TQ-01`–`TQ-15`) and **32 proposed system invariants** (`INV-01`–`INV-32`). All **47** original item IDs and source line numbers are retained below with **English editorial translations**. The original Russian wording remains authoritative at the pinned link; these English renderings **are not verbatim quotes**, approved Product policies, passing tests or evidence that the corresponding host/runtime exists.
+The frozen original Whole-System Topic 09, §12–13 (`#L987`) lists **15 proposed threat/operability probes** (`TQ-01`–`TQ-15`) and **32 proposed system invariants** (`INV-01`–`INV-32`). All **47** original item IDs and source line numbers are retained below with **English editorial translations**. The original Russian wording remains authoritative at the pinned link; these English renderings **are not verbatim quotes**, approved Product policies, passing tests or evidence that the corresponding host/runtime exists.
 
 ### Original fifteen risk-oriented probes
 
 | Source ID | Scenario (translated) | Expected discriminating evidence (translated) | Original line |
 | --- | --- | --- | --- |
-| `TQ-01` | Storage becomes inaccessible during exists/listdir. | Typed unavailable outcome, not successful false or [] | L987 (\`#L987\`) |
-| `TQ-02` | Write interrupted halfway through XLSX. | No committed artifact; stage remains recoverable | L988 (\`#L988\`) |
-| `TQ-03` | Crash after DB transaction before byte publication. | Reconcile; no premature success Artifact card | L989 (\`#L989\`) |
-| `TQ-04` | Submit the same command twice. | One admitted effect/command identity with safe repeat response | L990 (\`#L990\`) |
-| `TQ-05` | Worker loses ACK after remote effect. | Unknown/effect receipt/reconciliation, no blind retry | L991 (\`#L991\`) |
-| `TQ-06` | User B requests Work of user A. | Deny or filter without leaking metadata | L992 (\`#L992\`) |
-| `TQ-07` | Queued approval is revoked before execution. | Re-evaluate and deny before applying effect | L993 (\`#L993\`) |
-| `TQ-08` | Extension upgraded during an active Run. | Pinned plan binding, no silent version switch | L994 (\`#L994\`) |
-| `TQ-09` | GUI crashes while independently hosted scheduler executes. | Job persists according to host profile; no ghost local running state | L995 (\`#L995\`) |
-| `TQ-10` | Restore backup as a cloned node. | New generation/fencing prevents repeated external actions | L996 (\`#L996\`) |
-| `TQ-11` | Offline Android client renders old progress. | Show stale timestamp and disable unsafe actions | L997 (\`#L997\`) |
-| `TQ-12` | Official data source revised at same address. | New source/revision and Result, retain old with impact state | L998 (\`#L998\`) |
-| `TQ-13` | Registry schema changes. | Pinned versions and validation; no silent semantic drift | L999 (\`#L999\`) |
-| `TQ-14` | Online/offline actor differs from principal. | Apply permissions to actual actor and record audit | L1000 (\`#L1000\`) |
-| `TQ-15` | Text zoom, reduced motion and keyboard-only navigation. | Readable visible focus, usable action and truthful state without animation | L1001 (\`#L1001\`) |
+| `TQ-01` | Storage becomes inaccessible during exists/listdir. | Typed unavailable outcome, not successful false or [] | L987 (`#L987`) |
+| `TQ-02` | Write interrupted halfway through XLSX. | No committed artifact; stage remains recoverable | L988 (`#L988`) |
+| `TQ-03` | Crash after DB transaction before byte publication. | Reconcile; no premature success Artifact card | L989 (`#L989`) |
+| `TQ-04` | Submit the same command twice. | One admitted effect/command identity with safe repeat response | L990 (`#L990`) |
+| `TQ-05` | Worker loses ACK after remote effect. | Unknown/effect receipt/reconciliation, no blind retry | L991 (`#L991`) |
+| `TQ-06` | User B requests Work of user A. | Deny or filter without leaking metadata | L992 (`#L992`) |
+| `TQ-07` | Queued approval is revoked before execution. | Re-evaluate and deny before applying effect | L993 (`#L993`) |
+| `TQ-08` | Extension upgraded during an active Run. | Pinned plan binding, no silent version switch | L994 (`#L994`) |
+| `TQ-09` | GUI crashes while independently hosted scheduler executes. | Job persists according to host profile; no ghost local running state | L995 (`#L995`) |
+| `TQ-10` | Restore backup as a cloned node. | New generation/fencing prevents repeated external actions | L996 (`#L996`) |
+| `TQ-11` | Offline Android client renders old progress. | Show stale timestamp and disable unsafe actions | L997 (`#L997`) |
+| `TQ-12` | Official data source revised at same address. | New source/revision and Result, retain old with impact state | L998 (`#L998`) |
+| `TQ-13` | Registry schema changes. | Pinned versions and validation; no silent semantic drift | L999 (`#L999`) |
+| `TQ-14` | Online/offline actor differs from principal. | Apply permissions to actual actor and record audit | L1000 (`#L1000`) |
+| `TQ-15` | Text zoom, reduced motion and keyboard-only navigation. | Readable visible focus, usable action and truthful state without animation | L1001 (`#L1001`) |
 
 ### Original thirty-two whole-system invariants
 
 | Source ID | Research-proposed semantic constraint (translated) | Negative fixture (translated) | Original line |
 | --- | --- | --- | --- |
-| `INV-01` | One semantic fact has one authoritative owner within its scope. | GUI and host assert conflicting terminal Run outcomes | L1013 (\`#L1013\`) |
-| `INV-02` | Analytical core remains usable without desktop UI and external managed platform runtime. | Core import loads GUI or platform runtime | L1014 (\`#L1014\`) |
-| `INV-03` | Admitted durable Work/Jobs outlive client closure in a deployed managed-service profile. | Closing UI cancels scheduler or loses active Job | L1015 (\`#L1015\`) |
-| `INV-04` | All activation channels share one authoritative execution lifecycle. | AI and background paths create conflicting Run histories | L1016 (\`#L1016\`) |
-| `INV-05` | Capability definition, binding, invocation, plan, Run and Attempt have distinct identities. | Package update silently changes a running plan | L1017 (\`#L1017\`) |
-| `INV-06` | Work and Thread are distinct; Work can contain multiple Runs. | One failed Run destroys the durable Work | L1018 (\`#L1018\`) |
-| `INV-07` | Do not auto-publish every low-level helper as a Scenario. | Internal helper unexpectedly appears in a user catalog | L1019 (\`#L1019\`) |
-| `INV-08` | Execution success, analytical evidence and Work acceptance are distinct. | Valid XLSX automatically closes an analytical commission | L1020 (\`#L1020\`) |
-| `INV-09` | Preserve UNKNOWN for data, effects and execution status. | Timeout returns definite failure even after possible committed effect | L1021 (\`#L1021\`) |
-| `INV-10` | Backend failure must not become an apparently valid empty result. | listdir returns [] after an unavailable backend | L1022 (\`#L1022\`) |
-| `INV-11` | Destructive operation cannot claim full success for an unverified partial effect. | Rename/deletion proceeds after a skipped copy | L1023 (\`#L1023\`) |
-| `INV-12` | Idempotency is enforced at the real effect boundary. | Duplicate request creates second output or deletion | L1024 (\`#L1024\`) |
-| `INV-13` | Each effect is authorized by its actual authoritative executor. | UI disables button but API bypasses grant | L1025 (\`#L1025\`) |
-| `INV-14` | Installed extension is not automatically active, authorized or ready. | Risky operation chooses first available descriptor | L1026 (\`#L1026\`) |
-| `INV-15` | An in-process extension is not a sandbox. | Third-party code runs with process permissions despite a plugin label | L1027 (\`#L1027\`) |
-| `INV-16` | Original SourceSnapshot and currently available publication are distinct. | Publisher updates same URL and earlier evidence is overwritten | L1028 (\`#L1028\`) |
-| `INV-17` | Published amount, canonical observation and inferred estimate preserve their distinct evidence tiers. | Rounded published number is used as exact latent value | L1029 (\`#L1029\`) |
-| `INV-18` | Artifacts carry identity beyond their physical path. | Moving a file destroys the full audit trail | L1030 (\`#L1030\`) |
-| `INV-19` | Staged/partial bytes cannot appear as a committed Artifact. | Crash exposes incomplete download as completed output | L1031 (\`#L1031\`) |
-| `INV-20` | Material Results retain source, processing definition and execution versions. | Historical report cannot identify used source snapshot | L1032 (\`#L1032\`) |
-| `INV-21` | Cache does not bypass provenance or authorization. | Cached result crosses actor/data scopes without checks | L1033 (\`#L1033\`) |
-| `INV-22` | Personal read/unread state must not mutate a shared event. | User A marks event as read for user B | L1034 (\`#L1034\`) |
-| `INV-23` | Client streams reconnect with audience-aware cursor and state recovery. | Lost cursor silently drops terminal outcome | L1035 (\`#L1035\`) |
-| `INV-24` | Platform Node/Session status is not product Work/Run state. | Platform heartbeat is reported as completed analytical report | L1036 (\`#L1036\`) |
-| `INV-25` | Shared mutation has revision or idempotency guards. | Concurrent user edits overwrite each other's Work | L1037 (\`#L1037\`) |
-| `INV-26` | Domain diagnostic/problem link does not merge with restricted platform incident/log contents. | Raw traceback secrets reach every node participant | L1038 (\`#L1038\`) |
-| `INV-27` | Visual theme and animation do not establish subject-matter state. | Green success animation occurs before durable commit | L1039 (\`#L1039\`) |
-| `INV-28` | Share semantic design meaning while rendering natively on each platform. | Qt widget dependency required by headless runtime | L1040 (\`#L1040\`) |
-| `INV-29` | Persisted schema must be handled deliberately despite breaking API policy. | Release deletes valuable Work database with no migration/backup decision | L1041 (\`#L1041\`) |
-| `INV-30` | New physical component requires a real ownership or lifecycle reason. | New service created without a distinct consumer, failure or performance boundary | L1042 (\`#L1042\`) |
-| `INV-31` | AI, automation and delegated actors cannot silently escalate permissions. | Agent runs effect denied to initiating principal | L1043 (\`#L1043\`) |
-| `INV-32` | A report or Decision must not strengthen weaker evidence into official fact. | Conditional Forecast is displayed as official observation | L1044 (\`#L1044\`) |
+| `INV-01` | One semantic fact has one authoritative owner within its scope. | GUI and host assert conflicting terminal Run outcomes | L1013 (`#L1013`) |
+| `INV-02` | Analytical core remains usable without desktop UI and external managed platform runtime. | Core import loads GUI or platform runtime | L1014 (`#L1014`) |
+| `INV-03` | Admitted durable Work/Jobs outlive client closure in a deployed managed-service profile. | Closing UI cancels scheduler or loses active Job | L1015 (`#L1015`) |
+| `INV-04` | All activation channels share one authoritative execution lifecycle. | AI and background paths create conflicting Run histories | L1016 (`#L1016`) |
+| `INV-05` | Capability definition, binding, invocation, plan, Run and Attempt have distinct identities. | Package update silently changes a running plan | L1017 (`#L1017`) |
+| `INV-06` | Work and Thread are distinct; Work can contain multiple Runs. | One failed Run destroys the durable Work | L1018 (`#L1018`) |
+| `INV-07` | Do not auto-publish every low-level helper as a Scenario. | Internal helper unexpectedly appears in a user catalog | L1019 (`#L1019`) |
+| `INV-08` | Execution success, analytical evidence and Work acceptance are distinct. | Valid XLSX automatically closes an analytical commission | L1020 (`#L1020`) |
+| `INV-09` | Preserve UNKNOWN for data, effects and execution status. | Timeout returns definite failure even after possible committed effect | L1021 (`#L1021`) |
+| `INV-10` | Backend failure must not become an apparently valid empty result. | listdir returns [] after an unavailable backend | L1022 (`#L1022`) |
+| `INV-11` | Destructive operation cannot claim full success for an unverified partial effect. | Rename/deletion proceeds after a skipped copy | L1023 (`#L1023`) |
+| `INV-12` | Idempotency is enforced at the real effect boundary. | Duplicate request creates second output or deletion | L1024 (`#L1024`) |
+| `INV-13` | Each effect is authorized by its actual authoritative executor. | UI disables button but API bypasses grant | L1025 (`#L1025`) |
+| `INV-14` | Installed extension is not automatically active, authorized or ready. | Risky operation chooses first available descriptor | L1026 (`#L1026`) |
+| `INV-15` | An in-process extension is not a sandbox. | Third-party code runs with process permissions despite a plugin label | L1027 (`#L1027`) |
+| `INV-16` | Original SourceSnapshot and currently available publication are distinct. | Publisher updates same URL and earlier evidence is overwritten | L1028 (`#L1028`) |
+| `INV-17` | Published amount, canonical observation and inferred estimate preserve their distinct evidence tiers. | Rounded published number is used as exact latent value | L1029 (`#L1029`) |
+| `INV-18` | Artifacts carry identity beyond their physical path. | Moving a file destroys the full audit trail | L1030 (`#L1030`) |
+| `INV-19` | Staged/partial bytes cannot appear as a committed Artifact. | Crash exposes incomplete download as completed output | L1031 (`#L1031`) |
+| `INV-20` | Material Results retain source, processing definition and execution versions. | Historical report cannot identify used source snapshot | L1032 (`#L1032`) |
+| `INV-21` | Cache does not bypass provenance or authorization. | Cached result crosses actor/data scopes without checks | L1033 (`#L1033`) |
+| `INV-22` | Personal read/unread state must not mutate a shared event. | User A marks event as read for user B | L1034 (`#L1034`) |
+| `INV-23` | Client streams reconnect with audience-aware cursor and state recovery. | Lost cursor silently drops terminal outcome | L1035 (`#L1035`) |
+| `INV-24` | Platform Node/Session status is not product Work/Run state. | Platform heartbeat is reported as completed analytical report | L1036 (`#L1036`) |
+| `INV-25` | Shared mutation has revision or idempotency guards. | Concurrent user edits overwrite each other's Work | L1037 (`#L1037`) |
+| `INV-26` | Domain diagnostic/problem link does not merge with restricted platform incident/log contents. | Raw traceback secrets reach every node participant | L1038 (`#L1038`) |
+| `INV-27` | Visual theme and animation do not establish subject-matter state. | Green success animation occurs before durable commit | L1039 (`#L1039`) |
+| `INV-28` | Share semantic design meaning while rendering natively on each platform. | Qt widget dependency required by headless runtime | L1040 (`#L1040`) |
+| `INV-29` | Persisted schema must be handled deliberately despite breaking API policy. | Release deletes valuable Work database with no migration/backup decision | L1041 (`#L1041`) |
+| `INV-30` | New physical component requires a real ownership or lifecycle reason. | New service created without a distinct consumer, failure or performance boundary | L1042 (`#L1042`) |
+| `INV-31` | AI, automation and delegated actors cannot silently escalate permissions. | Agent runs effect denied to initiating principal | L1043 (`#L1043`) |
+| `INV-32` | A report or Decision must not strengthen weaker evidence into official fact. | Conditional Forecast is displayed as official observation | L1044 (`#L1044`) |
 
 ### Profile qualification, source contradictions and verification limits
 

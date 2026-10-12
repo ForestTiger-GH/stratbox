@@ -118,31 +118,31 @@ A future conformance suite should render and inspect bounded sample XLSX/DOCX/PP
 
 ## 9. Original twenty-two proposed cross-format style admission checks
 
-The frozen 2026-10-07 ArtifactStyleSet Research, §72 (\`#L2318-L2343\`) lists **twenty-two acceptance candidates**. They are retained below as individual English source-row interpretations with stable original identifiers, **not** as accepted requirements, validated style packages, installed writer support or executed tests. The original research argues for a compiled **single effective style-set identity** for cross-format meaning; runtime merging of independently versioned sets creates ambiguous provenance and difficult testability. Standalone bundles and neutral extension contribution are possibilities, not descriptions of any private implementation.
+The frozen 2026-10-07 ArtifactStyleSet Research, §72 (`#L2318-L2343`) lists **twenty-two acceptance candidates**. They are retained below as individual English source-row interpretations with stable original identifiers, **not** as accepted requirements, validated style packages, installed writer support or executed tests. The original research argues for a compiled **single effective style-set identity** for cross-format meaning; runtime merging of independently versioned sets creates ambiguous provenance and difficult testability. Standalone bundles and neutral extension contribution are possibilities, not descriptions of any private implementation.
 
 | Original item | English research candidate and limitation | Frozen source row |
 | --- | --- | --- |
-| `SB-SRC-0042/A01` | Keep the contributing extension, immutable ArtifactStyleSet and independent InterfaceTheme as different concepts. | L2322 (\`#L2322\`) |
-| `SB-SRC-0042/A02` | Permit a valid ArtifactStyleSet to be installed, chosen and used without an extension package. | L2323 (\`#L2323\`) |
-| `SB-SRC-0042/A03` | Allow an authorized extension to offer a StyleSet through a neutral shared provider/validation contract. | L2324 (\`#L2324\`) |
-| `SB-SRC-0042/A04` | Use one effective, explicitly selected and resolved ArtifactStyleSet for one execution context. | L2325 (\`#L2325\`) |
-| `SB-SRC-0042/A05` | Do not merge typography/colors from unrelated StyleSets dynamically during rendering. | L2326 (\`#L2326\`) |
-| `SB-SRC-0042/A06` | Allow authoring-time inheritance only after compilation to a complete closed semantic specification. | L2327 (\`#L2327\`) |
-| `SB-SRC-0042/A07` | Carry stable StyleSet ID, version and digest, separate from renderer version. | L2328 (\`#L2328\`) |
-| `SB-SRC-0042/A08` | Apply one specified primary font across supported output formats when actually available. | L2329 (\`#L2329\`) |
-| `SB-SRC-0042/A09` | Map the same semantic color roles across formats without assuming identical pixel rendering. | L2330 (\`#L2330\`) |
-| `SB-SRC-0042/A10` | Treat XLSX, DOCX, PPTX and PDF as format adapters consuming a shared semantic style model. | L2331 (\`#L2331\`) |
-| `SB-SRC-0042/A11` | Enumerate, version and test approved variants rather than allowing arbitrary runtime overrides. | L2332 (\`#L2332\`) |
-| `SB-SRC-0042/A12` | Keep arbitrary font and color override outside the default user flow; advanced controlled design may be separate. | L2333 (\`#L2333\`) |
-| `SB-SRC-0042/A13` | Treat ArtifactTemplate as a separately versioned asset which can be explicitly bound to a StyleSet. | L2334 (\`#L2334\`) |
-| `SB-SRC-0042/A14` | Keep file metadata (author, creation identity and source evidence) conceptually distinct from visual styling. | L2335 (\`#L2335\`) |
-| `SB-SRC-0042/A15` | Do not infer an artifact report StyleSet from the application's current light/dark InterfaceTheme. | L2336 (\`#L2336\`) |
-| `SB-SRC-0042/A16` | Do not let a contributed style package silently mutate the application shell's visual system. | L2337 (\`#L2337\`) |
-| `SB-SRC-0042/A17` | Treat the absence of the selected StyleSet as an explicit unavailable/problem outcome, not silent substitution. | L2338 (\`#L2338\`) |
-| `SB-SRC-0042/A18` | If an output format is unsupported, report that limitation instead of fetching another StyleSet's adapter. | L2339 (\`#L2339\`) |
-| `SB-SRC-0042/A19` | Record the resolved StyleSet identity/digest in artifact provenance if the feature is implemented. | L2340 (\`#L2340\`) |
-| `SB-SRC-0042/A20` | Do not treat the current Excel-only presets as a proven universal cross-format style API. | L2341 (\`#L2341\`) |
-| `SB-SRC-0042/A21` | Subject-matter exporters should avoid hard-coded fonts/colors when a declared format/style contract is in use. | L2342 (\`#L2342\`) |
-| `SB-SRC-0042/A22` | Portable clients and machine consumers should exchange one declared semantic style reference, with native rendering separate. | L2343 (\`#L2343\`) |
+| `SB-SRC-0042/A01` | Keep the contributing extension, immutable ArtifactStyleSet and independent InterfaceTheme as different concepts. | L2322 (`#L2322`) |
+| `SB-SRC-0042/A02` | Permit a valid ArtifactStyleSet to be installed, chosen and used without an extension package. | L2323 (`#L2323`) |
+| `SB-SRC-0042/A03` | Allow an authorized extension to offer a StyleSet through a neutral shared provider/validation contract. | L2324 (`#L2324`) |
+| `SB-SRC-0042/A04` | Use one effective, explicitly selected and resolved ArtifactStyleSet for one execution context. | L2325 (`#L2325`) |
+| `SB-SRC-0042/A05` | Do not merge typography/colors from unrelated StyleSets dynamically during rendering. | L2326 (`#L2326`) |
+| `SB-SRC-0042/A06` | Allow authoring-time inheritance only after compilation to a complete closed semantic specification. | L2327 (`#L2327`) |
+| `SB-SRC-0042/A07` | Carry stable StyleSet ID, version and digest, separate from renderer version. | L2328 (`#L2328`) |
+| `SB-SRC-0042/A08` | Apply one specified primary font across supported output formats when actually available. | L2329 (`#L2329`) |
+| `SB-SRC-0042/A09` | Map the same semantic color roles across formats without assuming identical pixel rendering. | L2330 (`#L2330`) |
+| `SB-SRC-0042/A10` | Treat XLSX, DOCX, PPTX and PDF as format adapters consuming a shared semantic style model. | L2331 (`#L2331`) |
+| `SB-SRC-0042/A11` | Enumerate, version and test approved variants rather than allowing arbitrary runtime overrides. | L2332 (`#L2332`) |
+| `SB-SRC-0042/A12` | Keep arbitrary font and color override outside the default user flow; advanced controlled design may be separate. | L2333 (`#L2333`) |
+| `SB-SRC-0042/A13` | Treat ArtifactTemplate as a separately versioned asset which can be explicitly bound to a StyleSet. | L2334 (`#L2334`) |
+| `SB-SRC-0042/A14` | Keep file metadata (author, creation identity and source evidence) conceptually distinct from visual styling. | L2335 (`#L2335`) |
+| `SB-SRC-0042/A15` | Do not infer an artifact report StyleSet from the application's current light/dark InterfaceTheme. | L2336 (`#L2336`) |
+| `SB-SRC-0042/A16` | Do not let a contributed style package silently mutate the application shell's visual system. | L2337 (`#L2337`) |
+| `SB-SRC-0042/A17` | Treat the absence of the selected StyleSet as an explicit unavailable/problem outcome, not silent substitution. | L2338 (`#L2338`) |
+| `SB-SRC-0042/A18` | If an output format is unsupported, report that limitation instead of fetching another StyleSet's adapter. | L2339 (`#L2339`) |
+| `SB-SRC-0042/A19` | Record the resolved StyleSet identity/digest in artifact provenance if the feature is implemented. | L2340 (`#L2340`) |
+| `SB-SRC-0042/A20` | Do not treat the current Excel-only presets as a proven universal cross-format style API. | L2341 (`#L2341`) |
+| `SB-SRC-0042/A21` | Subject-matter exporters should avoid hard-coded fonts/colors when a declared format/style contract is in use. | L2342 (`#L2342`) |
+| `SB-SRC-0042/A22` | Portable clients and machine consumers should exchange one declared semantic style reference, with native rendering separate. | L2343 (`#L2343`) |
 
 **Challenge:** a small CSV-only export does not require the complete multi-format authoring infrastructure, fonts may be unavailable on Android/headless host, and metadata author labels are not provenance principals. A sound formatter must declare unsupported formats and degraded font fallback when it occurs rather than claim full output consistency. No Product Authority decision about mandatory StyleSet, renderer or writer registry is inferred from this historical research list. **Twenty-two discrete rows were preserved; the remainder of the 2,447-line source has not been independently certified lossless.**

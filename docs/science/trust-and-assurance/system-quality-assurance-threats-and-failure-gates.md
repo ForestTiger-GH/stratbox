@@ -162,82 +162,82 @@ The separate Topic09 Whole-System study said that *at its original preparation* 
 
 ## 11. Exact research-source assurance matrix: fifty falsifiable candidates
 
-The frozen independent Topic 08 original, §10 (\`#L795-L875\`) contains **50 explicitly enumerated candidate invariant/test pairs**. They are translated into English below with stable original IDs and exact source-line links. The translations retain the bounded original meaning and negative fixture; they are **not verbatim text reproductions**, and the frozen primary original remains the wording authority. A five-axis thematic summary alone would lose material negative fixtures. **These are dated Research proposals**, not adopted `SB-Q-*` release policy IDs, not executed tests, not proof of cross-owner implementation and not a blanket demand that a pure standalone Python calculation implement user authentication and durable Work.
+The frozen independent Topic 08 original, §10 (`#L795-L875`) contains **50 explicitly enumerated candidate invariant/test pairs**. They are translated into English below with stable original IDs and exact source-line links. The translations retain the bounded original meaning and negative fixture; they are **not verbatim text reproductions**, and the frozen primary original remains the wording authority. A five-axis thematic summary alone would lose material negative fixtures. **These are dated Research proposals**, not adopted `SB-Q-*` release policy IDs, not executed tests, not proof of cross-owner implementation and not a blanket demand that a pure standalone Python calculation implement user authentication and durable Work.
 
 ### Semantic/result truth — 8 source items
 
 | Proposed research ID | English rendering of source invariant | English rendering of original negative test | Source line |
 | --- | --- | --- | --- |
-| `SB-Q-T01` | A transport failure must not become a successful empty result. | Backend timeout during listdir must produce a typed failure, not [] | L803 (\`#L803\`) |
-| `SB-Q-T02` | NotFound, PermissionDenied, Unavailable, Unsupported and WrongType must remain distinct. | Exercise a FileStore / HTTP / codec error matrix | L804 (\`#L804\`) |
-| `SB-Q-T03` | Execution, effect, domain qualification and Work acceptance have separate statuses. | Successful export with invalid comparability leaves Work awaiting review | L805 (\`#L805\`) |
-| `SB-Q-T04` | Semantic UNKNOWN must not silently become default 0, False or empty. | A missing officially published value remains missing, not zero | L806 (\`#L806\`) |
-| `SB-Q-T05` | Presentation must not strengthen provenance or evidence tier. | UI must not present weak reconstruction as an official fact | L807 (\`#L807\`) |
-| `SB-Q-T06` | A Job terminal outcome is committed at most once. | Concurrent cancel/success attempts produce one terminal record | L808 (\`#L808\`) |
-| `SB-Q-T07` | PARTIAL requires explicit policy and a residual-work ledger. | Failure to write one of five files cannot yield global success | L809 (\`#L809\`) |
-| `SB-Q-T08` | Operation definition, binding, invocation and Attempt retain different identities. | Repeat/retry preserves distinct history | L810 (\`#L810\`) |
+| `SB-Q-T01` | A transport failure must not become a successful empty result. | Backend timeout during listdir must produce a typed failure, not [] | L803 (`#L803`) |
+| `SB-Q-T02` | NotFound, PermissionDenied, Unavailable, Unsupported and WrongType must remain distinct. | Exercise a FileStore / HTTP / codec error matrix | L804 (`#L804`) |
+| `SB-Q-T03` | Execution, effect, domain qualification and Work acceptance have separate statuses. | Successful export with invalid comparability leaves Work awaiting review | L805 (`#L805`) |
+| `SB-Q-T04` | Semantic UNKNOWN must not silently become default 0, False or empty. | A missing officially published value remains missing, not zero | L806 (`#L806`) |
+| `SB-Q-T05` | Presentation must not strengthen provenance or evidence tier. | UI must not present weak reconstruction as an official fact | L807 (`#L807`) |
+| `SB-Q-T06` | A Job terminal outcome is committed at most once. | Concurrent cancel/success attempts produce one terminal record | L808 (`#L808`) |
+| `SB-Q-T07` | PARTIAL requires explicit policy and a residual-work ledger. | Failure to write one of five files cannot yield global success | L809 (`#L809`) |
+| `SB-Q-T08` | Operation definition, binding, invocation and Attempt retain different identities. | Repeat/retry preserves distinct history | L810 (`#L810`) |
 
 ### Effect and resource concurrency — 12 source items
 
 | Proposed research ID | English rendering of source invariant | English rendering of original negative test | Source line |
 | --- | --- | --- | --- |
-| `SB-Q-E01` | A destructive plan identifies exact scope, revision and postconditions. | Reject a target plan changed after approval | L816 (\`#L816\`) |
-| `SB-Q-E02` | Do not delete source after failed copy or verification. | Inject failure on the Nth file of a directory | L817 (\`#L817\`) |
-| `SB-Q-E03` | Partial physical deletion cannot be confirmed as full success. | One denied remove yields PARTIAL/FAILURE with receipts | L818 (\`#L818\`) |
-| `SB-Q-E04` | Deduplicate retry of identical command by key and request digest. | Duplicate Submit creates no second Job | L819 (\`#L819\`) |
-| `SB-Q-E05` | Reject one idempotency key reused with a different request digest. | Key collision yields a conflict | L820 (\`#L820\`) |
-| `SB-Q-E06` | A timeout following an irreversible effect must not cause blind retry. | Simulate delayed acknowledgment | L821 (\`#L821\`) |
-| `SB-Q-E07` | An expired worker must not publish under its former fencing generation. | Race a zombie worker against successor | L822 (\`#L822\`) |
-| `SB-Q-E08` | Coordinate resource conflicts outside the UI without global serialization. | Allow concurrent READ, block conflicting WRITE | L823 (\`#L823\`) |
-| `SB-Q-E09` | Cancellation request and terminal cancellation are separate facts. | Cancel after committed success does not change outcome | L824 (\`#L824\`) |
-| `SB-Q-E10` | One logical scheduled occurrence must not create two effectful Runs. | Crash between enqueue, acknowledgment and restart | L825 (\`#L825\`) |
-| `SB-Q-E11` | Remote execution receives no greater authority than the admitted binding. | Revoke policy while a Run is active | L826 (\`#L826\`) |
-| `SB-Q-E12` | Unknown external effect retains reconciliation evidence. | Partition network before acknowledgment | L827 (\`#L827\`) |
+| `SB-Q-E01` | A destructive plan identifies exact scope, revision and postconditions. | Reject a target plan changed after approval | L816 (`#L816`) |
+| `SB-Q-E02` | Do not delete source after failed copy or verification. | Inject failure on the Nth file of a directory | L817 (`#L817`) |
+| `SB-Q-E03` | Partial physical deletion cannot be confirmed as full success. | One denied remove yields PARTIAL/FAILURE with receipts | L818 (`#L818`) |
+| `SB-Q-E04` | Deduplicate retry of identical command by key and request digest. | Duplicate Submit creates no second Job | L819 (`#L819`) |
+| `SB-Q-E05` | Reject one idempotency key reused with a different request digest. | Key collision yields a conflict | L820 (`#L820`) |
+| `SB-Q-E06` | A timeout following an irreversible effect must not cause blind retry. | Simulate delayed acknowledgment | L821 (`#L821`) |
+| `SB-Q-E07` | An expired worker must not publish under its former fencing generation. | Race a zombie worker against successor | L822 (`#L822`) |
+| `SB-Q-E08` | Coordinate resource conflicts outside the UI without global serialization. | Allow concurrent READ, block conflicting WRITE | L823 (`#L823`) |
+| `SB-Q-E09` | Cancellation request and terminal cancellation are separate facts. | Cancel after committed success does not change outcome | L824 (`#L824`) |
+| `SB-Q-E10` | One logical scheduled occurrence must not create two effectful Runs. | Crash between enqueue, acknowledgment and restart | L825 (`#L825`) |
+| `SB-Q-E11` | Remote execution receives no greater authority than the admitted binding. | Revoke policy while a Run is active | L826 (`#L826`) |
+| `SB-Q-E12` | Unknown external effect retains reconciliation evidence. | Partition network before acknowledgment | L827 (`#L827`) |
 
 ### Durability and Artifact — 10 source items
 
 | Proposed research ID | English rendering of source invariant | English rendering of original negative test | Source line |
 | --- | --- | --- | --- |
-| `SB-Q-D01` | The UI is not authoritative for durable Work/Job truth. | Close Windows/Web and reconnect | L833 (\`#L833\`) |
-| `SB-Q-D02` | Committed Artifacts reference verified bytes and manifest. | Digest mismatch causes quarantine | L834 (\`#L834\`) |
-| `SB-Q-D03` | Incomplete staged bytes are never published as a completed Artifact. | Fill disk during XLSX writing | L835 (\`#L835\`) |
-| `SB-Q-D04` | Path, filename and mtime are insufficient for full Artifact/Source identity. | Reuse same filename with different bytes | L836 (\`#L836\`) |
-| `SB-Q-D05` | Broken or corrupt durable state does not silently become a new empty store. | Truncated JSON/database triggers degraded status | L837 (\`#L837\`) |
-| `SB-Q-D06` | State transition and event/outbox must commit atomically within one authority scope. | Crash between the two logical updates | L838 (\`#L838\`) |
-| `SB-Q-D07` | Detect incompatible persisted schema before admitting mutations. | Upgrade while old schema remains | L839 (\`#L839\`) |
-| `SB-Q-D08` | Backup covers a coherent recoverability set. | Restoring DB without required Artifact bytes fails explicitly | L840 (\`#L840\`) |
-| `SB-Q-D09` | Retention never deletes published bytes that are still referenced. | Run garbage collection with shared references | L841 (\`#L841\`) |
-| `SB-Q-D10` | Material Results retain source, registry and algorithm version access. | Reconstruct a historical report | L842 (\`#L842\`) |
+| `SB-Q-D01` | The UI is not authoritative for durable Work/Job truth. | Close Windows/Web and reconnect | L833 (`#L833`) |
+| `SB-Q-D02` | Committed Artifacts reference verified bytes and manifest. | Digest mismatch causes quarantine | L834 (`#L834`) |
+| `SB-Q-D03` | Incomplete staged bytes are never published as a completed Artifact. | Fill disk during XLSX writing | L835 (`#L835`) |
+| `SB-Q-D04` | Path, filename and mtime are insufficient for full Artifact/Source identity. | Reuse same filename with different bytes | L836 (`#L836`) |
+| `SB-Q-D05` | Broken or corrupt durable state does not silently become a new empty store. | Truncated JSON/database triggers degraded status | L837 (`#L837`) |
+| `SB-Q-D06` | State transition and event/outbox must commit atomically within one authority scope. | Crash between the two logical updates | L838 (`#L838`) |
+| `SB-Q-D07` | Detect incompatible persisted schema before admitting mutations. | Upgrade while old schema remains | L839 (`#L839`) |
+| `SB-Q-D08` | Backup covers a coherent recoverability set. | Restoring DB without required Artifact bytes fails explicitly | L840 (`#L840`) |
+| `SB-Q-D09` | Retention never deletes published bytes that are still referenced. | Run garbage collection with shared references | L841 (`#L841`) |
+| `SB-Q-D10` | Material Results retain source, registry and algorithm version access. | Reconstruct a historical report | L842 (`#L842`) |
 
 ### Security and audience — 10 source items
 
 | Proposed research ID | English rendering of source invariant | English rendering of original negative test | Source line |
 | --- | --- | --- | --- |
-| `SB-Q-S01` | Effective permission is checked by the actual authority, not only UI. | Forge API command despite disabled button | L848 (\`#L848\`) |
-| `SB-Q-S02` | Approval is scoped to exact plan, effect, target and version. | Changed destructive targets require new approval | L849 (\`#L849\`) |
-| `SB-Q-S03` | AI and automation receive no unrestricted or permanent grants by inference. | Revoke permission before a scheduled occurrence fires | L850 (\`#L850\`) |
-| `SB-Q-S04` | Clients cannot access others' raw logs, paths, Artifacts or secrets. | Two-user ACL and subscription matrix | L851 (\`#L851\`) |
-| `SB-Q-S05` | Provider discovery is distinct from trusted activation. | Malicious descriptor must not activate itself | L852 (\`#L852\`) |
-| `SB-Q-S06` | Public core and client surfaces remain independent of particular nonpublic implementation internals. | Run static dependency/import scan | L853 (\`#L853\`) |
-| `SB-Q-S07` | Untrusted source content never becomes an executable instruction merely by being read. | Prompt injection in PDF/HTML metadata | L854 (\`#L854\`) |
-| `SB-Q-S08` | User-controlled filesystem references cannot escape the authorized namespace. | Parent traversal, absolute path, symlink/junction escape | L855 (\`#L855\`) |
-| `SB-Q-S09` | Required audit/effect record is durable before destructive commit. | Unavailable audit sink denies the operation | L856 (\`#L856\`) |
-| `SB-Q-S10` | Filter published projections for audience before transport. | Event stream containing another user's objects and cursor | L857 (\`#L857\`) |
+| `SB-Q-S01` | Effective permission is checked by the actual authority, not only UI. | Forge API command despite disabled button | L848 (`#L848`) |
+| `SB-Q-S02` | Approval is scoped to exact plan, effect, target and version. | Changed destructive targets require new approval | L849 (`#L849`) |
+| `SB-Q-S03` | AI and automation receive no unrestricted or permanent grants by inference. | Revoke permission before a scheduled occurrence fires | L850 (`#L850`) |
+| `SB-Q-S04` | Clients cannot access others' raw logs, paths, Artifacts or secrets. | Two-user ACL and subscription matrix | L851 (`#L851`) |
+| `SB-Q-S05` | Provider discovery is distinct from trusted activation. | Malicious descriptor must not activate itself | L852 (`#L852`) |
+| `SB-Q-S06` | Public core and client surfaces remain independent of particular nonpublic implementation internals. | Run static dependency/import scan | L853 (`#L853`) |
+| `SB-Q-S07` | Untrusted source content never becomes an executable instruction merely by being read. | Prompt injection in PDF/HTML metadata | L854 (`#L854`) |
+| `SB-Q-S08` | User-controlled filesystem references cannot escape the authorized namespace. | Parent traversal, absolute path, symlink/junction escape | L855 (`#L855`) |
+| `SB-Q-S09` | Required audit/effect record is durable before destructive commit. | Unavailable audit sink denies the operation | L856 (`#L856`) |
+| `SB-Q-S10` | Filter published projections for audience before transport. | Event stream containing another user's objects and cursor | L857 (`#L857`) |
 
 ### Observability and operations — 10 source items
 
 | Proposed research ID | English rendering of source invariant | English rendering of original negative test | Source line |
 | --- | --- | --- | --- |
-| `SB-Q-O01` | Every Job/Attempt has recoverable causal lineage. | Inspect failed Attempts after worker crash | L863 (\`#L863\`) |
-| `SB-Q-O02` | Raw traceback is diagnostic evidence, not durable product state. | Serialized state schema refuses raw exception object | L864 (\`#L864\`) |
-| `SB-Q-O03` | Do not invent a confirmed ProblemRef when problem recording failed or is unknown. | Simulate recorder timeout | L865 (\`#L865\`) |
-| `SB-Q-O04` | Shared faults reach affected users as safely scoped Conditions. | Shared backend outage with audience/privacy matrix | L866 (\`#L866\`) |
-| `SB-Q-O05` | A diagnostic check does not secretly perform repair. | Offline diagnostic mode is read-only | L867 (\`#L867\`) |
-| `SB-Q-O06` | Telemetry loss is distinct from business terminal truth. | Log sink fails during a successful read | L868 (\`#L868\`) |
-| `SB-Q-O07` | User-visible state is explained in accessible text, not color/motion alone. | Screen reader and reduced-motion modes | L869 (\`#L869\`) |
-| `SB-Q-O08` | Progress never claims fabricated completeness. | Unknown total or stalled stage | L870 (\`#L870\`) |
-| `SB-Q-O09` | Release checks detect contract/version drift before distribution. | Manifest/tests/package version tuple mismatch | L871 (\`#L871\`) |
-| `SB-Q-O10` | System degrades safely when storage, configuration or readiness fails. | Database unavailable triggers diagnostic-only boot | L872 (\`#L872\`) |
+| `SB-Q-O01` | Every Job/Attempt has recoverable causal lineage. | Inspect failed Attempts after worker crash | L863 (`#L863`) |
+| `SB-Q-O02` | Raw traceback is diagnostic evidence, not durable product state. | Serialized state schema refuses raw exception object | L864 (`#L864`) |
+| `SB-Q-O03` | Do not invent a confirmed ProblemRef when problem recording failed or is unknown. | Simulate recorder timeout | L865 (`#L865`) |
+| `SB-Q-O04` | Shared faults reach affected users as safely scoped Conditions. | Shared backend outage with audience/privacy matrix | L866 (`#L866`) |
+| `SB-Q-O05` | A diagnostic check does not secretly perform repair. | Offline diagnostic mode is read-only | L867 (`#L867`) |
+| `SB-Q-O06` | Telemetry loss is distinct from business terminal truth. | Log sink fails during a successful read | L868 (`#L868`) |
+| `SB-Q-O07` | User-visible state is explained in accessible text, not color/motion alone. | Screen reader and reduced-motion modes | L869 (`#L869`) |
+| `SB-Q-O08` | Progress never claims fabricated completeness. | Unknown total or stalled stage | L870 (`#L870`) |
+| `SB-Q-O09` | Release checks detect contract/version drift before distribution. | Manifest/tests/package version tuple mismatch | L871 (`#L871`) |
+| `SB-Q-O10` | System degrades safely when storage, configuration or readiness fails. | Database unavailable triggers diagnostic-only boot | L872 (`#L872`) |
 
 ### Reconciliation and reliance limits
 
@@ -252,45 +252,45 @@ The frozen independent Topic 08 original, §10 (\`#L795-L875\`) contains **50 ex
 
 **Source-preserving Research supplement, not completed tests or Product admission.** These 36 source-identified scenarios come from the same original Topic 08 and belong in this existing canonical qualities and assurance article, not in a second parallel Science owner.
 
-Original Trust, Safety & System Qualities, §13.2 (\`#L961-L1001\`). These 36 `Fxx` tests were **proposed**, not executed. Their exact source identity is preserved; descriptions below are **English interpretations** and retain each negative-case expectation. Actual applicability differs among pure Python, local Windows and remote shared-host profiles.
+Original Trust, Safety & System Qualities, §13.2 (`#L961-L1001`). These 36 `Fxx` tests were **proposed**, not executed. Their exact source identity is preserved; descriptions below are **English interpretations** and retain each negative-case expectation. Actual applicability differs among pure Python, local Windows and remote shared-host profiles.
 
 | Source fixture | Injection / setup | Evidence expected by Research | Source line |
 | --- | --- | --- | --- |
-| `F01` | List an existing, truly empty directory | Successful empty response with observed directory presence | L965 (\`#L965\`) |
-| `F02` | List an absent directory | Typed NotFound, not a successful empty list | L966 (\`#L966\`) |
-| `F03` | List a file path as though it were a directory | WrongType, not successful empty result | L967 (\`#L967\`) |
-| `F04` | Fail network/permission access to a statistical source | Distinct typed error; never claim no data | L968 (\`#L968\`) |
-| `F05` | Serve HTML/error page in place of a workbook | Validate/reject inappropriate payload | L969 (\`#L969\`) |
-| `F06` | Inject corrupt ZIP, parent traversal or decompression expansion bomb | Reject safely, enforce path and resource budget | L970 (\`#L970\`) |
-| `F07` | Supply parent traversal, absolute path, or symlink/junction escape | Enforce authorized workspace bounds per platform | L971 (\`#L971\`) |
-| `F08` | Fail during the Nth file of directory copy | Retain source, quarantine partial destination, no success | L972 (\`#L972\`) |
-| `F09` | Fail one removal during recursive destructive cleanup | Per-object residuals, never full completion | L973 (\`#L973\`) |
-| `F10` | Fail while streaming an XLSX writer | Abort/reconcile staged bytes, no exposed incomplete Artifact | L974 (\`#L974\`) |
-| `F11` | Fill disk after bytes publication before catalog commit | Reconciler resolves orphan bytes/intent | L975 (\`#L975\`) |
-| `F12` | Corrupt artifact bytes despite committed database row | Digest mismatch and explicit damaged state | L976 (\`#L976\`) |
-| `F13` | Submit same command twice with same idempotency digest | Exactly one Job/Run per admitted scope | L977 (\`#L977\`) |
-| `F14` | Reuse idempotency key with a different request digest | Conflict rather than misleading reuse | L978 (\`#L978\`) |
-| `F15` | Lose acknowledgement after successful remote publication | UNKNOWN effect; inspect receipt; do not blindly retry | L979 (\`#L979\`) |
-| `F16` | Race workers with two fencing generations | Stale generation cannot publish | L980 (\`#L980\`) |
-| `F17` | Two users mutate/rename the same resource concurrently | Revision or serialization conflict at authority | L981 (\`#L981\`) |
-| `F18` | Crash between Run-to-Job transition and event/outbox append | Transactional consistency; recoverable event | L982 (\`#L982\`) |
-| `F19` | Corrupt persisted JSON/state database | Diagnostic degraded state, no silent empty reset | L983 (\`#L983\`) |
-| `F20` | Upgrade against unknown persisted schema | Refuse/controlled migration while retaining old state | L984 (\`#L984\`) |
-| `F21` | Restore only DB, omitting referenced artifact blobs | Coherence failure with missing refs, no green health | L985 (\`#L985\`) |
-| `F22` | Revoke permission while automation awaits execution | Recheck and deny at authoritative effect boundary | L986 (\`#L986\`) |
-| `F23` | AI proposes an unauthorized destructive plan | Reject or await scoped approval | L987 (\`#L987\`) |
-| `F24` | Leak another user's events into subscription stream | Filter before transport and protect cursor scope | L988 (\`#L988\`) |
-| `F25` | Close client UI while a host-managed Job executes | Host Job continues; reconnect by same identities (host profile only) | L989 (\`#L989\`) |
-| `F26` | Race terminal success with a late cancel request | One committed terminal outcome, no successful-to-cancelled rewrite | L990 (\`#L990\`) |
-| `F27` | Restart scheduler at exact due occurrence boundary | Occurrence/effect identity prevents duplicates | L991 (\`#L991\`) |
-| `F28` | Exercise repeated or nonexistent daylight-saving local hour | Deterministic timezone/misfire occurrence policy | L992 (\`#L992\`) |
-| `F29` | Lose mandatory audit recorder during dangerous action | Deny before irreversible effect | L993 (\`#L993\`) |
-| `F30` | Lose optional debug-log sink during safe read-only Job | Degraded diagnostics while business truth remains honest | L994 (\`#L994\`) |
-| `F31` | Attempt expensive whole-object decoding of huge input | Budgeted/spill-to-disk or controlled failure, not unbounded OOM | L995 (\`#L995\`) |
-| `F32` | Change official source bytes under unchanged file name | New source version; historical Results keep old dependency | L996 (\`#L996\`) |
-| `F33` | Use screen reader and reduced motion during run, error and cancellation | Full textual/accessible state without relying on color/motion | L997 (\`#L997\`) |
-| `F34` | Distribute incompatible package/manifest contract tuple | Reject activation with explicit diagnostics | L998 (\`#L998\`) |
-| `F35` | Compare IFRS versus RAS figures from different reporting perimeters | Qualify domain comparability before a conclusion | L999 (\`#L999\`) |
-| `F36` | Telemetry recorder reports OUTCOME_UNKNOWN | No invented confirmed ProblemRef; safe unknown recovery | L1000 (\`#L1000\`) |
+| `F01` | List an existing, truly empty directory | Successful empty response with observed directory presence | L965 (`#L965`) |
+| `F02` | List an absent directory | Typed NotFound, not a successful empty list | L966 (`#L966`) |
+| `F03` | List a file path as though it were a directory | WrongType, not successful empty result | L967 (`#L967`) |
+| `F04` | Fail network/permission access to a statistical source | Distinct typed error; never claim no data | L968 (`#L968`) |
+| `F05` | Serve HTML/error page in place of a workbook | Validate/reject inappropriate payload | L969 (`#L969`) |
+| `F06` | Inject corrupt ZIP, parent traversal or decompression expansion bomb | Reject safely, enforce path and resource budget | L970 (`#L970`) |
+| `F07` | Supply parent traversal, absolute path, or symlink/junction escape | Enforce authorized workspace bounds per platform | L971 (`#L971`) |
+| `F08` | Fail during the Nth file of directory copy | Retain source, quarantine partial destination, no success | L972 (`#L972`) |
+| `F09` | Fail one removal during recursive destructive cleanup | Per-object residuals, never full completion | L973 (`#L973`) |
+| `F10` | Fail while streaming an XLSX writer | Abort/reconcile staged bytes, no exposed incomplete Artifact | L974 (`#L974`) |
+| `F11` | Fill disk after bytes publication before catalog commit | Reconciler resolves orphan bytes/intent | L975 (`#L975`) |
+| `F12` | Corrupt artifact bytes despite committed database row | Digest mismatch and explicit damaged state | L976 (`#L976`) |
+| `F13` | Submit same command twice with same idempotency digest | Exactly one Job/Run per admitted scope | L977 (`#L977`) |
+| `F14` | Reuse idempotency key with a different request digest | Conflict rather than misleading reuse | L978 (`#L978`) |
+| `F15` | Lose acknowledgement after successful remote publication | UNKNOWN effect; inspect receipt; do not blindly retry | L979 (`#L979`) |
+| `F16` | Race workers with two fencing generations | Stale generation cannot publish | L980 (`#L980`) |
+| `F17` | Two users mutate/rename the same resource concurrently | Revision or serialization conflict at authority | L981 (`#L981`) |
+| `F18` | Crash between Run-to-Job transition and event/outbox append | Transactional consistency; recoverable event | L982 (`#L982`) |
+| `F19` | Corrupt persisted JSON/state database | Diagnostic degraded state, no silent empty reset | L983 (`#L983`) |
+| `F20` | Upgrade against unknown persisted schema | Refuse/controlled migration while retaining old state | L984 (`#L984`) |
+| `F21` | Restore only DB, omitting referenced artifact blobs | Coherence failure with missing refs, no green health | L985 (`#L985`) |
+| `F22` | Revoke permission while automation awaits execution | Recheck and deny at authoritative effect boundary | L986 (`#L986`) |
+| `F23` | AI proposes an unauthorized destructive plan | Reject or await scoped approval | L987 (`#L987`) |
+| `F24` | Leak another user's events into subscription stream | Filter before transport and protect cursor scope | L988 (`#L988`) |
+| `F25` | Close client UI while a host-managed Job executes | Host Job continues; reconnect by same identities (host profile only) | L989 (`#L989`) |
+| `F26` | Race terminal success with a late cancel request | One committed terminal outcome, no successful-to-cancelled rewrite | L990 (`#L990`) |
+| `F27` | Restart scheduler at exact due occurrence boundary | Occurrence/effect identity prevents duplicates | L991 (`#L991`) |
+| `F28` | Exercise repeated or nonexistent daylight-saving local hour | Deterministic timezone/misfire occurrence policy | L992 (`#L992`) |
+| `F29` | Lose mandatory audit recorder during dangerous action | Deny before irreversible effect | L993 (`#L993`) |
+| `F30` | Lose optional debug-log sink during safe read-only Job | Degraded diagnostics while business truth remains honest | L994 (`#L994`) |
+| `F31` | Attempt expensive whole-object decoding of huge input | Budgeted/spill-to-disk or controlled failure, not unbounded OOM | L995 (`#L995`) |
+| `F32` | Change official source bytes under unchanged file name | New source version; historical Results keep old dependency | L996 (`#L996`) |
+| `F33` | Use screen reader and reduced motion during run, error and cancellation | Full textual/accessible state without relying on color/motion | L997 (`#L997`) |
+| `F34` | Distribute incompatible package/manifest contract tuple | Reject activation with explicit diagnostics | L998 (`#L998`) |
+| `F35` | Compare IFRS versus RAS figures from different reporting perimeters | Qualify domain comparability before a conclusion | L999 (`#L999`) |
+| `F36` | Telemetry recorder reports OUTCOME_UNKNOWN | No invented confirmed ProblemRef; safe unknown recovery | L1000 (`#L1000`) |
 
 **Discriminating evidence:** any claim that a fixture *passed* requires runner/release versions, injected fault, actual input/environment, observed output and a failure-capable oracle. A table of expected properties alone does not constitute a test implementation. Some host durability tests are deliberately inapplicable to a local foreground profile; a documented `NOT_APPLICABLE` disposition with evidence is stronger than assuming the system passed.

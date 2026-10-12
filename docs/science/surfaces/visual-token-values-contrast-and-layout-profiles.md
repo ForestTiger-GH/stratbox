@@ -113,32 +113,32 @@ A visually polished screenshot cannot certify those behaviors. Reopen on real cl
 
 ## 8. Original visual profile: 23 source-line anchored typography and surface values
 
-The frozen visual-system Research (\`#L468-L687\`) proposed **nine typography role/size rows**, **seven light-theme surface tokens** and **seven dark-theme surface tokens**. They are retained individually to distinguish **semantic roles** from **candidate physical values**. Pixel sizes, weights and colors are **dated Research proposals**, not accepted branding, measured contrast, verified cross-platform equality or proof that the current Windows build renders these tokens.
+The frozen visual-system Research (`#L468-L687`) proposed **nine typography role/size rows**, **seven light-theme surface tokens** and **seven dark-theme surface tokens**. They are retained individually to distinguish **semantic roles** from **candidate physical values**. Pixel sizes, weights and colors are **dated Research proposals**, not accepted branding, measured contrast, verified cross-platform equality or proof that the current Windows build renders these tokens.
 
 | Original candidate ID | Semantic role and source values | Qualifying research interpretation | Frozen original row |
 | --- | --- | --- | --- |
-| `SB-SRC-0043/TYPOGRAPHY-01` | Micro / technical = `11 px, weight 500, line height 15 px` | Compact typography must still pass font metrics, readability and zoom tests. | L474 (\`#L474\`) |
-| `SB-SRC-0043/TYPOGRAPHY-02` | Meta / hint = `12 px, weight 400–500, line height 17 px` | Compact typography must still pass font metrics, readability and zoom tests. | L475 (\`#L475\`) |
-| `SB-SRC-0043/TYPOGRAPHY-03` | Body = `13 px, weight 400, line height 19 px` | Compact typography must still pass font metrics, readability and zoom tests. | L476 (\`#L476\`) |
-| `SB-SRC-0043/TYPOGRAPHY-04` | Body strong = `13 px, weight 600, line height 19 px` | Compact typography must still pass font metrics, readability and zoom tests. | L477 (\`#L477\`) |
-| `SB-SRC-0043/TYPOGRAPHY-05` | Item title = `14 px, weight 600, line height 20 px` | Compact typography must still pass font metrics, readability and zoom tests. | L478 (\`#L478\`) |
-| `SB-SRC-0043/TYPOGRAPHY-06` | Case title = `15 px, weight 600, line height 21 px` | Compact typography must still pass font metrics, readability and zoom tests. | L479 (\`#L479\`) |
-| `SB-SRC-0043/TYPOGRAPHY-07` | Panel title = `16 px, weight 600, line height 22 px` | Compact typography must still pass font metrics, readability and zoom tests. | L480 (\`#L480\`) |
-| `SB-SRC-0043/TYPOGRAPHY-08` | Section/page title = `18–20 px, weight 600, line height 24–28 px` | Compact typography must still pass font metrics, readability and zoom tests. | L481 (\`#L481\`) |
-| `SB-SRC-0043/TYPOGRAPHY-09` | Dialog hero title = `22–24 px, weight 600, line height 30–32 px` | Compact typography must still pass font metrics, readability and zoom tests. | L482 (\`#L482\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-01` | `surface.canvas` = ``#F5F7FA`` | Proposed light-mode surface, subject to contrast and focus tests. | L595 (\`#L595\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-02` | `surface.primary` = ``#FFFFFF`` | Proposed light-mode surface, subject to contrast and focus tests. | L596 (\`#L596\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-03` | `surface.secondary` = ``#F8FAFC`` | Proposed light-mode surface, subject to contrast and focus tests. | L597 (\`#L597\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-04` | `surface.tertiary` = ``#F1F4F8`` | Proposed light-mode surface, subject to contrast and focus tests. | L598 (\`#L598\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-05` | `surface.hover` = ``#F3F6FA`` | Proposed light-mode surface, subject to contrast and focus tests. | L599 (\`#L599\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-06` | `surface.selected` = ``#EEF4FF`` | Proposed light-mode surface, subject to contrast and focus tests. | L600 (\`#L600\`) |
-| `SB-SRC-0043/LIGHT_SURFACE-07` | `surface.elevated` = ``#FFFFFF`` | Proposed light-mode surface, subject to contrast and focus tests. | L601 (\`#L601\`) |
-| `SB-SRC-0043/DARK_SURFACE-01` | `surface.canvas` = ``#111318`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L681 (\`#L681\`) |
-| `SB-SRC-0043/DARK_SURFACE-02` | `surface.primary` = ``#181B21`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L682 (\`#L682\`) |
-| `SB-SRC-0043/DARK_SURFACE-03` | `surface.secondary` = ``#1E222A`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L683 (\`#L683\`) |
-| `SB-SRC-0043/DARK_SURFACE-04` | `surface.tertiary` = ``#242932`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L684 (\`#L684\`) |
-| `SB-SRC-0043/DARK_SURFACE-05` | `surface.hover` = ``#272D36`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L685 (\`#L685\`) |
-| `SB-SRC-0043/DARK_SURFACE-06` | `surface.selected` = ``#1B2A46`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L686 (\`#L686\`) |
-| `SB-SRC-0043/DARK_SURFACE-07` | `surface.elevated` = ``#242932`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L687 (\`#L687\`) |
+| `SB-SRC-0043/TYPOGRAPHY-01` | Micro / technical = `11 px, weight 500, line height 15 px` | Compact typography must still pass font metrics, readability and zoom tests. | L474 (`#L474`) |
+| `SB-SRC-0043/TYPOGRAPHY-02` | Meta / hint = `12 px, weight 400–500, line height 17 px` | Compact typography must still pass font metrics, readability and zoom tests. | L475 (`#L475`) |
+| `SB-SRC-0043/TYPOGRAPHY-03` | Body = `13 px, weight 400, line height 19 px` | Compact typography must still pass font metrics, readability and zoom tests. | L476 (`#L476`) |
+| `SB-SRC-0043/TYPOGRAPHY-04` | Body strong = `13 px, weight 600, line height 19 px` | Compact typography must still pass font metrics, readability and zoom tests. | L477 (`#L477`) |
+| `SB-SRC-0043/TYPOGRAPHY-05` | Item title = `14 px, weight 600, line height 20 px` | Compact typography must still pass font metrics, readability and zoom tests. | L478 (`#L478`) |
+| `SB-SRC-0043/TYPOGRAPHY-06` | Case title = `15 px, weight 600, line height 21 px` | Compact typography must still pass font metrics, readability and zoom tests. | L479 (`#L479`) |
+| `SB-SRC-0043/TYPOGRAPHY-07` | Panel title = `16 px, weight 600, line height 22 px` | Compact typography must still pass font metrics, readability and zoom tests. | L480 (`#L480`) |
+| `SB-SRC-0043/TYPOGRAPHY-08` | Section/page title = `18–20 px, weight 600, line height 24–28 px` | Compact typography must still pass font metrics, readability and zoom tests. | L481 (`#L481`) |
+| `SB-SRC-0043/TYPOGRAPHY-09` | Dialog hero title = `22–24 px, weight 600, line height 30–32 px` | Compact typography must still pass font metrics, readability and zoom tests. | L482 (`#L482`) |
+| `SB-SRC-0043/LIGHT_SURFACE-01` | `surface.canvas` = ``#F5F7FA`` | Proposed light-mode surface, subject to contrast and focus tests. | L595 (`#L595`) |
+| `SB-SRC-0043/LIGHT_SURFACE-02` | `surface.primary` = ``#FFFFFF`` | Proposed light-mode surface, subject to contrast and focus tests. | L596 (`#L596`) |
+| `SB-SRC-0043/LIGHT_SURFACE-03` | `surface.secondary` = ``#F8FAFC`` | Proposed light-mode surface, subject to contrast and focus tests. | L597 (`#L597`) |
+| `SB-SRC-0043/LIGHT_SURFACE-04` | `surface.tertiary` = ``#F1F4F8`` | Proposed light-mode surface, subject to contrast and focus tests. | L598 (`#L598`) |
+| `SB-SRC-0043/LIGHT_SURFACE-05` | `surface.hover` = ``#F3F6FA`` | Proposed light-mode surface, subject to contrast and focus tests. | L599 (`#L599`) |
+| `SB-SRC-0043/LIGHT_SURFACE-06` | `surface.selected` = ``#EEF4FF`` | Proposed light-mode surface, subject to contrast and focus tests. | L600 (`#L600`) |
+| `SB-SRC-0043/LIGHT_SURFACE-07` | `surface.elevated` = ``#FFFFFF`` | Proposed light-mode surface, subject to contrast and focus tests. | L601 (`#L601`) |
+| `SB-SRC-0043/DARK_SURFACE-01` | `surface.canvas` = ``#111318`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L681 (`#L681`) |
+| `SB-SRC-0043/DARK_SURFACE-02` | `surface.primary` = ``#181B21`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L682 (`#L682`) |
+| `SB-SRC-0043/DARK_SURFACE-03` | `surface.secondary` = ``#1E222A`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L683 (`#L683`) |
+| `SB-SRC-0043/DARK_SURFACE-04` | `surface.tertiary` = ``#242932`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L684 (`#L684`) |
+| `SB-SRC-0043/DARK_SURFACE-05` | `surface.hover` = ``#272D36`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L685 (`#L685`) |
+| `SB-SRC-0043/DARK_SURFACE-06` | `surface.selected` = ``#1B2A46`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L686 (`#L686`) |
+| `SB-SRC-0043/DARK_SURFACE-07` | `surface.elevated` = ``#242932`` | Proposed dark-mode surface, subject to contrast and OS high-contrast rules. | L687 (`#L687`) |
 
 **Counterarguments and adoption cost:** platform-native high-contrast can legitimately override physical colors if it preserves the semantic role; UI status must never rely on color alone, and an approved client theme does not automatically style financial reports. Dense analytical workflows may need adjusted font size and spacing under real devices/zoom. The table conserves **23 exact-source design candidates**, not full source meaning or accepted design-system values.

@@ -185,32 +185,32 @@ Candidate falsification tests (not executed): same URL/new bytes; bank classifie
 
 ## 15. Original twenty-two Data-to-Knowledge invariants and negative fixtures
 
-The frozen Topic 03 consolidation original, §18 (\`#L1264-L1291\`) specified **twenty-two proposed invariants**, each paired with an original fault scenario. Their English source-row interpretations are preserved below as **Research candidates**, not existing domain implementations, approved obligations or executed negative tests. Some imply optional higher-order services only for sufficiently demanding consumers; others concern fundamental evidence non-promotion and current code missingness.
+The frozen Topic 03 consolidation original, §18 (`#L1264-L1291`) specified **twenty-two proposed invariants**, each paired with an original fault scenario. Their English source-row interpretations are preserved below as **Research candidates**, not existing domain implementations, approved obligations or executed negative tests. Some imply optional higher-order services only for sufficiently demanding consumers; others concern fundamental evidence non-promotion and current code missingness.
 
 | Source invariant | English meaning and applicable challenge | Original source row |
 | --- | --- | --- |
-| `SB-SRC-0050/INV-DK-01` | Source definition and acquired byte snapshot retain separate identities under a stable URL. | L1270 (\`#L1270\`) |
-| `SB-SRC-0050/INV-DK-02` | An actually used raw input can be identified by digest even after movement or renaming. | L1271 (\`#L1271\`) |
-| `SB-SRC-0050/INV-DK-03` | Registry revisions are explicit rather than selected by mutable local mtime. | L1272 (\`#L1272\`) |
-| `SB-SRC-0050/INV-DK-04` | Canonical data retain measure, unit, bank/group perimeter, period and vintage. | L1273 (\`#L1273\`) |
-| `SB-SRC-0050/INV-DK-05` | Missing/Unknown do not become zero or false during parsing and export. | L1274 (\`#L1274\`) |
-| `SB-SRC-0050/INV-DK-06` | Parser validation cannot strengthen evidence support when domain definitions disagree. | L1275 (\`#L1275\`) |
-| `SB-SRC-0050/INV-DK-07` | A DatasetVersion points to exact sources and registry revision dependencies. | L1276 (\`#L1276\`) |
-| `SB-SRC-0050/INV-DK-08` | One semantic Result may be materialized in multiple differently formatted Artifacts. | L1277 (\`#L1277\`) |
-| `SB-SRC-0050/INV-DK-09` | Committed Artifact bytes have stable identity; replacement is a new version or a conflict. | L1278 (\`#L1278\`) |
-| `SB-SRC-0050/INV-DK-10` | Interrupted staging cannot create a falsely completed published Artifact. | L1279 (\`#L1279\`) |
-| `SB-SRC-0050/INV-DK-11` | A filesystem path is a materialization locator, not a durable semantic identity. | L1280 (\`#L1280\`) |
-| `SB-SRC-0050/INV-DK-12` | Work and UI indexes do not replace evidence of a domain analytical result. | L1281 (\`#L1281\`) |
-| `SB-SRC-0050/INV-DK-13` | Changing source/registry revision does not destroy historic results and their as-of provenance. | L1282 (\`#L1282\`) |
-| `SB-SRC-0050/INV-DK-14` | Do not silently promote inferred/weak evidence into direct official source claims. | L1283 (\`#L1283\`) |
-| `SB-SRC-0050/INV-DK-15` | Partial unavailable periods must remain explicit rather than appearing as a complete dataset. | L1284 (\`#L1284\`) |
-| `SB-SRC-0050/INV-DK-16` | Deleting a cache cannot silently invalidate a previously promised replay guarantee. | L1285 (\`#L1285\`) |
-| `SB-SRC-0050/INV-DK-17` | Sensitive source locators are filtered according to principal and projection. | L1286 (\`#L1286\`) |
-| `SB-SRC-0050/INV-DK-18` | File author's display label differs from the actor whose code generated or accepted a result. | L1287 (\`#L1287\`) |
-| `SB-SRC-0050/INV-DK-19` | Concurrent Artifact commits cannot publish mutually inconsistent catalog partial states. | L1288 (\`#L1288\`) |
-| `SB-SRC-0050/INV-DK-20` | Switching style profile does not alter the underlying economic value and Claim. | L1289 (\`#L1289\`) |
-| `SB-SRC-0050/INV-DK-21` | A workbook-shaped payload is not automatically a valid economic source input. | L1290 (\`#L1290\`) |
-| `SB-SRC-0050/INV-DK-22` | Impact assessment requires exact used-source scope, not all broadly related series revisions. | L1291 (\`#L1291\`) |
+| `SB-SRC-0050/INV-DK-01` | Source definition and acquired byte snapshot retain separate identities under a stable URL. | L1270 (`#L1270`) |
+| `SB-SRC-0050/INV-DK-02` | An actually used raw input can be identified by digest even after movement or renaming. | L1271 (`#L1271`) |
+| `SB-SRC-0050/INV-DK-03` | Registry revisions are explicit rather than selected by mutable local mtime. | L1272 (`#L1272`) |
+| `SB-SRC-0050/INV-DK-04` | Canonical data retain measure, unit, bank/group perimeter, period and vintage. | L1273 (`#L1273`) |
+| `SB-SRC-0050/INV-DK-05` | Missing/Unknown do not become zero or false during parsing and export. | L1274 (`#L1274`) |
+| `SB-SRC-0050/INV-DK-06` | Parser validation cannot strengthen evidence support when domain definitions disagree. | L1275 (`#L1275`) |
+| `SB-SRC-0050/INV-DK-07` | A DatasetVersion points to exact sources and registry revision dependencies. | L1276 (`#L1276`) |
+| `SB-SRC-0050/INV-DK-08` | One semantic Result may be materialized in multiple differently formatted Artifacts. | L1277 (`#L1277`) |
+| `SB-SRC-0050/INV-DK-09` | Committed Artifact bytes have stable identity; replacement is a new version or a conflict. | L1278 (`#L1278`) |
+| `SB-SRC-0050/INV-DK-10` | Interrupted staging cannot create a falsely completed published Artifact. | L1279 (`#L1279`) |
+| `SB-SRC-0050/INV-DK-11` | A filesystem path is a materialization locator, not a durable semantic identity. | L1280 (`#L1280`) |
+| `SB-SRC-0050/INV-DK-12` | Work and UI indexes do not replace evidence of a domain analytical result. | L1281 (`#L1281`) |
+| `SB-SRC-0050/INV-DK-13` | Changing source/registry revision does not destroy historic results and their as-of provenance. | L1282 (`#L1282`) |
+| `SB-SRC-0050/INV-DK-14` | Do not silently promote inferred/weak evidence into direct official source claims. | L1283 (`#L1283`) |
+| `SB-SRC-0050/INV-DK-15` | Partial unavailable periods must remain explicit rather than appearing as a complete dataset. | L1284 (`#L1284`) |
+| `SB-SRC-0050/INV-DK-16` | Deleting a cache cannot silently invalidate a previously promised replay guarantee. | L1285 (`#L1285`) |
+| `SB-SRC-0050/INV-DK-17` | Sensitive source locators are filtered according to principal and projection. | L1286 (`#L1286`) |
+| `SB-SRC-0050/INV-DK-18` | File author's display label differs from the actor whose code generated or accepted a result. | L1287 (`#L1287`) |
+| `SB-SRC-0050/INV-DK-19` | Concurrent Artifact commits cannot publish mutually inconsistent catalog partial states. | L1288 (`#L1288`) |
+| `SB-SRC-0050/INV-DK-20` | Switching style profile does not alter the underlying economic value and Claim. | L1289 (`#L1289`) |
+| `SB-SRC-0050/INV-DK-21` | A workbook-shaped payload is not automatically a valid economic source input. | L1290 (`#L1290`) |
+| `SB-SRC-0050/INV-DK-22` | Impact assessment requires exact used-source scope, not all broadly related series revisions. | L1291 (`#L1291`) |
 
 **Counterexamples:** matching SHA-256 cannot establish official authenticity or semantic equivalence; retaining a digest without bytes cannot prove replay-readiness. Timestamp-ordered registry resources are a current implementation convenience, not an official revision contract. Domain-specific risk determines whether raw inputs, registry bundles and histories require durable retention. These twenty-two producer translations are independently reviewable source locators, **not a complete conservation of the 1,498-line original**.
 
@@ -220,7 +220,7 @@ The frozen Topic 03 consolidation original, §18 (\`#L1264-L1291\`) specified **
 
 | Original position and epistemic status | Source meaning | Counterexample or missing proof | Frozen original span |
 | --- | --- | --- | --- |
-| `SB-SRC-0015/FRG-02` · `HISTORICAL_VERSION_FILTER` | The patch applied historical regional schema filtering and rejected obsolete intra-month weekly revisions as candidates for latest family selection. | An automatically chosen newest filename is not necessarily the newest official dataset edition and may hide a changed data vintage. | L27–L29 (\`#L27-L29\`) |
-| `SB-SRC-0015/FRG-03` · `HISTORICAL_RECOGNITION_GUARD` | Two filename schemes were supported, with internal names winning same-period duplicates while unrelated/unrecognized files were promised to remain untouched. | Known filename priority does not prove semantic duplicate equality or authorize modification/deletion of arbitrary neighbor files. | L31–L35 (\`#L31-L35\`) |
+| `SB-SRC-0015/FRG-02` · `HISTORICAL_VERSION_FILTER` | The patch applied historical regional schema filtering and rejected obsolete intra-month weekly revisions as candidates for latest family selection. | An automatically chosen newest filename is not necessarily the newest official dataset edition and may hide a changed data vintage. | L27–L29 (`#L27-L29`) |
+| `SB-SRC-0015/FRG-03` · `HISTORICAL_RECOGNITION_GUARD` | Two filename schemes were supported, with internal names winning same-period duplicates while unrelated/unrecognized files were promised to remain untouched. | Known filename priority does not prove semantic duplicate equality or authorize modification/deletion of arbitrary neighbor files. | L31–L35 (`#L31-L35`) |
 
 **Scientific boundary:** these are twelve source-positioned historical statements across bank reporting, FRG, escrow and raw-source collection, with error, identity and version qualifiers. They do not certify content correctness, deployed package behavior or a complete independent source-to-Science audit. Any restricted source material remains outside public Science.

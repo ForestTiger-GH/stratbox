@@ -157,41 +157,41 @@ Candidate checks, **not executed** by this article:
 
 ## 10. Primary-source banking/macro qualification and worked checks
 
-The original banking and macro specificity research, sections 61–62 (\`#L2764-L2822\`) explicitly warns that bank statement labels and macro time series cannot be made comparable by a generic file parser or spreadsheet header. The **four banking concerns, five derivation-status labels and ten macro-series qualifiers** below are copied or narrowly restated as research findings with source lines, **not a currently deployed universal observation schema**.
+The original banking and macro specificity research, sections 61–62 (`#L2764-L2822`) explicitly warns that bank statement labels and macro time series cannot be made comparable by a generic file parser or spreadsheet header. The **four banking concerns, five derivation-status labels and ten macro-series qualifiers** below are copied or narrowly restated as research findings with source lines, **not a currently deployed universal observation schema**.
 
 ### Four banking identity/interpretation boundaries
 
 | Original item | Source-specific obligation | Source line |
 | --- | --- | --- |
-| `SB-SRC-0019/BANK-IFRS_RAS` | **Same label across IFRS and RAS.** The comparison requires an explicit accounting-basis bridge. | L2768 (\`#L2768\`) |
-| `SB-SRC-0019/BANK-BANK_GROUP` | **Bank legal entity versus consolidated Group.** Reporting-perimeter semantics must be explicit. | L2779 (\`#L2779\`) |
-| `SB-SRC-0019/BANK-DERIVATION_STATUS` | **Transformation status must remain recoverable.** Preserve this distinction in the UI and Excel export: | L2783 (\`#L2783\`) |
-| `SB-SRC-0019/BANK-HISTORICAL_REVISIONS` | **Historical vintage remains addressable.** Historical analysis must remain able to use the exact original source vintage. | L2803 (\`#L2803\`) |
+| `SB-SRC-0019/BANK-IFRS_RAS` | **Same label across IFRS and RAS.** The comparison requires an explicit accounting-basis bridge. | L2768 (`#L2768`) |
+| `SB-SRC-0019/BANK-BANK_GROUP` | **Bank legal entity versus consolidated Group.** Reporting-perimeter semantics must be explicit. | L2779 (`#L2779`) |
+| `SB-SRC-0019/BANK-DERIVATION_STATUS` | **Transformation status must remain recoverable.** Preserve this distinction in the UI and Excel export: | L2783 (`#L2783`) |
+| `SB-SRC-0019/BANK-HISTORICAL_REVISIONS` | **Historical vintage remains addressable.** Historical analysis must remain able to use the exact original source vintage. | L2803 (`#L2803`) |
 
 ### Five different provenance/derivation statuses, not synonyms
 
 | Original item | Exact original term | Interpretive difference to keep visible | Source line |
 | --- | --- | --- | --- |
-| `SB-SRC-0019/DERIVATION-01` | `reported` | Value as published under its actual source/perimeter/version, prior to product recoding. | L2786 (\`#L2786\`) |
-| `SB-SRC-0019/DERIVATION-02` | `normalized` | Source published amount after a controlled mapping/unit/scoping normalization; publisher remains ground truth only for the original form. | L2787 (\`#L2787\`) |
-| `SB-SRC-0019/DERIVATION-03` | `derived` | Explicit transformation/computation over other values, with method and input identity. | L2788 (\`#L2788\`) |
-| `SB-SRC-0019/DERIVATION-04` | `estimated` | A supported estimate under an uncertainty/model regime rather than an exact observed amount. | L2789 (\`#L2789\`) |
-| `SB-SRC-0019/DERIVATION-05` | `restored` | An inferred or reconstructed amount under a recoverable evidence/rounding/constraint envelope, as in SORS. | L2790 (\`#L2790\`) |
+| `SB-SRC-0019/DERIVATION-01` | `reported` | Value as published under its actual source/perimeter/version, prior to product recoding. | L2786 (`#L2786`) |
+| `SB-SRC-0019/DERIVATION-02` | `normalized` | Source published amount after a controlled mapping/unit/scoping normalization; publisher remains ground truth only for the original form. | L2787 (`#L2787`) |
+| `SB-SRC-0019/DERIVATION-03` | `derived` | Explicit transformation/computation over other values, with method and input identity. | L2788 (`#L2788`) |
+| `SB-SRC-0019/DERIVATION-04` | `estimated` | A supported estimate under an uncertainty/model regime rather than an exact observed amount. | L2789 (`#L2789`) |
+| `SB-SRC-0019/DERIVATION-05` | `restored` | An inferred or reconstructed amount under a recoverable evidence/rounding/constraint envelope, as in SORS. | L2790 (`#L2790`) |
 
 ### Ten original macro-series comparability dimensions
 
 | Original item | Exact research term | What a consumer should ask | Source line |
 | --- | --- | --- | --- |
-| `SB-SRC-0019/MACRO-01` | `seasonality;` | Seasonally adjusted versus unadjusted, adjustment method and available revisions. | L2811 (\`#L2811\`) |
-| `SB-SRC-0019/MACRO-02` | `revisions;` | Has the release publisher revised the observation, estimation or definition? | L2812 (\`#L2812\`) |
-| `SB-SRC-0019/MACRO-03` | `real-time vintage;` | What statistical information was actually observable at the queried decision time? | L2813 (\`#L2813\`) |
-| `SB-SRC-0019/MACRO-04` | `classification changes;` | Was the measure/classifier definition changed or rebased over the interval? | L2814 (\`#L2814\`) |
-| `SB-SRC-0019/MACRO-05` | `price/current vs constant terms;` | Are amounts at current or constant price terms and what deflator/base are used? | L2815 (\`#L2815\`) |
-| `SB-SRC-0019/MACRO-06` | `index base;` | Is the index reported relative to which reference base and scale? | L2816 (\`#L2816\`) |
-| `SB-SRC-0019/MACRO-07` | `chain linking;` | Are components chain-linked or additively comparable at this level? | L2817 (\`#L2817\`) |
-| `SB-SRC-0019/MACRO-08` | `geography;` | Which geographical aggregation, boundaries and effective region codes apply? | L2818 (\`#L2818\`) |
-| `SB-SRC-0019/MACRO-09` | `observation vs estimate;` | Is this a direct publication/measurement or an estimate with its own method? | L2819 (\`#L2819\`) |
-| `SB-SRC-0019/MACRO-10` | `nowcast vs forecast.` | Is the target a current unobserved state estimate or a future forecast and what is its issuance vintage? | L2820 (\`#L2820\`) |
+| `SB-SRC-0019/MACRO-01` | `seasonality;` | Seasonally adjusted versus unadjusted, adjustment method and available revisions. | L2811 (`#L2811`) |
+| `SB-SRC-0019/MACRO-02` | `revisions;` | Has the release publisher revised the observation, estimation or definition? | L2812 (`#L2812`) |
+| `SB-SRC-0019/MACRO-03` | `real-time vintage;` | What statistical information was actually observable at the queried decision time? | L2813 (`#L2813`) |
+| `SB-SRC-0019/MACRO-04` | `classification changes;` | Was the measure/classifier definition changed or rebased over the interval? | L2814 (`#L2814`) |
+| `SB-SRC-0019/MACRO-05` | `price/current vs constant terms;` | Are amounts at current or constant price terms and what deflator/base are used? | L2815 (`#L2815`) |
+| `SB-SRC-0019/MACRO-06` | `index base;` | Is the index reported relative to which reference base and scale? | L2816 (`#L2816`) |
+| `SB-SRC-0019/MACRO-07` | `chain linking;` | Are components chain-linked or additively comparable at this level? | L2817 (`#L2817`) |
+| `SB-SRC-0019/MACRO-08` | `geography;` | Which geographical aggregation, boundaries and effective region codes apply? | L2818 (`#L2818`) |
+| `SB-SRC-0019/MACRO-09` | `observation vs estimate;` | Is this a direct publication/measurement or an estimate with its own method? | L2819 (`#L2819`) |
+| `SB-SRC-0019/MACRO-10` | `nowcast vs forecast.` | Is the target a current unobserved state estimate or a future forecast and what is its issuance vintage? | L2820 (`#L2820`) |
 
 ### Concrete failure tests
 
@@ -210,15 +210,15 @@ The October 2026 core survey is a secondary implementation study. Its findings b
 
 | Source reference | Qualified original meaning | Disposition | Original line |
 | --- | --- | --- | --- |
-| `SB-SRC-0021/CORE-01` | Source collection preserved official raw files; it did not establish parsed economic meaning. | `TRANSPORT_NOT_SEMANTIC` | L478 (\`#L478\`) |
-| `SB-SRC-0021/CORE-02` | Regulatory-form implementations shared a physical-to-semantic-to-Excel idea, but their coverage was heterogeneous. | `UNEQUAL_DOMAIN_MATURITY` | L479 (\`#L479\`) |
-| `SB-SRC-0021/CORE-03` | The industry-series component was focused on one observed series despite a broader module name. | `SCOPE_LIMIT` | L480 (\`#L480\`) |
-| `SB-SRC-0021/CORE-04` | SORS restoration remained an unusually specialized evidence method, not the default for every banking observation. | `SPECIALIST_METHOD` | L481 (\`#L481\`) |
-| `SB-SRC-0021/CORE-05` | FRG was primarily a file-family operational stage rather than a finished analytical parser. | `DOMAIN_CEILING` | L483 (\`#L483\`) |
-| `SB-SRC-0021/CORE-06` | Form records used a stable IndicatorId independently of a translated or human-facing display label. | `IDENTITY_BOUNDARY` | L576 (\`#L576\`) |
-| `SB-SRC-0021/CORE-07` | Bank form 802 distinguished a missing published field from an actual numeric zero. | `MISSINGNESS_BOUNDARY` | L585 (\`#L585\`) |
-| `SB-SRC-0021/CORE-08` | Support of one corporate-debt industry series could not establish support for arbitrary publication series. | `GENERALIZATION_LIMIT` | L637 (\`#L637\`) |
-| `SB-SRC-0021/CORE-09` | The study explicitly argued that a second real series should justify generalizing an adapter. | `COST_COUNTERARGUMENT` | L693 (\`#L693\`) |
-| `SB-SRC-0021/CORE-10` | The original counted 132 test functions without executing them; test presence is not a passing release. | `TEST_EVIDENCE_LIMIT` | L1139 (\`#L1139\`) |
+| `SB-SRC-0021/CORE-01` | Source collection preserved official raw files; it did not establish parsed economic meaning. | `TRANSPORT_NOT_SEMANTIC` | L478 (`#L478`) |
+| `SB-SRC-0021/CORE-02` | Regulatory-form implementations shared a physical-to-semantic-to-Excel idea, but their coverage was heterogeneous. | `UNEQUAL_DOMAIN_MATURITY` | L479 (`#L479`) |
+| `SB-SRC-0021/CORE-03` | The industry-series component was focused on one observed series despite a broader module name. | `SCOPE_LIMIT` | L480 (`#L480`) |
+| `SB-SRC-0021/CORE-04` | SORS restoration remained an unusually specialized evidence method, not the default for every banking observation. | `SPECIALIST_METHOD` | L481 (`#L481`) |
+| `SB-SRC-0021/CORE-05` | FRG was primarily a file-family operational stage rather than a finished analytical parser. | `DOMAIN_CEILING` | L483 (`#L483`) |
+| `SB-SRC-0021/CORE-06` | Form records used a stable IndicatorId independently of a translated or human-facing display label. | `IDENTITY_BOUNDARY` | L576 (`#L576`) |
+| `SB-SRC-0021/CORE-07` | Bank form 802 distinguished a missing published field from an actual numeric zero. | `MISSINGNESS_BOUNDARY` | L585 (`#L585`) |
+| `SB-SRC-0021/CORE-08` | Support of one corporate-debt industry series could not establish support for arbitrary publication series. | `GENERALIZATION_LIMIT` | L637 (`#L637`) |
+| `SB-SRC-0021/CORE-09` | The study explicitly argued that a second real series should justify generalizing an adapter. | `COST_COUNTERARGUMENT` | L693 (`#L693`) |
+| `SB-SRC-0021/CORE-10` | The original counted 132 test functions without executing them; test presence is not a passing release. | `TEST_EVIDENCE_LIMIT` | L1139 (`#L1139`) |
 
 These selected passages preserve domain support asymmetry and tests-as-evidence limits. Remaining original findings, direct code checks, real input compatibility and whole-source semantic coverage are independently open.

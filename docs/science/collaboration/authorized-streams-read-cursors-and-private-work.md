@@ -106,25 +106,25 @@ All are **proposed property tests**, not successful production runs. A high-valu
 
 ## Research-source reconciliation: fifteen shared-node negative tests and scope boundaries
 
-The frozen October 7 single-node collaboration study, §§111–125 (\`#L2262-L2325\`), blob `fb8ffe1b13f5c8718b171e6c7ad3d8a0f06948df`, proposes fifteen acceptance criteria. They are preserved as source-row-traced **English Research statements** rather than approved product scope, observed collaboration, passed end-to-end test or grant to expose sensitive data.
+The frozen October 7 single-node collaboration study, §§111–125 (`#L2262-L2325`), blob `fb8ffe1b13f5c8718b171e6c7ad3d8a0f06948df`, proposes fifteen acceptance criteria. They are preserved as source-row-traced **English Research statements** rather than approved product scope, observed collaboration, passed end-to-end test or grant to expose sensitive data.
 
 | Original source ID | Proposed multiuser behavior / falsifiable probe | Original source |
 | --- | --- | --- |
-| `SB-SRC-0036/AC-111` | Two clients observe one authoritative case/status within admitted shared-node scope | L2264 (\`#L2264\`) |
-| `SB-SRC-0036/AC-112` | Read/unread state is individual per participant, not a global event mutation | L2268 (\`#L2268\`) |
-| `SB-SRC-0036/AC-113` | One principal's multiple device sessions map to one participant with multiple sessions | L2272 (\`#L2272\`) |
-| `SB-SRC-0036/AC-114` | Conflicting concurrent writes wait or conflict without corrupting output | L2276 (\`#L2276\`) |
-| `SB-SRC-0036/AC-115` | Independent or read-only jobs may execute concurrently under resource budgets | L2280 (\`#L2280\`) |
-| `SB-SRC-0036/AC-116` | Duplicate command submission resolves to prior admitted case/job without duplicating effects | L2284 (\`#L2284\`) |
-| `SB-SRC-0036/AC-117` | Shared-node background occurrence is not spawned separately by every open desktop | L2288 (\`#L2288\`) |
-| `SB-SRC-0036/AC-118` | Client crash does not destroy a genuinely node-owned shared Job | L2292 (\`#L2292\`) |
-| `SB-SRC-0036/AC-119` | Worker crash is classified independently of success and confirmed cancellation | L2296 (\`#L2296\`) |
-| `SB-SRC-0036/AC-120` | Reconnect uses last authorized node cursor or returns a fresh filtered snapshot | L2300 (\`#L2300\`) |
-| `SB-SRC-0036/AC-121` | Corrupt shared state must report degraded status instead of empty history | L2304 (\`#L2304\`) |
-| `SB-SRC-0036/AC-122` | Authoritative server policy rejects unauthorized commands even if button is visible | L2308 (\`#L2308\`) |
-| `SB-SRC-0036/AC-123` | Personal vs node-wide diagnostics are audience filtered; raw traceback is restricted | L2312 (\`#L2312\`) |
-| `SB-SRC-0036/AC-124` | Artifact identity and producer lineage survive multiple authorized client projections | L2316 (\`#L2316\`) |
-| `SB-SRC-0036/AC-125` | Portable Android/shared contracts must not require PySide6/Qt imports | L2320 (\`#L2320\`) |
+| `SB-SRC-0036/AC-111` | Two clients observe one authoritative case/status within admitted shared-node scope | L2264 (`#L2264`) |
+| `SB-SRC-0036/AC-112` | Read/unread state is individual per participant, not a global event mutation | L2268 (`#L2268`) |
+| `SB-SRC-0036/AC-113` | One principal's multiple device sessions map to one participant with multiple sessions | L2272 (`#L2272`) |
+| `SB-SRC-0036/AC-114` | Conflicting concurrent writes wait or conflict without corrupting output | L2276 (`#L2276`) |
+| `SB-SRC-0036/AC-115` | Independent or read-only jobs may execute concurrently under resource budgets | L2280 (`#L2280`) |
+| `SB-SRC-0036/AC-116` | Duplicate command submission resolves to prior admitted case/job without duplicating effects | L2284 (`#L2284`) |
+| `SB-SRC-0036/AC-117` | Shared-node background occurrence is not spawned separately by every open desktop | L2288 (`#L2288`) |
+| `SB-SRC-0036/AC-118` | Client crash does not destroy a genuinely node-owned shared Job | L2292 (`#L2292`) |
+| `SB-SRC-0036/AC-119` | Worker crash is classified independently of success and confirmed cancellation | L2296 (`#L2296`) |
+| `SB-SRC-0036/AC-120` | Reconnect uses last authorized node cursor or returns a fresh filtered snapshot | L2300 (`#L2300`) |
+| `SB-SRC-0036/AC-121` | Corrupt shared state must report degraded status instead of empty history | L2304 (`#L2304`) |
+| `SB-SRC-0036/AC-122` | Authoritative server policy rejects unauthorized commands even if button is visible | L2308 (`#L2308`) |
+| `SB-SRC-0036/AC-123` | Personal vs node-wide diagnostics are audience filtered; raw traceback is restricted | L2312 (`#L2312`) |
+| `SB-SRC-0036/AC-124` | Artifact identity and producer lineage survive multiple authorized client projections | L2316 (`#L2316`) |
+| `SB-SRC-0036/AC-125` | Portable Android/shared contracts must not require PySide6/Qt imports | L2320 (`#L2320`) |
 
 **User-scope challenge:** the developer's annotated source describes a known trusted team, compact shared diagnostics, and parallel commands in different chats; it does **not** prove a currently deployed server, public-Web authentication, or a particular full role/ACL grammar. Tests of shared Job survival after GUI close apply to an independently admitted **host execution profile**, not an ordinary local foreground process, which the same user expects to terminate when the client closes. User-visible participant nicknames are presentation, not Internet-access principals.
 
