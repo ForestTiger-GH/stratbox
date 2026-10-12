@@ -28,7 +28,7 @@ The record below distinguishes **accepted** target constraints from **user-goal/
 | HOST-O3 | Distinct managed Windows host and Windows client installations, real authenticated attach | `BLOCKED` physical AppDock-host capability and integration proof |
 | HOST-O4 | Client disconnect does not fabricate host Job outcome; stale view reconciles | Logical snapshot port `CANDIDATE`; real durable continuity `BLOCKED` |
 | HOST-O5 | Analytic core remains independently callable and supplies equal domain meaning | Existing core owner plus Scenario/used-input interface fakes `CANDIDATE` |
-| HOST-O6 | Actual principal/object/effect authorization at host authority | [Security LCD](security/host-effect-authorization-construction.md) `BLOCKED` for deployed policy |
+| HOST-O6 | Actual principal/object/effect authorization at host authority | [Security LCD](security/host-effect-authorization-construction.md): twelve fake-port tests of missing target generation, mismatched actor/plan/target/policy, grant denial and stale resource; actual authenticated provider, approval expiry, conditional write and installed host remain `LCD_BLOCKED` |
 | HOST-O7 | Honest unavailable/unknown outcomes for host, bytes, contract and external effects | [Host LCD](hosting/host-authority-and-client-contract-construction.md), [artifact LCD](artifacts/local-output-publication-construction.md), [diagnostic LCD](observability/execution-evidence-and-problem-boundary-construction.md); local `CANDIDATE`, host `BLOCKED` |
 
 ## 2. User-goal scopes remain conditional until admitted
@@ -57,6 +57,10 @@ A future rule is distinct from a real TriggerEvaluation, unique Occurrence, admi
 ### Exactly consumed input: the scientific boundary is stronger than a typed field
 
 The input receipt seam must bind the **same immutable bytes** into the parser and the captured digest, with a separate claimed format verdict and a domain validation result. A mutable buffer, forged `CapturedPayload`, or a decoder that returns a value without an actual format witness cannot satisfy the provenance promise. A UTC field name alone cannot turn a naive client clock into a valid observation. The [used-input LCD](data/used-input-receipt-construction.md) demonstrates these as small candidate bodies and fake negative tests. These checks are **not** a publisher-authenticity proof, full HTML/XLSX parser conformance, true bank methodology validation, streaming performance benchmark, actual raw retention or R3/R4 replay. Those consumers remain separately governed.
+
+### Destructive approval needs a target revision and an actual effect fence
+
+The candidate [security effect guard](security/host-effect-authorization-construction.md) now explicitly refuses destructive requests without a declared resource generation and refuses a returned plan approval whose actor, target set, requested plan digest or policy generation disagrees with the current trusted decision. This is a **necessary synthetic precondition** and can be exercised without choosing IAM or storage technology. However, a real shared FileStore or OS path may be replaced *after* a separately read generation: exact authorization remains `LCD_BLOCKED` until the concrete mutation primitive proves compare-and-effect/fencing, ACL, signed approval expiry and audit receipt across failures. Source role and `SEC-09/SEC-10/SEC-27` evidence remain distinct; passing a class method against fakes is **not** permission to deploy destructive shared writes.
 
 ## 4. Explicit NOT_APPLICABLE boundaries
 
