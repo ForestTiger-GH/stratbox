@@ -105,12 +105,13 @@ These are **candidate pilot routes**. Their associated mechanisms and test vecto
 
 ## Scoped software-construction packets — 2026-10-12 continuation
 
-Four concrete, **documentation-only** packets now complement the assembly contract. Their program skeletons are candidates, not source changes, independently verified implementations, or accepted APIs.
+Five concrete, **documentation-only** packets now complement the assembly contract. Their program skeletons are candidates, not source changes, independently verified implementations, or accepted APIs.
 
 - [Local Scenario execution, independent of Qt application truth](application/local-scenario-execution-construction.md) — `LCD_CANDIDATE`. Source-reconciled sequential plan, typed Python requests/results, one-run gate, execution reducer, safe observations, Qt bridge and negative test stubs; aggregate-outcome, privacy and effect policies still need decisions and actual tests.
 - [Host authority and client attachment](hosting/host-authority-and-client-contract-construction.md) — `LCD_BLOCKED` for deployable Web/Windows-managed host. Typed logical host/client ports, intent admission, scoped views and artifact access; physical owner, authentication, durable dispatch, host recovery, transport, and external managed-platform integration remain unresolved.
 - [Local output verification and Artifact publication](artifacts/local-output-publication-construction.md) — `LCD_CANDIDATE` for a scoped local design and `LCD_BLOCKED` for universal atomic or remote semantics. Typed staging, byte-verification, publish intent and reconciliation models with explicit backend proof requirements.
 - [Exact actually-used input byte receipt in neutral analytical core](data/used-input-receipt-construction.md) — `LCD_CANDIDATE` single-consumer core pilot; `LCD_BLOCKED` for compulsory cross-domain receipts and replay. Defines acquired versus used bytes, typed identity/validation, a byte-preserving decoder handoff, attempt/coverage outcomes and proposed tests, with no full source catalog implied.
+- [Causal execution evidence, local Attempt logs and optional Problem receipts](observability/execution-evidence-and-problem-boundary-construction.md) — `LCD_CANDIDATE` for local evidence segregation and `LCD_BLOCKED` for hosted/durable shared problems; typed audience, evidence planes, safe event and external-registration ports with recovery and fault skeletons.
 
 **Assurance boundary:** all three are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
 
