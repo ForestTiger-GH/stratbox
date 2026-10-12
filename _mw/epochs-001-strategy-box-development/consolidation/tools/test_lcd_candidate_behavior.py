@@ -282,7 +282,8 @@ def probe_artifact_publication() -> dict:
     ref = "artifacts/local-output-publication-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass, "hashlib": hashlib}
     for name in ("PublicationPhase", "ScopedLocator", "PublicationIntent",
-                 "ByteReceipt", "PublicationReceipt", "LocalOutputPublisher"):
+                 "StagingSeal", "ByteReceipt", "PublicationReceipt",
+                 "LocalOutputPublisher"):
         compile_definition(ref, name, d)
     phase = d["PublicationPhase"]
     receipt_type = d["ByteReceipt"]
@@ -292,9 +293,12 @@ def probe_artifact_publication() -> dict:
     class FakeWriter:
         def __init__(self):
             self.staging = {}
+            self.current_generation = 1
+            self.sealed_read_calls = 0
             self.final_bytes = None
             self.raise_after_commit = False
             self.corrupt_final = False
+            self.mutate_after_first_sealed_read = False
 
         def create_unique_staging(self, intent):
             owner = self
@@ -305,11 +309,36 @@ def probe_artifact_publication() -> dict:
                     super().close()
             return "staging-1", CapturedStream()
 
-        def read_closed_staging(self, staging_ref):
-            return BytesIO(self.staging[staging_ref])
+        def external_replace_staging(self):
+            self.staging["staging-1"] = b"new attacker-controlled staging"
+            self.current_generation += 1
 
-        def finalize(self, intent, staging_ref, receipt):
-            self.final_bytes = self.staging[staging_ref]
+        def seal_closed_staging(self, staging_ref):
+            data = self.staging[staging_ref]
+            return d["StagingSeal"](staging_ref, str(self.current_generation),
+                                    len(data), hashlib.sha256(data).hexdigest())
+
+        def _require_current_seal(self, seal):
+            data = self.staging[seal.staging_ref]
+            if (seal.generation != str(self.current_generation)
+                    or len(data) != seal.byte_count
+                    or hashlib.sha256(data).hexdigest() != seal.sha256):
+                raise RuntimeError("sealed generation has changed")
+            return data
+
+        def read_sealed_staging(self, seal):
+            data = self._require_current_seal(seal)
+            self.sealed_read_calls += 1
+            # A violation after a trusted first read is detected at the
+            # NEXT read or conditional-finalize, never promoted to success.
+            if self.mutate_after_first_sealed_read and self.sealed_read_calls == 1:
+                self.external_replace_staging()
+            return BytesIO(data)
+
+        def finalize(self, intent, seal, receipt):
+            data = self._require_current_seal(seal)
+            assert receipt.sha256 == seal.sha256
+            self.final_bytes = data
             if self.corrupt_final:
                 self.final_bytes = self.final_bytes + b"externally changed"
             if self.raise_after_commit:
@@ -397,7 +426,19 @@ def probe_artifact_publication() -> dict:
     result = pub.publish(intent, write_valid)
     assert result.phase is phase.OUTCOME_UNKNOWN and not catalog.committed
 
-    return {"publication_effect_and_failure_cases": 7,
+    writer, catalog, auth, pub = fixture()
+    writer.mutate_after_first_sealed_read = True
+    result = pub.publish(intent, write_valid)
+    assert result.phase is not phase.COMMITTED
+    assert writer.final_bytes is None and not catalog.committed
+
+    writer, catalog, auth, pub = fixture()
+    catalog.after_pending = writer.external_replace_staging
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.OUTCOME_UNKNOWN
+    assert writer.final_bytes is None and not catalog.committed
+
+    return {"publication_effect_and_failure_cases": 9,
             "evidence": "executed documented publisher with in-memory bytes, no OS storage"}
 
 
