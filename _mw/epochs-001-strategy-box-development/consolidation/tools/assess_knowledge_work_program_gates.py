@@ -114,10 +114,40 @@ def check_archives(expected_commit: str) -> dict:
     }
 
 
+def check_native_posix_evidence(expected_commit: str) -> dict:
+    path = ROOT / "native_storage_fault_audit.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["git_commit"] == expected_commit
+    assert data["status"] == "BOUND_TO_POSIX_NATIVE_LOCAL_TEMPORARY_FILES"
+    expected = {
+        "preopen_path_containment_can_be_invalidated",
+        "single_final_component_nofollow_refusal",
+        "open_fd_and_inode_do_not_ensure_immutable_bytes",
+        "unfenced_repeated_staging_reads_disagree",
+        "plain_replace_clobbers_a_changed_target",
+        "posix_link_create_only_rejects_collision",
+        "posix_link_create_only_adds_fresh_name",
+        "same_bytes_different_observation_time_remain_equal",
+    }
+    assert data["passed"] == 8
+    assert set(data["cases"]) == expected
+    assert all(data["cases"].values())
+    assert "not_proved" in data and any(
+        "Windows" in term for term in data["not_proved"])
+    return {
+        "grade": "PRODUCER_LINUX_NATIVE_BOUNDED_EFFECT_EVIDENCE",
+        "exact_commit": expected_commit,
+        "passed": 8,
+        "known_windows_smb_and_durable_storage": "NOT_ATTESTED",
+        "profile_limit": data["scope"],
+    }
+
+
 def main() -> dict:
     head = commit()
     sources = read_census()
     bundles = check_archives(head)
+    native_posix = check_native_posix_evidence(head)
     assert sources["substantive_research_not_full_read"] == []
     # This program can PROVE OPEN through explicit census evidence.
     # It has no authority to infer that an absent human review is completed.
@@ -131,6 +161,7 @@ def main() -> dict:
         "status": "PARTIAL_WITH_EXTERNAL_INDEPENDENT_AND_IMPLEMENTATION_GATES",
         "frozen_source_population": sources,
         "reproducible_deliverables": bundles,
+        "bounded_native_posix_evidence": native_posix,
         "gates": {
             "source_identity_census": "PASS_EXACT_FROZEN_566",
             "all_53_substantive_research_read_producer": "PASS_PRODUCER_READ_STATE_ONLY",
@@ -141,7 +172,8 @@ def main() -> dict:
             "blind_independent_knowledge_consumer_review": "UNEXECUTED",
             "independent_original_first_reverse_check": "UNEXECUTED",
             "ten_lcd_candidate_fragment_probes": "CI_PRODUCER_FAKE_ONLY",
-            "actual_native_host_security_storage_domain_conformance": "UNEXECUTED",
+            "actual_linux_local_posix_race_characterization": "PASS_EIGHT_BOUNDED_REAL_FILESYSTEM_CASES",
+            "actual_target_windows_smb_host_security_storage_domain_conformance": "UNEXECUTED",
             "product_platform_security_policy_decisions": "OPEN_WITH_OWNER",
             "lost_annotated_human_binary": "OWNER_DECLARED_LOST_EXCLUDED",
             "global_lossless_pass": "BLOCKED",
