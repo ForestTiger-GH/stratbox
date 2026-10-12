@@ -1476,10 +1476,139 @@ def probe_frg_cleanup_effects() -> dict:
     }
 
 
+def probe_host_dispatch_recovery() -> dict:
+    """Exercise exact documented outbox consumer with fault-injected fake ports.
+
+    Durable transaction, lease expiry, native scheduler and actual effect
+    safety are NOT simulated or asserted by this producer self-test.
+    """
+    ref = "hosting/host-authority-and-client-contract-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("DispatchRecoveryKind", "DispatchClaim",
+                 "DispatchRecoveryReceipt", "HostDispatchRecovery"):
+        compile_definition(ref, name, d)
+    kind, claimtype = d["DispatchRecoveryKind"], d["DispatchClaim"]
+    class Outbox:
+        def __init__(self):
+            self.unfinished = []
+            self.epoch = 0
+            self.current_claim = None
+            self.fail_claim = False
+            self.fail_ack = False
+            self.bad_claim = None
+            self.unknowns = []
+            self.dispatched = set()
+        def append_as_if_transactional(self, run_ref):
+            self.unfinished.append((f"dispatch-{run_ref}", run_ref))
+        def claim_next(self, worker_ref):
+            if self.fail_claim:
+                raise RuntimeError("fake ledger unreachable")
+            if self.bad_claim is not None:
+                return self.bad_claim
+            if not self.unfinished:
+                return None
+            self.epoch += 1
+            dispatch_ref, run_ref = self.unfinished[0]
+            self.current_claim = claimtype(dispatch_ref, run_ref,
+                                           worker_ref, self.epoch)
+            return self.current_claim
+        def mark_dispatched(self, claim):
+            assert claim == self.current_claim, "stale ledger fence"
+            if self.fail_ack:
+                raise RuntimeError("lost final ledger ACK")
+            assert claim.dispatch_ref == self.unfinished[0][0]
+            self.unfinished.pop(0)
+            self.dispatched.add(claim.dispatch_ref)
+        def mark_uncertain(self, claim, safe_code):
+            assert claim == self.current_claim, "stale claim"
+            self.unknowns.append((claim.dispatch_ref, safe_code))
+    class Scheduler:
+        def __init__(self):
+            self.reservations = set()
+            self.calls = []
+            self.lost_ack = False
+            self.untyped_ack = False
+        def schedule_once(self, claim):
+            self.calls.append((claim.dispatch_ref, claim.fence_epoch))
+            # Fake exact same logical Job key, even if the first ACK is lost.
+            self.reservations.add(claim.dispatch_ref)
+            if self.lost_ack:
+                raise TimeoutError("schedule committed before ACK loss")
+            if self.untyped_ack:
+                return 1
+            return True
+    def new():
+        ledger, scheduler = Outbox(), Scheduler()
+        return ledger, scheduler, d["HostDispatchRecovery"](ledger, scheduler)
+
+    ledger, scheduler, recoverer = new()
+    assert recoverer.run_once("worker-A").kind is kind.NO_PENDING
+
+    # Emulate the durable accepted-Run/outbox pair that was originally stranded
+    # by a lost ledger admission response and a later REPLAY.
+    ledger.append_as_if_transactional("run-1")
+    scheduler.lost_ack = True
+    first = recoverer.run_once("worker-A")
+    assert first.kind is kind.DISPATCH_UNKNOWN and first.run_ref == "run-1"
+    assert scheduler.reservations == {"dispatch-run-1"} and ledger.unfinished
+    scheduler.lost_ack = False
+    recovery = recoverer.run_once("worker-B")
+    assert recovery.kind is kind.DISPATCH_CONFIRMED
+    assert recovery.run_ref == "run-1"
+    assert scheduler.reservations == {"dispatch-run-1"}
+    assert len(scheduler.calls) == 2
+    assert recoverer.run_once("worker-C").kind is kind.NO_PENDING
+
+    ledger, scheduler, recoverer = new()
+    ledger.append_as_if_transactional("run-2")
+    ledger.fail_claim = True
+    assert recoverer.run_once("worker-A").kind is kind.DISPATCH_UNKNOWN
+    assert not scheduler.calls and ledger.unfinished
+
+    ledger, scheduler, recoverer = new()
+    ledger.append_as_if_transactional("run-3")
+    ledger.bad_claim = claimtype("dispatch-run-3", "run-3",
+                                 "other-worker", 1)
+    assert recoverer.run_once("worker-A").kind is kind.MALFORMED_CLAIM
+    assert not scheduler.calls
+
+    ledger, scheduler, recoverer = new()
+    ledger.append_as_if_transactional("run-4")
+    ledger.bad_claim = claimtype("dispatch-run-4", "run-4",
+                                 "worker-A", True)
+    assert recoverer.run_once("worker-A").kind is kind.MALFORMED_CLAIM
+
+    ledger, scheduler, recoverer = new()
+    ledger.append_as_if_transactional("run-5")
+    scheduler.untyped_ack = True
+    assert recoverer.run_once("worker-A").kind is kind.DISPATCH_UNKNOWN
+    assert ledger.unknowns and ledger.unfinished
+    scheduler.untyped_ack = False
+    assert recoverer.run_once("worker-B").kind is kind.DISPATCH_CONFIRMED
+    assert len(scheduler.reservations) == 1
+
+    ledger, scheduler, recoverer = new()
+    ledger.append_as_if_transactional("run-6")
+    ledger.fail_ack = True
+    assert recoverer.run_once("worker-A").kind is kind.DISPATCH_UNKNOWN
+    assert ledger.unfinished and scheduler.reservations == {"dispatch-run-6"}
+    ledger.fail_ack = False
+    assert recoverer.run_once("worker-B").kind is kind.DISPATCH_CONFIRMED
+    assert scheduler.reservations == {"dispatch-run-6"}
+
+    return {
+        "outbox_recovery_synthetic_cases": 7,
+        "ack_lost_after_accepted_run_can_recover": True,
+        "reservation_key_not_run_duplicate": True,
+        "evidence": "literal HostDispatchRecovery AST with synthetic transactional outbox and idempotent scheduler; zero real durability or host execution claims",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
         "host_admission": probe_host_admission(),
+        "host_dispatch_recovery": probe_host_dispatch_recovery(),
         "problem_receipt": probe_problem_receipt(),
         "artifact_publication": probe_artifact_publication(),
         "trigger_occurrence": probe_trigger_occurrence(),
@@ -1494,7 +1623,8 @@ def main() -> dict:
     # document has two independently useful scoped probes.
     packet_to_probes = {
         "application/local-scenario-execution-construction.md": ("local_scenario",),
-        "hosting/host-authority-and-client-contract-construction.md": ("host_admission",),
+        "hosting/host-authority-and-client-contract-construction.md": (
+            "host_admission", "host_dispatch_recovery"),
         "artifacts/local-output-publication-construction.md": ("artifact_publication",),
         "data/used-input-receipt-construction.md": ("used_input_identity",),
         "observability/execution-evidence-and-problem-boundary-construction.md": ("problem_receipt",),
