@@ -179,20 +179,23 @@ class ObservabilityProjection:
         self.safe_events, self.external = safe_events, external
 
     def publish_optional(self, run_outcome: str,
-                         finding: DiagnosticFinding) -> TelemetryHealth:
+                         finding: DiagnosticFinding,
+                         correlation_key: str) -> TelemetryHealth:
         # run_outcome comes from the Run authority and MUST remain unchanged.
         event_health = EvidenceHealth.AVAILABLE
         try:
             self.safe_events.send(finding)
         except Exception:
             event_health = EvidenceHealth.DEGRADED
-        registration = self.external.record(finding, finding.safe_code)
+        registration = self.external.record(finding, correlation_key)
         recorder_health = (EvidenceHealth.AVAILABLE
                            if registration.kind is RegistrationKind.ACKNOWLEDGED
                            else EvidenceHealth.DEGRADED)
         return TelemetryHealth(EvidenceHealth.UNOBSERVED, event_health,
                                recorder_health, 0, None)
 ~~~
+
+**Producer correction — event code is not event identity:** `finding.safe_code` classifies many possible occurrences and must never be reused as their correlation/idempotency identity. The proposed `publish_optional` now requires a separate caller-supplied `correlation_key` bound to the actual Run/Attempt/Problem intention. The real host must generate and scope the key under the appropriate authority and preserve it across safe retries, without copying a token or private path into a shared event. The choice of key lifetime, external recorder idempotency and lookup semantics stays `LCD_BLOCKED`.
 
 The sketch intentionally does not claim actual local log health without a tested log adapter. The real implementation must report failed log close/write, quota, overflow and dropped telemetry; it must not overwrite terminal Run/effect evidence when an optional sink fails. If mandatory audit is admitted for a destructive action, a separate admission gate checks that required evidence can be committed **before** allowing that effect.
 
