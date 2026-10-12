@@ -254,20 +254,21 @@ class LocalScenarioService:
         return case_id
 
     def _run_and_release(self, plan: ExecutionPlan) -> None:
+        outcome: LocalCaseSnapshot | None = None
         try:
             outcome = self._executor.execute(plan)
-        except BaseException:
-            # Unexpected after-invocation effects may exist; never declare rollback.
-            # OS termination itself cannot be intercepted reliably.
+        except Exception:
+            # A normal Python failure after effect start may be ambiguous.
+            # A hard OS/process exit cannot be caught or repaired here.
             outcome = LocalCaseSnapshot(
                 case_id=plan.case_id, scenario_id=plan.scenario_id,
                 outcome=CaseOutcome.OUTCOME_UNKNOWN)
         finally:
             # A failed projection must not poison local single-flight liveness.
-            # In an actual implementation, retain the separately owned local
-            # outcome/diagnostic even if this display update cannot be shown.
+            # In an actual implementation, keep separately owned local
+            # result/diagnostic evidence even if display update fails.
             try:
-                if "outcome" in locals():
+                if outcome is not None:
                     self._projections.update(outcome)
             except Exception:
                 pass  # MUST report evidence degradation to a distinct safe sink
