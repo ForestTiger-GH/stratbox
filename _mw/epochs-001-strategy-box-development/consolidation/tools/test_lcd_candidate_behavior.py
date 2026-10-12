@@ -157,7 +157,30 @@ def probe_local_run() -> dict:
     dis.last_callback()
     assert service._active_case_id is None
     assert sink.snapshots[-1].outcome is result.SUCCESS
+    # Concurrent Python submissions target the documented Lock, not native Qt.
+    from concurrent.futures import ThreadPoolExecutor
+    barrier = threading.Barrier(8)
+    racing_dispatcher = Dispatcher()
+    racing_dispatcher.mode = "ok"
+    racing_service = d["LocalScenarioService"](
+        scenarios=scenarios, operations=SimpleNamespace(), executor=executor,
+        dispatcher=racing_dispatcher, projections=Sink())
+    def racing_submit(_index):
+        barrier.wait()
+        try:
+            return ("admitted", racing_service.submit(inv))
+        except d["BusyLocalExecutor"]:
+            return ("busy", None)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        outcomes = list(pool.map(racing_submit, range(8)))
+    assert sum(status == "admitted" for status, _ in outcomes) == 1
+    assert sum(status == "busy" for status, _ in outcomes) == 7
+    assert racing_service._active_case_id is not None
+    racing_dispatcher.last_callback()
+    assert racing_service._active_case_id is None
+
     return {"result_algebra": 5, "single_flight_and_faults": 6,
+            "synthetic_thread_race_submissions": 8,
             "evidence": "executed isolated doc-defined classes/functions with fakes"}
 
 
