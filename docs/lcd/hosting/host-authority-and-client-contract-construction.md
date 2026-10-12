@@ -2,7 +2,7 @@
 
 **Grade:** LCD_BLOCKED for a deployable host; coherent CANDIDATE_DESIGN software structure for future decisions. Prepared 2026-10-12. **Scope:** the already admitted logical host and the two planned Web/domain and Windows/AppDock host-client profiles (PD-SB-HOST-2026-10-12-01). **Current comparison:** stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b is a local foreground application, not this host. This is documentation-only, not product source or an API promise.
 
-**Semantic owners:** [admitted Host WHAT](../../what/strategy-box/host-deployment-commitment.md), [Hosting HOW](../../how/hosting/host-and-client-deployment.md), [application allocation](../../architecture/application-authority-placement.md), and [51 host fault vectors](../../ldd/hosting/host-client-attachment-boundary.md). The analytical core remains independent. Browser, Windows and future Android are consumers of the host authority; AppDock owns external installation/node/session lifecycle, not Strategy Box analytical truth.
+**Semantic owners:** [admitted Host WHAT](../../what/strategy-box/host-deployment-commitment.md), [Hosting HOW](../../how/hosting/host-and-client-deployment.md), [application allocation](../../architecture/application-authority-placement.md), and [59 host fault vectors](../../ldd/hosting/host-client-attachment-boundary.md). The analytical core remains independent. Browser, Windows and future Android are consumers of the host authority; AppDock owns external installation/node/session lifecycle, not Strategy Box analytical truth.
 
 ## 1. Concrete responsibility split and physical alternatives
 
@@ -557,7 +557,7 @@ def test_revocation_blocks_new_stream_page(fake_host, revoked_actor, run_ref):
         fake_host.observe(revoked_actor, run_ref, after=5)
 ~~~
 
-These are *abstract test scaffolds*, requiring fixture implementations. They do not prove live security, network behavior, Web reachability, crash recovery, Windows/AppDock attachment or Android parity. The [HC-01..51 LDD cases](../../ldd/hosting/host-client-attachment-boundary.md) remain separate, all target conformance UNEXECUTED without dated actual test runs. Cold-implementer and independent security/architecture challenges remain OPEN.
+These are *abstract test scaffolds*, requiring fixture implementations. They do not prove live security, network behavior, Web reachability, crash recovery, Windows/AppDock attachment or Android parity. The [HC-01..59 LDD cases](../../ldd/hosting/host-client-attachment-boundary.md) remain separate, all target conformance UNEXECUTED without dated actual test runs. Cold-implementer and independent security/architecture challenges remain OPEN.
 
 ## 7. Blocker/freedom register and cold handoff
 
