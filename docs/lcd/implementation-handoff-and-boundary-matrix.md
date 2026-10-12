@@ -1,0 +1,83 @@
+# Implementation handoff and adequacy matrix — scoped LCD construction
+
+**Edition:** 2026-10-12. **Status:** PRODUCER RECONCILIATION / PARTIAL / NOT INDEPENDENTLY VERIFIED. **Purpose:** allow a future implementer to find the correct concrete construction without treating every research concept as a mandated software subsystem. This matrix is a navigation/consumer gate, not a duplicate authority for Product WHAT, Target HOW or decisions.
+
+**Authority:** [Product Commitment Census](../what/strategy-box/commitment-census.md) and [accepted host direction](../what/strategy-box/host-deployment-commitment.md). **Mechanism owners:** [Target HOW](../how/README.md), [architecture](../architecture/README.md), [Low-Level Design](../ldd/README.md) and named individual LCD packages. The independent analytical core, future host authority, Windows/Web/Android surfaces and external AppDock boundaries remain distinct. Current implementation evidence is pinned in [Current HOW](../current-how/README.md).
+
+## 1. Product-bound obligations → construction and verification
+
+The record below distinguishes **accepted** target constraints from **user-goal/candidate** content. A planned host is accepted, while selection of its physical process, storage and API is not.
+
+| ID and product authority | Consumer-visible protected meaning | Concrete target construction or sufficient existing owner | Implementation handoff verdict |
+| --- | --- | --- | --- |
+| PC-SB-001 — BOUNDARY_ACCEPTED | Independent bank/macro methods callable directly in Python/notebooks | Existing analytic core + [used-input LCD](data/used-input-receipt-construction.md) only where provenance capture is actually admitted | Core architecture **sufficient**; provenance \`LCD_CANDIDATE\`, no global capture decision |
+| PC-SB-002 — BOUNDARY_ACCEPTED | External platform owns installation/node/session, not analytics | [Hosting HOW](../how/hosting/host-and-client-deployment.md) and [platform LDD](../ldd/integration/activation-contract-verification.md) specify an external boundary | Additional invented platform class \`NOT_APPLICABLE\` until verified integration consumer exists |
+| PC-SB-003 — HOST PLANNED/ACCEPTED | Web/domain-host and Windows/AppDock-host with distinct connecting client | [Host/client LCD](hosting/host-authority-and-client-contract-construction.md) + [security LCD](security/host-effect-authorization-construction.md) + [observability LCD](observability/execution-evidence-and-problem-boundary-construction.md) | \`LCD_BLOCKED\` deployment; physical placement, auth, durable ledger, real endpoint and platform contract need authority/proof |
+| PC-SB-004 — BOUNDARY_ACCEPTED | The same domain result meaning across clients | [Local Scenario LCD](application/local-scenario-execution-construction.md), [host LCD](hosting/host-authority-and-client-contract-construction.md), [used-input LCD](data/used-input-receipt-construction.md) | \`LCD_CANDIDATE\` contracts; actual cross-runtime fixture and domain-equivalence tests UNEXECUTED |
+| PC-SB-005 — USER DIRECTION | Portable semantics, optional Android, different native UX | Application/client ports in [host LCD](hosting/host-authority-and-client-contract-construction.md), [architecture](../architecture/application-authority-placement.md) | Client release parity \`LCD_BLOCKED\` pending feature scope; separate generic Android class catalog \`NOT_APPLICABLE\` absent implementation consumer |
+| PC-SB-006 — BOUNDARY_ACCEPTED | No gratuitous API compatibility; preserve existing user data by policy | [Host migration LDD](../ldd/hosting/host-client-attachment-boundary.md), [artifact LCD](artifacts/local-output-publication-construction.md) | Migration and retention \`LCD_BLOCKED\`; automatic backward-compatibility framework \`NOT_APPLICABLE\` |
+| PC-SB-007 — BOUNDARY_ACCEPTED | Public-neutral extension/contracts without protected implementation details | [Generic extension LDD](../ldd/extensions/neutral-provider-conformance-vectors.md) and [science](../science/extensions/provider-discovery-binding-readiness-and-conformance.md) | Only public-neutral conformance; deployment-specific provider packaging \`LCD_BLOCKED\` by owner and available evidence |
+| PC-SB-008 — COMMISSION ACCEPTED | Standalone, independently checkable complete Knowledge Product | [Publication manifest](../PUBLICATION-MANIFEST.md), [LCD README](README.md) and this matrix | \`GLOBAL LOSSLESS_PASS=BLOCKED\`; no design artifact can replace independent source verification |
+
+### Accepted host outcome contracts, individually
+
+| Host target | Required realization proof | Scope status |
+| --- | --- | --- |
+| HOST-O1 | One host identity/authority independently running from a connecting client's process, with a true lifecycle test | [Host LCD](hosting/host-authority-and-client-contract-construction.md) \`BLOCKED\`, native test absent |
+| HOST-O2 | Browser through actual configured authorized site/domain, supported client capability negotiation | \`BLOCKED\` browser transport/security/deployment choices |
+| HOST-O3 | Distinct managed Windows host and Windows client installations, real authenticated attach | \`BLOCKED\` physical AppDock-host capability and integration proof |
+| HOST-O4 | Client disconnect does not fabricate host Job outcome; stale view reconciles | Logical snapshot port \`CANDIDATE\`; real durable continuity \`BLOCKED\` |
+| HOST-O5 | Analytic core remains independently callable and supplies equal domain meaning | Existing core owner plus Scenario/used-input interface fakes \`CANDIDATE\` |
+| HOST-O6 | Actual principal/object/effect authorization at host authority | [Security LCD](security/host-effect-authorization-construction.md) \`BLOCKED\` for deployed policy |
+| HOST-O7 | Honest unavailable/unknown outcomes for host, bytes, contract and external effects | [Host LCD](hosting/host-authority-and-client-contract-construction.md), [artifact LCD](artifacts/local-output-publication-construction.md), [diagnostic LCD](observability/execution-evidence-and-problem-boundary-construction.md); local \`CANDIDATE\`, host \`BLOCKED\` |
+
+## 2. User-goal scopes remain conditional until admitted
+
+| Intent (source in Commitment Census) | Consequential coding consumer and current construction | Status and why detail is bounded |
+| --- | --- | --- |
+| U-01 Discoverable operations, scenarios, cascades and optional Schemes | Sequential Scenario semantics and model in [local LCD](application/local-scenario-execution-construction.md); machine catalog in [machine LDD](../ldd/capabilities/machine-operation-adapter-conformance.md) | Scope is bounded to *existing* sequential steps. New universal DAG/workflow engine \`NOT_APPLICABLE\` until a concrete approved consumer demonstrates its need |
+| U-02 Local foreground stops reasonably with window, without misreporting effect | [Local execution LCD](application/local-scenario-execution-construction.md), [diagnostics LCD](observability/execution-evidence-and-problem-boundary-construction.md) | \`LCD_CANDIDATE\`; verified process stop/cancel/effect guarantees require Product Decision/native test |
+| U-03 Reliable state without speculative infrastructure | [Host LCD](hosting/host-authority-and-client-contract-construction.md); local history remains correctly classified as a cache | Host storage/durability \`LCD_BLOCKED\`; automatic SQL/event sourcing mandate \`NOT_APPLICABLE\` |
+| U-04 Chat output and ordinary user-controlled Data files | [Artifact LCD](artifacts/local-output-publication-construction.md) and relevant [LDD](../ldd/artifacts/staged-publication.md) | Local \`LCD_CANDIDATE\`; stronger immutable catalog/retention is conditional |
+| U-05 Legible team identity and safe shared failure notices | [Security LCD](security/host-effect-authorization-construction.md), [diagnostic LCD](observability/execution-evidence-and-problem-boundary-construction.md) | Host sharing policy \`LCD_BLOCKED\`; UI nickname cannot substitute identity |
+| U-06 Direct Python + GUI + authorized machine client | Existing independent core, [Scenario LCD](application/local-scenario-execution-construction.md), [machine LDD](../ldd/capabilities/machine-operation-adapter-conformance.md) | Curated registry/external transport only after an authorized second consumer; unrestricted Python reflection \`NOT_APPLICABLE\` |
+| U-07 Website and possible Android companion | [Host LCD](hosting/host-authority-and-client-contract-construction.md) | Web host direction accepted; client/mobile release scope \`LCD_BLOCKED\` |
+| U-08 Concurrent independent work in threads | Local single-flight is **present** current limitation; [host LCD](hosting/host-authority-and-client-contract-construction.md) defines future shared authority | Shared scheduling/fencing/parallel effect strategy \`LCD_BLOCKED\`; no claimed concurrent executor |
+| U-09 Source observation/provenance | [Used-input LCD](data/used-input-receipt-construction.md) | Single real core-consumer candidate; mandatory catalog and raw retention \`LCD_BLOCKED\` |
+| U-10 State physically located with the executor that owns effects | [Host authority LCD](hosting/host-authority-and-client-contract-construction.md), [diagnostic LCD](observability/execution-evidence-and-problem-boundary-construction.md) | Local/host authority separation fixed in meaning; host process/storage selection \`LCD_BLOCKED\` |
+
+## 3. Specialized risk slice: plan/effect integrity
+
+[FRG cleanup LCD](application/frg-cleanup-effect-plan-construction.md) translates a directly observed source-specific destructive-file hazard into an executable **candidate** plan model. It is not a new universal user requirement and does not mandate freezing all source datasets. Cross-slice effect state must agree with [security authorization](security/host-effect-authorization-construction.md), [Artifact publication](artifacts/local-output-publication-construction.md) and [Scenario outcome](application/local-scenario-execution-construction.md): a valid user approval, a prepared plan, an attempted file write, a verified published Artifact and a completed Run are **five different truth-bearing events**.
+
+## 4. Explicit NOT_APPLICABLE boundaries
+
+A distinct LCD is **NOT_APPLICABLE** now for: every trivial utility function already exposed by the independent core; a generic component per theoretical entity (Work, Thread, Attempt, Job and Artifact do not automatically require five SQL tables); a blanket Android source-code clone of Python/Qt; an unapproved AI orchestration fleet; a mandatory content-addressed data lake and full-history artifact backup; a custom UI theme class for each setting; a separate desktop-host repository before release ownership is decided; a universal file format/parser registry merely because format variation exists. Each may be reopened only when an accepted consumer, consequence or cross-owner requirement makes the additional construction material.
+
+\`NOT_APPLICABLE\` means **no separate source-shaped document adds value in the present scope**; it does not claim those capabilities do not exist, are rejected forever or need zero engineering work after future Product Decisions.
+
+## 5. Whole-chain cross-construction challenge
+
+For a single permitted public-source acquisition feeding a two-step analysis and a file export, an implementer should be able to trace:
+
+~~~text
+actually downloaded bytes (transport evidence)
+→ actually consumed input bytes and parser revision (domain evidence)
+→ typed domain result (calculation and validation)
+→ admitted Scenario Run and required-step statuses (application truth)
+→ approved scoped file effect and pending intent (security/effects)
+→ staged then verified output bytes (storage)
+→ committed Artifact publication record and later availability (application)
+→ optional safe diagnostic event and authentic external Problem receipt (observability)
+→ authorized host snapshot and client rendering (presentation)
+~~~
+
+**Adversarial variants:** same URL changes content; required step fails but a later step succeeds; source is valid but Excel staging fails; final filesystem swap happens but acknowledgment is lost; one client disconnects during Run; authority revokes artifact access after card rendering; optional log writer fails; external problem recorder returns an unconfirmed identifier. The expected output must preserve each distinct uncertainty and success separately.
+
+**Evidence status:** original core and Windows behaviors have selected executed synthetic characterization; the **future mechanisms and cross-LCD system are UNEXECUTED**. Producer review of code snippets and parse-only CI cannot qualify an independent implementer handoff. Release admission requires owner Decisions, specialist/native tests and an independent cold-reader reviewer.
+
+## 6. Blocker closure route — no invented Product Decision
+
+A future coder cannot select these materially consequential choices by silent convention: host/client physical packaging, actual principal/session provider, permission object and effect-time revocation policy, durable Run and event store, idempotency retention and transaction/outbox strategy, Windows managed host attach, website security, Artifact byte-retention and file backend crash tier, partial/required-step meaning, cancellation/retry guarantees, machine delegation and support-log audience. The current safe state is \`LCD_BLOCKED\` for every real deployed integration requiring those choices.
+
+A decision is made only by its rightful Product/security/platform/operations owner. A technical probe may narrow candidate choices but cannot grant itself product authority. Resume on a new owner act, updated direct code, independently passed negative suite or contract change; otherwise the candidate slices remain useful for bounded prototype/fake test work without falsely claiming system completion.
