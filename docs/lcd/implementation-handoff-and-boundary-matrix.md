@@ -82,6 +82,10 @@ The [FRG LCD](application/frg-cleanup-effect-plan-construction.md) now enforces 
 
 This prevents a future host adapter from treating arbitrary DataFrame rows or a typed `FrozenAction` as proof of acceptance. It cannot constrain an unrestricted direct-core Python caller, certify signed human approval or eliminate physical time-of-check/time-of-use races by itself.
 
+### Physical storage evidence is now stronger than fakes but limited to a Linux local profile
+
+[Eight actual POSIX race/no-clobber probes](../../science/artifacts/output-identity-publication-and-availability.md) ran with disposable local files and kernel-backed syscalls at [CI 38221344760](https://github.com/ForestTiger-GH/stratbox/actions/runs/38221344760). They challenge the false assumption that a checked path, open inode, consistent size or plain atomic rename are enough for the Artifact/FRG effect guarantees. A Linux create-only name/link offers a bounded no-clobber route, *not* a safe replace/delete strategy on every FileStore. Therefore the actual selected backend still needs negative tests for name/link/reparse-point traversal, changed source/target generation, retained old output under failed publication, crash recovery, read-time privilege changes and cross-store catalog reconciliation. These native tests do not certify a Windows/SMB implementation or lift its `LCD_BLOCKED` grade.
+
 ## 4. Explicit NOT_APPLICABLE boundaries
 
 A distinct LCD is **NOT_APPLICABLE** now for: every trivial utility function already exposed by the independent core; a generic component per theoretical entity (Work, Thread, Attempt, Job and Artifact do not automatically require five SQL tables); a blanket Android source-code clone of Python/Qt; an unapproved AI orchestration fleet; a mandatory content-addressed data lake and full-history artifact backup; a custom UI theme class for each setting; a separate desktop-host repository before release ownership is decided; a universal file format/parser registry merely because format variation exists. Each may be reopened only when an accepted consumer, consequence or cross-owner requirement makes the additional construction material.
