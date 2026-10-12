@@ -202,7 +202,7 @@ class CleanupExecutor:
                 recognized = self.evidence.recognized_source(
                     plan.scope_ref, step.source.relative_path)
                 if recognized != (step.recognized_family, step.selected_period):
-                    raise PermissionError("DELETE_SOURCE_FAMILY_OR_PERIOD_CHANGED")
+                    raise StalePlanError("DELETE_SOURCE_FAMILY_OR_PERIOD_CHANGED")
                 # The real FileEffectPort must *also* prove compare-and-delete
                 # on the same generation; a prior observe() is not a fence.
                 confirmed = self.effects.conditional_delete(step.source)
