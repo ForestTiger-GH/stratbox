@@ -1,7 +1,8 @@
 # Current HOW — observed Strategy Box mechanisms
 
-**Status:** eight bounded static implementation slices, including a direct public external-platform integration boundary. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
+**Status:** nine bounded static implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
 
+- [Public AppDock Recorder and exact ProblemQuery](appdock-public-problem-contracts.md) — existing neutral contracts for recorded occurrences, unconfirmed references and five lookup outcomes; installed app-client integration unverified.
 - [Public AppDock activation versus host attachment](appdock-activation-host-attachment-boundary.md) — actual process launch, explicit delegated-backend unavailability and remaining remote host evidence gap.
 - [Analytical core runtime and network transport](core-runtime-network.md) — provider composition and typed HTTP download outcomes.
 - [Windows application lifecycle, scenarios and local history](windows-application.md) — activation, case execution, JSON history and background status scaffold.
