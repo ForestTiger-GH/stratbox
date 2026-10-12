@@ -1,0 +1,29 @@
+# SB-SRC-0558 — application effect authority and exact destructive plan challenge
+
+**Date:** 2026-10-12. **Grade:** `PRODUCER_ORIGINAL_FIRST_SCOPED_CHALLENGE`, not independent Security sign-off or complete 1,206-line source conservation. **Original:** `SB-SRC-0558`, pinned `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`, blob `68e433f98e9f660c1c5738ef8a41e077ac738a95`, `research/04-ai-raised-topics/05_Strategy_Box_Полномочия_безопасность_и_многопользовательская_работа.md`. **Published scientific owners:** `docs/science/trust-and-assurance/identity-authorization-and-effect-boundaries.md` and `docs/ldd/security/scoped-authority-and-privacy-vectors.md`. **Target code-shaped owner:** `docs/lcd/security/host-effect-authorization-construction.md`. No product implementation was changed.
+
+## Original-first qualified source assertions and existing transfer
+
+| Source locator | Actual position and nuance | Qualified Science/LDD consequence |
+| --- | --- | --- |
+| §§0–1, L13–L68 | Known-team/nickname UX is intentionally lightweight; trusted principal/Session/Actor and direct privileges are distinct | Science §§1–3 already preserves display identity vs real grant; no blanket large IAM rollout |
+| §3, L118–L162 | Current Windows catalog display flags and author fields do not establish live host authentication or enforcement | Science §4 distinguishes pinned implementation vs future Product |
+| §6.1–6.4, L257–L309 | Admission and actual effect require different checks; a queued destructive action can lose rights before use | Science §5 and LDD SEC-09; target host/effect port remains conditional |
+| §6.5, L310–L324 | `permission to delete` is different from approval of **one exact principal/plan/targets/revisions and expiry** | Science §5, LDD SEC-10; source-approved contract is a research recommendation, not a deployed signed approval service |
+| §7.3–7.4, L358–L385 | Resource scopes must be backed by real path/OS boundaries; knowing an Artifact ID never grants access | Science §§5–8, LDD SEC-06/SEC-27; application metadata alone cannot protect openly shared SMB bytes |
+| §19, L1000–L1065 | The original supplies thirty negative security/privilege tests from user identity through audit/cursor/denial failures | LDD SEC-01..30 already source-mapped; no second redundant test catalog produced |
+| §§20–21, L1070–L1205 | Initial guard is proportional to actual deployment and owner decisions; no uncommissioned enterprise policy server | Maintained Science and LCD agree on open infrastructure/authority decisions |
+
+## Newly observed candidate gaps, not actual deployment vulnerabilities
+
+The first `EffectGuard.authorize_before_effect` LCD sketch evaluated current policy and compared a resource revision **only when supplied**. It thus could proceed toward `record_before_effect` for a supposedly approved destructive `DELETE/OVERWRITE` with `ResourceKey.revision=None`; an old URL/locator without a version was treated as if its target were stable. It also checked only `approval.request_digest` itself, despite its `ApprovalScope` containing `actor_ref`, `target_set_digest`, `policy_revision` and `expiry_utc`. The name `verify_bound_scope()` suggested trusted validation but lacked a local defense against a miswired/stale port. These are **defects in the proposed pre-code example**, not proof of any real shared host security flaw.
+
+**Bounded code correction:** the candidate now requires a known revision and nonempty target-set digest for destructive effects; cross-checks authenticated `actor.principal_ref`, request/plan digest, target-set digest and actual policy revision against the returned approval. Unknown/unavailable policy and changed resource revision fail closed *before issuing an effect intent*. The trusted approval port must still verify signature/provenance, expiry, scope and revocation using the real authorized clock and policy. If CREATE is expected to be no-clobber, its backend must enforce conditional creation independently. An in-process application check cannot fence direct OS file writes by other actors.
+
+**Crucial residual race:** even exact current revision plus valid approval can become stale **after** the guard reads the resource and **before** a physical replace/delete. The target effect adapter must provide conditional commit/fencing tied to the same authenticated mutation intention. The LCD explicitly preserves this as `LCD_BLOCKED`; a fake-policy test cannot claim safe real Windows/SMB/object storage or remote host access.
+
+## Executed candidate, reproducibility and strict claims
+
+Work-only `consolidation/tools/test_lcd_candidate_behavior.py` now extracts `EffectGuard` and its literal dataclasses/enums from the **maintained Markdown**, injects deterministic fake Policy/Approval/ResourceVersion/EffectReceipt ports and exercises twelve bounded cases: one valid local fake path, missing target generation, missing approval/target-set, mismatched actor, target, plan or policy generation, revoked/unknown policy and changed resource version. It asserts that denied paths record **no successful before-effect intent**. [CI 38209119817](https://github.com/ForestTiger-GH/stratbox/actions/runs/38209119817) at exact `stratbox@540f9db5d35fc6ed4e77020d5291295ad47e3a20` completed **SUCCESS**.
+
+This is a **seventh** distinct `PRODUCER_EXECUTED_DOCUMENTED_CANDIDATE_FRAGMENT_TEST`, not an implementation, OS mutation, authenticated policy provider, authorization audit, independently approved permission matrix, cryptographic signature check or completed native SEC-01..30 conformance. The maintained single Research source census still records this original `material_unit_state=unaccounted`. No blanket `LCD_READY_FOR_IMPLEMENTATION` or `LOSSLESS_PASS` is warranted. Reopen on approved security policy, actual authenticated principal adapter, real conditional FileStore effect, revocation/lease strategy, ledger durability, or independent source/target review.
