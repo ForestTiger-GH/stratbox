@@ -1,6 +1,6 @@
 # MADARAII — процессная маршрутизация консолидации Strategy Box
 
-**Роль: управляющие инструкции в _mw/, не опубликованное знание о продукте.** Здесь разрешены адресные ссылки на MADARAII исключительно для организации выполняемого Work. Не переносить эти ссылки, ID, ссылки на методологический репозиторий, названия инструкций и EXAMPLES в поддерживаемые `docs/`. В Science, WHAT, HOW, Architecture и LDD применять всё релевантное содержание методологии, но публиковать самостоятельные положения о Strategy Box.
+**Роль: управляющие инструкции в _mw/, не опубликованное знание о продукте.** Здесь разрешены адресные ссылки на MADARAII исключительно для организации выполняемого Work. Не переносить эти ссылки, ID, ссылки на методологический репозиторий, названия инструкций и EXAMPLES в поддерживаемые `docs/`. В Science, WHAT, HOW, Architecture, LDD и LCD применять всё релевантное содержание методологии, но публиковать самостоятельные положения о Strategy Box.
 
 ## Обязательный методологический вход
 
@@ -35,7 +35,14 @@
 | [23](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-23.md) / [EXAMPLE-23](https://github.com/ForestTiger-GH/MADARAII/blob/main/EXAMPLES/EXAMPLE-23.md) | Semantic Work Block Summary | содержательное сжатие checkpoint при потребителе |
 | [38](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-38.md) / [EXAMPLE-38](https://github.com/ForestTiger-GH/MADARAII/blob/main/EXAMPLES/EXAMPLE-38.md) | Transition Package | handoff/cold recovery при независимой ценности |
 
-Рекомендуемая **условная** композиция: `13 [14] → 09 → [11/12/10] → 15/16 → 18 [19] → 17 → 18 → 24 → [25/26] → 27 → 18/21 → публикация [23/38]`. Возвраты к затронутым Work kinds допускаются на основании новых фактов. `22` и `20` включаются для реальных пробелов и вопросов. Source census из существующего `CENSUS.csv` переиспользуется, пока его проверенный baseline достаточен; входы вне него регистрируются адресно. Контур `28–34` предназначен для будущей дорожной карты и реализации продукта и **не входит** в эту документационную Commission. Выборочный LDD создаётся в поддерживаемой документации по действительной технической сложности, без маскировки реализации.
+Рекомендуемая **условная** композиция: `13 [14] → 09 → [11/12/10] → 15/16 → 18 [19] → 17 → 18 → 24 → [25/26] → selective LDD/LCD design-closure check → 27 → 18/21 → publication [23/38]`. Возвраты к затронутым Work kinds допускаются на основании новых фактов. `22` и `20` включаются для реальных пробелов и вопросов. Source census из существующего `CENSUS.csv` переиспользуется, пока его проверенный baseline достаточен; входы вне него регистрируются адресно. Контур `28–34` предназначен для будущей дорожной карты и реализации продукта и **не входит** в эту документационную Commission. Выборочный LDD создаётся в поддерживаемой документации по действительной технической сложности, без маскировки реализации.
+
+## Логическое обнуление, физическая очистка и регидратация
+## LCD — owner-directed design-depth routing (2026-10-12)
+
+**LCD = Low Code Design**, a scope-qualified implementation-near design readiness task; existing **LDD = Low-Level Design** remains a separate useful detailed-design source. There is **no invented dedicated MADARAII-LCD instruction**. Select [24](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-24.md) and its matching EXAMPLE for material Target HOW realization decisions, [25](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-25.md) and EXAMPLE only when independent cross-owner architecture allocation adds value, and [18](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-18.md) with EXAMPLE for an appropriately independent design/Knowledge challenge. Use [27](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-27.md) for brownfield Current↔Target dependency and [20](https://github.com/ForestTiger-GH/MADARAII/blob/main/MADARAII/MADARAII-20.md) for unresolved owner decisions where relevant. Bind full applicable FOUNDATION and paired EXAMPLES anew per Work. The realization-depth test asks whether materially consequential implementation choices are resolved or bounded, not whether documentation looks like code.
+
+Instructions for Roadmap/implementation execution remain outside this documentation-only Commission. A code patch, package creation, deployed host, native client and run/test claim require their own authorized Work; LCD readiness cannot substitute them. Qualified outcomes: `READY_FOR_IMPLEMENTATION`, `CANDIDATE`, `BLOCKED`, or justified `NOT_APPLICABLE`. Route independent challenge honestly; one producer cannot self-certify a distinct verifier.
 
 ## Логическое обнуление, физическая очистка и регидратация
 

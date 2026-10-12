@@ -1,6 +1,6 @@
 # Strategy Box — full lossless Science consolidation program
 
-**Applicable to:** the existing active consolidation Commission, expanded by the 2026-10-11 late Research closure. **Primary outcome:** a self-contained, complete, public-safe `docs/science/` body that preserves **all materially significant admissible Research meaning**, not merely selected interesting articles. Complementary Current HOW, WHAT, HOW, Architecture and LDD retain separate truth and authority.
+**Applicable to:** the existing active consolidation Commission, expanded by the 2026-10-11 late Research closure. **Primary outcome:** a self-contained, complete, public-safe `docs/science/` body that preserves **all materially significant admissible Research meaning**, not merely selected interesting articles. Complementary Current HOW, WHAT, HOW, Architecture, selective LDD (Low-Level Design) and scope-activated LCD (Low Code Design) retain separate truth, authority and assurance.
 
 ## 1. Preservation meaning
 
@@ -62,7 +62,7 @@ Keep one continuous commissioned work program with **bounded, verifiable checkpo
 - Finish full source reading and material-unit extraction; do not overstate completeness from line-range allocation alone.
 - Reconcile within themes and across original generations, especially 03 synthesis vs 04 revisions and user's actual comments.
 - Build complete Science in independent topical modules, progressively verifying material coverage.
-- Repair Current HOW from direct implementation facts and update WHAT/HOW/Architecture/LDD where **authorized and source-supported**, without converting Research into accepted commitments.
+- Repair Current HOW from direct implementation facts and update WHAT/HOW/Architecture/LDD and proportionate LCD where **authorized and source-supported**, without converting Research into accepted commitments.
 - Perform source-first, output-backward, cross-topic, cold-reader, machine consistency, restricted-content and independent-assurance checks; close only after all gates pass.
 - Update `STATE.md` and the affected per-source/owner ledgers after each meaningful batch. Persist exact next action and revisions *before* context compaction or a real session reset, then rehydrate from durable owners and direct sources. Logical reset is always mandatory; physical reset only when required and available.
 
@@ -87,3 +87,7 @@ If an input is unavailable, conflicts cannot be represented safely, or a require
 ## Owner-scoped lost-carrier rule — 2026-10-12
 
 For an original DOCX whose original bytes the Product owner declares permanently **LOST**, set original-byte identity to `CLOSED_BY_OWNER_AS_LOST / UNVERIFIABLE`. Preserve an available extracted-text witness, if any, only at its correctly attributed lower evidence tier. Do not maintain an impossible raw DOCX hash/test as an active completion task. A future exact-source publication boundary must explicitly exclude lossless reconstruction of the original DOCX bytes and cannot convert extracted statements into authenticated primary quotations. Completeness of accessible, pinned public Git Research and the obligation for independently assured semantic preservation **are unchanged**. A scientific verdict must be qualified to its admitted actual source population. Historical date-stamped carrier verification reports are preserved rather than rewritten.
+
+## Interface with the complete Knowledge Product (owner correction, 2026-10-12)
+
+This document owns **Science lossless** only. The full continuous Knowledge Commission must additionally carry admitted scope through Current HOW, Target WHAT, Target HOW, Engineering Architecture, selected LDD (**Low-Level Design**) and proportionate LCD (**Low Code Design**) before independent end-to-end publication and closure. LCD is not a substitute for Source→Science preservation, and a complete Science audit does not imply implementation-decision closure. Route each accepted implementation-facing target slice to a bounded LCD or a reasoned `NOT_APPLICABLE`; any missing Product Decision, external capability or independent reviewer stays explicitly `BLOCKED` in the relevant gate without fabricated readiness. Details belong to `ARCHITECTURE.md`, `CYCLE.md` and the maintained `docs/lcd/` owner; do not duplicate target technical decisions in Science.

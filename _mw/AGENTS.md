@@ -37,7 +37,7 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 | --- | --- | --- |
 | Strategy Box core implementation | `stratbox/src/stratbox/` | текущая библиотечная реализация core |
 | Core packaging and dependencies | `stratbox/pyproject.toml` | текущая упаковка и dependency contract core |
-| Shared Strategy Box Knowledge Product | `stratbox/docs/` | Maintained, partial, source-independent Science, Target WHAT, Current HOW, Target HOW, Architecture and selected LDD; independent lossless semantic assurance remains open |
+| Shared Strategy Box Knowledge Product | `stratbox/docs/` | Maintained, partial, source-independent Science, Target WHAT, Current HOW, Target HOW, Architecture and selected LDD plus owner-directed bounded LCD (Low Code Design); independent lossless semantic assurance remains open |
 | Historic core documents | `stratbox/docs_old/` | content-preserved archive, не текущая спецификация |
 | Knowledge consolidation Work | `stratbox/_mw/epochs-001-strategy-box-development/consolidation/` | отдельные циклы, census, source dispositions и checkpoints |
 | Core verification | `stratbox/tests/`, `stratbox/scripts/` | проверки и evidence core |
@@ -172,6 +172,8 @@ Research может устанавливать evidence, гипотезы, вы�
 - физическая структура начинает расходиться с описанной здесь семантикой.
 
 ## Prepared Knowledge Consolidation
+
+**2026-10-12 owner scope correction:** the active continuous Knowledge cycle must carry the product model beyond Science/WHAT/HOW/Architecture and useful LDD (Low-Level Design) into scoped **LCD (Low Code Design)** decision-closure and cold-implementer readiness. Keep the current `docs/ldd/` manuscripts intact and use `docs/lcd/` for justified implementation-near models; exact physical packages/repositories and unapproved Product Decisions remain open. This is a continuation of the existing Work Program, not a new Research generation or Product deployment authorization.
 
 Точка входа: `_mw/epochs-001-strategy-box-development/consolidation/README.md`. Там один текущий Work State и проверяемая процедура длительного последовательного сведения исходных Research, старой документации и прямых реализационных оснований в раздельные публикуемые роли. Подготовка маршрута не принимает содержательные обязательства продукта и не запускает автономную работу. Для запуска следующему агенту требуется отдельная Human Commission; в её рамках предусмотрено непрерывное исполнение с checkpoint/recovery без обязательных межэтапных запросов к пользователю.
 

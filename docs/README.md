@@ -1,6 +1,6 @@
 # Strategy Box — maintained Knowledge Product
 
-**Edition:** 2026-10-12, `PARTIAL / UNDER CONSOLIDATION`. The six maintained knowledge layers below are **designed to be read and navigated without the historical Research tree, Work logs or legacy documents**. Removal of those source archives must not break publication links or deprive the reader of the scientific argument, important counterexample, use-case boundary or qualified implementation status. The [standalone publication manifest](PUBLICATION-MANIFEST.md) owns the published evidence status and the remaining proof obligations.
+**Edition:** 2026-10-12, `PARTIAL / UNDER CONSOLIDATION`. The seven maintained knowledge layers below are **designed to be read and navigated without the historical Research tree, Work logs or legacy documents**. Removal of those source archives must not break publication links or deprive the reader of the scientific argument, important counterexample, use-case boundary or qualified implementation status. The [standalone publication manifest](PUBLICATION-MANIFEST.md) owns the published evidence status and the remaining proof obligations.
 
 | Entry | What the reader can find here | Status and authority |
 | --- | --- | --- |
@@ -10,8 +10,11 @@
 | [Target HOW](how/README.md) | Candidate application and execution/recovery realization | Proposed, with necessary Product decisions and tests still outstanding |
 | [Product Architecture](architecture/README.md) | Semantic owners across analytic core, application authority, presentation clients and external lifecycle | Qualified responsibility boundaries rather than a mandated new repository or service |
 | [Low-Level Design](ldd/README.md) | Risk-proportionate source receipts, effects, Artifact publication, host attachment, observability and adapter tests | Candidate conformance vectors, clearly separated from executed code or successful deployment |
+| [LCD — Low Code Design](lcd/README.md) | Selectively implementation-near models closing material design choices for defined coding scopes | Owner-directed layer; candidates and decision blockers are distinct from independently approved implementation readiness |
 
 ## How to interpret the evidence
+
+**Terminology correction (2026-10-12):** LDD means *Low-Level Design* and retains its existing useful detailed specifications. **LCD means *Low Code Design***: a separate, conditional implementation-readiness depth, not a visual no-code builder and not an automatic synonym of LDD. See the [LCD scope and gates](lcd/README.md).
 
 **Observed** means an identified public implementation revision actually contains the described code or a bounded synthetic test reproduced that branch. It does not imply a running installation, correct banking data or production security.
 

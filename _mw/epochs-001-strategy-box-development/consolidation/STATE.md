@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## Owner clarification — LCD scope and continuation contract (2026-10-12)
+
+**New human owner instruction, process amendment only:** `LCD` means **Low Code Design**, an implementation-near, scope-relative design/decision-closure stage. Earlier `LDD` was inadvertently treated as the intended final depth; existing `docs/ldd/` remains useful **Low-Level Design** and must be retained. The **same** active Work Program now continues through Science, Current HOW, Target WHAT, Target HOW, Architecture, selected LDD, scoped LCD, Current/Target mapping and independent full-Knowledge assurance. See `ARCHITECTURE.md`, `CYCLE.md`, `METHOD-ROUTER.md` and `docs/lcd/README.md` for the controlling amended contract. No new core/Windows implementation, release, Product Decision or independent source verification follows merely from adding this layer.
+
+**Resume discipline:** this amendment must not override the most recent exact source/CI evidence below. At cold entry resolve the new `main` HEAD, load the latest verified checkpoint, distinguish existing Science/LDD from not-yet-built LCD results, and continue actually open obligations rather than restarting the 566-entry census. All published materials remain self-contained under `docs/`; preserve protected/public, lost-source and independent-review boundaries. If an owner choice or independent certification is unavailable, record precise `PARTIAL/BLOCKED` scope and keep the next executable step durable. The preceding verified 102-document bundle is a *historical exact-revision artifact*, not verification of this amended Knowledge tree.
+
+
 ## Exact latest verified checkpoint — 2026-10-12, reproducible 102-document Knowledge
 
 **Verified Git HEAD before this summary-only checkpoint:** `d40fd03c310f1612e02847a4e0441c61c193eaca`, [GitHub Actions run 38202637776](https://github.com/ForestTiger-GH/stratbox/actions/runs/38202637776), **SUCCESS**. All public Knowledge link restrictions, pinned original-route producer checks, 15 cross-surface causal families, 30 security + 25 machine + 28 execution candidate vectors, original source-vintage 18-case mappings, and direct pinned Windows catalog source checks passed within their **explicitly bounded evidence scope**. The current State/report commit is later, so its own run must still be checked by exact Git SHA.

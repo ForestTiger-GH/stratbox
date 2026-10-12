@@ -1,5 +1,7 @@
 # Strategy Box — continuous knowledge consolidation
 
+**Owner clarification, 2026-10-12:** continue the *same* active Work Program through **Science → Current HOW → Target WHAT → Target HOW → Engineering Architecture → selective LDD (Low-Level Design) → scoped LCD (Low Code Design) → Current/Target correspondence and independent end-to-end assurance**. The former LDD endpoint was a terminology mismatch, not the owner's intended final design depth. Preserve existing LDD documents and their evidence; LCD means bounded closure of materially consequential implementation choices, not a no-code platform or forced source-code transcription. See the amended [Architecture](ARCHITECTURE.md), [Cycle](CYCLE.md), [Method Router](METHOD-ROUTER.md), and the [self-contained LCD owner](../../../docs/lcd/README.md). No historical source, implementation owner, Product Decision or previous verified checkpoint is silently replaced.
+
 **Posture:** ACTIVE CONTINUOUS CONSOLIDATION / PARTIAL. Earlier preparatory descriptions below are historical; current work is controlled by [STATE.md](STATE.md). Эта поверхность — отдельный рабочий контур единой консолидации; исследовательские ветки `research/01–03` остаются историческими Research, а `docs/` предназначен для поддерживаемого продукта знаний.
 
 ## Cold entry — следующий агент
@@ -10,7 +12,7 @@
 4. Прочитать точные Research-ветки и проверяемые первичные источники по зафиксированному source universe.
 5. В рамках отдельного поручения на полный цикл выполнять стадии без искусственных пауз; после каждого законченного блока обновлять проверяемое состояние.
 
-Полный file-level реестр двух основных репозиториев уже составлен: 553 SHA-проверенные строки (`stratbox`: 338, `stratbox-windows`: 198, выбранные контракты AppDock: 17). Все material units в нём ещё `unaccounted`. Следующий цикл расширяет declared universe для полученных от пользователя и других оправданных источников, а не удаляет пригодный census.
+**Current source accounting:** the frozen census has **566** registered Git identities (the original 553 plus thirteen admitted late inputs). Read, material-disposition and evidence-class counts must always be taken from current `sources/CENSUS.csv` and verified `STATE.md` checkpoints; historical count paragraphs do not supersede them. Independent whole-source semantic assurance remains open.
 
 Текущая подготовка **не запускает** сборку, не утверждает WHAT/HOW и не изменяет бизнес-логику. Полная программа консолидации уже прямо поручена; следующий агент продолжает существующий цикл и его checkpoint.
 

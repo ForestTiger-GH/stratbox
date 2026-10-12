@@ -33,7 +33,7 @@ Workspace может содержать исследования несколь�
 - `01-old-notes` — исторические и исходные материалы;
 - `02-base-study` — свежее базовое исследование текущего Strategy Box и тематические Research Results;
 - `03-consolidation-research` — исследовательский синтез накопленного корпуса;
-- `consolidation/` — действующий рабочий контур консолидации Science, WHAT, Current HOW, HOW, Architecture и LDD с durable checkpoints, проверками, открытыми вопросами и точными статусами.
+- `consolidation/` — active Knowledge consolidation covering Science, Current HOW, Target WHAT/HOW, Architecture, selective Low-Level Design (LDD) and implementation-near Low Code Design (LCD), with durable checkpoints, assurance and explicit partial status.
 
 Материалы `_mw/` сами по себе не меняют текущую продуктовую семантику и не входят в библиотечный пакет.
 

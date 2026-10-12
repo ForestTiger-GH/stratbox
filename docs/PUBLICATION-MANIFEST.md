@@ -1,5 +1,7 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Owner-directed extension (2026-10-12; not independently attested at this update):** [LCD — Low Code Design](lcd/README.md) is now a seventh maintained Knowledge role, following selective LDD — Low-Level Design. Its README is an assembly contract, **not** a certified implementation-ready design or a release. The previously verified **102-document ZIP** and its hash belong to their exact prior commit; the new current tree contains **103 Markdown documentation files** (subject to its own CI/publication check). Source→Science lossless and independent LCD readiness both remain open, with distinct acceptance gates.
+
 **Edition:** `SB-KP-PARTIAL-2026-10-12-SOURCE-INDEPENDENT-1`  
 **Publication status:** `PARTIAL / UNDER CONSOLIDATION`; **whole-corpus `LOSSLESS_PASS`: NOT ATTESTED**.  
 **Declared publication root:** `docs/`; **102 maintained Markdown documents** in the latest independently navigable edition. The previous 101-doc edition is an earlier snapshot. The initial one-time hyperlink detachment inspected 95 Markdown documents, and earlier snapshots documented 98; those figures are historical. All current scientific, design and navigation owners reside inside the published root.
