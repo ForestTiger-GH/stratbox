@@ -998,6 +998,84 @@ def probe_curated_machine_admission() -> dict:
             "evidence": "literal MachineGateway with fake host; no real MCP/A2A or Run store"}
 
 
+def probe_neutral_provider_binding() -> dict:
+    """Execute documented neutral resolver against metadata-only fake ports."""
+    ref = "extensions/neutral-provider-binding-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("ContributionKind", "BindingStatus", "FailureKind",
+                 "ProviderDescriptor", "BindingPolicy", "BindingResult",
+                 "NeutralProviderResolver"):
+        compile_definition(ref, name, d)
+    kind, status = d["ContributionKind"], d["BindingStatus"]
+    descriptor = d["ProviderDescriptor"](
+        "provider-public-a", "dist-a@1", 1, 0,
+        kind.FILE_BYTES, "file_bytes", "revision-1", False)
+    optional = d["ProviderDescriptor"](
+        "provider-codec", "dist-b@2", 1, 0,
+        kind.FORMAT_CODEC, "format_codec", "revision-1", True)
+
+    class Discovery:
+        def __init__(self):
+            self.items = (descriptor, optional)
+        def list_metadata_only(self):
+            return self.items
+    class Compat:
+        def validate(self, desc, major):
+            return desc.api_major == major
+    class Activation:
+        def __init__(self):
+            self.calls = 0
+            self.raise_error = False
+        def activate(self, desc, config):
+            self.calls += 1
+            if self.raise_error:
+                raise ValueError("synthetic setup error")
+            return object()
+    class Health:
+        verdict = status.READY
+        def check(self, instance, scope):
+            return self.verdict
+
+    discovery, compat, activation, health = (
+        Discovery(), Compat(), Activation(), Health())
+    resolver = d["NeutralProviderResolver"](
+        discovery, compat, activation, health)
+    policy = d["BindingPolicy"](
+        "workspace-A", {"file_bytes": "provider-public-a",
+                        "format_codec": "provider-codec"},
+        frozenset(), frozenset({"file_bytes"}))
+    bind = lambda slot, major=1, configuration=None: resolver.resolve(
+        policy, slot, required_major=major, configuration=configuration or {})
+    assert bind("file_bytes").status is status.READY
+    health.verdict = True
+    assert bind("file_bytes").status is status.CONTRACT_FAILURE
+    health.verdict = "ready"
+    assert bind("file_bytes").status is status.CONTRACT_FAILURE
+    health.verdict = status.DEGRADED
+    assert bind("file_bytes").status is status.DEGRADED
+    health.verdict = status.READY
+    before = activation.calls
+    assert bind("format_codec").status is status.CONFIGURATION_REQUIRED
+    assert activation.calls == before
+    assert bind("format_codec", configuration={"profile": "safe"}).status is status.READY
+    assert bind("file_bytes", major=2).status is status.INCOMPATIBLE
+    discovery.items = (descriptor, descriptor)
+    assert bind("file_bytes").status is status.CONTRACT_FAILURE
+    discovery.items = ()
+    assert bind("file_bytes").status is status.UNAVAILABLE
+    discovery.items = (descriptor, optional)
+    activation.raise_error = True
+    assert bind("file_bytes").status is status.CONTRACT_FAILURE
+    activation.raise_error = False
+    nochoice = d["BindingPolicy"]("workspace-A", {}, frozenset(), frozenset({"file_bytes"}))
+    outcome = resolver.resolve(nochoice, "file_bytes", required_major=1,
+                               configuration={})
+    assert outcome.status is status.NOT_SELECTED
+    assert outcome.safe_code == "REQUIRED_PROVIDER_NOT_SELECTED"
+    return {"provider_resolution_adverse_cases": 11,
+            "evidence": "literal neutral resolver on fake public descriptors; no provider package activated"}
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -1009,11 +1087,12 @@ def main() -> dict:
         "scoped_effect_guard": probe_scoped_effect_guard(),
         "safe_shared_projection": probe_safe_shared_projection(),
         "machine_admission": probe_curated_machine_admission(),
+        "neutral_provider_binding": probe_neutral_provider_binding(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "eight named LCD constructions executed with synthetic ports only",
+        "scope": "nine named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
