@@ -55,6 +55,26 @@ Avoid misleading user states:
 
 Controls such as cancel, replay, download, approve, review or inspect logs are shown with eligibility and reason codes; the application reauthorizes at command/effect time. A user able to view another colleague's Run does not automatically gain permission to cancel it or inspect private full logs.
 
+### Active Thread ordering is a derived, viewer-scoped projection, not a Job queue
+
+A background-Work study raised a more concrete UI problem than “show a spinner”: when several linked Runs exist, a user should be able to find a conversation needing action, without progress-tick churn, lost pinned order, accidental sharing, or confusing enabled automations with actually running tasks. It proposed a **candidate** ordering with (1) manually pinned Threads, (2) attention or active Threads, (3) remaining ordinary Threads and (4) archived Threads in a separate view. This is one useful **Research-level alternative**, not an adopted universal sorting rule or a requirement to materialize a new table per list.
+
+The sort key is derived from **permissioned, authoritative** Work/Run/Job data and each viewer's settings. Relevant countercases:
+
+| Situation | Correctly qualified presentation | Invalid shortcut |
+| --- | --- | --- |
+| Chat pinned by a particular viewer | Preserve that viewer's manual pinned order; show any active state within the row. | A background job silently moves the pinned item or changes another viewer's pin choice. |
+| One linked Run is awaiting this viewer's actual approval | Place in an action-needed group under a candidate ranking policy, with a permissible action and stable state-change timestamp. | Every progress event reorders the entire chat list or grants the viewer approval rights. |
+| Run is queued, executing, cancellation requested or resource-waiting | Show the actual known class and count of permitted **incomplete logical Cases**, not raw OS threads or repeated Attempts. | `enabled=True` on an Automation becomes a running badge, or a joined physical Job is counted twice. |
+| A completed Run has an unread result, warning or unresolved Condition | Show an appropriate unread/attention signal subject to user settings; distinguish it from an active worker. | The Thread remains permanently at the top as “running” after all execution has ended. |
+| Thread archived while its host Job continues | Keep the archive navigation choice, maintain independently authorized Run access through the task center, and optionally warn at archive time. | Force-unarchive the Thread, cancel the Job, or delete its immutable history as a side effect of hiding chat. |
+| Viewer loses Thread permission or another participant has private Run inputs | Reproject or remove unauthorized links, badges and details under current ACL; check Work/Artifact/Log rights separately. | Membership in the Thread grants raw task parameters, absolute paths, private logs or cancel privileges. |
+| User opens a different client or reconnects after missed events | Recompute scoped aggregates from the host snapshot+revision/cursor, label stale UI and avoid inventing a new Run. | Reactivate the Job, replay all progress as chat messages or apply client-local status as server truth. |
+
+A candidate **anti-jitter invariant** groups on meaningful transitions and respects user controls: changes to `phase_progress`, log line count or ETA alone must not change sort buckets or bump `last_meaningful_activity`; a real `QUEUED→RUNNING` transition may change the group once; a verified terminal result may count as one meaningful activity event. The original proposal prioritized urgent approval over running and queued work, but personal attention policy and manual sort remain Product/UX decisions. A lower persistent activity strip was proposed **only for real active/action-needed runs**, not for every configured scheduled rule. A Task Center/Runs view has its own authorized aggregate and does not take execution ownership away from the host.
+
+A simple illustrative pure ranking predicate is `archived → pinned → needs_action → has_incomplete_case → regular`, **computed after access filtering** and with stable tie-breaks; this is not a released Algorithm, stored `ChatThread.status`, a CPU-scheduling priority or permission grant. Screen-reader announcements, compact badges, handling of thousands of Runs, notification rate and cross-device usability require native tests and real Product acceptance. A user hiding a notification does not cancel an execution, close a Condition or delete an Artifact.
+
 ## 5. Explorer unifies access while retaining two object types
 
 **Workspace FileRef** locates a permitted mutable file/folder in a managed resource scope. **ArtifactRef** names a committed versioned product result, linked to Run/source/algorithm/style and possibly several byte materializations. A workbook generated into a folder is not automatically a verified Artifact, and editing the original input does not silently rewrite a previously committed Artifact.
