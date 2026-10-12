@@ -121,7 +121,8 @@ class RunSnapshot:
     revision: int
     phase: RunPhase
     outcome: RunOutcome | None
-    last_sequence: int
+    # Deliberately no raw node_seq, full internal event count or hidden
+    # cursor here. The authorized feed publishes its own opaque position.
     stale: bool = False
 
 @dataclass(frozen=True, slots=True)
@@ -403,7 +404,14 @@ class ScopedReads:
         snapshot = self.ledger.get(run_ref)
         if snapshot is None:
             raise LookupError("RUN_UNAVAILABLE")
-        if not isinstance(snapshot, RunSnapshot):
+        if (not isinstance(snapshot, RunSnapshot)
+                or snapshot.run_ref != run_ref
+                or type(snapshot.revision) is not int
+                or snapshot.revision < 0
+                or not isinstance(snapshot.phase, RunPhase)
+                or (snapshot.outcome is not None
+                    and not isinstance(snapshot.outcome, RunOutcome))
+                or type(snapshot.stale) is not bool):
             raise RuntimeError("RUN_SNAPSHOT_CONTRACT_INVALID")
         return snapshot
 
@@ -471,6 +479,8 @@ class ScopedReads:
                                   internal.content_digest, internal.media_type)
         return ArtifactResult(internal.availability, None, None)
 ~~~
+
+**No internal-sequence readback:** a `RunSnapshot.last_sequence: int` that is returned directly by the host read method has no proven per-reader filtering. It could expose a global `node_seq` or hidden Run activity even if the separate event feed uses an opaque cursor. The revised public `RunSnapshot` omits that field; only the authorized feed may issue the viewer-scoped cursor. The host read additionally validates returned Run identity, revision, phase/outcome enum and stale flag before projection. A trusted storage owner still must prevent timing and count side channels, and `RunSnapshot.revision` is an authorized **Run-aggregate version**, not a node-wide sequence.
 
 **Source-first authorized feed correction (Topic 05, §9.2–9.4):** the earlier candidate performed `can_read_run(actor, run_ref)` once using Python truthiness, then returned `LedgerPort.read_after(run_ref, after:int)` **directly** to a client. A policy implementation returning `"false"` or `1` could be mistaken for explicit allow; ledger rows could include raw `safe_text` from the current Windows source, and an integer cursor could disclose hidden node-wide activity or remain valid after ACL revocation. The replacement requires literal Boolean `True` at each Run read, surfaces policy outages as scoped access uncertainty, and routes every event-page fetch to a **trusted, object- and field-authorizing `AuthorizedFeedPort`**. It returns an `ObservationPage` with opaque actor-bound cursor and feed-generation, and `RESYNC_REQUIRED` without unfiltered events when authority/retention changes. A port that merely casts raw ledger records into an `Observation` dataclass, or labels a global event sequence “opaque”, **does not** implement this contract. Cursor authentication/expiry, field-sensitivity classification, safe text schema, per-event ACL, atomic snapshot/subscribe and user revocation during streaming are physical host/security implementation gates; their absence keeps this LCD `BLOCKED`. These are candidate semantics and source-derived security challenges, not a published remote feed endpoint or actual privacy proof.
 
