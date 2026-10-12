@@ -37,6 +37,10 @@ The tenth-packet set's `docs/lcd/data/used-input-receipt-construction.md` origin
 
 **Assurance grade:** `PRODUCER_EXECUTED_DOCUMENTED_CANDIDATE_FRAGMENT` — parser/logic fake tests of one proposed contract, **not** actual `stratbox` source handling, official bank source validation, preserved raw bytes, full R3/R4 replay, storage atomicity, domain method equivalence, actual provider package or independent review.
 
+### Candidate module-boundary follow-up
+
+The proposed capture and domain bridge originally appeared in one fenced Python fragment even though they were labeled as separate future files. That could encourage a cold implementer to copy the domain function without its `sha256`, acquisition-contract and typed-failure imports, while the producer's AST harness silently injected those globals. The revised document now places capture and domain usage into **separate syntax-checked fenced blocks** with explicit *candidate package imports*. This is a clarity repair; `safe_url` and `DomainValidationIncomplete` still require actual implementations, real module imports, packaging and tests before integration. As with all ten LCD packets, semantic completeness and actual code readiness remain unverified.
+
 ## 4. Resolution, materiality and open scope
 
 **No new scientific contradiction found:** the principal source 0562 content and its 18 numbered negative cases were already maintained correctly in Science. The value of this pass is a **genuine implementation-handoff defect**: the candidate code's claimed stronger source integrity exceeded its actual guards. It was corrected in the proportional LCD design, not by inventing another universal catalog or rewording the already adequate Science.
