@@ -288,6 +288,8 @@ def test_validation_and_digest_bind_to_same_staging_generation(fake_storage):
 
 These fixtures are *not implemented*. Link the actual target suite to [staged publication LDD](../../ldd/artifacts/staged-publication.md), [input provenance LDD](../../ldd/data/used-source-receipt-boundary.md), and host HC artifact/security vectors where applicable. Static Python parse checks alone validate no storage semantics. Native filesystem fault injection and independent implementation review are required before an implementation-ready declaration.
 
+**Native POSIX challenge, NOT host acceptance:** [CI 38221344760](https://github.com/ForestTiger-GH/stratbox/actions/runs/38221344760) at `ee40ca1794c3d3b5409df55110b92a9b43b953b6` passed eight *real local Linux-file* adversarial cases. `Path.resolve()` before `open()` failed under a controlled symlink swap; the same inode and FD retained their identifiers while bytes changed; and plain `os.replace()` overwrote an intervening target revision. `os.link()` gave a **limited create-only/no-clobber** path, not an overwrite CAS. The `ScopedWriterPort` must choose explicit storage-supported conditional generation semantics, safe scoped traversal and an actual trusted staging byte seal; neither `os.replace()` nor a Python `StagingSeal` instance proves these. Missing NTFS/SMB/object backend profiles, shared catalog transaction and power-loss tests keep real implementation `LCD_BLOCKED`.
+
 ## 7. Decision register / implementation sufficiency
 
 | Material choice | Status | Owner |
