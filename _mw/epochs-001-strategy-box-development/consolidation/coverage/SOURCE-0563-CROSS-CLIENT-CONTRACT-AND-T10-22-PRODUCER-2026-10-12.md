@@ -1,0 +1,29 @@
+# Original-first Topic 10 — exact twenty-two contract probes and versioned shared writes
+
+**Work date:** 2026-10-12. **Authority class:** `PRODUCER_ORIGINAL_FIRST_SOURCE_TO_SCIENCE_AND_LDD_CHALLENGE`. This is a bounded correction and a structural source identity trace, **not** complete independent whole-original preservation or admission of an actual Web/Windows/Android host. **Original:** `SB-SRC-0563`, `stratbox@388e3d61ec01350d3b7d35ea4a97a21db0b36f97`, exact Git blob `bc8ed2e00a554b36bf624a4f0f8b4ac8b3501af6`, `_mw/epochs-001-strategy-box-development/research/04-ai-raised-topics/10_Границы_ответственности_и_интеграционные_контракты_Strategy_Box.md` (759 physical lines).
+
+## Existing maintained destinations, already source-faithful in substance
+
+- `docs/science/architecture/semantic-ownership-and-contract-boundaries.md`: P0–P6 modes, source of Case/Job/Run truth, host versus client storage, correlated but separate identity, no unconditional AppDock-owned Jobs, no global compatibility version, distinctive effects and 22 **proposed** future acceptance scenarios.
+- `docs/science/surfaces/semantic-portability-and-client-authority.md`: desktop/browser/mobile semantic clients, future headless authority conditional on actual deployment, platform activation and per-surface native constraints.
+- `docs/current-how/windows-application.md`: pinned Qt local behavior, five JSON projections and bounded failure tests, not a shared host.
+- `docs/lcd/hosting/host-authority-and-client-contract-construction.md`: one candidate admission/effects/query semantics with actual recovery and scoped field projection **only in fake probes**.
+- `docs/ldd/hosting/host-client-attachment-boundary.md`: future host negative vectors, qualified by absent actual user/session/storage authority.
+
+The original §12 at L568–L598 explicitly assigns `T10-01` through `T10-22` to 22 distinct negative acceptance cases: direct Python (01), independent Runs (02), output writer conflict (03), client-close while hosted (04), foreground interruption (05), post-commit ACK loss (06), compute-versus-file write (07), file rename availability (08), principal spoof (09), unapproved machine operation (10), platform contract mismatch (11), direct Python platform independence (12), missing Data root (13), conflicting chat title writes (14), protected logs (15), corrupted history (16), expired worker finalization (17), Web/Android attach during Run (18), unsupported platform capability (19), platform activation versus Job (20), schema/handler drift (21), economic units/evidence loss at adapter (22). These are **original author-suggested tests**, not executed results or universal mandatory protocol.
+
+The maintained Science §10 already carried all 22 corresponding *semantic scenarios in identical order* but omitted their original `T10-XX` labels. The producer replaced the anonymous two-column table with three columns containing **each original ID and its separate falsifying consequence**. `tools/verify_integration_0563_acceptance_vectors.py` now checks exact original blob, exact source row order/count and precise one-to-one unique occurrence of all 22 IDs in the published Science section; [CI 38236929134](https://github.com/ForestTiger-GH/stratbox/actions/runs/38236929134), `e9d2d0bb4cf38fa58cf119f66006a0cc2bffdca2`, **SUCCESS**. This is a **structural route and nonempty-row check**, not material equivalence proof, source-executing behavioral test or human reviewer attestation.
+
+## Newly qualified cross-actor boundary: `InvokeCommand` versus mutable Thread metadata
+
+The original §7.1 L387–L435 provided an **illustrative** `InvokeCommand` with `workspace_id`, `chat_id`, optional expected workspace revision and idempotency key, while T10-02 and T10-14 separate concurrent independent Run admission from **optimistic revision conflict on a shared chat rename**. The current Host LCD's `Submission` is a narrower *Scenario Run intention* and contains no `rename_thread` endpoint, so a naive copy of the source's global workspace revision onto every Run would incorrectly serialize unrelated analyses. The inverse error would be to assume Run `intention_key` deduplication suffices for two different clients overwriting the same Thread title.
+
+A new **source-qualified three-vector target boundary** `HC-60..62` is recorded in `docs/ldd/hosting/host-client-attachment-boundary.md`: (60) two competing titles against revision 7 produce one actual mutation plus version conflict; (61) client-tampered chat/principal IDs cannot grant object access; (62) independent read-only Scenario Runs may be admitted across an unrelated Thread mutation unless real resource/policy coupling justifies otherwise. This is **architecture differentiation**, not an implemented revision-CAS service, second generic command engine or an arbitrary push toward a DB. The exact revision granularity, log privacy, session-auth and client wire DTO remain explicit **Product/Platform/Host owner choices**.
+
+## Integrity, limits and closure status
+
+- No implementation of any public/private extension and no protected evidence was written to public repositories.
+- Original source status remains `full_read` per producer census, **`material_unit_state=unaccounted`** until a separate competent reviewer checks the entire original L1–L759 and the maintained destination backward.
+- Other older original-specific probes, SCIENCE links and both negative/positive deployment alternatives retain their existing owners; no broad second summary was created.
+- Exact native host HTTP/client versions, Windows/Android mobile session behavior, real database fencing, schema/economic unit fidelity, actual AppDock compatibility and **independent source-hidden review** remain unexecuted or blocked by actual Product decisions.
+- This bounded producer improvement is a **named per-source precision increment**, not `LOSSLESS_PASS`.
