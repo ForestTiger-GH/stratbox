@@ -193,7 +193,8 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     decoded = decoder.parse(same_bytes)
     # Decoding returned a value, but that alone is NOT a positive claim
     # that the source is the declared XLSX/DBF/CSV format.
-    if decoded.format_validation is not ValidationKind.FORMAT_VALID:
+    if (decoded.format_validation is not ValidationKind.FORMAT_VALID
+            or not decoded.format_evidence_ref):
         raise DomainValidationIncomplete(
             decoded.format_evidence_ref or "FORMAT_UNVERIFIED")
     parsed = decoded.value
@@ -216,7 +217,7 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
 
 The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. **Clock qualification:** the candidate also checks that the observed acquisition time is a timezone-aware datetime with UTC offset zero. A field name or unverified clock implementation claiming `now_utc()` does not establish this. Passing the check establishes an unambiguous timestamp *representation*; clock synchronization, precision, actual response-capture instant, publisher release time and independent trusted time remain separate real-environment evidence. A non-UTC timestamp is refused before a misleading receipt can be issued.
 
-**Second producer correction — avoid evidence inflation:** the original bridge also set `format_validation=FORMAT_VALID` automatically after `ByteDecoder.parse()`. A parser returning any object was therefore enough to manufacture format evidence. The narrowed `DecodedPayload` contract now carries an explicit typed format verdict and evidence reference from the actual decoder; the bridge stops before domain validation unless that verdict is `FORMAT_VALID`. This is a candidate producer-provided verification boundary, not proof that an arbitrary decoder is trustworthy or that a workbook with valid ZIP structure contains authoritative banking facts.
+**Second producer correction — avoid evidence inflation:** the original bridge also set `format_validation=FORMAT_VALID` automatically after `ByteDecoder.parse()`. A parser returning any object was therefore enough to manufacture format evidence. The narrowed `DecodedPayload` contract now carries an explicit typed format verdict and evidence reference from the actual decoder; the bridge stops before domain validation unless that verdict is `FORMAT_VALID` **and supplies a nonempty format-evidence reference**. This is a candidate producer-provided verification boundary, not proof that an arbitrary decoder is trustworthy or that a workbook with valid ZIP structure contains authoritative banking facts.
 
 The additional in-memory hash pass is deliberate for this pilot; a real streaming implementation should hash exactly the same byte stream supplied to the domain without duplicating a very large payload. Whether the chosen source uses a trusted zero-copy holder is a separate performance/security decision, not permission to falsely claim byte equality. Domain-dependent format and economic validation remain with the domain; the generic helper must not elevate bare HTTP 200 or ZIP container parsing to a correct banking figure. A production implementation must validate that captured.acquisition.actual_bytes is present and bind the same immutable bytes into the parser; the type model may be refined to a separate ReceivedAcquisition variant so that a nullable digest cannot reach this function. Memory and streaming policy are deliberately open because the current DownloadResult materializes bytes. For large datasets use a constrained stream/chunk capture with immutable open-handle identity; do not change domain semantics just for a universal abstraction.
 
@@ -256,6 +257,15 @@ def test_decoder_returning_object_without_format_proof_cannot_claim_format_valid
         captured, weak_decoder, domain_validator, clock):
     weak_decoder.returns = DecodedPayload({"looks": "parsed"},
                                           ValidationKind.NOT_CHECKED, None)
+    with raises(DomainValidationIncomplete):
+        decode_with_used_receipt(captured, weak_decoder,
+                                 domain_validator, "scope", clock)
+    assert domain_validator.calls == 0
+
+def test_format_valid_without_evidence_ref_is_not_accepted(
+        captured, weak_decoder, domain_validator, clock):
+    weak_decoder.returns = DecodedPayload({"looks": "parsed"},
+                                          ValidationKind.FORMAT_VALID, None)
     with raises(DomainValidationIncomplete):
         decode_with_used_receipt(captured, weak_decoder,
                                  domain_validator, "scope", clock)
