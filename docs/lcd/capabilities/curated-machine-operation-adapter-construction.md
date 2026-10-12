@@ -86,11 +86,20 @@ class MachineDomainResult:
     used_source_refs: tuple[str, ...] = ()
     diagnostics: tuple[str, ...] = ()
 
+class AdmissionStatus(str, Enum):
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"           # no application Run was admitted
+    OUTCOME_UNKNOWN = "outcome_unknown"  # admission may have succeeded
+
 @dataclass(frozen=True, slots=True)
 class MachineAdmission:
     run_ref: str | None
-    accepted: bool
+    status: AdmissionStatus
     safe_code: str
+
+    @property
+    def accepted(self) -> bool:
+        return self.status is AdmissionStatus.ACCEPTED
 
 class CuratedCatalogPort(Protocol):
     def get_approved(self, operation_id: str,
@@ -139,24 +148,45 @@ class MachineGateway:
         definition = self.catalog.get_approved(
             request.operation_id, request.contract_revision)
         if definition is None:
-            return MachineAdmission(None, False, "OPERATION_UNKNOWN_OR_REVISION")
+            return MachineAdmission(None, AdmissionStatus.REJECTED, "OPERATION_UNKNOWN_OR_REVISION")
         if not definition.allow_machine_discovery:
-            return MachineAdmission(None, False, "MACHINE_CALL_UNSUPPORTED")
+            return MachineAdmission(None, AdmissionStatus.REJECTED, "MACHINE_CALL_UNSUPPORTED")
         # Reject unknown parameters, invalid types and unsafe path/reference
         # fields at a trusted schema boundary before any business effect.
         try:
             normalized = self.schema.validate_strict(
                 definition.input_schema_ref, request.params)
         except Exception:
-            return MachineAdmission(None, False, "PARAMETER_SCHEMA_INVALID")
+            return MachineAdmission(None, AdmissionStatus.REJECTED, "PARAMETER_SCHEMA_INVALID")
         if not self.bindings.is_available(
                 definition.operation_id, definition.contract_revision):
-            return MachineAdmission(None, False, "OPERATION_BINDING_UNAVAILABLE")
+            return MachineAdmission(None, AdmissionStatus.REJECTED, "OPERATION_BINDING_UNAVAILABLE")
         if not self.policy.may_invoke(trusted_actor, definition, normalized):
-            return MachineAdmission(None, False, "EFFECT_PERMISSION_DENIED")
-        # Actual host Run admission owns idempotency and effect reconciliation.
-        return self.application.admit(trusted_actor, request, normalized)
+            return MachineAdmission(None, AdmissionStatus.REJECTED, "EFFECT_PERMISSION_DENIED")
+        # A lost admission acknowledgement cannot be reclassified as a
+        # rejected/no-Run command. Keep the original intention key stable for
+        # host-side reconciliation; never synthesize a new retry key here.
+        try:
+            admission = self.application.admit(trusted_actor, request, normalized)
+        except Exception:
+            return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
+                                    "HOST_ADMISSION_ACK_UNCERTAIN")
+        if not isinstance(admission.status, AdmissionStatus):
+            return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
+                                    "HOST_ADMISSION_CONTRACT_INVALID")
+        if (admission.status is AdmissionStatus.ACCEPTED
+                and not admission.run_ref):
+            return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
+                                    "ACCEPTED_RUN_REF_MISSING")
+        if (admission.status is AdmissionStatus.REJECTED
+                and admission.run_ref):
+            return MachineAdmission(admission.run_ref,
+                                    AdmissionStatus.OUTCOME_UNKNOWN,
+                                    "DENIED_WITH_RUN_REF_CONFLICT")
+        return admission
 ~~~
+
+**Original Research qualification:** the dated machine-interface study distinguished *rejected with no admitted Run*, *accepted/pending* and *unknown whether admission/effects happened* (§10.1, and T13–T16). A single `accepted: bool` in the first LCD sketch erased that third truth. This candidate replaces it with `AdmissionStatus` and treats a thrown host admission call, an accepted response without a Run reference, or contradictory/invalid port output as **OUTCOME_UNKNOWN**, not an invitation to retry under a new identity. The host remains responsible for same-intention-key idempotency, digest conflicts, actual grants and effect receipts; this gateway does not establish exactly-once effects. `MachineInvocation.intention_key` and normalized parameter snapshots must be qualified/bound at the actual trusted admission port, not merely passed through untrusted client metadata.
 
 This is a transport-neutral **adapter to host application authority**, not an independent JobManager. Approval and effect-time resource checks remain with [security LCD](../security/host-effect-authorization-construction.md); admission/replay with [host LCD](../hosting/host-authority-and-client-contract-construction.md). An in-process direct Python domain call has no machine gateway requirement.
 
@@ -200,6 +230,17 @@ def test_large_result_never_serializes_full_dataframe(projector, large_data):
     result = projector.for_machine(large_data)
     assert result.dataset is not None
     assert len(str(result.small_values)) < 4096
+
+def test_lost_host_admission_ack_cannot_be_reported_as_rejected(gateway, host):
+    host.raise_after_admission = True
+    response = gateway.invoke("trusted-actor", approved_request)
+    assert response.status is AdmissionStatus.OUTCOME_UNKNOWN
+    assert not response.accepted
+
+def test_accepted_without_run_ref_remains_unknown(gateway, host):
+    host.admission = MachineAdmission(None, AdmissionStatus.ACCEPTED, "ACCEPTED")
+    response = gateway.invoke("trusted-actor", approved_request)
+    assert response.status is AdmissionStatus.OUTCOME_UNKNOWN
 
 def test_unknown_effect_never_automatically_resubmitted_with_new_identity(host):
     outcome = host.simulate_lost_effect_ack()
