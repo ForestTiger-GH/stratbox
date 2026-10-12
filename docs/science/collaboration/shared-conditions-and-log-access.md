@@ -109,3 +109,15 @@ These are **proposed negative tests**, not reports of passing integration runs. 
 Open: who is admitted into a trusted node; what “everyone sees everything” means for private Threads; message retention; per-user read receipts; rights to cancel/retry another participant's Work; node-wide alert thresholds; notification channels; who authorizes log-reference resolution; problem prioritization and platform registration; whether a distinct support/incident backend or mobile push is actually needed; and migration of existing per-user state.
 
 **Core conclusion:** credible shared observability requires one accountable event owner and safe audience-specific projections. Enlarging visibility must not enlarge technical permissions, nor turn raw private traceback into a chat message. The presence of navigation labels such as Participants, Assignments, Background and Chat filters in the existing Windows client is **not** evidence of a working network collaboration service.
+
+## Windows Research 0020 — chat filters versus shared authority
+
+**Primary source:** [frozen Windows source study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), Git blob `225128f2599f0792422c0b31cb3cbe1437991ced`, contrasted with pinned public `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b` and bounded source executions. The 18 cross-owner items below conserve distinct original meanings, invalid inferences, competing physical states and one demonstrably false original generalization. This is a source-first producer packet; it is not an independent scientific conservation finding or a Product Decision.
+
+| Research address and evidential status | Material meaning | Challenge / limiting countercase | Original lines |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/UI-04` · `HISTORICAL_PRESENTATION_CANDIDATE` | The study described All/Mine/In progress/Success/Errors/Unread chat filters and a Qt-independent semantic message projection. | A client filter cannot grant read access, correct a misleading aggregate Case success or prove a shared per-principal unread cursor. | [L837–L850](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L837-L850) |
+
+**Public projection principle:** filter mode, author placement and unread flags are UI properties until a verified shared authority and recipient-specific projection enforce object-scoped access and cursor state. A filter cannot sanitize raw params or filesystem paths that have already entered the message model.
+
+**Conservation boundary:** these 1 additional rows are producer-traced source passages only. The original 0020 contains 1,741 physical lines, has additional unpartitioned material, and keeps census state `unaccounted`. A distinct verifier must review bidirectionally before a whole-source terminal disposition.
