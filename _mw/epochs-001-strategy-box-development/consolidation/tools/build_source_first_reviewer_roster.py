@@ -185,7 +185,7 @@ def build() -> dict:
     assert set(payloads) == PAYLOAD_NAMES
     for label, body in payloads.items():
         assert b"research/02-" not in body and b"research/03-" not in body, label
-        assert b"stratbox-plugin" not in body, label
+        assert b'source_filename' not in body, label
         assert b"source_lines_in_envelope" not in body, label
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(OUT, "w") as archive:
