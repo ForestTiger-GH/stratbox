@@ -19,7 +19,7 @@ The user's admitted goal permits a manually moved/deleted output file to become 
 
 ## Relation to competing original studies
 
-Earlier [whole-system architecture Topic 09](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_09_whole_system_target_architecture_2026-10-09.md#L896-L919) explicitly marked its quality block as provisional while specialized Topic 08 was absent from its original evidence cutoff. Later [Topic 08, §4.3](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/Strategy_Box_03_Topic_08_Trust_Safety_System_Qualities_2026-10-09.md#L310-L324) identified the narrower current behavior, now verified against direct implementation. The later work refines the earlier provisional risk analysis; it does not automatically approve a new storage API.
+Earlier whole-system architecture Topic 09 (\`#L896-L919\`) explicitly marked its quality block as provisional while specialized Topic 08 was absent from its original evidence cutoff. Later Topic 08, §4.3 (\`#L310-L324\`) identified the narrower current behavior, now verified against direct implementation. The later work refines the earlier provisional risk analysis; it does not automatically approve a new storage API.
 
 Proposed negative fixtures: existing empty directory versus missing directory versus regular file; missing after workspace change; denied listing; interruption after destination was opened for writing; attempted publication of incomplete bytes. **None has been executed here.** The future strict result/status profile remains a Product/Implementation decision tied to risk. See also [source receipts](source-download-receipts-registry-choice-and-coverage-limits.md) and [Artifact publication](../science/artifacts/output-identity-publication-and-availability.md).
 
@@ -34,7 +34,7 @@ A hypothetical Web/MCP/AI workspace service must **not** treat this adapter root
 
 ## Five executed temporary-filesystem observations — 2026-10-12
 
-The earlier path-confinement risks have now been **tested against actual checked-in public core Python code**, not only inferred from source text. [CI 38188491459](https://github.com/ForestTiger-GH/stratbox/actions/runs/38188491459) ran [five standard-library-only tests](../../_mw/epochs-001-strategy-box-development/consolidation/tools/test_local_filestore_observed_safety.py) in a disposable system temporary directory. They loaded frozen `types.py/base.py/local.py/tmp.py` directly with explicit lightweight import scaffolding; **5/5 passed**. All outside-root test paths remained *inside the test's own temporary directory*; no actual user, network, corporate or host file was accessed.
+The earlier path-confinement risks have now been **tested against actual checked-in public core Python code**, not only inferred from source text. [CI 38188491459](https://github.com/ForestTiger-GH/stratbox/actions/runs/38188491459) ran five standard-library-only tests in a disposable system temporary directory. They loaded frozen `types.py/base.py/local.py/tmp.py` directly with explicit lightweight import scaffolding; **5/5 passed**. All outside-root test paths remained *inside the test's own temporary directory*; no actual user, network, corporate or host file was accessed.
 
 | Current local adapter case | Actually observed current behavior | Reliance boundary |
 | --- | --- | --- |

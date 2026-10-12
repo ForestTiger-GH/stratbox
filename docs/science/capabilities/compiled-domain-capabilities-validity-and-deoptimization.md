@@ -1,6 +1,6 @@
 # Compiled domain capabilities: applicability, admission and deoptimization
 
-**Scientific question.** Under what conditions may a repeatedly solved banking/macroeconomic analytical task be lowered to a cheap deterministic program, reusable composition, lookup, specialized solver or other machine path, while remaining discoverable to a future cognitive actor? **Status:** research-qualified engineering synthesis; no released cognitive protocol, self-compiling service, accepted `MachineScheme` schema or installed integration is asserted. Source baselines: [domain/cognition boundary study, 2026-10-07](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_boundary_research_2026-10-07.md), [machine-readiness study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md), and dated [core baseline](https://github.com/ForestTiger-GH/stratbox/tree/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox).
+**Scientific question.** Under what conditions may a repeatedly solved banking/macroeconomic analytical task be lowered to a cheap deterministic program, reusable composition, lookup, specialized solver or other machine path, while remaining discoverable to a future cognitive actor? **Status:** research-qualified engineering synthesis; no released cognitive protocol, self-compiling service, accepted `MachineScheme` schema or installed integration is asserted. Source baselines: domain/cognition boundary study, 2026-10-07, machine-readiness study, and dated [core baseline](https://github.com/ForestTiger-GH/stratbox/tree/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox).
 
 ## 1. “Compiled cognition” is a useful analogy, not a product classification
 
@@ -171,7 +171,7 @@ Related maintained Science: [machine discovery](machine-discovery-bindings-and-a
 
 ## 12. Research-source qualification and machine-readiness inventory (not an admitted standard)
 
-This source-preserving matrix matters because dropping the qualifiers would silently turn a research proposal into a supposed implementation guarantee. Its original owner is [machine-readiness Research #31 and #37](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2112-L2169), blob `a0a1212e394b57792ec3b4f05066d5dbf540d21c`. **MUST/SHOULD/MAY below are the _source's proposed priority words_, not accepted Strategy Box obligations.** Every row is presented as a question or candidate conformance dimension. An individual item may be conditionally irrelevant, require a stronger specialist check, or be rejected in a future authorized contract; that disposition must be explicit rather than silently omitted. The 22-point checklist is a research-proposed human review aid and **not an executed acceptance test or official release gate**.
+This source-preserving matrix matters because dropping the qualifiers would silently turn a research proposal into a supposed implementation guarantee. Its original owner is machine-readiness Research #31 and #37 (\`#L2112-L2169\`), blob `a0a1212e394b57792ec3b4f05066d5dbf540d21c`. **MUST/SHOULD/MAY below are the _source's proposed priority words_, not accepted Strategy Box obligations.** Every row is presented as a question or candidate conformance dimension. An individual item may be conditionally irrelevant, require a stronger specialist check, or be rejected in a future authorized contract; that disposition must be explicit rather than silently omitted. The 22-point checklist is a research-proposed human review aid and **not an executed acceptance test or official release gate**.
 
 The inventory is separate from the maturity-level ladder above. It cannot be aggregated into one “AI-ready percentage”: e.g. a missing authority fence or unsafe destructive retry is critical even when 68 other fields pass. Nor does a richer descriptor prove its own content, its implementation's behavior, numerical validity, product rights, deployment readiness, or evidence freshness.
 
@@ -179,91 +179,91 @@ The inventory is separate from the maturity-level ladder above. It cannot be agg
 
 | Original item | Source-exact research wording | Frozen source line |
 | --- | --- | --- |
-| `SB-SRC-0032/MUST-01` | Stable semantic identity. | [L2116](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2116) |
-| `SB-SRC-0032/MUST-02` | Exact contract version. | [L2117](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2117) |
-| `SB-SRC-0032/MUST-03` | Semantic input/output types. | [L2118](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2118) |
-| `SB-SRC-0032/MUST-04` | Serializable machine schema for public capability boundary. | [L2119](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2119) |
-| `SB-SRC-0032/MUST-05` | Applicability with `UNKNOWN`. | [L2120](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2120) |
-| `SB-SRC-0032/MUST-06` | Explicit effects. | [L2121](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2121) |
-| `SB-SRC-0032/MUST-07` | Explicit outcome/failure semantics. | [L2122](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2122) |
-| `SB-SRC-0032/MUST-08` | Distinction semantic contract / implementation binding. | [L2123](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2123) |
-| `SB-SRC-0032/MUST-09` | Exact implementation revision in provenance. | [L2124](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2124) |
-| `SB-SRC-0032/MUST-10` | Determinism class. | [L2125](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2125) |
-| `SB-SRC-0032/MUST-11` | Idempotency semantics where retry/effects matter. | [L2126](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2126) |
-| `SB-SRC-0032/MUST-12` | Concurrency semantics. | [L2127](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2127) |
-| `SB-SRC-0032/MUST-13` | Cancellation semantics for long operations. | [L2128](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2128) |
-| `SB-SRC-0032/MUST-14` | Artifact identity beyond path. | [L2129](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2129) |
-| `SB-SRC-0032/MUST-15` | Source/registry/version provenance. | [L2130](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2130) |
-| `SB-SRC-0032/MUST-16` | Immutable capability/scheme definition. | [L2131](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2131) |
-| `SB-SRC-0032/MUST-17` | No hidden mutable global semantic state. | [L2132](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2132) |
-| `SB-SRC-0032/MUST-18` | Capability lifecycle/admission status. | [L2133](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2133) |
-| `SB-SRC-0032/MUST-19` | Validity envelope. | [L2134](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2134) |
-| `SB-SRC-0032/MUST-20` | Invalidation trigger. | [L2135](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2135) |
-| `SB-SRC-0032/MUST-21` | Fallback/deoptimization for compiled fast path. | [L2136](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2136) |
-| `SB-SRC-0032/MUST-22` | Capability discoverability without reading Python. | [L2137](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2137) |
-| `SB-SRC-0032/MUST-23` | Tests/evidence for admitted capabilities. | [L2138](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2138) |
-| `SB-SRC-0032/MUST-24` | Strategy Box standalone execution without PROTOS. | [L2139](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2139) |
+| `SB-SRC-0032/MUST-01` | Stable semantic identity. | L2116 (\`#L2116\`) |
+| `SB-SRC-0032/MUST-02` | Exact contract version. | L2117 (\`#L2117\`) |
+| `SB-SRC-0032/MUST-03` | Semantic input/output types. | L2118 (\`#L2118\`) |
+| `SB-SRC-0032/MUST-04` | Serializable machine schema for public capability boundary. | L2119 (\`#L2119\`) |
+| `SB-SRC-0032/MUST-05` | Applicability with `UNKNOWN`. | L2120 (\`#L2120\`) |
+| `SB-SRC-0032/MUST-06` | Explicit effects. | L2121 (\`#L2121\`) |
+| `SB-SRC-0032/MUST-07` | Explicit outcome/failure semantics. | L2122 (\`#L2122\`) |
+| `SB-SRC-0032/MUST-08` | Distinction semantic contract / implementation binding. | L2123 (\`#L2123\`) |
+| `SB-SRC-0032/MUST-09` | Exact implementation revision in provenance. | L2124 (\`#L2124\`) |
+| `SB-SRC-0032/MUST-10` | Determinism class. | L2125 (\`#L2125\`) |
+| `SB-SRC-0032/MUST-11` | Idempotency semantics where retry/effects matter. | L2126 (\`#L2126\`) |
+| `SB-SRC-0032/MUST-12` | Concurrency semantics. | L2127 (\`#L2127\`) |
+| `SB-SRC-0032/MUST-13` | Cancellation semantics for long operations. | L2128 (\`#L2128\`) |
+| `SB-SRC-0032/MUST-14` | Artifact identity beyond path. | L2129 (\`#L2129\`) |
+| `SB-SRC-0032/MUST-15` | Source/registry/version provenance. | L2130 (\`#L2130\`) |
+| `SB-SRC-0032/MUST-16` | Immutable capability/scheme definition. | L2131 (\`#L2131\`) |
+| `SB-SRC-0032/MUST-17` | No hidden mutable global semantic state. | L2132 (\`#L2132\`) |
+| `SB-SRC-0032/MUST-18` | Capability lifecycle/admission status. | L2133 (\`#L2133\`) |
+| `SB-SRC-0032/MUST-19` | Validity envelope. | L2134 (\`#L2134\`) |
+| `SB-SRC-0032/MUST-20` | Invalidation trigger. | L2135 (\`#L2135\`) |
+| `SB-SRC-0032/MUST-21` | Fallback/deoptimization for compiled fast path. | L2136 (\`#L2136\`) |
+| `SB-SRC-0032/MUST-22` | Capability discoverability without reading Python. | L2137 (\`#L2137\`) |
+| `SB-SRC-0032/MUST-23` | Tests/evidence for admitted capabilities. | L2138 (\`#L2138\`) |
+| `SB-SRC-0032/MUST-24` | Strategy Box standalone execution without PROTOS. | L2139 (\`#L2139\`) |
 
 ### Original 15 conditional strengthening measures
 
 | Original item | Source-exact research wording | Frozen source line |
 | --- | --- | --- |
-| `SB-SRC-0032/SHOULD-01` | Resource/cost/latency class. | [L2143](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2143) |
-| `SB-SRC-0032/SHOULD-02` | Capability Envelope as first-class projection. | [L2144](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2144) |
-| `SB-SRC-0032/SHOULD-03` | Typed relations between capabilities. | [L2145](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2145) |
-| `SB-SRC-0032/SHOULD-04` | Hierarchical discovery. | [L2146](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2146) |
-| `SB-SRC-0032/SHOULD-05` | AI visibility profile. | [L2147](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2147) |
-| `SB-SRC-0032/SHOULD-06` | Canonical serialization + content digest. | [L2148](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2148) |
-| `SB-SRC-0032/SHOULD-07` | Checkpoint/resume contract for long Scheme. | [L2149](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2149) |
-| `SB-SRC-0032/SHOULD-08` | Effect receipts. | [L2150](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2150) |
-| `SB-SRC-0032/SHOULD-09` | Frame conditions. | [L2151](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2151) |
-| `SB-SRC-0032/SHOULD-10` | Outcome verification contract. | [L2152](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2152) |
-| `SB-SRC-0032/SHOULD-11` | Generated docs from canonical contracts. | [L2153](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2153) |
-| `SB-SRC-0032/SHOULD-12` | Conformance linting. | [L2154](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2154) |
-| `SB-SRC-0032/SHOULD-13` | Property-based tests for invariants. | [L2155](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2155) |
-| `SB-SRC-0032/SHOULD-14` | Type-first planner compatibility. | [L2156](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2156) |
-| `SB-SRC-0032/SHOULD-15` | Static effect/resource derivation for Scheme. | [L2157](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2157) |
+| `SB-SRC-0032/SHOULD-01` | Resource/cost/latency class. | L2143 (\`#L2143\`) |
+| `SB-SRC-0032/SHOULD-02` | Capability Envelope as first-class projection. | L2144 (\`#L2144\`) |
+| `SB-SRC-0032/SHOULD-03` | Typed relations between capabilities. | L2145 (\`#L2145\`) |
+| `SB-SRC-0032/SHOULD-04` | Hierarchical discovery. | L2146 (\`#L2146\`) |
+| `SB-SRC-0032/SHOULD-05` | AI visibility profile. | L2147 (\`#L2147\`) |
+| `SB-SRC-0032/SHOULD-06` | Canonical serialization + content digest. | L2148 (\`#L2148\`) |
+| `SB-SRC-0032/SHOULD-07` | Checkpoint/resume contract for long Scheme. | L2149 (\`#L2149\`) |
+| `SB-SRC-0032/SHOULD-08` | Effect receipts. | L2150 (\`#L2150\`) |
+| `SB-SRC-0032/SHOULD-09` | Frame conditions. | L2151 (\`#L2151\`) |
+| `SB-SRC-0032/SHOULD-10` | Outcome verification contract. | L2152 (\`#L2152\`) |
+| `SB-SRC-0032/SHOULD-11` | Generated docs from canonical contracts. | L2153 (\`#L2153\`) |
+| `SB-SRC-0032/SHOULD-12` | Conformance linting. | L2154 (\`#L2154\`) |
+| `SB-SRC-0032/SHOULD-13` | Property-based tests for invariants. | L2155 (\`#L2155\`) |
+| `SB-SRC-0032/SHOULD-14` | Type-first planner compatibility. | L2156 (\`#L2156\`) |
+| `SB-SRC-0032/SHOULD-15` | Static effect/resource derivation for Scheme. | L2157 (\`#L2157\`) |
 
 ### Original nine later/optional transport and evolution directions
 
 | Original item | Source-exact research wording | Frozen source line |
 | --- | --- | --- |
-| `SB-SRC-0032/MAY_LATER-01` | MCP projection. | [L2161](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2161) |
-| `SB-SRC-0032/MAY_LATER-02` | HTTP/IPC transport. | [L2162](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2162) |
-| `SB-SRC-0032/MAY_LATER-03` | CEL-like predicate language. | [L2163](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2163) |
-| `SB-SRC-0032/MAY_LATER-04` | CloudEvents projection. | [L2164](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2164) |
-| `SB-SRC-0032/MAY_LATER-05` | PROTOS-specific adapter. | [L2165](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2165) |
-| `SB-SRC-0032/MAY_LATER-06` | Dynamic Scheme generation. | [L2166](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2166) |
-| `SB-SRC-0032/MAY_LATER-07` | Automatic compile-down. | [L2167](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2167) |
-| `SB-SRC-0032/MAY_LATER-08` | Remote federation. | [L2168](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2168) |
-| `SB-SRC-0032/MAY_LATER-09` | Learned small-model bindings. | [L2169](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2169) |
+| `SB-SRC-0032/MAY_LATER-01` | MCP projection. | L2161 (\`#L2161\`) |
+| `SB-SRC-0032/MAY_LATER-02` | HTTP/IPC transport. | L2162 (\`#L2162\`) |
+| `SB-SRC-0032/MAY_LATER-03` | CEL-like predicate language. | L2163 (\`#L2163\`) |
+| `SB-SRC-0032/MAY_LATER-04` | CloudEvents projection. | L2164 (\`#L2164\`) |
+| `SB-SRC-0032/MAY_LATER-05` | PROTOS-specific adapter. | L2165 (\`#L2165\`) |
+| `SB-SRC-0032/MAY_LATER-06` | Dynamic Scheme generation. | L2166 (\`#L2166\`) |
+| `SB-SRC-0032/MAY_LATER-07` | Automatic compile-down. | L2167 (\`#L2167\`) |
+| `SB-SRC-0032/MAY_LATER-08` | Remote federation. | L2168 (\`#L2168\`) |
+| `SB-SRC-0032/MAY_LATER-09` | Learned small-model bindings. | L2169 (\`#L2169\`) |
 
 ### Original 22 capability review questions
 
 | Original item | Source-exact research wording | Frozen source line |
 | --- | --- | --- |
-| `SB-SRC-0032/CHECK-01` | Is the semantic identifier stable? | [L2447](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2447) |
-| `SB-SRC-0032/CHECK-02` | Can a machine consumer understand the purpose without reading Python source? | [L2448](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2448) |
-| `SB-SRC-0032/CHECK-03` | Are the semantic inputs clear? | [L2449](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2449) |
-| `SB-SRC-0032/CHECK-04` | Is the semantic output clear? | [L2450](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2450) |
-| `SB-SRC-0032/CHECK-05` | Is the applicability context defined? | [L2451](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2451) |
-| `SB-SRC-0032/CHECK-06` | Is an UNKNOWN applicability outcome expressible? | [L2452](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2452) |
-| `SB-SRC-0032/CHECK-07` | Are the effects explicit? | [L2453](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2453) |
-| `SB-SRC-0032/CHECK-08` | Are preconditions and postconditions explicit? | [L2454](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2454) |
-| `SB-SRC-0032/CHECK-09` | Are failure meanings clear? | [L2455](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2455) |
-| `SB-SRC-0032/CHECK-10` | Is retry safety known? | [L2456](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2456) |
-| `SB-SRC-0032/CHECK-11` | Is concurrency behavior known? | [L2457](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2457) |
-| `SB-SRC-0032/CHECK-12` | Is cancellation behavior known? | [L2458](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2458) |
-| `SB-SRC-0032/CHECK-13` | Is recovery/resume behavior known? | [L2459](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2459) |
-| `SB-SRC-0032/CHECK-14` | Is provenance available? | [L2460](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2460) |
-| `SB-SRC-0032/CHECK-15` | Is supporting evidence available? | [L2461](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2461) |
-| `SB-SRC-0032/CHECK-16` | Is the validity envelope defined? | [L2462](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2462) |
-| `SB-SRC-0032/CHECK-17` | Is there an invalidation trigger? | [L2463](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2463) |
-| `SB-SRC-0032/CHECK-18` | Is fallback or deoptimization defined? | [L2464](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2464) |
-| `SB-SRC-0032/CHECK-19` | Is admission/lifecycle state explicit? | [L2465](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2465) |
-| `SB-SRC-0032/CHECK-20` | Can the capability be discovered without scanning Python imports? | [L2466](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2466) |
-| `SB-SRC-0032/CHECK-21` | Can the capability execute without a particular external cognition framework? | [L2467](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2467) |
-| `SB-SRC-0032/CHECK-22` | Can the implementation be replaced while preserving semantic identity? | [L2468](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_protos_business_code_readiness_research_2026-10-07.md#L2468) |
+| `SB-SRC-0032/CHECK-01` | Is the semantic identifier stable? | L2447 (\`#L2447\`) |
+| `SB-SRC-0032/CHECK-02` | Can a machine consumer understand the purpose without reading Python source? | L2448 (\`#L2448\`) |
+| `SB-SRC-0032/CHECK-03` | Are the semantic inputs clear? | L2449 (\`#L2449\`) |
+| `SB-SRC-0032/CHECK-04` | Is the semantic output clear? | L2450 (\`#L2450\`) |
+| `SB-SRC-0032/CHECK-05` | Is the applicability context defined? | L2451 (\`#L2451\`) |
+| `SB-SRC-0032/CHECK-06` | Is an UNKNOWN applicability outcome expressible? | L2452 (\`#L2452\`) |
+| `SB-SRC-0032/CHECK-07` | Are the effects explicit? | L2453 (\`#L2453\`) |
+| `SB-SRC-0032/CHECK-08` | Are preconditions and postconditions explicit? | L2454 (\`#L2454\`) |
+| `SB-SRC-0032/CHECK-09` | Are failure meanings clear? | L2455 (\`#L2455\`) |
+| `SB-SRC-0032/CHECK-10` | Is retry safety known? | L2456 (\`#L2456\`) |
+| `SB-SRC-0032/CHECK-11` | Is concurrency behavior known? | L2457 (\`#L2457\`) |
+| `SB-SRC-0032/CHECK-12` | Is cancellation behavior known? | L2458 (\`#L2458\`) |
+| `SB-SRC-0032/CHECK-13` | Is recovery/resume behavior known? | L2459 (\`#L2459\`) |
+| `SB-SRC-0032/CHECK-14` | Is provenance available? | L2460 (\`#L2460\`) |
+| `SB-SRC-0032/CHECK-15` | Is supporting evidence available? | L2461 (\`#L2461\`) |
+| `SB-SRC-0032/CHECK-16` | Is the validity envelope defined? | L2462 (\`#L2462\`) |
+| `SB-SRC-0032/CHECK-17` | Is there an invalidation trigger? | L2463 (\`#L2463\`) |
+| `SB-SRC-0032/CHECK-18` | Is fallback or deoptimization defined? | L2464 (\`#L2464\`) |
+| `SB-SRC-0032/CHECK-19` | Is admission/lifecycle state explicit? | L2465 (\`#L2465\`) |
+| `SB-SRC-0032/CHECK-20` | Can the capability be discovered without scanning Python imports? | L2466 (\`#L2466\`) |
+| `SB-SRC-0032/CHECK-21` | Can the capability execute without a particular external cognition framework? | L2467 (\`#L2467\`) |
+| `SB-SRC-0032/CHECK-22` | Can the implementation be replaced while preserving semantic identity? | L2468 (\`#L2468\`) |
 
 ### How a future owner should actually qualify this inventory
 
@@ -278,26 +278,26 @@ The inventory is separate from the maturity-level ladder above. It cannot be agg
 
 ## Original machine-Scheme source: sixteen conceptual trade-offs
 
-The extensive [Machine Scheme architecture study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md) supplies **16 source-row-traced design arguments** beyond the separately conserved readiness checklist. The source compared standards and engineering models, but its normative-sounding proposals are **Research**, not approved machine protocol standards, implemented compiled Schemes or Product Decision authority. Its proposed Scheme ownership is contested by later source research, as preserved in the [owner divergence](https://github.com/ForestTiger-GH/stratbox/blob/main/_mw/epochs-001-strategy-box-development/consolidation/reconciliation/MACHINE-SCHEME-OWNER-AND-EXECUTION-PLAN-DIVERGENCE-2026-10-11.md).
+The extensive Machine Scheme architecture study supplies **16 source-row-traced design arguments** beyond the separately conserved readiness checklist. The source compared standards and engineering models, but its normative-sounding proposals are **Research**, not approved machine protocol standards, implemented compiled Schemes or Product Decision authority. Its proposed Scheme ownership is contested by later source research, as preserved in the owner divergence.
 
 | Original identifier | Meaning, with source status preserved | Evidence status | Original line |
 | --- | --- | --- | --- |
-| `SB-SRC-0022/SCHEME-01` | The source argues no single standard captures intent, workflow, evidence, authority, state and physical execution simultaneously; this remains a research observation requiring standards review. | `RESEARCH_STANDARDS_COMPARISON` | [L80](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L80) |
-| `SB-SRC-0022/SCHEME-02` | A bounded internal Scheme representation plus selected mature external formalisms was preferred over one universal cognitive DSL. | `PROPORTIONALITY_PROPOSAL` | [L98](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L98) |
-| `SB-SRC-0022/SCHEME-03` | Capability Definition, parameterized Invocation, resolved ExecutionPlan and actual Run were four distinct meanings in the original model. | `SEMANTIC_IDENTITY_SEPARATION` | [L420](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L420) |
-| `SB-SRC-0022/SCHEME-04` | An ExecutionPlan was expected to pin versions, inputs, source snapshots, resources, destinations and policy gates before runtime. | `CANDIDATE_PLAN_CONTRACT` | [L444](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L444) |
-| `SB-SRC-0022/SCHEME-05` | Actual Run lifecycle was assigned to an application executor rather than being hidden in the domain Scheme definition. | `OWNER_CANDIDATE_CONFLICT` | [L458](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L458) |
-| `SB-SRC-0022/SCHEME-06` | The meaning of a capability was explicitly distinct from the Python implementation that happens to provide it. | `DEFINITION_BINDING_BOUNDARY` | [L579](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L579) |
-| `SB-SRC-0022/SCHEME-07` | The current domain contracts were judged insufficient to constitute a stable machine-facing ABI, notwithstanding useful existing operations. | `DATED_MACHINE_READINESS_GAP` | [L907](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L907) |
-| `SB-SRC-0022/SCHEME-08` | A Scheme was proposed as a typed dependency DAG for compositions that genuinely need reusable multi-step semantics. | `SCHEME_IR_CANDIDATE` | [L1031](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1031) |
-| `SB-SRC-0022/SCHEME-09` | An unbounded mutable global context dictionary was rejected for inter-step state transfer and concurrency correctness. | `STATE_ISOLATION_PROPOSAL` | [L1089](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1089) |
-| `SB-SRC-0022/SCHEME-10` | Applicability was modeled as APPLICABLE, NOT_APPLICABLE or UNKNOWN rather than a single unconstrained Boolean. | `UNCERTAINTY_BOUNDARY` | [L1296](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1296) |
-| `SB-SRC-0022/SCHEME-11` | External effects were proposed to follow independently inspectable Plan and Apply phases with revalidated preconditions. | `EFFECT_ADMISSION_CANDIDATE` | [L1310](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1310) |
-| `SB-SRC-0022/SCHEME-12` | A single operation ok:Boolean was criticized as unable to describe partial, unsupported, no-change and unknown outcomes. | `RESULT_STRENGTH_BOUNDARY` | [L1387](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1387) |
-| `SB-SRC-0022/SCHEME-13` | Reference registries, acquisition catalogs, capability catalogs and format registries were distinguished by their evidence and owners. | `REGISTRY_MEANING_SEPARATION` | [L1461](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1461) |
-| `SB-SRC-0022/SCHEME-14` | A universal MegaRegistry was rejected; shared discovery/versioning may coexist with independently owned domain content. | `OVERGENERALIZATION_COUNTERARGUMENT` | [L1503](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1503) |
-| `SB-SRC-0022/SCHEME-15` | Relative latest registry selection was proposed to resolve to an exact immutable reference before the admitted Run. | `VINTAGE_PINNING_PROPOSAL` | [L1529](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1529) |
-| `SB-SRC-0022/SCHEME-16` | A SourceDescriptor for how/where to acquire is not the SourceSnapshot actually observed. | `SOURCE_OBSERVATION_BOUNDARY` | [L1548](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox_business_logic_machine_schemes_architecture_research_2026-10-07.md#L1548) |
+| `SB-SRC-0022/SCHEME-01` | The source argues no single standard captures intent, workflow, evidence, authority, state and physical execution simultaneously; this remains a research observation requiring standards review. | `RESEARCH_STANDARDS_COMPARISON` | L80 (\`#L80\`) |
+| `SB-SRC-0022/SCHEME-02` | A bounded internal Scheme representation plus selected mature external formalisms was preferred over one universal cognitive DSL. | `PROPORTIONALITY_PROPOSAL` | L98 (\`#L98\`) |
+| `SB-SRC-0022/SCHEME-03` | Capability Definition, parameterized Invocation, resolved ExecutionPlan and actual Run were four distinct meanings in the original model. | `SEMANTIC_IDENTITY_SEPARATION` | L420 (\`#L420\`) |
+| `SB-SRC-0022/SCHEME-04` | An ExecutionPlan was expected to pin versions, inputs, source snapshots, resources, destinations and policy gates before runtime. | `CANDIDATE_PLAN_CONTRACT` | L444 (\`#L444\`) |
+| `SB-SRC-0022/SCHEME-05` | Actual Run lifecycle was assigned to an application executor rather than being hidden in the domain Scheme definition. | `OWNER_CANDIDATE_CONFLICT` | L458 (\`#L458\`) |
+| `SB-SRC-0022/SCHEME-06` | The meaning of a capability was explicitly distinct from the Python implementation that happens to provide it. | `DEFINITION_BINDING_BOUNDARY` | L579 (\`#L579\`) |
+| `SB-SRC-0022/SCHEME-07` | The current domain contracts were judged insufficient to constitute a stable machine-facing ABI, notwithstanding useful existing operations. | `DATED_MACHINE_READINESS_GAP` | L907 (\`#L907\`) |
+| `SB-SRC-0022/SCHEME-08` | A Scheme was proposed as a typed dependency DAG for compositions that genuinely need reusable multi-step semantics. | `SCHEME_IR_CANDIDATE` | L1031 (\`#L1031\`) |
+| `SB-SRC-0022/SCHEME-09` | An unbounded mutable global context dictionary was rejected for inter-step state transfer and concurrency correctness. | `STATE_ISOLATION_PROPOSAL` | L1089 (\`#L1089\`) |
+| `SB-SRC-0022/SCHEME-10` | Applicability was modeled as APPLICABLE, NOT_APPLICABLE or UNKNOWN rather than a single unconstrained Boolean. | `UNCERTAINTY_BOUNDARY` | L1296 (\`#L1296\`) |
+| `SB-SRC-0022/SCHEME-11` | External effects were proposed to follow independently inspectable Plan and Apply phases with revalidated preconditions. | `EFFECT_ADMISSION_CANDIDATE` | L1310 (\`#L1310\`) |
+| `SB-SRC-0022/SCHEME-12` | A single operation ok:Boolean was criticized as unable to describe partial, unsupported, no-change and unknown outcomes. | `RESULT_STRENGTH_BOUNDARY` | L1387 (\`#L1387\`) |
+| `SB-SRC-0022/SCHEME-13` | Reference registries, acquisition catalogs, capability catalogs and format registries were distinguished by their evidence and owners. | `REGISTRY_MEANING_SEPARATION` | L1461 (\`#L1461\`) |
+| `SB-SRC-0022/SCHEME-14` | A universal MegaRegistry was rejected; shared discovery/versioning may coexist with independently owned domain content. | `OVERGENERALIZATION_COUNTERARGUMENT` | L1503 (\`#L1503\`) |
+| `SB-SRC-0022/SCHEME-15` | Relative latest registry selection was proposed to resolve to an exact immutable reference before the admitted Run. | `VINTAGE_PINNING_PROPOSAL` | L1529 (\`#L1529\`) |
+| `SB-SRC-0022/SCHEME-16` | A SourceDescriptor for how/where to acquire is not the SourceSnapshot actually observed. | `SOURCE_OBSERVATION_BOUNDARY` | L1548 (\`#L1548\`) |
 
 **Counterarguments and admission:** An application operating only one deterministic Python transform may not require a persisted Scheme graph, planner or multi-level lifecycle. A machine consumer's JSON descriptor cannot enforce ACL, schema freshness, effect idempotency, resource limits or authentic evidence. Conversely, a multi-step effectful analysis does require stronger plan, binding, unknown-result and external-effect semantics. A domain-core Scheme reused in Python notebooks and a commissioned durable multi-user Work may require **different semantic owners**, so no physical source-module placement is established by this article.
 

@@ -139,13 +139,13 @@ Related maintained Science: [observation semantics](observation-semantics-compar
 
 ## 11. Original epistemic stress tests and status-preservation firewalls
 
-This appendix retains source material from the frozen [epistemic architecture original, #87 and #88](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3461-L3646), blob `00d738012f9dc85d80f89105c9ad71521097e221`. The **twenty proposed acceptance tests** (presented in faithful English translation) and **thirty-eight distinction statements** are Research claims; none is a completed test or an accepted Product rule. Their applicability and verification depth should be proportional to the actual task, risk and material reliance.
+This appendix retains source material from the frozen epistemic architecture original, #87 and #88 (\`#L3461-L3646\`), blob `00d738012f9dc85d80f89105c9ad71521097e221`. The **twenty proposed acceptance tests** (presented in faithful English translation) and **thirty-eight distinction statements** are Research claims; none is a completed test or an accepted Product rule. Their applicability and verification depth should be proportional to the actual task, risk and material reliance.
 
 ### Twenty proposed tests: English translations of source questions and failure triggers
 
 #### 01. Reported vs restored — `SB-SRC-0019/TEST-01`
 
-Original [L3463–L3468](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3463-L3468).
+Original L3463–L3468 (\`#L3463-L3468\`).
 
 Can the user distinguish an officially published amount from a reconstructed amount?
 
@@ -153,43 +153,43 @@ If not, the proposed test fails.
 
 #### 02. Source trace — `SB-SRC-0019/TEST-02`
 
-Original [L3469–L3472](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3469-L3472).
+Original L3469–L3472 (\`#L3469-L3472\`).
 
 Can a material Result be traced back to the exact source snapshot and vintage?
 
 #### 03. Definition trace — `SB-SRC-0019/TEST-03`
 
-Original [L3473–L3476](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3473-L3476).
+Original L3473–L3476 (\`#L3473-L3476\`).
 
 Can a reader establish exactly what the statistical indicator means?
 
 #### 04. Comparison bridge — `SB-SRC-0019/TEST-04`
 
-Original [L3477–L3480](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3477-L3480).
+Original L3477–L3480 (\`#L3477-L3480\`).
 
 If two series have different reporting perimeters or definitions, is an explicit comparison bridge or limitation available?
 
 #### 05. Historical integrity — `SB-SRC-0019/TEST-05`
 
-Original [L3481–L3484](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3481-L3484).
+Original L3481–L3484 (\`#L3481-L3484\`).
 
 Does a newly fetched source leave previously issued Forecasts and Analyses unchanged?
 
 #### 06. Currentness — `SB-SRC-0019/TEST-06`
 
-Original [L3485–L3488](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3485-L3488).
+Original L3485–L3488 (\`#L3485-L3488\`).
 
 Can the system distinguish historically valid Results that now require revalidation?
 
 #### 07. UNKNOWN — `SB-SRC-0019/TEST-07`
 
-Original [L3489–L3492](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3489-L3492).
+Original L3489–L3492 (\`#L3489-L3492\`).
 
 Does UNKNOWN survive normalization, export and user-interface presentation?
 
 #### 08. Claim-strength preservation — `SB-SRC-0019/TEST-08`
 
-Original [L3493–L3498](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3493-L3498).
+Original L3493–L3498 (\`#L3493-L3498\`).
 
 Can a summary or report silently strengthen a conditional Claim into a factual assertion?
 
@@ -197,7 +197,7 @@ If yes, the proposed test fails.
 
 #### 09. Decision separation — `SB-SRC-0019/TEST-09`
 
-Original [L3499–L3504](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3499-L3504).
+Original L3499–L3504 (\`#L3499-L3504\`).
 
 Can a Recommendation be presented as an authorized Decision without the required Authority transition?
 
@@ -205,7 +205,7 @@ If yes, the proposed test fails.
 
 #### 10. Acceptance separation — `SB-SRC-0019/TEST-10`
 
-Original [L3505–L3510](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3505-L3510).
+Original L3505–L3510 (\`#L3505-L3510\`).
 
 Does successful computation automatically become an accepted Result?
 
@@ -213,7 +213,7 @@ If yes, the proposed test fails.
 
 #### 11. Retry/effect — `SB-SRC-0019/TEST-11`
 
-Original [L3511–L3520](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3511-L3520).
+Original L3511–L3520 (\`#L3511-L3520\`).
 
 If a remote operation times out, can the Work accurately represent:
 
@@ -225,19 +225,19 @@ rather than reducing the outcome to `failed`?
 
 #### 12. Dependency impact — `SB-SRC-0019/TEST-12`
 
-Original [L3521–L3524](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3521-L3524).
+Original L3521–L3524 (\`#L3521-L3524\`).
 
 When a source or registry changes, can dependent Results be identified without indiscriminate global refresh?
 
 #### 13. Artifact lineage — `SB-SRC-0019/TEST-13`
 
-Original [L3525–L3528](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3525-L3528).
+Original L3525–L3528 (\`#L3525-L3528\`).
 
 Can a recipient identify the semantic Result represented by an Excel file?
 
 #### 14. AI authority — `SB-SRC-0019/TEST-14`
 
-Original [L3529–L3534](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3529-L3534).
+Original L3529–L3534 (\`#L3529-L3534\`).
 
 Can an AI actor promote its own output to accepted Result or authorized Decision without separate Authority?
 
@@ -245,7 +245,7 @@ If yes, the proposed test fails.
 
 #### 15. Shared lineage — `SB-SRC-0019/TEST-15`
 
-Original [L3535–L3540](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3535-L3540).
+Original L3535–L3540 (\`#L3535-L3540\`).
 
 Are multiple derivative reports counted as independent evidence merely because there are many of them?
 
@@ -253,7 +253,7 @@ If yes, the proposed test fails.
 
 #### 16. Forecast vintage — `SB-SRC-0019/TEST-16`
 
-Original [L3541–L3546](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3541-L3546).
+Original L3541–L3546 (\`#L3541-L3546\`).
 
 Can a historically issued Forecast be overwritten?
 
@@ -261,7 +261,7 @@ If yes, the proposed test fails.
 
 #### 17. UI semantics — `SB-SRC-0019/TEST-17`
 
-Original [L3547–L3552](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3547-L3552).
+Original L3547–L3552 (\`#L3547-L3552\`).
 
 Can color, position or notifications silently change action availability or priority meaning?
 
@@ -269,19 +269,19 @@ If yes, the proposed test fails.
 
 #### 18. Recovery — `SB-SRC-0019/TEST-18`
 
-Original [L3553–L3556](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3553-L3556).
+Original L3553–L3556 (\`#L3553-L3556\`).
 
 Can Work be safely resumed after restart or actor replacement without rereading the full conversation transcript?
 
 #### 19. Public boundary — `SB-SRC-0019/TEST-19`
 
-Original [L3557–L3560](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3557-L3560).
+Original L3557–L3560 (\`#L3557-L3560\`).
 
 Are public core/surface contracts fully neutral toward any particular private deployment environment?
 
 #### 20. Research amputation — `SB-SRC-0019/TEST-20`
 
-Original [L3561–L3566](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3561-L3566).
+Original L3561–L3566 (\`#L3561-L3566\`).
 
 Once Current Knowledge is maintained, can a reader understand a current Result without first reading the full historical Research while preserving forensic links back to sources?
 
@@ -293,44 +293,44 @@ The “≠” statements are **boundaries on inference**, not claims that the te
 
 | Exact-source ID | Distinction in original wording | Frozen line |
 | --- | --- | --- |
-| `SB-SRC-0019/FIREWALL-01` | Source ≠ world truth | [L3572](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3572) |
-| `SB-SRC-0019/FIREWALL-02` | Published value ≠ canonical internal value | [L3574](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3574) |
-| `SB-SRC-0019/FIREWALL-03` | Canonical ≠ true | [L3576](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3576) |
-| `SB-SRC-0019/FIREWALL-04` | Observation ≠ explanation | [L3578](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3578) |
-| `SB-SRC-0019/FIREWALL-05` | Data ≠ evidence for every claim | [L3580](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3580) |
-| `SB-SRC-0019/FIREWALL-06` | Evidence ≠ Authority | [L3582](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3582) |
-| `SB-SRC-0019/FIREWALL-07` | Model ≠ target | [L3584](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3584) |
-| `SB-SRC-0019/FIREWALL-08` | Model output ≠ fact | [L3586](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3586) |
-| `SB-SRC-0019/FIREWALL-09` | Decomposition ≠ cause | [L3588](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3588) |
-| `SB-SRC-0019/FIREWALL-10` | Correlation ≠ intervention effect | [L3590](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3590) |
-| `SB-SRC-0019/FIREWALL-11` | Scenario ≠ Forecast | [L3592](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3592) |
-| `SB-SRC-0019/FIREWALL-12` | Forecast ≠ Target | [L3594](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3594) |
-| `SB-SRC-0019/FIREWALL-13` | Forecast ≠ Decision | [L3596](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3596) |
-| `SB-SRC-0019/FIREWALL-14` | Probability ≠ confidence | [L3598](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3598) |
-| `SB-SRC-0019/FIREWALL-15` | Unknown ≠ zero | [L3600](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3600) |
-| `SB-SRC-0019/FIREWALL-16` | No finding ≠ absence | [L3602](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3602) |
-| `SB-SRC-0019/FIREWALL-17` | Many documents ≠ independent evidence | [L3604](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3604) |
-| `SB-SRC-0019/FIREWALL-18` | Result ≠ Artifact | [L3606](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3606) |
-| `SB-SRC-0019/FIREWALL-19` | Artifact ≠ Knowledge | [L3608](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3608) |
-| `SB-SRC-0019/FIREWALL-20` | Log ≠ Work State | [L3610](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3610) |
-| `SB-SRC-0019/FIREWALL-21` | Execution success ≠ Work success | [L3612](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3612) |
-| `SB-SRC-0019/FIREWALL-22` | Evaluation ≠ Acceptance | [L3614](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3614) |
-| `SB-SRC-0019/FIREWALL-23` | Acceptance ≠ world truth | [L3616](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3616) |
-| `SB-SRC-0019/FIREWALL-24` | Recommendation ≠ Decision | [L3618](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3618) |
-| `SB-SRC-0019/FIREWALL-25` | Decision ≠ Commitment | [L3620](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3620) |
-| `SB-SRC-0019/FIREWALL-26` | Commitment ≠ Execution | [L3622](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3622) |
-| `SB-SRC-0019/FIREWALL-27` | Execution ≠ intended effect | [L3624](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3624) |
-| `SB-SRC-0019/FIREWALL-28` | Outcome ≠ ex-ante decision quality | [L3626](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3626) |
-| `SB-SRC-0019/FIREWALL-29` | Message sent ≠ understood | [L3628](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3628) |
-| `SB-SRC-0019/FIREWALL-30` | Understood ≠ accepted | [L3630](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3630) |
-| `SB-SRC-0019/FIREWALL-31` | Accepted ≠ committed | [L3632](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3632) |
-| `SB-SRC-0019/FIREWALL-32` | Capability ≠ Authority | [L3634](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3634) |
-| `SB-SRC-0019/FIREWALL-33` | Presence ≠ responsibility | [L3636](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3636) |
-| `SB-SRC-0019/FIREWALL-34` | Workspace ≠ semantic owner | [L3638](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3638) |
-| `SB-SRC-0019/FIREWALL-35` | UI ≠ truth owner | [L3640](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3640) |
-| `SB-SRC-0019/FIREWALL-36` | Latest ≠ current for every use | [L3642](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3642) |
-| `SB-SRC-0019/FIREWALL-37` | Historical ≠ invalid | [L3644](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3644) |
-| `SB-SRC-0019/FIREWALL-38` | Current ≠ permanent | [L3646](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/Strategy_Box_target_MADAR_epistemic_architecture_research_2026-10-07.md#L3646) |
+| `SB-SRC-0019/FIREWALL-01` | Source ≠ world truth | L3572 (\`#L3572\`) |
+| `SB-SRC-0019/FIREWALL-02` | Published value ≠ canonical internal value | L3574 (\`#L3574\`) |
+| `SB-SRC-0019/FIREWALL-03` | Canonical ≠ true | L3576 (\`#L3576\`) |
+| `SB-SRC-0019/FIREWALL-04` | Observation ≠ explanation | L3578 (\`#L3578\`) |
+| `SB-SRC-0019/FIREWALL-05` | Data ≠ evidence for every claim | L3580 (\`#L3580\`) |
+| `SB-SRC-0019/FIREWALL-06` | Evidence ≠ Authority | L3582 (\`#L3582\`) |
+| `SB-SRC-0019/FIREWALL-07` | Model ≠ target | L3584 (\`#L3584\`) |
+| `SB-SRC-0019/FIREWALL-08` | Model output ≠ fact | L3586 (\`#L3586\`) |
+| `SB-SRC-0019/FIREWALL-09` | Decomposition ≠ cause | L3588 (\`#L3588\`) |
+| `SB-SRC-0019/FIREWALL-10` | Correlation ≠ intervention effect | L3590 (\`#L3590\`) |
+| `SB-SRC-0019/FIREWALL-11` | Scenario ≠ Forecast | L3592 (\`#L3592\`) |
+| `SB-SRC-0019/FIREWALL-12` | Forecast ≠ Target | L3594 (\`#L3594\`) |
+| `SB-SRC-0019/FIREWALL-13` | Forecast ≠ Decision | L3596 (\`#L3596\`) |
+| `SB-SRC-0019/FIREWALL-14` | Probability ≠ confidence | L3598 (\`#L3598\`) |
+| `SB-SRC-0019/FIREWALL-15` | Unknown ≠ zero | L3600 (\`#L3600\`) |
+| `SB-SRC-0019/FIREWALL-16` | No finding ≠ absence | L3602 (\`#L3602\`) |
+| `SB-SRC-0019/FIREWALL-17` | Many documents ≠ independent evidence | L3604 (\`#L3604\`) |
+| `SB-SRC-0019/FIREWALL-18` | Result ≠ Artifact | L3606 (\`#L3606\`) |
+| `SB-SRC-0019/FIREWALL-19` | Artifact ≠ Knowledge | L3608 (\`#L3608\`) |
+| `SB-SRC-0019/FIREWALL-20` | Log ≠ Work State | L3610 (\`#L3610\`) |
+| `SB-SRC-0019/FIREWALL-21` | Execution success ≠ Work success | L3612 (\`#L3612\`) |
+| `SB-SRC-0019/FIREWALL-22` | Evaluation ≠ Acceptance | L3614 (\`#L3614\`) |
+| `SB-SRC-0019/FIREWALL-23` | Acceptance ≠ world truth | L3616 (\`#L3616\`) |
+| `SB-SRC-0019/FIREWALL-24` | Recommendation ≠ Decision | L3618 (\`#L3618\`) |
+| `SB-SRC-0019/FIREWALL-25` | Decision ≠ Commitment | L3620 (\`#L3620\`) |
+| `SB-SRC-0019/FIREWALL-26` | Commitment ≠ Execution | L3622 (\`#L3622\`) |
+| `SB-SRC-0019/FIREWALL-27` | Execution ≠ intended effect | L3624 (\`#L3624\`) |
+| `SB-SRC-0019/FIREWALL-28` | Outcome ≠ ex-ante decision quality | L3626 (\`#L3626\`) |
+| `SB-SRC-0019/FIREWALL-29` | Message sent ≠ understood | L3628 (\`#L3628\`) |
+| `SB-SRC-0019/FIREWALL-30` | Understood ≠ accepted | L3630 (\`#L3630\`) |
+| `SB-SRC-0019/FIREWALL-31` | Accepted ≠ committed | L3632 (\`#L3632\`) |
+| `SB-SRC-0019/FIREWALL-32` | Capability ≠ Authority | L3634 (\`#L3634\`) |
+| `SB-SRC-0019/FIREWALL-33` | Presence ≠ responsibility | L3636 (\`#L3636\`) |
+| `SB-SRC-0019/FIREWALL-34` | Workspace ≠ semantic owner | L3638 (\`#L3638\`) |
+| `SB-SRC-0019/FIREWALL-35` | UI ≠ truth owner | L3640 (\`#L3640\`) |
+| `SB-SRC-0019/FIREWALL-36` | Latest ≠ current for every use | L3642 (\`#L3642\`) |
+| `SB-SRC-0019/FIREWALL-37` | Historical ≠ invalid | L3644 (\`#L3644\`) |
+| `SB-SRC-0019/FIREWALL-38` | Current ≠ permanent | L3646 (\`#L3646\`) |
 
 ### Adversarial interpretation and cost limits
 
@@ -344,24 +344,24 @@ The “≠” statements are **boundaries on inference**, not claims that the te
 
 ## 12. Fifteen original ontology challenge cases from consolidation Topic 02
 
-The [frozen canonical semantic-model Research, §15](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L922-L1040) specified fifteen independent adversarial use cases. Each is retained as a separate **source-location-traced English problem and expected semantic restraint**. They test several authority planes; none is a passing system test, an approved wire vocabulary, or a mandate to materialize one table per conceptual noun. In particular, a paper model cannot certify remote Work, managed storage or installed automation.
+The frozen canonical semantic-model Research, §15 (\`#L922-L1040\`) specified fifteen independent adversarial use cases. Each is retained as a separate **source-location-traced English problem and expected semantic restraint**. They test several authority planes; none is a passing system test, an approved wire vocabulary, or a mandate to materialize one table per conceptual noun. In particular, a paper model cannot certify remote Work, managed storage or installed automation.
 
 | Source case | English challenge and qualified response | Frozen original heading |
 | --- | --- | --- |
-| `SB-SRC-0049/V01` — **Source revised under the same period label** | Preserve two observed byte snapshots and original derived claims; do not silently rerun a past Work against a revised publication. | [L926](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L926) |
-| `SB-SRC-0049/V02` — **Two identical labels from different bank reporting perimeters** | Keep legal-bank/RAS and group/IFRS measures distinct or prove an explicit comparability bridge. | [L934](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L934) |
-| `SB-SRC-0049/V03` — **SORS computes a value not directly published** | Record latent reconstruction, source constraints, uncertainty and evidence tier without promoting it to official publication. | [L942](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L942) |
-| `SB-SRC-0049/V04` — **Workbook writes successfully but the analysis is wrong** | Keep execution and byte success distinct from domain validation and reviewer acceptance; earlier Artifact history remains traceable. | [L950](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L950) |
-| `SB-SRC-0049/V05` — **Destructive remote mutation times out** | Record UNKNOWN effect until reconciliation; never auto-retry an irreversible action because the response was lost. | [L958](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L958) |
-| `SB-SRC-0049/V06` — **Several principals use one managed node** | Keep one authoritative Work/Run/Job with individually filtered views, per-user cursors and independent permission checks. | [L966](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L966) |
-| `SB-SRC-0049/V07` — **Daily recurring source watcher** | One Automation definition produces distinct occurrences; no-change may legitimately produce no user Work. | [L974](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L974) |
-| `SB-SRC-0049/V08` — **The same operation requested by UI and a machine actor** | Reuse domain operation/effect/validation semantics with separately admitted principal, plan and Run. | [L982](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L982) |
-| `SB-SRC-0049/V09` — **One spreadsheet represents more than one analysis** | Maintain qualified per-part lineage; copying a file path does not create independent economic evidence. | [L990](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L990) |
-| `SB-SRC-0049/V10` — **Automation disabled while a Job is active** | Prevent future triggers without silently changing the status of an already running Job. | [L998](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L998) |
-| `SB-SRC-0049/V11` — **App accent changed and another report style selected** | Keep application appearance and ArtifactStyleSet separate from core analytical value/evidence. | [L1006](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L1006) |
-| `SB-SRC-0049/V12` — **Approved cleanup plan becomes stale** | Bind approval to exact plan revision, target set and effect scope; reject changed source state before apply. | [L1014](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L1014) |
-| `SB-SRC-0049/V13` — **Absence of evidence versus negative finding** | Allow a scoped supported no-observation result but never translate it into a measured zero. | [L1022](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L1022) |
-| `SB-SRC-0049/V14` — **One Work discussed in two Chats** | Link two authorized Threads to one canonical Work, each with access-filtered context. | [L1028](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L1028) |
-| `SB-SRC-0049/V15` — **Operation implementation optimized without semantic change** | Require proven conformance and versioned binding; an optimization does not automatically change the declared subject-matter meaning. | [L1034](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_02_canonical_semantic_model_2026-10-08.md#L1034) |
+| `SB-SRC-0049/V01` — **Source revised under the same period label** | Preserve two observed byte snapshots and original derived claims; do not silently rerun a past Work against a revised publication. | L926 (\`#L926\`) |
+| `SB-SRC-0049/V02` — **Two identical labels from different bank reporting perimeters** | Keep legal-bank/RAS and group/IFRS measures distinct or prove an explicit comparability bridge. | L934 (\`#L934\`) |
+| `SB-SRC-0049/V03` — **SORS computes a value not directly published** | Record latent reconstruction, source constraints, uncertainty and evidence tier without promoting it to official publication. | L942 (\`#L942\`) |
+| `SB-SRC-0049/V04` — **Workbook writes successfully but the analysis is wrong** | Keep execution and byte success distinct from domain validation and reviewer acceptance; earlier Artifact history remains traceable. | L950 (\`#L950\`) |
+| `SB-SRC-0049/V05` — **Destructive remote mutation times out** | Record UNKNOWN effect until reconciliation; never auto-retry an irreversible action because the response was lost. | L958 (\`#L958\`) |
+| `SB-SRC-0049/V06` — **Several principals use one managed node** | Keep one authoritative Work/Run/Job with individually filtered views, per-user cursors and independent permission checks. | L966 (\`#L966\`) |
+| `SB-SRC-0049/V07` — **Daily recurring source watcher** | One Automation definition produces distinct occurrences; no-change may legitimately produce no user Work. | L974 (\`#L974\`) |
+| `SB-SRC-0049/V08` — **The same operation requested by UI and a machine actor** | Reuse domain operation/effect/validation semantics with separately admitted principal, plan and Run. | L982 (\`#L982\`) |
+| `SB-SRC-0049/V09` — **One spreadsheet represents more than one analysis** | Maintain qualified per-part lineage; copying a file path does not create independent economic evidence. | L990 (\`#L990\`) |
+| `SB-SRC-0049/V10` — **Automation disabled while a Job is active** | Prevent future triggers without silently changing the status of an already running Job. | L998 (\`#L998\`) |
+| `SB-SRC-0049/V11` — **App accent changed and another report style selected** | Keep application appearance and ArtifactStyleSet separate from core analytical value/evidence. | L1006 (\`#L1006\`) |
+| `SB-SRC-0049/V12` — **Approved cleanup plan becomes stale** | Bind approval to exact plan revision, target set and effect scope; reject changed source state before apply. | L1014 (\`#L1014\`) |
+| `SB-SRC-0049/V13` — **Absence of evidence versus negative finding** | Allow a scoped supported no-observation result but never translate it into a measured zero. | L1022 (\`#L1022\`) |
+| `SB-SRC-0049/V14` — **One Work discussed in two Chats** | Link two authorized Threads to one canonical Work, each with access-filtered context. | L1028 (\`#L1028\`) |
+| `SB-SRC-0049/V15` — **Operation implementation optimized without semantic change** | Require proven conformance and versioned binding; an optimization does not automatically change the declared subject-matter meaning. | L1034 (\`#L1034\`) |
 
 **Independent assessment frontier:** this source-level checklist can detect false promotions, but it cannot establish by itself which abstractions are material to a direct Python-only profile. Conditionality, source revisions, replay and authority must be challenged against a real chosen use case; the original fifteen bodies and competing model arguments remain available in the frozen source. The 15 item translations here are **producer-traced, not independently accepted or technically executed**.

@@ -1,6 +1,6 @@
 # LDD candidate — activation, package binding and diagnostics conformance
 
-**Status:** `CANDIDATE / NON-DEPLOYED`; this is a testable, public-safe design for a known cross-repository failure risk, **not** a new AppDock manifest, wire contract, host daemon, installer or Product Decision. **Scope:** existing Windows local surface and exact pinned AppDock interface versions. **Baselines:** `stratbox-windows@959e9c4`, public `AppDock@a4d87c6`; source-to-current-state [audit evidence](../../../_mw/epochs-001-strategy-box-development/consolidation/coverage/WINDOWS-TESTS-PUBLIC-CONTRACT-BOUNDARY-2026-10-12.md).
+**Status:** `CANDIDATE / NON-DEPLOYED`; this is a testable, public-safe design for a known cross-repository failure risk, **not** a new AppDock manifest, wire contract, host daemon, installer or Product Decision. **Scope:** existing Windows local surface and exact pinned AppDock interface versions. **Baselines:** `stratbox-windows@959e9c4`, public `AppDock@a4d87c6`; source-to-current-state audit evidence.
 
 ## Governing authority and invariants
 

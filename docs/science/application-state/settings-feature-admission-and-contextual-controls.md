@@ -87,38 +87,38 @@ These are **proposed** checks; no installed Windows/Android build or migration a
 
 ## 8. Original source-attributed Settings eligibility, ownership and page candidates
 
-The frozen [Settings Research study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L159-L378), blob `bedb3628f3a58a27c9de10b7a19043549c281dca`, makes **eight eligibility checks**, **five mutually distinct state owners**, and **four proposed interface sections**. These are **dated Research criteria and candidate UI choices**, not already accepted Settings schema or evidence of a running notification/extension catalog. The source particularly rejects turning restored layout and per-Run options into permanent user preference controls.
+The frozen Settings Research study (\`#L159-L378\`), blob `bedb3628f3a58a27c9de10b7a19043549c281dca`, makes **eight eligibility checks**, **five mutually distinct state owners**, and **four proposed interface sections**. These are **dated Research criteria and candidate UI choices**, not already accepted Settings schema or evidence of a running notification/extension catalog. The source particularly rejects turning restored layout and per-Run options into permanent user preference controls.
 
 ### Eight proposed reasons a value actually belongs in Settings
 
 | Exact source item | English meaning | Research line |
 | --- | --- | --- |
-| `SB-SRC-0044/CRITERION-01` | An enduring user preference rather than transient context | [L165](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L165) |
-| `SB-SRC-0044/CRITERION-02` | Affects behavior across several sessions or scenarios | [L166](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L166) |
-| `SB-SRC-0044/CRITERION-03` | User can meaningfully select the value in advance | [L167](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L167) |
-| `SB-SRC-0044/CRITERION-04` | Changes infrequently | [L168](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L168) |
-| `SB-SRC-0044/CRITERION-05` | Cannot reliably be inferred from restored UI or environment state | [L169](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L169) |
-| `SB-SRC-0044/CRITERION-06` | Is not an ordinary workflow command | [L170](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L170) |
-| `SB-SRC-0044/CRITERION-07` | Does not apply only to a specific Run or Scenario | [L171](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L171) |
-| `SB-SRC-0044/CRITERION-08` | Is not a policy that the user lacks authority to override | [L172](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L172) |
+| `SB-SRC-0044/CRITERION-01` | An enduring user preference rather than transient context | L165 (\`#L165\`) |
+| `SB-SRC-0044/CRITERION-02` | Affects behavior across several sessions or scenarios | L166 (\`#L166\`) |
+| `SB-SRC-0044/CRITERION-03` | User can meaningfully select the value in advance | L167 (\`#L167\`) |
+| `SB-SRC-0044/CRITERION-04` | Changes infrequently | L168 (\`#L168\`) |
+| `SB-SRC-0044/CRITERION-05` | Cannot reliably be inferred from restored UI or environment state | L169 (\`#L169\`) |
+| `SB-SRC-0044/CRITERION-06` | Is not an ordinary workflow command | L170 (\`#L170\`) |
+| `SB-SRC-0044/CRITERION-07` | Does not apply only to a specific Run or Scenario | L171 (\`#L171\`) |
+| `SB-SRC-0044/CRITERION-08` | Is not a policy that the user lacks authority to override | L172 (\`#L172\`) |
 
 ### Five distinct sources of state truth
 
 | Exact source item | Semantic class | English use/authority distinction | Research line |
 | --- | --- | --- | --- |
-| `SB-SRC-0044/OWNER-01` | `UserSettings` | Deliberately chosen enduring preferences such as theme, accent, report style, file creator label and notification preference; user-owned, with policy qualifications. | [L182](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L182) |
-| `SB-SRC-0044/OWNER-02` | `SurfaceState` | Automatically restored layout/mode/filter/inspector/scroll context; useful persistence does not imply a visible Settings control. | [L194](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L194) |
-| `SB-SRC-0044/OWNER-03` | `RecentState/DraftState` | Last used scenarios, artifacts, workspace locations and not-yet-run parameter drafts; retains operational context without global preference meaning. | [L210](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L210) |
-| `SB-SRC-0044/OWNER-04` | `ManagedPolicy` | Externally administered permissions/allowed capabilities, storage/network/retention/security and forced defaults; user can inspect reasons but does not automatically edit them. | [L222](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L222) |
-| `SB-SRC-0044/OWNER-05` | `RunParameters` | Specific period, dataset, refresh, overwrite, output target/format, optimization and chosen template; belongs to Scenario form/preset/activation. | [L237](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L237) |
+| `SB-SRC-0044/OWNER-01` | `UserSettings` | Deliberately chosen enduring preferences such as theme, accent, report style, file creator label and notification preference; user-owned, with policy qualifications. | L182 (\`#L182\`) |
+| `SB-SRC-0044/OWNER-02` | `SurfaceState` | Automatically restored layout/mode/filter/inspector/scroll context; useful persistence does not imply a visible Settings control. | L194 (\`#L194\`) |
+| `SB-SRC-0044/OWNER-03` | `RecentState/DraftState` | Last used scenarios, artifacts, workspace locations and not-yet-run parameter drafts; retains operational context without global preference meaning. | L210 (\`#L210\`) |
+| `SB-SRC-0044/OWNER-04` | `ManagedPolicy` | Externally administered permissions/allowed capabilities, storage/network/retention/security and forced defaults; user can inspect reasons but does not automatically edit them. | L222 (\`#L222\`) |
+| `SB-SRC-0044/OWNER-05` | `RunParameters` | Specific period, dataset, refresh, overwrite, output target/format, optimization and chosen template; belongs to Scenario form/preset/activation. | L237 (\`#L237\`) |
 
 ### Three permanent candidate pages, one conditional page
 
 | Exact source item | Candidate page | Constraint and reason | Research line |
 | --- | --- | --- | --- |
-| `SB-SRC-0044/PAGE-01` | Appearance | Theme/system/light/dark and bounded accent options, not arbitrary user theme construction. | [L367](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L367) |
-| `SB-SRC-0044/PAGE-02` | Artifacts and reports | Default report style and chosen authorship metadata when supported; domain provenance actor remains distinct. | [L368](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L368) |
-| `SB-SRC-0044/PAGE-03` | Neutral extension management | Installed extension list, applicable settings and controlled activation under authorized providers; no private implementation claim. | [L369](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L369) |
-| `SB-SRC-0044/PAGE-04` | Notifications | Conditional future page only if actual notification delivery capability exists; do not show an empty permanent category. | [L375](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_system_settings_research_2026-10-07.md#L375) |
+| `SB-SRC-0044/PAGE-01` | Appearance | Theme/system/light/dark and bounded accent options, not arbitrary user theme construction. | L367 (\`#L367\`) |
+| `SB-SRC-0044/PAGE-02` | Artifacts and reports | Default report style and chosen authorship metadata when supported; domain provenance actor remains distinct. | L368 (\`#L368\`) |
+| `SB-SRC-0044/PAGE-03` | Neutral extension management | Installed extension list, applicable settings and controlled activation under authorized providers; no private implementation claim. | L369 (\`#L369\`) |
+| `SB-SRC-0044/PAGE-04` | Notifications | Conditional future page only if actual notification delivery capability exists; do not show an empty permanent category. | L375 (\`#L375\`) |
 
 **Competing interpretation:** in a small standalone CLI library there may be no Settings screen at all; a future shared host may expose centrally managed policy but should not duplicate it as writable personal preference. The proposed three-page design is a small-user-experience hypothesis, not a mandated default for every client profile. A source-published priority or tentative future page is not itself a Product Decision. Source-line trace coverage above is **17 specific candidate items**; the full 2,752-line study still contains further material requiring a separate lossless and independent challenge pass.

@@ -1,6 +1,6 @@
 # Strategy Box — maintained knowledge product
 
-**Publication status (2026-10-12): PARTIAL / UNDER CONSOLIDATION.** The published sections are self-contained **bounded** scientific topics, directly observed implementation slices and explicitly labelled target candidates. They are **not** proof of a complete lossless transfer of the frozen source corpus. The [publication manifest](PUBLICATION-MANIFEST.md) records exact study admissions, source baselines and remaining conditions; the working [consolidation state](../_mw/epochs-001-strategy-box-development/consolidation/STATE.md) owns current corpus metrics and verification obligations.
+**Publication status (2026-10-12): PARTIAL / UNDER CONSOLIDATION.** The published sections are self-contained **bounded** scientific topics, directly observed implementation slices and explicitly labelled target candidates. They are **not** proof of a complete lossless transfer of the frozen source corpus. The [publication manifest](PUBLICATION-MANIFEST.md) records exact study admissions, source baselines and remaining conditions; the working consolidation state owns current corpus metrics and verification obligations.
 
 | Entrance | Intended use | Evidence and admission |
 | --- | --- | --- |
@@ -29,6 +29,6 @@ The pinned analytical and desktop code studies are static reconstructions; **thi
 
 ## Why the research archive remains available
 
-The maintained [Science index](science/README.md) is the proper entry for bounded thematic knowledge. It must eventually allow a reader to understand every material supported conclusion, counterargument and limitation without reading its historical Research first. The historical [docs_old](../docs_old/README.md) stays available for forensic provenance, not as a second current owner of WHAT/HOW.
+The maintained [Science index](science/README.md) is the proper entry for bounded thematic knowledge. It must eventually allow a reader to understand every material supported conclusion, counterargument and limitation without reading its historical Research first. The historical docs_old stays available for forensic provenance, not as a second current owner of WHAT/HOW.
 
-The [frozen source census and conservation workflow](../_mw/epochs-001-strategy-box-development/consolidation/README.md) retain material source identities, provisional source-located candidates, unresolved contradictions and verification findings. **No published file count, working link or saved original proves complete semantic conservation.** Full Research Amputation and independent source↔Science evidence verification remain mandatory before the word “lossless” may describe the entire product.
+The frozen source census and conservation workflow retain material source identities, provisional source-located candidates, unresolved contradictions and verification findings. **No published file count, working link or saved original proves complete semantic conservation.** Full Research Amputation and independent source↔Science evidence verification remain mandatory before the word “lossless” may describe the entire product.
