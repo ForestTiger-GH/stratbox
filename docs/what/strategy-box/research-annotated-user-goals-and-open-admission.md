@@ -1,6 +1,6 @@
 # Developer-annotated Strategy Box research goals — primary text and Product admission
 
-**Evidence status:** `FULL_PRIMARY_TEXT_READ / ORIGINAL_DOCX_SHA_UNVERIFIED / PRODUCT_DECISIONS_OPEN`. This document conveys the goals expressed in **ten developer answers** in an annotated research questionnaire. Its full source text was read from an authorized user Library file, but source DOCX bytes were not made available for checksum verification. No original private source text is copied into the repository. Subsequent Research contains twelve topics; the last two have **no corresponding developer answers** in this ten-topic original.
+**Evidence status (current owner decision 2026-10-12):** `DERIVED_TEXT_WITNESS_AVAILABLE / ORIGINAL_DOCX_CARRIER_LOST / PRODUCT_DECISIONS_OPEN`. This document conveys the goals expressed in **ten developer answers** in an annotated research questionnaire. A previously authorized Library extraction preserved readable text, but the owner has now classified the original DOCX bytes as permanently **LOST**. The text is a lower-attestation witness rather than an authenticated copy of the original carrier. No original private source text is copied into the repository. Subsequent Research contains twelve topics; the last two have **no corresponding developer answers** in this ten-topic original.
 
 **Authority distinction:** the developer's direct reply, a question written by the researcher, an engineer's later proposal, a fact in current code and a formally admitted Product Decision are different evidence classes. Tentative statements about priority, schedule, implementation and ownership retain their qualifications.
 
@@ -19,7 +19,7 @@
 | **09 — Source currency and evidence** | Record actual download time; let qualified experts judge statistical trust and recency; link existing method code when useful. Preserve proportional operating cost. | Exhaustive globally monitored series catalog, surveillance of every source value, mandatory per-indicator methodology documents. |
 | **10 — Host versus local ownership** | Meaningful data/history should reside where operations actually execute: device for local work; shared host for hosted work; clients may retain secondary preferences. | Named SQL engine, detailed synchronization, exact AppDock package/runtime architecture, future network services already working. |
 
-These ten rows are **source-grounded intent summaries**. Neither the suggested mechanisms nor this editorial consolidation automatically grants Product approval.
+These ten rows are **derived-text-grounded provisional intent summaries**, subject to unavailable original-carrier verification. Neither the suggested mechanisms nor this editorial consolidation automatically grants Product approval.
 
 ## Three implementation tensions that must remain visible
 
@@ -31,12 +31,12 @@ These ten rows are **source-grounded intent summaries**. Neither the suggested m
 
 ## Audit of 30 previously source-tagged human-intent statements
 
-A producer comparison of all 30 historic `HUMAN_INTENT` records against the recovered annotated primary text classified **14 as direct comments; 4 as supported but engineering/security qualified; 8 as researcher interpretations; 2 as technical details absent from the comment; 1 as an item introduced by a research question; and 1 as a composite of several separate answers**.
+A producer comparison of all 30 historic `HUMAN_INTENT` records against the recovered annotated primary text classified **14 as direct comments within the represented text; 4 as supported but engineering/security qualified; 8 as researcher interpretations; 2 as technical details absent from the comment; 1 as an item introduced by a research question; and 1 as a composite of several separate answers**.
 
-The per-item JSONL provenance now records the recovered primary text as its basis and explicitly notes that the original DOCX hash remains unverified. The old semantic tag is retained for forensic provenance; it does **not** override the assessment field. The classifications are a **producer** review, not an independent assurance pass, and they do not establish Product decisions.
+The per-item historical JSONL provenance records the recovered textual representation; its original DOCX is **LOST**, and those tags cannot claim authenticated original bytes. The old semantic tag is retained for forensic provenance; it does **not** override the assessment field. The classifications are a **producer** review, not an independent assurance pass, and they do not establish Product decisions.
 
 ## Admission frontier
 
 Before product commitments are frozen, separate at least the **local foreground**, **trusted shared node**, **authenticated Web/host**, and **remote Android** deployment profiles. For each, define permitted Work/Run actions, durable state owner, file/artifact behavior, chat visibility, diagnostic audience and machine actor restrictions. Keep toolkit, storage engine, repositories, queues, and transport in HOW/Architecture until approved against actual scope and evidence.
 
-**Supporting evidence:** [human-source recovery and hash limits](../../../_mw/epochs-001-strategy-box-development/consolidation/coverage/HUMAN-CARRIER-RECOVERY-AND-ASSURANCE-DELTA-2026-10-11.md), [research-versus-comment reconciliation](../../../_mw/epochs-001-strategy-box-development/consolidation/reconciliation/HUMAN-ANNOTATED-EXECUTION-SCOPES-VS-RESEARCH-DEFAULTS-2026-10-11.md). The architecture carrier `SB-EXT-0001` is SHA-256 verified; the original `SB-EXT-0002` DOCX binary remains unverified.
+**Supporting evidence:** [human-source recovery and hash limits](../../../_mw/epochs-001-strategy-box-development/consolidation/coverage/HUMAN-CARRIER-RECOVERY-AND-ASSURANCE-DELTA-2026-10-11.md), [research-versus-comment reconciliation](../../../_mw/epochs-001-strategy-box-development/consolidation/reconciliation/HUMAN-ANNOTATED-EXECUTION-SCOPES-VS-RESEARCH-DEFAULTS-2026-10-11.md). The architecture carrier `SB-EXT-0001` is SHA-256 verified; the original `SB-EXT-0002` DOCX binary is classified **LOST / not recoverable by owner decision**, and its raw-hash task is closed as unverifiable.

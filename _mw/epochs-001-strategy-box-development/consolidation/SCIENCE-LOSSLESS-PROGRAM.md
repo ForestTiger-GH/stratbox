@@ -83,3 +83,7 @@ Avoid spending most of the work budget re-auditing links, statistics and the sam
 9. Final dated closure report gives exact denominator, source/unit counts, zero material residue, precise `docs/science/` owners and remaining **product choices** separately from scientific completeness.
 
 If an input is unavailable, conflicts cannot be represented safely, or a required independent check cannot be conducted, report precise **`PARTIAL / BLOCKED`** at the corresponding scope. Never reinterpret a short summary, saved source blob, plan or more research as equivalent to full semantic conservation.
+
+## Owner-scoped lost-carrier rule — 2026-10-12
+
+For an original DOCX whose original bytes the Product owner declares permanently **LOST**, set original-byte identity to `CLOSED_BY_OWNER_AS_LOST / UNVERIFIABLE`. Preserve an available extracted-text witness, if any, only at its correctly attributed lower evidence tier. Do not maintain an impossible raw DOCX hash/test as an active completion task. A future exact-source publication boundary must explicitly exclude lossless reconstruction of the original DOCX bytes and cannot convert extracted statements into authenticated primary quotations. Completeness of accessible, pinned public Git Research and the obligation for independently assured semantic preservation **are unchanged**. A scientific verdict must be qualified to its admitted actual source population. Historical date-stamped carrier verification reports are preserved rather than rewritten.

@@ -43,3 +43,7 @@ Thirty previously source-labeled human-intent items in the twelve 04-research pr
 | Global Knowledge Product | Primary Git original Research reading finished | More complete human-source evidence | 566 Git source material dispositions and independent source↔Science assurance |
 
 **Publication boundary:** public Knowledge can preserve generic approved semantic constraints and qualified research alternatives. The raw user document, private Library identifiers and any restricted-source detail remain with their authorized owner.
+
+## Owner disposition superseding active DOCX recovery — 2026-10-12
+
+The owner has classified the original DOCX files as **LOST** and closed further materialization or original-byte verification. The 2026-10-11 extraction and its digest are historical evidence of a *text representation*, not original DOCX authenticity. Current permitted role: lower-attestation annotation witness for provisional developer goals; not a primary verifiable original carrier. Do not count the original DOCX as a reproducible input in a semantic-losslessness denominator and do not claim byte-for-byte preservation. The publication must disclose this limitation; full Research Amputation of **available** original Research and a distinct authorized semantic reviewer remain open and mandatory. This section controls decisions after 2026-10-12; preceding dated findings remain factually historical.

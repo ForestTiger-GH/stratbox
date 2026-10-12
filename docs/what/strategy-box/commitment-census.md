@@ -1,6 +1,6 @@
 # Strategy Box Product Commitment Census — admitted direction and open goals
 
-**Revision:** `PC-SB-2026-10-12-1`; **status:** `PARTIAL_AUTHORITY_BOUND / OPEN_CENSUS`. **Product:** Strategy Box banking/macroeconomic analytical core, application host and Windows/Web/Android client direction. **Authority boundary:** direct Product owner instructions received within the active project and the subsequent **explicitly accepted host Decision**; the ten recovered original questionnaire answers are **user-intent evidence** but do not automatically approve all Research implementations. The original annotated questionnaire text is available in the maintained [annotated goals owner](research-annotated-user-goals-and-open-admission.md), while its original raw DOCX checksum remains unverified.
+**Revision:** `PC-SB-2026-10-12-1`; **status:** `PARTIAL_AUTHORITY_BOUND / OPEN_CENSUS`. **Product:** Strategy Box banking/macroeconomic analytical core, application host and Windows/Web/Android client direction. **Authority boundary:** direct Product owner instructions received within the active project and the subsequent **explicitly accepted host Decision**; the ten recovered original questionnaire answers are **user-intent evidence** but do not automatically approve all Research implementations. The original annotated questionnaire text is available in the maintained [annotated goals owner](research-annotated-user-goals-and-open-admission.md), while the original DOCX binary has been declared **LOST** by the owner; its extracted text remains an unattested representation.
 
 ## Accepted present direction and provenance
 
@@ -42,7 +42,7 @@ The Product host existence question is **closed positively** by `PC-SB-003`. Do 
 4. What authentication, membership, sharing, permission and browser exposure policies are approved for a publicly reachable domain and a Windows-managed host?
 5. What does the exact released AppDock revision actually implement for host lifecycle, remote attachment and delegated work, beyond optional schema vocabulary?
 6. Which first-release actions are available from Android, browsers and Windows clients, and what protocol/version/evidence is required before release?
-7. Can the remaining independent Research→Science material accounting, blind Research Amputation, current code/test conformance and user-carrier binary attestation be completed by authorized verifiers?
+7. Can the remaining independent Research→Science material accounting, blind Research Amputation, current code/test conformance be completed by authorized verifiers, with the original DOCX explicitly excluded as lost and its textual witness kept at reduced evidence weight?
 
 **Non-goals of this census:** prescribing a DB or backend framework, formalizing Research hypotheses as decisions, inventing a host protocol or asserting shipped/migrated runtime. **Product completeness status:** partial; historical user acts beyond the actively bound inputs may require source recovery and future Product Authority. No whole-product acceptance or `LOSSLESS_PASS` follows from this document.
 
