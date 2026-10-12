@@ -126,7 +126,7 @@ A user confirmation, credential bootstrap, resource selection or conflict resolu
 
 ## Pinned local Explorer/path/projection fault evidence and candidate host conformance (HC-34..39)
 
-Sixteen or more current local UI state labels are not a host FileStore access policy. The specific relevant **executed source behaviors** are [WEX-10..14](../../current-how/windows-application.md): direct external Explorer navigation is rejected while symlink entry is not recontained, and synthetic Case/Artifact fields are copied into an incoming visual card. The [direct code](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/workspace/explorer_service.py) supplies proof only for a pinned local Python service. The following **HC-34..39 are unexecuted proposed tests for any real future host/client profile**.
+The current local Explorer and chat view models are not a host FileStore access policy. The specific relevant **executed source behaviors** are [WEX-10..14](../../current-how/windows-application.md): direct external Explorer navigation is rejected while symlink entry is not recontained, and synthetic Case/Artifact fields are copied into an incoming visual card. The [direct code](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/workspace/explorer_service.py) supplies proof only for a pinned local Python service. The following **HC-34..39 are unexecuted proposed tests for any real future host/client profile**.
 
 | Candidate negative case | Input or contested transition | Required conditional result |
 | --- | --- | --- |

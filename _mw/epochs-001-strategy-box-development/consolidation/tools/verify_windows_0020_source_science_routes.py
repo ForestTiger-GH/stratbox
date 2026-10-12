@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Nine pinned Windows Research source-to-Science route checks; not independent semantics."""
+"""Frozen Windows Research original source-to-Science text routing, not independent semantics."""
 from __future__ import annotations
 import hashlib
 import json
@@ -8,12 +8,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 ORIGINAL = ROOT / "_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md"
-LEDGER = ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units/WINDOWS-STUDY-0020-DIRECT-RECONCILIATION-09.jsonl"
+LEDGERS = (
+    ("WINDOWS-STUDY-0020-DIRECT-RECONCILIATION-09.jsonl", 9),
+    ("WINDOWS-STUDY-0020-RUNTIME-WORKROOM-18.jsonl", 18),
+)
+UNITS_ROOT = ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units"
 SOURCE_SHA = "225128f2599f0792422c0b31cb3cbe1437991ced"
 SOURCE_COMMIT = "8459dc58922b7e8df853cf1d9e8131fa9e132580"
 SCOPED = {
     "docs/science/surfaces/semantic-portability-and-client-authority.md",
     "docs/science/engineering/proportional-assurance-and-knowledge-admission.md",
+    "docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md",
+    "docs/science/collaboration/shared-conditions-and-log-access.md",
 }
 
 
@@ -22,8 +28,12 @@ def verify() -> dict:
     actual = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
     assert actual == SOURCE_SHA, f"Original blob identity mismatch: {actual}"
     source_lines = raw.decode("utf-8").splitlines()
-    rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines() if line.strip()]
-    assert len(rows) == 9
+    rows = []
+    for filename, expected in LEDGERS:
+        entry_rows = [json.loads(line) for line in (UNITS_ROOT / filename).read_text(encoding="utf-8").splitlines() if line.strip()]
+        assert len(entry_rows) == expected, filename
+        rows.extend(entry_rows)
+    assert len(rows) == 27
     seen = set()
     for row in rows:
         identity = row["unit_id"]
