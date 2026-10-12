@@ -288,5 +288,82 @@ class ExplorerAndChatProjectionObservedCases(TestCase):
             self.assertFalse((data_root / "Strategy Box Data").exists())
 
 
+class LocalHistoryDurabilityObservedCases(TestCase):
+    """Execute real pinned HistoryPersistenceService with disposable stores."""
+
+    @staticmethod
+    def stores():
+        from stratbox_windows.application.cases.store import ScenarioCaseStore
+        from stratbox_windows.application.events.store import OperationalEventStore
+        from stratbox_windows.application.artifacts.store import ArtifactStore
+        from stratbox_windows.application.logs.store import LogStore
+        from stratbox_windows.application.assignments.store import AssignmentStore
+        return dict(
+            case_store=ScenarioCaseStore(), event_store=OperationalEventStore(),
+            artifact_store=ArtifactStore(), log_store=LogStore(),
+            assignment_store=AssignmentStore(),
+        )
+
+    def test_corrupted_existing_history_file_reloads_as_empty_case_history(self):
+        from stratbox_windows.application.history.persistence import HistoryPersistenceService
+        with TemporaryDirectory() as tmp:
+            service = HistoryPersistenceService(Path(tmp))
+            cases = service._history_dir / "cases.json"
+            cases.write_text("{synthetic invalid", encoding="utf-8")
+            stores = self.stores()
+            service.load_into(**stores)
+            self.assertEqual(stores["case_store"].all(), tuple())
+            # _load_list has silently suppressed the parse error and retained
+            # the malformed original; later saving can overwrite that evidence.
+            self.assertEqual(cases.read_text(encoding="utf-8"), "{synthetic invalid")
+
+    def test_history_decoder_drops_invalid_object_from_valid_array_without_error(self):
+        from stratbox_windows.application.history.persistence import HistoryPersistenceService
+        with TemporaryDirectory() as tmp:
+            service = HistoryPersistenceService(Path(tmp))
+            cases = service._history_dir / "cases.json"
+            cases.write_text('[{"synthetic": "incompatible_case_schema"}]', encoding="utf-8")
+            stores = self.stores()
+            service.load_into(**stores)
+            self.assertEqual(stores["case_store"].all(), tuple())
+
+    def test_simulated_save_interruption_can_leave_partial_five_file_generation(self):
+        from stratbox_windows.application.history.persistence import HistoryPersistenceService
+        from stratbox_windows.application.cases.models import ScenarioRunCase
+        from stratbox_windows.application.events.models import OperationalEvent
+        with TemporaryDirectory() as tmp:
+            service = HistoryPersistenceService(Path(tmp))
+            stores = self.stores()
+            cases = stores["case_store"]
+            case = ScenarioRunCase.create(
+                scenario_id="synthetic", scenario_title="Synthetic", params={}
+            )
+            cases.add(case)
+            service.save_from(**stores)
+            initial_cases = (service._history_dir / "cases.json").read_bytes()
+            initial_events = (service._history_dir / "events.json").read_bytes()
+            other = ScenarioRunCase.create(
+                scenario_id="synthetic.second", scenario_title="Second", params={}
+            )
+            cases.add(other)
+            real_save = service._save_list
+            counter = {"n": 0}
+            def interrupt_second(path, payload):
+                counter["n"] += 1
+                if counter["n"] == 2:
+                    raise OSError("synthetic interruption between files")
+                return real_save(path, payload)
+            with patch.object(service, "_save_list", side_effect=interrupt_second):
+                with self.assertRaisesRegex(OSError, "synthetic interruption"):
+                    service.save_from(**stores)
+            self.assertNotEqual(
+                (service._history_dir / "cases.json").read_bytes(), initial_cases
+            )
+            self.assertEqual(
+                (service._history_dir / "events.json").read_bytes(), initial_events
+            )
+            self.assertEqual(counter["n"], 2)
+
+
 if __name__ == "__main__":
     main(verbosity=2)
