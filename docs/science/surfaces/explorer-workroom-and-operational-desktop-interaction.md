@@ -250,3 +250,39 @@ A bounded **full-original producer read** of the 178-line early workbench sketch
 | `SB-SRC-0013/UX-RESIDUE-06` · `HISTORICAL_MINIMUM_DESKTOP_COMPOSITION` | The original minimum desktop brief enumerated header, icon-only mode rail, mode panel, central Scenario chat, prelaunch bar, logs and Artifacts panes, parameter inspector, Explorer, participants/assignments, background view, user-menu settings and structured events. | A long UI inventory is a design snapshot, not a set of independently justified Product commitments; later information architecture and Android/Web accessibility may require fewer/different surfaces. | L154-L170 (`#L154-L170`) |
 
 **Full-original producer disposition (limited):** all fifteen numbered sections, plus title, concept and flow, now have a classified destination in the maintained UX Science through 22 original details, 14 former concrete residuals and six additional positions. Section coverage can include nonmaterial headings, redundant examples and connecting prose; multiple claims within a paragraph may have different owners. The source-first section accounting kept in the separate Work evidence corpus states which claims were treated as repeated, superseded or unsafe as current fact. This is **not a separate independent reader** and whole-source census state remains `unaccounted` until competent adverse reverse verification and full Research Amputation.
+
+## Original high-volume interaction and performance risks — frozen Windows UX Research 0039
+
+**Research status:** dated proposal, **not a measured performance SLO**, accepted release threshold, installed Qt benchmark, or mobile design requirement. The frozen desktop UX original `SB-SRC-0039`, source blob `0668c3af7cec9862e638ad1b3f74b8f847404fca`, L1495–L1672, separates ten UI states, responsiveness mechanisms, keyboard operation and corporate trust signals. The maintained basic UX guidance above covers these in broad form; the following makes their *operational failure conditions* separately falsifiable.
+
+### Ten distinct UI states are not one generic empty/error widget
+
+| Source-proposed state | Essential explanation/action | Counterexample that defeats visual plausibility |
+| --- | --- | --- |
+| `EMPTY` | Say what will appear and identify an actually available first operation | Offers AI chat or source import when no capable binding is installed |
+| `LOADING` | Stable skeletal geometry or bounded indicator | Large layout jump makes a focused control move while loading |
+| `READY` | Ordinary usable content with actual permission | "Ready" despite missing source, expired grant or disconnected host |
+| `RUNNING` | Causally supported activity/attempt evidence | Animated activity from an `enabled` rule with no accepted Run |
+| `PARTIAL` | Show ready results and explicitly unavailable/failed required portions | Last successful Step turns entire failed analysis green |
+| `WAITING_FOR_USER` | Bounded human action, approval or missing qualified input | Waiting indefinite while presenting a spinner instead of an actionable request |
+| `ERROR` | Safe causal explanation, recovery choice and preserved diagnostics | Raw `str(exc)` exposes host path or secret in a shared chat |
+| `DEGRADED` | State which functions still operate and which lack backing | Node diagnostics disappear because Workspace data root is absent |
+| `OFFLINE_OR_UNAVAILABLE` | Last confirmed `as_of` state and restricted disabled operations | Client disconnection changes an admitted Job to `FAILED` |
+| `PERMISSION_DENIED` | Safe refusal and owner contact without revealing protected object | Error includes another participant's private file or existence bit |
+
+These are **presentation predicates** over trusted domain/application facts, not new canonical domain enum values. A single view can have a usable partial listing while a child Artifact download is access-denied. State should be attached to its real owner and scope.
+
+### Source-proposed responsiveness mechanisms, to be tested on actual machines
+
+The original specifically calls for nonblocking click/selection feedback; incremental history; model/view virtualization for large Explorer, Run and Artifact lists; throttled progress updates; lazy thumbnails and large-file previews; and an efficient raw-log viewer. In Qt, examples included `QAbstractItemModel/QTableView`, `QPlainTextEdit` or another model-backed log projection, and worker threads/processes isolated from GUI object ownership. These are **option candidates**, not a Qt mandate on Web/Android: a native Android list/paging component or browser virtual data grid may fulfill the same semantic throughput contract. The pinned current single-active Qt worker cannot be cited as background execution after the GUI exits.
+
+The original offered **qualitative UX latency directions**, not verified milliseconds, p95 thresholds or a signed hardware profile. Before committing a numeric budget, measure actual target slow workstation/browser/phone, data volume, message frequencies, font scale and memory use. At a minimum, an implementer should falsify: 10,000+ historical Runs while scrolling/searching; an extremely long synchronized log with rapid appended lines; a selected long path while resizing Inspector; large artifact preview with an active Run; 125/150/200% scaling; slow source/provider response with permission change; burst of safe warnings; and offline reconnect without stale Run-success. The test oracle is responsiveness **plus faithful authority/status**, not merely frames per second.
+
+### Shortcut and operator trust gates are role-specific
+
+The dated keyboard map proposed `Ctrl+N` new Work, `Ctrl+P` quick open, `Ctrl+Shift+P` command palette, `Ctrl+F` surface search, `Ctrl+Shift+F` global search, `Ctrl+L` location, `Alt+Left/Right/Up` navigation, `Ctrl+,` Settings, `Esc` close a transient overlay, and `F6` pane navigation. This is a **candidate** requiring conflict testing against Qt widget shortcuts, the OS, screen readers, keyboard layouts, and translated locale. In particular, Escape closing an overlay must **not** silently cancel or approve a persistent Run/effect; read-only, output-write, destructive and elevated/external actions require proportionate guarded feedback, with exact target set before destructive confirmation. AI-proposed actions must go through the same authority, rather than gain powers from a natural-language message or a shortcut.
+
+**Negative scope:** an eight-screen onboarding wizard, forced AI entrypoint when absent, dedicated Team mode with only one assignment, and an unconditional global scheduler are not implied by the original. Empty Work should offer current accessible Scenarios, Workspace or Diagnostics. Expensive new surfaces become justified only with a real consumer and adopted authority. Earlier source's four top-level work areas (Work, Explorer, Scenarios, Runs) are an **information architecture proposal**, not a Product Decision forcing a navigation redesign.
+
+**Verification boundary:** these additional source-driven cases are extracted from the primary UX original and analyzed by the knowledge producer; none is a passed installed UI benchmark, a second independent reviewer, or evidence of an available Android application. Publication remains independent of the original manuscript for ordinary use; Work-only source-position review must still determine complete semantic conservation.
+
