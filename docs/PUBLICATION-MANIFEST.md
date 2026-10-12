@@ -20,7 +20,7 @@ At [Actions run 38206215081](https://github.com/ForestTiger-GH/stratbox/actions/
 
 The independently downloadable [Actions Knowledge artifact](https://github.com/ForestTiger-GH/stratbox/actions/runs/38206215081#artifacts) has artifact ID `11727477030` and reports a **delivery-wrapper** digest `sha256:03488ab80ceac18910479496d5f3e37f4bdcbc760d54ec274da5d36086bb16aa` (879,025 bytes). That is **not the inner deterministic Knowledge ZIP checksum**. The prior inner ZIP checksum for the 102-document edition remains a historical value; the inner SHA for this 113-file edition has **not** been independently extracted here and must not be invented. Future edits demand exact-commit revalidation.
 
-The [nine-packet producer challenge](../_mw/epochs-001-strategy-box-development/consolidation/coverage/LCD-NINE-PACKET-CROSS-BOUNDARY-PRODUCER-CHALLENGE-2026-10-12.md) is a Work file, intentionally outside the standalone Knowledge publication; the self-contained implications and open decisions are expressed in [LCD handoff matrix](lcd/implementation-handoff-and-boundary-matrix.md) and individual packets. No standalone reader should need Work paths to understand implementation status.
+A separate nine-packet producer challenge exists in the Work evidence area and is intentionally excluded from standalone Knowledge; the self-contained implications and open decisions are expressed in [LCD handoff matrix](lcd/implementation-handoff-and-boundary-matrix.md) and individual packets. No standalone reader should need Work paths to understand implementation status.
 
 ## Verified structural snapshot — 2026-10-12
 
