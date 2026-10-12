@@ -69,6 +69,7 @@ class EvidenceHealth(str, Enum):
     AVAILABLE = "available"
     DEGRADED = "degraded"
     UNAVAILABLE = "unavailable"
+    UNOBSERVED = "unobserved"
 
 @dataclass(frozen=True, slots=True)
 class CausalReference:
@@ -189,7 +190,7 @@ class ObservabilityProjection:
         recorder_health = (EvidenceHealth.AVAILABLE
                            if registration.kind is RegistrationKind.ACKNOWLEDGED
                            else EvidenceHealth.DEGRADED)
-        return TelemetryHealth(EvidenceHealth.AVAILABLE, event_health,
+        return TelemetryHealth(EvidenceHealth.UNOBSERVED, event_health,
                                recorder_health, 0, None)
 ~~~
 
