@@ -159,8 +159,17 @@ class OperationPort(Protocol):
 class ObservationPort(Protocol):
     def publish(self, observation: ExecutionObservation) -> None: ...
 
+class DispatchDefinitelyNotStarted(Exception): ...
+class DispatchStatusUnknown(Exception): ...
+
 class LocalDispatcher(Protocol):
-    def start(self, callback: Callable[[], None]) -> None: ...
+    def start(self, callback: Callable[[], None]) -> None:
+        """Return only on confirmed local scheduling.
+
+        Raise DispatchDefinitelyNotStarted only with proof the callback
+        cannot run. Any ambiguous error must preserve the reservation.
+        """
+        ...
 
 class ProjectionPort(Protocol):
     def update(self, snapshot: LocalCaseSnapshot) -> None: ...
@@ -231,27 +240,43 @@ class LocalScenarioService:
         # An observed 'accepted' does NOT promise a disk-journal commit.
         try:
             self._dispatcher.start(lambda: self._run_and_release(plan))
-        except Exception:
+        except DispatchDefinitelyNotStarted:
+            # Only this proof allows releasing the reservation safely.
             with self._gate:
                 if self._active_case_id == case_id:
                     self._active_case_id = None
-            raise AdmissionError("worker_schedule_failed") from None
+            raise AdmissionError("worker_definitely_not_started") from None
+        except Exception:
+            # The dispatcher may have started the callback and lost its ACK.
+            # Keep the single-flight reservation; expose case_id via the
+            # restricted coordinator/query to support local reconciliation.
+            raise DispatchStatusUnknown(case_id) from None
         return case_id
 
     def _run_and_release(self, plan: ExecutionPlan) -> None:
         try:
             outcome = self._executor.execute(plan)
-            self._projections.update(outcome)  # delivery failure handled separately
         except BaseException:
             # Unexpected after-invocation effects may exist; never declare rollback.
-            self._projections.update(LocalCaseSnapshot(
+            # OS termination itself cannot be intercepted reliably.
+            outcome = LocalCaseSnapshot(
                 case_id=plan.case_id, scenario_id=plan.scenario_id,
-                outcome=CaseOutcome.OUTCOME_UNKNOWN))
+                outcome=CaseOutcome.OUTCOME_UNKNOWN)
         finally:
+            # A failed projection must not poison local single-flight liveness.
+            # In an actual implementation, retain the separately owned local
+            # outcome/diagnostic even if this display update cannot be shown.
+            try:
+                if "outcome" in locals():
+                    self._projections.update(outcome)
+            except Exception:
+                pass  # MUST report evidence degradation to a distinct safe sink
             with self._gate:
                 if self._active_case_id == plan.case_id:
                     self._active_case_id = None
 ~~~
+
+**Producer design repair — dispatch acknowledgment and callback loss:** a dispatcher exception after a worker has been scheduled does **not** prove no worker exists. The initial unconditional gate release would have admitted two operations into the one-active-run scope. The revised fragment releases only after the adapter proves `DispatchDefinitelyNotStarted`; all other scheduling failures retain a reservation and require an explicit local reconciliation/known-exit path. The reported `case_id` must remain recoverable from the same process until its fate is determined. Likewise, a failed user-facing observation callback cannot undo a completed operation: the engine makes local projections best-effort, and the completion wrapper attempts to release the gate through `finally`. The `pass` markers are intentionally **unfinished diagnostics**; they do not implement a trustworthy side-channel for dropped-event counts, nor a durable Case record. This is a corrected candidate boundary, not a runtime test or approved Product guarantee.
 
 **Refinement required before a production patch:** handle failures of `_projections.update` without preventing gate release, log exception details only to an access-limited local diagnostic sink, and define a liveness/worker-start handshake if the chosen dispatcher can enqueue but never start. A `BaseException` handling sketch represents a last-resort unknown-effect boundary, not a plan to suppress process termination or system signals. Use exception-safe `finally` and an independent supervisory fault report. In-memory snapshots are *ephemeral*; post-crash missing snapshot cannot imply an empty history.
 
@@ -292,8 +317,13 @@ class LocalExecutionEngine:
         def record(kind: str, step_id: str | None, code: str, summary: str) -> None:
             nonlocal seq
             seq += 1
-            self.observations.publish(ExecutionObservation(
-                plan.case_id, seq, kind, step_id, code, summary))
+            try:
+                self.observations.publish(ExecutionObservation(
+                    plan.case_id, seq, kind, step_id, code, summary))
+            except Exception:
+                # Best-effort local projection loss must be separately
+                # diagnosed; never reclassify a core operation result.
+                pass  # replace with a bounded telemetry-degraded signal
         record("admitted", None, "LOCAL_ACCEPTED", "Local execution admitted")
         for step in plan.steps:
             record("step_started", step.step_id, "STEP_STARTED", "Step started")
