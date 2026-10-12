@@ -59,3 +59,14 @@ The [FRG LCD](../../lcd/application/frg-cleanup-effect-plan-construction.md) now
 | FR-14 | Backend reports a deletion with wrong generation/source digest, other scope, no confirmed absence or a bare string | No false `VERIFIED`; require receipt tied to intended source; retain unknown/reconciliation after physical call. |
 
 **Proof status:** the Work test tool uses documentary candidate definitions and fake-port acknowledgments, not real filesystem conditional-effect receipts. The verified deletion primitive, evidence authenticity, crash-safe pending record and OS/backend-specific mutation fence remain `LCD_BLOCKED` regardless of synthetic green CI.
+
+## Explicitly unimplemented file actions — FR-15..16 (2026-10-12)
+
+The candidate FRG executor formerly treated a copy as a completed rename and an unstarted archive as an ambiguous physical effect. These are **documentation-only design defects**, not demonstrated installed-code failures.
+
+| Test | Stimulus | Required future implementation proof |
+| --- | --- | --- |
+| FR-15 | `RENAME_LATEST` reaches the limited copy/delete executor | Explicitly reject before authority/pending/backend actions until a separately approved copy-plus-conditional-delete sequence and its joint truth are implemented. |
+| FR-16 | `CREATE_ARCHIVE` reaches the limited executor without member-plan/publisher support | Explicitly reject before pending or backend calls. No fake `OUTCOME_UNKNOWN` when nothing was attempted. |
+
+Work-only synthetic tests now exercise those rejection paths. A real future rename/archive acceptance suite remains `UNEXECUTED`, and storage/effect authorization remains `LCD_BLOCKED`.

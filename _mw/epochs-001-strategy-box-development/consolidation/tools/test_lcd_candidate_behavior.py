@@ -1407,6 +1407,11 @@ def probe_frg_cleanup_effects() -> dict:
     plan = d["FrozenCleanupPlan"](
         "plan-1", "v1", "data", (copy, delete),
         canonical((copy, delete), "data", "v1", "src-rev-2"), "src-rev-2")
+    rename = replace(copy, action_id="rename-1", action=action.RENAME_LATEST)
+    plan_with_rename = replace(
+        plan, actions=(copy, delete, rename),
+        sorted_target_set_digest=canonical(
+            (copy, delete, rename), "data", "v1", "src-rev-2"))
     plan_with_archive = replace(
         plan, actions=(copy, delete, archive),
         sorted_target_set_digest=canonical(
@@ -1550,9 +1555,18 @@ def probe_frg_cleanup_effects() -> dict:
     result = executor.apply_one(plan, delete, "approved-plan")
     assert result.truth is truth.FAILED_NO_EFFECT and not effects.deleted
 
-    effects, auth, receipts, evidence, executor = fixture()
-    result = executor.apply_one(plan_with_archive, archive, "approved-plan")
-    assert result.truth is truth.OUTCOME_UNKNOWN and not effects.calls
+    # Unsupported candidate actions have NO physical uncertainty: neither
+    # action is executed or given a pending receipt.
+    for planned, step in ((plan_with_archive, archive),
+                          (plan_with_rename, rename)):
+        effects, auth, receipts, evidence, executor = fixture()
+        try:
+            executor.apply_one(planned, step, "approved-plan")
+        except NotImplementedError as exc:
+            assert str(exc) == "ACTION_HAS_NO_VERIFIED_EXECUTION_PLAN"
+        else:
+            raise AssertionError("unimplemented action was accepted")
+        assert not effects.calls and not receipts.pending and not receipts.recorded
 
     # A handwritten FrozenAction outside a verified plan must be rejected
     # before any approval or effect-intent record.
@@ -1645,7 +1659,7 @@ def probe_frg_cleanup_effects() -> dict:
         raise AssertionError("unapproved FRG effect admitted")
     assert not receipts.pending and not effects.calls
     return {
-        "frg_cleanup_effect_cases": 35,
+        "frg_cleanup_effect_cases": 37,
         "fingerprint_uses_full_action_content": True,
         "source_observation_time_excluded_from_byte_equality": True,
         "evidence": "literal documented executor, canonical SHA256 plan fingerprint and byte-witness matcher on synthetic effects; no native FS proof",

@@ -231,10 +231,15 @@ class CleanupExecutor:
                 and (step.source is None
                      or not (step.source.file_generation or step.source.sha256))):
             raise PermissionError("DESTRUCTIVE_SOURCE_IDENTITY_REQUIRED")
+        # Only COPY and guarded DELETE have a bounded implementation plan.
+        # A rename is copy + separate approved delete; archive requires an
+        # independently verified member plan and publishing port.
+        if step.action not in (FileAction.COPY_LATEST, FileAction.DELETE_SOURCE):
+            raise NotImplementedError("ACTION_HAS_NO_VERIFIED_EXECUTION_PLAN")
         permit = self.auth.authorize(plan, step, approval_ref)
         pending = self.receipts.record_pending(plan, step, permit)
         try:
-            if step.action in (FileAction.COPY_LATEST, FileAction.RENAME_LATEST):
+            if step.action is FileAction.COPY_LATEST:
                 assert step.source is not None and step.target is not None
                 current = self.evidence.observe(
                     plan.scope_ref, step.source.relative_path)
@@ -290,7 +295,7 @@ class CleanupExecutor:
                     plan.plan_id, step.action_id, EffectTruth.VERIFIED,
                     None, confirmed.backend_receipt_ref, "DELETE_CONFIRMED")
             else:
-                raise NotImplementedError("ARCHIVE_REQUIRES_SEPARATE_MEMBER_PLAN")
+                raise AssertionError("UNREACHABLE_ACTION_AFTER_ADMISSION")
         except StalePlanError:
             receipt = EffectReceipt(plan.plan_id, step.action_id,
                                     EffectTruth.FAILED_NO_EFFECT,
@@ -313,6 +318,8 @@ class CleanupExecutor:
 **Source-first destructive-plan correction:** the first candidate called `auth.authorize(plan, step, ...)` without first checking whether `step` was **the unique exact action in the frozen plan**, whether the plan digest was still derived from its actual ordered action set, whether source/target scopes matched the plan, or whether a requested delete had any byte/generation witness. The delete branch additionally checked only that `recognized_source()` returned *some* recognized family: it omitted a current source witness comparison and could accept another family/period occupying the same path. The code now refuses these mismatches **before creating an effect intent**, and treats changed source bytes before deletion as `FAILED_NO_EFFECT`. These are conditions **necessary** for a trustworthy host caller; `normalize_and_validate`, canonical digest computation, authenticated plan approval, backend-safe path resolution and a genuine compare-and-delete storage primitive remain independently unimplemented. A malicious Python caller with the same OS rights can still call core I/O directly, outside an application host's access policy. Never represent this LCD as deployed permission enforcement.
 
 **Hard stops before production:** \`normalize_and_validate\`, \`create_stable_plan_ref\`, \`source_selection_revision\`, \`source_witness_matches\` and \`StalePlanError\` are deliberate design obligations, **not shipped definitions**. More importantly, \`record_result\` can fail after a confirmed physical effect; the actual implementation must preserve the pending receipt for reconciliation. Storage must guarantee a generation-checked finalize/delete or disclose a weaker, explicitly accepted local policy. A source may change after a precheck but before staging; staging must validate the bytes actually copied, and conditional finalization must be tied to the same immutable generation. An authorization check that happened before this code cannot replace an effect-time check.
+
+**Unsupported-action semantic correction (2026-10-12, documentation-only):** the preceding candidate incorrectly marked `RENAME_LATEST` **VERIFIED** after copying bytes without deleting the old source. It also opened a pending effect for `CREATE_ARCHIVE` and then classified its own `NotImplementedError` as `OUTCOME_UNKNOWN`, despite never invoking the archive backend. Both actions now raise a bounded explicit unsupported-action diagnostic **before** authorization, pending record or effect call. These are corrections to the *design skeleton*, not evidence of product-code defects. A future application must safely project that exception without claiming a completed effect. The enum retains possible future actions as design vocabulary, not as admitted commands.
 
 **Rename semantics:** a desired rename must not silently consume the only source copy until target commit is proven; if the source is to be removed, model it as a **separate guarded delete** with a confirmed prerequisite, not a magic atomic cross-backend move.
 
@@ -397,6 +404,13 @@ def test_delete_ack_binds_exact_generation_bytes_and_absence(executor, effects, 
         r = executor.apply_one(plan, plan.delete_step, approval_ref="a")
         assert r.truth is EffectTruth.OUTCOME_UNKNOWN
         assert r.reconciliation_ref
+
+def test_unimplemented_rename_and_archive_are_rejected_before_effect(executor, plan, effects, receipts):
+    for kind in (FileAction.RENAME_LATEST, FileAction.CREATE_ARCHIVE):
+        with raises(NotImplementedError):
+            executor.apply_one(plan.with_action(kind), plan.action(kind), "a")
+    assert not effects.calls
+    assert not receipts.pending
 
 def test_notebook_direct_core_still_imports_without_host_python_package(import_guard):
     import_guard.block_application_and_qt()
