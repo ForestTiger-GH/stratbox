@@ -577,11 +577,12 @@ def probe_used_input_identity() -> dict:
             self.calls = 0
             self.actual_input = None
             self.format_kind = d["ValidationKind"].FORMAT_VALID
+            self.format_evidence_ref = "synthetic-format-witness"
         def parse(self, payload):
             self.calls += 1
             self.actual_input = payload
             return d["DecodedPayload"](
-                {"rows": 1}, self.format_kind, "synthetic-format-witness")
+                {"rows": 1}, self.format_kind, self.format_evidence_ref)
     class Validator:
         kind = "valid"
         def __init__(self):
@@ -643,6 +644,16 @@ def probe_used_input_identity() -> dict:
         raise AssertionError("parser result without format proof was promoted")
     assert validator.calls == 0
     parser.format_kind = d["ValidationKind"].FORMAT_VALID
+    parser.format_evidence_ref = None
+    validator.calls = 0
+    try:
+        decode(captured, parser, validator, "bank_scope", clock)
+    except d["DomainValidationIncomplete"]:
+        pass
+    else:
+        raise AssertionError("format-valid claim without evidence ref accepted")
+    assert validator.calls == 0
+    parser.format_evidence_ref = "synthetic-format-witness"
 
     validator.kind = "indeterminate"
     parser.calls = 0
@@ -674,7 +685,7 @@ def probe_used_input_identity() -> dict:
     assert type_error.kind is d["AcquisitionKind"].FAILED
     assert type_error.safe_error_code == "INVALID_PAYLOAD_TYPE"
     return {
-        "used_byte_proof_and_negative_cases": 10,
+        "used_byte_proof_and_negative_cases": 11,
         "evidence": "exact documented source capture/decode with fake immutable/mutable bytes",
     }
 
