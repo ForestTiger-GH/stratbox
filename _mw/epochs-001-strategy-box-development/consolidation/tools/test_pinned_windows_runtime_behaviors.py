@@ -268,5 +268,25 @@ class ExplorerAndChatProjectionObservedCases(TestCase):
         self.assertEqual(message.status_label, "Завершено")
 
 
+    def test_non_drive_selector_is_current_workspace_not_nested_named_child(self):
+        from stratbox_windows.application.workspace.models import WorkspaceSchema
+        from stratbox_windows.application.workspace.resolver import resolve_workspace_root
+        with TemporaryDirectory() as tmp:
+            data_root = Path(tmp) / "selected_data"
+            data_root.mkdir()
+            schema = WorkspaceSchema(
+                id="default", title="Default", required_dirs=("input", "output"),
+                root_mode="derived_from_selector", workspace_dirname="Strategy Box Data"
+            )
+            answer = resolve_workspace_root(
+                schema, data_root, run_mode="appdock_managed", create_missing=True
+            )
+            self.assertEqual(answer.resolution_mode, "explicit_workspace_root")
+            self.assertEqual(answer.workspace_root_path, data_root)
+            self.assertTrue((data_root / "input").is_dir())
+            self.assertTrue((data_root / "output").is_dir())
+            self.assertFalse((data_root / "Strategy Box Data").exists())
+
+
 if __name__ == "__main__":
     main(verbosity=2)
