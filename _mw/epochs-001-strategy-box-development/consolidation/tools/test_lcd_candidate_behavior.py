@@ -1085,7 +1085,8 @@ def probe_frg_cleanup_effects() -> dict:
     This does not implement the deliberately unavailable plan normalizer or
     verify OS conditional file mutation and historical domain semantics.
     """
-    from dataclasses import replace
+    import hashlib
+    from dataclasses import replace, asdict
     ref = "application/frg-cleanup-effect-plan-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass}
     class StalePlanError(RuntimeError):
