@@ -23,6 +23,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Validate all maintained Knowledge publication links and host owner routing
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_publication_routes.py
+      - name: Characterize pinned core CBR collector accounting with offline fakes
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_cbr_collector_observed_accounting.py
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Audit research source coverage and distinguish evidence classes
