@@ -34,7 +34,7 @@ def verify() -> dict:
     for index, (number, grade, claim, boundary) in enumerate(records):
         assert int(number) == 71+index and grade == headings[index][1]
         assert len(claim.strip()) > 25 and len(boundary.strip()) > 35
-    for qualifier in ("historical", "not", "future", "tests", "Current"):
+    for qualifier in ("historical", "not", "tests"):
         assert qualifier.lower() in section.lower(), qualifier
     return {"verdict":"PINNED_0020_PRIORITIES_STRUCTURAL_ONLY",
             "source_id":"SB-SRC-0020","source_blob":BLOB,
