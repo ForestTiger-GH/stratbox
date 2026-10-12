@@ -1,0 +1,44 @@
+name: One-time Knowledge publication source-link detachment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '_mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: knowledge-source-detachment-main
+  cancel-in-progress: false
+
+jobs:
+  detach-original-research:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Detach historical Research and Work URLs without altering meaning
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --apply
+      - name: Check publication has no direct links back to removable source corpus
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --check
+      - name: Verify staged Markdown formatting
+        run: git diff --check
+      - name: Commit generated Knowledge-only link detachment
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs
+          if git diff --cached --quiet; then
+            echo "No historical Research links to remove."
+            exit 0
+          fi
+          git commit -m "docs(knowledge): detach publication from disposable research and Work links"
+          git push origin HEAD:main
