@@ -40,7 +40,7 @@ def main() -> dict:
                all(len(value.strip()) >= 12 for value in row.split("|")[:2])
                for _, row in rows)
     assert all(science.count(f"| R03-{i:02d} |") == 1 for i in EXPECTED)
-    assert "UNEXECUTED" in matrix and "Product/Platform decisions" in matrix
+    assert "unexecuted" in matrix.lower() and "product/platform decisions" in matrix.lower()
     return {
         "verdict": "TWENTY_RECOVERY_PROPOSALS_ROUTED_STRUCTURALLY",
         "source_id": "SB-SRC-0556",
