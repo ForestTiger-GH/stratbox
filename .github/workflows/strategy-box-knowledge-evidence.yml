@@ -48,6 +48,8 @@ jobs:
             dist/strategy-box-knowledge-standalone.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Parse documentation-only LCD Python code skeletons (syntax, not runtime readiness)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_lcd_python_skeletons.py
       - name: "Exercise docs-only archive-amputation navigation in isolation"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_docs_only_archive_amputation.py
       - name: Validate all maintained Knowledge publication links and host owner routing
