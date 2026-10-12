@@ -1,6 +1,6 @@
 # LCD candidate — Qt-independent local Scenario execution construction
 
-**Scope:** one bounded local, in-process Scenario run in the existing Windows application, with a headless application seam. **Grade:** \`LCD_CANDIDATE\`; documentation-only \`CANDIDATE_DESIGN\`. **Not:** an implemented patch, approved distributed Job contract, multi-user host service, adopted cancellation/retry guarantee, or certified readiness. **Prepared:** 2026-10-12. **Evidence baseline:** \`stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b\`; analytical core source baseline \`stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580\`. Scope and model are subordinate to candidate \`TW-SB-2026-10-09-CANDIDATE-1\`, \`TH-SB-2026-10-09-CANDIDATE-1\`, \`PA-SB-2026-10-09-CANDIDATE-1\` and the [planned logical host commitment](../../what/strategy-box/host-deployment-commitment.md).
+**Scope:** one bounded local, in-process Scenario run in the existing Windows application, with a headless application seam. **Grade:** `LCD_CANDIDATE`; documentation-only `CANDIDATE_DESIGN`. **Not:** an implemented patch, approved distributed Job contract, multi-user host service, adopted cancellation/retry guarantee, or certified readiness. **Prepared:** 2026-10-12. **Evidence baseline:** `stratbox-windows@959e9c4ce1441124af5111c1e025041714e04d3b`; analytical core source baseline `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`. Scope and model are subordinate to candidate `TW-SB-2026-10-09-CANDIDATE-1`, `TH-SB-2026-10-09-CANDIDATE-1`, `PA-SB-2026-10-09-CANDIDATE-1` and the [planned logical host commitment](../../what/strategy-box/host-deployment-commitment.md).
 
 **Consumer:** an implementer preparing a bounded, separately authorized Windows refactor; a future independent headless consumer; a reviewer testing its admission, execution and observation semantics. This packet adds concrete *proposed Python construction* to the [local orchestration LDD](../../ldd/application/local-scenario-orchestration-boundary.md). That LDD remains the detailed mechanism and fault-vector owner. The wider host implementation remains [conditional architecture](../../architecture/application-authority-placement.md), not a requirement to extract a repository in this pilot.
 
@@ -8,23 +8,23 @@
 
 The pinned source shows:
 
-- \`application/scenarios/models.py\`: immutable \`ScenarioSpec\`, \`ScenarioStepSpec\`, \`ScenarioRegistry\`; step \`order\`, \`required\`, \`params_map\`, \`params_override\`; error policies \`fail_fast\` and \`continue_with_warnings\`.
-- \`application/scenarios/registry.py\`: three atomic Scenarios for three locally registered operations, plus the conditional two-step CBR composite. Do not generalize this into an already dynamic or hosted catalog.
-- \`application/scenarios/runner.py\`: sequential mapping and \`run_operation\`, mutable \`ScenarioRunCase\`, callbacks for case/event/artifact/log, step-level results and case finish. It is already independent of Qt imports.
-- \`application/operations/execution/runner.py\`: handler-resolution boundary and \`OperationResult(ok, message, outputs, details)\`, operation file logger, workspace precondition and broad exception-to-message conversion.
-- \`presentation/qt_desktop/scenario_coordinator.py\` and \`workers.py\`: one-active-case admission, \`QThread\` start and Qt signals. \`runtime/bootstrap.py\` imports this concrete Qt coordinator and places it into \`AppRuntime\`.
-- \`application/history/persistence.py\`: five independent recent-history JSON projections, tolerant of invalid payloads but without multi-file transaction, lock or credible durable Run authority.
+- `application/scenarios/models.py`: immutable `ScenarioSpec`, `ScenarioStepSpec`, `ScenarioRegistry`; step `order`, `required`, `params_map`, `params_override`; error policies `fail_fast` and `continue_with_warnings`.
+- `application/scenarios/registry.py`: three atomic Scenarios for three locally registered operations, plus the conditional two-step CBR composite. Do not generalize this into an already dynamic or hosted catalog.
+- `application/scenarios/runner.py`: sequential mapping and `run_operation`, mutable `ScenarioRunCase`, callbacks for case/event/artifact/log, step-level results and case finish. It is already independent of Qt imports.
+- `application/operations/execution/runner.py`: handler-resolution boundary and `OperationResult(ok, message, outputs, details)`, operation file logger, workspace precondition and broad exception-to-message conversion.
+- `presentation/qt_desktop/scenario_coordinator.py` and `workers.py`: one-active-case admission, `QThread` start and Qt signals. `runtime/bootstrap.py` imports this concrete Qt coordinator and places it into `AppRuntime`.
+- `application/history/persistence.py`: five independent recent-history JSON projections, tolerant of invalid payloads but without multi-file transaction, lock or credible durable Run authority.
 
-**Direct counterexamples:** \`continue_with_warnings\` can finish \`success\` after a failed required step; failed results may contain diagnostic log paths in \`outputs\`, then become ordinary artifact cards; raw \`str(exc)\` and parameter summaries enter visible messages; an early workspace failure returns before the logger-cleanup \`finally\` region. A lost Qt worker/callback has no separately durable execution owner. These are source-bounded observations, not measured deployed failures.
+**Direct counterexamples:** `continue_with_warnings` can finish `success` after a failed required step; failed results may contain diagnostic log paths in `outputs`, then become ordinary artifact cards; raw `str(exc)` and parameter summaries enter visible messages; an early workspace failure returns before the logger-cleanup `finally` region. A lost Qt worker/callback has no separately durable execution owner. These are source-bounded observations, not measured deployed failures.
 
 ## 2. Explicit local scope and invariants
 
 This packet designs **one-active local execution** only. It does not pretend a local mutex coordinates different processes or Web/Android clients. A future accepted logical host requires a different authority/durability/authentication/deployment slice.
 
-1. **Analytic independence — FIXED boundary:** \`stratbox\` performs domain calculations and domain validations without importing Windows, Qt, AppDock or host execution code.
+1. **Analytic independence — FIXED boundary:** `stratbox` performs domain calculations and domain validations without importing Windows, Qt, AppDock or host execution code.
 2. **Application truth — FIXED boundary / candidate realization:** only one local execution service may admit and conclude a local Case; Qt schedules and renders, and AppDock owns installation/session/node lifecycle.
 3. **Local single-flight — BOUNDED:** a locked admission gate rejects a concurrent submission instead of silently starting a second worker. No persistent queue is implied.
-4. **Explicit aggregate status — candidate safety rule:** failure of a required step cannot produce unconditional Case success. Optional-step and partial-policy admission remains a Product Decision; preserve its ambiguity as a blocker rather than treating \`required\` as already enforced.
+4. **Explicit aggregate status — candidate safety rule:** failure of a required step cannot produce unconditional Case success. Optional-step and partial-policy admission remains a Product Decision; preserve its ambiguity as a blocker rather than treating `required` as already enforced.
 5. **Evidence segregation — FIXED scientific invariant:** handler output path, operation technical log, candidate/staged output and verified published Artifact are different evidence classes. Creation of a card is not byte verification.
 6. **Effect uncertainty — FIXED scientific invariant:** raised exception, lost callback or process crash after an effect may have started does not prove that effect was rolled back or absent.
 7. **Observation safety — candidate guard:** unreviewed raw exception text, sensitive parameter values and filesystem paths cannot be broadcast to shared/mobile/agent projections. Local restricted diagnostic logs have a separate policy.
@@ -34,11 +34,11 @@ This packet designs **one-active local execution** only. It does not pretend a l
 
 | Existing owner | Proposed owner | Semantic delta | Strictly preserved |
 | --- | --- | --- | --- |
-| Qt \`ScenarioCoordinator.submit\` + \`_active_case\` | \`LocalScenarioService.submit\` with atomic single-flight admission | Move business admission out of Qt | Local busy rejection, one accepted Case at a time |
-| Qt \`ScenarioWorker\` + \`QThread\` | Qt \`ThreadDispatcher\` adapter invoking toolkit-free service | Qt becomes scheduling/signal bridge | Asynchronous UI, no UI thread blocking |
-| \`run_scenario\` mutates Case, emits callbacks | Pure plan + deterministic execution reducer and typed observations | Repair required-failure aggregate and untrusted output interpretation | Sequential steps, ordered mapping, observed step failures |
-| \`run_operation\` catches exceptions, exposes raw details | Boundary wrapper maps exception to bounded safe failure, restricted diagnostics | Separate error privacy and effect certainty | Existing handler invocation and core result values where valid |
-| \`HistoryPersistenceService\` five JSON files | Recent-history projection behind a local \`ProjectionSink\` | Cache must not become Run truth; corruption is reportable | Existing recent-context purpose |
+| Qt `ScenarioCoordinator.submit` + `_active_case` | `LocalScenarioService.submit` with atomic single-flight admission | Move business admission out of Qt | Local busy rejection, one accepted Case at a time |
+| Qt `ScenarioWorker` + `QThread` | Qt `ThreadDispatcher` adapter invoking toolkit-free service | Qt becomes scheduling/signal bridge | Asynchronous UI, no UI thread blocking |
+| `run_scenario` mutates Case, emits callbacks | Pure plan + deterministic execution reducer and typed observations | Repair required-failure aggregate and untrusted output interpretation | Sequential steps, ordered mapping, observed step failures |
+| `run_operation` catches exceptions, exposes raw details | Boundary wrapper maps exception to bounded safe failure, restricted diagnostics | Separate error privacy and effect certainty | Existing handler invocation and core result values where valid |
+| `HistoryPersistenceService` five JSON files | Recent-history projection behind a local `ProjectionSink` | Cache must not become Run truth; corruption is reportable | Existing recent-context purpose |
 | AppDock node/session and activation | External platform interface unchanged | No new manifest or host protocol | Distinct platform ownership |
 
 This is an interim *application construction* compatible with a planned host direction. It is insufficient by itself to deliver the admitted shared-host/Web/Windows-host-client target.
@@ -68,11 +68,11 @@ tests/unit/
   test_headless_application_imports.py
 ~~~
 
-\`execution_local\` → existing \`application.scenarios\`, \`application.operations\`, \`application.cases\`; existing adapter → \`stratbox\`. The application package **must not** import \`presentation.qt_desktop\`. UI-only bridge depends inward on \`execution_local\`. AppDock remains an external activation/lifecycle input, not an authority for analytic validity. The durable shared-host/API/ACL design has no physical allocation here.
+`execution_local` → existing `application.scenarios`, `application.operations`, `application.cases`; existing adapter → `stratbox`. The application package **must not** import `presentation.qt_desktop`. UI-only bridge depends inward on `execution_local`. AppDock remains an external activation/lifecycle input, not an authority for analytic validity. The durable shared-host/API/ACL design has no physical allocation here.
 
 ## 4. Concrete types and interfaces — CANDIDATE_DESIGN
 
-The following Python is a *coherent annotated design skeleton*, **not executable production code**. Type names, module boundaries and method signatures remain proposal-grade. A proposed \`case_id\` identifies one local execution; it is not a cross-host idempotency or durable Job key.
+The following Python is a *coherent annotated design skeleton*, **not executable production code**. Type names, module boundaries and method signatures remain proposal-grade. A proposed `case_id` identifies one local execution; it is not a cross-host idempotency or durable Job key.
 
 ~~~python
 # application/execution_local/contracts.py -- CANDIDATE_DESIGN
@@ -170,7 +170,7 @@ class BusyLocalExecutor(AdmissionError): ...
 class InvalidScenario(AdmissionError): ...
 ~~~
 
-**Data contract:** these are in-memory local Python values; no remotely callable JSON schema or durable wire compatibility is claimed. Mapping parameters are copied/frozen on admission before worker scheduling; current \`ScenarioSpec.resolve_params\` and \`OperationSpec.resolve_params\` still own defaults within their current scopes. For future serialization, a separate schema version and safe-field projection are mandatory; \`path\`, \`diagnostic_ref\` and raw params are not exposed to remote consumers by default.
+**Data contract:** these are in-memory local Python values; no remotely callable JSON schema or durable wire compatibility is claimed. Mapping parameters are copied/frozen on admission before worker scheduling; current `ScenarioSpec.resolve_params` and `OperationSpec.resolve_params` still own defaults within their current scopes. For future serialization, a separate schema version and safe-field projection are mandatory; `path`, `diagnostic_ref` and raw params are not exposed to remote consumers by default.
 
 ### Source-backed plan translation
 
@@ -202,7 +202,7 @@ def build_local_plan(scenario, invocation: LocalInvocation, *, case_id: str,
     return ExecutionPlan(case_id, scenario.id, tuple(steps), scenario.error_policy)
 ~~~
 
-**Required admission check before implementation:** \`OperationSpec.enabled\` exists in the pinned catalog model, but execution current code does not itself enforce disabled operations at this path. Input validation, dangerous operation authorization and correct permissions require their own owner; this local plan gate does **not** authorize a human, agent or remote principal.
+**Required admission check before implementation:** `OperationSpec.enabled` exists in the pinned catalog model, but execution current code does not itself enforce disabled operations at this path. Input validation, dangerous operation authorization and correct permissions require their own owner; this local plan gate does **not** authorize a human, agent or remote principal.
 
 ## 5. Local single-flight coordination — CANDIDATE_DESIGN
 
@@ -253,9 +253,9 @@ class LocalScenarioService:
                     self._active_case_id = None
 ~~~
 
-**Refinement required before a production patch:** handle failures of \`_projections.update\` without preventing gate release, log exception details only to an access-limited local diagnostic sink, and define a liveness/worker-start handshake if the chosen dispatcher can enqueue but never start. A \`BaseException\` handling sketch represents a last-resort unknown-effect boundary, not a plan to suppress process termination or system signals. Use exception-safe \`finally\` and an independent supervisory fault report. In-memory snapshots are *ephemeral*; post-crash missing snapshot cannot imply an empty history.
+**Refinement required before a production patch:** handle failures of `_projections.update` without preventing gate release, log exception details only to an access-limited local diagnostic sink, and define a liveness/worker-start handshake if the chosen dispatcher can enqueue but never start. A `BaseException` handling sketch represents a last-resort unknown-effect boundary, not a plan to suppress process termination or system signals. Use exception-safe `finally` and an independent supervisory fault report. In-memory snapshots are *ephemeral*; post-crash missing snapshot cannot imply an empty history.
 
-**Deliberate limitation:** no \`cancel()\`, \`retry()\`, \`resume()\`, queue, scheduler, remote client, API handler, durable \`Job\` or AppDock manifest is prescribed. A one-process gate is not secure multiuser admission.
+**Deliberate limitation:** no `cancel()`, `retry()`, `resume()`, queue, scheduler, remote client, API handler, durable `Job` or AppDock manifest is prescribed. A one-process gate is not secure multiuser admission.
 
 ## 6. Execution reducer, failure and effect policy — CANDIDATE_DESIGN
 
@@ -320,10 +320,10 @@ class LocalExecutionEngine:
 
 **Two stop-before-code decisions:**
 
-- **UNKNOWN versus FAILED:** the shown reducer conservatively returns \`OUTCOME_UNKNOWN\` for unreceipted failed operations, which exceeds the current CaseStatus vocabulary. Implementer must agree whether CaseStatus expands, or whether an independent \`effect_state=UNKNOWN\` accompanies \`FAILED\`; changing case schema, UI and persistence requires one aligned Decision. If the operation explicitly proves no effect occurred, \`FAILED\` remains possible.
-- **Observation sink:** \`publish\` may fail *after* an operation effect, so production \`record\` requires a bounded failure policy that preserves operation result and emits local diagnostic loss. If observations are authoritative/durable in a chosen profile, then the transaction/journal semantics must be defined before execution. In this local profile, treat callbacks as best-effort projection signals only.
+- **UNKNOWN versus FAILED:** the shown reducer conservatively returns `OUTCOME_UNKNOWN` for unreceipted failed operations, which exceeds the current CaseStatus vocabulary. Implementer must agree whether CaseStatus expands, or whether an independent `effect_state=UNKNOWN` accompanies `FAILED`; changing case schema, UI and persistence requires one aligned Decision. If the operation explicitly proves no effect occurred, `FAILED` remains possible.
+- **Observation sink:** `publish` may fail *after* an operation effect, so production `record` requires a bounded failure policy that preserves operation result and emits local diagnostic loss. If observations are authoritative/durable in a chosen profile, then the transaction/journal semantics must be defined before execution. In this local profile, treat callbacks as best-effort projection signals only.
 
-**Operation adapter bridge:** the existing \`run_operation\` returns \`OperationResult\` with \`ok\`, \`outputs\` and \`details['operation_log']\`; adapt it, do not replace banking handlers. Convert \`operation_log\` into a \`TECHNICAL_LOG\` reference; other paths into \`DOMAIN_OUTPUT_REFERENCE\` until a separate verification/publish receipt exists. Never call them \`VERIFIED_ARTIFACT\` based only on file suffix or \`ok\`. Prohibit raw \`str(exc)\` in shared observations, retain restricted technical cause. A failing operation can produce a diagnostic log even if \`ok=False\`. Ensure logger lifecycle closes on **every** path, including workspace early return; use a unique physical attempt/log path, not just sanitized case+step names.
+**Operation adapter bridge:** the existing `run_operation` returns `OperationResult` with `ok`, `outputs` and `details['operation_log']`; adapt it, do not replace banking handlers. Convert `operation_log` into a `TECHNICAL_LOG` reference; other paths into `DOMAIN_OUTPUT_REFERENCE` until a separate verification/publish receipt exists. Never call them `VERIFIED_ARTIFACT` based only on file suffix or `ok`. Prohibit raw `str(exc)` in shared observations, retain restricted technical cause. A failing operation can produce a diagnostic log even if `ok=False`. Ensure logger lifecycle closes on **every** path, including workspace early return; use a unique physical attempt/log path, not just sanitized case+step names.
 
 ## 7. Qt boundary (view-only bridge) — CANDIDATE_DESIGN
 
@@ -348,7 +348,7 @@ class QtLocalExecutionBridge(QObject):
     # (QThread or a bound executor) is BOUNDED within GUI lifecycle constraints.
 ~~~
 
-In source composition, build semantic service in a Qt-free application factory, then create Qt bridge at the UI entry. The current \`AppRuntime.scenario_coordinator: Any\` can be replaced by a typed local application port once implementation is authorized; do not replace it with an automatically global hosted interface. Screen projectors consume immutable snapshots and ordered \`ExecutionObservation\`; Qt callback order cannot establish execution truth.
+In source composition, build semantic service in a Qt-free application factory, then create Qt bridge at the UI entry. The current `AppRuntime.scenario_coordinator: Any` can be replaced by a typed local application port once implementation is authorized; do not replace it with an automatically global hosted interface. Screen projectors consume immutable snapshots and ordered `ExecutionObservation`; Qt callback order cannot establish execution truth.
 
 ## 8. Verification skeletons — PROPOSED, NOT EXECUTED
 
@@ -408,17 +408,17 @@ A *different competent reviewer* must be able to answer from this LCD and its ma
 | No domain/UI/AppDock import inside analytical core | **FIXED** boundary | Existing core + Architecture |
 | Scenario step order and map/override semantics in current local scope | **FIXED baseline**, change requires separate design review | Current Windows implementation |
 | One local admitted Case and atomic busy rejection during current local pilot | **BOUNDED** candidate | Windows application owner; validate thread/race test |
-| Exact \`execution_local\` private files and local scheduler implementation | **DELEGATED_NONMATERIAL** when interfaces/behavior hold | Implementer |
+| Exact `execution_local` private files and local scheduler implementation | **DELEGATED_NONMATERIAL** when interfaces/behavior hold | Implementer |
 | No unconditional success after failed required step | **FIXED target safety invariant; policy detail BLOCKED** | Product owner for partial/optional choices |
 | Local CaseStatus expansion versus separate effect-certainty axis | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** | Product + application owner |
 | Verified Artifact promotion, retention, authorization and receipt | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** | Product + artifact/security owners |
 | Diagnostic redaction/audience and retention | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** for policy; safe-by-default interim bridge | Security + operations |
 | Cancellation, retry, crash continuation, partial effects and concurrency beyond one local run | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** | Product + engineering risk owner |
-| Physical \`stratbox-application\` repo/process/host and remote protocol | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** | Product + engineering owners; distinct host slice |
+| Physical `stratbox-application` repo/process/host and remote protocol | **BLOCKED_ON_AUTHORITY_OR_EVIDENCE** | Product + engineering owners; distinct host slice |
 | Qt signal mechanics and in-process callback registry | **BOUNDED** | Desktop implementer and native test |
 | Independent headless and native conformance | **NOT EXECUTED** | Separate verifier |
 
-The code skeleton intentionally exposes some unresolved production choices rather than silently committing them. It is **not** \`LCD_READY_FOR_IMPLEMENTATION\` yet. A smaller well-defined future patch (for example extracting the pure step planner and testing its existing mapping semantics) may qualify separately after a cold implementation challenge and authority check.
+The code skeleton intentionally exposes some unresolved production choices rather than silently committing them. It is **not** `LCD_READY_FOR_IMPLEMENTATION` yet. A smaller well-defined future patch (for example extracting the pure step planner and testing its existing mapping semantics) may qualify separately after a cold implementation challenge and authority check.
 
 ## 10. Result / residual route
 
@@ -426,4 +426,4 @@ The code skeleton intentionally exposes some unresolved production choices rathe
 
 **What is still missing:** Product policy for partial/optional outcomes, compatible CaseStatus/effect-state acceptance, tested execution and failure behavior, native lifecycle and actual host/remote authority. The other LCD directions—host/client attachment, artifact/source integrity and AppDock interaction—remain separate activation candidates, not implicitly completed by this pilot.
 
-**Assurance and stop:** this document is producer-authored and statically reconciled with the pinned paths above; it has not received an independently executed cold-implementer challenge. No source-level \`unaccounted\` record, missing original carrier, or independent Research Amputation status is changed by publication. Reopen on a Windows source revision, admitted outcome/error policy, independent negative test failure, second consumer, or changed deployment contract.
+**Assurance and stop:** this document is producer-authored and statically reconciled with the pinned paths above; it has not received an independently executed cold-implementer challenge. No source-level `unaccounted` record, missing original carrier, or independent Research Amputation status is changed by publication. Reopen on a Windows source revision, admitted outcome/error policy, independent negative test failure, second consumer, or changed deployment contract.
