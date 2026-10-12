@@ -124,7 +124,14 @@ Only public-safe URL provenance should enter a shared receipt; credential-bearin
 # source_evidence/capture.py -- CANDIDATE_DESIGN
 from hashlib import sha256
 from uuid import uuid4
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from typing import Callable
+from stratbox.base.source_evidence.contracts import (
+    AcquisitionKind, CapturedPayload, ClockPort, OriginalByteIdentity,
+    SourceAcquisition,
+)
+# Implement safe_url as a sanitized canonical public-locator conversion
+# before a caller is allowed to serialize or share any receipt.
 
 class CaptureClockInvalid(ValueError):
     """The reported observation time lacks a validated UTC representation."""
@@ -169,8 +176,18 @@ def capture_downloaded_payload(source_id: str, request_url_safe: str,
         AcquisitionKind.RECEIVED, result.status_code, identity,
         None, safe_url(result.final_url))
     return CapturedPayload(receipt, payload)
+~~~
 
+~~~python
 # Chosen domain's used_input_bridge.py -- CANDIDATE_DESIGN
+from hashlib import sha256
+from stratbox.base.source_evidence.contracts import (
+    AcquisitionKind, ByteDecoder, CapturedPayload, ClockPort,
+    DomainInputValidator, InputEvidenceMismatch,
+    UsedInputReceipt, ValidationKind,
+)
+# Implement DomainValidationIncomplete as a safe typed domain failure
+# before integrating this bridge in a public Run or test fixture.
 def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
                              validator: DomainInputValidator,
                              domain_scope: str, clock: ClockPort,
@@ -215,7 +232,7 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     return parsed, used
 ~~~
 
-The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. **Clock qualification:** the candidate also checks that the observed acquisition time is a timezone-aware datetime with UTC offset zero. A field name or unverified clock implementation claiming `now_utc()` does not establish this. Passing the check establishes an unambiguous timestamp *representation*; clock synchronization, precision, actual response-capture instant, publisher release time and independent trusted time remain separate real-environment evidence. A non-UTC timestamp is refused before a misleading receipt can be issued.
+The placeholders `safe_url` and `DomainValidationIncomplete` require real implementations *before use*. The two logical file sketches now have **separate fenced Python modules** and explicit candidate imports; importing these paths in production still requires actual package construction, security-reviewed locator sanitation and domain error types. The AST-based producer checks exercise named definitions with injected fake ports; they cannot certify a working wheel solely from valid syntax. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. **Clock qualification:** the candidate also checks that the observed acquisition time is a timezone-aware datetime with UTC offset zero. A field name or unverified clock implementation claiming `now_utc()` does not establish this. Passing the check establishes an unambiguous timestamp *representation*; clock synchronization, precision, actual response-capture instant, publisher release time and independent trusted time remain separate real-environment evidence. A non-UTC timestamp is refused before a misleading receipt can be issued.
 
 **Second producer correction — avoid evidence inflation:** the original bridge also set `format_validation=FORMAT_VALID` automatically after `ByteDecoder.parse()`. A parser returning any object was therefore enough to manufacture format evidence. The narrowed `DecodedPayload` contract now carries an explicit typed format verdict and evidence reference from the actual decoder; the bridge stops before domain validation unless that verdict is `FORMAT_VALID` **and supplies a nonempty format-evidence reference**. This is a candidate producer-provided verification boundary, not proof that an arbitrary decoder is trustworthy or that a workbook with valid ZIP structure contains authoritative banking facts.
 
