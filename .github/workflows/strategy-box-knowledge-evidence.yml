@@ -23,6 +23,15 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Validate all maintained Knowledge publication links and host owner routing
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_publication_routes.py
+      - name: Fetch exact public Windows source for bounded execution characterization
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ForestTiger-GH/stratbox-windows
+          ref: 959e9c4ce1441124af5111c1e025041714e04d3b
+          path: windows-pinned
+          persist-credentials: false
+      - name: Execute pinned Windows scenario and local-log behavior with synthetic inputs
+        run: PYTHONPATH=windows-pinned/src python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_pinned_windows_runtime_behaviors.py
       - name: Characterize pinned core CBR collector accounting with offline fakes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_cbr_collector_observed_accounting.py
       - name: Characterize FRG cleanup replacement and archive fault safety with offline fakes
