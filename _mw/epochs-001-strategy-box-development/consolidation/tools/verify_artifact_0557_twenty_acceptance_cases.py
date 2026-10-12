@@ -21,7 +21,7 @@ SOURCE = (
 SCIENCE = ROOT / "docs/science/artifacts/output-identity-publication-and-availability.md"
 EXPECTED = [f"A{i:02d}" for i in range(1, 21)]
 ORIGINAL = re.compile(r"^\|\s*(A\d{2})\s*\|\s*([^|]+)\|\s*([^|]+)\|$", re.MULTILINE)
-PUBLISHED = re.compile(r"^\|\s*\`(A\d{2})\`\s*\|\s*([^|]+)\|\s*([^|]+)\|$", re.MULTILINE)
+PUBLISHED = re.compile(r"^\|\s*`(A\d{2})`\s*\|\s*([^|]+)\|\s*([^|]+)\|$", re.MULTILINE)
 PROFILES = ("NTFS/Windows", "Linux/POSIX", "SMB/NAS", "Object storage",
             "Remote host/client")
 
@@ -50,9 +50,9 @@ def verify() -> dict:
     assert [x[0] for x in science_cases] == EXPECTED, science_cases
     assert all(len(stimulus) > 20 and len(expected) > 55
                for _, stimulus, expected in science_cases)
-    assert all(science.count(f"\`{case}\`") == 1 for case in EXPECTED)
+    assert all(science.count(f"`{case}`") == 1 for case in EXPECTED)
     for name in PROFILES:
-        assert f"| \`{name}\` |" in segment, name
+        assert f"| `{name}` |" in segment, name
     assert "UNEXECUTED" in segment and "five" in segment.lower()
     assert all(token in segment for token in (
         "ACCESS_DENIED", "OUTCOME", "MISSING", "UNAVAILABLE", "Run", "Step"))
