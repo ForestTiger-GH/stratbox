@@ -1,5 +1,13 @@
 # Consolidation Work State
 
+## Current Transition Package — 2026-10-12, all twelve research gap originals in redacted reviewer geometry
+
+**Same active Knowledge Work Program:** incoming `main@8ecbf9d93bdb78ab1e7eb23d0ad9cd7bff5a4a83`, [CI 38262187215](https://github.com/ForestTiger-GH/stratbox/actions/runs/38262187215) **SUCCESS**. Exact 17-source-span original 0020 Work ledger passed and lowered its unspanned nonblank geometry **307→234**; scientific materiality unchanged. New Work-only reviewer workflow generalizes metadata-only triage to **all currently unspanned Research originals**, rather than just the largest two, while retaining targeted legacy packet. [All-source Work report](coverage/ALL-RESEARCH-UNSPANNED-METADATA-TRIAGE-2026-10-12.md) contains bounded producer classifications for other ten small residuals, with protected-source **publication exclusion** and no restricted details, paths or original excerpts. New exact CI and artifact shape still must be checked.
+
+**Authority/gates:** frozen 566 source identities, 176 full/10 governing/380 not-full, 53 producer fully read Research originals, 566/566 `material_unit_state=unaccounted`. Maintained 114 public Knowledge Markdown/10 candidate LCD; 22 human-independent review questions unanswered, real host and native Windows/Web/Android integration unavailable, physical implementation decisions open, Research Amputation NOT PERFORMED. No corporate extension implementation disclosure or production-code changes. Logical reset checkpoint performed; physical reset unavailable. `PARTIAL / CONTINUING`.
+
+---
+
 ## Current Transition Package — 2026-10-12, seventeen exact Windows source-source provenance spans
 
 **Continuing same authorized Work Program:** entering `main@0e6f4e92667ad70fa7dfcab0b5f39662b47b1791`, [CI 38261812122](https://github.com/ForestTiger-GH/stratbox/actions/runs/38261812122) **SUCCESS** for metadata-only public reviewer-triage; no raw Research excerpt is exported on that verified revision. Producer reconciliation now registers **12 original 0020 dated P0–P2 recommendations** and **five §XXIII roadmap stages** as 17 exact source-heading/body span-addressed Work units, each tied to the already-published self-standing Science interpretation and countercase. [Work report](coverage/SOURCE-0020-SEVENTEEN-EXACT-STAGE-AND-PRIORITY-SOURCE-SPANS-2026-10-12.md), Work-only verification script and CI step added. The structural audit may reduce original 0020 unspanned geometry, but **source-semantic losslessness does not follow**. Check new HEAD CI and audit denominator.

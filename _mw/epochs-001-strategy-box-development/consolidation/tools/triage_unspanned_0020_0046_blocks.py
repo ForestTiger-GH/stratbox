@@ -38,7 +38,7 @@ def classify_shape(lines: list[str]) -> str:
     return "PROSE_OR_LIST_REVIEW"
 
 
-def main() -> dict:
+def packet_for(source_ids: tuple[str, ...], output: Path) -> dict:
     import csv
     with CENSUS.open(newline="", encoding="utf-8") as f:
         items = {r["source_id"]: r for r in csv.DictReader(f)}
@@ -46,7 +46,7 @@ def main() -> dict:
     result = {"grade": "STRUCTURAL_GAP_REVIEW_PACKET_NOT_SEMANTIC_DISPOSITION",
               "redaction_profile": "METADATA_ONLY_NO_SOURCE_TEXT",
               "originals": []}
-    for sid in SOURCE_IDS:
+    for sid in source_ids:
         row, detail = items[sid], details[sid]
         raw = read_pinned_blob(ROOT, row["commit"], row["path"],
                                row["blob_sha"]).decode("utf-8")
@@ -82,8 +82,8 @@ def main() -> dict:
             "shape_only_counts": summary, "blocks": blocks,
             "source_independent_semantic_proof": "UNEXECUTED",
         })
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n",
                    encoding="utf-8")
     print(json.dumps({
         "grade": result["grade"],
@@ -99,9 +99,13 @@ def main() -> dict:
             ]}
             for item in result["originals"]
         ],
-        "artifact": str(OUT.relative_to(ROOT)),
+        "artifact": str(output.relative_to(ROOT)),
     }, ensure_ascii=False))
     return result
+
+
+def main() -> dict:
+    return packet_for(SOURCE_IDS, OUT)
 
 
 if __name__ == "__main__":
