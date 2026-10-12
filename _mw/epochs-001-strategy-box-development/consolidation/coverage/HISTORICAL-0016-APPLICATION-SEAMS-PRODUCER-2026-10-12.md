@@ -1,0 +1,9 @@
+# Historical refactor source 0016 — product projection and execution seam challenge
+
+**Source:** `SB-SRC-0016`, exact frozen `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`, Git blob `d04fece78c89063c2ac2dac775179f1517c7fea9`; this is a 1,926-line early architecture discussion, *not* current code or an already adopted physical application layout. **Producer verification only.**
+
+Seven [new source-specific dispositions](../units/HISTORICAL-REFACTOR-0016-APPLICATION-SEAMS-07.jsonl) supplement 27 earlier candidate meanings without restating them. Three scientific destinations retain seven mechanically checkable original ranges: [responsibility boundaries](../../../../docs/science/architecture/semantic-ownership-and-contract-boundaries.md), [capability semantics](../../../../docs/science/capabilities/definitions-plans-and-execution-truth.md) and [work/execution failure truth](../../../../docs/science/work/admission-planning-resource-scheduling-and-recovery.md).
+
+**Adversarial interpretations tested by producer:** three *logical* curated selection stages do not require independent services; zero/multiple user forms can legitimately derive from one domain operation; a typed object does not prove valid source vintages or safe external effects; exporter decoupling has its own artifact-conformance burden; cleanup planning is distinct from approved execution; an older narrative of a post-Run failure is not a reproduced bug; import tests do not establish installed host conformance.
+
+**Readiness:** this only covers seven previously under-addressed source areas L200–261, L343–415 and L701–770. Full source/Science exhaustive accounting and independent reverse challenge remain OPEN. `CENSUS.material_unit_state=unaccounted`; no accepted physical `stratbox-application` repository or specific host backend was chosen, and no protected implementation matter is introduced.
