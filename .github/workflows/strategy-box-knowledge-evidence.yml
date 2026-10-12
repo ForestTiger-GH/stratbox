@@ -48,6 +48,17 @@ jobs:
             dist/strategy-box-knowledge-standalone.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Build separate answer-free 22-case independent reviewer handoff packet
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/build_independent_reviewer_kit.py
+      - name: Upload source-hidden questions separately from the Knowledge publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: strategy-box-independent-reader-questions
+          path: |
+            dist/strategy-box-independent-reader-questions.zip
+            dist/strategy-box-independent-reader-questions.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: Parse documentation-only LCD Python code skeletons (syntax, not runtime readiness)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_lcd_python_skeletons.py
       - name: Execute selected LCD candidate fragments against synthetic ports (not production)
