@@ -784,6 +784,81 @@ def probe_scoped_effect_guard() -> dict:
     }
 
 
+def probe_safe_shared_projection() -> dict:
+    """Run the actual documented projection with an independent fake schema."""
+    ref = "security/host-effect-authorization-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("EffectClass", "AuthOutcome", "DecisionPhase", "Principal",
+                 "ResourceKey", "ActionRequest", "AuthDecision",
+                 "FieldVisibility", "ClassifiedField",
+                 "QualifiedSharedField", "AudienceProjection"):
+        compile_definition(ref, name, d)
+    actor = d["Principal"]("p", "session", "host", "human", None)
+    key = d["ResourceKey"]("node-shared-events", "event-7", "v2")
+    vis = d["FieldVisibility"]
+
+    class Policy:
+        allow = True
+        def evaluate(self, actor, request, *, phase):
+            assert phase is d["DecisionPhase"].FETCH
+            return d["AuthDecision"](
+                d["AuthOutcome"].ALLOW if self.allow else d["AuthOutcome"].DENY,
+                "synthetic", "p-1", "v2", None)
+
+    class SafeFields:
+        def __init__(self):
+            self.remap = False
+        def qualify_shared(self, resource, name, value):
+            allowed = {"status", "safe_code", "observed_at_utc"}
+            if resource.namespace != "node-shared-events" or name not in allowed:
+                return None
+            if type(value) is not str or len(value) > 80:
+                return None
+            if any(fragment in value.lower() for fragment in (
+                    "token=", "bearer ", "<script", "/private/", "traceback")):
+                return None
+            safe_name = "unexpected-new-key" if self.remap else name
+            return d["QualifiedSharedField"](safe_name, value)
+
+    policy, safe = Policy(), SafeFields()
+    projection = d["AudienceProjection"](policy, safe)
+    fields = (
+        d["ClassifiedField"]("status", "failed", vis.SHARED_SAFE),
+        d["ClassifiedField"]("private_path", "/private/a", vis.SHARED_SAFE),
+        d["ClassifiedField"]("raw_exception", "token=fake", vis.SHARED_SAFE),
+        d["ClassifiedField"]("safe_code", "SOURCE_FAILED", vis.SHARED_SAFE),
+        d["ClassifiedField"]("safe_code", "token=secret", vis.SHARED_SAFE),
+        d["ClassifiedField"]("observed_at_utc", "2026-10-12T08:30:00Z", vis.SHARED_SAFE),
+        d["ClassifiedField"]("safe_code", RuntimeError("bad"), vis.SHARED_SAFE),
+        d["ClassifiedField"]("status", "private", vis.OWNER_ONLY),
+        d["ClassifiedField"]("status", "<script>evil()</script>", vis.SHARED_SAFE),
+    )
+    result = projection.select(actor, key, fields)
+    assert result["status"] == "failed"
+    assert result["safe_code"] == "SOURCE_FAILED"
+    assert result["observed_at_utc"] == "2026-10-12T08:30:00Z"
+    assert set(result) == {"status", "safe_code", "observed_at_utc"}
+    policy.allow = False
+    try:
+        projection.select(actor, key, fields)
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("unauthorized resource read escaped host policy")
+    policy.allow = True
+    safe.remap = True
+    try:
+        projection.select(actor, key, fields)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("untrusted field remapping silently admitted")
+    return {
+        "bounded_shared_projection_adverse_cases": 8,
+        "evidence": "literal documented AudienceProjection against fake schema/authorization; no real serialization",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -793,6 +868,7 @@ def main() -> dict:
         "trigger_occurrence": probe_trigger_occurrence(),
         "used_input_identity": probe_used_input_identity(),
         "scoped_effect_guard": probe_scoped_effect_guard(),
+        "safe_shared_projection": probe_safe_shared_projection(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
