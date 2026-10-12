@@ -956,6 +956,8 @@ def probe_curated_machine_admission() -> dict:
                                               status.REJECTED, "REJECTED")
             if self.mode == "bad_port_type":
                 return d["MachineAdmission"](None, "accepted", "BAD_TYPE")
+            if self.mode == "null_payload":
+                return None
             if self.mode == "no_run":
                 return d["MachineAdmission"](None, status.REJECTED, "NOT_ADMITTED")
             return d["MachineAdmission"]("run-1", status.ACCEPTED, "RUN_ADMITTED")
@@ -988,13 +990,14 @@ def probe_curated_machine_admission() -> dict:
         ("accepted_no_ref", status.OUTCOME_UNKNOWN),
         ("denied_with_ref", status.OUTCOME_UNKNOWN),
         ("bad_port_type", status.OUTCOME_UNKNOWN),
+        ("null_payload", status.OUTCOME_UNKNOWN),
         ("no_run", status.REJECTED),
     ):
         app.mode = mode
         result = gateway.invoke("trusted-host-principal", invoke)
         assert result.status is expected and not result.accepted
         assert app.calls[-1][1] == "stable-intent-key"
-    return {"machine_admission_adverse_cases": 11,
+    return {"machine_admission_adverse_cases": 12,
             "evidence": "literal MachineGateway with fake host; no real MCP/A2A or Run store"}
 
 
