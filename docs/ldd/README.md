@@ -2,6 +2,7 @@
 
 **Status:** bounded **candidate** specifications. They are not deployed code, not adopted external platform protocols and do not substitute for accepted Product Decisions. Design relations inherit conditional `TW-SB-2026-10-09-CANDIDATE-1`, `TH-SB-2026-10-09-CANDIDATE-1` and `PA-SB-2026-10-09-CANDIDATE-1` where relevant.
 
+- [Twenty-five machine-operation adapter conformance cases](capabilities/machine-operation-adapter-conformance.md) — curated cross-client/domain schemas, catalog identity, input/effect security, retries, long jobs and protocol version failure cases; all unexecuted.
 - [Thirty scoped authority, privacy and effect conformance cases](security/scoped-authority-and-privacy-vectors.md) — conditional L0/L1/host/machine threat matrix with strict actor, plan, resource, field, log, cursor and unknown-effect boundaries; all unexecuted.
 - [Staged → Verified → Published Artifact](artifacts/staged-publication.md) — candidate local publication states, recovery, tests and faults.
 - [Neutral provider conformance vectors](extensions/neutral-provider-conformance-vectors.md) — 98 source-preserved public-neutral test intentions; not an implemented or executed certification suite.

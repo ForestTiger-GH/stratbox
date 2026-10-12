@@ -306,3 +306,7 @@ The frozen Topic 06 consolidation Research, §17 (`#L1489-L1526`) lists **thirty
 | `SB-SRC-0041/SCHEMA-02` · `HISTORICAL_PROTOCOL_SURFACE_EXAMPLES` | The Appendix B illustrated names for machine tools, case/artifact resource URIs, reusable prompts and long-running task projection onto internal Job/Case. | Example URI and operation labels are not released APIs or permission grants; task handles, artifact bytes and interaction-required states need exact provider-version verification. | L2271–L2305 (`#L2271-L2305`) |
 
 **Conservation limit:** this is a producer source-first packet; independent reverse review, empirical release tests and whole-original material accounting remain open. The current accepted Strategy Box host requirement supersedes only conflicting historical ownership/timing assumptions, not the original's record as a real alternative.
+
+## Complete twenty-five machine adapter contract and adverse test intentions
+
+[Twenty-five source-independent machine adapter conformance vectors](../../ldd/capabilities/machine-operation-adapter-conformance.md) now separate direct-core equivalence, curated tool selection, schema validation, source-data missingness, stable contract versions, trusted execution binding, authorization and delegated prompt-injection boundaries, large result references, byte-effect idempotency, artifact staging, interrupted tasks and incompatible protocol editions. Every proposed case is `UNEXECUTED`, while current code facts and future hosted claims remain qualified independently.
