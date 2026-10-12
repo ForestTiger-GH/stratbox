@@ -6,7 +6,7 @@
 - [Neutral provider conformance vectors](extensions/neutral-provider-conformance-vectors.md) — 98 source-preserved public-neutral test intentions; not an implemented or executed certification suite.
 - [Used-source receipt and byte provenance](data/used-source-receipt-boundary.md) — first local Python-core conditional seam with 18 negative tests, storage/evidence boundary and no universal Source Catalog.
 - [Host attachment across Web and Windows/AppDock](hosting/host-client-attachment-boundary.md) — admitted planned host target, alternative Windows packaging and 33 unexecuted conformance vectors.
-- [Host problem receipts and evidence degradation](observability/host-problem-receipts-and-evidence-degradation.md) — qualified diagnostic registration, recorder ambiguity, mandatory-audit and bootstrap/support-bundle boundaries with 16 unexecuted negative cases.
+- [Host problem receipts and evidence degradation](observability/host-problem-receipts-and-evidence-degradation.md) — qualified diagnostic registration, recorder ambiguity, mandatory-audit and bootstrap/support-bundle boundaries with 24 unexecuted negative cases.
 - [Local scenario execution without Qt-owned application truth](application/local-scenario-orchestration-boundary.md) — candidate extraction of the existing sequential runner's semantics, error classes, observation and projections before any physical service split.
 - [Activation and package-binding conformance](integration/activation-contract-verification.md) — pinned Windows/AppDock local integration defects and proposed release/fault tests, without creating a new manifest.
 
