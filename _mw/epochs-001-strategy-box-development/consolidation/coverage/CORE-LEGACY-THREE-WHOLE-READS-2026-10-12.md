@@ -1,0 +1,7 @@
+# Three complete public-neutral historical core/development/example reads
+
+**Date:** 2026-10-12. Three small frozen docs from `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580` were read fully: architectural owner sketch (28 lines, `SB-SRC-0065`), developer environment instructions (39 lines, `SB-SRC-0078`) and Python usage examples overview (17 lines, `SB-SRC-0079`). They are historical/auxiliary content, not shipped Current HOW or current AppDock conformance results.
+
+[Five individual material routes](../units/CORE-LEGACY-PUBLIC-READS-05.jsonl) qualify source-specific ontology, dependency direction, package developer commands, verification needs and notebook-example scope, with historical source SHA, exact line span, scientific statement and counterexample. The already maintained [architecture Science](../../../../docs/science/architecture/semantic-ownership-and-contract-boundaries.md) now reads independently without Research or legacy-document hyperlinks and preserves the relevant distinctions.
+
+`CENSUS.csv` read states for those three exact records changed from `not_full_read` to `full_read`; **all remain `material_unit_state=unaccounted`** until a separate authorized content verifier checks complete original preservation. This is producer-full reading/classification, not 3 certified pass results. Original developer-annotated DOCX carrier remains owner-declared LOST, excluded from byte attestation.
