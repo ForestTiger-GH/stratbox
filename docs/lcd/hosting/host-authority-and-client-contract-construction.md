@@ -39,6 +39,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping, Protocol
 
+class SubmissionRejected(ValueError):
+    """A proven invalid request; different from unavailable qualification."""
+    pass
+
 class AdmissionKind(str, Enum):
     ACCEPTED = "accepted"
     REPLAY = "replay"
@@ -252,11 +256,18 @@ class HostAdmission:
     def submit(self, actor: Actor, request: Submission) -> AdmissionReceipt:
         try:
             qualified = self.canonicalizer.seal(actor, request)
-        except Exception:
-            # Definitive pre-ledger validation failure for this submission.
+        except SubmissionRejected:
+            # Proven invalid request before admission; no Run created here.
             return AdmissionReceipt(AdmissionKind.REJECTED,
                                     request.intention_key, None,
-                                    self.host.host_id, "REQUEST_QUALIFICATION_FAILED")
+                                    self.host.host_id, "REQUEST_VALIDATION_REJECTED")
+        except Exception:
+            # Source/schema/provider/qualifier unavailable or faulty does
+            # not prove the submitted semantic request itself was invalid.
+            # No effect is asserted; eligibility is not established.
+            return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                    request.intention_key, None,
+                                    self.host.host_id, "REQUEST_QUALIFIER_UNAVAILABLE")
         if (not isinstance(qualified, Submission)
                 or qualified.intention_key != request.intention_key
                 or not qualified.intention_key
@@ -314,6 +325,8 @@ class HostAdmission:
                                     self.host.host_id, "DISPATCH_UNCERTAIN")
         return receipt
 ~~~
+
+**Qualification evidence correction (2026-10-12, candidate only):** the previous `HostAdmission.submit` returned a definitive `REJECTED` on **every** error raised by `CanonicalSubmissionPort.seal`, including an unavailable policy/source/schema service. A transport input shown invalid by deterministic validation is different from a qualified request whose validity could not be established. The candidate now distinguishes a typed `SubmissionRejected` (invalid and rejected for this attempt) from a generic qualification failure (`OUTCOME_UNKNOWN` with no invented Run). The qualifier must only raise `SubmissionRejected` after proving invalidity without effects; this type and its safe error mapping are proposed, **not deployed**. The unknown result does not grant retry with a new key or assert a physical mutation; it records inability to certify admission eligibility. This is an implementation-handoff semantic distinction, not an adopted production API.
 
 **Source-first T05 anti-spoofing correction (candidate logic only):** a transport-supplied `Submission.payload_digest` is merely a caller claim. Earlier candidate admission forwarded it straight into the ledger, so a malicious or buggy consumer could change scenario parameters under the same key and repeat the same claimed digest. The Host construction now **requires** a `CanonicalSubmissionPort` in its constructor. Before policy evaluation and ledger access, this trusted port validates the actual operation/definition/parameters/scope and supplies an immutable normalized request with a **server-calculated semantic digest**. The ledger sees that qualified request only; a qualifier that raises or changes the original intention identity is rejected pre-ledger. This is still a typed port *obligation*, not a canonical JSON algorithm or identity-verification implementation. The true canonicalization, sensitive fields, dynamic default resolution, principal binding, parser versions and actor/session authentication are `LCD_BLOCKED` until the actual host owner implements and tests them. The source's same-key/different-payload conflict contract cannot be certified by trusting an input `payload_digest`.
 
@@ -532,9 +545,24 @@ def test_duplicate_intention_replays_one_run(fake_host, actor, submit):
     assert a.run_ref == b.run_ref
     assert b.kind is AdmissionKind.REPLAY
 
-def test_digest_change_under_same_key_is_rejected(fake_host, actor, submit):
-    changed = with_changed_digest(submit)
+def test_transport_digest_change_only_does_not_change_meaning(fake_host, actor, submit):
+    first = fake_host.submit(actor, submit)
+    changed = with_changed_digest(submit)  # *only* untrusted client claim
+    result = fake_host.submit(actor, changed)
+    assert result.kind is AdmissionKind.REPLAY
+    assert result.run_ref == first.run_ref
+
+def test_semantic_parameter_change_under_same_key_is_rejected(fake_host, actor, submit):
+    fake_host.submit(actor, submit)
+    changed = with_changed_parameters(submit)
     assert fake_host.submit(actor, changed).kind is AdmissionKind.REJECTED
+
+def test_schema_rejection_and_qualifier_outage_are_distinct(fake_host, actor, submit):
+    assert fake_host.submit(actor, invalid_parameters(submit)).kind is AdmissionKind.REJECTED
+    fake_host.qualifier_unavailable = True
+    r = fake_host.submit(actor, submit)
+    assert r.kind is AdmissionKind.OUTCOME_UNKNOWN
+    assert r.run_ref is None
 
 def test_cross_principal_run_is_not_visible(fake_host, unauthorized, run_ref):
     with raises(PermissionError):
@@ -542,20 +570,23 @@ def test_cross_principal_run_is_not_visible(fake_host, unauthorized, run_ref):
 
 def test_missing_bytes_are_not_published(fake_host, actor, stale_artifact_ref):
     r = fake_host.fetch(actor, stale_artifact_ref)
-    assert r.availability is ArtifactAvailability.UNAVAILABLE
+    assert r.availability is not ArtifactAvailability.VERIFIED_AVAILABLE
+    assert r.content_digest is None
 
-def test_client_disconnect_does_not_terminate_host_run(fake_host, client, run_ref):
-    before = fake_host.read_run(client.actor, run_ref)
-    client.disconnect()
-    assert fake_host.read_run(client.actor, run_ref).revision == before.revision
+def test_client_disconnect_does_not_terminate_host_run(fake_host, client, actor, run_ref):
+    before = fake_host.read_run(actor, run_ref)
+    client.disconnect()  # fixture's presentation connection only
+    assert fake_host.read_run(actor, run_ref).revision == before.revision
 
 def test_unfenced_second_writer_is_rejected(two_hosts_same_namespace):
     assert two_hosts_same_namespace.second_writer_denied()
 
 def test_revocation_blocks_new_stream_page(fake_host, revoked_actor, run_ref):
     with raises(PermissionError):
-        fake_host.observe(revoked_actor, run_ref, after=5)
+        fake_host.observe(revoked_actor, run_ref, after_cursor="opaque-authorized-cursor")
 ~~~
+
+**Test-interface consistency correction (2026-10-12):** earlier proposed tests referred to `ArtifactAvailability.UNAVAILABLE`, which is **not** a member of the candidate enum; they also passed `after=5` although the proposed feed port accepts `after_cursor: str | None`, and treated changing only caller-supplied digest as a semantic payload conflict even though the trusted qualifier recomputes it. The stubs now use real candidate enum/signature names and separate spoofed digest versus changed semantic parameter behavior. Fixture helpers such as `with_changed_parameters`, `invalid_parameters`, the local `client.disconnect` fake, and transport integration remain deliberate *test placeholders*, not defined production functions. Their existence does not establish runnable deployed conformance.
 
 These are *abstract test scaffolds*, requiring fixture implementations. They do not prove live security, network behavior, Web reachability, crash recovery, Windows/AppDock attachment or Android parity. The [HC-01..59 LDD cases](../../ldd/hosting/host-client-attachment-boundary.md) remain separate, all target conformance UNEXECUTED without dated actual test runs. Cold-implementer and independent security/architecture challenges remain OPEN.
 

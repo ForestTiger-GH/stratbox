@@ -189,7 +189,8 @@ def probe_host_admission() -> dict:
     from types import MappingProxyType
     ref = "hosting/host-authority-and-client-contract-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass}
-    for name in ("AdmissionKind", "AdmissionReceipt", "Submission", "HostAdmission"):
+    for name in ("SubmissionRejected", "AdmissionKind", "AdmissionReceipt",
+                 "Submission", "HostAdmission"):
         compile_definition(ref, name, d)
     kind, receipt = d["AdmissionKind"], d["AdmissionReceipt"]
     host = SimpleNamespace(host_id="host-1")
@@ -203,12 +204,15 @@ def probe_host_admission() -> dict:
         def __init__(self):
             self.calls = 0
             self.mutate_intent_key = False
+            self.unavailable = False
         def seal(self, actor, untrusted):
             self.calls += 1
+            if self.unavailable:
+                raise RuntimeError("synthetic qualifier unavailable")
             if (not untrusted.intention_key or
                     set(untrusted.parameters) != {"period"} or
                     not isinstance(untrusted.parameters["period"], str)):
-                raise ValueError("schema rejected")
+                raise d["SubmissionRejected"]("schema rejected")
             frozen = MappingProxyType(dict(untrusted.parameters))
             canonical = json.dumps(
                 {"principal": actor.principal_ref, "scope": actor.scope_ref,
@@ -284,6 +288,12 @@ def probe_host_admission() -> dict:
     assert ledger.seen["intent"][0] == policy.seen_digest
     replay = svc.submit(actor, req)
     assert replay.kind is kind.REPLAY and replay.run_ref == "run-1"
+    # Merely changing an untrusted claimed digest MUST leave the certified
+    # semantic request unchanged: the host recomputes digest before ledger.
+    forged_claim_only = svc.submit(
+        actor, request(client_claim="different-forged-digest"))
+    assert forged_claim_only.kind is kind.REPLAY
+    assert forged_claim_only.run_ref == "run-1"
     assert scheduler.calls == 1
     # A client can assert one digest for two different payloads; the trusted
     # canonicalizer must make the ledger reject the second under the same key.
@@ -308,6 +318,11 @@ def probe_host_admission() -> dict:
     canonicalizer.mutate_intent_key = True
     assert svc.submit(actor, request(key="modified-key")).kind is kind.REJECTED
     canonicalizer.mutate_intent_key = False
+    canonicalizer.unavailable = True
+    outage = svc.submit(actor, request(key="qualifier-outage"))
+    assert outage.kind is kind.OUTCOME_UNKNOWN
+    assert outage.run_ref is None
+    canonicalizer.unavailable = False
     assert ledger.calls == calls_before_invalid
 
     ledger.lose_ack_after_commit = True
