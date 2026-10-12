@@ -65,6 +65,8 @@ jobs:
           persist-credentials: false
       - name: Execute pinned Windows scenario and local-log behavior with synthetic inputs
         run: PYTHONPATH=windows-pinned/src python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_pinned_windows_runtime_behaviors.py
+      - name: Characterize pinned Windows settings load, coercion and write-fault effects
+        run: PYTHONPATH=windows-pinned/src python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_pinned_windows_settings_config.py
       - name: Characterize pinned core CBR collector accounting with offline fakes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_cbr_collector_observed_accounting.py
       - name: Characterize FRG cleanup replacement and archive fault safety with offline fakes
