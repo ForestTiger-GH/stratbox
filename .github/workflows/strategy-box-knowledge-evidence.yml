@@ -25,6 +25,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_publication_routes.py
       - name: Characterize pinned core CBR collector accounting with offline fakes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_cbr_collector_observed_accounting.py
+      - name: Characterize FRG cleanup replacement and archive fault safety with offline fakes
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_frg_cleanup_observed_faults.py
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Audit research source coverage and distinguish evidence classes
