@@ -1,0 +1,267 @@
+# LCD candidate — FRG cleanup plan trust and file-effect construction
+
+**Status:** \`LCD_CANDIDATE\` for a bounded, single-workspace local design; \`LCD_BLOCKED\` for transactional replacement, hosted destructive actions and backend-agnostic guarantees. **Prepared:** 2026-10-12. This is \`CANDIDATE_DESIGN\` within the maintained Knowledge Product, never a patch to the FRG implementation.
+
+**Direct source:** \`stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580\`, \`src/stratbox/macrobanks/frg/cleanup.py\` blob \`a51e1a905ddc9290dc1593e6d887564714b0bce4\`. [Current HOW](../../current-how/frg-cleanup-effects.md) records five actually executed synthetic faults at [CI 38188245744](https://github.com/ForestTiger-GH/stratbox/actions/runs/38188245744). [FRG effect LDD](../../ldd/application/frg-cleanup-effect-guards.md), [Artifact publication LCD](../artifacts/local-output-publication-construction.md) and [host effect-authorization LCD](../security/host-effect-authorization-construction.md) are the adjacent design owners. Those five current-state tests are **not** implementation tests of this LCD.
+
+## 1. Exact reason a specialized LCD is warranted
+
+The existing \`run_frg_cleanup\` path builds a catalog-based DataFrame plan, then optionally calls \`apply_frg_cleanup_plan\`. That lower-level apply function accepts the supplied plan as trusted, iterates rows, can remove an existing target **before** a copy/rename or archive write succeeds, records row-level errors and continues. A new FileStore layer alone cannot determine whether a caller is authorized to delete a specific file or whether a selected latest source is semantically correct. A generic Artifact publisher alone cannot prove that an archive member corresponds to the accepted latest source version.
+
+This LCD prepares a *narrow* seam: immutable normalized cleanup intentions, plan freeze/validation, source and target observations, guarded per-effect execution, verified replacement, evidence/partial states, and an independent application authority for hosted destructive use. It does not make every FRG file an immutable data lake, rewrite the statistical parser, mandate a database, or prevent a trusted notebook caller from using the existing direct Python core API.
+
+## 2. Candidate logical location and phases
+
+~~~text
+src/stratbox/macrobanks/frg/
+   cleanup.py                    # existing observed implementation, unmodified
+   cleanup_plan_contracts.py     # candidate neutral typed value model
+   cleanup_plan_validate.py      # candidate actual-family/source plan qualification
+   cleanup_effects.py            # candidate per-file staging and receipts
+application_authority/
+   effect_admission.py           # host-only principal, resource, permission and approval
+tests/frg/
+   test_stale_plan_and_root_escape.py
+   test_replace_failure_preserves_old_bytes.py
+   test_archive_uses_verified_chosen_source.py
+   test_partial_effect_and_ack_loss.py
+~~~
+
+Read-only planning can remain in the core. The host wraps any remotely requested write/delete operation in a trusted application effect gate; UI approval or an AI agent's suggested row is not a FileStore authorization grant.
+
+**Proposed execution phases:** (1) select actual source family from recognized catalog; (2) freeze a normalized plan, input generation and intended effects; (3) request admission/approval under the actual application profile; (4) re-read source/target generation and authorization at effect time; (5) stage new bytes, verify source identity and resulting representation; (6) finalize with backend-specific replace/commit evidence; (7) persist or return a bounded effect receipt; (8) permit dependent archive/remove only if its prerequisites were verified. A failure after an effect may have begun becomes a partial or uncertain outcome, not an unconditional rollback.
+
+## 3. Concrete typed plan and effect state — CANDIDATE_DESIGN
+
+~~~python
+# cleanup_plan_contracts.py -- DOCUMENTATION ONLY
+from dataclasses import dataclass
+from enum import Enum
+from typing import Protocol
+
+class FileAction(str, Enum):
+    COPY_LATEST = "copy_latest"
+    RENAME_LATEST = "rename_latest"
+    DELETE_SOURCE = "delete_source"
+    CREATE_ARCHIVE = "create_archive"
+
+class EffectTruth(str, Enum):
+    NOT_STARTED = "not_started"
+    VERIFIED = "verified"
+    SKIPPED = "skipped"
+    FAILED_NO_EFFECT = "failed_no_effect"
+    PARTIAL = "partial"
+    OUTCOME_UNKNOWN = "outcome_unknown"
+
+@dataclass(frozen=True, slots=True)
+class FileWitness:
+    root_scope: str
+    relative_path: str
+    file_generation: str | None
+    sha256: str | None
+    observed_at_utc: str
+    exists: bool
+
+@dataclass(frozen=True, slots=True)
+class FrozenAction:
+    action_id: str
+    action: FileAction
+    source: FileWitness | None
+    target: FileWitness | None
+    recognized_family: str
+    selected_period: str
+    expected_target_digest: str | None
+    destructive: bool
+
+@dataclass(frozen=True, slots=True)
+class FrozenCleanupPlan:
+    plan_id: str
+    revision: str
+    scope_ref: str
+    actions: tuple[FrozenAction, ...]
+    sorted_target_set_digest: str
+    selected_source_revision: str
+
+@dataclass(frozen=True, slots=True)
+class EffectReceipt:
+    plan_id: str
+    action_id: str
+    truth: EffectTruth
+    observed_target_digest: str | None
+    reconciliation_ref: str | None
+    safe_code: str
+
+class PlanEvidencePort(Protocol):
+    def observe(self, scope_ref: str, relative_path: str) -> FileWitness: ...
+    def recognized_source(self, scope_ref: str, path: str
+                          ) -> tuple[str, str] | None: ...
+    def derive_plan_digest(self, actions: tuple[FrozenAction, ...]) -> str: ...
+
+class FileEffectPort(Protocol):
+    def prepare_copy_to_staging(self, source: FileWitness,
+                                destination: FileWitness) -> str: ...
+    def verify_staging(self, staging_ref: str,
+                       expected_sha256: str) -> bool: ...
+    def conditional_finalize(self, staging_ref: str, target: FileWitness,
+                             intended_sha256: str) -> FileWitness: ...
+    def conditional_delete(self, source: FileWitness) -> str: ...
+
+class EffectAuthorizationPort(Protocol):
+    def authorize(self, plan: FrozenCleanupPlan, action: FrozenAction,
+                  approval_ref: str | None) -> str: ...
+
+class CleanupReceiptPort(Protocol):
+    def record_pending(self, plan: FrozenCleanupPlan,
+                       action: FrozenAction, permit_ref: str) -> str: ...
+    def record_result(self, pending_ref: str, receipt: EffectReceipt) -> None: ...
+~~~
+
+A \`FileWitness\` is a bounded observed fact, not a cryptographic resource capability. A content digest is evidence of byte identity but does not prove file ownership, recognized bank-source publication or a safe path. On storage without stable generations/conditional effects, the strong option is **BLOCKED**, not a hopeful \`os.rename\` claim.
+
+## 4. Plan normalization and application guard — CANDIDATE_DESIGN
+
+~~~python
+# cleanup_plan_validate.py -- CANDIDATE_DESIGN
+def freeze_cleanup_plan(catalog_rows: tuple[dict[str, object], ...],
+                        root_scope: str,
+                        evidence: PlanEvidencePort) -> FrozenCleanupPlan:
+    # 1. Interpret recognized catalog policy and selected reporting period.
+    # 2. Reject unknown action strings, duplicated action IDs, conflicting
+    #    targets, out-of-root references and unrecognized delete subjects.
+    # 3. Observe source/target bytes/generations where required.
+    # 4. Sort canonical action tuples before digesting; do not hash Pandas
+    #    object identity or serialize unstable DataFrame repr().
+    # 5. Record source choice and prerequisites for every archive member.
+    validated: list[FrozenAction] = normalize_and_validate(
+        catalog_rows, root_scope, evidence)
+    if not validated:
+        raise ValueError("NO_ELIGIBLE_ACTIONS")
+    actions = tuple(validated)
+    digest = evidence.derive_plan_digest(actions)
+    return FrozenCleanupPlan(
+        plan_id=create_stable_plan_ref(), revision="candidate-v1",
+        scope_ref=root_scope, actions=actions,
+        sorted_target_set_digest=digest,
+        selected_source_revision=source_selection_revision(actions))
+
+# cleanup_effects.py -- CANDIDATE_DESIGN
+class CleanupExecutor:
+    def __init__(self, effects: FileEffectPort, auth: EffectAuthorizationPort,
+                 receipts: CleanupReceiptPort, evidence: PlanEvidencePort):
+        self.effects, self.auth, self.receipts, self.evidence = (
+            effects, auth, receipts, evidence)
+
+    def apply_one(self, plan: FrozenCleanupPlan,
+                  step: FrozenAction, approval_ref: str | None) -> EffectReceipt:
+        permit = self.auth.authorize(plan, step, approval_ref)
+        pending = self.receipts.record_pending(plan, step, permit)
+        try:
+            if step.action in (FileAction.COPY_LATEST, FileAction.RENAME_LATEST):
+                assert step.source is not None and step.target is not None
+                current = self.evidence.observe(
+                    plan.scope_ref, step.source.relative_path)
+                if not source_witness_matches(current, step.source):
+                    raise StalePlanError("SOURCE_CHANGED")
+                staging = self.effects.prepare_copy_to_staging(
+                    step.source, step.target)
+                expected = step.source.sha256
+                if expected is None or not self.effects.verify_staging(staging, expected):
+                    raise StalePlanError("STAGING_NOT_VERIFIED")
+                final = self.effects.conditional_finalize(
+                    staging, step.target, expected)
+                receipt = EffectReceipt(
+                    plan.plan_id, step.action_id, EffectTruth.VERIFIED,
+                    final.sha256, None, "REPLACEMENT_VERIFIED")
+            elif step.action is FileAction.DELETE_SOURCE:
+                assert step.source is not None
+                # Do not delete unrecognized or changed source, or anything
+                # that is still the only needed recovery copy.
+                if self.evidence.recognized_source(
+                    plan.scope_ref, step.source.relative_path) is None:
+                    raise PermissionError("UNRECOGNIZED_DELETE_SOURCE")
+                confirmed = self.effects.conditional_delete(step.source)
+                receipt = EffectReceipt(
+                    plan.plan_id, step.action_id, EffectTruth.VERIFIED,
+                    None, confirmed, "DELETE_CONFIRMED")
+            else:
+                raise NotImplementedError("ARCHIVE_REQUIRES_SEPARATE_MEMBER_PLAN")
+        except StalePlanError:
+            receipt = EffectReceipt(plan.plan_id, step.action_id,
+                                    EffectTruth.FAILED_NO_EFFECT,
+                                    None, None, "STALE_PLAN")
+        except Exception:
+            # After a pending effect, an exception alone cannot establish
+            # whether the external backend committed bytes or deletion.
+            receipt = EffectReceipt(plan.plan_id, step.action_id,
+                                    EffectTruth.OUTCOME_UNKNOWN,
+                                    None, pending, "EFFECT_UNCERTAIN")
+        self.receipts.record_result(pending, receipt)
+        return receipt
+~~~
+
+**Hard stops before production:** \`normalize_and_validate\`, \`create_stable_plan_ref\`, \`source_selection_revision\`, \`source_witness_matches\` and \`StalePlanError\` are deliberate design obligations, **not shipped definitions**. More importantly, \`record_result\` can fail after a confirmed physical effect; the actual implementation must preserve the pending receipt for reconciliation. Storage must guarantee a generation-checked finalize/delete or disclose a weaker, explicitly accepted local policy. A source may change after a precheck but before staging; staging must validate the bytes actually copied, and conditional finalization must be tied to the same immutable generation. An authorization check that happened before this code cannot replace an effect-time check.
+
+**Rename semantics:** a desired rename must not silently consume the only source copy until target commit is proven; if the source is to be removed, model it as a **separate guarded delete** with a confirmed prerequisite, not a magic atomic cross-backend move.
+
+**Archive semantics:** construct each archive member from the *accepted selected source* or a verified target that has the same selected source digest. An old preexisting target path is **not** sufficient. Archive staging, integrity and publication use the generic Artifact LCD. The membership manifest must be frozen before a delete that could eliminate required input bytes.
+
+## 5. Partial and unknown outcomes
+
+A complete cleanup plan is not one Boolean. Maintain per-action \`NOT_STARTED\`, \`VERIFIED\`, \`SKIPPED\`, \`FAILED_NO_EFFECT\`, \`PARTIAL\`, \`OUTCOME_UNKNOWN\`; derive the plan outcome from required actions, outstanding prerequisites and actual effect certainty. One completed copy cannot justify archive or delete when another required action failed.
+
+For each action, preserve a causal chain: normalized plan revision → approved principal/target set → current file generation → pending effect → physical receipt → verified final bytes or explicit unknown → actual source/data availability. The user-visible summary must never dump raw \`str(exc)\` or private absolute paths into a shared feed.
+
+## 6. Proposed concrete negative tests — UNEXECUTED
+
+~~~python
+def test_existing_old_target_survives_failed_staging(effects, executor, plan):
+    effects.raise_on_copy()
+    result = executor.apply_one(plan, plan.replace_step, approval_ref="a")
+    assert result.truth is not EffectTruth.VERIFIED
+    assert effects.original_target_bytes_intact()
+
+def test_changed_file_since_preview_rejected(executor, mutable_source, plan):
+    mutable_source.replace_bytes_after_preview()
+    r = executor.apply_one(plan, plan.copy_step, approval_ref="a")
+    assert r.truth in (EffectTruth.FAILED_NO_EFFECT, EffectTruth.OUTCOME_UNKNOWN)
+
+def test_reused_approval_with_new_target_set_fails(auth, plan):
+    with raises(PermissionError):
+        auth.authorize(plan.with_changed_actions(), plan.delete_step, "old")
+
+def test_unrecognized_delete_row_cannot_reach_host_effect(executor, plan):
+    r = executor.apply_one(plan, plan.unrecognized_delete_step, approval_ref="a")
+    assert r.truth is not EffectTruth.VERIFIED
+
+def test_archive_members_match_selected_source_digest(archive_builder, plan):
+    manifest = archive_builder.prepare_members(plan)
+    assert all(member.digest == plan.chosen_source_digest(member.family)
+               for member in manifest)
+
+def test_lost_finalize_ack_marks_unknown_and_preserves_pending(executor, effects, plan):
+    effects.commit_then_lose_reply()
+    r = executor.apply_one(plan, plan.copy_step, approval_ref="a")
+    assert r.truth is EffectTruth.OUTCOME_UNKNOWN
+    assert r.reconciliation_ref
+
+def test_notebook_direct_core_still_imports_without_host_python_package(import_guard):
+    import_guard.block_application_and_qt()
+    import stratbox.macrobanks.frg.cleanup
+~~~
+
+These are **proposed future fake/native tests**. Their correct execution requires a real chosen FileStore backend, staged publication conformance, conditional resource mutations, approved host effect policy and a separate verifier. The five existing pinned synthetic tests expose the current *absence* of these safeguards; they do not pass the target contract.
+
+## 7. Decisions and implementer freedom
+
+| Choice | Status / consumer |
+| --- | --- |
+| Preserve independently usable analytic core and current plan/apply identity | FIXED source and architecture boundary |
+| Normalized immutable selected-source/effect plan for one local pilot | LCD_CANDIDATE; core domain + application owners |
+| Actual backend atomic/conditional writes, durable pending effect and safe rollback/reconcile | LCD_BLOCKED; storage/operations owner with native fault tests |
+| Host permission, destructive approval, machine delegation, lease/revocation | LCD_BLOCKED; Product/Security owner; [effect LCD](../security/host-effect-authorization-construction.md) |
+| FRG family/period source policy and changed/unknown file recognition | Core domain owner; use existing recognized catalog source, do not invent publisher truth |
+| Archive member manifest semantics | Candidate specialized FRG rule; actual compression backend and staging acceptance need proof |
+| Choice of concrete Python module filenames and small helper functions | BOUNDED; developer after invariants satisfied |
+| Exact consumer/safe migration and independent implementation handoff | NOT EXECUTED |
+
+**Verdict:** scoped FRG cleanup is \`LCD_CANDIDATE\`; safe universal/hosted destructive operation remains \`LCD_BLOCKED\`. This model is sufficient for an implementation author to construct a fake-plan reference and find gaps, not to make real destructive source-code changes under the present documentation Commission. No Research completeness claim follows.
