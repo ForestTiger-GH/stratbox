@@ -124,7 +124,18 @@ Only public-safe URL provenance should enter a shared receipt; credential-bearin
 # source_evidence/capture.py -- CANDIDATE_DESIGN
 from hashlib import sha256
 from uuid import uuid4
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
+
+class CaptureClockInvalid(ValueError):
+    """The reported observation time lacks a validated UTC representation."""
+
+def checked_utc_observation(clock: ClockPort) -> datetime:
+    observed = clock.now_utc()
+    if (not isinstance(observed, datetime)
+            or observed.tzinfo is None
+            or observed.utcoffset() != timedelta(0)):
+        raise CaptureClockInvalid("OBSERVATION_TIMESTAMP_NOT_UTC")
+    return observed
 
 def capture_downloaded_payload(source_id: str, request_url_safe: str,
                                downloader: Callable[[], object],
@@ -135,9 +146,9 @@ def capture_downloaded_payload(source_id: str, request_url_safe: str,
     except Exception:
         return SourceAcquisition(
             source_id, attempt_ref, request_url_safe,
-            clock.now_utc(), AcquisitionKind.FAILED,
+            checked_utc_observation(clock), AcquisitionKind.FAILED,
             None, None, "TRANSPORT_EXCEPTION")
-    observed = clock.now_utc()
+    observed = checked_utc_observation(clock)
     if not result.ok or result.content is None:
         return SourceAcquisition(
             source_id, attempt_ref, request_url_safe, observed,
@@ -203,7 +214,9 @@ def decode_with_used_receipt(captured: CapturedPayload, decoder: ByteDecoder,
     return parsed, used
 ~~~
 
-The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. **Second producer correction — avoid evidence inflation:** the original bridge also set `format_validation=FORMAT_VALID` automatically after `ByteDecoder.parse()`. A parser returning any object was therefore enough to manufacture format evidence. The narrowed `DecodedPayload` contract now carries an explicit typed format verdict and evidence reference from the actual decoder; the bridge stops before domain validation unless that verdict is `FORMAT_VALID`. This is a candidate producer-provided verification boundary, not proof that an arbitrary decoder is trustworthy or that a workbook with valid ZIP structure contains authoritative banking facts.
+The placeholders safe_url and DomainValidationIncomplete require real implementations *before use*. **Producer adverse-case repair:** a frozen dataclass and a purported digest are not authority to claim that a possibly externally assembled `CapturedPayload` carries identical bytes. The candidate now seals accepted mutable transport buffers into `bytes` before hashing and rejects a bad/missing acquisition identity or digest mismatch **before the parser is called**. **Clock qualification:** the candidate also checks that the observed acquisition time is a timezone-aware datetime with UTC offset zero. A field name or unverified clock implementation claiming `now_utc()` does not establish this. Passing the check establishes an unambiguous timestamp *representation*; clock synchronization, precision, actual response-capture instant, publisher release time and independent trusted time remain separate real-environment evidence. A non-UTC timestamp is refused before a misleading receipt can be issued.
+
+**Second producer correction — avoid evidence inflation:** the original bridge also set `format_validation=FORMAT_VALID` automatically after `ByteDecoder.parse()`. A parser returning any object was therefore enough to manufacture format evidence. The narrowed `DecodedPayload` contract now carries an explicit typed format verdict and evidence reference from the actual decoder; the bridge stops before domain validation unless that verdict is `FORMAT_VALID`. This is a candidate producer-provided verification boundary, not proof that an arbitrary decoder is trustworthy or that a workbook with valid ZIP structure contains authoritative banking facts.
 
 The additional in-memory hash pass is deliberate for this pilot; a real streaming implementation should hash exactly the same byte stream supplied to the domain without duplicating a very large payload. Whether the chosen source uses a trusted zero-copy holder is a separate performance/security decision, not permission to falsely claim byte equality. Domain-dependent format and economic validation remain with the domain; the generic helper must not elevate bare HTTP 200 or ZIP container parsing to a correct banking figure. A production implementation must validate that captured.acquisition.actual_bytes is present and bind the same immutable bytes into the parser; the type model may be refined to a separate ReceivedAcquisition variant so that a nullable digest cannot reach this function. Memory and streaming policy are deliberately open because the current DownloadResult materializes bytes. For large datasets use a constrained stream/chunk capture with immutable open-handle identity; do not change domain semantics just for a universal abstraction.
 
@@ -266,6 +279,10 @@ def test_forged_or_changed_capture_rejected_before_parser(captured, spy_parser):
     with raises(InputEvidenceMismatch):
         decode_with_used_receipt(forged, spy_parser, validator, "scope", clock)
     assert spy_parser.calls == 0
+
+def test_naive_clock_never_receives_utc_label(fake_download, naive_clock):
+    with raises(CaptureClockInvalid):
+        capture_downloaded_payload("s", "safe", fake_download(b"X"), naive_clock)
 
 def test_mutable_transport_buffer_is_sealed_before_receipt(fake_transport, clock):
     producer_buffer = bytearray(b"official-source-bytes")
