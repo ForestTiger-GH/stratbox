@@ -201,11 +201,26 @@ class FieldVisibility(str, Enum):
 class ClassifiedField:
     name: str
     value: object
-    visibility: FieldVisibility
+    visibility: FieldVisibility  # source hint, NOT trusted field authorization
+
+@dataclass(frozen=True, slots=True)
+class QualifiedSharedField:
+    name: str
+    value: str | int | float | bool | None
+
+class SafeSharedFieldPort(Protocol):
+    def qualify_shared(self, resource: ResourceKey, name: str,
+                       value: object) -> QualifiedSharedField | None:
+        """Use a server-owned allowlisted schema and validate each value.
+
+        Unknown names, raw exceptions, sensitive paths, tokens, arbitrary
+        objects and unvalidated numeric/HTML-bearing values are refused.
+        """
+        ...
 
 class AudienceProjection:
-    def __init__(self, policy: PolicyPort):
-        self.policy = policy
+    def __init__(self, policy: PolicyPort, safe_fields: SafeSharedFieldPort):
+        self.policy, self.safe_fields = policy, safe_fields
 
     def select(self, actor: Principal, resource: ResourceKey,
                fields: tuple[ClassifiedField, ...]) -> dict[str, object]:
@@ -216,11 +231,23 @@ class AudienceProjection:
         decision = self.policy.evaluate(actor, req, phase=DecisionPhase.FETCH)
         if decision.outcome is not AuthOutcome.ALLOW:
             raise PermissionError("OBJECT_ACCESS_DENIED")
-        # Actual field grant policy needed; this conservative candidate exposes
-        # shared-safe only and never exports raw exception, path or secrets.
-        return {field.name: field.value for field in fields
-                if field.visibility is FieldVisibility.SHARED_SAFE}
+        projection: dict[str, object] = {}
+        for field in fields:
+            if field.visibility is not FieldVisibility.SHARED_SAFE:
+                continue
+            # A caller's self-declared SHARED_SAFE label is insufficient.
+            # The host's schema/serializer must independently accept the field
+            # name and its actual value under this resource scope and audience.
+            qualified = self.safe_fields.qualify_shared(
+                resource, field.name, field.value)
+            if qualified is not None:
+                if qualified.name != field.name:
+                    raise ValueError("UNEXPECTED_PROJECTION_FIELD_REMAP")
+                projection[qualified.name] = qualified.value
+        return projection
 ~~~
+
+**Producer correction against false shared safety:** the first sketch returned any value whose record supplied `ClassifiedField.visibility=SHARED_SAFE`, including a token-bearing exception or a newly introduced sensitive path accidentally marked safe. That is **source-provided classification, not a server-owned field permit**. The revised `SafeSharedFieldPort` requires a product-owned schema of specific permitted keys and value-level validation/redaction before emission; unknown keys and arbitrary raw objects are dropped. HTML-like *legitimate text* still requires escaped/inert rendering at every client, and source text must not be elevated into executable markup. Browser/JSON serializers must reject nonfinite numbers and other unsupported structures. This is a dependency on an independently secured port, not proof of its implementation. A field may be safe in a shared Event but restricted in a private Case or Machine response; field schema must bind resource/audience scope.
 
 A future audience-specific field grant is a separate policy projection, not the raw storage record. Knowing an Artifact ID or seeing a Case card does not authorize reading bytes, technical logs, source URLs with embedded credentials or another participant's private parameters. Server must enforce access at **every read**, including pagination, reconnect and artifact download. Revoked grants require new filtered snapshots rather than reusing stale client event cursors.
 
@@ -250,6 +277,14 @@ def test_revocation_at_effect_time_denies(effect_guard, revoked):
 def test_protected_artifact_id_is_not_an_access_grant(host, outsider, private_id):
     assert host.try_metadata(outsider, private_id).is_denied_or_hidden
     assert host.try_download(outsider, private_id).is_denied_or_hidden
+
+def test_untrusted_shared_safe_label_cannot_publish_unknown_field(
+        projection, actor, record):
+    record.fields += (ClassifiedField("raw_exception",
+                                     "token=synthetic-secret",
+                                     FieldVisibility.SHARED_SAFE),)
+    visible = projection.select(actor, record.resource, record.fields)
+    assert "raw_exception" not in visible
 
 def test_shared_projection_never_copies_raw_sensitive_fields(projection, actor, record):
     safe = projection.select(actor, record.resource, record.fields)
