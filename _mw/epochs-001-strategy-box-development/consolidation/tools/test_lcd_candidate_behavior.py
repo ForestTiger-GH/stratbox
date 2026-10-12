@@ -584,11 +584,13 @@ def probe_artifact_publication() -> dict:
     """Run a bounded subset of the exact documented publisher on in-memory bytes."""
     import hashlib
     from io import BytesIO
+    from dataclasses import replace
 
     ref = "artifacts/local-output-publication-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass, "hashlib": hashlib}
     for name in ("PublicationPhase", "ScopedLocator", "PublicationIntent",
-                 "StagingSeal", "ByteReceipt", "PublicationReceipt",
+                 "StagingSeal", "ByteReceipt", "FinalizationProof",
+                 "PublicationReceipt",
                  "LocalOutputPublisher"):
         compile_definition(ref, name, d)
     phase = d["PublicationPhase"]
@@ -604,6 +606,7 @@ def probe_artifact_publication() -> dict:
             self.final_bytes = None
             self.raise_after_commit = False
             self.corrupt_final = False
+            self.receipt_fault = None
             self.mutate_after_first_sealed_read = False
 
         def create_unique_staging(self, intent):
@@ -649,7 +652,25 @@ def probe_artifact_publication() -> dict:
                 self.final_bytes = self.final_bytes + b"externally changed"
             if self.raise_after_commit:
                 raise RuntimeError("ack lost after effect")
-            return "committed-object-ref"
+            proof = d["FinalizationProof"](
+                "committed-object-ref", intent.artifact_id, intent.generation,
+                intent.target, receipt.byte_count, receipt.sha256, True)
+            if self.receipt_fault == "wrong_artifact":
+                return replace(proof, artifact_id="other-artifact")
+            if self.receipt_fault == "wrong_generation":
+                return replace(proof, generation="other-generation")
+            if self.receipt_fault == "wrong_target":
+                return replace(proof, target=d["ScopedLocator"](
+                    "workspace", "other/file.xlsx"))
+            if self.receipt_fault == "wrong_digest":
+                return replace(proof, sha256="different-bytes")
+            if self.receipt_fault == "wrong_count":
+                return replace(proof, byte_count=receipt.byte_count + 1)
+            if self.receipt_fault == "not_committed":
+                return replace(proof, commit_confirmed=False)
+            if self.receipt_fault == "empty_ref":
+                return replace(proof, final_ref="")
+            return proof
 
         def inspect_final(self, intent):
             if self.final_bytes is None:
@@ -705,6 +726,16 @@ def probe_artifact_publication() -> dict:
     assert result.phase is phase.FAILED
     assert writer.final_bytes is None and not catalog.committed
 
+    for fault in ("wrong_artifact", "wrong_generation", "wrong_target",
+                  "wrong_digest", "wrong_count", "not_committed", "empty_ref"):
+        writer, catalog, auth, pub = fixture()
+        writer.receipt_fault = fault
+        result = pub.publish(intent, write_valid)
+        assert result.phase is phase.OUTCOME_UNKNOWN
+        assert result.byte_receipt is not None and result.reconciliation_ref
+        assert writer.final_bytes is not None
+        assert catalog.pending and not catalog.committed
+
     writer, catalog, auth, pub = fixture()
     writer.raise_after_commit = True
     result = pub.publish(intent, write_valid)
@@ -744,7 +775,7 @@ def probe_artifact_publication() -> dict:
     assert result.phase is phase.OUTCOME_UNKNOWN
     assert writer.final_bytes is None and not catalog.committed
 
-    return {"publication_effect_and_failure_cases": 9,
+    return {"publication_effect_and_failure_cases": 16,
             "evidence": "executed documented publisher with in-memory bytes, no OS storage"}
 
 

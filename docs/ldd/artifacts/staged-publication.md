@@ -69,3 +69,12 @@ DRAFT
 **Blocking decisions:** Q-02 (storage and retention), Q-03 (effect permissions), Q-05 (Artifact identity), Q-06 (внешние capabilities). **Engineering selection freedom:** формат manifest, конкретный DB transaction engine, internal temporary path, hash algorithm с подтверждённой стойкостью и совместимостью. Данные, уже сохранённые пользователем, требуют отдельного миграционного/архивного решения; отсутствие обязательства на старый API не разрешает их молча уничтожать.
 
 **Next revalidation:** adopted WHAT/HOW revision, backend capability conformance, actual fault injection, exact storage semantics и Product Authority.
+## Exact Artifact finalization acknowledgment — AP-09..11 (2026-10-12)
+
+| ID | Injected candidate fault | Required future native/host proof |
+| --- | --- | --- |
+| AP-09 | Finalize returns a different Artifact ID, generation, target, byte count or digest after physical bytes might have been written | Never COMMITTED; retain OUTCOME_UNKNOWN and the known verified-byte witness. |
+| AP-10 | Finalize returns an empty object ref or no confirmed-commit proof | A bare success string is insufficient to certify or catalog an Artifact. |
+| AP-11 | Finalize succeeded but catalog or inspection errors | Do not erase known ByteReceipt while effect remains unresolved; reconciliation is necessary. |
+
+These are design-only target checks. Selected in-memory fake-port assertions are producer-executed only after an exact green CI; native storage commit semantics and independent testing remain LCD_BLOCKED.

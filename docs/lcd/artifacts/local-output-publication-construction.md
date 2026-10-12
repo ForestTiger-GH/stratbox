@@ -97,6 +97,16 @@ class ByteReceipt:
     domain_validation_ref: str | None
 
 @dataclass(frozen=True, slots=True)
+class FinalizationProof:
+    final_ref: str
+    artifact_id: str
+    generation: str
+    target: ScopedLocator
+    byte_count: int
+    sha256: str
+    commit_confirmed: bool
+
+@dataclass(frozen=True, slots=True)
 class PublicationReceipt:
     phase: PublicationPhase
     intent: PublicationIntent
@@ -117,7 +127,7 @@ class ScopedWriterPort(Protocol):
     def seal_closed_staging(self, staging_ref: str) -> StagingSeal: ...
     def read_sealed_staging(self, seal: StagingSeal) -> BinaryIO: ...
     def finalize(self, intent: PublicationIntent, seal: StagingSeal,
-                 verified: ByteReceipt) -> str: ...
+                 verified: ByteReceipt) -> FinalizationProof: ...
     def inspect_final(self, intent: PublicationIntent) -> ByteReceipt | None: ...
 
 class ArtifactCatalogPort(Protocol):
@@ -153,12 +163,21 @@ class LocalOutputPublisher:
 
     def publish(self, intent: PublicationIntent,
                 produce: Callable[[BinaryIO], None]) -> PublicationReceipt:
-        if not self.auth.may_write(intent.actor_ref, intent.target):
+        try:
+            allowed = self.auth.may_write(intent.actor_ref, intent.target)
+        except Exception:
+            return PublicationReceipt(PublicationPhase.FAILED, intent, None,
+                                      None, "WRITE_AUTHORITY_UNAVAILABLE", None)
+        if allowed is not True:
             return PublicationReceipt(PublicationPhase.FAILED, intent, None,
                                       None, "WRITE_DENIED", None)
-        # Validate confinement of storage_scope + relative_path independently:
-        # no '..', absolute injection, symlink/junction traversal or racing open.
-        staging_ref, stream = self.writer.create_unique_staging(intent)
+        # Actual confinement/anti-race belongs to the storage backend.
+        try:
+            staging_ref, stream = self.writer.create_unique_staging(intent)
+        except Exception:
+            return PublicationReceipt(PublicationPhase.FAILED, intent, None,
+                                      None, "STAGING_START_FAILED", None)
+        receipt: ByteReceipt | None = None
         completed = False
         finalization_started = False  # external finalize may outlive our receipt
         try:
@@ -195,13 +214,23 @@ class LocalOutputPublisher:
                                   "UTC_CLOCK_FROM_INJECTED_SOURCE", domain_ref)
             self.catalog.record_pending(intent, receipt)
             # Recheck authorization immediately before external finalization.
-            if not self.auth.may_write(intent.actor_ref, intent.target):
+            if self.auth.may_write(intent.actor_ref, intent.target) is not True:
                 return PublicationReceipt(PublicationPhase.FAILED, intent,
                                           receipt, None, "PERMISSION_CHANGED",
                                           staging_ref)
             finalization_started = True
             try:
-                final_ref = self.writer.finalize(intent, seal, receipt)
+                proof = self.writer.finalize(intent, seal, receipt)
+                if (not isinstance(proof, FinalizationProof)
+                        or not isinstance(proof.final_ref, str)
+                        or not proof.final_ref
+                        or proof.artifact_id != intent.artifact_id
+                        or proof.generation != intent.generation
+                        or proof.target != intent.target
+                        or proof.byte_count != receipt.byte_count
+                        or proof.sha256 != receipt.sha256
+                        or proof.commit_confirmed is not True):
+                    raise RuntimeError("FINALIZATION_PROOF_INVALID")
             except Exception:
                 # The external finalize MAY already have happened.
                 return PublicationReceipt(PublicationPhase.OUTCOME_UNKNOWN,
@@ -214,7 +243,7 @@ class LocalOutputPublisher:
                                           intent, receipt, None,
                                           "FINAL_VERIFICATION_MISSING",
                                           staging_ref)
-            self.catalog.record_committed(intent, receipt, final_ref)
+            self.catalog.record_committed(intent, receipt, proof.final_ref)
             return PublicationReceipt(PublicationPhase.COMMITTED,
                                       intent, receipt, intent.target, None, None)
         except Exception:
@@ -224,9 +253,12 @@ class LocalOutputPublisher:
                      else PublicationPhase.FAILED)
             code = ("FINALIZE_OR_CATALOG_UNCERTAIN" if finalization_started
                     else "STAGING_OR_METADATA_FAILED")
-            return PublicationReceipt(phase, intent, None,
+            return PublicationReceipt(phase, intent,
+                                      receipt if finalization_started else None,
                                       None, code, staging_ref)
 ~~~
+
+**Post-finalization acknowledgment correction (2026-10-12, candidate only):** The former `finalize()` method returned an arbitrary string, which became a catalog reference without proof that it belonged to the intended Artifact ID, generation, target and verified bytes. The revised *documentation-only* interface defines `FinalizationProof` and checks those dimensions before declaring COMMITTED. A malformed post-effect acknowledgment produces OUTCOME_UNKNOWN; a known `ByteReceipt` is preserved through later catalog/inspection errors. Typed proof remains merely a backend claim until a native storage implementation supplies generation-fenced commit and actual attestation. This is not a deployed implementation or release test.
 
 **Important deliberate incompleteness:** this skeleton still has a possible ambiguous window between physical finalization and catalog commit. The actual accepted backend must prove a durable publish intent, stable generation/reconciliation, permissions at final open, and its particular atomic visibility/durability tier. **Source-driven correction:** the earlier sketch called an unfenced `read_closed_staging(staging_ref)` twice (once for digest, once for validation), then finalized by the same mutable staging path. A file modified between those passes could therefore receive a digest for version A, validation for version B and potentially publication of version C. The revised candidate introduces `StagingSeal` with an exact backend-fenced generation, member size and hash. **Both reads and finalize are required to enforce the same seal**; mismatch is quarantined before an intended effect. This is a contract on the storage port, **not** a magical guarantee supplied by a dataclass. A filesystem, NAS or object backend without real sealed-generation/conditional-finalize semantics cannot claim this profile. In particular, `mtime` or `stat` followed by `open()` does not close the race. A source producer must not treat a sealed staging handle as an unrestricted path capability. The injected UTC clock and verification must supply actual observations, not the literal placeholder shown. Callback, writer cleanup, quarantine retention and catalog conflict handling also require tested concrete implementations. This is a construction *prompt to eliminate ambiguity*, not deployable code.
 
@@ -264,6 +296,15 @@ def test_lost_finalize_ack_requires_reconciliation(inject_lost_ack, publisher, i
 def test_permission_revoked_between_verify_and_finalize(revoke_after_verify, publisher, intent):
     result = publisher.publish(intent, produce=write_valid_xlsx)
     assert result.phase is not PublicationPhase.COMMITTED
+
+def test_false_backend_finalization_ack_requires_reconciliation(publisher, writer, intent):
+    for kind in ("wrong_artifact", "wrong_generation", "wrong_target",
+                 "wrong_digest", "wrong_count", "not_committed", "empty_ref"):
+        writer.receipt_fault = kind
+        outcome = publisher.publish(intent, produce_valid)
+        assert outcome.phase is PublicationPhase.OUTCOME_UNKNOWN
+        assert outcome.byte_receipt is not None
+        assert outcome.reconciliation_ref
 
 def test_external_user_delete_does_not_erase_old_publication_receipt(catalog, availability, artifact_id):
     assert catalog.get(artifact_id).publication_phase is PublicationPhase.COMMITTED
