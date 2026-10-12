@@ -409,7 +409,7 @@ def probe_authorized_host_feed() -> dict:
     for name in ("RunPhase", "RunOutcome", "RunSnapshot",
                  "Observation", "ObservationPage", "ScopedReads"):
         compile_definition(ref, name, d)
-    snapshot = d["RunSnapshot"]("run-A", 4, d["RunPhase"].RUNNING, None, 35, False)
+    snapshot = d["RunSnapshot"]("run-A", 4, d["RunPhase"].RUNNING, None, False)
     observation = d["Observation"](
         "run-A", "visible-opaque-id", 4, "SOURCE_UNAVAILABLE", "Source unavailable")
     page_type = d["ObservationPage"]
@@ -423,8 +423,9 @@ def probe_authorized_host_feed() -> dict:
 
     class Ledger:
         raw_reads = 0
+        current = snapshot
         def get(self, run_ref):
-            return snapshot
+            return self.current
         def read_after(self, *args):
             self.raw_reads += 1
             raise AssertionError("must not use raw ledger events")
@@ -466,6 +467,23 @@ def probe_authorized_host_feed() -> dict:
         else:
             raise AssertionError("non-True permission granted")
         assert feed.calls == before
+    from dataclasses import replace
+    for bad_snapshot in (
+        replace(snapshot, run_ref="private-other-run"),
+        replace(snapshot, revision=-1),
+        replace(snapshot, revision="4"),
+        replace(snapshot, phase="running"),
+        replace(snapshot, stale=1),
+    ):
+        ledger.current = bad_snapshot
+        try:
+            reads.read_run(actor, "run-A")
+        except RuntimeError as exc:
+            assert str(exc) == "RUN_SNAPSHOT_CONTRACT_INVALID"
+        else:
+            raise AssertionError("untyped or foreign Run snapshot accepted")
+    ledger.current = snapshot
+    assert not hasattr(reads.read_run(actor, "run-A"), "last_sequence")
     policy.permission, policy.fail = True, True
     try:
         reads.read_run(actor, "run-A")
@@ -506,7 +524,7 @@ def probe_authorized_host_feed() -> dict:
     feed.mode = "resync"
     assert reads.observe(actor, "run-A", None).resync_required
     assert ledger.raw_reads == 0
-    return {"authorized_feed_adverse_groups": 17,
+    return {"authorized_feed_adverse_groups": 22,
             "raw_ledger_reads": ledger.raw_reads,
             "evidence": "literal ScopedReads/ObservationPage, synthetic feed; no native authenticated cursor or actual shared-node policy"}
 
