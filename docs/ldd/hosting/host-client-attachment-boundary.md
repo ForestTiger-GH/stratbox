@@ -2,6 +2,21 @@
 
 **Status:** `CANDIDATE / INTEGRATION-DEPENDENT / ZERO REAL HOST TESTS`. **WHAT:** [PD-SB-HOST-2026-10-12-01](../../what/strategy-box/host-deployment-commitment.md). **HOW:** [host attachment profiles](../../how/hosting/host-and-client-deployment.md). This LDD details testable inter-component semantics only; it does not establish a new host repo, Python package, executable, API URL, certificate, AppDock manifest, DB, broker or security protocol.
 
+## Two cross-boundary negative cases required by lost admission ACK and Artifact projection
+
+The [Host LCD](../../lcd/hosting/host-authority-and-client-contract-construction.md) now distinguishes an exception from **admission ledger after possible durable commit** from a definite pre-ledger rejection. An authorized client must be able to reconcile by its original intention key and canonical request digest; generating a new key after this ambiguous acknowledgment can produce duplicate admitted work. A typed receipt with a mismatched host/intention or an accepted status without a Run identity is not authoritative. This is a candidate semantic proof obligation: no real ledger, secure identity or outbox is certified.
+
+A **host-private file handle** must never appear in a client-facing Artifact metadata response. The client may learn scoped availability and a justified content digest/media type, but opening actual bytes requires a distinct current object-authorization and version-checked storage operation. A verified catalog entry does not prove the physical bytes are still openable to that principal; storage outage must not be promoted to definitive missing file. Both issues follow original Topic 12's distinction between admission/physical effect/receipt/Artifact access, and are **not** assertions about an installed remote host.
+
+| Verification case | Fault | Required observable outcome |
+| --- | --- | --- |
+| Ledger admitted Run, response lost | Commit before response, submit same key and exact normalized payload | Initial UNKNOWN, later same logical Run through authenticated replay; never new-key automatic effect |
+| Malformed admission receipt | Wrong host, changed intention, REJECTED with Run or ACCEPTED without Run | UNKNOWN/contract failure; no second scheduler dispatch |
+| Private Artifact handle | Repository returns a server-only locator with available bytes | Client receives status and permitted metadata, never the internal handle |
+| Status versus byte availability | Backend failure, changed content, missing digest, or a revoked grant | Distinguish backend outage from confirmed missing, return UNKNOWN if evidence inadequate, enforce actual stream-open authorization |
+
+**Readiness:** all four are proposed native/host integration vectors. The producer's executable Markdown tests cover their **algorithmic fake-port shapes only**; real process crash, physical storage race, client/session ACL and stream-open effects remain `UNEXECUTED`.
+
 ## Logical ownership and identity rules
 
 One running host owns the accepted logical Run/Case/Job within its served scope. Client instance, app installation, AppDock user/session, network connection, host installation and domain operation are **distinct identities**. The same authenticated user on Windows and browser might see the same authorized Case; another user might see only an audience-safe incident notice. Two host instances must never both claim write authority for one job namespace without a separately proved leadership/fencing protocol. Name of host type (Web or Windows/AppDock) must not change the canonical meaning of a Step, Artifact or effect outcome.
