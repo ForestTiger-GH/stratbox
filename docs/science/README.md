@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [Fourteen practical consumer failure cases](engineering/consumer-failure-cases-and-evidence-boundaries.md) — standalone answers about source replay, historical registries, Windows Run status, privacy, Artifacts, host clients, recovery and Product authority, with explicit unexecuted and uncertainty bounds.
+
 - [Bounded peer Work delegation and causal reconciliation](collaboration/bounded-delegation-peer-work-and-causal-reconciliation.md) — independent actors, scoped WorkOffers, effect receipts, deduplication, partitions and evidence-aware fan-in.
 - [Forecast vintages, conditionality and decision authority](data-and-knowledge/forecast-vintage-conditionality-and-decision-separation.md) — issued historical meaning, ex-ante information bounds, forecast evaluation, uncertainty and decision separation.
 - [Communication acts, protected claims and correction](surfaces/communication-acts-protected-claims-and-repair.md) — recipient-specific reliability, omitted qualifiers, institutional force, delivery versus acceptance and propagated repair.
