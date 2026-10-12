@@ -1076,6 +1076,142 @@ def probe_neutral_provider_binding() -> dict:
             "evidence": "literal neutral resolver on fake public descriptors; no provider package activated"}
 
 
+def probe_frg_cleanup_effects() -> dict:
+    """Execute the exact documented FRG executor with frozen synthetic witnesses.
+
+    This does not implement the deliberately unavailable plan normalizer or
+    verify OS conditional file mutation and historical domain semantics.
+    """
+    from dataclasses import replace
+    ref = "application/frg-cleanup-effect-plan-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    class StalePlanError(RuntimeError):
+        pass
+    d["StalePlanError"] = StalePlanError
+    d["source_witness_matches"] = lambda actual, expected: actual == expected
+    for name in ("FileAction", "EffectTruth", "FileWitness",
+                 "FrozenAction", "FrozenCleanupPlan", "EffectReceipt",
+                 "CleanupExecutor"):
+        compile_definition(ref, name, d)
+    action, truth = d["FileAction"], d["EffectTruth"]
+    source = d["FileWitness"]("data", "reports/new-source.xlsx", "gen-2",
+                              "digest-new", "2026-10-12T08:00:00Z", True)
+    target = d["FileWitness"]("data", "reports/target.xlsx", "gen-1",
+                              "digest-old", "2026-10-12T08:00:00Z", True)
+    copy = d["FrozenAction"]("copy-1", action.COPY_LATEST, source, target,
+                              "financial-family", "2026-07", "digest-old", True)
+    delete = d["FrozenAction"]("delete-1", action.DELETE_SOURCE, source, None,
+                                "financial-family", "2026-07", None, True)
+    archive = d["FrozenAction"]("archive-1", action.CREATE_ARCHIVE,
+                                 source, target, "financial-family",
+                                 "2026-07", None, False)
+    plan = d["FrozenCleanupPlan"]("plan-1", "v1", "data", (copy, delete),
+                                  "targets-digest", "src-rev-2")
+    class Evidence:
+        current = source
+        recognized = True
+        def observe(self, scope_ref, path):
+            return self.current
+        def recognized_source(self, scope_ref, path):
+            return ("financial-family", "2026-07") if self.recognized else None
+    class Effects:
+        def __init__(self):
+            self.final_bytes = None
+            self.staging_is_valid = True
+            self.ack_lost = False
+            self.deleted = False
+            self.calls = []
+        def prepare_copy_to_staging(self, src, dest):
+            self.calls.append("staged")
+            return "staging-key"
+        def verify_staging(self, ref, expected):
+            self.calls.append("verified_staging")
+            return self.staging_is_valid
+        def conditional_finalize(self, staging_ref, target, expected):
+            self.calls.append("finalized")
+            self.final_bytes = b"new-source"
+            if self.ack_lost:
+                raise TimeoutError("synthetic lost ACK")
+            return replace(target, sha256=expected, file_generation="gen-3")
+        def conditional_delete(self, src):
+            self.calls.append("deleted")
+            self.deleted = True
+            if self.ack_lost:
+                raise TimeoutError("synthetic lost delete ACK")
+            return "deleted-file-generation"
+    class Auth:
+        permit = True
+        def authorize(self, plan, step, approval_ref):
+            if not self.permit or approval_ref != "approved-plan":
+                raise PermissionError("not approved")
+            return "trusted-fake-permit"
+    class Receipts:
+        def __init__(self):
+            self.pending = []
+            self.recorded = []
+        def record_pending(self, plan, action, permit_ref):
+            self.pending.append((plan.plan_id, action.action_id))
+            return "pending-" + action.action_id
+        def record_result(self, pending_ref, result):
+            self.recorded.append((pending_ref, result.truth))
+    def fixture():
+        effects, auth, receipts, evidence = (
+            Effects(), Auth(), Receipts(), Evidence())
+        executor = d["CleanupExecutor"](effects, auth, receipts, evidence)
+        return effects, auth, receipts, evidence, executor
+
+    effects, auth, receipts, evidence, executor = fixture()
+    result = executor.apply_one(plan, copy, "approved-plan")
+    assert result.truth is truth.VERIFIED and result.observed_target_digest == "digest-new"
+    assert effects.calls == ["staged", "verified_staging", "finalized"]
+    assert len(receipts.pending) == len(receipts.recorded) == 1
+
+    effects, auth, receipts, evidence, executor = fixture()
+    evidence.current = replace(source, sha256="modified-after-preview")
+    result = executor.apply_one(plan, copy, "approved-plan")
+    assert result.truth is truth.FAILED_NO_EFFECT
+    assert not effects.calls and effects.final_bytes is None
+
+    effects, auth, receipts, evidence, executor = fixture()
+    effects.staging_is_valid = False
+    result = executor.apply_one(plan, copy, "approved-plan")
+    assert result.truth is truth.FAILED_NO_EFFECT
+    assert effects.final_bytes is None
+
+    effects, auth, receipts, evidence, executor = fixture()
+    effects.ack_lost = True
+    result = executor.apply_one(plan, copy, "approved-plan")
+    assert result.truth is truth.OUTCOME_UNKNOWN and result.reconciliation_ref
+    assert effects.final_bytes is not None
+
+    effects, auth, receipts, evidence, executor = fixture()
+    result = executor.apply_one(plan, delete, "approved-plan")
+    assert result.truth is truth.VERIFIED and effects.deleted
+
+    effects, auth, receipts, evidence, executor = fixture()
+    evidence.recognized = False
+    result = executor.apply_one(plan, delete, "approved-plan")
+    assert result.truth is truth.OUTCOME_UNKNOWN and not effects.deleted
+
+    effects, auth, receipts, evidence, executor = fixture()
+    result = executor.apply_one(plan, archive, "approved-plan")
+    assert result.truth is truth.OUTCOME_UNKNOWN and not effects.calls
+
+    effects, auth, receipts, evidence, executor = fixture()
+    auth.permit = False
+    try:
+        executor.apply_one(plan, copy, "approved-plan")
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("unapproved FRG effect admitted")
+    assert not receipts.pending and not effects.calls
+    return {
+        "frg_cleanup_effect_cases": 8,
+        "evidence": "literal documented executor on synthetic evidence/effects; actual current FRG was previously tested separately",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -1088,11 +1224,12 @@ def main() -> dict:
         "safe_shared_projection": probe_safe_shared_projection(),
         "machine_admission": probe_curated_machine_admission(),
         "neutral_provider_binding": probe_neutral_provider_binding(),
+        "frg_cleanup_effects": probe_frg_cleanup_effects(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "nine named LCD constructions executed with synthetic ports only",
+        "scope": "ten named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
