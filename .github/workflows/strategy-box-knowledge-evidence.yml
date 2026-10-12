@@ -59,6 +59,17 @@ jobs:
             dist/strategy-box-independent-reader-questions.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Prepare separate source-first, answer-free original Research reviewer roster (not review execution)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/build_source_first_reviewer_roster.py
+      - name: Upload 53-original source-first reviewer request separately from blind reader questions
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: strategy-box-source-first-reviewer-roster
+          path: |
+            dist/strategy-box-source-first-reviewer-roster.zip
+            dist/strategy-box-source-first-reviewer-roster.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: Characterize local SQLite Run+dispatch transaction crash windows (not deployed host)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_native_sqlite_outbox_crash_characterization.py > native_sqlite_dispatch_audit.json
       - name: Characterize real POSIX path, staging and create-only races at exact Git revision (Linux only)

@@ -1,5 +1,13 @@
 # Consolidation Work State
 
+## Current Transition Package — 2026-10-12, independent source-first 53-study review request (not review)
+
+**Same authorized Knowledge consolidation:** incoming `stratbox@72a4a2771c69b52ff5c38789a828d7774bf1d508`, [CI 38262703538](https://github.com/ForestTiger-GH/stratbox/actions/runs/38262703538) **SUCCESS**. Independent 22-case blind Knowledge consumer handoff exists, but cannot verify all original Research material. This increment adds a **separate** Work-only source-first reviewer ZIP generator, exact-version 53 substantive Research ID/blobs roster, neutral original-first instructions and **blank per-source independent verdict forms**, with no source paths, filenames, original text, producer meanings or private carrier details. Existing 22-question blind ZIP remains isolated; source-first assessor must access the frozen source census separately **after** the blind reader has frozen its responses. [Work report](coverage/SOURCE-FIRST-53-ORIGINALS-INDEPENDENT-ASSURANCE-HANDOFF-2026-10-12.md). New exact-SHA CI must confirm the added separate artifact.
+
+**Denominator and limits unchanged:** 566 frozen originals/evidence entries (53 substantive Research), 176 full/10 governing/380 not-full, 566 `unaccounted` independent material dispositions; 114 published Markdown and 10 blocked LCD plans. No independent reviewer or verified external native deployment exists. Other 513 census items have different review roles. This step authorizes neither independent signoff nor source-amputation. `PARTIAL / CONTINUING`; no protected implementation details, no production code change; physical reset unavailable.
+
+---
+
 ## Verified checkpoint — 2026-10-12, all-original metadata triage and Windows semantic routing
 
 **Active Commission: same continuous full Knowledge consolidation; full-program terminal gate remains OPEN.** Exact incoming `stratbox@f815f7297baa3515a9f937d8326f2adcfe170dbd` passed [GitHub Actions 38262459679](https://github.com/ForestTiger-GH/stratbox/actions/runs/38262459679) **SUCCESS**. The verified Actions run produced the standalone **114-Markdown Knowledge** artifact, a separate **22-question answer-free independent consumer challenge**, and the research-audit bundle `strategy-box-research-audit-bounded`. That bundle now includes both restricted two-original and **all-current-gap-originals** metadata-only triage, with no verbatim Research text in the newly generated line-envelope packets.
