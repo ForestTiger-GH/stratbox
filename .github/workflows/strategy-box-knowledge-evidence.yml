@@ -59,6 +59,8 @@ jobs:
             dist/strategy-box-independent-reader-questions.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Evaluate exact Knowledge program gate evidence without false global completion
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/assess_knowledge_work_program_gates.py
       - name: Parse documentation-only LCD Python code skeletons (syntax, not runtime readiness)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_lcd_python_skeletons.py
       - name: Execute selected LCD candidate fragments against synthetic ports (not production)
@@ -169,5 +171,6 @@ jobs:
             research_coverage_audit.json
             research_span_audit.json
             original_span_gap_triage.json
+            dist/strategy-box-work-program-gates.json
           if-no-files-found: error
           retention-days: 14
