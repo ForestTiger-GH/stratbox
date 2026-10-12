@@ -356,6 +356,8 @@ def test_notebook_direct_core_still_imports_without_host_python_package(import_g
 
 These are **proposed future fake/native tests**. Their correct execution requires a real chosen FileStore backend, staged publication conformance, conditional resource mutations, approved host effect policy and a separate verifier. The five existing pinned synthetic tests expose the current *absence* of these safeguards; they do not pass the target contract.
 
+**Real POSIX fault demonstration distinct from fake executor tests:** [CI 38221344760](https://github.com/ForestTiger-GH/stratbox/actions/runs/38221344760) exercised eight actual temporary-file operations on Linux and confirmed pathname-approval symlink swap, same-inode byte mutation and `os.replace()` overwriting a changed destination. A backend able only to perform `stat→remove`, `resolve→open` or `stat→replace` cannot satisfy this candidate's promised generation-fenced destructive effects merely through producer tests. A Linux create-only `os.link()` can refuse collision, but **deletion, replace-existing, multi-file archive, native Windows and remote mounts need their own chosen safe primitive**. Real source authenticity, authorized principal and durable effect reconciliation are still separate.
+
 ## 7. Decisions and implementer freedom
 
 | Choice | Status / consumer |
