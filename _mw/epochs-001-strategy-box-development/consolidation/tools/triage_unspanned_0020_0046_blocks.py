@@ -4,6 +4,7 @@
 This tool does NOT decide whether any line has preserved semantic meaning.
 Missing a structural ledger span is not identical to knowledge loss; having a
 span is not a proof of semantic conservation. Reads exact frozen Git blobs.
+Public CI output is source-text-free and carries metadata-only geometry.
 """
 from __future__ import annotations
 
@@ -43,6 +44,7 @@ def main() -> dict:
         items = {r["source_id"]: r for r in csv.DictReader(f)}
     details = {r["source_id"]: r for r in audit()["source_detail"]}
     result = {"grade": "STRUCTURAL_GAP_REVIEW_PACKET_NOT_SEMANTIC_DISPOSITION",
+              "redaction_profile": "METADATA_ONLY_NO_SOURCE_TEXT",
               "originals": []}
     for sid in SOURCE_IDS:
         row, detail = items[sid], details[sid]
@@ -61,12 +63,16 @@ def main() -> dict:
                 "envelope_length": len(content),
                 "untraced_nonblank_in_envelope": entry["untraced_nonblank_lines"],
                 "shape_hint_not_materiality": classify_shape(content),
-                "source_lines_in_envelope": [
-                    {"line": first+i, "text": line}
-                    for i, line in enumerate(content)
-                ],
                 "reviewer_semantic_verdict": "NOT_REVIEWED",
             })
+        # Explicit export allowlist: never copy original source text into a
+        # public CI log or retained artifact. The reviewer uses exact Git
+        # blob+line span with authorized source access as a separate step.
+        allowed_keys = {
+            "span", "envelope_length", "untraced_nonblank_in_envelope",
+            "shape_hint_not_materiality", "reviewer_semantic_verdict",
+        }
+        assert all(set(block) == allowed_keys for block in blocks)
         summary = dict(Counter(b["shape_hint_not_materiality"] for b in blocks))
         result["originals"].append({
             "source_id": sid, "original_blob": row["blob_sha"],
@@ -88,7 +94,7 @@ def main() -> dict:
         "sample_unspanned_envelopes": [
             {"source": item["source_id"], "samples": [
                 {"span": b["span"], "shape": b["shape_hint_not_materiality"],
-                 "excerpt": " ".join(x["text"] for x in b["source_lines_in_envelope"])[:145]}
+                 "envelope_length": b["envelope_length"]}
                 for b in item["blocks"][:22]
             ]}
             for item in result["originals"]
