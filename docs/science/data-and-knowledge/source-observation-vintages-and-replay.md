@@ -227,3 +227,14 @@ A **consumer-specific completeness model** may partition `selected = attempted +
 | `SB-SRC-0015/CBRFILES-02` · `HISTORICAL_RAW_FILE_AND_PARTIAL_OUTCOME` | The collector intended raw CBR files to remain untransformed, with provider/URL-derived names, collision uniquification and continued batch download after individual failures. | A continued batch run does not imply all requested sources succeeded; unattempted sources and actual delivered bytes need separate accounting, especially after stop-on-error. | [L92–L100](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/01-old-notes/Патч stratbox Май 2026.md#L92-L100) |
 
 **Scientific boundary:** these are twelve source-positioned historical statements across bank reporting, FRG, escrow and raw-source collection, with error, identity and version qualifiers. They do not certify content correctness, deployed package behavior or a complete independent source-to-Science audit. Any restricted source material remains outside public Science.
+
+## Historical May domain patch 0015 — bounded public-safe residuals
+
+These are **four historical change-log claims**, not present-day code or runtime tests. The frozen source is used as internal Work evidence for the *public-safe claims only*, and this publication intentionally omits links into protected legacy material. The older original has additional publication constraints; its full-source material disposition remains `unaccounted`.
+
+| Source-row class | Conserved public-safe meaning | Limit / negative case | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0015/PUBLIC-SAFE-03` · `HISTORICAL_RAW_FILENAME_SPECIAL_CASE` | The raw-source archiver history preserved publisher bytes and filenames, explicitly removing one prior special filename rewrite while retaining response/URL-derived naming and collision disambiguation. | Byte-preserving download and a de-duplicated local filename do not establish source authenticity, immutable content vintage, or that two filename aliases imply two independent publisher releases. | `L92-L98` |
+| `SB-SRC-0015/PUBLIC-SAFE-04` · `HISTORICAL_MOCK_TEST_AND_PUBLIC_IMPORT` | The old archiver change note recorded a domain-level public import, notebook/network-file examples and limited compile/import, ZIP and mock-batch checks. | Historical mock checks are not observed execution here, prove neither real central-bank download nor installed runtime availability, and cannot certify provenance of the live inputs. | `L102-L106` |
+
+A historical change note is distinct from live implementation, original input bytes, validated source provenance and executed test results. No current support guarantee or protected integration contract follows from these entries.

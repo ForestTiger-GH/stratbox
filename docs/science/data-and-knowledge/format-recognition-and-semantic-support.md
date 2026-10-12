@@ -90,3 +90,14 @@ The [2026-10-07 original Format/FileStore study, §54](https://github.com/Forest
 | `SB-SRC-0015/ES-04` · `HISTORICAL_MISSINGNESS_AND_EXTENSION` | Per-date absence of a known escrow indicator was treated as optional, with a retained sheet catalog and an explicit future region-registry mode reserved. | A missing indicator is not a numeric zero, and a reserved region registry mode is not current authoritative territorial data. | [L71–L74](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/01-old-notes/Патч stratbox Май 2026.md#L71-L74) |
 
 **Scientific boundary:** these are twelve source-positioned historical statements across bank reporting, FRG, escrow and raw-source collection, with error, identity and version qualifiers. They do not certify content correctness, deployed package behavior or a complete independent source-to-Science audit. Any restricted source material remains outside public Science.
+
+## Historical May domain patch 0015 — bounded public-safe residuals
+
+These are **four historical change-log claims**, not present-day code or runtime tests. The frozen source is used as internal Work evidence for the *public-safe claims only*, and this publication intentionally omits links into protected legacy material. The older original has additional publication constraints; its full-source material disposition remains `unaccounted`.
+
+| Source-row class | Conserved public-safe meaning | Limit / negative case | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0015/PUBLIC-SAFE-01` · `HISTORICAL_FRG_PUBLIC_NAMING_AND_EVIDENCE` | The historical file-processing patch recorded a move to a short neutral public FRG domain label, alongside documentation and notebook examples, with a dated statement that prior changes had been checked. | A dated changelog statement is not a reproducible test result on a modern checkout; public-facing naming and a public API must be verified against direct code/packaging, not old wording. | `L41-L45` |
+| `SB-SRC-0015/PUBLIC-SAFE-02` · `HISTORICAL_ESCROW_INDICATOR_SEMANTICS` | The historical escrow parser distinguished federal districts, regions and national totals, retained publisher row order and reported an added labeled measure for escrow accounts carrying balances. | An indicator's historical name and position do not prove cross-vintage units, coverage, continued availability or a method-equivalent replacement; compare original publisher columns and periods. | `L54-L58` |
+
+A historical change note is distinct from live implementation, original input bytes, validated source provenance and executed test results. No current support guarantee or protected integration contract follows from these entries.
