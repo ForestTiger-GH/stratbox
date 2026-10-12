@@ -58,6 +58,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_local_filestore_observed_safety.py
       - name: Verify fifteen self-contained cross-surface fault family owner links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_cross_surface_fault_case_links.py
+      - name: Verify historical Windows source survey early material routes
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_windows_0020_historical_introduction.py
       - name: Verify all eighteen input-vintage Research 09 counterexamples
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_source_vintage_0562_cases.py
       - name: Verify all twenty-eight observability fault-case source intentions

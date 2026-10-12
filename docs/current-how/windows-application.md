@@ -290,3 +290,28 @@ The direct pinned Manifest/test inconsistency and tracked generated files remain
 The frozen Windows [`__main__.py`](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/__main__.py) proves a narrow negative: both `--no-gui` and `--diagnose` invoke `system.diagnostics`, serialize its result to JSON, and return success/error exit status. Neither path starts a persistent Job listener, server or shared application authority. The normal GUI path imports Qt only afterward; `--standalone-dev-root` is an explicit development escape, not a released unmanaged profile. This is **direct static source behavior**, not a run of a Windows executable.
 
 The pinned [operation registry](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/operations/catalog/registry.py) declares two business operations plus `system.diagnostics` by hand. The separate [Scenario registry](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/scenarios/registry.py) creates one-step atomic Scenarios for enabled items and one two-step CBR/escrow composite when both business operations are available. A handler reference, dangerous flag, actor-visibility descriptor or background-kind enumeration is **catalog metadata**, not an authorization engine, automatically callable arbitrary `stratbox` function, background executor or host. The related eight dated original source arguments and counterexamples are separately conserved in [Science](../science/capabilities/definitions-plans-and-execution-truth.md).
+
+## Frozen October 2026 Windows package scale, navigation and startup inventory
+
+The earlier **pinned October 6, 2026 source survey** characterized an application with more than a lightweight GUI veneer. It reported **198 tracked files, including 149 Python files, 23 SVG assets, a stylesheet, ten tests and one large 1.34 MB PNG**. Its survey measured roughly 63 Python application files, 52 presentation files, eleven runtime files and eight adapters. These are *dated source-tree metrics*, not the present `main` inventory and not a feature-completeness metric: raw repository bytes are strongly influenced by the one PNG. Meaningful application contracts had already accumulated outside both the analytical core and the concrete Qt view layer.
+
+The observed **desktop navigation** at that revision presented Explorer, Scenarios, Cascades, Background Processes, Participants and Assignments, a central scenario-chat workroom and a contextual inspector for Case, diagnostic log, Artifact and parameters. Existence of a navigation region is a presentation fact only: background scheduling, other participants' network presence, shared assignments and machine/AI worker execution were mostly **local projection/scaffold concepts**, not installed or remotely synchronized behavior. The choice to retain all six historical labels or tabs in future Web/Android is **not an accepted Product Decision**.
+
+The original top-down execution map crossed multiple responsibilities:
+
+```text
+managed platform or explicitly authorized local development entry
+  → trusted application context / package-binding checks
+  → local operation and scenario catalogs
+  → Qt runtime bootstrap and active-scenario coordinator
+  → worker and sequential domain operation runner
+  → imported independent analytical Python core
+  → file candidates, diagnostic logs, Case/Artifact/Event records
+  → separate local JSON history and UI/runtime state projections
+```
+
+At the pinned revision, `pyproject.toml` declared Python `>=3.10`, external analytical `stratbox==0.2.1`, PySide6 `>=6.6` and a console entrypoint. The published AppDock-related package graph and manifest `4.0` described local foreground Windows startup, two linked Python distributions, a desktop view and `--diagnose`; those are **declarations**, not a verified current external installation. The entrypoint's `AppContext` and binding checks formed a useful guard against silently importing arbitrary source directories. Ordinary production startup without recognized activation context was expected to fail; an explicitly specified development root was an alternative mode. Diagnostic/no-GUI execution was an invocation variant, **not a detached multiuser application host**.
+
+**Architectural consequence:** direct notebook calls to `stratbox` and installed Windows application requests already have distinct lifecycle and permission owners. A future semantic application host should preserve the reusable domain Operation/Request/Result meanings while moving any long-lived job execution owner and reusable orchestration semantics outside the Qt presentation composition. Which physical package/repository implements that host is open. The observed Qt construction and one active coordinator are evidence of actual present coupling, not reasons to force a copied Qt runtime into Android or to assign long-lived Work/Job authority to the external installation platform.
+
+**Evidence limits:** package graph, file-count claims, six navigation labels and launch modes are based on a dated pinned study plus selected direct code owner corroboration. No native GUI interaction, actual concurrent host processes, mounted shared storage or Android device was exercised here. The separate current-code tests and [source-based Windows Current HOW sections](#runtime-composition-currently-imports-qt) give narrower direct verification where available.
