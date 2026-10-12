@@ -14,7 +14,7 @@ def verify() -> dict[str, object]:
     assert definitions, "No HC vector definitions found"
     collisions = sorted({x for x in definitions if definitions.count(x) > 1})
     assert not collisions, f"Duplicate HC definition numbers: {collisions}"
-    for idx in range(34, 52):
+    for idx in range(34, 60):
         assert idx in definitions, f"Expected HC-{idx} missing"
     for x in range(40, 46):
         assert f"| HC-{x} |" in text
