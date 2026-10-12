@@ -2642,7 +2642,7 @@ Entry points сами по себе не решают:
 
 # 57. Why a separate static manifest is not required for v1
 
-Можно было бы добавить `stratbox-plugin.json`, но это создаёт второй metadata source.
+Можно было бы добавить `strategybox-extension-manifest.json`, но это создаёт второй metadata source.
 
 Для v1 достаточно:
 
@@ -2971,7 +2971,7 @@ Plugin сломался
 # Приложение A. Минимальный шаблон private plugin package
 
 ```text
-example-stratbox-plugin/
+example-enterprise-extension/
 ├── pyproject.toml
 ├── README.private.md
 ├── src/
@@ -3004,7 +3004,7 @@ requires = ["setuptools>=...", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "example-stratbox-plugin"
+name = "example-enterprise-extension"
 version = "1.0.0"
 requires-python = ">=3.10"
 dependencies = [

@@ -22,9 +22,6 @@ dependencies = [
 sors-restoration = [
   "highspy>=1.11,<2",
 ]
-plugin = [
-  "stratbox-plugin>=0.2.1",
-]
 pdf = [
   "pypdf>=4.0",
 ]
