@@ -152,6 +152,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_host_ldd_case_ids.py
       - name: Verify Topic 04 Artifact original source-to-Science candidate routes
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_artifacts_0557_source_routes.py
+      - name: Verify twenty exact Topic-04 Artifact A acceptance cases and five backend profiles
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_artifact_0557_twenty_acceptance_cases.py
       - name: Route non-Research source roles without falsely disposing material
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_nonresearch_source_roles.py
       - name: Audit research source coverage and distinguish evidence classes
