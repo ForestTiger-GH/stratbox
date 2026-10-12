@@ -3197,8 +3197,7 @@ scenario.cbr.full_update
 
 1. `stratbox_base_study_current_state_2026-10-06.md`
 2. `stratbox-windows_current_state_full_research_2026-10-06.md`
-3. `stratbox_plugin_current_state_research_2026-10-06.md` — приватный project research.
-4. `AppDock - Базовое описание.docx`
+3. `AppDock - Базовое описание.docx`
 5. `CBR_dbf_to_csv (1).ipynb`
 6. `stratbox_file_artifact_layer_research_2026-10-06.md`
 7. `stratbox_filestore_file_formats_research_2026-10-07.md`

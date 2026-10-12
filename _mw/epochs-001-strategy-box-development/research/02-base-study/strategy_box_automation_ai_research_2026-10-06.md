@@ -2311,8 +2311,7 @@ mapped to Strategy Box Job/Case
 
 1. `stratbox_base_study_current_state_2026-10-06.md`
 2. `stratbox-windows_current_state_full_research_2026-10-06.md`
-3. `stratbox_plugin_current_state_research_2026-10-06.md` — использован только как внутренний контекст environment capabilities; детали закрытого слоя не предназначены для переноса в публичные репозитории.
-4. `AppDock - Базовое описание.docx`
+3. `AppDock - Базовое описание.docx`
 
 ---
 
