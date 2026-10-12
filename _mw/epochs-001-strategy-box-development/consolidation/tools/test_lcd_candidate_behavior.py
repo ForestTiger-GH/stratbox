@@ -1226,10 +1226,14 @@ def probe_frg_cleanup_effects() -> dict:
                 sorted_target_set_digest="copy-1:copy-1:delete-1"), copy)
     assert_pre_effect_rejected(
         replace(plan, actions=(copy, archive), sorted_target_set_digest="copy-1:delete-1"), copy)
+    cross_scope_source = replace(copy, source=replace(source, root_scope="system"))
     assert_pre_effect_rejected(
-        plan, replace(copy, source=replace(source, root_scope="system")))
+        replace(plan, actions=(cross_scope_source, delete)),
+        cross_scope_source)
+    cross_scope_target = replace(copy, target=replace(target, root_scope="other"))
     assert_pre_effect_rejected(
-        plan, replace(copy, target=replace(target, root_scope="other")))
+        replace(plan, actions=(cross_scope_target, delete)),
+        cross_scope_target)
     assert_pre_effect_rejected(
         replace(plan, actions=(
             copy, replace(delete, source=replace(source,
