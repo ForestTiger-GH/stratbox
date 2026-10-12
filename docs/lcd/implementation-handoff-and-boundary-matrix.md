@@ -43,7 +43,7 @@ The record below distinguishes **accepted** target constraints from **user-goal/
 | U-06 Direct Python + GUI + authorized machine client | Existing independent core, [Scenario LCD](application/local-scenario-execution-construction.md), [machine LDD](../ldd/capabilities/machine-operation-adapter-conformance.md) | Curated registry/external transport only after an authorized second consumer; unrestricted Python reflection `NOT_APPLICABLE` |
 | U-07 Website and possible Android companion | [Host LCD](hosting/host-authority-and-client-contract-construction.md) | Web host direction accepted; client/mobile release scope `LCD_BLOCKED` |
 | U-08 Concurrent independent work in threads | Local single-flight is **present** current limitation; [host LCD](hosting/host-authority-and-client-contract-construction.md) defines future shared authority; [trigger-occurrence LCD](automation/trigger-occurrence-and-scheduling-construction.md) bounds conditional recurring work | Shared scheduling, fencing, overlap and parallel-effect strategy `LCD_BLOCKED`; no claimed concurrent executor or deployed scheduler |
-| U-09 Source observation/provenance | [Used-input LCD](data/used-input-receipt-construction.md) | Single real core-consumer candidate; mandatory catalog and raw retention `LCD_BLOCKED` |
+| U-09 Source observation/provenance | [Used-input LCD](data/used-input-receipt-construction.md) | Synthetic source-fragment guards now test mutable payload sealing, acquired/consumed digest equality, explicit format witness, domain validity and UTC representation; **actual core domain pilot remains `LCD_CANDIDATE`/UNEXECUTED**, mandatory catalog/raw retention and host capture policy `LCD_BLOCKED` |
 | U-10 State physically located with the executor that owns effects | [Host authority LCD](hosting/host-authority-and-client-contract-construction.md), [diagnostic LCD](observability/execution-evidence-and-problem-boundary-construction.md) | Local/host authority separation fixed in meaning; host process/storage selection `LCD_BLOCKED` |
 
 ### Conditional automation scope
@@ -53,6 +53,10 @@ A future rule is distinct from a real TriggerEvaluation, unique Occurrence, admi
 ## 3. Specialized risk slice: plan/effect integrity
 
 [FRG cleanup LCD](application/frg-cleanup-effect-plan-construction.md) translates a directly observed source-specific destructive-file hazard into an executable **candidate** plan model. It is not a new universal user requirement and does not mandate freezing all source datasets. Cross-slice effect state must agree with [security authorization](security/host-effect-authorization-construction.md), [Artifact publication](artifacts/local-output-publication-construction.md) and [Scenario outcome](application/local-scenario-execution-construction.md): a valid user approval, a prepared plan, an attempted file write, a verified published Artifact and a completed Run are **five different truth-bearing events**.
+
+### Exactly consumed input: the scientific boundary is stronger than a typed field
+
+The input receipt seam must bind the **same immutable bytes** into the parser and the captured digest, with a separate claimed format verdict and a domain validation result. A mutable buffer, forged `CapturedPayload`, or a decoder that returns a value without an actual format witness cannot satisfy the provenance promise. A UTC field name alone cannot turn a naive client clock into a valid observation. The [used-input LCD](data/used-input-receipt-construction.md) demonstrates these as small candidate bodies and fake negative tests. These checks are **not** a publisher-authenticity proof, full HTML/XLSX parser conformance, true bank methodology validation, streaming performance benchmark, actual raw retention or R3/R4 replay. Those consumers remain separately governed.
 
 ## 4. Explicit NOT_APPLICABLE boundaries
 
