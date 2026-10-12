@@ -164,16 +164,44 @@ class HostAdmission:
         self.ledger, self.scheduler = ledger, scheduler
 
     def submit(self, actor: Actor, request: Submission) -> AdmissionReceipt:
-        if not self.policy.can_submit(actor, request):
+        try:
+            permitted = self.policy.can_submit(actor, request)
+        except Exception:
+            # A permission-service failure cannot certify a historical Run
+            # is absent, especially when this key was admitted previously.
+            return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                    request.intention_key, None,
+                                    self.host.host_id, "POLICY_STATUS_UNCERTAIN")
+        if not permitted:
             return AdmissionReceipt(AdmissionKind.REJECTED,
                                     request.intention_key, None,
                                     self.host.host_id, "ACCESS_DENIED")
-        # Require schema/definition/effects validation here before ledger call.
-        receipt = self.ledger.admit_atomically(actor, request, self.host)
+        # Trusted request-schema/effect checks and a server-calculated canonical
+        # actor/operation/parameters digest MUST precede this ledger call.
+        try:
+            receipt = self.ledger.admit_atomically(actor, request, self.host)
+        except Exception:
+            # The ledger could have committed Run admission and lost its ACK.
+            # Returning REJECTED (or allowing a new intention_key) would lie.
+            return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                    request.intention_key, None,
+                                    self.host.host_id, "LEDGER_ADMISSION_UNCERTAIN")
+        if (not isinstance(receipt, AdmissionReceipt)
+                or not isinstance(receipt.kind, AdmissionKind)
+                or receipt.intention_key != request.intention_key
+                or receipt.host_id != self.host.host_id):
+            return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                    request.intention_key, None,
+                                    self.host.host_id, "ADMISSION_RECEIPT_CONTRACT_INVALID")
+        if ((receipt.kind in (AdmissionKind.ACCEPTED, AdmissionKind.REPLAY)
+                 and not receipt.run_ref)
+                or (receipt.kind is AdmissionKind.REJECTED and receipt.run_ref)):
+            return AdmissionReceipt(AdmissionKind.OUTCOME_UNKNOWN,
+                                    request.intention_key, receipt.run_ref,
+                                    self.host.host_id, "ADMISSION_RUN_REF_CONFLICT")
         if receipt.kind is not AdmissionKind.ACCEPTED:
             return receipt
         try:
-            assert receipt.run_ref is not None
             self.scheduler.schedule(receipt.run_ref)
         except Exception:
             # Never create a second Run or invent rollback after admitted work.
@@ -182,6 +210,8 @@ class HostAdmission:
                                     self.host.host_id, "DISPATCH_UNCERTAIN")
         return receipt
 ~~~
+
+**Source-first ledger acknowledgment correction (Research Topic 12):** an earlier `HostAdmission.submit` guarded scheduler dispatch but allowed `LedgerPort.admit_atomically` exceptions to escape before returning a qualified admission result. If the ledger committed and its response was lost, a caller might infer "never admitted" from the exception and re-submit under a new intention key. The updated candidate treats an exception from ledger admission as **`OUTCOME_UNKNOWN` without inventing a Run ref**; a replay with the same trusted intention identity must reconcile against the authoritative ledger. It also checks typed returned receipt, exact intention/host identity, and accepted/replayed Run identity before scheduling. Provider-policy failures remain uncertain, while an explicit policy denial is a genuine pre-ledger rejection for **this attempt**, not proof an older Run with the same key never existed. The ledger still owns durable idempotency, canonical digest collision detection, signed/principal scoped identity, conflict handling and actual dispatch-outbox atomicity: these are not proven by a response dataclass. The mechanism is supported by the source's separation of `accepted`, `started` and `UNKNOWN`, not an accepted release decision.
 
 **STOP BEFORE PRODUCTION:** atomic logical admission and schedule dispatch are two operations in this illustrative method. They need an approved transactional outbox or equivalent persistent recovery/lease mechanism. Only after storage, crash lifetime, receipt and retention requirements are decided can they form one implementable invariant. Stable idempotency scope, client intention-key window, parameter canonicalization, hash, version conflicts and conflict/error grammar also require Product/security approval. A lost response must be reconciled using the *same* intention key. A second new-key submit may cause a second external effect.
 
@@ -249,6 +279,10 @@ class AttachedClient:
 This client port is a testable abstraction, not an adopted browser or Windows remote protocol. Exact transport/session security, browser origin/CSRF protection, TLS, replay and upload limits, native credentials, AppDock deployment capability and certificate lifecycle are blocked choices. The host and client must be installed on distinct Windows managed installations to prove the intended HOST-O3, not merely two widgets reading one shared directory.
 
 ## 6. Negative conformance stubs — PROPOSED, never executed
+
+Additional target fixture: persist a Run in a durable ledger, drop the **admission ACK**, then call `HostAdmission.submit` using the same intention key/digest. The first response is `OUTCOME_UNKNOWN` with no fabricated Run ID; authoritative lookup should return the original admitted Run on retry. A response with changed intention key, host identity, contradictory REJECTED+run_ref or ACCEPTED without Run ref must not be accepted or scheduled as success. Test this on the actual host ledger/outbox separately from producer synthetic ports.
+
+
 
 ~~~python
 def test_duplicate_intention_replays_one_run(fake_host, actor, submit):
