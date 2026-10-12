@@ -230,3 +230,34 @@ The frozen Topic 05 state/persistence/collaboration Research, §18 (`#L995-L1021
 | `SB-SRC-0556/Q03-16` | Using a network-mounted user folder for preference state is conditional on verified filesystem capabilities and class-specific durability; local private user storage is an alternative. | Remote folder availability alone cannot certify atomicity, safe concurrent writes or recovery of preferences. | L701 (`#L701`) |
 
 **Material status:** no question is silently marked answered by mentioning its default. The accepted *need for a logical application host* belongs to later Product authority, while exact physical provider, writers, resource location, RPO/RTO, retention and operating model remain separate decisions. This producer source→Science record does not close the original file, independent review or real host/storage tests.
+
+## Original Topic 03 — twenty distinct recovery failure proposals
+
+**Source-evidence status:** the 2026-10-10 state/persistence study `SB-SRC-0556` proposed 20 numbered fault-injection cases in its §13 (original L575–L600). This source-specific matrix supplements, rather than replaces, existing separately retained cross-store trade-offs and sixteen unresolved Product questions. Every row is an **unexecuted target contract test**, even where a related *current Windows source-executed failure characterization* exists. The real filesystem profile, authorizing app owner, storage capabilities, crash point and recovery policy determine whether a stronger guarantee is achievable.
+
+| Original recovery vector | Failure/falsifier | Required candidate recovery truth / actual proof obligation |
+| --- | --- | --- |
+| R03-01 | Process killed mid-write of `cases.json` | Recover **previous or new valid state generation**, or explicit corruption; tested replace/power-loss semantics, never fabricated empty history. |
+| R03-02 | Fault between Case and Artifact metadata writes | Coupled generation commits coherently or leaves explicit reconcile state; test fault between writes and visible Case/Artifact mismatch. |
+| R03-03 | Disk-full during user configuration update | Preserve previous usable preference bytes where backend permits; show write error; synthetic quota fault differs from real power-loss guarantees. |
+| R03-04 | Malformed history JSON on startup | Quarantine/diagnose retained evidence, offer qualified read-only/restore; empty list is not a confirmed first-use state. |
+| R03-05 | Two concurrent Scenario Runs in different Threads write history | Unique Run identities and correctly serialized/transactional state commits; do not equate a single shared state writer with one active worker. |
+| R03-06 | Two clients concurrently rename one chat from the same known revision | One guarded mutation commits, another receives revision conflict and safe refreshed projection; no lost update. |
+| R03-07 | Close GUI during active local Job | Local profile reports interruption/unknown after genuine recovery, rather than inventing terminal completion; hosted continuation is a separate profile. |
+| R03-08 | Host accepts remote request but its ACK is dropped | Replay/lookup by same qualified idempotency identity; a second Run under new key is unsafe without reconciliation. |
+| R03-09 | Partially written XLSX becomes visible | Stage incomplete bytes outside published Artifact namespace and do not generate a committed output receipt. |
+| R03-10 | File finalized but metadata transaction fails | Byte object may be orphaned; reconcile or retain under policy rather than claim a completed registered Artifact. |
+| R03-11 | Artifact metadata remains but user manually deletes the file | On actual authorized access report confirmed missing bytes, retain prior historical catalog; no unrequested disk-wide search. |
+| R03-12 | Data root becomes unavailable, e.g. disconnected mount | Return `BACKEND_UNAVAILABLE` / degraded read-only ability, not a successful empty directory or evidence of user deletion. |
+| R03-13 | Host worker survives a UI restart, or conversely only GUI process existed | Reattach to confirmed host-owned Run or mark local interruption; a stale UI flag cannot decide the outcome. |
+| R03-14 | Restore an earlier state generation while a stale client/worker survives | Verify generation/lease/fence and refuse stale post-restore writes; backup extraction alone cannot establish exclusive writer authority. |
+| R03-15 | Backup includes SQL/state but omits referenced output file generations | Describe explicit backup coverage and unresolved Artifacts after restore; not a falsely complete restored Work. |
+| R03-16 | Managed-platform activation context is schema/locator-incompatible | Fail version/capability preflight before writing to an unapproved root; controlled unsupported contract, not invented fallback. |
+| R03-17 | SQLite WAL or file locking is attempted on unsupported SMB/NFS topology | Validate physical capabilities, reject/select appropriate storage profile and client API; do not assume local WAL guarantees on shared network files. |
+| R03-18 | Two users independently mark one Thread read | Scoped per-principal read receipts/cursors; do not overwrite one shared per-message `unread` bool. |
+| R03-19 | Corrupt middle/tail bytes in append-only event journal | Stop/quarantine actual interior corruption; recovery of incomplete tail only under tested frame/checksum rules, never skip unknown events as if none existed. |
+| R03-20 | Schema migration crashes midway through existing user state | Keep old authority and actual user evidence until new generation/cutover verified, or explicit controlled repair; no silent destructive migration. |
+
+**Boundary of target admission:** these cases cannot all be satisfied by `temp + rename` alone. R03-01 concerns file visibility/durability, R03-02 cross-record atomicity, R03-10 file/catalog cross-store truth, R03-14 writer generation, R03-15 multi-plane restore completeness and R03-17 host-specific filesystem topology. A direct Python caller without managed StateStore cannot be assumed to possess hosted Run, UI or backup guarantees. Real Windows and Linux fsync/replace, SQLite WAL, remote object storage, delegated permission, host ownership and actual platform activation must be tested **after** the relevant Product/Platform decisions; one successful fake test is not 20 completed integrations.
+
+**Conservation limitation:** this matrix supplements the existing source-addressed SREC evidence but does not independently certify every line of the original 785-line study, nor does it authorize overwriting retained user data or choosing a mandatory database.
