@@ -326,3 +326,13 @@ The [frozen Topic 04 execution Research, §18](https://github.com/ForestTiger-GH
 | `SB-SRC-0051/EX-25` | Resume uses valid checkpoint and source-version identities rather than blindly repeating a changed procedure. | [L986](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/03-consolidation-research/strategy_box_03_topic_04_work_to_execution_consolidated_research_2026-10-09.md#L986) |
 
 **Adversarial qualification:** a source-row match is not an actual cancel/retry/lease/reconnect test. Low-risk direct Python can use one call with ordinary exception handling and no persistent Work ledger; effectful shared host must have stronger admission and outcome evidence before release. The original study also contains competing choices about Scheme composition, job granularity and physical runtime topology; those choices remain open. This table conserves **25 concrete invariant propositions**, not the entire historical source.
+
+## Original Windows Study 0020: future portability and execution options (source packet A)
+
+**Frozen source:** [Windows historical study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), Git blob `225128f2599f0792422c0b31cb3cbe1437991ced`. These 1 dated Research claims represent separately qualified proposed options, *not* delivered features or admitted Product commitments. [Windows current-state owner](../../current-how/windows-application.md) and actual implementation remain decisive for present-tense facts.
+
+| Original address · role | Material historical meaning | Defeater or cost | Exact original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/FUT-02` · `HISTORICAL_WORKFLOW_ALTERNATIVES` | The proposed workflow extension listed branching, optional/parallel steps, warning continuation, retries, conditions, checkpoints, resume and cancellation. | The source called the composite runner proof of architecture, not proof any advanced DAG/conditional semantics currently execute; cost and effect control need separate evidence. | [L1396–L1410](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L1396-L1410) |
+
+**Conservation boundary:** source-specific producer interpretation only, no native deployment, validated future API, whole-source `LOSSLESS_PASS` or distinct independent reviewer. All source file dispositions remain `unaccounted`.
