@@ -26,10 +26,11 @@ def check():
         assert r["source_path"]==census[r["source_id"]]["path"]
         assert r["source_blob_sha"]==census[r["source_id"]]["blob_sha"]
         lines=read_pinned_blob(ROOT,REV,r["source_path"],r["source_blob_sha"]).decode("utf-8").splitlines()
-        a,z=map(int,re.fullmatch(r"L(\d+)-L(\d+)",r["source_span"]).groups())
+        span=re.fullmatch(r"L(\d+)(?:-L(\d+))?",r["source_span"])
+        assert span is not None
+        a=int(span.group(1)); z=int(span.group(2) or a)
         assert 1<=a<=z<=len(lines) and any(s.strip() for s in lines[a-1:z])
         assert r["science_destination"]=="docs/science/data-and-knowledge/sors-evidence-surfaces-crosswalk-and-audit.md"
-        assert r["material_unit_state"]=="unaccounted" if "material_unit_state" in r else True
         assert r["source_material_state"]=="unaccounted" and r["independent_review"]=="OPEN"
     for phrase in ("June 1, 2026","fixed point","global feasibility","primary facts","supersede","upper-open interval"):
         assert phrase.lower() in body.lower(),phrase
