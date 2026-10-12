@@ -5,7 +5,7 @@
 | Entrance | Intended use | Evidence and admission |
 | --- | --- | --- |
 | [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | Maintained thematic articles and navigation guides; exact scope and assurance boundaries are recorded in the [Science index](science/README.md); global source conservation and independent verification remain open |
-| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Eight bounded static Current HOW slices, including a public AppDock launch boundary; repository-wide reconstruction, installed GUI and fault testing remain open |
+| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Nine bounded static Current HOW slices, including a public AppDock launch boundary; repository-wide reconstruction, installed GUI and fault testing remain open |
 | [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Necessary host with two target arrangements **accepted** by direct Product Decision; remaining scope includes conditional requirements and unadmitted Research ideas |
 | [Target HOW](how/README.md) | Candidate realization, application and operations/recovery mechanisms | Conditional design awaiting relevant product decisions and deployment profile |
 | [Product Architecture](architecture/README.md) | Responsibility allocation among analytical core, application authority, clients and an external management boundary | Qualified logical owner candidates; no new deployable/repository or versioned API admitted |
