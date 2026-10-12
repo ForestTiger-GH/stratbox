@@ -2,13 +2,21 @@
 
 **Edition:** `SB-KP-PARTIAL-2026-10-12-SOURCE-INDEPENDENT-1`  
 **Publication status:** `PARTIAL / UNDER CONSOLIDATION`; **whole-corpus `LOSSLESS_PASS`: NOT ATTESTED**.  
-**Declared publication root:** `docs/`; **101 maintained Markdown documents** in the latest exact verified 2026-10-12 edition. The initial one-time hyperlink detachment inspected 95 Markdown documents, and earlier snapshots documented 98; those figures are historical. All current scientific, design and navigation owners reside inside the published root.
+**Declared publication root:** `docs/`; **102 maintained Markdown documents** in the latest independently navigable edition. The previous 101-doc edition is an earlier snapshot. The initial one-time hyperlink detachment inspected 95 Markdown documents, and earlier snapshots documented 98; those figures are historical. All current scientific, design and navigation owners reside inside the published root.
 
 ## Verified structural snapshot — 2026-10-12
 
 The latest completed scope-qualified [knowledge evidence run 38200938421](https://github.com/ForestTiger-GH/stratbox/actions/runs/38200938421) passed at exact Git commit `8b4af42f4c18a9dc37aca8d323c063bdc34f8d49`. The dated prior snapshot, a **copy of 98 maintained Knowledge Markdown documents**, contained **483 local document links**, all resolving **inside the isolated publication**, with no historical Research, Work or old documentation present. The two historical bulk migrations were mechanically compared to their exact previous Git blobs: 52 documents had source backlinks detached and 41 received locator formatting normalization, with **zero unintended text differences**. This verifies **deletion-ready navigation and text-preserving link migration only**, not semantic completeness.
 
 The old report-stated SORS numerical performance and source-validation examples are dated evidence with explicit test blockers, while [Science](science/README.md) now explains their significance without requiring historical source files. In the separate source audit, **171/566 frozen Git files are full-read, 10 governing-read and 385 not-full-read**; all 566 source-level semantic dispositions remain unaccounted pending independent assurance. Real host/client conformance and a distinct original-to-Knowledge reviewer are still open.
+
+## Current exact archive-independent publication rehearsal
+
+[CI 38202507779](https://github.com/ForestTiger-GH/stratbox/actions/runs/38202507779), exact commit `f27edf664dcd5436891a79a32a4b239e351a80ae`, **SUCCESS**. The actual reproducible [standalone Knowledge ZIP artifact](https://github.com/ForestTiger-GH/stratbox/actions/runs/38202507779#artifacts) comprises **102 maintained `docs/` Markdown files** and a per-file SHA-256 integrity manifest; ZIP SHA-256 `e6c9e24f3f70ba6f70e1696f9c131dc1d405f3fa221c325b4fdf8f69c3247f53`. It was extracted and validated without the Research/Work/legacy files, checking **562 internal relative links**, zero missing/outside. The GitHub artifact expires after fourteen days, while rebuilding the source-only publication remains reproducible from the frozen commit.
+
+The currently observed Windows operation registry defines **two public banking operations and one local diagnostics service**. Its scenario registry projects three atomic scenarios and one conditional two-step composite in the pinned default setup, distinct from a launched host or generic machine interface. The [Current HOW](current-how/windows-application.md) records exact source evidence, not unverified deployment claims.
+
+This release rehearsal proves a navigable, byte-checked **partial Knowledge edition** suitable for a separate reviewer. No original-to-publication *independent semantic certification*, fourteen-case blind reader, original lost DOCX attestation or deployed host/client test has passed. The frozen Git census still contains 566 original source records with `material_unit_state=unaccounted`; continued original-first audit and independent reviewer proof remain mandatory before any global lossless declaration.
 
 ## Latest exact source-independent publication verification
 

@@ -1,0 +1,38 @@
+# Independent, source-hidden Strategy Box Knowledge challenge — question-only handoff
+
+**Execution status: NOT EXECUTED.** This is a *question and evidence template*, not a producer answer sheet, certification or consent to self-mark a PASS.
+
+**Frozen target publication:** Git `ForestTiger-GH/stratbox@f27edf664dcd5436891a79a32a4b239e351a80ae`, [successful CI run 38202507779](https://github.com/ForestTiger-GH/stratbox/actions/runs/38202507779), [uploaded standalone Knowledge artifact](https://github.com/ForestTiger-GH/stratbox/actions/runs/38202507779#artifacts). It contains a ZIP with **only 102 documents inside `docs/`** plus `KNOWLEDGE-HASHES.json`, checked against **562 relative publication links**, no Research, Work or legacy archive. Inner ZIP checksum: `sha256:e6c9e24f3f70ba6f70e1696f9c131dc1d405f3fa221c325b4fdf8f69c3247f53`, 809377 bytes. The containing GitHub Actions delivery artifact can have a *different* digest because it is a ZIP envelope around the generated ZIP plus checksum file. The uploaded action artifact expires after fourteen days and can be rebuilt reproducibly from the pinned Git revision.
+
+## Strict reviewer role and independence
+
+The first reader must be a **genuinely different competent authorized reviewer**, not the same corpus-producing assistant re-reading its own answers under an imagined role. The first phase gives the reviewer **only the standalone published ZIP, this question section, and the task instruction**. Do not give earlier Research originals, the consolidation ledgers, earlier authored question answers, development Git history, or this Work commentary. Reviewer first freezes answer text, explicit `UNKNOWN`, directly visible Knowledge path(s) and any source-dependent weakness. Only then may a **separately accountable original-first reviewer** inspect the accessible frozen Git Research originals and compare the answers against actual source meaning, contradictory hypotheses, and negative details.
+
+**Prohibited claims:** a zip with valid links is not scientific proof; a green producer test is not independent review; a source row within a broad range does not prove concept preservation; a lost original DOCX cannot be independently hashed and is excluded by owner's instruction. If a reader looks up the source archive during the publication-only phase, that challenge is invalid and must be repeated.
+
+## Fourteen consumer questions — no supplied answers
+
+| Case | Independent consumer question |
+| --- | --- |
+| IR-01 | A bank's historical source URL is unchanged, while a previously issued number differs from a fresh acquisition. The previous original bytes were not retained. What can a reviewer still assert, and which version/replay claims must be qualified? |
+| IR-02 | An HTTP cache validator replies `304`, but the cache body was deleted, and another publisher response reuses one ETag for different bytes. Distinguish successful transport, usable input, and proof of source identity. |
+| IR-03 | An industrial classification's `data` is present but its optional `meta` and `structure` are absent. What is the verified basic reader behavior, and when would three-component edition mismatch become a separately required check? |
+| IR-04 | A rounded official amount has representative six and a solver returns exactly one preferred numeric representative. Under what mathematical/evidence conditions is this a uniquely published bucket rather than a proven exact latent point? |
+| IR-05 | The Windows source registry lists three operations and one composed central-bank update Scenario. Which actual executable operations are represented, what does the composite control, and what does this *not* prove about detached host or simultaneous worker capacity? |
+| IR-06 | A local desktop Scenario continues after a required operation failure and emits both diagnostic output and a file-like Artifact card. Which statuses and physical bytes must be checked before reporting success or a published spreadsheet? |
+| IR-07 | A command was admitted while a participant had permission, but the shared target changed and the grant was revoked before delete/replace. Does a prior UI approval authorize the present effect? How does the application separate discoverability, admission, approval and the effect boundary? |
+| IR-08 | Two viewers with different permissions receive an ordered activity stream. One loses Thread access, and the public event cursor appears to skip hidden internal numbers. What observable recovery and confidentiality properties matter? |
+| IR-09 | A shared source folder loses availability and the platform problem recorder fails to return a confirmed occurrence reference. How should the product distinguish node-wide condition, actual application result, local diagnostics and external platform evidence? |
+| IR-10 | A remote user disconnects during an authorized long-running analytic Job; a stale local UI still shows RUNNING, then the worker loses an external write acknowledgment. Which owner can attest the Job, which outcome remains unknown, and when is retry allowed? |
+| IR-11 | A technical support log contains an access token, a home-directory path and a participant's private spreadsheet location. Which parts of an incident can appear in a shared chat, in a machine result, and in a permissioned technical log? |
+| IR-12 | A future Android surface is built without importing the Windows Qt runtime. Which reusable semantic objects can it still consume, and what existing implementation or host APIs must actually be supplied before it becomes a functioning remote client? |
+| IR-13 | Two XLSX packages have numerically identical visible tables but different raw SHA-256 digests; their input snapshots are used by different revisions of a forecasting/reconstruction method. Which identities, assumptions, vintages and claims must remain separate? |
+| IR-14 | Strategy Box needs a planned host in Web/domain and Windows/AppDock host-plus-distinct-client arrangements. Has any specific new repository, mandatory global registry, database, MCP/A2A gateway, security policy or installed host already been accepted or independently tested? How does the current product decision limit a proposed implementation plan? |
+
+## Frozen answer and evidence form
+
+For each case, require: `reviewer_id` (trusted non-secret accountability handle), `publication_git_sha`, `question_id`, `answer`, `observed_claim`, `proposed_claim`, `product_decision_or_open`, `knowledge_paths`, `missing_evidence`, `contradiction`, `confidence_limit`, `reviewed_without_originals=true/false`, `time_of_answer`. An answer of genuinely justified **UNKNOWN** is valid; inventing a shipped host or strengthening a rounded reconstruction to official exactness fails even if fluent.
+
+For the second original-first phase, record separately the pinned source ID/blob SHA/line bounds, accepted scientific statement, explicitly falsifying or contradictory original text, publication destination and material verdict `preserved | qualified | omitted | contradicted | blocked`. Avoid transcribing restricted originals into public source or release data. A verified material disposition must be based on a real adequate reviewer and cannot be obtained by turning existing structural counts green.
+
+**Completion gate:** only after another authorized reviewer actually performs the source-hidden challenge, reverse source-content tests find no unresolved material omission, and all admitted public Git source items are justified or safely excluded can Knowledge receive a scoped independent semantic verdict. Actual native host/Web/Android/security release acceptance is distinct. The permanent lost original DOCX carrier remains expressly **excluded/unverifiable**.
