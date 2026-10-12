@@ -123,6 +123,12 @@ See also the [Product obligations → concrete LCD handoff matrix](implementatio
 
 **Assurance boundary:** all nine are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
 
+## Executable candidate-fragment probes — 2026-10-12
+
+The Knowledge CI now **parses** the nine documented LCD construction files and **executes selected allowlisted Python AST definitions extracted directly from three maintained packets**, using deterministic synthetic schedulers, ledgers, projections and optional recorders. [CI run 38206600725](https://github.com/ForestTiger-GH/stratbox/actions/runs/38206600725) completed **SUCCESS** at `stratbox@16fbe7acd5d1b817c4613247cad902f38aa4160c`. Its bounded checks exercised the proposed local Scenario outcome reducer and one-run admission guard, host intention replay/conflict, and external Problem acknowledgment uncertainty. The behavioral checks do **not** run production modules, actual domains, native Qt, remote hosting, storage, external platform integration, concurrency, or a security acceptance suite.
+
+**Evidence tier:** `PRODUCER_EXECUTED_DESIGN_FRAGMENT_TEST` — stronger than source-syntax parse, weaker than a code implementation and distinct from an independent reviewer. It does not promote `LCD_CANDIDATE` to `LCD_READY_FOR_IMPLEMENTATION`; all listed blockers remain. A changed candidate requires this test and appropriate independent conformance to run again at the new exact revision.
+
 ## Cross-packet construction consistency (producer challenge; not independent)
 
 These five packets share **semantic constraints**, not one prematurely selected data model. A real implementation must make the following inter-packet adapters explicit and test the same negative scenarios end-to-end.
