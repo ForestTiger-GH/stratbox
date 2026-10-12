@@ -10,12 +10,14 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from stratbox_windows.runtime.config import (
     AppUserConfig, load_user_config, save_user_config,
 )
 from stratbox_windows.runtime.errors import AppConfigError
+from stratbox_windows.runtime.user_preferences import PreferencesService
 
 
 def assert_raises(cls, fn):
@@ -94,6 +96,34 @@ def main() -> dict[str, object]:
         raw = json.loads(p4.read_text(encoding="utf-8"))
         assert "schema_version" not in raw and "window" in raw and "scenario_form_values" in raw
         assertions.append("unversioned mixed UI/draft JSON current writer")
+
+        # 9. The actual PreferencesService mutates live in-memory config
+        #    before handing it to save_user_config; failed persistence does
+        #    not undo those mutations.
+        p5 = root / "preferences-failure.json"
+        cfg5 = AppUserConfig()
+        save_user_config(p5, cfg5)
+        previous = p5.read_text(encoding="utf-8")
+        ctx = SimpleNamespace(user_config=cfg5, paths=SimpleNamespace(app_config_path=p5))
+        svc = PreferencesService(ctx)
+        def raise_before_write(self, text, *args, **kwargs):
+            if self == p5:
+                raise OSError("simulated disk unavailable")
+            return original(self, text, *args, **kwargs)
+        with patch.object(Path, "write_text", raise_before_write):
+            assert_raises(OSError, lambda: svc.save(width=1777))
+        assert cfg5.window.width == 1777
+        assert p5.read_text(encoding="utf-8") == previous
+        assertions.append("PreferencesService memory changed despite failed disk persistence")
+
+        # 10. Uncommitted synthetic Scenario draft lives in memory even when
+        #     save fails. This is not an accepted or persisted Run parameter.
+        with patch.object(Path, "write_text", raise_before_write):
+            assert_raises(OSError, lambda: svc.save_scenario_values(
+                "scenario.atomic.synthetic", {"example": 42}))
+        assert cfg5.scenario_form_values["scenario.atomic.synthetic"] == {"example": 42}
+        assert p5.read_text(encoding="utf-8") == previous
+        assertions.append("scenario draft memory changed despite failed disk persistence")
 
     return {
         "evidence": "exact checked-in pinned Windows config functions executed with synthetic temporary files",
