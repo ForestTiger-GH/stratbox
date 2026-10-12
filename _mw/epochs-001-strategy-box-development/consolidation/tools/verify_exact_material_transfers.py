@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+from pinned_source import read_pinned_blob
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -89,21 +91,6 @@ def read_text(path: Path) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def original_sha(path: Path) -> str:
-    proc = subprocess.run(
-        ["git", "hash-object", "--", str(path)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return proc.stdout.strip()
-
-
-def source_lines(source: Path) -> list[str]:
-    return read_text(source).splitlines()
-
-
 def normalized_for_markdown(text: str) -> str:
     return text.replace("|", r"\|").replace("<", "&lt;")
 
@@ -138,11 +125,11 @@ def verify() -> dict:
             path = Path(census["path"])
             if source_id not in source_cache:
                 try:
-                    sha = original_sha(path)
-                    if sha != census["blob_sha"]:
-                        issues.append(f"{source_id}: current source Git blob differs from frozen census")
-                    source_cache[source_id] = source_lines(path)
-                except (OSError, subprocess.CalledProcessError) as exc:
+                    pinned = read_pinned_blob(
+                        ROOT, census["commit"], census["path"], census["blob_sha"]
+                    )
+                    source_cache[source_id] = pinned.decode("utf-8").splitlines()
+                except (OSError, subprocess.CalledProcessError, ValueError, UnicodeDecodeError) as exc:
                     issues.append(f"{source_id}: unable to open/hash source: {exc}")
                     continue
             recorded_sha = item.get("source_sha") or item.get("source_blob_sha")

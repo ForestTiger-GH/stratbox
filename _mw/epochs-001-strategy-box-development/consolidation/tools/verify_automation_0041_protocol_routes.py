@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+
+from pinned_source import read_pinned_blob
 import re
 import sys
 
@@ -23,9 +25,10 @@ PRIMARY_SPEC_URLS = (
 
 
 def verify() -> dict[str, object]:
-    raw = SOURCE.read_bytes()
-    git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
-    assert git_blob == BLOB, f"source byte identity changed: {git_blob}"
+    raw = read_pinned_blob(
+        ROOT, "8459dc58922b7e8df853cf1d9e8131fa9e132580",
+        str(SOURCE.relative_to(ROOT)), BLOB
+    )
     lines = raw.decode("utf-8").splitlines()
     protocol_science = SCIENCE.read_text(encoding="utf-8")
     assert SCIENCE_HEADER in protocol_science

@@ -16,18 +16,13 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from pinned_source import read_pinned_blob
+
 ROOT = Path(__file__).resolve().parents[4]
 BASE = ROOT / "_mw/epochs-001-strategy-box-development/consolidation"
 ROLES = {"historical_research", "base_research", "consolidation_research", "ai_raised_research"}
 ORIENTATIONS = {"SB-SRC-0012", "SB-SRC-0017", "SB-SRC-0045"}
 SPAN = re.compile(r"^L(\d+)(?:-L?(\d+))?$")
-
-
-def sha_of(path: Path) -> str:
-    return subprocess.run(
-        ["git", "hash-object", "--", str(path)],
-        cwd=ROOT, capture_output=True, text=True, check=True
-    ).stdout.strip()
 
 
 def main() -> dict:
@@ -177,13 +172,12 @@ def main() -> dict:
     for sid, row in originals.items():
         by_role[row["role"]] += 1
         read_by_role[row["read_state"]] += 1
-        src = ROOT / row["path"]
-        if not src.is_file():
-            pinned_bad.append([sid, "SOURCE_NOT_IN_CHECKOUT", row["path"]])
-        else:
-            blob = sha_of(src)
-            if blob != row["blob_sha"]:
-                pinned_bad.append([sid, "SOURCE_CHANGED_FROM_FROZEN_CENSUS", row["path"]])
+        try:
+            if row["repository"] != "ForestTiger-GH/stratbox":
+                raise ValueError("External Git original requires its own checked-out repository")
+            read_pinned_blob(ROOT, row["commit"], row["path"], row["blob_sha"])
+        except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+            pinned_bad.append([sid, "FROZEN_SOURCE_UNAVAILABLE_OR_MISMATCHED", type(exc).__name__])
         values = by_source[sid]
         if (values["producer_provisional_semantic"] == 0 and
                 values["exact_text_transcription"] == 0 and

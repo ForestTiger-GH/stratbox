@@ -16,17 +16,13 @@ import sys
 from collections import defaultdict, Counter
 from pathlib import Path
 
+from pinned_source import read_pinned_blob
+
 BASE = Path(__file__).resolve().parents[1]
 ROOT = Path(__file__).resolve().parents[4]
 ROLES = {"historical_research", "base_research", "consolidation_research", "ai_raised_research"}
 ORIENTATIONS = {"SB-SRC-0012", "SB-SRC-0017", "SB-SRC-0045"}
 SPAN = re.compile(r"^L([0-9]+)(?:-L?([0-9]+))?$")
-
-def git_blob(path: Path) -> str:
-    return subprocess.run(
-        ["git", "hash-object", "--", str(path)], cwd=ROOT, check=True,
-        text=True, capture_output=True
-    ).stdout.strip()
 
 def source_locator(item: dict) -> str | None:
     raw = item.get("source_span") or item.get("span")
@@ -116,18 +112,15 @@ def audit() -> dict:
     unresolved_section_routes: set[tuple[str, str, int]] = set()
 
     for sid, r in sorted(study.items()):
-        source = ROOT / r["path"]
-        if not source.is_file():
-            structural_issues.append(f"{sid}: source missing from checkout")
+        try:
+            if r["repository"] != "ForestTiger-GH/stratbox":
+                raise ValueError("External original requires another repository checkout")
+            frozen = read_pinned_blob(ROOT, r["commit"], r["path"], r["blob_sha"])
+            # Preserve final empty segment for original terminal-line locators.
+            lines = frozen.decode("utf-8").split("\n")
+        except (OSError, subprocess.CalledProcessError, ValueError, UnicodeDecodeError) as exc:
+            structural_issues.append(f"{sid}: frozen Git source unreadable or mismatched: {type(exc).__name__}")
             continue
-        current_sha = git_blob(source)
-        if current_sha != r["blob_sha"]:
-            structural_issues.append(f"{sid}: frozen source blob differs: {current_sha}")
-        # The pinned source-span ledgers count the terminal empty field of a
-        # newline-terminated Git blob (text.split("\n")), just as previous
-        # exact-source verifiers do. Using splitlines() drops that field and
-        # incorrectly flags up to one terminal boundary per study as invalid.
-        lines = source.read_text(encoding="utf-8").split("\n")
         nonblank = {i for i, line in enumerate(lines, 1) if line.strip()}
         observed: set[int] = set()
         candidate: set[int] = set()
