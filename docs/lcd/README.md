@@ -115,6 +115,20 @@ Five concrete, **documentation-only** packets now complement the assembly contra
 
 **Assurance boundary:** all three are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
 
+## Cross-packet construction consistency (producer challenge; not independent)
+
+These five packets share **semantic constraints**, not one prematurely selected data model. A real implementation must make the following inter-packet adapters explicit and test the same negative scenarios end-to-end.
+
+| Boundary | Concrete handoff expected | Consistency condition and status |
+| --- | --- | --- |
+| Neutral consumed-byte receipt → domain Result → Scenario Operation adapter | Source/method/registry identities from the *actual* bytes consumed; a typed domain result retains both values and validation qualifications | A successful download is not a successful domain claim; host/app receipt linking is `CANDIDATE`, raw retention policy `BLOCKED` |
+| Local Scenario Outcome → future host Run Outcome | A step/run identity mapping that preserves required-step failure, partial/unknown effect and explicit terminal evidence | Do not map any historical local `success` after failed required step to verified host success; schema migration and outcome policy `BLOCKED` |
+| Operation output reference → local publisher → host Artifact fetch | A restricted output candidate may become a published Artifact only with a backend-specific finalization and verified receipt; host fetch additionally checks object access and current byte availability | A log path is never an Artifact receipt; local publisher `CANDIDATE`, host publication `BLOCKED` |
+| Local diagnostic evidence → host problem/read projection | Attempt-scoped restricted log and safe failure code link to accepted Run; only an acknowledged external problem occurrence gains a confirmed external reference | Telemetry failure does not alter domain outcome; audience/recorder/retention `BLOCKED` |
+| Client disconnect/Qt lifecycle → future host authority | A client refreshes an authorized scoped snapshot by host-owned identity; a local-only process has no hosted continuity claim | Qt callback, active-client hint and AppDock health never decide hosted Run terminal truth; real host/client deployment `BLOCKED` |
+
+**Cold implementer proof required:** construct one synthetic collector→domain→two-step Scenario with a failed required step, a diagnostic-only log, interrupted Artifact finalization and missing external Problem acknowledgment. The same logical input must yield differentiated acquisition/domain, Run/effect, Artifact and diagnostic states; neither the Qt local view nor a host-client fake may show unconditional success, published bytes or an acknowledged Problem without receipts. A second adversarial case must revoke access between a displayed artifact card and a byte fetch. These are **proposed integration tests, never executed**. The separate source-to-Science independent reviewer and Research Amputation remain unstarted by this producer check.
+
 ## Whole-Knowledge completion relation
 
 An end-to-end Knowledge Product review must check that every admitted implementation-relevant target scope has a sufficient realization route: either a justified LCD result with its exact readiness grade, or a reasoned `NOT_APPLICABLE` disposition. Open Product Decisions and conditional deployments remain visible and owner-routed. Complete scientific conservation, current-state evidence, target coverage, architecture coherence, LCD decision closure, independent checks and publication integrity are **distinct gates**. A final publication may remain `PARTIAL / BLOCKED` when a genuine independent assurance or owner decision is unavailable; no agent may self-award that proof.
