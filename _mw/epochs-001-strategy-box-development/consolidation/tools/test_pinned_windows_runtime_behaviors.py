@@ -317,7 +317,7 @@ class LocalHistoryDurabilityObservedCases(TestCase):
             # the malformed original; later saving can overwrite that evidence.
             self.assertEqual(cases.read_text(encoding="utf-8"), "{synthetic invalid")
 
-    def test_history_decoder_drops_invalid_object_from_valid_array_without_error(self):
+    def test_history_decoder_materializes_placeholder_case_from_sparse_json_object(self):
         from stratbox_windows.application.history.persistence import HistoryPersistenceService
         with TemporaryDirectory() as tmp:
             service = HistoryPersistenceService(Path(tmp))
@@ -325,7 +325,11 @@ class LocalHistoryDurabilityObservedCases(TestCase):
             cases.write_text('[{"synthetic": "incompatible_case_schema"}]', encoding="utf-8")
             stores = self.stores()
             service.load_into(**stores)
-            self.assertEqual(stores["case_store"].all(), tuple())
+            imported = stores["case_store"].all()
+            self.assertEqual(len(imported), 1)
+            self.assertEqual(imported[0].scenario_id, "")
+            self.assertEqual(imported[0].scenario_title, "Сценарий")
+            self.assertTrue(imported[0].case_id)
 
     def test_simulated_save_interruption_can_leave_partial_five_file_generation(self):
         from stratbox_windows.application.history.persistence import HistoryPersistenceService
@@ -336,16 +340,18 @@ class LocalHistoryDurabilityObservedCases(TestCase):
             stores = self.stores()
             cases = stores["case_store"]
             case = ScenarioRunCase.create(
-                scenario_id="synthetic", scenario_title="Synthetic", params={}
+                scenario_id="synthetic", scenario_title="Synthetic", params={},
+                author_id=None, author_label=None, steps=[]
             )
-            cases.add(case)
+            cases.upsert(case)
             service.save_from(**stores)
             initial_cases = (service._history_dir / "cases.json").read_bytes()
             initial_events = (service._history_dir / "events.json").read_bytes()
             other = ScenarioRunCase.create(
-                scenario_id="synthetic.second", scenario_title="Second", params={}
+                scenario_id="synthetic.second", scenario_title="Second", params={},
+                author_id=None, author_label=None, steps=[]
             )
-            cases.add(other)
+            cases.upsert(other)
             real_save = service._save_list
             counter = {"n": 0}
             def interrupt_second(path, payload):
