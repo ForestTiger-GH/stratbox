@@ -153,6 +153,25 @@ class CleanupExecutor:
 
     def apply_one(self, plan: FrozenCleanupPlan,
                   step: FrozenAction, approval_ref: str | None) -> EffectReceipt:
+        # Do not accept an arbitrary action row merely because it has the
+        # FrozenAction type. Require a unique exact member of the frozen plan.
+        matches = tuple(a for a in plan.actions if a.action_id == step.action_id)
+        if len(matches) != 1 or matches[0] != step:
+            raise PermissionError("STEP_NOT_UNIQUE_MEMBER_OF_APPROVED_PLAN")
+        if (not plan.sorted_target_set_digest
+                or self.evidence.derive_plan_digest(plan.actions)
+                    != plan.sorted_target_set_digest):
+            raise PermissionError("PLAN_DIGEST_NOT_CURRENT")
+        if (step.source is not None
+                and step.source.root_scope != plan.scope_ref):
+            raise PermissionError("SOURCE_OUTSIDE_PLAN_SCOPE")
+        if (step.target is not None
+                and step.target.root_scope != plan.scope_ref):
+            raise PermissionError("TARGET_OUTSIDE_PLAN_SCOPE")
+        if (step.action is FileAction.DELETE_SOURCE
+                and (step.source is None
+                     or not (step.source.file_generation or step.source.sha256))):
+            raise PermissionError("DESTRUCTIVE_SOURCE_IDENTITY_REQUIRED")
         permit = self.auth.authorize(plan, step, approval_ref)
         pending = self.receipts.record_pending(plan, step, permit)
         try:
@@ -176,9 +195,16 @@ class CleanupExecutor:
                 assert step.source is not None
                 # Do not delete unrecognized or changed source, or anything
                 # that is still the only needed recovery copy.
-                if self.evidence.recognized_source(
-                    plan.scope_ref, step.source.relative_path) is None:
-                    raise PermissionError("UNRECOGNIZED_DELETE_SOURCE")
+                current = self.evidence.observe(
+                    plan.scope_ref, step.source.relative_path)
+                if not source_witness_matches(current, step.source):
+                    raise StalePlanError("DELETE_SOURCE_CHANGED")
+                recognized = self.evidence.recognized_source(
+                    plan.scope_ref, step.source.relative_path)
+                if recognized != (step.recognized_family, step.selected_period):
+                    raise PermissionError("DELETE_SOURCE_FAMILY_OR_PERIOD_CHANGED")
+                # The real FileEffectPort must *also* prove compare-and-delete
+                # on the same generation; a prior observe() is not a fence.
                 confirmed = self.effects.conditional_delete(step.source)
                 receipt = EffectReceipt(
                     plan.plan_id, step.action_id, EffectTruth.VERIFIED,
@@ -199,6 +225,8 @@ class CleanupExecutor:
         return receipt
 ~~~
 
+**Source-first destructive-plan correction:** the first candidate called `auth.authorize(plan, step, ...)` without first checking whether `step` was **the unique exact action in the frozen plan**, whether the plan digest was still derived from its actual ordered action set, whether source/target scopes matched the plan, or whether a requested delete had any byte/generation witness. The delete branch additionally checked only that `recognized_source()` returned *some* recognized family: it omitted a current source witness comparison and could accept another family/period occupying the same path. The code now refuses these mismatches **before creating an effect intent**, and treats changed source bytes before deletion as `FAILED_NO_EFFECT`. These are conditions **necessary** for a trustworthy host caller; `normalize_and_validate`, canonical digest computation, authenticated plan approval, backend-safe path resolution and a genuine compare-and-delete storage primitive remain independently unimplemented. A malicious Python caller with the same OS rights can still call core I/O directly, outside an application host's access policy. Never represent this LCD as deployed permission enforcement.
+
 **Hard stops before production:** \`normalize_and_validate\`, \`create_stable_plan_ref\`, \`source_selection_revision\`, \`source_witness_matches\` and \`StalePlanError\` are deliberate design obligations, **not shipped definitions**. More importantly, \`record_result\` can fail after a confirmed physical effect; the actual implementation must preserve the pending receipt for reconciliation. Storage must guarantee a generation-checked finalize/delete or disclose a weaker, explicitly accepted local policy. A source may change after a precheck but before staging; staging must validate the bytes actually copied, and conditional finalization must be tied to the same immutable generation. An authorization check that happened before this code cannot replace an effect-time check.
 
 **Rename semantics:** a desired rename must not silently consume the only source copy until target commit is proven; if the source is to be removed, model it as a **separate guarded delete** with a confirmed prerequisite, not a magic atomic cross-backend move.
@@ -214,6 +242,17 @@ For each action, preserve a causal chain: normalized plan revision → approved 
 ## 6. Proposed concrete negative tests — UNEXECUTED
 
 ~~~python
+def test_injected_action_row_cannot_bypass_frozen_cleanup_plan(executor, plan):
+    forged = replace(plan.actions[0], source=other_sensitive_source)
+    with raises(PermissionError):
+        executor.apply_one(plan, forged, approval_ref="approved")
+
+def test_changed_delete_source_and_family_cannot_reach_conditional_delete(
+        executor, changed_source, plan):
+    with raises_or_failed_receipt("STALE_PLAN", "DELETE_SOURCE_CHANGED"):
+        executor.apply_one(plan, plan.delete_step, approval_ref="approved")
+    assert not changed_source.deleted
+
 def test_existing_old_target_survives_failed_staging(effects, executor, plan):
     effects.raise_on_copy()
     result = executor.apply_one(plan, plan.replace_step, approval_ref="a")
