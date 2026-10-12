@@ -255,6 +255,25 @@ The direct pinned Manifest/test inconsistency and tracked generated files remain
 **Assurance limit:** actual original Python behavior on synthetic fixtures, not a compiled/native Windows release, shared host, real credentials, installed AppDock handshake or independent cross-application security audit.
 
 
+## Executed pinned Settings configuration failure windows — 2026-10-12
+
+**Exact source:** [\`stratbox-windows/runtime/config.py\` at the frozen Windows revision](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/runtime/config.py), plus \`runtime/errors.py\`; actual legacy \`PreferencesService\` source still mutates the in-memory \`AppUserConfig\` and calls that same writer. **Execution evidence:** [Strategy Box CI 38207727483](https://github.com/ForestTiger-GH/stratbox/actions/runs/38207727483), exact \`stratbox@5ba2176845f4f0881ea024b1d7283069a601ac04\` — **SUCCESS**, running original pinned Windows importable config functions on synthetic temporary directories. No GUI, real platform, user credentials or production file were used.
+
+| Executed current-source case | Observed result | Proper limit |
+| --- | --- | --- |
+| Loading absent \`app.json\` | \`load_user_config()\` **writes** a default file as a load side effect | A read operation is not pure or read-only; no managed-root authority established |
+| Invalid JSON syntax | Raises \`AppConfigError\` | It does not silently repair corrupted user data |
+| Invalid numerical width | Coercion raises unwrapped \`ValueError\` | Already independently recorded as earlier WEX-09; repeated here to compare failure classes |
+| JSON string \`"false"\` for \`right_inspector_open\` | Becomes \`True\` because Python \`bool(nonempty_string)\` | No strict type validation at this field |
+| Nonpositive window width/height | \`-7\` and \`0\` are accepted as integers | No domain/range validation of geometry at this boundary |
+| Synthetic sensitive-looking \`scenario_form_values\` key/value | Value stored verbatim as JSON, without per-field sensitivity filter | Corroborates earlier WEX-08; **no actual secret exposure was observed** |
+| Injected short \`Path.write_text\` with exception | Actual \`save_user_config()\` propagates writer error and old file is left replaced by partial bytes in the synthetic fault | Proves no rollback/staging in this wrapper under injected failure; **not** native Windows power-loss or filesystem behavior |
+| Saving fresh \`AppUserConfig\` | Direct JSON contains mixed \`window\` and \`scenario_form_values\` but no schema-version field | No versioned schema/transaction guarantee at this implementation baseline |
+
+The source's \`save_user_config\` calls \`Path.write_text\` directly, rather than write-to-temp / fsync / backend-qualified replace. In the test's injected failing writer, old bytes disappeared. This is a **bounded causal failure mode**, not a report of a real user losing settings. Current config behavior must not be conflated with the **candidate** future split into durable UserSettings, device-local SurfaceState and versioned ScenarioDraftStore. The appropriate scientific consequence—different persistence/preview/effective/Run truths, and strict fallback or explicit unknown on durability failure—is captured in [maintained Settings Science](../science/application-state/settings-policy-preferences-and-drafts.md).
+
+**Reopen:** actual packaged Windows runtime and target filesystem guarantees, config model or PreferencesService revision, OS/runtime-specific save and move behavior, chosen host security/policy and remote preferences sync. This CI establishes eight selected source-executing cases, **not** global Settings implementation readiness or a privacy certificate.
+
 ## Executed Explorer containment, workroom projection and workspace-root contrast — 2026-10-12
 
 **Pinned source ownership:** [ExplorerService](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/workspace/explorer_service.py), [ExplorerProvider](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/workspace/explorer_provider.py), [Workspace resolver](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/application/workspace/resolver.py), [Scenario chat projector](https://github.com/ForestTiger-GH/stratbox-windows/blob/959e9c4ce1441124af5111c1e025041714e04d3b/src/stratbox_windows/presentation/common/scenario_chat/projector.py), original Windows source `959e9c4ce1441124af5111c1e025041714e04d3b`. Source characterization tests exercise exactly imported pinned Windows Python modules with synthetic temporary directories, files and Case records. [CI 38191826914](https://github.com/ForestTiger-GH/stratbox/actions/runs/38191826914) passed after WEX-14 was added; `14/14` Windows tests pass. No Qt native, actual managed runtime, other principals or real sensitive files were accessed.
