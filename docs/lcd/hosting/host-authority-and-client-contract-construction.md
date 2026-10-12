@@ -127,10 +127,18 @@ class RunSnapshot:
 @dataclass(frozen=True, slots=True)
 class Observation:
     run_ref: str
-    sequence: int
+    event_ref: str          # opaque, scoped visible-event identifier, not node_seq
     revision: int
     safe_code: str
     safe_text: str
+
+@dataclass(frozen=True, slots=True)
+class ObservationPage:
+    run_ref: str
+    feed_generation: str   # authorization-aware projection revision
+    next_cursor: str | None  # opaque token, never raw internal sequence
+    observations: tuple[Observation, ...]
+    resync_required: bool = False
 
 @dataclass(frozen=True, slots=True)
 class ArtifactIdentity:
@@ -175,6 +183,19 @@ class LedgerPort(Protocol):
     def get(self, run_ref: str) -> RunSnapshot | None: ...
     def read_after(self, run_ref: str, sequence: int) -> tuple[Observation, ...]: ...
 
+class AuthorizedFeedPort(Protocol):
+    def read_authorized(self, actor: Actor, run_ref: str,
+                        cursor: str | None) -> ObservationPage:
+        """Owned by trusted host, not by client serialization.
+
+        Must reauthorize every permitted event AND field at the current ACL
+        revision, validate/redact schema at the server, and return an opaque
+        principal+scope+generation-bound cursor. On revocation, cursor expiry,
+        or retention gap return an explicit RESYNC_REQUIRED projection.
+        Never return unfiltered ledger rows or expose internal node sequence.
+        """
+        ...
+
 class ExecutionSchedulerPort(Protocol):
     # Volatile first-attempt signal; absence or lost ACK does not remove the
     # transactional ledger-owned dispatch intent.
@@ -209,7 +230,7 @@ class HostApplicationPort(Protocol):
     def submit(self, actor: Actor, request: Submission) -> AdmissionReceipt: ...
     def read_run(self, actor: Actor, run_ref: str) -> RunSnapshot: ...
     def observe(self, actor: Actor, run_ref: str,
-                after: int) -> tuple[Observation, ...]: ...
+                after_cursor: str | None) -> ObservationPage: ...
     def fetch(self, actor: Actor, artifact: ArtifactIdentity) -> ArtifactResult: ...
 ~~~
 
@@ -367,23 +388,59 @@ class HostDispatchRecovery:
 # CANDIDATE_DESIGN: application_authority/observations.py
 class ScopedReads:
     def __init__(self, policy: PolicyPort, ledger: LedgerPort,
-                 artifacts: ArtifactRepositoryPort):
-        self.policy, self.ledger, self.artifacts = policy, ledger, artifacts
+                 artifacts: ArtifactRepositoryPort, feed: AuthorizedFeedPort):
+        self.policy, self.ledger, self.artifacts, self.feed = (
+            policy, ledger, artifacts, feed)
 
     def read_run(self, actor: Actor, run_ref: str) -> RunSnapshot:
-        if not self.policy.can_read_run(actor, run_ref):
+        try:
+            permitted = self.policy.can_read_run(actor, run_ref)
+        except Exception:
+            # Availability of the policy service is not a grant.
+            raise PermissionError("RUN_ACCESS_UNCONFIRMED") from None
+        if permitted is not True:
             raise PermissionError("RUN_ACCESS_DENIED")
         snapshot = self.ledger.get(run_ref)
         if snapshot is None:
             raise LookupError("RUN_UNAVAILABLE")
+        if not isinstance(snapshot, RunSnapshot):
+            raise RuntimeError("RUN_SNAPSHOT_CONTRACT_INVALID")
         return snapshot
 
     def observe(self, actor: Actor, run_ref: str,
-                after: int) -> tuple[Observation, ...]:
-        self.read_run(actor, run_ref)  # reauthorizes on every call
-        # Production must validate actor-scoped cursor, retention and gaps,
-        # revocation between frames and safe redaction of technical details.
-        return self.ledger.read_after(run_ref, after)
+                after_cursor: str | None) -> ObservationPage:
+        self.read_run(actor, run_ref)  # current object policy precheck
+        if (after_cursor is not None
+                and (type(after_cursor) is not str or not after_cursor)):
+            raise ValueError("INVALID_AUTHORIZED_CURSOR")
+        try:
+            page = self.feed.read_authorized(actor, run_ref, after_cursor)
+        except PermissionError:
+            raise PermissionError("RUN_ACCESS_DENIED") from None
+        except Exception:
+            raise RuntimeError("AUTHORIZED_FEED_UNAVAILABLE") from None
+        if (not isinstance(page, ObservationPage)
+                or page.run_ref != run_ref
+                or type(page.feed_generation) is not str
+                or not page.feed_generation
+                or (page.next_cursor is not None
+                    and (type(page.next_cursor) is not str
+                         or not page.next_cursor))
+                or type(page.resync_required) is not bool
+                or type(page.observations) is not tuple
+                or any(not isinstance(item, Observation)
+                       or item.run_ref != run_ref
+                       or type(item.event_ref) is not str
+                       or not item.event_ref
+                       or type(item.safe_code) is not str
+                       or type(item.safe_text) is not str
+                       for item in page.observations)
+                or (page.resync_required and page.observations)):
+            raise RuntimeError("AUTHORIZED_FEED_CONTRACT_INVALID")
+        # Exact ACL and safe-field qualification remains inside a trusted
+        # AuthorizedFeedPort. This wrapper cannot authenticate the issuer
+        # or certify privacy solely from typed return values.
+        return page
 
     def fetch(self, actor: Actor, ref: ArtifactIdentity) -> ArtifactResult:
         # This candidate fetch is a safe metadata *inspection*, not a bytes
@@ -415,6 +472,8 @@ class ScopedReads:
         return ArtifactResult(internal.availability, None, None)
 ~~~
 
+**Source-first authorized feed correction (Topic 05, §9.2–9.4):** the earlier candidate performed `can_read_run(actor, run_ref)` once using Python truthiness, then returned `LedgerPort.read_after(run_ref, after:int)` **directly** to a client. A policy implementation returning `"false"` or `1` could be mistaken for explicit allow; ledger rows could include raw `safe_text` from the current Windows source, and an integer cursor could disclose hidden node-wide activity or remain valid after ACL revocation. The replacement requires literal Boolean `True` at each Run read, surfaces policy outages as scoped access uncertainty, and routes every event-page fetch to a **trusted, object- and field-authorizing `AuthorizedFeedPort`**. It returns an `ObservationPage` with opaque actor-bound cursor and feed-generation, and `RESYNC_REQUIRED` without unfiltered events when authority/retention changes. A port that merely casts raw ledger records into an `Observation` dataclass, or labels a global event sequence “opaque”, **does not** implement this contract. Cursor authentication/expiry, field-sensitivity classification, safe text schema, per-event ACL, atomic snapshot/subscribe and user revocation during streaming are physical host/security implementation gates; their absence keeps this LCD `BLOCKED`. These are candidate semantics and source-derived security challenges, not a published remote feed endpoint or actual privacy proof.
+
 **Source-first artifact projection correction (Topics 04/05/12):** the first typed `ArtifactResult` included a `host_handle` field and was *also the return value of a client-facing transport*. Even where that handle was described as opaque, passing it through the client DTO risked exposing an internal storage capability/path or suggesting that it was itself a valid download grant. The code now separates host-private `InternalArtifactRecord` from **client-safe metadata-only** `ArtifactResult`; no storage handle ever leaves `ScopedReads.fetch`. The intentionally renamed availability cases distinguish confirmed missing bytes, backend outage, changed version, unknown effect, staged bytes and permission denial. A broken backend response or a claimed verified record missing digest/media/host handle returns `OUTCOME_UNKNOWN` rather than false `VERIFIED_AVAILABLE`. Physical bytes still require an **additional authorized streaming/open operation**, proper generation and digest verification, scope-limited headers and current access recheck. This code is **NOT a deployed or security-certified download endpoint** and a dataclass/typed status is not sufficient evidence of issuer/backend authenticity.
 
 A client cannot turn a local absolute filesystem path into a remote accessible URL. A published Artifact needs a byte-verified record and separate access check at download time; technical logs are a different scope. Permission revocation during a stream requires reauthorization and stream termination. A stale cursor or missing event range must return a qualified resnapshot path, never imply continuous observation. On network loss, the client marks its state stale without changing the host-owned Run status.
@@ -427,7 +486,7 @@ class ClientTransport(Protocol):
     def negotiate(self) -> HostIdentity: ...
     def submit(self, request: Submission) -> AdmissionReceipt: ...
     def snapshot(self, run_ref: str) -> RunSnapshot: ...
-    def observations(self, run_ref: str, after: int) -> tuple[Observation, ...]: ...
+    def observations(self, run_ref: str, cursor: str | None) -> ObservationPage: ...
     def artifact(self, ref: ArtifactIdentity) -> ArtifactResult: ...
 
 class AttachedClient:
