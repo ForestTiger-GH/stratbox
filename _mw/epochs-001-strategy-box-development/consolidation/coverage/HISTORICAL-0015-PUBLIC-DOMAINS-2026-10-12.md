@@ -1,0 +1,9 @@
+# Historical May 2026 Strategy Box patch — public domain semantic reconciliation
+
+**Status:** `PARTIAL / SOURCE-FIRST PRODUCER`, 2026-10-12. Original `SB-SRC-0015`, pinned Git blob `a2339ebc79f72a075d290b761fda7b8997b15710`, 107 physical lines. Twelve publicly admissible, material original positions cover bank forms 135/805, FRG filename period/selection/effect, escrow geographic/indicator schema evolution and raw banking statistical-file collection. [Address ledger](../units/HISTORICAL-PATCH-0015-PUBLIC-DOMAINS-12.jsonl) has original exact public line ranges and distinct counterexamples.
+
+**Critical corrections to strong historical wording:** a 2026 patch statement that a cleanup is safe is not a verified guarantee against replacement-before-failed-copy/rename (direct bounded FRG tests show otherwise). A copied XLSX raw source can be available without an immutable origin vintage or completeness proof. A missing escrow indicator is not zero. A normalized bank label can collide across reporting perimeters. The historical source is not a release test or a guarantee of numerical banking correctness.
+
+**Publication scope:** only generic/public mathematical and data-handling concepts from the original; no access-restricted implementation references, identifying names or protected details were transferred. Original Git forensic bytes remain pinned separately from the edited public working copy, which is a different revision. The public repository's committed history requires a separate authorized review if historical access is considered in threat scope. **No** complete source-level material closure or distinct independent Research Amputation is claimed.
+
+**Verification next:** pinned Git SHA/line and exact Science text route verification, no original replacement with sanitized working copy. Wider source population remains `566 material entries unaccounted`.
