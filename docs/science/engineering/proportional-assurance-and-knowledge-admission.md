@@ -169,3 +169,13 @@ Still unresolved are exact Work vs one-off Run identity, durable state promises 
 **Qualified conclusion:** commit subjects, file inventory, Manifest declaration, smoke assertions and installed-process evidence are distinct. A missing Git metadata directory gives a truthfully unknown local revision, not a verified release fingerprint. Existing model shapes and automated source characterization do not prove a native Windows or hosted release.
 
 **Scope boundary:** this nine-row producer slice does not exhaust 1,741 physical original lines. The file's whole-source state is `unaccounted`; no independent Science conservation or Research Amputation has been performed.
+
+## Original Windows Study 0020: proposed client, artifact and collaboration maturity (source packet B)
+
+**Source:** [frozen 2026-10-06 Windows study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), exact blob `225128f2599f0792422c0b31cb3cbe1437991ced`; a dated future-option/release-maturity study, **not** binding architecture, accepted permission semantics or an executed host. Each row retains a competing disconfirming case.
+
+| Address · epistemic role | Original material proposal or observation | Counterexample / limit | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/FUT-09` · `DATED_IMPLEMENTATION_MATURITY_MATRIX` | The study separated realized local desktop operations, local JSON preferences and AppDock activation from only-scaffold Background, presence, AI, cancellation, remote and Android features. | Its matrix is historical, not a delivery certificate at a future commit; exact direct code and native tests govern any current implementation claim. | [L1642–L1668](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L1642-L1668) |
+
+**Evidence status:** a future AI actor label, mobile sketch, host execution backend or artifact field list cannot establish the relevant implementation or rights. This packet is a **producer source transfer**; independent review, complete source accounting and host/client release tests remain open. All frozen source dispositions are still `unaccounted`.

@@ -234,3 +234,13 @@ The [dated Artifact and Result Management Research](https://github.com/ForestTig
 **Counterarguments:** A manually moved file can legitimately become unavailable in the historical chat rather than requiring aggressive global discovery. A cheap temporary CSV may not warrant permanent content-addressed storage. Conversely, an output path appearing after a failure must not be promoted to an accepted published accounting workbook, and a visible shared chat card does not confer download/delete rights on every viewer. The lowest trustworthy publication assurance is the one actually supported by the backend and observed effect receipt. A high-level staged publication model is a candidate, not installed generic code.
 
 **Preservation limit:** the 16 original rows remain material partial coverage of this 986-line study; complete source-level lossless, the physical user DOCX hash and installed host/web tests remain open.
+
+## Original Windows Study 0020: proposed client, artifact and collaboration maturity (source packet B)
+
+**Source:** [frozen 2026-10-06 Windows study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), exact blob `225128f2599f0792422c0b31cb3cbe1437991ced`; a dated future-option/release-maturity study, **not** binding architecture, accepted permission semantics or an executed host. Each row retains a competing disconfirming case.
+
+| Address · epistemic role | Original material proposal or observation | Counterexample / limit | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/FUT-07` · `HISTORICAL_ARTIFACT_EXPANSION_CANDIDATE` | The proposed Artifact roadmap named preview metadata, lineage, hash, source links, retention, pin/favorite, controlled share/export and chaining. | A path-based ArtifactRecord does not already possess canonical byte digest, accessible generation, ownership grant, retention guarantee or safe remote publication. | [L1490–L1502](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L1490-L1502) |
+
+**Evidence status:** a future AI actor label, mobile sketch, host execution backend or artifact field list cannot establish the relevant implementation or rights. This packet is a **producer source transfer**; independent review, complete source accounting and host/client release tests remain open. All frozen source dispositions are still `unaccounted`.

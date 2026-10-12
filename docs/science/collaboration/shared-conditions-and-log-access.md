@@ -121,3 +121,13 @@ Open: who is admitted into a trusted node; what “everyone sees everything” m
 **Public projection principle:** filter mode, author placement and unread flags are UI properties until a verified shared authority and recipient-specific projection enforce object-scoped access and cursor state. A filter cannot sanitize raw params or filesystem paths that have already entered the message model.
 
 **Conservation boundary:** these 1 additional rows are producer-traced source passages only. The original 0020 contains 1,741 physical lines, has additional unpartitioned material, and keeps census state `unaccounted`. A distinct verifier must review bidirectionally before a whole-source terminal disposition.
+
+## Original Windows Study 0020: proposed client, artifact and collaboration maturity (source packet B)
+
+**Source:** [frozen 2026-10-06 Windows study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), exact blob `225128f2599f0792422c0b31cb3cbe1437991ced`; a dated future-option/release-maturity study, **not** binding architecture, accepted permission semantics or an executed host. Each row retains a competing disconfirming case.
+
+| Address · epistemic role | Original material proposal or observation | Counterexample / limit | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/FUT-08` · `HISTORICAL_COLLABORATION_POTENTIAL` | Presence, Assignments, authored Cases and incoming/outgoing presentation were framed as seeds for collaboration, comments, approvals, audit and remote Case ownership. | Local presentation actor labels and JSON records cannot substantiate shared live presence, verified remote authority or consent by an assigned colleague. | [L1504–L1516](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L1504-L1516) |
+
+**Evidence status:** a future AI actor label, mobile sketch, host execution backend or artifact field list cannot establish the relevant implementation or rights. This packet is a **producer source transfer**; independent review, complete source accounting and host/client release tests remain open. All frozen source dispositions are still `unaccounted`.

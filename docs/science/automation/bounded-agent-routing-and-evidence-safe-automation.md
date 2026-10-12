@@ -349,3 +349,13 @@ The frozen [2026-10-06 automation and AI study](https://github.com/ForestTiger-G
 | `SB-SRC-0041/AI-21` · `RESEARCH_STATE_AUTHORITY_INVARIANT` | Schedules, critical Job/Case/Approval/Artifact state and authoritative execution status should not live only in prompts, conversations or model claims. | Persistence by itself proves neither atomic effect outcome nor a reliable delivered current host service. | [L1804–1814](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_automation_ai_research_2026-10-06.md#L1804-L1814) |
 
 **Status after producer reconciliation:** material meanings are addressable in this maintained Science module, and the original counter-options remain traceable. There is **no independent semantic-verification PASS** for these items, no whole-source `LOSSLESS_PASS`, and no actual cross-device release conformance. The source-wide material census remains `unaccounted`.
+
+## Original Windows Study 0020: proposed client, artifact and collaboration maturity (source packet B)
+
+**Source:** [frozen 2026-10-06 Windows study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md), exact blob `225128f2599f0792422c0b31cb3cbe1437991ced`; a dated future-option/release-maturity study, **not** binding architecture, accepted permission semantics or an executed host. Each row retains a competing disconfirming case.
+
+| Address · epistemic role | Original material proposal or observation | Counterexample / limit | Original span |
+| --- | --- | --- | --- |
+| `SB-SRC-0020/FUT-06` · `HISTORICAL_MACHINE_INTERFACE_PROPOSAL` | The study viewed AI actor labels and ai_visibility metadata as a basis for a permitted operation/scenario agent router that yields Case status/evidence rather than shell access. | Catalog hints do not enforce actual principal grants or prove any agent service; this routing direction needs current authorization and source-evidence checks. | [L1459–L1488](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/stratbox-windows_current_state_full_research_2026-10-06.md#L1459-L1488) |
+
+**Evidence status:** a future AI actor label, mobile sketch, host execution backend or artifact field list cannot establish the relevant implementation or rights. This packet is a **producer source transfer**; independent review, complete source accounting and host/client release tests remain open. All frozen source dispositions are still `unaccounted`.
