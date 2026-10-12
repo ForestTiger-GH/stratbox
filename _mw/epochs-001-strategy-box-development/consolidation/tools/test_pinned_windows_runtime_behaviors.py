@@ -186,5 +186,87 @@ class WindowsConfigAndProvenanceCases(TestCase):
 
 
 
+class ExplorerAndChatProjectionObservedCases(TestCase):
+    def test_direct_explorer_absolute_external_navigation_is_rejected(self):
+        from stratbox_windows.application.workspace.explorer_service import WorkspaceExplorerService
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            root = parent / "workspace"
+            outside = parent / "external"
+            root.mkdir()
+            outside.mkdir()
+            service = WorkspaceExplorerService(
+                mount_root_path=root, start_root_path=root, root_label="Workspace"
+            )
+            self.assertIsNone(service.location_for_path(outside))
+            self.assertIsNone(service.location_for_path(Path("..") / "external"))
+
+    def test_directory_symlink_entry_bypasses_location_guard_during_enter_and_list(self):
+        from stratbox_windows.application.workspace.explorer_service import WorkspaceExplorerService
+        from stratbox_windows.application.workspace.explorer_models import ExplorerSort
+        with TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            root = parent / "workspace"
+            outside = parent / "external"
+            root.mkdir()
+            outside.mkdir()
+            (outside / "PRIVATE_SYNTHETIC_FILE.txt").write_text("test only", encoding="utf-8")
+            try:
+                (root / "linked_outside").symlink_to(outside, target_is_directory=True)
+            except (NotImplementedError, OSError):
+                self.skipTest("Platform cannot create directory symlink")
+            service = WorkspaceExplorerService(
+                mount_root_path=root, start_root_path=root, root_label="Workspace"
+            )
+            self.assertIsNone(service.location_for_path(root / "linked_outside"))
+            start = service.initial_location()
+            self.assertIsNotNone(start)
+            listing = service.list_location(start, ExplorerSort())
+            alias = next(x for x in listing.entries if x.name == "linked_outside")
+            self.assertTrue(alias.is_navigable)
+            entered = service.enter_entry(start, alias)
+            self.assertIsNotNone(entered)
+            names = {x.name for x in service.list_location(entered, ExplorerSort()).entries}
+            self.assertIn("PRIVATE_SYNTHETIC_FILE.txt", names)
+
+    def test_chat_case_projection_exposes_synthetic_parameter_and_raw_local_artifact_path(self):
+        from stratbox_windows.application.artifacts.store import ArtifactStore
+        from stratbox_windows.application.artifacts.models import ArtifactRecord
+        from stratbox_windows.application.cases.models import ScenarioRunCase, ScenarioStepRun
+        from stratbox_windows.presentation.common.scenario_chat.projector import project_case
+        with TemporaryDirectory() as tmp:
+            case = ScenarioRunCase.create(
+                scenario_id="scenario.synthetic", scenario_title="Synthetic",
+                params={"synthetic_password": "SENTINEL_PRIVATE_VALUE"},
+                author_id="synthetic_author", author_label="Synthetic user",
+                steps=[ScenarioStepRun(step_id="s", operation_id="fake", title="Fake")],
+            )
+            store = ArtifactStore()
+            path = str(Path(tmp) / "PRIVATE_SYNTHETIC_OUTPUT.xlsx")
+            store.add(ArtifactRecord.from_path(
+                path, scenario_id="scenario.synthetic", case_id=case.case_id,
+                operation_id="fake", author_id="synthetic_author", author_label="Synthetic user",
+            ))
+            msg = project_case(case, store, current_user_id="another_synthetic_user")
+            self.assertIn("SENTINEL_PRIVATE_VALUE", msg.params_summary)
+            self.assertEqual(msg.artifacts[0].path, path)
+            self.assertEqual(msg.placement, "incoming")
+
+    def test_chat_case_projector_copies_aggregate_success_despite_failed_substep(self):
+        from stratbox_windows.application.artifacts.store import ArtifactStore
+        from stratbox_windows.application.cases.models import ScenarioRunCase, ScenarioStepRun
+        from stratbox_windows.presentation.common.scenario_chat.projector import project_case
+        case = ScenarioRunCase.create(
+            scenario_id="scenario.synthetic", scenario_title="Synthetic",
+            params={}, author_id="synthetic_author", author_label="Synthetic user",
+            steps=[ScenarioStepRun(step_id="failed", operation_id="fake", title="Required", status="failed")],
+        )
+        case.status = "success"
+        message = project_case(case, ArtifactStore(), current_user_id="synthetic_author")
+        self.assertEqual(message.status, "success")
+        self.assertEqual(message.steps[0].status, "failed")
+        self.assertEqual(message.status_label, "Завершено")
+
+
 if __name__ == "__main__":
     main(verbosity=2)
