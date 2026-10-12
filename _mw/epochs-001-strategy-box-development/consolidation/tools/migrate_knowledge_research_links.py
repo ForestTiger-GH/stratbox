@@ -59,7 +59,7 @@ def replacement(match: re.Match[str]) -> str:
     if span:
         token = f"#{span.group(0)}"
         if token not in label:
-            return f"{label} (\`{token}\`)"
+            return f"{label} ({chr(96)}{token}{chr(96)})"
     return label
 
 
@@ -88,6 +88,9 @@ def run(apply: bool, check: bool) -> None:
         matches = [m for m in INLINE_LINK.finditer(old) if forbidden(m.group(2))]
         removed += len(matches)
         new = INLINE_LINK.sub(replacement, old)
+        # First migration rendered historical source-position markers with
+        # escaped backticks; normalize only those inert markdown annotations.
+        new = re.sub(r"\\`(#L\d+(?:-L\d+)?)\\`", lambda match: f"`{match.group(1)}`", new)
         if new != old:
             touched.append(str(path.relative_to(ROOT)))
             if apply:

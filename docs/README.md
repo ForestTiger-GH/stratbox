@@ -1,34 +1,34 @@
-# Strategy Box — maintained knowledge product
+# Strategy Box — maintained Knowledge Product
 
-**Publication status (2026-10-12): PARTIAL / UNDER CONSOLIDATION.** The published sections are self-contained **bounded** scientific topics, directly observed implementation slices and explicitly labelled target candidates. They are **not** proof of a complete lossless transfer of the frozen source corpus. The [publication manifest](PUBLICATION-MANIFEST.md) records exact study admissions, source baselines and remaining conditions; the working consolidation state owns current corpus metrics and verification obligations.
+**Edition:** 2026-10-12, `PARTIAL / UNDER CONSOLIDATION`. The six maintained knowledge layers below are **designed to be read and navigated without the historical Research tree, Work logs or legacy documents**. Removal of those source archives must not break publication links or deprive the reader of the scientific argument, important counterexample, use-case boundary or qualified implementation status. The [standalone publication manifest](PUBLICATION-MANIFEST.md) owns the published evidence status and the remaining proof obligations.
 
-| Entrance | Intended use | Evidence and admission |
+| Entry | What the reader can find here | Status and authority |
 | --- | --- | --- |
-| [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | Maintained thematic articles and navigation guides; exact scope and assurance boundaries are recorded in the [Science index](science/README.md); global source conservation and independent verification remain open |
-| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Bounded revision-pinned Current HOW slices, including public AppDock launch boundaries; repository-wide reconstruction, installed GUI and fault testing remain open |
-| [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Necessary host with two target arrangements **accepted** by direct Product Decision; remaining scope includes conditional requirements and unadmitted Research ideas |
-| [Target HOW](how/README.md) | Candidate realization, application and operations/recovery mechanisms | Conditional design awaiting relevant product decisions and deployment profile |
-| [Product Architecture](architecture/README.md) | Responsibility allocation among analytical core, application authority, clients and an external management boundary | Qualified logical owner candidates; no new deployable/repository or versioned API admitted |
-| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Candidate designs for Artifact publication, source receipts, provider conformance, host attachment, scenario orchestration, platform activation and diagnostic evidence degradation; all applicable deployment tests and Product gates remain open |
+| [Science](science/README.md) | Banking and macroeconomic data semantics, source vintages, domain capabilities, artifacts, collaboration, automation, external boundaries, safety, negative results and competing designs | Qualified scientific understanding, with uncertainty and limitations embedded in each topic; incomplete independent semantic assurance |
+| [Current HOW](current-how/README.md) | Bounded exact-revision observations of the independent analytical core, Windows and selected public AppDock contracts | Pinned implementation evidence and limited synthetic fault characterizations; no installed host or end-to-end release certification |
+| [Target WHAT](what/README.md) | Product goals, known admitted commitments, excluded assumptions and open owner decisions | Planned logical application host explicitly admitted; physical details and most additional features conditional |
+| [Target HOW](how/README.md) | Candidate application and execution/recovery realization | Proposed, with necessary Product decisions and tests still outstanding |
+| [Product Architecture](architecture/README.md) | Semantic owners across analytic core, application authority, presentation clients and external lifecycle | Qualified responsibility boundaries rather than a mandated new repository or service |
+| [Low-Level Design](ldd/README.md) | Risk-proportionate source receipts, effects, Artifact publication, host attachment, observability and adapter tests | Candidate conformance vectors, clearly separated from executed code or successful deployment |
 
-## Meaning of evidence and admission
+## How to interpret the evidence
 
-**Observed** means the identified repository revision actually contains a particular implementation or test. It is not proof that an application was installed, executed successfully or behaves identically in all environments.
+**Observed** means an identified public implementation revision actually contains the described code or a bounded synthetic test reproduced that branch. It does not imply a running installation, correct banking data or production security.
 
-**Research-supported** means an engineering statement has a stated scope, original bases, trade-offs and falsification conditions. It may be useful and internally coherent without being product-approved or independently certified.
+**Scientific / research-derived** means the rationale, scope, competing interpretation and applicable counterexample are **explained here**. Historical study metadata is optional provenance, never the only location of the meaning. A source locator preserved as text is not a dependency for understanding it.
 
-**CANDIDATE / CONDITIONAL** means a proposed WHAT/HOW/Architecture option still requires the appropriate Product owner, scope, deployment and acceptance criteria. A documented candidate does not become a feature commitment.
+**Accepted** means a Product Authority actually approved that obligation, distinct from a convincing research recommendation. **Candidate, conditional, open and unexecuted** denote the precise limits of support.
 
-A completed step, produced Excel file, accepted Result, published Artifact, authoritative Decision and verified external effect are not interchangeable. The maintained Science explains those distinctions and preserves material negatives as well as positive proposals.
+**Result distinctions:** successful computation, valid source observation, completed Run, accepted Work, authoritative Decision, published Artifact and verified real-world effect are different assertions. The topical modules define their own evidence gates.
 
-## Repository and platform boundary
+## Repository and runtime boundary
 
-The public [stratbox core](https://github.com/ForestTiger-GH/stratbox) owns subject-area bank/macro statistical processing and its neutral contracts; [stratbox-windows](https://github.com/ForestTiger-GH/stratbox-windows) owns its currently observed Windows implementation. The external managed platform is a separate product responsible only for the lifecycle and interfaces actually established by its own versioned contracts. A Strategy Box host in **Web/domain** and **Windows/AppDock host + distinct Windows/AppDock client** profiles is **accepted and planned**, while no actual host, Android app, agent, remote API or cross-device runtime is demonstrated. The one-versus-two Windows repositories option remains open.
+The [independent Python analytical core](https://github.com/ForestTiger-GH/stratbox) owns data methods and domain operations. [stratbox-windows](https://github.com/ForestTiger-GH/stratbox-windows) owns the observed Windows client/runtime. AppDock is a separate platform and only its versioned public interface contracts apply. The user has admitted **a planned logical Strategy Box host** for Web/domain and for host-capable Windows/AppDock + distinct client installations. This **does not** imply an implemented host, public Web API, Android binary, adopted DB/ACL technology, or a required physical `stratbox-application` repository.
 
-The pinned analytical and desktop code studies are static reconstructions; **this publication does not assert a successful GUI, full test suite, real deployment, concurrency, fault injection, security acceptance or cross-device compatibility run.** It contains no deployment-specific confidential implementation materials; extension boundaries are described neutrally.
+The original developer-annotated DOCX carrier is **LOST by owner decision**. A previously recovered textual representation is lower-attestation evidence and cannot be treated as an authenticated original or an automatic Product commitment.
 
-## Why the research archive remains available
+## Research deletion readiness
 
-The maintained [Science index](science/README.md) is the proper entry for bounded thematic knowledge. It must eventually allow a reader to understand every material supported conclusion, counterargument and limitation without reading its historical Research first. The historical docs_old stays available for forensic provenance, not as a second current owner of WHAT/HOW.
+The maintained `docs/` navigation intentionally carries **no links to the removable historical Research tree, Work corpus or legacy document archive**. Direct public code references, third-party standards and named external platform contracts may remain as optional supporting evidence because their owners are separate from the Research archive. The historical source-to-claim ledger, exact original spans and author processing can be kept separately without making the Knowledge Product dependent on them.
 
-The frozen source census and conservation workflow retain material source identities, provisional source-located candidates, unresolved contradictions and verification findings. **No published file count, working link or saved original proves complete semantic conservation.** Full Research Amputation and independent source↔Science evidence verification remain mandatory before the word “lossless” may describe the entire product.
+**Qualification:** the link-free publication is **not yet semantically certified lossless**. Whole-original meaning preservation, an independent original↔publication audit and a genuinely separate publication-only Research Amputation have not passed. This bounded edition remains partial even though the archive can be deleted without breaking the published navigation.

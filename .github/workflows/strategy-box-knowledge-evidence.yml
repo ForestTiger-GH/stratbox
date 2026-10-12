@@ -23,6 +23,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
+      - name: Enforce standalone Knowledge: no links to removable Research or Work
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --check
       - name: Validate all maintained Knowledge publication links and host owner routing
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_publication_routes.py
       - name: Fetch exact public Windows source for bounded execution characterization
