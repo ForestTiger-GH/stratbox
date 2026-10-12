@@ -27,6 +27,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --check
       - name: "Verify three independent core and example legacy notes"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_core_legacy_public_notes.py
+      - name: "Verify three dated SORS implementation report source meanings"
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_sors_august_reports.py
       - name: "Verify SORS acceptance and architecture historical evidence routes"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_sors_acceptance_architecture.py
       - name: "Verify six fully read historical SORS technical originals and Science routes"

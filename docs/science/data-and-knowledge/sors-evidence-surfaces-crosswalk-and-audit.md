@@ -82,3 +82,49 @@ The historical strong rounding objective used a two-stage lexicographic search: 
 **Evidence failure case:** optimization returns one cell value which appears plausible, but another equally feasible candidate exists in a different published bucket; if the interface calls the first number `ROUNDING_OPTIMUM_IDENTIFIED`, the claim is too strong. Conversely, independently proven strict/source-preserving facts may legitimately supersede a prior weak selection and must retain their own provenance. [Publication uncertainty](publication-rounding-and-claim-strength.md) and [source-observation trust](source-observation-vintages-and-replay.md) are required complementary controls.
 
 **Historical evidence boundary:** this independent article preserves architecture/acceptance meanings without relying on the archived Research or `docs_old` bytes. An independent reviewer has not yet confirmed that no further material original nuance is missing; a successful structural route checker is not such a review.
+
+## 9. Dated implementation evidence: crosswalk, open endpoints and three-scope restoration (August 2026)
+
+Three successive **historical implementation reports** described substantial changes in SORS. They provide evidence of what the development process *claimed to implement and test at those points*, which is weaker than a fresh reproducing execution of the pinned current package and its real central-bank source books. Preserve both the positive results and their test-coverage limitations.
+
+| Historical report date / version | Reported engineering change | Reported bounded verification | Critical limitation |
+| --- | --- | --- | --- |
+| August 5, 2026 / `0.5.0` | Replace capped benchmark crosswalk bridge with explicit mass-preserving legacy-atom→allowed-OKVED2 flows; isolate `TECHNICAL_UNALLOCATED` and trace remaining masses without a hidden objective | 64 unit/domain passes, five skipped, built wheel and a synthetic 100→90+10 flow exercise were *reported* | Production `highspy` and real regulatory workbooks unavailable in that sandbox; it **did not** establish all configured crosswalk scenarios feasible |
+| August 6, 2026 / `0.6.1` | Persistent global sparse LP with local RKVS horizon expansions, repair of open upper publication endpoints and lower-zero strictness, reuse only unfinished MIN/MAX solves | Historical June 1 five-book run reported 16,450 source observations, global feasibility `OPTIMAL`, 57 domain test passes and zero open-endpoint touches after the fix | Full expensive global maximization for some targets remained incomplete; local uniqueness proof depends on the correct outer approximation |
+| August 7, 2026 / `0.8.0` | Add nested SME and SME_IE scopes, `DOMINANCE`, published-token isolation, strong and relaxed-rounding objectives, zero guard, and NumPy-indexed ledger feedback | Historical July 1 run reported 18,266 observations, 55/55 source checks, corporate Udmurtia/class-47 overdue-FX publication six; scoped suite `70 passed, 1 skipped` | Full repository suite was `94 passed, 7 skipped, 1 failed` under a missing non-SORS dependency; official `highspy` unavailable for full production-backend end-to-end run |
+
+### 9.1 Open interval endpoints are mathematical, not merely numerical tolerances
+
+A rounded published six at unit precision represents `[5.5, 6.5)`, not the closed interval `[5.5, 6.5]`. The historical August 6 report diagnosed **135 touches of forbidden open upper endpoints** in an initial LP compilation: semantic bounds were supplied to a solver without sufficiently safe inward conversion. A proposed fix used a numerically solver-safe inward displacement of excluded endpoints, consistently for initial and updated constraints. This fix illustrates a general danger: `nextafter` alone can be smaller than the solver's feasibility tolerance. Any actual current conformance claim requires a numerical counterexample suite, exact configured tolerances and evidence that the chosen displacement neither admits excluded endpoints nor excludes legitimate feasible evidence.
+
+The same historical repair distinguished a residual negative lower bound intersected with independent `x ≥ 0`: then **zero is attained** rather than being treated as open merely due to an intermediate residual expression. Only the correct active inequality and endpoint reachability determine whether a zero point belongs to the feasible set. An inferred exact zero must be separately justified from a publisher-rounded zero bucket.
+
+### 9.2 A sound local proof has a one-way implication
+
+For a global feasible set `G` and a properly relaxed local set `L`, with **`G ⊆ L`**, a target coordinate constant throughout `L` is necessarily constant throughout `G`, assuming `G` is nonempty and the coordinate projection is preserved. This is a useful sufficient *local uniqueness proof*. The reverse is false: a coordinate can vary across the larger relaxed local set but be unique in the constrained global set. Thus **local failure to prove uniqueness is not evidence of global ambiguity**; another exact global solve may still establish it.
+
+Removing arbitrary constraint rows is a relaxation only when variables in retained relations are represented consistently and transformed/projection semantics do not add new restrictions. A local solver timeout is an **unknown proof outcome**, not permission to publish a guessed exact value. The historical v0.6.1 report emphasized persistent solver session reuse and direction-specific retry because full global target maximization can be expensive and degenerate.
+
+### 9.3 Dates, model sizes and performance must carry their reporting envelope
+
+The historical evolution from a predominantly single-scope target engine to three coupled scopes changed dimension and proof routes materially:
+
+| Reported quantity | June 1, 2026 single-scope version | July 1, 2026 three-scope version |
+| --- | ---: | ---: |
+| Source observations | 16,450 | 18,266 |
+| Region atoms / real OKVED2 categories | 85 / 88 | 85 / 88 |
+| Latent atomic components | 29,920 active RKVS variables | 89,760 |
+| All quantity nodes | 76,118 | 228,098 |
+| Quantity relations | 46,198 sum relations | 451,371 total relations |
+| Solver constraints | 1,318 official sparse constraints | 198,178 rows |
+| Other output/compilation measures | 409,200 nonzero coefficients | 1,571,680 nonzero coefficients; 74,800 corporate target expressions |
+
+These are **historical reported counts**, not a current benchmark or cross-version apples-to-apples speed measure. The July profiling recorded approximately 3.1 seconds for loading, 11.8 for quantity graph, 2.8 for publication graph and 11.7 for first full interval closure in its sandbox; it expressly warned the timings were unstable and **not a deployment service-level objective**.
+
+The reported July Udmurtia class-47 `overdue_fx` example depended on source-preserving SME/SME_IE publication facts and a corporate bounding relationship. This gives a valuable *specific falsifiable test case*: reconstruct corporate publication bucket six without weak selection. It is **not** a claim that this consolidation reran the original official books, confirmed exact latent six or had access to a working production `highspy` backend.
+
+### 9.4 Reported code checks versus evidence strength
+
+A green unit suite, an installable wheel, synthetic crosswalk tests, genuine raw official source validation and an end-to-end sparse production solver run test different claims. The dated August 5–7 reports show precisely why these grades should never collapse: some changes passed synthetic checks while real solver dependencies or full-repository tests were unavailable/failed. Missing `dbfread` in a non-SORS test is a bounded environment issue; it does not make the rest of a failed full-suite run equivalent to release success. A missing `highspy` backend is decisive for not claiming a completed production solve even when deterministic stages and mock-proven logic pass.
+
+**Publication rule:** keep these historical results as bounded, source-reported engineering observations. For contemporary assertions use the pinned [Current HOW](../../current-how/sors-restoration-evidence-and-inference.md) plus actually executed behavior receipts at its exact commit. No historical Research/Work original is required to understand this independent scientific section, and no old test result should be silently promoted to a new verification status.
