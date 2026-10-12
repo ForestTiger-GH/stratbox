@@ -32,7 +32,7 @@ def verify() -> dict:
     science = SCIENCE.read_text(encoding="utf-8")
     section = science.split("## Dated Windows study 0020: five proposed implementation stages", 1)[1].split(
         "## Original application note 0014", 1)[0]
-    records = re.findall(r"^\\| W20-RM([1-5]) \\| ([^|]+) \\| ([^|]+) \\|$", section, re.M)
+    records = re.findall(r"^\| W20-RM([1-5]) \| ([^|]+) \| ([^|]+) \|$", section, re.M)
     assert [int(n) for n, _, _ in records] == [1, 2, 3, 4, 5], records
     for _, meaning, countercase in records:
         assert len(meaning.strip()) > 85 and len(countercase.strip()) > 65
