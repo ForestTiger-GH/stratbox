@@ -44,6 +44,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Verify historical launcher original 0014 whole producer routes (structural)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_historical_0014_full_producer.py
+      - name: Verify historical domain profiles 0016 original source routes (structural)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_historical_0016_domain_profiles.py
       - name: Verify seven original business refactor 0016 application seams (structural)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_historical_0016_application_seams.py
       - name: Verify historical business refactor 0016 source-to-Science candidate routes
