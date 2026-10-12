@@ -170,6 +170,8 @@ jobs:
         run: |
           python3 _mw/epochs-001-strategy-box-development/consolidation/tools/audit_research_span_routes.py --top 0 --unspanned 53 > original_span_gap_triage.json
           python3 -c 'import json; a=json.load(open("original_span_gap_triage.json")); x=a.get("completely_unspanned_candidate_geometry",[]); print("UNSPANNED RESEARCH ORIGINALS:",len(x)); print("TOP GAPS:",[(z["source_id"],z["unspanned_nonblank"],[b["span"] for b in z["blocks"][:6]]) for z in x[:22]])'
+      - name: Prepare exact-frozen original 0020/0046 unspanned line-block reviewer triage (not meaning certification)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/triage_unspanned_0020_0046_blocks.py
       - name: Show structural source-span audit headline
         if: always()
         run: |
@@ -191,6 +193,7 @@ jobs:
             research_coverage_audit.json
             research_span_audit.json
             original_span_gap_triage.json
+            dist/research-original-0020-0046-unspanned-triage.json
             dist/strategy-box-work-program-gates.json
             native_sqlite_dispatch_audit.json
             native_storage_fault_audit.json
