@@ -1229,10 +1229,34 @@ def main() -> dict:
         "neutral_provider_binding": probe_neutral_provider_binding(),
         "frg_cleanup_effects": probe_frg_cleanup_effects(),
     }
+    # Coverage counts *documents*, not separate fake scenarios. The Security
+    # document has two independently useful scoped probes.
+    packet_to_probes = {
+        "application/local-scenario-execution-construction.md": ("local_scenario",),
+        "hosting/host-authority-and-client-contract-construction.md": ("host_admission",),
+        "artifacts/local-output-publication-construction.md": ("artifact_publication",),
+        "data/used-input-receipt-construction.md": ("used_input_identity",),
+        "observability/execution-evidence-and-problem-boundary-construction.md": ("problem_receipt",),
+        "security/host-effect-authorization-construction.md": (
+            "scoped_effect_guard", "safe_shared_projection"),
+        "application/frg-cleanup-effect-plan-construction.md": ("frg_cleanup_effects",),
+        "capabilities/curated-machine-operation-adapter-construction.md": ("machine_admission",),
+        "extensions/neutral-provider-binding-construction.md": ("neutral_provider_binding",),
+        "automation/trigger-occurrence-and-scheduling-construction.md": ("trigger_occurrence",),
+    }
+    assert len(packet_to_probes) == 10
+    assert set(checks) == {
+        key for probes in packet_to_probes.values() for key in probes}
+    assert all((LCD / doc).is_file() for doc in packet_to_probes)
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "ten named LCD constructions executed with synthetic ports only",
+        "packet_coverage": {
+            "unique_document_packets": len(packet_to_probes),
+            "independent_fake_probe_functions": len(checks),
+            "mapping": {doc: list(probes) for doc, probes in packet_to_probes.items()},
+        },
+        "scope": "ten documented LCD constructions with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
