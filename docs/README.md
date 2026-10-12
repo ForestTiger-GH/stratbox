@@ -12,6 +12,10 @@
 | [Low-Level Design](ldd/README.md) | Risk-proportionate source receipts, effects, Artifact publication, host attachment, observability and adapter tests | Candidate conformance vectors, clearly separated from executed code or successful deployment |
 | [LCD — Low Code Design](lcd/README.md) | Selectively implementation-near models closing material design choices for defined coding scopes | Owner-directed layer; candidates and decision blockers are distinct from independently approved implementation readiness |
 
+## Concrete LCD construction now available
+
+The first source-reconciled **candidate pre-code packets** include [Qt-independent local Scenario execution](lcd/application/local-scenario-execution-construction.md), [logical host authority and client attachment](lcd/hosting/host-authority-and-client-contract-construction.md), and [local Artifact verification/publication](lcd/artifacts/local-output-publication-construction.md). They add Python-style classes, typed interfaces, data contracts, algorithm stubs and proposed fault tests. The local construction scopes are `LCD_CANDIDATE`; the deployable shared host and universal publication mechanisms remain `LCD_BLOCKED` by explicit product, security, operational and external-contract decisions. These packets are **not code** and have **no independent implementation-readiness certification**.
+
 ## How to interpret the evidence
 
 **Terminology correction (2026-10-12):** LDD means *Low-Level Design* and retains its existing useful detailed specifications. **LCD means *Low Code Design***: a separate, conditional implementation-readiness depth, not a visual no-code builder and not an automatic synonym of LDD. See the [LCD scope and gates](lcd/README.md).
