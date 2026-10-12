@@ -14,6 +14,7 @@ import errno
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -131,12 +132,23 @@ def characterize() -> dict:
         # itself a source-generation change; content still needs independent
         # generation/byte verification.
         v = sha(create_only_staging.read_bytes())
+        prior_time = create_only_staging.stat().st_mtime_ns
+        os.utime(create_only_staging, ns=(prior_time + 1_000_000_000,
+                                          prior_time + 1_000_000_000))
+        later_time = create_only_staging.stat().st_mtime_ns
+        assert later_time != prior_time
+        assert v == sha(create_only_staging.read_bytes())
         assert v == sha(fresh_target.read_bytes())
         cases["same_bytes_different_observation_time_remain_equal"] = True
 
     assert len(cases) == 8
+    checked_revision = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True,
+        cwd=Path(__file__).resolve().parents[4]).strip()
+    assert len(checked_revision) == 40
     return {
         "status": "BOUND_TO_POSIX_NATIVE_LOCAL_TEMPORARY_FILES",
+        "git_commit": checked_revision,
         "cases": cases,
         "passed": len(cases),
         "scope": "Linux CI ordinary local FS, real OS syscalls, injected races",
