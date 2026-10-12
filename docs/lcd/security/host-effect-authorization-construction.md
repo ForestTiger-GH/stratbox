@@ -148,15 +148,28 @@ class EffectGuard:
         decision = self.policy.evaluate(actor, request, phase=DecisionPhase.EFFECT)
         if decision.outcome is not AuthOutcome.ALLOW:
             raise PermissionError("EFFECT_POLICY_DENIED_OR_UNAVAILABLE")
+        destructive = request.effect_class in (
+            EffectClass.DELETE, EffectClass.OVERWRITE)
+        # An exact destructive plan requires a known target generation:
+        # otherwise the guard could approve deleting *anything currently*
+        # at an old display path under an unversioned request.
+        if destructive and request.resource.revision is None:
+            raise PermissionError("DESTRUCTIVE_TARGET_REVISION_REQUIRED")
         actual_version = self.versions.current_revision(request.resource)
-        if request.resource.revision is not None and actual_version != request.resource.revision:
+        if (request.resource.revision is not None
+                and actual_version != request.resource.revision):
             raise RuntimeError("RESOURCE_REVISION_CHANGED")
-        if request.effect_class in (EffectClass.DELETE, EffectClass.OVERWRITE):
-            if approval_ref is None:
-                raise PermissionError("APPROVAL_REQUIRED")
+        if destructive:
+            if approval_ref is None or not target_set_digest:
+                raise PermissionError("APPROVAL_AND_TARGET_PROOF_REQUIRED")
             approval = self.approvals.verify_bound_scope(
                 actor, request, approval_ref, target_set_digest)
-            if approval is None or approval.request_digest != request.parameter_digest:
+            if (approval is None
+                    or approval.actor_ref != actor.principal_ref
+                    or approval.request_digest != request.parameter_digest
+                    or approval.target_set_digest != target_set_digest
+                    or decision.policy_revision is None
+                    or approval.policy_revision != decision.policy_revision):
                 raise PermissionError("STALE_OR_INVALID_APPROVAL")
         # Source of authority must record an effect intent and policy proof before
         # the actual mutation, subject to the accepted audit/durability tier.
@@ -165,6 +178,8 @@ class EffectGuard:
     def record_effect_result(self, intent_ref: str, outcome: str) -> None:
         self.receipts.record_after_effect(intent_ref, outcome)
 ~~~
+
+**Original-source producer correction:** `SB-SRC-0558` §§6.1–6.5, 7.4 and the corresponding SEC-09/SEC-10 vectors require approval of the **particular principal, plan and target revision**. The previous draft guarded revision equality only when the caller happened to provide a revision, allowing an apparent approved DELETE/OVERWRITE with `revision=None`. It also relied on the approval port alone for verifying actor, target-set and policy-generation binding despite an `ApprovalScope` explicitly carrying those fields. The bounded guard now refuses destructive requests with missing target revision/target-set digest and cross-checks principal, parameter/plan, target-set and policy revision *after* trusted port verification. These are **necessary fake-port guards**, not sufficient security enforcement or a release-grade clock/ACL proof. A real approval port still must validate expiry and authenticity before returning a token. Other operation types have their own effect-specific preconditions: e.g. CREATE requires conditional no-clobber at the storage boundary, not an assumed existing revision.
 
 **Do not copy this method into production without closing the race:** a resource can change **after** `current_revision` and before a lower-level FileStore delete/replace. The storage/effect adapter must enforce conditional mutation against the same resource generation or hold a valid exclusivity/fencing mechanism. Policy/grant revocation after `evaluate` is also material: choose a bounded policy snapshot/lease or recheck at actual commit, then test that contract. If no safe compare-and-effect primitive exists, do not offer a strong guarantee.
 
