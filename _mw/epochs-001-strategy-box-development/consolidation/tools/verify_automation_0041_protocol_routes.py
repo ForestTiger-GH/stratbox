@@ -27,39 +27,59 @@ def verify() -> dict[str, object]:
     git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
     assert git_blob == BLOB, f"source byte identity changed: {git_blob}"
     lines = raw.decode("utf-8").splitlines()
-    text = SCIENCE.read_text(encoding="utf-8")
-    assert SCIENCE_HEADER in text
-    assert all(url in text for url in PRIMARY_SPEC_URLS), "primary specification route missing"
-    entries = [json.loads(row) for row in LEDGER.read_text(encoding="utf-8").splitlines() if row.strip()]
-    assert len(entries) == 7
-    ids = set()
-    source_meaning_transfers = 0
-    for item in entries:
-        uid = item["unit_id"]
-        assert uid not in ids, uid
-        ids.add(uid)
-        assert item["source_id"] == "SB-SRC-0041"
-        assert item["source_blob_sha"] == BLOB
-        assert item["science_destination"] == str(SCIENCE.relative_to(ROOT))
-        assert item["source_material_state"] == "unaccounted"
-        assert item["independent_review"] == "OPEN"
-        assert item["defeater_or_limit"].strip()
-        assert item["epistemic_status"].strip()
-        span = re.fullmatch(r"L(\d+)-L(\d+)", item["source_span"])
-        assert span, uid
-        start, end = map(int, span.groups())
-        assert 1 <= start <= end <= len(lines)
-        assert any(lines[i - 1].strip() for i in range(start, end + 1)), uid
-        assert item["english_research_meaning"] in text, "Science prose transfer missing: " + uid
-        scientific_id = uid.replace("SB-MAT-0041-", "SB-SRC-0041/")
-        assert scientific_id in text, "Science identifier missing: " + uid
-        assert "#L" + str(start) + "-L" + str(end) in text, "source anchor missing: " + uid
-        source_meaning_transfers += 1
+    protocol_science = SCIENCE.read_text(encoding="utf-8")
+    assert SCIENCE_HEADER in protocol_science
+    assert all(url in protocol_science for url in PRIMARY_SPEC_URLS), "primary specification route missing"
+
+    packet_specs = (
+        (LEDGER, 7, {"docs/science/capabilities/machine-discovery-bindings-and-adapters.md"}),
+        (
+            ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units/AUTOMATION-0041-TRIGGER-AUTONOMY-24.jsonl",
+            24,
+            {
+                "docs/science/automation/trigger-occurrence-identity-and-governed-execution.md",
+                "docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md",
+            },
+        ),
+    )
+    docs = {}
+    seen = set()
+    counts = []
+    for packet_path, expected, permitted in packet_specs:
+        rows = [json.loads(x) for x in packet_path.read_text(encoding="utf-8").splitlines() if x.strip()]
+        assert len(rows) == expected, f"{packet_path}: expected {expected}, got {len(rows)}"
+        for row in rows:
+            uid = row["unit_id"]
+            assert uid not in seen, f"duplicated material unit ID {uid}"
+            seen.add(uid)
+            assert row["source_id"] == "SB-SRC-0041"
+            assert row["source_blob_sha"] == BLOB
+            assert row["source_commit"] == "8459dc58922b7e8df853cf1d9e8131fa9e132580"
+            assert row["independent_review"] == "OPEN"
+            assert (row.get("material_state") or row.get("source_material_state")) == "unaccounted"
+            assert row["epistemic_status"].strip()
+            caveat = row.get("defeater_or_limit") or row.get("counterexample_or_limit")
+            assert caveat and caveat.strip()
+            dest = row["science_destination"]
+            assert dest in permitted, f"{uid}: out-of-scope Science destination {dest}"
+            if dest not in docs:
+                docs[dest] = (ROOT / dest).read_text(encoding="utf-8")
+            science = docs[dest]
+            assert row["english_research_meaning"] in science, f"{uid}: missing English meaning"
+            assert caveat in science, f"{uid}: missing counterexample or limit"
+            assert uid.replace("SB-MAT-0041-", "SB-SRC-0041/") in science, f"{uid}: missing Science identity"
+            span = re.fullmatch(r"L(\d+)-L(\d+)", row["source_span"])
+            assert span, f"{uid}: invalid locator"
+            a, b = map(int, span.groups())
+            assert 1 <= a <= b <= len(lines), f"{uid}: out-of-range locator"
+            assert any(lines[i - 1].strip() for i in range(a, b + 1)), f"{uid}: empty source passage"
+            assert "#L" + str(a) + "-L" + str(b) in science, f"{uid}: missing source anchor"
+        counts.append({"ledger":packet_path.name, "rows":len(rows), "structural_transfers":len(rows)})
     return {
-        "verdict": "EXACT_SOURCE_ROW_TRANSFER_NOT_SEMANTIC_OR_INDEPENDENT_PASS",
+        "verdict": "SOURCE_IDENTITY_AND_DESTINATION_TEXT_ONLY_NOT_INDEPENDENT_SEMANTIC_PASS",
         "source": "SB-SRC-0041",
-        "rows": len(entries),
-        "source_meaning_transfers": source_meaning_transfers,
+        "packet_counts": counts,
+        "total_rows": len(seen),
         "source_git_blob": BLOB,
         "source_material_state": "unaccounted",
         "independent_reviews": 0,
