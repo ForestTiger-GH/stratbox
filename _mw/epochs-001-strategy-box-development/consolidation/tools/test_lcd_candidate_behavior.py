@@ -542,7 +542,7 @@ def probe_used_input_identity() -> dict:
              "DomainValidationIncomplete", (ValueError,), {})}
     for name in ("AcquisitionKind", "ValidationKind", "InputEvidenceMismatch",
                  "OriginalByteIdentity", "SourceAcquisition", "UsedInputReceipt",
-                 "CapturedPayload", "capture_downloaded_payload",
+                 "CapturedPayload", "DecodedPayload", "capture_downloaded_payload",
                  "decode_with_used_receipt"):
         compile_definition(ref, name, d)
 
@@ -574,13 +574,18 @@ def probe_used_input_identity() -> dict:
         def __init__(self):
             self.calls = 0
             self.actual_input = None
+            self.format_kind = d["ValidationKind"].FORMAT_VALID
         def parse(self, payload):
             self.calls += 1
             self.actual_input = payload
-            return {"rows": 1}
+            return d["DecodedPayload"](
+                {"rows": 1}, self.format_kind, "synthetic-format-witness")
     class Validator:
         kind = "valid"
+        def __init__(self):
+            self.calls = 0
         def qualify(self, parsed, source_id):
+            self.calls += 1
             return (d["ValidationKind"].DOMAIN_VALID if self.kind == "valid"
                     else d["ValidationKind"].INDETERMINATE), "evidence-ref"
     parser, validator = Decoder(), Validator()
@@ -624,6 +629,19 @@ def probe_used_input_identity() -> dict:
     else:
         raise AssertionError("missing byte proof accepted")
 
+    # Format proof must precede domain validation: a parser may produce
+    # something from HTML/invalid bytes without a qualified XLSX contract.
+    parser.format_kind = d["ValidationKind"].NOT_CHECKED
+    validator.calls = 0
+    try:
+        decode(captured, parser, validator, "bank_scope", clock)
+    except d["DomainValidationIncomplete"]:
+        pass
+    else:
+        raise AssertionError("parser result without format proof was promoted")
+    assert validator.calls == 0
+    parser.format_kind = d["ValidationKind"].FORMAT_VALID
+
     validator.kind = "indeterminate"
     parser.calls = 0
     try:
@@ -644,7 +662,7 @@ def probe_used_input_identity() -> dict:
     assert type_error.kind is d["AcquisitionKind"].FAILED
     assert type_error.safe_error_code == "INVALID_PAYLOAD_TYPE"
     return {
-        "used_byte_proof_and_negative_cases": 8,
+        "used_byte_proof_and_negative_cases": 9,
         "evidence": "exact documented source capture/decode with fake immutable/mutable bytes",
     }
 
