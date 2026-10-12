@@ -104,6 +104,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_recovery_0556_twenty_faults.py
       - name: Verify twenty-six frozen execution Topic-02 failure-vector intentions
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_execution_0555_failure_vectors.py
+      - name: Verify five contract and twelve client Topic-07 source acceptance proposals
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_crossplatform_0560_acceptance_vectors.py
       - name: Verify all twenty-two original integration-owner contract acceptance vectors
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_integration_0563_acceptance_vectors.py
       - name: Verify twenty-five dated machine-interface conformance intentions
