@@ -31,7 +31,6 @@ For each activated implementation scope, produce the least sufficient combinatio
 
 A ready model should let a **cold competent implementer** identify its starting baseline, smallest bounded change, protected invariants, allowed choices and falsifying checks using maintained Knowledge alone. An independent reviewer should be able to identify where implementation could still diverge materially. The target is **material implementation-decision closure together with concrete pre-code construction for the declared scope**, not identical code generation from the same text.
 
-## Status and release semantics
 ## Concrete program-construction deliverables (2026-10-12 owner refinement)
 
 **LCD includes concrete pre-coding software construction.** For an activated coding scope, a decision register, narrative design or fault-vector matrix alone cannot count as a complete implementation-near model when classes/functions/source structures would materially help the implementer. LCD may and often should contain **actual target-language declarations**, proposed class hierarchies, functions and method signatures, typed stubs, module and package scaffolds, domain/data/error types, and executable-looking algorithm or state-machine skeletons. This is the owner's intended addition to Low-Level Design; it is not a commercial no-code builder.
@@ -85,6 +84,8 @@ Each code-shaped fragment needs a clear label: `ILLUSTRATIVE`, `CANDIDATE_DESIGN
 
 When a schema or IDL is the canonical owner, generated class/interface boilerplate should be treated as a projection, with one editable owner and explicit generated/manual boundaries. Stop elaborating when additional model detail would merely duplicate private code rather than remove a material implementation ambiguity. A cold implementer must nevertheless see **what concretely needs to be coded**, not only why a high-level architecture might work.
 
+
+## Status and release semantics
 
 - `LCD_CANDIDATE`: a coherent scoped model exists, but product choices, realization decisions, evidence or conformance are open.
 - `LCD_BLOCKED`: a named authority, missing prerequisite, external contract or unverified assumption prevents closing a material implementation choice. Publish the safe candidate and route the decision; never invent the answer.

@@ -56,8 +56,7 @@ Keep already existing research documents as untouched historical inputs rather t
 
 This contract supports a sustained **agent session** with durable recovery, not asynchronous or self-scheduling work. A future separate request starts the next execution; no preparatory step itself triggers an agent run.
 
-## 7. Authoring language for subsequent consolidation
-## 8. Owner clarification: LCD is Low Code Design (2026-10-12)
+## 7. Owner clarification: LCD is Low Code Design (2026-10-12)
 
 The owner corrected the originally used endpoint: **LDD means Low-Level Design; LCD means Low Code Design**. This is a scoped extension of the same existing Knowledge Work Program, not an independent program, additional Research generation or authorization to edit production application code. Existing `docs/ldd/` is preserved because its technical models and negative vectors are useful inputs; `docs/lcd/` has the separate downstream task of implementation-near decision closure. Commercial low-code/no-code UI platforms are outside the meaning of LCD here.
 
@@ -65,6 +64,6 @@ A meaningful LCD Result is *scope-relative*: accepted target outcome and revisio
 
 At the complete Knowledge gate, account for each admitted implementation-facing slice as `LCD_READY_FOR_IMPLEMENTATION` (independently challenged and authorized), `LCD_CANDIDATE`, `LCD_BLOCKED` with a named owner, or `NOT_APPLICABLE` with justification. A partial or blocked LCD does not invalidate a separately passed scientific conservation check; scientific completeness does not certify implementation readiness. If unavailable owner decisions or an independent verifier prevent closure, publish honest bounded results and precise handoff, never a global PASS.
 
-## 7. Authoring language for subsequent consolidation
+## 8. Authoring language for subsequent consolidation
 
 The owner explicitly requires **English for every future repository artifact, update, Science publication, extraction ledger, checkpoint and commit message**. Historical research originals must stay source-faithful and can remain in their original language. This instruction governs later continuations after cold re-entry; a discussion in another language does not override the English repository artifact requirement.

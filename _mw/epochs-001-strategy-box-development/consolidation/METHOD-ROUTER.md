@@ -37,7 +37,6 @@
 
 Рекомендуемая **условная** композиция: `13 [14] → 09 → [11/12/10] → 15/16 → 18 [19] → 17 → 18 → 24 → [25/26] → selective LDD/LCD design-closure check → 27 → 18/21 → publication [23/38]`. Возвраты к затронутым Work kinds допускаются на основании новых фактов. `22` и `20` включаются для реальных пробелов и вопросов. Source census из существующего `CENSUS.csv` переиспользуется, пока его проверенный baseline достаточен; входы вне него регистрируются адресно. Контур `28–34` предназначен для будущей дорожной карты и реализации продукта и **не входит** в эту документационную Commission. Выборочный LDD создаётся в поддерживаемой документации по действительной технической сложности, без маскировки реализации.
 
-## Логическое обнуление, физическая очистка и регидратация
 ## LCD — owner-directed design-depth routing (2026-10-12)
 **Concrete source-construction clarification:** the owner expects LCD to design actual classes, interfaces/protocols, typed functions and body stubs, module/data skeletons and test scaffolds where material. Apply source-skeleton and implementation-decision-closure principles from the relevant MADAR design-to-code research, without inventing a new MADARAII procedure. Use the existing Target HOW/Architecture/current-to-target and Knowledge verification routes below. Code-looking snippets in maintained LCD are planned construction, not code changes or test-pass evidence.
 
