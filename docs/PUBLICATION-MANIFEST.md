@@ -2,7 +2,7 @@
 
 **Edition:** `SB-KP-PARTIAL-2026-10-12-SOURCE-INDEPENDENT-1`  
 **Publication status:** `PARTIAL / UNDER CONSOLIDATION`; **whole-corpus `LOSSLESS_PASS`: NOT ATTESTED**.  
-**Declared publication root:** `docs/`; **95 maintained Markdown documents** were inspected during the original link detachment; the current standalone edition contains **97 maintained Markdown documents**, including two subsequent source-independent consumer/science modules. Topic and folder indexes are inside this root.
+**Declared publication root:** `docs/`; **95 maintained Markdown documents** were inspected during the original link detachment; the current standalone edition contains **98 maintained Markdown documents**, including two subsequent source-independent consumer/science modules. Topic and folder indexes are inside this root.
 
 ## Publication independence
 
@@ -23,7 +23,7 @@ The 2026-10-12 one-time migration detached **1,962 legacy Research/Work hyperlin
 | [Architecture](architecture/README.md) | Logical responsibility and application/client boundaries | New repository/service decisions and verified platform-attach contracts |
 | [LDD](ldd/README.md) | Proportional negative test vectors around effects, provenance, publication, integration and diagnosis | Most target fault injection vectors remain `UNEXECUTED` |
 
-**Source population versus claims:** the separate frozen evidence program registered 566 Git file identities including 53 substantive Research originals and many auxiliary/current implementation files. At the last available audit, 168 files have been fully read, 10 governance-read and 388 pending broader inspection; **566 source-level material dispositions remained `unaccounted`** under independent-completeness criteria. These are evidence-accounting figures, not a proportion of published facts or a quality score. Their historical provenance ledger is separate and **not required to navigate this edition**.
+**Source population versus claims:** the separate frozen evidence program registered 566 Git file identities including 53 substantive Research originals and many auxiliary/current implementation files. At the last available audit, 171 files have been fully read, 10 governance-read and 385 pending broader inspection; **566 source-level material dispositions remained `unaccounted`** under independent-completeness criteria. These are evidence-accounting figures, not a proportion of published facts or a quality score. Their historical provenance ledger is separate and **not required to navigate this edition**.
 
 ## Explicitly excluded and unresolved inputs
 

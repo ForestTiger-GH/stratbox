@@ -4,6 +4,8 @@
 
 ## Independent study paths
 
+- [FRG file recognition, latest selection and safe cleanup](data-and-knowledge/frg-file-selection-cleanup-and-effects.md) — canonical names versus source vintages, historical family/week rules, mutable ZIPs and plan-before-effect authorization.
+
 - [SORS evidence surfaces, crosswalk feasibility and audit](data-and-knowledge/sors-evidence-surfaces-crosswalk-and-audit.md) — historical and current reconstruction distinctions, qualified source consistency, fixed-point/solver scope, evidence tiers and source-independent diagnostic checks.
 
 - [Fourteen practical consumer failure cases](engineering/consumer-failure-cases-and-evidence-boundaries.md) — standalone answers about source replay, historical registries, Windows Run status, privacy, Artifacts, host clients, recovery and Product authority, with explicit unexecuted and uncertainty bounds.
