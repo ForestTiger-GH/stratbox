@@ -251,16 +251,144 @@ def probe_problem_receipt() -> dict:
             "evidence": "executed candidate Problem bridge against deterministic fake recorder"}
 
 
+def probe_artifact_publication() -> dict:
+    """Run a bounded subset of the exact documented publisher on in-memory bytes."""
+    import hashlib
+    from io import BytesIO
+
+    ref = "artifacts/local-output-publication-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass, "hashlib": hashlib}
+    for name in ("PublicationPhase", "ScopedLocator", "PublicationIntent",
+                 "ByteReceipt", "PublicationReceipt", "LocalOutputPublisher"):
+        compile_definition(ref, name, d)
+    phase = d["PublicationPhase"]
+    receipt_type = d["ByteReceipt"]
+    locator = d["ScopedLocator"]("workspace", "output/report.xlsx")
+    intent = d["PublicationIntent"]("artifact", "generation-1", "run", "step",
+                                   "actor", locator, "xlsx")
+    class FakeWriter:
+        def __init__(self):
+            self.staging = {}
+            self.final_bytes = None
+            self.raise_after_commit = False
+            self.corrupt_final = False
+
+        def create_unique_staging(self, intent):
+            owner = self
+            class CapturedStream(BytesIO):
+                def close(self):
+                    if not self.closed:
+                        owner.staging["staging-1"] = self.getvalue()
+                    super().close()
+            return "staging-1", CapturedStream()
+
+        def read_closed_staging(self, staging_ref):
+            return BytesIO(self.staging[staging_ref])
+
+        def finalize(self, intent, staging_ref, receipt):
+            self.final_bytes = self.staging[staging_ref]
+            if self.corrupt_final:
+                self.final_bytes = self.final_bytes + b"externally changed"
+            if self.raise_after_commit:
+                raise RuntimeError("ack lost after effect")
+            return "committed-object-ref"
+
+        def inspect_final(self, intent):
+            if self.final_bytes is None:
+                return None
+            data = self.final_bytes
+            return receipt_type(len(data), hashlib.sha256(data).hexdigest(),
+                                "synthetic-clock", "synthetic-domain")
+
+    class FakeAuth:
+        allow = True
+        def may_write(self, actor_ref, locator):
+            return self.allow
+
+    class FakeCatalog:
+        def __init__(self):
+            self.pending = []
+            self.committed = []
+            self.fail_commit = False
+            self.after_pending = None
+        def record_pending(self, intent, receipt):
+            self.pending.append((intent, receipt))
+            if self.after_pending:
+                self.after_pending()
+        def record_committed(self, intent, receipt, final_ref):
+            if self.fail_commit:
+                raise RuntimeError("catalog record failed after bytes")
+            self.committed.append((intent, receipt, final_ref))
+
+    class FakeDomain:
+        def validate(self, stream, expected_format):
+            return "format-and-domain-valid" if stream.read().startswith(b"ok") else None
+
+    def fixture():
+        writer, catalog, auth, domain = (
+            FakeWriter(), FakeCatalog(), FakeAuth(), FakeDomain())
+        publisher = d["LocalOutputPublisher"](writer, catalog, auth, domain)
+        return writer, catalog, auth, publisher
+
+    def write_valid(stream):
+        stream.write(b"ok synthetic workbook data")
+
+    writer, catalog, auth, pub = fixture()
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.COMMITTED
+    assert len(catalog.committed) == 1
+    assert result.byte_receipt.sha256 == hashlib.sha256(writer.final_bytes).hexdigest()
+
+    writer, catalog, auth, pub = fixture()
+    def interrupted(stream):
+        stream.write(b"partial")
+        raise RuntimeError("producer crashed")
+    result = pub.publish(intent, interrupted)
+    assert result.phase is phase.FAILED
+    assert writer.final_bytes is None and not catalog.committed
+
+    writer, catalog, auth, pub = fixture()
+    writer.raise_after_commit = True
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.OUTCOME_UNKNOWN and writer.final_bytes is not None
+    assert catalog.pending and not catalog.committed
+
+    writer, catalog, auth, pub = fixture()
+    catalog.fail_commit = True
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.OUTCOME_UNKNOWN and writer.final_bytes is not None
+
+    writer, catalog, auth, pub = fixture()
+    result = pub.publish(intent, lambda stream: stream.write(b"not a workbook"))
+    assert result.phase is phase.QUARANTINED
+    assert writer.final_bytes is None and not catalog.committed
+
+    writer, catalog, auth, pub = fixture()
+    catalog.after_pending = lambda: setattr(auth, "allow", False)
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.FAILED and result.failure_code == "PERMISSION_CHANGED"
+    assert writer.final_bytes is None
+
+    writer, catalog, auth, pub = fixture()
+    writer.corrupt_final = True
+    result = pub.publish(intent, write_valid)
+    assert result.phase is phase.OUTCOME_UNKNOWN and not catalog.committed
+
+    return {"publication_effect_and_failure_cases": 7,
+            "evidence": "executed documented publisher with in-memory bytes, no OS storage"}
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
         "host_admission": probe_host_admission(),
         "problem_receipt": probe_problem_receipt(),
+        "artifact_publication": probe_artifact_publication(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "three named LCD snippets executed with synthetic ports only",
+        "scope": "four named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
