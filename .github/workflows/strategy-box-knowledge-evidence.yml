@@ -37,6 +37,17 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_sors_legacy_technical_notes.py
       - name: "Verify exact link migration preserved substantive text"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_knowledge_link_migration_fidelity.py
+      - name: "Produce deterministic no-Research portable Knowledge-only ZIP"
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/package_standalone_knowledge.py
+      - name: "Publish independent-reader Knowledge-only bundle with file manifest"
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: strategy-box-knowledge-standalone
+          path: |
+            dist/strategy-box-knowledge-standalone.zip
+            dist/strategy-box-knowledge-standalone.sha256
+          if-no-files-found: error
+          retention-days: 14
       - name: "Exercise docs-only archive-amputation navigation in isolation"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_docs_only_archive_amputation.py
       - name: Validate all maintained Knowledge publication links and host owner routing
