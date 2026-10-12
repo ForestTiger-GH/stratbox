@@ -1,0 +1,9 @@
+# Historical application note 0014 — old launcher and GUI co-location
+
+**2026-10-12 producer re-read:** `SB-SRC-0014`, exact source `8459dc58922b7e8df853cf1d9e8131fa9e132580`, Git blob `c10ee7d96f24996f6480d95adf2b005c0651122e`, 125 physical text lines. Sixteen source-specific candidate positions recorded in [ledger](../units/HISTORICAL-APPLICATION-0014-LAUNCHER-16.jsonl) and routed to maintained deployment, portable UI, automation and owner-boundary Science.
+
+**Conflict resolution:** the old note suggested a self-updating Launcher EXE and primary GUI embedded in stratbox/core. These physical parts were superseded by distinct public stratbox and stratbox-windows owners and external AppDock activation; an accepted logical host need must not be retrofitted as if it were that Launcher. The old note's substantive requirements of low-friction user setup, available user-visible startup diagnosis, runnable domain operations under local/file profiles, update provenance, watcher reuse and operational instructions survive as historical needs subject to current Product authority.
+
+**Falsification:** a proposed tray or GitHub auto-update is not a shipped feature; a mounted network drive treated as a Path is not a guaranteed atomic shared DB; a fallback to local unverified Git checkout is not installed package attestation. None of these historical alternatives should be adopted solely because the original strongly advocated them.
+
+**Status:** partial producer meaning transfer with direct original anchors, **not independent source↔Science semantic review**; the 125-line source remains `unaccounted` and the wider 566-source census stays open. Protected enterprise extension identity/details were never introduced. Need a different verifier and whole-corpus source material review before terminal `LOSSLESS_PASS`.
