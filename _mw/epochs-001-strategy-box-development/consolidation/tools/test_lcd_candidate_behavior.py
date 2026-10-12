@@ -195,14 +195,32 @@ def probe_host_admission() -> dict:
     req = SimpleNamespace(intention_key="intent", payload_digest="good")
     class Policy:
         allow = True
+        fault = False
         def can_submit(self, actor, req):
+            if self.fault:
+                raise RuntimeError("policy service unavailable")
             return self.allow
     class Ledger:
         def __init__(self):
             self.calls = 0
             self.seen = {}
+            self.lose_ack_after_commit = False
+            self.bad_mode = None
         def admit_atomically(self, actor, request, host):
             self.calls += 1
+            if self.bad_mode == "null":
+                return None
+            if self.bad_mode == "wrong_key":
+                return receipt(kind.ACCEPTED, "other-key", "run-stolen", host.host_id)
+            if self.bad_mode == "wrong_host":
+                return receipt(kind.ACCEPTED, request.intention_key,
+                               "run-stolen", "other-host")
+            if self.bad_mode == "accepted_no_run":
+                return receipt(kind.ACCEPTED, request.intention_key, None, host.host_id)
+            if self.bad_mode == "rejected_with_run":
+                return receipt(kind.REJECTED, request.intention_key, "run-stolen", host.host_id)
+            if self.bad_mode == "wrong_enum":
+                return receipt("accepted", request.intention_key, "run-stolen", host.host_id)
             old = self.seen.get(request.intention_key)
             if old:
                 digest, run = old
@@ -212,6 +230,8 @@ def probe_host_admission() -> dict:
                                host.host_id)
             run = "run-1"
             self.seen[request.intention_key] = (request.payload_digest, run)
+            if self.lose_ack_after_commit:
+                raise TimeoutError("ledger committed Run, lost ACK")
             return receipt(kind.ACCEPTED, request.intention_key, run, host.host_id)
     class Scheduler:
         fail = True
@@ -235,8 +255,34 @@ def probe_host_admission() -> dict:
     denied = svc.submit(actor, SimpleNamespace(intention_key="different",
                                                 payload_digest="good"))
     assert denied.kind is kind.REJECTED
-    return {"admission_duplicate_conflict_denial": 4,
-            "evidence": "executed candidate admission code on synthetic ledger; no durability"}
+    policy.allow = True
+    policy.fault = True
+    unknown = svc.submit(actor, SimpleNamespace(intention_key="different",
+                                                 payload_digest="good"))
+    assert unknown.kind is kind.OUTCOME_UNKNOWN and unknown.run_ref is None
+    policy.fault = False
+    ledger.lose_ack_after_commit = True
+    second = SimpleNamespace(intention_key="intent-lost-ledger-ack",
+                             payload_digest="good")
+    uncertain = svc.submit(actor, second)
+    assert uncertain.kind is kind.OUTCOME_UNKNOWN and uncertain.run_ref is None
+    # Same intention and canonical digest is the ONLY admissible replay
+    # candidate here: lookup finds the admitted original Run, no dispatch.
+    assert ledger.seen[second.intention_key] == ("good", "run-1")
+    ledger.lose_ack_after_commit = False
+    found = svc.submit(actor, second)
+    assert found.kind is kind.REPLAY and found.run_ref == "run-1"
+    before = scheduler.calls
+    for mode in ("null", "wrong_key", "wrong_host", "accepted_no_run",
+                 "rejected_with_run", "wrong_enum"):
+        ledger.bad_mode = mode
+        result = svc.submit(actor, SimpleNamespace(
+            intention_key="intent-malformed", payload_digest="good"))
+        assert result.kind is kind.OUTCOME_UNKNOWN
+        assert scheduler.calls == before
+    ledger.bad_mode = None
+    return {"admission_duplicate_conflict_denial": 13,
+            "evidence": "literal candidate HostAdmission on synthetic durable-ledger sketch; no actual persistence"}
 
 
 def probe_problem_receipt() -> dict:
