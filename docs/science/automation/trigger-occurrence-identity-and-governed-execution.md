@@ -179,3 +179,13 @@ Related maintained topics: [Work planning and scheduling](../work/admission-plan
 | `SB-SRC-0041/FRAME-05` · `HISTORICAL_TRIGGER_ALGEBRA_REFERENCE` | Prefect was cited for event and compound/sequence trigger design, while plugin dependency was conditioned on a real operating need. | A trigger grammar without qualified event evidence, deduplication, effects authority or resource controls can amplify false updates. | [L1497–L1501](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_automation_ai_research_2026-10-06.md#L1497-L1501) |
 
 **Conservation limit:** dated comparative judgment and engineering proposal only; no live evaluation of current third-party APIs/versions, host, worker, schedule or domain service is asserted. Independent original→Science semantic certification remains open, as does full source material accounting.
+
+## Original automation Research 0041 — dated roadmap, logical architecture and example machine endpoints
+
+**Frozen source:** [primary automation/AI study](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_automation_ai_research_2026-10-06.md), Git blob `dee8958b16b3fe08042b5212d35fcc8424db28e3`. These are historical engineering alternatives with explicitly limited authority. A phase number, API-like name or deployment box in the original document is not evidence of an actual provider, Product Decision, accepted schedule or real effect.
+
+| Material address and epistemic role | Source-defined proposition | Defeater, cost, competing choice | Primary lines |
+| --- | --- | --- | --- |
+| `SB-SRC-0041/ROAD-03` · `HISTORICAL_PHASE_PROPOSAL` | The research proposed introducing a scheduler only after core/job identities, with TriggerSpec, AutomationSpec, persistence, misfire/overlap, idempotency, source watchers and notifications. | A cheap local scheduler may be sufficient for a bounded profile, while future host durability needs separate evidence; phase order is not an adopted release roadmap. | [L2050–L2061](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/_mw/epochs-001-strategy-box-development/research/02-base-study/strategy_box_automation_ai_research_2026-10-06.md#L2050-L2061) |
+
+**Conservation limit:** this is a producer source-first packet; independent reverse review, empirical release tests and whole-original material accounting remain open. The current accepted Strategy Box host requirement supersedes only conflicting historical ownership/timing assumptions, not the original's record as a real alternative.
