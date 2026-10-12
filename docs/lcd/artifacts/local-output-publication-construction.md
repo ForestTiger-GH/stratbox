@@ -83,6 +83,13 @@ class PublicationIntent:
     expected_format: str
 
 @dataclass(frozen=True, slots=True)
+class StagingSeal:
+    staging_ref: str
+    generation: str            # backend-fenced staging generation, not a caller timestamp
+    byte_count: int
+    sha256: str
+
+@dataclass(frozen=True, slots=True)
 class ByteReceipt:
     byte_count: int
     sha256: str
@@ -107,8 +114,9 @@ class AvailabilityObservation:
 
 class ScopedWriterPort(Protocol):
     def create_unique_staging(self, intent: PublicationIntent) -> tuple[str, BinaryIO]: ...
-    def read_closed_staging(self, staging_ref: str) -> BinaryIO: ...
-    def finalize(self, intent: PublicationIntent, staging_ref: str,
+    def seal_closed_staging(self, staging_ref: str) -> StagingSeal: ...
+    def read_sealed_staging(self, seal: StagingSeal) -> BinaryIO: ...
+    def finalize(self, intent: PublicationIntent, seal: StagingSeal,
                  verified: ByteReceipt) -> str: ...
     def inspect_final(self, intent: PublicationIntent) -> ByteReceipt | None: ...
 
@@ -162,16 +170,22 @@ class LocalOutputPublisher:
                 stream.close()               # must not COMMIT the final target
             if not completed:
                 raise RuntimeError("INCOMPLETE_STAGING")
-            # Hash the very bytes subsequently validated/finalized, after
-            # closing writer. Detect replacement/races by storage generation
-            # or a verified re-read before commit, not stat-before-read only.
-            with self.writer.read_closed_staging(staging_ref) as src:
+            # The backend must seal the exact closed staging generation.
+            # A plain pathname or mtime cannot establish this property.
+            # Every read and finalization is fenced against this SAME seal.
+            seal = self.writer.seal_closed_staging(staging_ref)
+            with self.writer.read_sealed_staging(seal) as src:
                 digest = hashlib.sha256()
                 count = 0
                 for chunk in iter(lambda: src.read(1024 * 1024), b""):
                     count += len(chunk)
                     digest.update(chunk)
-            with self.writer.read_closed_staging(staging_ref) as src:
+            if (seal.byte_count != count
+                    or seal.sha256 != digest.hexdigest()):
+                return PublicationReceipt(PublicationPhase.QUARANTINED,
+                                          intent, None, None,
+                                          "STAGING_SEAL_MISMATCH", staging_ref)
+            with self.writer.read_sealed_staging(seal) as src:
                 domain_ref = self.domain.validate(src, intent.expected_format)
             if domain_ref is None:
                 return PublicationReceipt(PublicationPhase.QUARANTINED,
@@ -187,14 +201,15 @@ class LocalOutputPublisher:
                                           staging_ref)
             finalization_started = True
             try:
-                final_ref = self.writer.finalize(intent, staging_ref, receipt)
+                final_ref = self.writer.finalize(intent, seal, receipt)
             except Exception:
                 # The external finalize MAY already have happened.
                 return PublicationReceipt(PublicationPhase.OUTCOME_UNKNOWN,
                                           intent, receipt, None,
                                           "FINALIZE_AMBIGUOUS", staging_ref)
             observed = self.writer.inspect_final(intent)
-            if observed is None or observed.sha256 != receipt.sha256:
+            if (observed is None or observed.sha256 != receipt.sha256
+                    or observed.byte_count != receipt.byte_count):
                 return PublicationReceipt(PublicationPhase.OUTCOME_UNKNOWN,
                                           intent, receipt, None,
                                           "FINAL_VERIFICATION_MISSING",
@@ -213,7 +228,7 @@ class LocalOutputPublisher:
                                       None, code, staging_ref)
 ~~~
 
-**Important deliberate incompleteness:** this skeleton still has a possible ambiguous window between physical finalization and catalog commit. The actual accepted backend must prove a durable publish intent, stable generation/reconciliation, permissions at final open, and its particular atomic visibility/durability tier. Hashing and validating in two reads introduces a TOCTOU risk unless the staging object is sealed or immutable by generation; a production plan must tie both reads and finalization to the *same byte generation*. The injected UTC clock and verification must supply actual observations, not the literal placeholder shown. Callback, writer cleanup, quarantine retention and catalog conflict handling also require tested concrete implementations. This is a construction *prompt to eliminate ambiguity*, not deployable code.
+**Important deliberate incompleteness:** this skeleton still has a possible ambiguous window between physical finalization and catalog commit. The actual accepted backend must prove a durable publish intent, stable generation/reconciliation, permissions at final open, and its particular atomic visibility/durability tier. **Source-driven correction:** the earlier sketch called an unfenced `read_closed_staging(staging_ref)` twice (once for digest, once for validation), then finalized by the same mutable staging path. A file modified between those passes could therefore receive a digest for version A, validation for version B and potentially publication of version C. The revised candidate introduces `StagingSeal` with an exact backend-fenced generation, member size and hash. **Both reads and finalize are required to enforce the same seal**; mismatch is quarantined before an intended effect. This is a contract on the storage port, **not** a magical guarantee supplied by a dataclass. A filesystem, NAS or object backend without real sealed-generation/conditional-finalize semantics cannot claim this profile. In particular, `mtime` or `stat` followed by `open()` does not close the race. A source producer must not treat a sealed staging handle as an unrestricted path capability. The injected UTC clock and verification must supply actual observations, not the literal placeholder shown. Callback, writer cleanup, quarantine retention and catalog conflict handling also require tested concrete implementations. This is a construction *prompt to eliminate ambiguity*, not deployable code.
 
 **Backend-specific stop condition:** if rename/finalize lacks a trustworthy commit-barrier, do not return COMMITTED based on a successful method call alone. Publish a weaker explicit outcome tier, reject the requested guarantee or select a proven backend. Cleanup cannot destroy the only recoverable staging bytes while effect outcome remains unknown.
 
@@ -253,6 +268,19 @@ def test_permission_revoked_between_verify_and_finalize(revoke_after_verify, pub
 def test_external_user_delete_does_not_erase_old_publication_receipt(catalog, availability, artifact_id):
     assert catalog.get(artifact_id).publication_phase is PublicationPhase.COMMITTED
     assert availability.check(artifact_id).status is Availability.MISSING
+
+def test_staging_mutation_between_digest_and_validation_never_commits(
+        fake_writer, publisher, intent):
+    fake_writer.mutate_after_first_sealed_read = True
+    result = publisher.publish(intent, produce_valid)
+    assert result.phase is not PublicationPhase.COMMITTED
+
+def test_staging_mutation_after_intent_before_finalize_never_commits(
+        fake_writer, fake_catalog, publisher, intent):
+    fake_catalog.after_pending = fake_writer.external_replace_staging
+    result = publisher.publish(intent, produce_valid)
+    assert result.phase is PublicationPhase.OUTCOME_UNKNOWN
+    assert fake_catalog.committed == []
 
 def test_validation_and_digest_bind_to_same_staging_generation(fake_storage):
     assert fake_storage.rejects_staging_mutation_between_read_and_finalize()
