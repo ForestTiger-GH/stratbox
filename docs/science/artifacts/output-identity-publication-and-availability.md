@@ -349,7 +349,7 @@ The frozen Artifact Research `SB-SRC-0557` §15 (L783–L824) proposed **twenty 
 | `A10` | Object exists but current principal has no read permission. | Return `ACCESS_DENIED`, not `MISSING`; error payload must not reveal confidential path or protected existence. |
 | `A11` | Publisher attempts replacement while `overwrite=false`. | Existing bytes remain intact; any failed candidate is staging/error, not a destructive pre-delete. |
 | `A12` | Two workers concurrently publish to one requested path. | Compare-and-publish or deterministic distinct names yields a conflict; no hidden last-write-wins when overwrite is prohibited. |
-| `A13` | Crash after physical finalize, before catalog registration. | Recovery uses recorded publication intent and actual generation; no unproven ready card and no blind duplicate write. |
+| `A13` | Crash after physical finalize, before catalog registration. | Mark `OUTCOME_UNKNOWN` until intent and actual object generation are reconciled; no unproven ready card and no blind duplicate write. |
 | `A14` | Crash after durable catalog commit, before UI refresh. | Restart returns the already committed card/Artifact ID without publishing the same bytes again. |
 | `A15` | Persisted state JSON or ledger is corrupted. | Explicit diagnostic/recovery outcome rather than silently replacing legitimate historical work with an empty timeline. |
 | `A16` | Operation yields a legitimate result without a file. | A structured message/value/preview is possible, and physical Artifact ID is optional rather than invented. |
