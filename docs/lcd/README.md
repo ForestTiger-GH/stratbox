@@ -113,8 +113,6 @@ Nine concrete, **documentation-only** packets now complement the assembly contra
 - [Exact actually-used input byte receipt in neutral analytical core](data/used-input-receipt-construction.md) — `LCD_CANDIDATE` single-consumer core pilot; `LCD_BLOCKED` for compulsory cross-domain receipts and replay. Defines acquired versus used bytes, typed identity/validation, a byte-preserving decoder handoff, attempt/coverage outcomes and proposed tests, with no full source catalog implied.
 - [Causal execution evidence, local Attempt logs and optional Problem receipts](observability/execution-evidence-and-problem-boundary-construction.md) — `LCD_CANDIDATE` for local evidence segregation and `LCD_BLOCKED` for hosted/durable shared problems; typed audience, evidence planes, safe event and external-registration ports with recovery and fault skeletons.
 
-**Assurance boundary:** all three are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
-
 - [Host command/object/effect authorization](security/host-effect-authorization-construction.md) — `LCD_BLOCKED` deployed security policy, `LCD_CANDIDATE` scoped fake/port prototype. Separates trusted principal, phase-specific grants, plan approvals, resource version, effect receipts and safe field-level read projections.
 - [FRG cleanup plan and file effects](application/frg-cleanup-effect-plan-construction.md) — `LCD_CANDIDATE` narrow local plan; `LCD_BLOCKED` backend-safe hosted mutations. Specifies source family/period plan normalization, generation-checked staging, guarded deletion and archive-member byte choice using direct FRG failure evidence.
 
@@ -122,6 +120,8 @@ Nine concrete, **documentation-only** packets now complement the assembly contra
 - [Public-neutral provider discovery and binding](extensions/neutral-provider-binding-construction.md) — `LCD_CANDIDATE` generic descriptor/selection ports; `LCD_BLOCKED` public SDK adoption, trusted activation/resource lifetimes and release conformance. Provider presence and readiness are not successful domain results.
 
 See also the [Product obligations → concrete LCD handoff matrix](implementation-handoff-and-boundary-matrix.md) for admitted HOST-O1..07, PC-SB-001..008, conditional user goals U-01..10, justified `NOT_APPLICABLE` classifications and cross-packet residual requirements. This matrix is a derived consumer guide, not a new Product/Decision owner.
+
+**Assurance boundary:** all nine are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
 
 ## Cross-packet construction consistency (producer challenge; not independent)
 
