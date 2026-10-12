@@ -229,3 +229,36 @@ The dated Topic 01 source explicitly compared **five competing ontology/engine m
 **Falsifiers and costs:** a common compositional definition is worthwhile only when it has real reused consumers and independent semantic constraints. A single notebook can directly invoke domain functions without a graph database. Five parallel semantic registries can create drift, while a prematurely installed full workflow platform can impose high costs for a one-step calculation. If an AI describes a capability it still does not obtain authorization, and a UI Cascade folder must not be mistaken for scheduled Work. A more powerful Scheme identity requires independent tests, lifecycle and use that justify its storage and governance. Each option remains reviewable under a real product Work scenario.
 
 **Evidence ceiling:** sixteen producer-translated source lines with exact origin and meaning/limit, not a complete or independently verified assimilation of the 1,555-line source or verified system implementation.
+
+## Original Topic 01 — twenty testable ontology proposals and two Scheme falsification experiments
+
+**Source-qualified provenance:** the dated operation/scenario ontology research `SB-SRC-0554` (2026-10-10) proposed 20 individually numbered acceptance tests (§20.1, original L1363–L1392) and two experiments concerning **Scenario versus Scheme** identity (§20.2, L1392–L1400). These are research hypotheses/negative test plans, **not** evidence that a universal Operation registry, A2A/MCP endpoint, versioned Composition engine or independent Scheme service has been deployed. In particular, a machine-readable projection of one approved Scenario is **not automatically a separate Scheme**.
+
+| Source probe | Target falsifier | Distinction / candidate proof obligation |
+| --- | --- | --- |
+| O01-T01 | Importing one bank Operation requires Qt or managed platform boot | Independent core Python `Request→Result` works with no GUI/activation. |
+| O01-T02 | Identical notebook domain inputs produce different method semantics than desktop | Direct Colab/Jupyter preserves calculation, validation and domain result meaning without hidden UI-path dependency. |
+| O01-T03 | Desktop handler silently duplicates financial algorithm | UI/application handler translates typed data to an independently owned core operation. |
+| O01-T04 | UI title, icon or translation changes canonical capability identity | Stable semantic Operation ID/version persists across surface copy and labels. |
+| O01-T05 | Changing selected implementation hides executed package/binding version | Semantic definition is distinct from exact execution binding; a historical Run can identify the actual implementation. |
+| O01-T06 | Port/type incompatibility detected only after hours of computation | Validate a typed multi-step composition's edge connections before launch, with a qualified error. |
+| O01-T07 | Missing pinned definition version is silently replaced by latest | Explicit version-resolution failure or approved replan; no rewritten historic method. |
+| O01-T08 | Directly cyclic composition freezes executor | Detect/disallow cycles at planning time under an accepted composition profile. |
+| O01-T09 | Required intermediate step fails but aggregate Run reports unconditional success | Aggregate outcome considers required-step failure and actual receipts, not only last handler. |
+| O01-T10 | Optional step warns and overall result erases incompleteness | Preserve partial/warning cause and declared required/optional policy. |
+| O01-T11 | Reordering Cascade's user grouping creates a duplicated analysis implementation | Presentation/orchestration group can change without silently altering base financial algorithm. |
+| O01-T12 | Visible Scenario invokes even while its required binding or source is unavailable | Discovery/visibility and actual readiness/effect permission are separate checks. |
+| O01-T13 | AI must parse Russian UI button text to identify machine callable operation | Approved machine descriptor has its own versioned typed schema, effect metadata and provenance. |
+| O01-T14 | A model uses `dangerous=False` as an authorization grant | Real principal/object/effect policy blocks destructive tool use without permission or bounded approval. |
+| O01-T15 | Uncertain destructive effect automatically retried on timeout | Stable effect identity and outcome reconciliation precede any re-execution. |
+| O01-T16 | Multiple authorized clients overwrite shared mutable definition/run state | One pinned Scenario definition can produce multiple independent Run/Attempt identities. |
+| O01-T17 | Remote machine export attempts to serialize a huge unserializable DataFrame as control payload | Emit controlled Dataset/Artifact reference plus qualified summary and paging, under access policy. |
+| O01-T18 | Dynamic parameter `latest` resolves to changed source bytes while old and new Runs look identical | Record actual selected source snapshots/versions, rather than treating the same symbolic parameter as immutable input. |
+| O01-T19 | Reopening an old Case after catalog update changes its historical steps | Pin original definition and resolved plan revisions; new catalog affects only future admitted executions. |
+| O01-T20 | Adding a second reusable composition duplicates shared step code and later drifts | Reusable typed composition identity with real equivalence proof, not just matching user-visible labels. |
+
+**Experiment A — projection is enough:** change Scenario title, search synonyms and UI localization, then generate a machine descriptor for the same semantic target. If the descriptor still means the *same* operation/plan and carries the same effect/permission boundary, a separately durable `SchemeDefinition` adds no demonstrated value. A source's proposed name alone is insufficient evidence.
+
+**Experiment B — independent reusable machine semantics:** compose “verify source → normalize → evaluate validity”, expose that verified composition across different banking contexts (e.g. escrow and sector indicators) and show it has a distinct reusable contract, version and proof criteria **not reducible to each UI Scenario**. Then a separate `CompositionDefinition` or a narrowly defined `SchemeDefinition` may be warranted. Merely making an ordinary Scenario visible to an AI does not justify a second global registry.
+
+**Assurance limits:** these 20 probes and two experiments distinguish logically testable designs; they do **not** settle the Product choice of terminology, whether optional Schemes are initially needed, the physical catalog owner, cross-format schema, host concurrency, actual trusted third-party invocation or bank-domain golden results. Both positive and negative experiment branches remain open until a named consumer and implemented source-independent contract are available.
