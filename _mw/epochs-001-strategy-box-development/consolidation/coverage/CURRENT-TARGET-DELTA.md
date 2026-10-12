@@ -105,3 +105,14 @@ Six reproducible local Python cases from **the actual pinned Windows source** pa
 | WEX-06: missing workspace returns with registered FileHandler | Clean log handler on all paths, especially in persistent host process | `RESOURCE-LIFECYCLE GUARD`, LS-20/OB-27; long-lived resource impact not measured |
 
 **Evidence boundary:** WEX-01..06 are *actual synthetic executions of original Windows Python*, whereas LS-15..22 and OB-25..27 remain **unexecuted target acceptance cases**. This delta neither alters product APIs nor changes the accepted logical host decision. No Windows code mutation or data migration occurred. The user-facing Product Owner must decide exact partial-step and retention/security semantics; a real independent verifier must evaluate release fitness.
+
+
+## Executed workspace-root and Explorer alias conflicts — Current ↔ conditional host Target (2026-10-12)
+
+| Direct pinned Current HOW witness | Target hypothesis, distinct authority | Typed change / verification |
+| --- | --- | --- |
+| WEX-11 rejects external direct navigation, WEX-12 accepts an in-root directory symlink and enumerates a synthetic external filename | A future permissioned host needs every effective path transition, enumeration and opened object to remain within authorized scope | `NEW SERVER-SIDE PATH/AUTHORIZATION BOUNDARY`; [HC-34..36](../../../../docs/ldd/hosting/host-client-attachment-boundary.md) **UNEXECUTED**. Current local source behavior was **executed on Linux synthetic directories**, not deployed-host exploitation |
+| WEX-13 copied synthetic sensitive-like form value and local Artifact path into an `incoming` ScenarioChatMessage; WEX-10 copied aggregate `success` despite failed Step | Future client receives safe audience-specific projections and truthful composite status from host owner | `SEPARATE LOCAL VIEW MODEL FROM AUTHORIZED MESSAGE`; HC-37/38 **UNEXECUTED**, no real cross-user incident established |
+| WEX-14 used selected normal Data directory directly, not a named `Strategy Box Data` child despite `derived_from_selector` schema | Preserve exact local workspace choice/effective branch when migrating to host, avoid silently redirected input/output | `CORRECT HISTORIC RESEARCH OVERGENERALIZATION`; HC-39 **UNEXECUTED**, no filesystem migration performed |
+
+**Source evidence:** [executed Current HOW](../../../../docs/current-how/windows-application.md) and [source study 0020 reconciliation](WINDOWS-0020-RUNTIME-WORKROOM-SOURCE-CHALLENGE-2026-10-12.md); accepted two host arrangements remain planned, physical host/protocol/security choices unresolved. None of the tests proves full target conformance.
