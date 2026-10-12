@@ -29,7 +29,7 @@ def science_rows(path: str, start: str, finish: str, prefix: str) -> list[list[s
 def verify() -> dict:
     original = read_pinned_blob(ROOT, REV, SOURCE, BLOB).decode("utf-8").splitlines()
     p = [(i+1, int(m.group(1)), m.group(2)) for i, line in enumerate(original)
-         if (m := re.match(r"^## (7[1-9]|8[0-2])\\. (P[012]) ", line))]
+         if (m := re.match(r"^## (7[1-9]|8[0-2])\. (P[012]) ", line))]
     rm = [(i+1, int(m.group(1))) for i, line in enumerate(original)
           if (m := re.match(r"^## Этап ([1-5]) — ", line))]
     assert [n for _, n, _ in p] == list(range(71, 83))
