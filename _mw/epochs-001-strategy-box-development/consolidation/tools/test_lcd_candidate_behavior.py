@@ -532,15 +532,17 @@ def probe_used_input_identity() -> dict:
     """Exercise the EXACT documentary capture/decode functions with fake bytes."""
     import hashlib
     from dataclasses import replace
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
 
     ref = "data/used-input-receipt-construction.md"
     d = {"Enum": enum.Enum, "dataclass": dataclass,
+         "datetime": datetime, "timedelta": timedelta,
          "sha256": hashlib.sha256, "uuid4": uuid.uuid4,
          "safe_url": lambda url: url,
          "DomainValidationIncomplete": type(
              "DomainValidationIncomplete", (ValueError,), {})}
     for name in ("AcquisitionKind", "ValidationKind", "InputEvidenceMismatch",
+                 "CaptureClockInvalid", "checked_utc_observation",
                  "OriginalByteIdentity", "SourceAcquisition", "UsedInputReceipt",
                  "CapturedPayload", "DecodedPayload", "capture_downloaded_payload",
                  "decode_with_used_receipt"):
@@ -658,11 +660,21 @@ def probe_used_input_identity() -> dict:
     assert isinstance(failed, d["SourceAcquisition"])
     assert failed.kind is d["AcquisitionKind"].FAILED
     assert failed.actual_bytes is None
+    class NaiveClock:
+        def now_utc(self):
+            return datetime(2026, 10, 12, 8, 30)
+    try:
+        acquire("s", "safe", lambda: ok(b"good"), NaiveClock())
+    except d["CaptureClockInvalid"]:
+        pass
+    else:
+        raise AssertionError("naive observation was recorded as UTC")
+
     type_error = acquire("s", "safe", lambda: ok("not-byte-payload"), clock)
     assert type_error.kind is d["AcquisitionKind"].FAILED
     assert type_error.safe_error_code == "INVALID_PAYLOAD_TYPE"
     return {
-        "used_byte_proof_and_negative_cases": 9,
+        "used_byte_proof_and_negative_cases": 10,
         "evidence": "exact documented source capture/decode with fake immutable/mutable bytes",
     }
 
