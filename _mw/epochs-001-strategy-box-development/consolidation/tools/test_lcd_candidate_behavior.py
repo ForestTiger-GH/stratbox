@@ -425,6 +425,8 @@ def probe_trigger_occurrence() -> dict:
         def __init__(self):
             self.claimed = set()
             self.attached = {}
+            self.no_run = {}
+            self.claim_fail_after_write = False
         def key(self, identity):
             return (identity.automation_id, identity.rule_revision,
                     identity.trigger_fingerprint)
@@ -433,19 +435,28 @@ def probe_trigger_occurrence() -> dict:
             if k in self.claimed:
                 return False
             self.claimed.add(k)
+            if self.claim_fail_after_write:
+                raise RuntimeError("unique occurrence committed but ACK lost")
             return True
         def find_run_ref(self, identity):
             return self.attached.get(self.key(identity))
+        def find_confirmed_no_run_reason(self, identity):
+            return self.no_run.get(self.key(identity))
+        def record_confirmed_no_run(self, identity, reason):
+            self.no_run[self.key(identity)] = reason
         def attach_admission(self, identity, run_ref):
             self.attached[self.key(identity)] = run_ref
 
     class Admission:
         attempts = 0
         fail = False
+        deny = False
         def request_run(self, rule, identity, evidence):
             self.attempts += 1
             if self.fail:
                 raise RuntimeError("host accepted but reply lost")
+            if self.deny:
+                return None, "CONFIRMED_POLICY_DENIAL_NO_RUN"
             return "host-run-1", "HOST_ACCEPTED"
 
     ledger, admit = Ledger(), Admission()
@@ -479,6 +490,32 @@ def probe_trigger_occurrence() -> dict:
     assert retry.disposition is disposition.UNKNOWN_ADMISSION
     assert admit.attempts == 2  # never issued a second host request for the key
 
+    # Definitive host rejection is an observable no-Run result, not a
+    # permanently ambiguous occurrence or an invitation to resubmit.
+    admit.fail = False
+    admit.deny = True
+    denied_id = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                                trigger_fingerprint="denied-event")
+    denied = service.handle(rule, evaluation, denied_id)
+    assert denied.disposition is disposition.BLOCKED
+    assert denied.safe_code == "CONFIRMED_POLICY_DENIAL_NO_RUN"
+    replay_denied = service.handle(rule, evaluation, denied_id)
+    assert replay_denied.disposition is disposition.BLOCKED
+    assert replay_denied.safe_code == denied.safe_code
+    assert admit.attempts == 3  # no second host admission for denied occurrence
+
+    # Occurrence claim ACK can fail after the ledger has written the key.
+    ledger.claim_fail_after_write = True
+    claim_id = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                               trigger_fingerprint="claim-ack-lost")
+    claim_unknown = service.handle(rule, evaluation, claim_id)
+    assert claim_unknown.disposition is disposition.UNKNOWN_ADMISSION
+    assert ledger.key(claim_id) in ledger.claimed
+    assert admit.attempts == 3
+    ledger.claim_fail_after_write = False
+    assert service.handle(rule, evaluation, claim_id).disposition is (
+        disposition.UNKNOWN_ADMISSION)
+
     class SourceVerifier:
         def compare_qualified_versions(self, old, new):
             assert old == "v1" and new == "v2"
@@ -486,7 +523,7 @@ def probe_trigger_occurrence() -> dict:
     source_result = d["source_change_evaluation"](rule, evidence, SourceVerifier())
     assert source_result.outcome is evaluation_kind.UNAVAILABLE
     return {
-        "conditional_trigger_occurrence_cases": 8,
+        "conditional_trigger_occurrence_cases": 12,
         "evidence": "real documented candidate service with fake occurrence ledger and source verifier",
     }
 
