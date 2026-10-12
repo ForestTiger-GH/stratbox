@@ -7,7 +7,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[4]
 CONSOLIDATION = ROOT / "_mw/epochs-001-strategy-box-development/consolidation"
@@ -20,7 +19,7 @@ EXPECTED_ROWS = 14
 
 
 def git_blob_sha(content: bytes) -> str:
-    return hashlib.sha1(b"blob " + str(len(content)).encode("ascii") + b"\\0" + content).hexdigest()
+    return hashlib.sha1(b"blob " + str(len(content)).encode("ascii") + b"\0" + content).hexdigest()
 
 
 def verify() -> dict[str, object]:
