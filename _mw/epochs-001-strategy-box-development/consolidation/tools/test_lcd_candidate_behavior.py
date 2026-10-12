@@ -1388,7 +1388,7 @@ def probe_frg_cleanup_effects() -> dict:
     d["json"] = json
     for name in ("FileAction", "EffectTruth", "FileWitness",
                  "FrozenAction", "FrozenCleanupPlan", "EffectReceipt",
-                 "canonical_cleanup_digest", "source_witness_matches",
+                 "DeleteEffectProof", "canonical_cleanup_digest", "source_witness_matches",
                  "CleanupExecutor"):
         compile_definition(ref, name, d)
     action, truth = d["FileAction"], d["EffectTruth"]
@@ -1429,6 +1429,8 @@ def probe_frg_cleanup_effects() -> dict:
             self.final_bytes = None
             self.staging_is_valid = True
             self.ack_lost = False
+            self.final_receipt_mode = "valid"
+            self.delete_receipt_mode = "valid"
             self.deleted = False
             self.calls = []
         def prepare_copy_to_staging(self, src, dest):
@@ -1442,13 +1444,37 @@ def probe_frg_cleanup_effects() -> dict:
             self.final_bytes = b"new-source"
             if self.ack_lost:
                 raise TimeoutError("synthetic lost ACK")
-            return replace(target, sha256=expected, file_generation="gen-3")
+            result = replace(target, sha256=expected, file_generation="gen-3")
+            if self.final_receipt_mode == "wrong_digest":
+                return replace(result, sha256="wrong-target-bytes")
+            if self.final_receipt_mode == "wrong_target":
+                return replace(result, relative_path="reports/other.xlsx")
+            if self.final_receipt_mode == "not_present":
+                return replace(result, exists=False)
+            if self.final_receipt_mode == "wrong_scope":
+                return replace(result, root_scope="other")
+            return result
         def conditional_delete(self, src):
             self.calls.append("deleted")
             self.deleted = True
             if self.ack_lost:
                 raise TimeoutError("synthetic lost delete ACK")
-            return "deleted-file-generation"
+            proof = d["DeleteEffectProof"](
+                src.root_scope, src.relative_path, src.file_generation,
+                src.sha256, True, "deleted-file-generation")
+            if self.delete_receipt_mode == "wrong_generation":
+                return replace(proof, deleted_generation="unexpected-generation")
+            if self.delete_receipt_mode == "wrong_digest":
+                return replace(proof, deleted_sha256="unexpected-bytes")
+            if self.delete_receipt_mode == "absence_unproved":
+                return replace(proof, absence_confirmed=False)
+            if self.delete_receipt_mode == "wrong_scope":
+                return replace(proof, root_scope="other")
+            if self.delete_receipt_mode == "blank_ref":
+                return replace(proof, backend_receipt_ref="")
+            if self.delete_receipt_mode == "untyped_ack":
+                return "deleted-file-generation"
+            return proof
     class Auth:
         permit = True
         def authorize(self, plan, step, approval_ref):
@@ -1497,6 +1523,27 @@ def probe_frg_cleanup_effects() -> dict:
     effects, auth, receipts, evidence, executor = fixture()
     result = executor.apply_one(plan, delete, "approved-plan")
     assert result.truth is truth.VERIFIED and effects.deleted
+
+
+    # Post-effect acknowledgments that describe a different object, bytes or
+    # absent durability evidence may follow a real physical mutation. Such
+    # mismatches MUST NOT be marked VERIFIED or known-no-effect.
+    for fault in ("wrong_digest", "wrong_target", "not_present", "wrong_scope"):
+        effects, auth, receipts, evidence, executor = fixture()
+        effects.final_receipt_mode = fault
+        result = executor.apply_one(plan, copy, "approved-plan")
+        assert result.truth is truth.OUTCOME_UNKNOWN and result.reconciliation_ref
+        assert effects.final_bytes is not None
+        assert receipts.recorded[-1][1] is truth.OUTCOME_UNKNOWN
+
+    for fault in ("wrong_generation", "wrong_digest", "absence_unproved",
+                  "wrong_scope", "blank_ref", "untyped_ack"):
+        effects, auth, receipts, evidence, executor = fixture()
+        effects.delete_receipt_mode = fault
+        result = executor.apply_one(plan, delete, "approved-plan")
+        assert result.truth is truth.OUTCOME_UNKNOWN and result.reconciliation_ref
+        assert effects.deleted
+        assert receipts.recorded[-1][1] is truth.OUTCOME_UNKNOWN
 
     effects, auth, receipts, evidence, executor = fixture()
     evidence.recognized = False
@@ -1598,7 +1645,7 @@ def probe_frg_cleanup_effects() -> dict:
         raise AssertionError("unapproved FRG effect admitted")
     assert not receipts.pending and not effects.calls
     return {
-        "frg_cleanup_effect_cases": 25,
+        "frg_cleanup_effect_cases": 35,
         "fingerprint_uses_full_action_content": True,
         "source_observation_time_excluded_from_byte_equality": True,
         "evidence": "literal documented executor, canonical SHA256 plan fingerprint and byte-witness matcher on synthetic effects; no native FS proof",

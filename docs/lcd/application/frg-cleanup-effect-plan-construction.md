@@ -91,6 +91,15 @@ class EffectReceipt:
     reconciliation_ref: str | None
     safe_code: str
 
+@dataclass(frozen=True, slots=True)
+class DeleteEffectProof:
+    root_scope: str
+    relative_path: str
+    deleted_generation: str | None
+    deleted_sha256: str | None
+    absence_confirmed: bool
+    backend_receipt_ref: str
+
 class PlanEvidencePort(Protocol):
     def observe(self, scope_ref: str, relative_path: str) -> FileWitness: ...
     def recognized_source(self, scope_ref: str, path: str
@@ -106,7 +115,7 @@ class FileEffectPort(Protocol):
                        expected_sha256: str) -> bool: ...
     def conditional_finalize(self, staging_ref: str, target: FileWitness,
                              intended_sha256: str) -> FileWitness: ...
-    def conditional_delete(self, source: FileWitness) -> str: ...
+    def conditional_delete(self, source: FileWitness) -> DeleteEffectProof: ...
 
 class EffectAuthorizationPort(Protocol):
     def authorize(self, plan: FrozenCleanupPlan, action: FrozenAction,
@@ -238,6 +247,16 @@ class CleanupExecutor:
                     raise StalePlanError("STAGING_NOT_VERIFIED")
                 final = self.effects.conditional_finalize(
                     staging, step.target, expected)
+                # A returned object is not proof when it names a different
+                # target or represents different bytes. After finalize starts,
+                # invalid/missing proof means UNKNOWN, never FAILED_NO_EFFECT.
+                if (not isinstance(final, FileWitness)
+                        or not final.exists
+                        or final.root_scope != step.target.root_scope
+                        or final.relative_path != step.target.relative_path
+                        or final.sha256 != expected
+                        or not final.file_generation):
+                    raise RuntimeError("FINALIZE_RECEIPT_UNVERIFIED")
                 receipt = EffectReceipt(
                     plan.plan_id, step.action_id, EffectTruth.VERIFIED,
                     final.sha256, None, "REPLACEMENT_VERIFIED")
@@ -256,9 +275,20 @@ class CleanupExecutor:
                 # The real FileEffectPort must *also* prove compare-and-delete
                 # on the same generation; a prior observe() is not a fence.
                 confirmed = self.effects.conditional_delete(step.source)
+                # Backend-issued absence proof must bind the exact target
+                # and generation or source digest. A bare success string is
+                # not a verified deletion receipt.
+                if (not isinstance(confirmed, DeleteEffectProof)
+                        or confirmed.root_scope != step.source.root_scope
+                        or confirmed.relative_path != step.source.relative_path
+                        or confirmed.deleted_generation != step.source.file_generation
+                        or confirmed.deleted_sha256 != step.source.sha256
+                        or confirmed.absence_confirmed is not True
+                        or not confirmed.backend_receipt_ref):
+                    raise RuntimeError("DELETE_RECEIPT_UNVERIFIED")
                 receipt = EffectReceipt(
                     plan.plan_id, step.action_id, EffectTruth.VERIFIED,
-                    None, confirmed, "DELETE_CONFIRMED")
+                    None, confirmed.backend_receipt_ref, "DELETE_CONFIRMED")
             else:
                 raise NotImplementedError("ARCHIVE_REQUIRES_SEPARATE_MEMBER_PLAN")
         except StalePlanError:
@@ -276,6 +306,9 @@ class CleanupExecutor:
 ~~~
 
 **Fingerprint equivalence qualification:** an earlier producer-only fake `derive_plan_digest()` hashed **action IDs alone**, even though the LCD claimed a digest over the complete frozen target set. That is an unsafe test double: changing a file path, planned source revision, selected period or scope while retaining action IDs would keep the same alleged fingerprint. The source-addressed cleanup/frozen-approval requirement demands a canonical digest of **complete action content and exact selected-scope/revision metadata**. The revised candidate supplies pure `canonical_cleanup_digest()` over all typed action/witness fields and plan scope/revision/selected-source revision (sorted actions with deterministic JSON encoding, SHA-256), and the synthetic evidence adapter must call this exact pure function. The real `PlanEvidencePort` is required to use a matching canonical serializer. This digest is **not cryptographic actor authorization** or an externally attested Plan signature: trustworthy approval must independently check principal, plan ID/revision, target digest, issuer, expiry and current grant. The candidate also adds an explicit `source_witness_matches()` that compares source scope/path, existence and the frozen generation/hash **without requiring an equal observation timestamp**. Two identical observed byte generations at different acquisition times should not spuriously appear stale; a changed byte digest or generation must fail. Real backend identity and conditional effects are still necessary.
+
+
+**After-effect receipt truth correction (2026-10-12, candidate design only):** a prior `CleanupExecutor` accepted *any* FileWitness returned by `conditional_finalize` as `VERIFIED`, without checking that it described the approved target, verified source digest, live existence and a supported target generation. It likewise accepted any string from `conditional_delete` as a verified deletion. These are real gaps in the earlier **documentation-only LCD skeleton**, not demonstrated vulnerabilities in product code or released FileStore drivers. The revised candidate checks a typed `DeleteEffectProof` bound to the exact source scope/path/byte identity and an explicit absence claim; it checks a replacement result against the exact intended target and digest. Crucially, a missing/mismatched *post-effect* receipt now takes the general exception route to `OUTCOME_UNKNOWN`, **not** `FAILED_NO_EFFECT`, because the mutation could already have committed. The physical backend must still independently prove receipt authenticity, compare-and-delete under concurrency, atomic finalize and durable reconciliation; the typed fields alone cannot do that. These invariants are explicitly hypothetical until a selected backend and owner authority are admitted.
 
 **Source-first destructive-plan correction:** the first candidate called `auth.authorize(plan, step, ...)` without first checking whether `step` was **the unique exact action in the frozen plan**, whether the plan digest was still derived from its actual ordered action set, whether source/target scopes matched the plan, or whether a requested delete had any byte/generation witness. The delete branch additionally checked only that `recognized_source()` returned *some* recognized family: it omitted a current source witness comparison and could accept another family/period occupying the same path. The code now refuses these mismatches **before creating an effect intent**, and treats changed source bytes before deletion as `FAILED_NO_EFFECT`. These are conditions **necessary** for a trustworthy host caller; `normalize_and_validate`, canonical digest computation, authenticated plan approval, backend-safe path resolution and a genuine compare-and-delete storage primitive remain independently unimplemented. A malicious Python caller with the same OS rights can still call core I/O directly, outside an application host's access policy. Never represent this LCD as deployed permission enforcement.
 
@@ -348,6 +381,22 @@ def test_lost_finalize_ack_marks_unknown_and_preserves_pending(executor, effects
     r = executor.apply_one(plan, plan.copy_step, approval_ref="a")
     assert r.truth is EffectTruth.OUTCOME_UNKNOWN
     assert r.reconciliation_ref
+
+
+def test_finalize_mismatched_or_missing_commit_receipt_is_unknown(executor, effects, plan):
+    for fault in ("wrong_digest", "wrong_target", "not_present", "wrong_scope"):
+        effects.final_receipt_mode = fault
+        r = executor.apply_one(plan, plan.copy_step, approval_ref="a")
+        assert r.truth is EffectTruth.OUTCOME_UNKNOWN
+        assert r.reconciliation_ref
+
+def test_delete_ack_binds_exact_generation_bytes_and_absence(executor, effects, plan):
+    for fault in ("wrong_generation", "wrong_digest", "absence_unproved",
+                  "wrong_scope", "blank_ref", "untyped_ack"):
+        effects.delete_receipt_mode = fault
+        r = executor.apply_one(plan, plan.delete_step, approval_ref="a")
+        assert r.truth is EffectTruth.OUTCOME_UNKNOWN
+        assert r.reconciliation_ref
 
 def test_notebook_direct_core_still_imports_without_host_python_package(import_guard):
     import_guard.block_application_and_qt()

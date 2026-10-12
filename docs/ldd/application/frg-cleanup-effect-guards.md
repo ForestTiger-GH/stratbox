@@ -48,3 +48,14 @@ This is a **design space**, not a requirement to wrap all direct Python-core ope
 Five current-behavior tests `test_frg_cleanup_observed_faults.py` are **executed**, while **all twelve FR-01..12 target tests remain unexecuted**. A passing GitHub knowledge evidence workflow does not certify native Windows, deployed AppDock, encrypted storage, backend atomicity or actual backup recovery.
 
 **Blocking decisions:** who may perform destructive cleanup, which roots/objects are eligible, when approval and audit are mandatory, how lost old versions are handled, retention and output storage guarantees for both host deployments, and the appropriate independent release/fault-verification scope. They remain outside the presently accepted host-existence Product Decision.
+
+## After-effect receipt mismatch — FR-13..14 candidate (2026-10-12)
+
+The [FRG LCD](../../lcd/application/frg-cleanup-effect-plan-construction.md) now proposes explicit post-effect typed receipt checks. **Unexecuted target tests**:
+
+| ID | Injection | Target rule |
+| --- | --- | --- |
+| FR-13 | Backend returns a FileWitness for another path/scope, wrong digest, or `exists=False` after `conditional_finalize` was called | No false `VERIFIED`; preserve pending and `OUTCOME_UNKNOWN` until independent physical byte reconciliation. A post-effect mismatch cannot prove `FAILED_NO_EFFECT`. |
+| FR-14 | Backend reports a deletion with wrong generation/source digest, other scope, no confirmed absence or a bare string | No false `VERIFIED`; require receipt tied to intended source; retain unknown/reconciliation after physical call. |
+
+**Proof status:** the Work test tool uses documentary candidate definitions and fake-port acknowledgments, not real filesystem conditional-effect receipts. The verified deletion primitive, evidence authenticity, crash-safe pending record and OS/backend-specific mutation fence remain `LCD_BLOCKED` regardless of synthetic green CI.
