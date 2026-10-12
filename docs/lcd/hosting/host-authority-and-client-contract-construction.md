@@ -96,6 +96,25 @@ class AdmissionReceipt:
     host_id: str
     safe_reason: str | None = None
 
+class DispatchRecoveryKind(str, Enum):
+    NO_PENDING = "no_pending"
+    DISPATCH_CONFIRMED = "dispatch_confirmed"
+    DISPATCH_UNKNOWN = "dispatch_unknown"
+    MALFORMED_CLAIM = "malformed_claim"
+
+@dataclass(frozen=True, slots=True)
+class DispatchClaim:
+    dispatch_ref: str
+    run_ref: str
+    worker_ref: str
+    fence_epoch: int
+
+@dataclass(frozen=True, slots=True)
+class DispatchRecoveryReceipt:
+    kind: DispatchRecoveryKind
+    run_ref: str | None
+    safe_code: str
+
 @dataclass(frozen=True, slots=True)
 class RunSnapshot:
     run_ref: str
@@ -157,7 +176,28 @@ class LedgerPort(Protocol):
     def read_after(self, run_ref: str, sequence: int) -> tuple[Observation, ...]: ...
 
 class ExecutionSchedulerPort(Protocol):
+    # Volatile first-attempt signal; absence or lost ACK does not remove the
+    # transactional ledger-owned dispatch intent.
     def schedule(self, run_ref: str) -> None: ...
+
+class DurableDispatchPort(Protocol):
+    """The *same* durable admission transaction must append pending dispatch.
+
+    Actual leases/fencing, reclaim and retention are storage-owner obligations.
+    Every claimed delivery is rechecked against the admitted Run generation.
+    """
+    def claim_next(self, worker_ref: str) -> DispatchClaim | None: ...
+    def mark_dispatched(self, claim: DispatchClaim) -> None: ...
+    def mark_uncertain(self, claim: DispatchClaim, safe_code: str) -> None: ...
+
+class IdempotentDispatchPort(Protocol):
+    def schedule_once(self, claim: DispatchClaim) -> bool:
+        """True only for a durable reservation for this same dispatch_ref.
+
+        Retries and lease takeovers MUST resolve to the same logical Job
+        reservation. Returning True is not an effect/Run completion receipt.
+        """
+        ...
 
 class ArtifactRepositoryPort(Protocol):
     # Returns host-private implementation handle to this service only.
@@ -260,6 +300,66 @@ class HostAdmission:
 **Explicit availability countercase (producer-executed, unresolved):** after a ledger *durably* accepts Run `R`, a lost admission ACK prevents the above code from calling `scheduler.schedule(R)`. Repeating the original request with its original key can return a correct `REPLAY(R)` without dispatching the admitted Job. This is **safe against duplicate submission but not live against stranded work**. The bounded fake-port test now asserts that scheduler dispatch remains absent in exactly this case. A future real host must have a durable outbox, ledger-backed dispatch scanner, or another demonstrably crash-recoverable mechanism binding accepted Runs to executable Jobs; define idempotent dispatcher pickup, effect intent, ownership/fencing and incident handling. Calling `schedule` blindly on every replay would simply move the fault into duplicate execution. The test proves a **blocking unsatisfied condition**, not a delivered recovery feature.
 
 **STOP BEFORE PRODUCTION:** atomic logical admission and schedule dispatch are two operations in this illustrative method. They need an approved transactional outbox or equivalent persistent recovery/lease mechanism. Only after storage, crash lifetime, receipt and retention requirements are decided can they form one implementable invariant. Stable idempotency scope, client intention-key window, parameter canonicalization, hash, version conflicts and conflict/error grammar also require Product/security approval. A lost response must be reconciled using the *same* intention key. A second new-key submit may cause a second external effect.
+
+### Durable dispatch recovery candidate — after Run admission, before worker effects
+
+The admission method's fast-path `scheduler.schedule(run_ref)` is **merely a volatile acceleration**. Recovery must not rely on its successful return. The real `LedgerPort.admit_atomically()` must commit **both** the accepted logical Run and a uniquely keyed pending dispatch intent in one proven transaction. A replay or lost admission ACK therefore cannot create a stranded Run with no durable dispatch record. The *queued job* is a separate, idempotently reserved physical execution identity, not a new Run or effect. The candidate below is intentionally a tiny one-claim recovery worker; the approved storage implementation must supply fencing/lease expiry and durable handoff to a scheduler that deduplicates `dispatch_ref` even after its own ACK loss.
+
+~~~python
+# CANDIDATE_DESIGN: application_authority/dispatch_recovery.py
+class HostDispatchRecovery:
+    def __init__(self, ledger: DurableDispatchPort,
+                 scheduler: IdempotentDispatchPort):
+        self.ledger, self.scheduler = ledger, scheduler
+
+    def run_once(self, worker_ref: str) -> DispatchRecoveryReceipt:
+        try:
+            claim = self.ledger.claim_next(worker_ref)
+        except Exception:
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.DISPATCH_UNKNOWN,
+                                           None, "DISPATCH_LEDGER_UNAVAILABLE")
+        if claim is None:
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.NO_PENDING,
+                                           None, "NO_PENDING_DISPATCH")
+        if (not isinstance(claim, DispatchClaim)
+                or not claim.dispatch_ref or not claim.run_ref
+                or claim.worker_ref != worker_ref
+                or type(claim.fence_epoch) is not int or claim.fence_epoch < 1):
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.MALFORMED_CLAIM,
+                                           None, "DISPATCH_CLAIM_INVALID")
+        # If scheduler ACK is lost after a durable Job reservation, retry
+        # must use THIS SAME dispatch_ref. It must not start a new Run.
+        try:
+            acknowledged = self.scheduler.schedule_once(claim)
+        except Exception:
+            self._uncertain(claim, "DISPATCH_SCHEDULER_ACK_UNCERTAIN")
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.DISPATCH_UNKNOWN,
+                                           claim.run_ref, "DISPATCH_SCHEDULER_ACK_UNCERTAIN")
+        if acknowledged is not True:
+            self._uncertain(claim, "DISPATCH_RESERVATION_UNCONFIRMED")
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.DISPATCH_UNKNOWN,
+                                           claim.run_ref, "DISPATCH_RESERVATION_UNCONFIRMED")
+        try:
+            # Must be conditional on the fenced claim, never on run_ref alone.
+            self.ledger.mark_dispatched(claim)
+        except Exception:
+            return DispatchRecoveryReceipt(DispatchRecoveryKind.DISPATCH_UNKNOWN,
+                                           claim.run_ref, "DISPATCH_LEDGER_ACK_UNCERTAIN")
+        return DispatchRecoveryReceipt(DispatchRecoveryKind.DISPATCH_CONFIRMED,
+                                       claim.run_ref, "JOB_RESERVATION_CONFIRMED")
+
+    def _uncertain(self, claim: DispatchClaim, reason: str) -> None:
+        try:
+            self.ledger.mark_uncertain(claim, reason)
+        except Exception:
+            # No fabricated success; the claim remains subject to recovery
+            # by the real durable ledger after lease expiry.
+            pass
+~~~
+
+**Exact recovery obligation, not satisfied by fake tests:** a claim returned by `claim_next` must refer to an **actual pending durable outbox row created with Run admission**; lease loss must permit reclamation without simultaneous unfenced reservations; `mark_dispatched` must check `dispatch_ref` and `fence_epoch`; `schedule_once` must atomically reserve one logical Job for that dispatch identity even when it loses its response. A `True` response proves a Job reservation only, never that an Attempt ran, an external effect happened, output bytes were published or the analytic result was accepted. On grant/policy revocation before the work begins, the actual executor must revalidate applicable authority; a durable dispatch intent is **not** a standing permission for file mutation. A backend with no transaction tying Run and outbox, and no deduplication/fence at the scheduler, cannot claim recoverable hosted admission. It may choose a simpler proven single-worker profile, rather than pretend a distributed lease exists.
+
+**Producer fake counterexample repaired at the *candidate* contract level:** the prior acknowledged bad path committed Run R, lost ledger ACK, returned `REPLAY(R)` on identical request and never called the volatile scheduler. The newly specified recovery worker can pick that existing outbox dispatch independently, reserve Job R exactly once and mark dispatch acknowledged, provided the fake ledger and scheduler both implement the required semantics. Actual process crash, database transaction, host reconnection and physical effect conformance remain unexecuted.
 
 ## 4. Scope-checked observation and bytes
 
