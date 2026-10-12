@@ -16,6 +16,6 @@ The exact geometry triage marked original 0020 block L1327–L1366 among unspann
 
 ## Verification plan
 
-Add a Work-only source-identity check for the twelve exact original headings and twelve maintained Science row IDs. This is **structural producer coverage**; no independent meaning verification, owner approval, deployed host or tested Android extraction follows.
+The Work-only `tools/verify_windows_0020_priority_route_integrity.py` reads the pinned Git original, checks twelve headings §§71–82 and their P0/P1/P2 assignments against twelve exact `W20-P71..82` rows in maintained Science. The existing GitHub Actions workflow executes this structural-only check; observe the **exact new HEAD's** CI before calling it executed. This is **structural producer coverage**; no independent meaning verification, owner approval, deployed host or tested Android extraction follows.
 
 Other 0020 original gap envelopes (including a dated source history and target architecture sketch) remain separate candidate reviewer inputs. `SB-SRC-0020.material_unit_state` and all 566 source material states remain `unaccounted`; complete semantic Research Amputation and LCD implementation-ready status remain OPEN.
