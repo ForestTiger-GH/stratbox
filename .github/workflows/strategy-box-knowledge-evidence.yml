@@ -25,6 +25,8 @@ jobs:
           fetch-depth: 0
       - name: "Enforce standalone Knowledge: no links to removable Research or Work"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --check
+      - name: "Verify exact link migration preserved substantive text"
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_knowledge_link_migration_fidelity.py
       - name: "Exercise docs-only archive-amputation navigation in isolation"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_docs_only_archive_amputation.py
       - name: Validate all maintained Knowledge publication links and host owner routing
