@@ -528,6 +528,127 @@ def probe_trigger_occurrence() -> dict:
     }
 
 
+def probe_used_input_identity() -> dict:
+    """Exercise the EXACT documentary capture/decode functions with fake bytes."""
+    import hashlib
+    from dataclasses import replace
+    from datetime import datetime, timezone
+
+    ref = "data/used-input-receipt-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass,
+         "sha256": hashlib.sha256, "uuid4": uuid.uuid4,
+         "safe_url": lambda url: url,
+         "DomainValidationIncomplete": type(
+             "DomainValidationIncomplete", (ValueError,), {})}
+    for name in ("AcquisitionKind", "ValidationKind", "InputEvidenceMismatch",
+                 "OriginalByteIdentity", "SourceAcquisition", "UsedInputReceipt",
+                 "CapturedPayload", "capture_downloaded_payload",
+                 "decode_with_used_receipt"):
+        compile_definition(ref, name, d)
+
+    class Clock:
+        def now_utc(self):
+            return datetime(2026, 10, 12, 8, 30, tzinfo=timezone.utc)
+
+    def ok(payload):
+        return SimpleNamespace(ok=True, content=payload, status_code=200,
+                               final_url="https://publisher.example/stat.xls")
+
+    acquire = d["capture_downloaded_payload"]
+    decode = d["decode_with_used_receipt"]
+    clock = Clock()
+    raw = bytearray(b"bank-source-2026")
+    captured = acquire("public-source", "https://publisher.example/stat.xls",
+                       lambda: ok(raw), clock)
+    assert isinstance(captured, d["CapturedPayload"])
+    assert captured.acquisition.kind is d["AcquisitionKind"].RECEIVED
+    assert captured.content == b"bank-source-2026"
+    assert captured.acquisition.actual_bytes.sha256 == hashlib.sha256(
+        b"bank-source-2026").hexdigest()
+
+    # A provider could retain/change its mutable response after capture.
+    raw[0] = 0
+    assert captured.content == b"bank-source-2026"
+
+    class Decoder:
+        def __init__(self):
+            self.calls = 0
+            self.actual_input = None
+        def parse(self, payload):
+            self.calls += 1
+            self.actual_input = payload
+            return {"rows": 1}
+    class Validator:
+        kind = "valid"
+        def qualify(self, parsed, source_id):
+            return (d["ValidationKind"].DOMAIN_VALID if self.kind == "valid"
+                    else d["ValidationKind"].INDETERMINATE), "evidence-ref"
+    parser, validator = Decoder(), Validator()
+    result, used = decode(captured, parser, validator, "bank_scope", clock,
+                          registry_revision="r1", parser_revision="v1")
+    assert result == {"rows": 1}
+    assert parser.actual_input is captured.content
+    assert used.byte_identity == captured.acquisition.actual_bytes
+    assert used.format_validation is d["ValidationKind"].FORMAT_VALID
+    assert used.domain_validation is d["ValidationKind"].DOMAIN_VALID
+
+    # A forged/mismatched record MUST NOT reach decoder or validate as used.
+    bad_content = replace(captured, content=b"other-version")
+    parser.calls = 0
+    try:
+        decode(bad_content, parser, validator, "bank_scope", clock)
+    except d["InputEvidenceMismatch"]:
+        pass
+    else:
+        raise AssertionError("mismatched consumed bytes accepted")
+    assert parser.calls == 0
+
+    wrong_hash = replace(captured.acquisition, actual_bytes=d["OriginalByteIdentity"](
+        "0" * 64, len(captured.content)))
+    parser.calls = 0
+    try:
+        decode(replace(captured, acquisition=wrong_hash), parser,
+               validator, "bank_scope", clock)
+    except d["InputEvidenceMismatch"]:
+        pass
+    else:
+        raise AssertionError("forged byte hash accepted")
+    assert parser.calls == 0
+
+    missing_digest = replace(captured.acquisition, actual_bytes=None)
+    try:
+        decode(replace(captured, acquisition=missing_digest),
+               parser, validator, "bank_scope", clock)
+    except d["InputEvidenceMismatch"]:
+        pass
+    else:
+        raise AssertionError("missing byte proof accepted")
+
+    validator.kind = "indeterminate"
+    parser.calls = 0
+    try:
+        decode(captured, parser, validator, "bank_scope", clock)
+    except d["DomainValidationIncomplete"]:
+        pass
+    else:
+        raise AssertionError("indeterminate economic interpretation accepted")
+    assert parser.calls == 1
+    validator.kind = "valid"
+
+    failed = acquire("s", "safe", lambda: (_ for _ in ()).throw(
+        TimeoutError("fake transport timeout")), clock)
+    assert isinstance(failed, d["SourceAcquisition"])
+    assert failed.kind is d["AcquisitionKind"].FAILED
+    assert failed.actual_bytes is None
+    type_error = acquire("s", "safe", lambda: ok("not-byte-payload"), clock)
+    assert type_error.kind is d["AcquisitionKind"].FAILED
+    assert type_error.safe_error_code == "INVALID_PAYLOAD_TYPE"
+    return {
+        "used_byte_proof_and_negative_cases": 8,
+        "evidence": "exact documented source capture/decode with fake immutable/mutable bytes",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -535,11 +656,12 @@ def main() -> dict:
         "problem_receipt": probe_problem_receipt(),
         "artifact_publication": probe_artifact_publication(),
         "trigger_occurrence": probe_trigger_occurrence(),
+        "used_input_identity": probe_used_input_identity(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "five named LCD constructions executed with synthetic ports only",
+        "scope": "six named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
