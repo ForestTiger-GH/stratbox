@@ -1,0 +1,11 @@
+# Windows Research 0020: historical future options and reusable-client design — source packet
+
+**Status:** `PARTIAL / PRODUCER SOURCE-FIRST`, 2026-10-12. **Frozen original:** `SB-SRC-0020`, Git `8459dc58922b7e8df853cf1d9e8131fa9e132580`, exact blob `225128f2599f0792422c0b31cb3cbe1437991ced` (1,741 physical text lines). **Exact publication before this packet:** `fdc7b8f5ec7b5df7a8ec32dbec5e56f8d4645e4f`. The 15 dated propositions are preserved in [individual source ledger](../units/WINDOWS-STUDY-0020-FUTURE-AND-PORTABILITY-15.jsonl) and nine canonical topical Science owners.
+
+**Historical source range:** L1031–1118 records OS PlatformServices and Qt/Android/toolkit alternative; L1382–1516 catalogs hypothetical domain capabilities, workflow engine, scheduler, host, mobile companion, AI interface, artifact enhancements and collaboration; L1642–1682 differentiates implemented local desktop from unfunded/scaffolded capabilities and derives its recommendation for Qt-neutral semantics. All of these matter for future architecture alternatives, but none is by itself a Product Decision or implemented feature.
+
+**Contrary design/evidence:** a Windows-only manifest can coexist with an `xdg-open` branch; executable Python semantics do not guarantee a Kotlin client; a local `actor_kind=ai` does not grant machine authority; adding Artifact metadata fields cannot authenticate a stored byte generation; a historical suggested AppDock gateway is not a deployed host. Later accepted host WHAT resolves *host necessity*, **not** physical placement of `ExecutionBackend`, distributed worker identity or installed AppDock API.
+
+**Truth and independence:** this is 15 structural source-spanned producer transfer rows only, supplementing prior 9 and 18 rows, yielding **42 specific positions** for source original 0020 after the checker update. This cannot establish full conservation of the 1,741-line source, nor grant 42 independent reviews. The original and all source Git entries retain material state `unaccounted`.
+
+**Next:** verify the exact source SHA and text/defeater routing by CI; then independently review missing material in the original, including context/execution and user UI details, and run blind published-only challenge. Native Windows, Android, host and full lossless product assurance remain open.

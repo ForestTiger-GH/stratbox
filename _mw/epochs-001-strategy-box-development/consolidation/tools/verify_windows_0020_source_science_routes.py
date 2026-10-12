@@ -11,11 +11,18 @@ ORIGINAL = ROOT / "_mw/epochs-001-strategy-box-development/research/02-base-stud
 LEDGERS = (
     ("WINDOWS-STUDY-0020-DIRECT-RECONCILIATION-09.jsonl", 9),
     ("WINDOWS-STUDY-0020-RUNTIME-WORKROOM-18.jsonl", 18),
+    ("WINDOWS-STUDY-0020-FUTURE-AND-PORTABILITY-15.jsonl", 15),
 )
 UNITS_ROOT = ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units"
 SOURCE_SHA = "225128f2599f0792422c0b31cb3cbe1437991ced"
 SOURCE_COMMIT = "8459dc58922b7e8df853cf1d9e8131fa9e132580"
 SCOPED = {
+    "docs/science/capabilities/definitions-plans-and-execution-truth.md",
+    "docs/science/work/admission-planning-resource-scheduling-and-recovery.md",
+    "docs/science/automation/trigger-occurrence-identity-and-governed-execution.md",
+    "docs/science/deployment/headless-host-web-security-and-persistence-tradeoffs.md",
+    "docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md",
+    "docs/science/artifacts/output-identity-publication-and-availability.md",
     "docs/science/surfaces/semantic-portability-and-client-authority.md",
     "docs/science/engineering/proportional-assurance-and-knowledge-admission.md",
     "docs/science/surfaces/explorer-workroom-and-operational-desktop-interaction.md",
@@ -33,7 +40,7 @@ def verify() -> dict:
         entry_rows = [json.loads(line) for line in (UNITS_ROOT / filename).read_text(encoding="utf-8").splitlines() if line.strip()]
         assert len(entry_rows) == expected, filename
         rows.extend(entry_rows)
-    assert len(rows) == 27
+    assert len(rows) == 42
     seen = set()
     for row in rows:
         identity = row["unit_id"]
