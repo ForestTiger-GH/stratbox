@@ -690,6 +690,100 @@ def probe_used_input_identity() -> dict:
     }
 
 
+def probe_scoped_effect_guard() -> dict:
+    """Execute exact documented security guard against denied fake policies."""
+    from dataclasses import replace
+    ref = "security/host-effect-authorization-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("EffectClass", "AuthOutcome", "DecisionPhase", "Principal",
+                 "ResourceKey", "ActionRequest", "ApprovalScope",
+                 "AuthDecision", "EffectGuard"):
+        compile_definition(ref, name, d)
+    effect, outcome = d["EffectClass"], d["AuthOutcome"]
+    actor = d["Principal"]("trusted-user", "session-1", "host-1", "human", None)
+    resource = d["ResourceKey"]("workspace", "object-42", "generation-7")
+    request = d["ActionRequest"]("cleanup", "rev-3", effect.DELETE,
+                                  resource, "plan-sha", "command-intent")
+    approval = d["ApprovalScope"]("signed", "plan-sha", "target-sha",
+                                   "trusted-user", "2099-01-01T00:00:00Z",
+                                   "policy-42")
+
+    class Policy:
+        verdict = outcome.ALLOW
+        revision = "policy-42"
+        def evaluate(self, actor, request, *, phase):
+            assert phase is d["DecisionPhase"].EFFECT
+            return d["AuthDecision"](self.verdict, "synthetic-policy",
+                                      self.revision, "generation-7", None)
+    class Versions:
+        revision = "generation-7"
+        def current_revision(self, resource):
+            return self.revision
+    class Approvals:
+        current = approval
+        def verify_bound_scope(self, actor, request, approval_ref, digest):
+            return self.current
+    class Receipts:
+        def __init__(self):
+            self.intents = []
+        def record_before_effect(self, actor, request, decision):
+            self.intents.append((actor, request, decision))
+            return "synthetic-durable-intent-1"
+        def record_after_effect(self, intent_ref, observed_outcome):
+            pass
+
+    policy, versions, approvals, receipts = (
+        Policy(), Versions(), Approvals(), Receipts())
+    guard = d["EffectGuard"](policy, approvals, versions, receipts)
+
+    def attempt(req=request, target="target-sha", approval_ref="signed"):
+        return guard.authorize_before_effect(
+            actor, req, approval_ref=approval_ref, target_set_digest=target)
+
+    assert attempt() == "synthetic-durable-intent-1"
+    assert len(receipts.intents) == 1
+    receipts.intents.clear()
+
+    def denied(exc_type, invocation):
+        before = len(receipts.intents)
+        try:
+            invocation()
+        except exc_type:
+            pass
+        else:
+            raise AssertionError(f"unsafe approval passed: {exc_type}")
+        assert len(receipts.intents) == before
+
+    denied(PermissionError, lambda: attempt(
+        replace(request, resource=replace(resource, revision=None))))
+    denied(PermissionError, lambda: attempt(target=""))
+    denied(PermissionError, lambda: attempt(approval_ref=None))
+    approvals.current = replace(approval, actor_ref="other-principal")
+    denied(PermissionError, attempt)
+    approvals.current = replace(approval, target_set_digest="wrong-set")
+    denied(PermissionError, attempt)
+    approvals.current = replace(approval, request_digest="old-plan")
+    denied(PermissionError, attempt)
+    approvals.current = replace(approval, policy_revision="policy-old")
+    denied(PermissionError, attempt)
+    approvals.current = approval
+
+    policy.verdict = outcome.DENY
+    denied(PermissionError, attempt)
+    policy.verdict = outcome.POLICY_UNAVAILABLE
+    denied(PermissionError, attempt)
+    policy.verdict = outcome.ALLOW
+    versions.revision = "generation-8"
+    denied(RuntimeError, attempt)
+    versions.revision = "generation-7"
+    policy.revision = None
+    denied(PermissionError, attempt)
+    return {
+        "scoped_effect_auth_probes": 12,
+        "evidence": "literal EffectGuard against fake object revisions, approval scopes, and policies; NO actual OS effect",
+    }
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -698,11 +792,12 @@ def main() -> dict:
         "artifact_publication": probe_artifact_publication(),
         "trigger_occurrence": probe_trigger_occurrence(),
         "used_input_identity": probe_used_input_identity(),
+        "scoped_effect_guard": probe_scoped_effect_guard(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "six named LCD constructions executed with synthetic ports only",
+        "scope": "seven named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
