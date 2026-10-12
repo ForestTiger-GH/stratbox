@@ -144,6 +144,8 @@ The Knowledge CI now **parses** the concrete documented LCD construction files a
 
 **Evidence tier:** `PRODUCER_EXECUTED_DESIGN_FRAGMENT_TEST` — stronger than source-syntax parse, weaker than a code implementation and distinct from an independent reviewer. It does not promote `LCD_CANDIDATE` to `LCD_READY_FOR_IMPLEMENTATION`; all listed blockers remain. A changed candidate requires this test and appropriate independent conformance to run again at the new exact revision.
 
+**Host admission and Artifact audience correction (same existing Host packet):** the [Host LCD](hosting/host-authority-and-client-contract-construction.md) now classifies lost ledger-admission acknowledgments as `OUTCOME_UNKNOWN` even when the ledger may have accepted a Run, and validates a returned admission receipt before dispatching. It also separates backend-only Artifact storage handles from the client-safe metadata type and distinguishes denied, missing, changed and unavailable storage. The producer test suite executes the literal host design under synthetic dropped-ACK, inconsistent-receipt and metadata-projection cases; [CI 38227243998](https://github.com/ForestTiger-GH/stratbox/actions/runs/38227243998) at `f15666aeb3bed5e4b686a735ccfc6558e4972d07` completed **SUCCESS**. The logical Host LCD is still only one of the ten maintained packets; no actual ledger transaction, authenticated Artifact byte streaming, native ACL enforcement or independent acceptance has been proved.
+
 ## Cross-packet construction consistency (producer challenge; not independent)
 
 These five packets share **semantic constraints**, not one prematurely selected data model. A real implementation must make the following inter-packet adapters explicit and test the same negative scenarios end-to-end.
