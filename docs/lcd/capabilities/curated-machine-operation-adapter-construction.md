@@ -171,6 +171,9 @@ class MachineGateway:
         except Exception:
             return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
                                     "HOST_ADMISSION_ACK_UNCERTAIN")
+        if not isinstance(admission, MachineAdmission):
+            return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
+                                    "HOST_ADMISSION_PAYLOAD_INVALID")
         if not isinstance(admission.status, AdmissionStatus):
             return MachineAdmission(None, AdmissionStatus.OUTCOME_UNKNOWN,
                                     "HOST_ADMISSION_CONTRACT_INVALID")
@@ -236,6 +239,11 @@ def test_lost_host_admission_ack_cannot_be_reported_as_rejected(gateway, host):
     response = gateway.invoke("trusted-actor", approved_request)
     assert response.status is AdmissionStatus.OUTCOME_UNKNOWN
     assert not response.accepted
+
+def test_null_or_untyped_admission_receipt_remains_unknown(gateway, host):
+    host.admission = None
+    response = gateway.invoke("trusted-actor", approved_request)
+    assert response.status is AdmissionStatus.OUTCOME_UNKNOWN
 
 def test_accepted_without_run_ref_remains_unknown(gateway, host):
     host.admission = MachineAdmission(None, AdmissionStatus.ACCEPTED, "ACCEPTED")
