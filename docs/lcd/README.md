@@ -103,6 +103,16 @@ When a schema or IDL is the canonical owner, generated class/interface boilerpla
 
 These are **candidate pilot routes**. Their associated mechanisms and test vectors remain at their existing statuses until independently challenged and authorized. Do not create a mandatory LCD file per Scenario, Python module or Research topic.
 
+## Scoped software-construction packets — 2026-10-12 continuation
+
+Three concrete, **documentation-only** packets now complement the assembly contract. Their program skeletons are candidates, not source changes, independently verified implementations, or accepted APIs.
+
+- [Local Scenario execution, independent of Qt application truth](application/local-scenario-execution-construction.md) — `LCD_CANDIDATE`. Source-reconciled sequential plan, typed Python requests/results, one-run gate, execution reducer, safe observations, Qt bridge and negative test stubs; aggregate-outcome, privacy and effect policies still need decisions and actual tests.
+- [Host authority and client attachment](hosting/host-authority-and-client-contract-construction.md) — `LCD_BLOCKED` for deployable Web/Windows-managed host. Typed logical host/client ports, intent admission, scoped views and artifact access; physical owner, authentication, durable dispatch, host recovery, transport, and external managed-platform integration remain unresolved.
+- [Local output verification and Artifact publication](artifacts/local-output-publication-construction.md) — `LCD_CANDIDATE` for a scoped local design and `LCD_BLOCKED` for universal atomic or remote semantics. Typed staging, byte-verification, publish intent and reconciliation models with explicit backend proof requirements.
+
+**Assurance boundary:** all three are producer-authored pre-code designs; proposed tests are `UNEXECUTED`. They consume existing [Low-Level Design](../ldd/README.md) rather than replacing it. A distinct implementer cold-read and specialist/independent conformance challenge must precede any `LCD_READY_FOR_IMPLEMENTATION` claim. Source ↔ Science completeness and blind Research Amputation remain separate open gates.
+
 ## Whole-Knowledge completion relation
 
 An end-to-end Knowledge Product review must check that every admitted implementation-relevant target scope has a sufficient realization route: either a justified LCD result with its exact readiness grade, or a reasoned `NOT_APPLICABLE` disposition. Open Product Decisions and conditional deployments remain visible and owner-routed. Complete scientific conservation, current-state evidence, target coverage, architecture coherence, LCD decision closure, independent checks and publication integrity are **distinct gates**. A final publication may remain `PARTIAL / BLOCKED` when a genuine independent assurance or owner decision is unavailable; no agent may self-award that proof.
