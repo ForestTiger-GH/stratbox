@@ -88,3 +88,15 @@ Open Decision subjects: whether any scenario persists after client exit; partial
 | LS-22 | Two concurrent attempted operations use a case/step/log filename alias | Preserve distinct Attempt evidence and avoid truncation/collision, with OS/process-appropriate log ownership |
 
 **Owner and authorization:** these are design/assurance candidates requiring application implementation review, acceptable partial/failure policy and resource/audience choice. The old GUI current-state flaw does not mandate a broad framework, an extra repository or breaking retention of old legitimate user files. Real Qt/native and actual shared-host tests are required before acceptance; **none** of LS-15..22 was run.
+
+## Further minimal local/application separation tests — unexecuted (LS-23..25)
+
+These source-motivated tests extend the conditional LDD, **not** the implementation or an authorized physical extraction.
+
+| ID | Distinguishing input or observation | Candidate acceptance condition | Evidence status |
+| --- | --- | --- | --- |
+| LS-23 | Invoke the pinned-style `--no-gui`/diagnostic entry mode and attempt to attach a second client | The current diagnostic command terminates with explicit JSON; a future host must expose a separately documented, authenticated application authority before attachment can be advertised | Static current `__main__.py` supports the negative; host conformance **UNEXECUTED** |
+| LS-24 | Register an enabled stable business operation and a disabled or unknown helper | Only admitted catalog entries become callable user Scenarios; authorizing a machine action requires the real caller/object/effect policy beyond `dangerous` or `ai_visibility` metadata | Current registry-generation scope observed; future policy **UNEXECUTED** |
+| LS-25 | Compare a single atomic Scenario with the dated two-step CBR composite under failure and parameter mutation | Preserve one-step versus ordered-map semantics without claiming branching, parallelism, background durability or success of nonexistent effects; compare direct core operation results | Sequential current code observed; future common-service conformance **UNEXECUTED** |
+
+A new standalone `stratbox-application` module/service or repository is **not** mandated by these checks. An independently useful headless second consumer, real host lifecycle and a Product Decision remain necessary for physical placement.
