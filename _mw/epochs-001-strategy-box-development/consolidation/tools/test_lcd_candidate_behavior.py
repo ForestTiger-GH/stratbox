@@ -1109,14 +1109,20 @@ def probe_frg_cleanup_effects() -> dict:
                                  source, target, "financial-family",
                                  "2026-07", None, False)
     plan = d["FrozenCleanupPlan"]("plan-1", "v1", "data", (copy, delete),
-                                  "targets-digest", "src-rev-2")
+                                  "copy-1:delete-1", "src-rev-2")
+    plan_with_archive = replace(plan, actions=(copy, delete, archive),
+                                sorted_target_set_digest="copy-1:delete-1:archive-1")
     class Evidence:
         current = source
         recognized = True
+        family = "financial-family"
+        def derive_plan_digest(self, actions):
+            # Deliberately fake digest, NOT a cryptographic/safe serializer.
+            return ":".join(item.action_id for item in actions)
         def observe(self, scope_ref, path):
             return self.current
         def recognized_source(self, scope_ref, path):
-            return ("financial-family", "2026-07") if self.recognized else None
+            return (self.family, "2026-07") if self.recognized else None
     class Effects:
         def __init__(self):
             self.final_bytes = None
@@ -1194,11 +1200,53 @@ def probe_frg_cleanup_effects() -> dict:
     effects, auth, receipts, evidence, executor = fixture()
     evidence.recognized = False
     result = executor.apply_one(plan, delete, "approved-plan")
-    assert result.truth is truth.OUTCOME_UNKNOWN and not effects.deleted
+    assert result.truth is truth.FAILED_NO_EFFECT and not effects.deleted
 
     effects, auth, receipts, evidence, executor = fixture()
-    result = executor.apply_one(plan, archive, "approved-plan")
+    result = executor.apply_one(plan_with_archive, archive, "approved-plan")
     assert result.truth is truth.OUTCOME_UNKNOWN and not effects.calls
+
+    # A handwritten FrozenAction outside a verified plan must be rejected
+    # before any approval or effect-intent record.
+    effects, auth, receipts, evidence, executor = fixture()
+    def assert_pre_effect_rejected(p, step):
+        try:
+            executor.apply_one(p, step, "approved-plan")
+        except PermissionError:
+            pass
+        else:
+            raise AssertionError("unapproved plan/step reached effect")
+        assert not receipts.pending and not effects.calls
+
+    assert_pre_effect_rejected(plan, archive)
+    assert_pre_effect_rejected(
+        plan, replace(copy, source=replace(source, relative_path="system/secret")))
+    assert_pre_effect_rejected(
+        replace(plan, actions=(copy, copy, delete),
+                sorted_target_set_digest="copy-1:copy-1:delete-1"), copy)
+    assert_pre_effect_rejected(
+        replace(plan, actions=(copy, archive), sorted_target_set_digest="copy-1:delete-1"), copy)
+    assert_pre_effect_rejected(
+        plan, replace(copy, source=replace(source, root_scope="system")))
+    assert_pre_effect_rejected(
+        plan, replace(copy, target=replace(target, root_scope="other")))
+    assert_pre_effect_rejected(
+        replace(plan, actions=(
+            copy, replace(delete, source=replace(source,
+                sha256=None, file_generation=None))),
+            sorted_target_set_digest="copy-1:delete-1"),
+        replace(delete, source=replace(source, sha256=None, file_generation=None)))
+    assert not receipts.recorded
+
+    effects, auth, receipts, evidence, executor = fixture()
+    evidence.current = replace(source, sha256="unexpected-new-version")
+    result = executor.apply_one(plan, delete, "approved-plan")
+    assert result.truth is truth.FAILED_NO_EFFECT and not effects.deleted
+
+    effects, auth, receipts, evidence, executor = fixture()
+    evidence.family = "different-recognized-family"
+    result = executor.apply_one(plan, delete, "approved-plan")
+    assert result.truth is truth.FAILED_NO_EFFECT and not effects.deleted
 
     effects, auth, receipts, evidence, executor = fixture()
     auth.permit = False
@@ -1210,7 +1258,7 @@ def probe_frg_cleanup_effects() -> dict:
         raise AssertionError("unapproved FRG effect admitted")
     assert not receipts.pending and not effects.calls
     return {
-        "frg_cleanup_effect_cases": 8,
+        "frg_cleanup_effect_cases": 17,
         "evidence": "literal documented executor on synthetic evidence/effects; actual current FRG was previously tested separately",
     }
 
