@@ -129,7 +129,7 @@ def characterize() -> dict:
 
         # A source re-observation with the same bytes but later clock is not
         # itself a source-generation change; content still needs independent
-        generation/byte verification.
+        # generation/byte verification.
         v = sha(create_only_staging.read_bytes())
         assert v == sha(fresh_target.read_bytes())
         cases["same_bytes_different_observation_time_remain_equal"] = True
