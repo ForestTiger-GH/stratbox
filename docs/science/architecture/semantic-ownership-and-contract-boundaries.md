@@ -148,28 +148,28 @@ The future contract can be challenged by at least the following scenarios, which
 
 | Original research vector | Adverse case | Required semantic separation / qualification |
 | --- | --- | --- |
-| T10-01 Direct Jupyter run without GUI/platform | Core remains callable; no invented chat Job |
-| T10-02 Two runs in separate threads/chats | Independent Run IDs and real resource admission |
-| T10-03 Two writers to one output | Conflict/serialize/version, never invisible overwrite |
-| T10-04 Close Web during true host execution | Verified Job continues independently of client |
-| T10-05 Kill local foreground worker | Interrupted/Unknown vs unwarranted success |
-| T10-06 Network drops after output commit before ACK | Reconcile effect via identity/receipt |
-| T10-07 Export built in RAM, Data root write failed | Compute success vs publication failure |
-| T10-08 File manually renamed/deleted | Honest `missing` with historical record retained |
-| T10-09 Spoofed browser `principal_id` | Server ignores forged author and checks real identity |
-| T10-10 Machine caller asks for destructive permission | Same managed policy denies unauthorized effects |
-| T10-11 Connector manifest and tests have incompatible versions | Build/contract gate finds drift before release |
-| T10-12 Platform unavailable during direct Python run | Core remains functional; managed client reports startup issue |
-| T10-13 Shared Data root absent | Degraded/read-only state or explicit denied writes |
-| T10-14 Two clients rename one chat | Revision conflict rather than last-write-wins loss |
-| T10-15 Viewer may see Thread but not raw logs | Safe summary allowed; traceback protected |
-| T10-16 Persisted history corrupt | Typed corruption/recovery, not “first run with empty state” |
-| T10-17 Stale worker finalizes output | Fencing/version guard for actual multiworker profile |
-| T10-18 Web/Android attach during active run | Shared snapshot+cursor lifecycle truth |
-| T10-19 Unsupported platform remote feature | Explicit unsupported rather than invented success |
-| T10-20 Platform startup failure | Platform failure is not a fabricated domain Job failure |
-| T10-21 Operation schema drift from handler | Contract/fixture test catches mismatch |
-| T10-22 Result adapter drops economic units or evidence | Semantic fidelity preserved, not generic `ok` only |
+| T10-01 | Direct Jupyter run without GUI/platform | Core remains callable; no invented chat Job |
+| T10-02 | Two runs in separate threads/chats | Independent Run IDs and real resource admission |
+| T10-03 | Two writers to one output | Conflict/serialize/version, never invisible overwrite |
+| T10-04 | Close Web during true host execution | Verified Job continues independently of client |
+| T10-05 | Kill local foreground worker | Interrupted/Unknown vs unwarranted success |
+| T10-06 | Network drops after output commit before ACK | Reconcile effect via identity/receipt |
+| T10-07 | Export built in RAM, Data root write failed | Compute success vs publication failure |
+| T10-08 | File manually renamed/deleted | Honest `missing` with historical record retained |
+| T10-09 | Spoofed browser `principal_id` | Server ignores forged author and checks real identity |
+| T10-10 | Machine caller asks for destructive permission | Same managed policy denies unauthorized effects |
+| T10-11 | Connector manifest and tests have incompatible versions | Build/contract gate finds drift before release |
+| T10-12 | Platform unavailable during direct Python run | Core remains functional; managed client reports startup issue |
+| T10-13 | Shared Data root absent | Degraded/read-only state or explicit denied writes |
+| T10-14 | Two clients rename one chat | Revision conflict rather than last-write-wins loss |
+| T10-15 | Viewer may see Thread but not raw logs | Safe summary allowed; traceback protected |
+| T10-16 | Persisted history corrupt | Typed corruption/recovery, not “first run with empty state” |
+| T10-17 | Stale worker finalizes output | Fencing/version guard for actual multiworker profile |
+| T10-18 | Web/Android attach during active run | Shared snapshot+cursor lifecycle truth |
+| T10-19 | Unsupported platform remote feature | Explicit unsupported rather than invented success |
+| T10-20 | Platform startup failure | Platform failure is not a fabricated domain Job failure |
+| T10-21 | Operation schema drift from handler | Contract/fixture test catches mismatch |
+| T10-22 | Result adapter drops economic units or evidence | Semantic fidelity preserved, not generic `ok` only |
 
 The test pyramid includes direct core fixtures, application rule tests with fake ports, exact external contract validation, cross-client DTO fixtures, host E2E concurrency/fault injection and installed runtime gates. None has been executed by this article. Revisit choices on accepted deployment profiles P0–P6, actual storage RPO/RTO, scope of machine consumers, public Web authorization, retention, workspace multiplicity, host lifecycle, external platform versioned contracts and measured workloads.
 
