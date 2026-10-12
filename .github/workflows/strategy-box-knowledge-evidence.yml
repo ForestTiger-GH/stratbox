@@ -59,6 +59,8 @@ jobs:
             dist/strategy-box-independent-reader-questions.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Characterize local SQLite Run+dispatch transaction crash windows (not deployed host)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_native_sqlite_outbox_crash_characterization.py > native_sqlite_dispatch_audit.json
       - name: Characterize real POSIX path, staging and create-only races at exact Git revision (Linux only)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_native_local_storage_race_characterization.py > native_storage_fault_audit.json
       - name: Evaluate exact Knowledge program gate evidence without false global completion
@@ -174,6 +176,7 @@ jobs:
             research_span_audit.json
             original_span_gap_triage.json
             dist/strategy-box-work-program-gates.json
+            native_sqlite_dispatch_audit.json
             native_storage_fault_audit.json
           if-no-files-found: error
           retention-days: 14
