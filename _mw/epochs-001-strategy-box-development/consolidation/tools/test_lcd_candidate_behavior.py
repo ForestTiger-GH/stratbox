@@ -900,6 +900,104 @@ def probe_safe_shared_projection() -> dict:
     }
 
 
+def probe_curated_machine_admission() -> dict:
+    """Execute documented machine gateway with a fake but effectful host port."""
+    ref = "capabilities/curated-machine-operation-adapter-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass}
+    for name in ("Availability", "DomainQuality", "AdmissionStatus",
+                 "OperationDefinition", "MachineInvocation", "MachineAdmission",
+                 "MachineGateway"):
+        compile_definition(ref, name, d)
+    status = d["AdmissionStatus"]
+    definition = d["OperationDefinition"](
+        "bank.report", "schema-v1", "Bank report",
+        "safe-input-schema", "safe-output-schema",
+        "compute", True, "machine_allowed")
+    class Catalog:
+        approved = True
+        allow_machine = True
+        def get_approved(self, operation_id, contract_revision):
+            if not self.approved or operation_id != "bank.report" or contract_revision != "schema-v1":
+                return None
+            return definition if self.allow_machine else d["OperationDefinition"](
+                "bank.report", "schema-v1", "Bank report",
+                "safe-input-schema", "safe-output-schema",
+                "compute", False, "hidden")
+        def list_authorized(self, trusted_actor):
+            return (definition,)
+    class Schema:
+        def validate_strict(self, schema_ref, params):
+            if schema_ref != "safe-input-schema" or set(params) != {"period"}:
+                raise ValueError("unregistered parameter")
+            if not isinstance(params["period"], str):
+                raise TypeError("period")
+            return {"period": params["period"]}
+    class Bindings:
+        available = True
+        def is_available(self, operation_id, contract_revision):
+            return self.available
+    class Policy:
+        allow = True
+        def may_invoke(self, principal, definition, params):
+            return self.allow
+    class Application:
+        def __init__(self):
+            self.calls = []
+            self.mode = "accepted"
+        def admit(self, actor, request, params):
+            self.calls.append((actor, request.intention_key, dict(params)))
+            if self.mode == "ack_lost":
+                # The host may have durably admitted an invocation.
+                raise TimeoutError("simulated lost admission ACK")
+            if self.mode == "accepted_no_ref":
+                return d["MachineAdmission"](None, status.ACCEPTED, "ACCEPTED")
+            if self.mode == "denied_with_ref":
+                return d["MachineAdmission"]("already-admitted-run",
+                                              status.REJECTED, "REJECTED")
+            if self.mode == "bad_port_type":
+                return d["MachineAdmission"](None, "accepted", "BAD_TYPE")
+            if self.mode == "no_run":
+                return d["MachineAdmission"](None, status.REJECTED, "NOT_ADMITTED")
+            return d["MachineAdmission"]("run-1", status.ACCEPTED, "RUN_ADMITTED")
+    catalog, schema, bindings, policy, app = (
+        Catalog(), Schema(), Bindings(), Policy(), Application())
+    gateway = d["MachineGateway"](catalog, schema, bindings, policy, app)
+    invoke = d["MachineInvocation"]("stable-intent-key", "bank.report",
+                                     "schema-v1", {"period": "2026-07"})
+    result = gateway.invoke("trusted-host-principal", invoke)
+    assert result.accepted and result.status is status.ACCEPTED
+    assert result.run_ref == "run-1" and len(app.calls) == 1
+    catalog.approved = False
+    assert gateway.invoke("trusted-host-principal", invoke).status is status.REJECTED
+    catalog.approved = True
+    catalog.allow_machine = False
+    assert gateway.invoke("trusted-host-principal", invoke).status is status.REJECTED
+    catalog.allow_machine = True
+    altered = d["MachineInvocation"](
+        "stable-intent-key", "bank.report", "schema-v1",
+        {"period": "2026-07", "handler": "os.system"})
+    assert gateway.invoke("trusted-host-principal", altered).safe_code == "PARAMETER_SCHEMA_INVALID"
+    bindings.available = False
+    assert gateway.invoke("trusted-host-principal", invoke).status is status.REJECTED
+    bindings.available = True
+    policy.allow = False
+    assert gateway.invoke("trusted-host-principal", invoke).status is status.REJECTED
+    policy.allow = True
+    for mode, expected in (
+        ("ack_lost", status.OUTCOME_UNKNOWN),
+        ("accepted_no_ref", status.OUTCOME_UNKNOWN),
+        ("denied_with_ref", status.OUTCOME_UNKNOWN),
+        ("bad_port_type", status.OUTCOME_UNKNOWN),
+        ("no_run", status.REJECTED),
+    ):
+        app.mode = mode
+        result = gateway.invoke("trusted-host-principal", invoke)
+        assert result.status is expected and not result.accepted
+        assert app.calls[-1][1] == "stable-intent-key"
+    return {"machine_admission_adverse_cases": 11,
+            "evidence": "literal MachineGateway with fake host; no real MCP/A2A or Run store"}
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -910,11 +1008,12 @@ def main() -> dict:
         "used_input_identity": probe_used_input_identity(),
         "scoped_effect_guard": probe_scoped_effect_guard(),
         "safe_shared_projection": probe_safe_shared_projection(),
+        "machine_admission": probe_curated_machine_admission(),
     }
     return {
         "status": "DOCUMENTED_CANDIDATE_FAKE_BEHAVIOR_PASS",
         "checks": checks,
-        "scope": "seven named LCD constructions executed with synthetic ports only",
+        "scope": "eight named LCD constructions executed with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",
