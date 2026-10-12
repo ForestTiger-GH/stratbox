@@ -4,12 +4,12 @@
 
 | Entrance | Intended use | Evidence and admission |
 | --- | --- | --- |
-| [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | **51 thematic bounded articles plus two navigation/guide Markdown files** at this checkpoint; global source conservation and independent verification remain open |
-| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Seven limited static slices; repository-wide reconstruction, installed GUI and fault testing remain open |
-| [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Partial source-bound candidate; no new host, machine consumer, data service or UI promise accepted merely by publication |
+| [Science](science/README.md) | Standalone explanations of statistical-data meaning, epistemic and operational risks, alternatives, uncertainty, interfaces, extensibility and artifact behavior | Maintained thematic articles and navigation guides; exact scope and assurance boundaries are recorded in the [Science index](science/README.md); global source conservation and independent verification remain open |
+| [Current HOW](current-how/README.md) | What exact pinned core and Windows mechanisms actually do | Eight bounded static Current HOW slices, including a public AppDock launch boundary; repository-wide reconstruction, installed GUI and fault testing remain open |
+| [Target WHAT](what/README.md) | Desired capabilities, scope, invariants, intended users and open product choices | Necessary host with two target arrangements **accepted** by direct Product Decision; remaining scope includes conditional requirements and unadmitted Research ideas |
 | [Target HOW](how/README.md) | Candidate realization, application and operations/recovery mechanisms | Conditional design awaiting relevant product decisions and deployment profile |
 | [Product Architecture](architecture/README.md) | Responsibility allocation among analytical core, application authority, clients and an external management boundary | Qualified logical owner candidates; no new deployable/repository or versioned API admitted |
-| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Five bounded candidate design documents (staged Artifact publication; 98 neutral provider conformance vectors; local activation and binding checks; portable local scenario orchestration; used-source provenance); other LDD areas remain open |
+| [Low-Level Design](ldd/README.md) | Concrete risk-sensitive designs linked to accepted requirements when available | Candidate designs for Artifact publication, source receipts, provider conformance, host attachment, scenario orchestration, platform activation and diagnostic evidence degradation; all applicable deployment tests and Product gates remain open |
 
 ## Meaning of evidence and admission
 
@@ -23,7 +23,7 @@ A completed step, produced Excel file, accepted Result, published Artifact, auth
 
 ## Repository and platform boundary
 
-The public [stratbox core](https://github.com/ForestTiger-GH/stratbox) owns subject-area bank/macro statistical processing and its neutral contracts; [stratbox-windows](https://github.com/ForestTiger-GH/stratbox-windows) owns its currently observed Windows implementation. The external managed platform is a separate product responsible only for the lifecycle and interfaces actually established by its own versioned contracts. Conceptual headless, Web, Android, agent and remote-execution architectures remain future research/design options, not evidence of deployed components.
+The public [stratbox core](https://github.com/ForestTiger-GH/stratbox) owns subject-area bank/macro statistical processing and its neutral contracts; [stratbox-windows](https://github.com/ForestTiger-GH/stratbox-windows) owns its currently observed Windows implementation. The external managed platform is a separate product responsible only for the lifecycle and interfaces actually established by its own versioned contracts. A Strategy Box host in **Web/domain** and **Windows/AppDock host + distinct Windows/AppDock client** profiles is **accepted and planned**, while no actual host, Android app, agent, remote API or cross-device runtime is demonstrated. The one-versus-two Windows repositories option remains open.
 
 The pinned analytical and desktop code studies are static reconstructions; **this publication does not assert a successful GUI, full test suite, real deployment, concurrency, fault injection, security acceptance or cross-device compatibility run.** It contains no deployment-specific confidential implementation materials; extension boundaries are described neutrally.
 
