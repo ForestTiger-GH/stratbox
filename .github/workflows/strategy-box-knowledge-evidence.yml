@@ -56,6 +56,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_frg_cleanup_observed_faults.py
       - name: Characterize local FileStore root, missingness and write safety in temp directories
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_local_filestore_observed_safety.py
+      - name: Verify full thirty source-spanned security negative-case proposals
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_security_0558_negative_cases.py
       - name: Verify bounded source item transfers and local Science links
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_exact_material_transfers.py
       - name: Verify historical launcher original 0014 whole producer routes (structural)
