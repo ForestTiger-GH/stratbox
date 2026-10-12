@@ -37,7 +37,7 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 | --- | --- | --- |
 | Strategy Box core implementation | `stratbox/src/stratbox/` | текущая библиотечная реализация core |
 | Core packaging and dependencies | `stratbox/pyproject.toml` | текущая упаковка и dependency contract core |
-| Shared Strategy Box Knowledge Product | `stratbox/docs/` | будущие поддерживаемые Science / WHAT / Current HOW / HOW / Architecture / LDD; в данный момент bootstrap |
+| Shared Strategy Box Knowledge Product | `stratbox/docs/` | Maintained, partial, source-independent Science, Target WHAT, Current HOW, Target HOW, Architecture and selected LDD; independent lossless semantic assurance remains open |
 | Historic core documents | `stratbox/docs_old/` | content-preserved archive, не текущая спецификация |
 | Knowledge consolidation Work | `stratbox/_mw/epochs-001-strategy-box-development/consolidation/` | отдельные циклы, census, source dispositions и checkpoints |
 | Core verification | `stratbox/tests/`, `stratbox/scripts/` | проверки и evidence core |
@@ -58,7 +58,7 @@ AppDock — отдельный внешний проект. Strategy Box мож�
 
 **Purpose:** сформировать проверенную исходную картину Strategy Box как системы, сохранить прежние материалы с честной provenance-семантикой и подготовить дальнейшее согласованное развитие core и application surfaces.
 
-**Current posture:** ACTIVE / CONSOLIDATION_PREPARED. Исследовательские ветки 01–03 существуют, а отдельный `consolidation/` готов к Human-commissioned непрерывной сборке знаний. Публичный `docs/` содержит пока только подготовительные маршруты; legacy-документы сохранены в `docs_old/`. Сам факт наличия Research или synthesis-материалов не означает принятого Product Decision, изменения реализации или admission в поддерживаемое Knowledge.
+**Current posture:** `ACTIVE / CONTINUOUS CONSOLIDATION / PARTIAL / INDEPENDENT LOSSLESS ASSURANCE OPEN`. Historical Research branches, provenance and source Work remain separate from the self-contained maintained `docs/` Knowledge Product; no Research original or temporary local state determines current Product authority. Historical-source hyperlink removal and isolated docs-only navigation have passed structural CI. Product decisions and runtime implementation remain separately admitted/verified.
 
 Повторное глобальное переоформление этой же работы не создаёт новую эпоху. Новая эпоха нужна при новом самостоятельном глобальном исходе или после явного закрытия текущей.
 

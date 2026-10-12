@@ -22,7 +22,7 @@ Strategy Box как проект шире этого репозитория: п�
 
 - runtime и библиотечная реализация core: `src/stratbox/`;
 - упаковка и зависимости core: `pyproject.toml`;
-- документация: `docs/` — новый единый публикационный корпус Strategy Box (пока только bootstrap), `docs_old/` — архив прежней документации; текущая проверяемая реализация core — `src/stratbox/` и `tests/`;
+- documentation: `docs/` is the maintained partial, scientifically qualified and Research-independent Strategy Box Knowledge Product; `docs_old/` is a historical source archive, not current Product authority. Current core behavior belongs to `src/stratbox/` and `tests/`.
 - проверочный контур core: `tests/` и `scripts/`;
 - центральный Strategy Box Research/Work/provenance workspace: `_mw/`.
 
@@ -54,7 +54,7 @@ Research, заметки и workspace-only изменения не требую�
 
 ## Knowledge Product и подготовка цикла
 
-В `docs/` создаётся самостоятельная документационная система единого Strategy Box; `_mw/epochs-001-strategy-box-development/consolidation/` владеет рабочей процедурой, доказательствами сохранения значимого смысла, source census и checkpoint state. Прежние `docs/` перенесены в `docs_old/` без изменения исходных файлов. Пока `docs/` содержит только точки входа: принимать их за готовые научные или продуктовые спецификации запрещено.
+The maintained `docs/` Knowledge Product now contains substantive Science, Current HOW, qualified Target WHAT/HOW, Architecture and selective LDD. It remains PARTIAL: source-unit semantic completeness, independent reverse verification and blind Research Amputation have not been passed. `_mw/epochs-001-strategy-box-development/consolidation/` owns the 566-source census, provenance ledgers, dispositions and checkpoint. `docs_old/` and historical Research remain preserved inputs at present, but `docs/` must stay readable and navigable if they are subsequently removed. All new publication must place material arguments and counterexamples in `docs/`, with no links back to disposable Research/Work/legacy material. Current implementation claims require direct code evidence and scope limits.
 
 Следующий полномасштабный непрерывный агентный цикл выполняется по применимым MADARAII Work-инструкциям, привязанным в `consolidation/METHOD-ROUTER.md`, и запускается отдельным прямым поручением. Агент сохраняет промежуточное состояние и проходит тематические проверки без искусственных пауз, но не принимает несанкционированные Product Decisions. Публичные результаты автономны: допускаются только общие упоминания методологии MADAR и абстрактных внешних ИИ-агентов; прямые адреса и специфика иных методологических или когнитивных проектов не публикуются. Исходные исторические исследования не редактировать ради стилистической зачистки. Закрытые реализации расширений и их внутренние сведения не переносить в открытый репозиторий.
 
