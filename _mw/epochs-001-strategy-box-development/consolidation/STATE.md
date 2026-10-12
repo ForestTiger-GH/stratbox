@@ -1,5 +1,10 @@
 # Consolidation Work State
 
+## LCD concrete-design refinement — 2026-10-12 owner continuation
+
+**Owner instruction:** LCD (Low Code Design) **also means actual preparation of proposed code structures**: classes, interfaces/protocols, typed function signatures and stubs, module/package outlines, data/errors, algorithmic bodies and test scaffolds where useful for the future programmer. A mere decisions-closed table or negative-test matrix does not fulfill LCD in an implementation-facing slice if material source construction remains unspecified. Class declarations in `docs/lcd/` are pre-code design, *not* runtime source or Product Decisions. Keep existing LDD, protect the core/Windows boundaries and publish honest candidate/blocked grades until authorized. The previous exact CI/evidence checkpoint remains authoritative for validated work; this addendum requires its own CI verification.
+
+
 ## Owner clarification — LCD scope and continuation contract (2026-10-12)
 
 **New human owner instruction, process amendment only:** `LCD` means **Low Code Design**, an implementation-near, scope-relative design/decision-closure stage. Earlier `LDD` was inadvertently treated as the intended final depth; existing `docs/ldd/` remains useful **Low-Level Design** and must be retained. The **same** active Work Program now continues through Science, Current HOW, Target WHAT, Target HOW, Architecture, selected LDD, scoped LCD, Current/Target mapping and independent full-Knowledge assurance. See `ARCHITECTURE.md`, `CYCLE.md`, `METHOD-ROUTER.md` and `docs/lcd/README.md` for the controlling amended contract. No new core/Windows implementation, release, Product Decision or independent source verification follows merely from adding this layer.

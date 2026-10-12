@@ -16,6 +16,8 @@
 
 **Terminology correction (2026-10-12):** LDD means *Low-Level Design* and retains its existing useful detailed specifications. **LCD means *Low Code Design***: a separate, conditional implementation-readiness depth, not a visual no-code builder and not an automatic synonym of LDD. See the [LCD scope and gates](lcd/README.md).
 
+**Concrete-LCD scope clarification:** for implementation-near work, LCD also includes proposed classes, protocols/interfaces, typed functions, stub bodies, module/data/error structures and algorithm/test scaffolds. A risk matrix alone is not the intended LCD construction deliverable where material code-shaped design is needed.
+
 **Observed** means an identified public implementation revision actually contains the described code or a bounded synthetic test reproduced that branch. It does not imply a running installation, correct banking data or production security.
 
 **Scientific / research-derived** means the rationale, scope, competing interpretation and applicable counterexample are **explained here**. Historical study metadata is optional provenance, never the only location of the meaning. A source locator preserved as text is not a dependency for understanding it.

@@ -2,6 +2,8 @@
 
 **Terminology boundary (owner clarification, 2026-10-12):** `LDD` is **Low-Level Design**. It was not the owner's intended final `LCD` (**Low Code Design**) layer. Retain the documents below as valuable detailed mechanisms and fault vectors; use them as inputs to [selectively activated LCD](../lcd/README.md) without renaming, duplicating or treating their candidate tests as implementation-ready proof.
 
+LCD adds actual pre-code constructions where useful: designed classes and typed functions, module/interface/data scaffolds, operational code skeletons and test stubs, not just LDD descriptions or test matrices.
+
 **Status:** bounded **candidate** specifications. They are not deployed code, not adopted external platform protocols and do not substitute for accepted Product Decisions. Design relations inherit conditional `TW-SB-2026-10-09-CANDIDATE-1`, `TH-SB-2026-10-09-CANDIDATE-1` and `PA-SB-2026-10-09-CANDIDATE-1` where relevant.
 
 - [Twenty-eight execution observability, crash and recovery conformance cases](observability/execution-truth-and-recovery-vectors.md) — independent attempts, incomplete journals, failed log sinks, authorized streams, unknown effects, retention and lifecycle; all unexecuted.

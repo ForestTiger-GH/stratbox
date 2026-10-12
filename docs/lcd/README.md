@@ -23,15 +23,68 @@ For each activated implementation scope, produce the least sufficient combinatio
 | --- | --- |
 | **Scope and status** | Exact user-visible outcomes; admitted WHAT and chosen HOW/Architecture/LDD revisions; variant, excluded behavior, decision owner and maturity state. |
 | **Current-to-target correspondence** | Direct current implementation witnesses; preserved behavior, replacement and migration/data-continuity obligations; unknown current behavior. |
-| **Realization decomposition** | Required implementation responsibilities, state owners, effects, module/interface seams and dependency direction; physical file layout only if material. |
-| **Concrete contracts** | Input/output types and errors, lifecycle and state transitions, storage/consistency, concurrency, cancellation, retries, authorization, artifacts, external interfaces and recovery **as applicable**. |
+| **Realization decomposition** | Required implementation responsibilities, state owners and dependency direction; concrete module/package/source skeletons when a chosen coding scope benefits materially. |
+| **Code-shaped constructions and contracts** | Proportionate concrete classes, interfaces/protocols, annotated function signatures, implementation stubs, records, result/error types, algorithmic/state-transition skeletons and corresponding validation; ownership, storage, concurrency, retries, authorization, artifacts and recovery as applicable. |
 | **Material decision closure** | For each consequence-bearing choice, record accepted decision and rationale, allowable implementation variants, testable constraints, owner and blockers. |
 | **Implementation freedom** | Mark `FIXED`, `BOUNDED`, `DELEGATED_NONMATERIAL` or `BLOCKED_ON_AUTHORITY_OR_EVIDENCE` per decision. Freedom must be explicit; a speculative API signature is not a decision. |
 | **Conformance and handoff** | Acceptance/negative tests, expected observable results, required environments, evidence needed, unresolved risks and stop/reopen conditions; distinguish planned from executed tests. |
 
-A ready model should let a **cold competent implementer** identify its starting baseline, smallest bounded change, protected invariants, allowed choices and falsifying checks using maintained Knowledge alone. An independent reviewer should be able to identify where implementation could still diverge materially. The target is **material implementation-decision closure for the declared scope**, not identical code generation from the same text.
+A ready model should let a **cold competent implementer** identify its starting baseline, smallest bounded change, protected invariants, allowed choices and falsifying checks using maintained Knowledge alone. An independent reviewer should be able to identify where implementation could still diverge materially. The target is **material implementation-decision closure together with concrete pre-code construction for the declared scope**, not identical code generation from the same text.
 
 ## Status and release semantics
+## Concrete program-construction deliverables (2026-10-12 owner refinement)
+
+**LCD includes concrete pre-coding software construction.** For an activated coding scope, a decision register, narrative design or fault-vector matrix alone cannot count as a complete implementation-near model when classes/functions/source structures would materially help the implementer. LCD may and often should contain **actual target-language declarations**, proposed class hierarchies, functions and method signatures, typed stubs, module and package scaffolds, domain/data/error types, and executable-looking algorithm or state-machine skeletons. This is the owner's intended addition to Low-Level Design; it is not a commercial no-code builder.
+
+A scope-appropriate LCD construction packet should, where relevant, cover:
+
+| Concrete construct | Implementation preparation required |
+| --- | --- |
+| **Source/package skeleton** | Actual proposed modules/paths and import/export boundaries when they affect ownership, integration, build or change; otherwise leave private file layout flexible. |
+| **Classes and protocols/interfaces** | Named, target-language class/protocol/interface sketches with responsibility, lifecycle, important methods and permitted dependency direction. Mark interfaces as approved only after proper decisions. |
+| **Functions and methods** | Proposed names, typed parameters, return/result/error contracts, validations and branch conditions. Use function bodies as algorithmic pseudocode or explicit `TODO` / `NotImplementedError` **design-only** stubs. |
+| **Data and state** | Typed records, enumerations, error/result types, serialization/schema boundaries, state transitions, mutation authority and invariants. |
+| **Algorithms and effects** | Ordered step skeletons, resource lifecycle, concurrency, cancellation, retry, partial failure and recovery paths to the extent that different implementations would change protected meaning. |
+| **Tests and handoff** | Concrete test skeletons and negative fixtures derived from accepted observable obligations; label tests `PROPOSED` until actually executed at a known implementation revision. |
+
+Choose a suitable representation for the accepted or explicitly conditional language/runtime (for example Python class/Protocol definitions, typed Rust traits/structs, or TypeScript interfaces). Prefer real target-language sketches over generic prose when the chosen code shape matters. **The selected constructs form a coherent pre-programmed solution**, not a list of disconnected example APIs. The packet must distinguish `FIXED`, `BOUNDED`, `DELEGATED_NONMATERIAL` and `BLOCKED` implementation choices.
+
+### Illustrative declaration only — not an adopted Strategy Box interface
+
+The following is a **syntax illustration**, not a product contract or an instruction to create the named classes in production:
+
+```python
+from dataclasses import dataclass
+from typing import Protocol
+
+
+@dataclass(frozen=True)
+class ExampleRequest:
+    operation_id: str
+
+
+@dataclass(frozen=True)
+class ExampleOutcome:
+    accepted: bool
+    reference: str | None
+
+
+class ExampleOperationPort(Protocol):
+    def submit(self, request: ExampleRequest) -> ExampleOutcome: ...
+
+
+class ExampleOperationAdapter:
+    def submit(self, request: ExampleRequest) -> ExampleOutcome:
+        # LCD CANDIDATE STUB — actual behavior requires an admitted contract.
+        raise NotImplementedError
+```
+
+Real LCD must replace this example with **source-reconciled, scope-specific** construction. For instance, a candidate Qt-independent scenario extraction should establish which existing code is reused, which class or protocol owns admission/execution, exactly where Qt callbacks are converted to neutral events, what request/outcome types and errors mean, and which tests will falsify the proposal. Names and signatures remain candidate until their proper authority has approved them.
+
+Each code-shaped fragment needs a clear label: `ILLUSTRATIVE`, `CANDIDATE_DESIGN`, `ACCEPTED_DESIGN_CONTRACT` or `OBSERVED_CODE_AT_PINNED_REVISION`. **Documentation-only LCD source skeletons are never shipped implementation.** Do not insert unfinished stubs into `src/stratbox/`, `stratbox-windows` or another product owner without a separate implementation commission. Static syntax checks can show a stub parses; they cannot certify functional behavior, business correctness, host existence, security or a product release.
+
+When a schema or IDL is the canonical owner, generated class/interface boilerplate should be treated as a projection, with one editable owner and explicit generated/manual boundaries. Stop elaborating when additional model detail would merely duplicate private code rather than remove a material implementation ambiguity. A cold implementer must nevertheless see **what concretely needs to be coded**, not only why a high-level architecture might work.
+
 
 - `LCD_CANDIDATE`: a coherent scoped model exists, but product choices, realization decisions, evidence or conformance are open.
 - `LCD_BLOCKED`: a named authority, missing prerequisite, external contract or unverified assumption prevents closing a material implementation choice. Publish the safe candidate and route the decision; never invent the answer.
