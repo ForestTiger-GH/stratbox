@@ -66,6 +66,15 @@ def verify() -> dict[str, object]:
           "docs/science/architecture/semantic-ownership-and-contract-boundaries.md"
 }
         ),
+        (
+            ROOT / "_mw/epochs-001-strategy-box-development/consolidation/units/AUTOMATION-0041-ROUTER-ARTIFACT-14.jsonl",
+            14,
+            {
+                "docs/science/work/admission-planning-resource-scheduling-and-recovery.md",
+                "docs/science/automation/bounded-agent-routing-and-evidence-safe-automation.md",
+                "docs/science/artifacts/output-identity-publication-and-availability.md",
+            },
+        ),
     )
     docs = {}
     seen = set()

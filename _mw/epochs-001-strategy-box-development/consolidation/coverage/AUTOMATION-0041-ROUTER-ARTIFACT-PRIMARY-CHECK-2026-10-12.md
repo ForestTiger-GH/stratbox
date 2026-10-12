@@ -1,0 +1,11 @@
+# Original Automation Research 0041 — typed router, bounded agent and artifact evidence
+
+**Status:** `PARTIAL / PRODUCER SOURCE FIRST`, 2026-10-12. **Source:** `SB-SRC-0041`, fixed `8459dc58922b7e8df853cf1d9e8131fa9e132580`, Git blob `dee8958b16b3fe08042b5212d35fcc8424db28e3`. This packet preserves fourteen additional propositions anchored at original L553–850. The source's dates, diagrams and illustrative fields remain historical Research until independently assessed and adopted by appropriate Product authority.
+
+**Distinctions actually conserved:** optional SQLite metadata rather than files-for-everything; easy-to-evaluate typed Scenario selection versus open-ended AgentRun; authoritative catalog/typed params/rights checks instead of model-selected confidence/confirmation flags; planner–policy–executor separation, deterministic financial math with genuine source/period/unit fidelity; Artifact ID and bounded table slicing rather than unrestricted raw paths and million-row model contexts; source→canonical→derived→Excel→report lineage; concise structured agent decision receipt instead of hidden model reasoning capture.
+
+**Contrary cases preserved:** SQLite alone does not prove durable effect atomicity. `confidence=0.94` is not permission. A real ID is not an Artifact grant. Deterministic calculations can still use wrong economic source, units or vintage. A table-slice limit can miss rare but material observations. The original proposals are not claims that the pinned Qt Windows code already implemented any of these services or schemas.
+
+**Review state:** [14-row ledger](../units/AUTOMATION-0041-ROUTER-ARTIFACT-14.jsonl) → existing topical Science modules (work, automation/AI, artifacts). Dedicated CI should check SHA, spans, exact English meaning/counterexample transfer and stable IDs, bringing source 0041 from 70 to **84** explicit positions. Structural pass is not a distinct source-independent semantic review and does not dispose the remainder of the original 2,386 lines. All frozen Git source material states remain `unaccounted`.
+
+**Open:** prior Source⇄Science corpus residues, exact Product Decisions on runtime authority/host/storage, real AppDock integrations, independent Research Amputation and authorized verification of original human DOCX bytes.
