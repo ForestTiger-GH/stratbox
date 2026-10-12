@@ -71,3 +71,20 @@ Tests LS-01–07, LS-10, LS-13 and LS-14 can begin with pure fakes and local fix
 Open Decision subjects: whether any scenario persists after client exit; partial/fail-fast policy; cancellability and effect classes; artifact publication/retention/access; concurrency beyond one local run; shared-host identity/authorization; physical module/package/repository, host and API. A platform launch manifest is a **separate** decision surface and must not be inferred from this LDD.
 
 **Reopen:** a second concrete consumer, accepted lifecycle/effect requirement, current source change, independent negative test result or relevant AppDock contract version change. This design intentionally stops at the sufficient local seam and remains **not certified for implementation or release**.
+
+## Source-executed local Case and handler diagnostics: target safeguards (LS-15..22)
+
+**Evidence division:** six **current-code** Linux/offline Python behavior characterizations passed at pinned Windows SHA in [CI 38190957120](https://github.com/ForestTiger-GH/stratbox/actions/runs/38190957120), detailed in [Current HOW](../../current-how/windows-application.md). The following **LS-15..22** are **unexecuted** prospective target acceptance/failure vectors. A passing current defect reproduction is not a passed target fix.
+
+| Target vector | Fault / input | Required conditional future behavior |
+| --- | --- | --- |
+| LS-15 | Required step fails under a policy named `continue_with_warnings` | Aggregate result clearly signals partial/warning/failure under the accepted outcome algebra; cannot say fully `success` without semantic qualification |
+| LS-16 | Explicit optional step fails with `fail_fast` | Accepted required/optional contract controls propagation; if optional has no special semantics, do not claim it does in schema or UI |
+| LS-17 | User supplies a synthetic parameter resembling a credential | Shared Event projections omit/redact protected values before persistence, AI visibility or remote-stream publication; safe diagnostic receipt preserved |
+| LS-18 | An error path returns a technical `.log` path in the normal outputs tuple | File/log class and intended audience are checked; log path must not be promoted to a remotely fetchable generic Artifact without separate authority |
+| LS-19 | Operation raises before structured result, after Step started | Authoritative Run/Case/Attempt must finish or explicitly remain `UNKNOWN/INTERRUPTED` with causal evidence; pending Step and error event cannot silently disappear |
+| LS-20 | Workspace unavailable after FileHandler attached | Handler is closed/removed on every exit, including early return, exception during construction and repeated operation |
+| LS-21 | Same synthetic Case with two optional/required failures and then reconnect | Step, aggregate status, user-facing card and persisted history agree on partial/unknown distinctions; no stale projection asserts complete success |
+| LS-22 | Two concurrent attempted operations use a case/step/log filename alias | Preserve distinct Attempt evidence and avoid truncation/collision, with OS/process-appropriate log ownership |
+
+**Owner and authorization:** these are design/assurance candidates requiring application implementation review, acceptable partial/failure policy and resource/audience choice. The old GUI current-state flaw does not mandate a broad framework, an extra repository or breaking retention of old legitimate user files. Real Qt/native and actual shared-host tests are required before acceptance; **none** of LS-15..22 was run.
