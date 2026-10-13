@@ -82,6 +82,8 @@ jobs:
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/verify_lcd_python_skeletons.py
       - name: Execute selected LCD candidate fragments against synthetic ports (not production)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_lcd_candidate_behavior.py
+      - name: Execute pinned core FRG API direct Python call with explicit synthetic collaborators (not domain result verification)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_real_core_hostless_frg_api_boundary.py
       - name: "Exercise docs-only archive-amputation navigation in isolation"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_docs_only_archive_amputation.py
       - name: Validate all maintained Knowledge publication links and host owner routing

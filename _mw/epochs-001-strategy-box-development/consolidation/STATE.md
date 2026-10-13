@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## 2026-10-13 continuation — direct current FRG source Python consumer
+
+At exact main@ee0c16a8fc1f7b939e7f922ea8b1913a01610820, [Actions 38370928270](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370928270) **SUCCESS** including eleven LCD packets, fourteen producer-authored fake probe functions and eighteen new Product Offering negative scenarios; compiler fixed-value normalization and canonical schema checks now passed as literal documented AST. This Work increment adds a distinct **real-source execution witness** for current src/stratbox/macrobanks/frg/api.py via a direct notebook-style Python call with **synthetic catalog/selection/dispatch/FileStore dependencies**. It can prove the direct API/module boundary and stage ordering, never the actual data-processing meaning, real host or LCD integration. Own new CI needed before evidence acceptance. The same Commission and 115-document standalone Knowledge remain. All 566 independent material dispositions unaccounted; 53-source original-first and 22-question blind reader independently unanswered; native host/clients, Product Decisions and semantic Research Amputation OPEN. Production sources untouched, public-safe only.
+
+---
+
+
 ## 2026-10-13 continuation — installed validator and sealer consistency corrections
 
 Exact main@91829771e0fc26a9923132e12be68a7174308788 [CI 38370737513](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370737513) SUCCESS: 115 Knowledge Markdown, eleven literal-AST LCD packets, fourteen synthetic probe functions, fourteen Product Offering negative cases. This continuation adds compiler fail-closed integrity checks for (1) a domain normalizer returning an altered previously fixed offering value and (2) a sealed result returning a schema revision different from the exact installed domain definition. Its candidate default service now advances context revision on relevant default changes and stale client revisions are refused. All remain producer-authored design fakes; next exact-SHA CI must be verified. Source semantic independence 566 UNACCOUNTED; 53 source-first and 22 blind cases externally UNEXECUTED, Product Decisions and installed host/native acceptance OPEN. Product/runtime source unchanged; no private extension specifics. Same Commission and single State; physical reset unavailable.

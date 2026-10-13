@@ -1,5 +1,8 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Direct core boundary source witness (2026-10-13, own CI pending):** new Work-only test invokes the actual public FRG API source using explicit synthetic domain dependencies without Windows/host imports, asserting three-stage return wiring. It is distinct from product LCD fake-compiler execution; real FRG parser/data and host/native/domain semantic conformance are not proven. Prior main@ee0c16a8fc1f7b939e7f922ea8b1913a01610820 [CI 38370928270](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370928270) SUCCESS includes updated fail-closed candidate compiler checks. The publication remains 115 self-contained Markdown and all independent program gates remain open.
+
+
 **Producer fake probe exact-SHA result and integrity correction (2026-10-13):** main@91829771e0fc26a9923132e12be68a7174308788 [CI 38370737513](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370737513) SUCCESS for 115 Markdown documents, 11 candidate LCD AST coverage packets and 14 synthetic probe functions. Additional bounded compiler guards now require domain validation to preserve approved fixed offering values and canonical sealing to return the installed definition revision; their new exact-revision CI is still pending. This changes neither product implementation nor the independent source, Product Decision or native-platform gates.
 
 
