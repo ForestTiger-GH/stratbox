@@ -185,10 +185,17 @@ def source_change_evaluation(
             or evidence.after_source_revision is None):
         return TriggerEvaluation(rule.automation_id, rule.rule_revision,
                                  EvaluationOutcome.UNKNOWN, evidence)
-    outcome = verifier.compare_qualified_versions(
-        evidence.before_source_revision, evidence.after_source_revision)
-    # A transport error/failed source validation may yield UNAVAILABLE/UNKNOWN.
-    # Only qualified source equivalence may yield NO_CHANGE.
+    try:
+        outcome = verifier.compare_qualified_versions(
+            evidence.before_source_revision, evidence.after_source_revision)
+    except Exception:
+        # A thrown transport/source-verification error proves neither a
+        # qualified change nor qualified equality. Preserve uncertainty;
+        # an outer diagnostic owner should capture a redacted cause.
+        outcome = EvaluationOutcome.UNKNOWN
+    if not isinstance(outcome, EvaluationOutcome):
+        outcome = EvaluationOutcome.INVALID_EVIDENCE
+    # Only a verified version comparison may return NO_CHANGE.
     return TriggerEvaluation(rule.automation_id, rule.rule_revision,
                              outcome, evidence)
 
@@ -233,14 +240,21 @@ class TriggerOccurrenceService:
                 OccurrenceDisposition.UNKNOWN_ADMISSION, None,
                 "OCCURRENCE_CLAIM_UNCERTAIN")
         if not claimed:
-            existing = self.ledger.find_run_ref(identity)
-            if existing is not None:
-                return OccurrenceDecision(identity, OccurrenceDisposition.REPLAY_EXISTING,
-                                          existing, "DUPLICATE_RUN_REPLAY")
-            rejected = self.ledger.find_confirmed_no_run_reason(identity)
-            if rejected is not None:
-                return OccurrenceDecision(identity, OccurrenceDisposition.BLOCKED,
-                                          None, rejected)
+            try:
+                existing = self.ledger.find_run_ref(identity)
+                if existing is not None:
+                    return OccurrenceDecision(identity, OccurrenceDisposition.REPLAY_EXISTING,
+                                              existing, "DUPLICATE_RUN_REPLAY")
+                rejected = self.ledger.find_confirmed_no_run_reason(identity)
+                if rejected is not None:
+                    return OccurrenceDecision(identity, OccurrenceDisposition.BLOCKED,
+                                              None, rejected)
+            except Exception:
+                # A read timeout/corrupt projection after a prior occurrence
+                # claim is not permission to admit a second host Run.
+                return OccurrenceDecision(identity,
+                    OccurrenceDisposition.UNKNOWN_ADMISSION, None,
+                    "OCCURRENCE_LOOKUP_UNCERTAIN")
             return OccurrenceDecision(identity, OccurrenceDisposition.UNKNOWN_ADMISSION,
                                       None, "DUPLICATE_OCCURRENCE_RECONCILE")
         # The host must authorize real run-as grants, scenario version,
@@ -282,6 +296,8 @@ class TriggerOccurrenceService:
 
 **Crucial candidate hole:** \`claim_unique\`, host \`request_run\` and \`attach_admission\` are independent calls. A crash after claiming an occurrence but before recording a Run link can strand the occurrence. Replaying it must *not* blindly produce a second host Run: use a durable linked dispatch intent or query the host by a stable admission intention. A host admission ACK loss is \`UNKNOWN_ADMISSION\` pending authentic reconciliation; the example does not implement a complete transaction or guarantee exactly-once effects. The host still owns all effect-time approvals, actual Run/Attempt state and Artifact receipts.
 
+**Read-after-claim failure and verifier uncertainty — producer-discovered adverse case.** A unique claim may be fully durable while `find_run_ref` or `find_confirmed_no_run_reason` fails transiently. Treat **either lookup failure** as `UNKNOWN_ADMISSION` with a safe code; never call `request_run` again merely because a read failed. A source-version verifier that raises or returns an invalid outcome also cannot turn into `OBSERVED` or `NO_CHANGE`; the candidate maps these cases to `UNKNOWN` and `INVALID_EVIDENCE`, respectively. An application diagnostic owner must record a privacy-safe causal error separately; this candidate does not yet implement that log or reconcile a distributed transaction. For a Run already accepted before `attach_admission` fails, retain its returned identity and reconcile later. For definitive no-Run recorded before its acknowledgment fails, replay the same certified block if available. No extra scheduler iteration grants permission to repeat a physical effect.
+
 **Rule-disabled semantics:** disabling prevents **new** evaluations/admissions by default. It does not automatically cancel previously accepted work. Revoked principal/grant conditions must independently block admission or actual effect, even when the source change is valid.
 
 ## 5. Calendar, overlap and resource policies — deliberately unresolved
@@ -295,6 +311,23 @@ Overlap may mean identical **source observation** coalesces while separate requi
 ## 6. Conformance stubs — PROPOSED / UNEXECUTED
 
 ~~~python
+def test_duplicate_claim_lookup_timeout_does_not_submit_again(service, ledger):
+    ledger.raise_on_find_run_ref()
+    decision = service.handle(rule, observed_event, already_claimed_occurrence)
+    assert decision.disposition is OccurrenceDisposition.UNKNOWN_ADMISSION
+    assert host_admission.calls == calls_before
+
+def test_no_run_reason_lookup_timeout_does_not_submit_again(service, ledger):
+    ledger.raise_on_find_no_run_reason()
+    decision = service.handle(rule, observed_event, already_claimed_occurrence)
+    assert decision.safe_code == "OCCURRENCE_LOOKUP_UNCERTAIN"
+    assert host_admission.calls == calls_before
+
+def test_source_verifier_exception_keeps_trigger_uncertain(rule, evidence, verifier):
+    verifier.raise_transport_error()
+    assert source_change_evaluation(
+        rule, evidence, verifier).outcome is EvaluationOutcome.UNKNOWN
+
 def test_source_unavailable_is_not_no_change(rule, evidence, verifier):
     verifier.return_unavailable()
     evaluation = source_change_evaluation(rule, evidence, verifier)

@@ -805,6 +805,10 @@ def probe_trigger_occurrence() -> dict:
             self.attached = {}
             self.no_run = {}
             self.claim_fail_after_write = False
+            self.fail_read_run = False
+            self.fail_read_no_run = False
+            self.fail_attach_after_write = False
+            self.fail_no_run_after_write = False
         def key(self, identity):
             return (identity.automation_id, identity.rule_revision,
                     identity.trigger_fingerprint)
@@ -817,13 +821,21 @@ def probe_trigger_occurrence() -> dict:
                 raise RuntimeError("unique occurrence committed but ACK lost")
             return True
         def find_run_ref(self, identity):
+            if self.fail_read_run:
+                raise TimeoutError("read prior accepted Run lost")
             return self.attached.get(self.key(identity))
         def find_confirmed_no_run_reason(self, identity):
+            if self.fail_read_no_run:
+                raise TimeoutError("read no-Run receipt lost")
             return self.no_run.get(self.key(identity))
         def record_confirmed_no_run(self, identity, reason):
             self.no_run[self.key(identity)] = reason
+            if self.fail_no_run_after_write:
+                raise TimeoutError("no-Run reason was written, ACK lost")
         def attach_admission(self, identity, run_ref):
             self.attached[self.key(identity)] = run_ref
+            if self.fail_attach_after_write:
+                raise TimeoutError("Run link was written, ACK lost")
 
     class Admission:
         attempts = 0
@@ -900,8 +912,64 @@ def probe_trigger_occurrence() -> dict:
             return evaluation_kind.UNAVAILABLE
     source_result = d["source_change_evaluation"](rule, evidence, SourceVerifier())
     assert source_result.outcome is evaluation_kind.UNAVAILABLE
+
+    # A failed replay read of a claimed occurrence is not a new admission.
+    baseline_attempts = admit.attempts
+    ledger.fail_read_run = True
+    unknown_run_read = service.handle(rule, evaluation, identity)
+    assert unknown_run_read.disposition is disposition.UNKNOWN_ADMISSION
+    assert unknown_run_read.safe_code == "OCCURRENCE_LOOKUP_UNCERTAIN"
+    ledger.fail_read_run = False
+    assert admit.attempts == baseline_attempts
+
+    # A failed lookup of a previously certified no-Run rejection is unknown.
+    ledger.fail_read_no_run = True
+    unknown_no_run_read = service.handle(rule, evaluation, denied_id)
+    assert unknown_no_run_read.disposition is disposition.UNKNOWN_ADMISSION
+    assert unknown_no_run_read.safe_code == "OCCURRENCE_LOOKUP_UNCERTAIN"
+    ledger.fail_read_no_run = False
+    assert admit.attempts == baseline_attempts
+
+    # A successful host admission can be durably linked before its ACK is lost.
+    admit.deny = False
+    ledger.fail_attach_after_write = True
+    linked = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                             trigger_fingerprint="link-after-ack-loss")
+    link_unknown = service.handle(rule, evaluation, linked)
+    assert link_unknown.disposition is disposition.UNKNOWN_ADMISSION
+    assert link_unknown.run_ref == "host-run-1"
+    ledger.fail_attach_after_write = False
+    attempts_after_link = admit.attempts
+    assert service.handle(rule, evaluation, linked).disposition is disposition.REPLAY_EXISTING
+    assert admit.attempts == attempts_after_link
+
+    # A confirmed denial may be written before loss of its local ACK.
+    admit.deny = True
+    ledger.fail_no_run_after_write = True
+    no_run = SimpleNamespace(automation_id="auto-1", rule_revision="rev-1",
+                             trigger_fingerprint="no-run-ack-loss")
+    receipt_unknown = service.handle(rule, evaluation, no_run)
+    assert receipt_unknown.disposition is disposition.UNKNOWN_ADMISSION
+    ledger.fail_no_run_after_write = False
+    attempts_after_no_run = admit.attempts
+    assert service.handle(rule, evaluation, no_run).disposition is disposition.BLOCKED
+    assert admit.attempts == attempts_after_no_run
+
+    class SourceVerifierRaises:
+        def compare_qualified_versions(self, before, after):
+            raise TimeoutError("source byte proof unavailable")
+    failed_comparison = d["source_change_evaluation"](
+        rule, evidence, SourceVerifierRaises())
+    assert failed_comparison.outcome is evaluation_kind.UNKNOWN
+
+    class SourceVerifierInvalid:
+        def compare_qualified_versions(self, before, after):
+            return "observed"   # untyped provider reply is not enum evidence
+    invalid_comparison = d["source_change_evaluation"](
+        rule, evidence, SourceVerifierInvalid())
+    assert invalid_comparison.outcome is evaluation_kind.INVALID_EVIDENCE
     return {
-        "conditional_trigger_occurrence_cases": 12,
+        "conditional_trigger_occurrence_cases": 18,
         "evidence": "real documented candidate service with fake occurrence ledger and source verifier",
     }
 
