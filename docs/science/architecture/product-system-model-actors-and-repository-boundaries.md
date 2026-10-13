@@ -21,6 +21,25 @@ The candidate product is neither an arbitrary Python-function GUI nor a new inst
 | **Platform / environment** | Install, deployment, managed roots, Node/Session, process activation, platform health and operational recovery | An external platform owns its **own** lifecycle and identity facts; its health state cannot certify a banking result. |
 | **Presentation / interaction** | Rendering, navigation, client drafts, accessibility, local OS interactions and safe permitted actions | Windows is the realized surface; Web and Android are prospective consumers of common application semantics. |
 
+### Original system-ownership matrix: splits that an overview table can conceal
+
+The original 2026-10-08 system model recorded a more granular **research ownership hypothesis** than a four-plane diagram. It is conserved below as role-specific scientific meaning, not as an approved deployment topology. In particular, the original column suggesting a physical *headless service* is a **dated proposed realization**; the separately accepted later host *capability* does not approve a named service, repository, storage or transport.
+
+| Concern from the original owner matrix | Distinct semantic owner and boundary | Status of physical realization |
+| --- | --- | --- |
+| Banking/macro algorithms, source registries, analytical operations, provenance and neutral FileStore/format contracts | Independent domain core; **backend storage effect guarantees still belong to the actual adapter** | Core exists; canonical catalog and evidential completeness vary by domain |
+| Public capability binding protocol versus concrete installed environment implementation | Core defines a neutral protocol; an actual adapter owns its environment-specific realization | Contract conformance and deployment must be verified separately |
+| Scenario catalog, planning, accepted Run/Job/Attempt, automation, collaboration and product permission | Logical Strategy Box application authority, **not** the Windows form or external platform | Some local Windows models exist; real headless shared authority remains unimplemented |
+| Platform identity, Node/Session, service lifecycle, health and infrastructure recovery | External managed platform | Its available contracts and real profiles require exact-version checks |
+| Product participant mapping, domain/application diagnostics and Work lifecycle | Application authority maps verified external principals into product actors; diagnostic meaning stays with the respective producing owner | Local presence or a healthy process establishes neither product grant nor analytical success |
+| Artifact semantic result and source provenance / artifact index, visibility and workflow / physical content bytes | **Three distinct owners:** core domain, application authority and storage adapter | Shared/remote storage, retention and receipt guarantees remain open |
+| Windows, prospective browser and Android visual rendering / common status, action and form semantics | Each native renderer / shared application–client semantic contract | Only Windows is observed at the pinned baseline; no common installed host or native parity claim |
+| Interface design tokens / exported report and artifact style semantics | Logical UI-design responsibility / core reporting and artifact formatting respectively | Separate design package or token release remains conditional |
+| Device-local settings / optional shared cross-device preferences | Each client / application authority when cross-device behavior is admitted | No current shared preference service inferred |
+| Installation and engineering history / external cognitive planner | Managed external platform and separate engineering workspace / external decision-support consumer | Neither engineering notes nor a planner can become runtime banking authority |
+
+**Counterexample:** a stored scenario appears in a desktop form and a managed platform reports a healthy process. This still provides no evidence that the user may run a consequential operation, that a shared Job was admitted, that its output bytes were published, or that the domain answer is correct. Any proposal that merges those claims must first demonstrate an actual common authority with typed contracts and state/evidence reconciliation.
+
 The phrase **presentation truth** in the original four-plane summary means authoritative state of a particular rendering or local preference, **not** authority over a shared banking observation or a Job. One semantic application owner may reside physically inside one process, or be served by a separate local/team process. The physical model is determined by independent consumers, restart/fault domains, security, release cadence and deployment constraints.
 
 In a shared setup, multiple clients must not hold competing primary copies of the same Job, Work or user grant. In a standalone direct-Python setup there may simply be no shared Work authority; this is a different supported profile, not an inconsistency.
@@ -58,6 +77,10 @@ Domain diagnostics describe invalid source, unsupported interpretation, partial 
 Likewise, **interface design tokens** (semantic status colors, typography, motion, density, accessible controls) and **report/artifact style sets** (XLSX/DOCX/PDF/PPTX visual outputs) have different consumers and version/lifetime rules. A common design language is a valid logical responsibility. A mandatory standalone design repository is currently **unsupported** because independent frontend/package consumers have not yet been proved. Future Android should reuse semantic forms, status, actions and artifact projections—not Qt widgets or Windows layout.
 
 Public extension integration is described only by environment-neutral declarations, versioned bindings, availability, error and conformance contracts. Discovery, selection and readiness are different events; no concrete deployment-specific implementation knowledge belongs in public architecture.
+
+**Source-preserved split-state counterexample (system study §12.2):** the environment may be healthy while an analytical operation fails on data; conversely, domain calculation may have completed while a platform transport loses the outcome acknowledgement. These are not one shared state machine. A correlated execution reference, version and scoped observation can join evidence after reconciliation, but no process-level success, missing acknowledgement or UI card can silently certify a domain result.
+
+The same original synthesis (§14.2) enumerated **eight independent visual-semantic responsibilities**: semantic status/color roles; typography roles; spacing/density; motion; icon semantics; component/pattern contracts; accessibility; and system/light/dark theme behavior. Each needs a native consumer/contrast/focus/performance test before it can become an assured cross-platform visual contract. A logical design owner is justified; a separately released design repository remains an evidence-dependent physical alternative. Detailed candidate tokens and adversarial accessibility checks live in [design Science](../surfaces/semantic-design-tokens-motion-and-accessibility.md), not in raw Research history.
 
 ## 7. Fifteen source-proposed invariants, deliberately not test results
 

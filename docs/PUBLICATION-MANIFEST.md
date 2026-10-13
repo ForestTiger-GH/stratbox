@@ -1,5 +1,8 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Source conservation producer reconciliation — 2026-10-13 (own CI pending):** pinned original System Model `SB-SRC-0046` §12.2, §14.2 and §19 direct gaps were checked against maintained Science. Six new exact-span Work ledger rows and expanded [system Science](science/architecture/product-system-model-actors-and-repository-boundaries.md) preserve lost-confirmation-versus-domain-outcome distinctions, visual-token role set and granular ownership boundaries. For the two named 0046 Work ledgers, source line-addressing residue is expected to fall from 62 nonblank lines to **11 headings**; this does **not** certify complete original meaning or independent assent. Whole census remains 566 `unaccounted`; Product and native gates remain open.
+
+
 **Direct core boundary source witness (2026-10-13, own CI pending):** new Work-only test invokes the actual public FRG API source using explicit synthetic domain dependencies without Windows/host imports, asserting three-stage return wiring. It is distinct from product LCD fake-compiler execution; real FRG parser/data and host/native/domain semantic conformance are not proven. Prior main@ee0c16a8fc1f7b939e7f922ea8b1913a01610820 [CI 38370928270](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370928270) SUCCESS includes updated fail-closed candidate compiler checks. The publication remains 115 self-contained Markdown and all independent program gates remain open.
 
 
