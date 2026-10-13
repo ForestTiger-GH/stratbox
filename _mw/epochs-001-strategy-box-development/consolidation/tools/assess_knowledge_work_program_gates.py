@@ -203,7 +203,7 @@ def main() -> dict:
             "blind_independent_knowledge_consumer_review": "UNEXECUTED",
             "independent_original_first_reverse_check": "UNEXECUTED",
             "ten_lcd_candidate_fragment_probes": "CI_PRODUCER_FAKE_ONLY",
-            "additional_product_offering_lcd_candidate": "DOCUMENTED_UNEXECUTED",
+            "additional_product_offering_lcd_candidate": "CI_PRODUCER_FAKE_ONLY",
             "actual_linux_local_posix_race_characterization": "PASS_EIGHT_BOUNDED_REAL_FILESYSTEM_CASES",
             "actual_target_windows_smb_host_security_storage_domain_conformance": "UNEXECUTED",
             "product_platform_security_policy_decisions": "OPEN_WITH_OWNER",

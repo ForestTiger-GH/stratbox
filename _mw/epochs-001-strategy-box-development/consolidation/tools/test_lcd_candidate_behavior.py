@@ -1908,6 +1908,161 @@ def probe_host_dispatch_recovery() -> dict:
     }
 
 
+def probe_product_offering() -> dict:
+    """Execute literal documented class/compiler/DTO AST on fake ports only."""
+    import hashlib
+    from collections.abc import Mapping
+    from typing import Protocol
+    ref = "application/domain-operation-product-projection-construction.md"
+    d = {"Enum": enum.Enum, "dataclass": dataclass,
+         "Mapping": Mapping, "Protocol": Protocol}
+    for name in ("ProjectionFailure", "PublicField", "ProductOffering",
+                 "DomainBinding", "FormSuggestion", "PublicOfferingView",
+                 "ProductFormSubmission", "SealedParameters",
+                 "ResolvedProductInvocation", "ProjectionError",
+                 "ProductInvocationCompiler", "safe_public_view"):
+        compile_definition(ref, name, d)
+    fail = d["ProjectionFailure"]
+    fld, Offering, Binding = d["PublicField"], d["ProductOffering"], d["DomainBinding"]
+    Submission, Sealed = d["ProductFormSubmission"], d["SealedParameters"]
+    def make_offering(name="table", rev="offer-v1"):
+        return Offering(name, rev, "core.op", "domain-v1",
+                        (fld("period", "Period", "choice", True),
+                         fld("unit", "Units", "choice", False)),
+                        {"output_kind": "table"}, frozenset({"period", "unit"}))
+    class Catalog:
+        current = make_offering()
+        dishonest = False
+        def exact(self, name, rev):
+            if self.dishonest:
+                return self.current
+            if (name, rev) != (self.current.offering_id,
+                               self.current.offering_revision):
+                raise d["ProjectionError"](fail.UNKNOWN_OFFERING)
+            return self.current
+    class Installed:
+        current = Binding("core.op", "domain-v1", "binding-a", True)
+        calls = 0
+        last = None
+        deny = False
+        def exact(self, op, rev):
+            return self.current
+        def validate_effective(self, binding, values):
+            self.calls += 1
+            self.last = dict(values)
+            if self.deny or not isinstance(values.get("period"), str):
+                raise d["ProjectionError"](fail.INVALID_PARAMETERS)
+            return dict(values)
+    token = object()
+    class Defaults:
+        revision = "context-1"
+        values = {"period": "2026-07"}
+        def resolve(self, offering, trusted_context):
+            assert trusted_context is token
+            return self.revision, dict(self.values)
+    class Sealer:
+        calls = 0
+        def seal(self, values, schema_revision):
+            self.calls += 1
+            raw = json.dumps({"revision": schema_revision, "values": dict(values)},
+                             sort_keys=True, separators=(",", ":"),
+                             allow_nan=False).encode("utf-8")
+            return Sealed(raw, hashlib.sha256(raw).hexdigest(), schema_revision)
+    catalog, installed, defaults, sealer = (
+        Catalog(), Installed(), Defaults(), Sealer())
+    compiler = d["ProductInvocationCompiler"](
+        offerings=catalog, installed=installed, defaults=defaults, sealer=sealer)
+    def form(values=None, name="table", revision="offer-v1", ctx="context-1"):
+        return Submission(name, revision, ctx, {} if values is None else values)
+    cases = 0
+    def rejects(submission, reason):
+        nonlocal cases
+        old = (installed.calls, sealer.calls)
+        try:
+            compiler.compile(submission, trusted_context=token)
+        except d["ProjectionError"] as ex:
+            assert ex.reason is reason, (ex.reason, reason)
+        else:
+            raise AssertionError(f"accepted case {reason}")
+        assert old == (installed.calls, sealer.calls)
+        cases += 1
+
+    first = compiler.compile(form({"period": "2026-08"}),
+                             trusted_context=token)
+    assert (first.domain_operation_id, first.domain_definition_revision,
+            first.binding_revision, first.offering_revision) == (
+                "core.op", "domain-v1", "binding-a", "offer-v1")
+    assert installed.last == {"period": "2026-08", "output_kind": "table"}
+    assert first.parameters.digest_sha256 == hashlib.sha256(
+        first.parameters.canonical_bytes).hexdigest()
+    rejects(form({"handler": "fake.module:entry"}), fail.UNKNOWN_PARAMETER)
+    rejects(form({"output_kind": "changed"}), fail.FORBIDDEN_PARAMETER)
+    rejects(form({"period": "2026-08", "output_kind": "changed"}),
+            fail.FORBIDDEN_PARAMETER)
+    rejects(form(revision="missing"), fail.UNKNOWN_OFFERING)
+    catalog.dishonest = True
+    rejects(form(name="wrong"), fail.STALE_OFFERING)
+    catalog.dishonest = False
+    for bad in (Binding("core.op", "domain-v1", "binding-a", False),
+                Binding("wrong", "domain-v1", "binding-a", True),
+                Binding("core.op", "wrong", "binding-a", True)):
+        installed.current = bad
+        rejects(form(), fail.BINDING_MISMATCH)
+    installed.current = Binding("core.op", "domain-v1", "binding-a", True)
+    rejects(form(ctx="stale"), fail.CONTEXT_CHANGED)
+    for bad in ({"unexpected": "x"}, {"output_kind": "changed"}):
+        defaults.values = bad
+        rejects(form(), fail.INVALID_PARAMETERS)
+    defaults.values = {"period": "2026-07"}
+    catalog.current = Offering("table", "offer-v1", "core.op", "domain-v1",
+        (fld("period", "P", "choice", True),
+         fld("period", "Duplicate", "choice", True)),
+        {"output_kind": "table"}, frozenset({"period"}))
+    rejects(form(), fail.INVALID_PARAMETERS)
+    catalog.current = Offering("table", "offer-v1", "core.op", "domain-v1",
+        (fld("period", "P", "choice", True),),
+        {"period": "forged"}, frozenset({"period"}))
+    rejects(form(), fail.INVALID_PARAMETERS)
+    catalog.current = make_offering()
+    installed.deny = True
+    try:
+        compiler.compile(form({"period": None}), trusted_context=token)
+    except d["ProjectionError"] as ex:
+        assert ex.reason is fail.INVALID_PARAMETERS
+    else:
+        raise AssertionError("domain validator denial ignored")
+    installed.deny = False
+
+    catalog.current = make_offering("chart", "chart-v1")
+    second = compiler.compile(
+        form({"period": "2026-08"}, "chart", "chart-v1"),
+        trusted_context=token)
+    assert first.domain_operation_id == second.domain_operation_id
+    assert first.domain_definition_revision == second.domain_definition_revision
+    assert first.offering_id != second.offering_id
+    assert first.parameters.canonical_bytes == second.parameters.canonical_bytes
+    visible = d["safe_public_view"](catalog.current)
+    assert isinstance(visible, d["PublicOfferingView"])
+    assert not hasattr(visible, "fixed_values")
+    assert not hasattr(visible, "domain_operation_id")
+    assert not hasattr(visible, "binding_revision")
+    assert "output_kind" not in str(visible)
+    assert not hasattr(first, "run_ref")
+    assert not hasattr(first, "actor")
+    old_bytes = first.parameters.canonical_bytes
+    defaults.values = {"period": "2026-09"}
+    newest = compiler.compile(
+        form(name="chart", revision="chart-v1"), trusted_context=token)
+    assert newest.parameters.canonical_bytes != old_bytes
+    assert first.parameters.canonical_bytes == old_bytes
+    return {"negative_rejection_cases": cases + 1,
+            "two_offerings_one_core": True,
+            "fixed_field_and_binding_not_in_public_dto": True,
+            "sealed_bytes_stable_when_defaults_change": True,
+            "no_host_authority_or_real_core_implementation": True,
+            "evidence": "literal documented AST with synthetic ports; producer-only"}
+
+
 def main() -> dict:
     checks = {
         "local_scenario": probe_local_run(),
@@ -1923,11 +2078,13 @@ def main() -> dict:
         "machine_admission": probe_curated_machine_admission(),
         "neutral_provider_binding": probe_neutral_provider_binding(),
         "frg_cleanup_effects": probe_frg_cleanup_effects(),
+        "product_offering": probe_product_offering(),
     }
     # Coverage counts *documents*, not separate fake scenarios. The Security
     # document has two independently useful scoped probes.
     packet_to_probes = {
         "application/local-scenario-execution-construction.md": ("local_scenario",),
+        "application/domain-operation-product-projection-construction.md": ("product_offering",),
         "hosting/host-authority-and-client-contract-construction.md": (
             "host_admission", "host_dispatch_recovery", "authorized_host_feed"),
         "artifacts/local-output-publication-construction.md": ("artifact_publication",),
@@ -1940,7 +2097,7 @@ def main() -> dict:
         "extensions/neutral-provider-binding-construction.md": ("neutral_provider_binding",),
         "automation/trigger-occurrence-and-scheduling-construction.md": ("trigger_occurrence",),
     }
-    assert len(packet_to_probes) == 10
+    assert len(packet_to_probes) == 11
     assert set(checks) == {
         key for probes in packet_to_probes.values() for key in probes}
     assert all((LCD / doc).is_file() for doc in packet_to_probes)
@@ -1952,7 +2109,7 @@ def main() -> dict:
             "independent_fake_probe_functions": len(checks),
             "mapping": {doc: list(probes) for doc, probes in packet_to_probes.items()},
         },
-        "scope": "ten documented LCD constructions with synthetic ports only",
+        "scope": "eleven documented LCD constructions with synthetic ports only",
         "limits": [
             "no installed or actual Strategy Box production implementation executed",
             "host persistence, thread scheduling, real network and platform unavailable",

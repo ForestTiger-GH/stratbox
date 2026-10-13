@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## Current transition — 2026-10-13, eleventh LCD behavior runner candidate
+
+Entering main@ebf1c5050575d44fb34aa702626a2775c4631dca; exact [CI 38359988560](https://github.com/ForestTiger-GH/stratbox/actions/runs/38359988560) SUCCESS (115 Knowledge Markdown, 11 candidate LCD, 566 frozen source identities). Extended the existing documented-AST fake-port probe runner to exercise Domain Operation → Product Offering compiler, negative forgeries/revision/permission separations and immutable sealed-byte snapshots. Own new SHA and CI pending, so execution verdict remains provisional. No production code or protected extension material changed. All 566 original identities remain independently unaccounted; original-first 53 and blind 22 external assessments remain absent, as do target-host/native platform implementation evidence and Product Decisions. Same authoritative State; single Commission; logical rehydration; physical reset unavailable. Status PARTIAL / CONTINUING.
+
+---
+
+
 ## CI corrective checkpoint — 2026-10-13, publication-count and candidate guard repair
 
 **Observed failure at exact Git HEAD:** `stratbox@42a0b218ac6fd53db34c032b1a1ec51b7a75bd71`, [Actions 38359834280](https://github.com/ForestTiger-GH/stratbox/actions/runs/38359834280) **FAILURE**. All preceding document-independent packaging and 53-source response-shape checks completed, but the existing Work Program gate asserted the historical fixed **114 Markdown** population after the edition legitimately grew to **115**. Later steps were **SKIPPED**, not passed. Corrective Work replaces this stale count with the actually enumerated doc population, retaining exact ZIP-vs-disk byte identity and all 566-source/53-original role checks. It also repairs the proposed LCD's backtick markup, explicit fixed-input override classification, exact offering-revision returned by port, and minimal safe public DTO. Existing ten source-fragment fake probes still cover only their named prior scopes; the eleventh product-offering pilot remains UNEXECUTED. New corrective HEAD and all its CI steps must be checked before a success claim.

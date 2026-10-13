@@ -247,7 +247,7 @@ def safe_public_view(offering: ProductOffering) -> PublicOfferingView:
 
 The client-visible projection must redact **fixed_values** and any protected binding metadata; the complete **ProductOffering** above is an internal application-authority record. **PublicOfferingView** and **safe_public_view** implement a minimal allowlisted DTO boundary; the transport must also filter offering visibility and validate field labels/options for audience safety. Displayability is never sufficient for effect admission. Stale form data receives a typed re-render/refresh outcome, not covert execution using new defaults. Form choices can be paginated/bounded but cannot remotely execute Python provider names.
 
-## 5. Cold-implementer conformance plan — PROPOSED, UNEXECUTED
+## 5. Cold-implementer conformance plan — PROPOSED, BOUNDED PRODUCER FAKE CHECKS
 
 ~~~python
 # tests/application/test_product_projection.py -- proposed fixtures
@@ -292,7 +292,7 @@ def test_authorized_catalog_visibility_is_not_effect_grant(host, displayed_offer
     assert host.revoke_effect_then_submit(displayed_offering).denied
 ~~~
 
-These are **test intentions**, not executable fixtures or current conformance passes. A minimum coded pilot should pair one actual domain request/result with two offerings, one dynamic choice provider fake, one denial after visible selection and a second direct-Python consumer. Compare source/domain semantics and final Artifact/Run outcomes independently. A static Python parser or fake registry alone cannot prove real effective-permission checks, package topology, browser trust or cross-client parity.
+The named intentions below remain **unimplemented test fixtures**. The separate Work-only probe exercises only the exact documented compiler and public DTO AST with synthetic ports, requiring new exact-SHA CI for a producer-only bounded pass. It cannot attest full host/core/native conformance. A minimum coded pilot should pair one actual domain request/result with two offerings, one dynamic choice provider fake, one denial after visible selection and a second direct-Python consumer. Compare source/domain semantics and final Artifact/Run outcomes independently. A static Python parser or fake registry alone cannot prove real effective-permission checks, package topology, browser trust or cross-client parity.
 
 ## 6. Decision closure, constrained freedom and readiness
 
