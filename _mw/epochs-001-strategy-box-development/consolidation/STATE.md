@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## 2026-10-13 residual role screening — source 0020 (NOT a terminal disposition)
+
+Exact main@dc0c33c3464ee0d2b8b03696c22f9d57c8b66282 [Actions 38383071687](https://github.com/ForestTiger-GH/stratbox/actions/runs/38383071687) **SUCCESS**: unified Work Program gate snapshot now reports bounded producer-only 0046 (11 headings) and 0020 (72 unspanned) provenance geometry alongside unchanged 566 independent unaccounted source identities and external verification blockers. This iteration reads the remaining 72 literal 0020 source-line roles and adds a constrained automated *classification proposal*: 41 citation/source-inventory/context lines, 27 structural headings or separators, three ASCII file-tree display lines and one dated source-size statistic. These labels aid qualified review and establish NO materiality exclusion, source termination, authenticated author or semantic preservation. The one dated count remains a source-era fact, not a present product metric. New exact-SHA CI required. No changes to production code or public Science in this small Work-only refinement. Same single Commission/State and physical-reset limitation; entire Work remains PARTIAL.
+
+---
+
+
 ## Verified research-route checkpoint — 2026-10-13, 0020 and 0046
 
 At exact main@ade409f80d8ac27b81eb76dfb192891cdc739291, [GitHub Actions 38382872928](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382872928) **SUCCESS**, following documented unsuccessful [38382746155](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382746155) whose source-case/overlap test oracle was corrected. The active 115-file public-safe Knowledge Product now has six new exact original 0046 units (unspanned nonblank 62 to 11 top-level headings) and seven original 0020 units (unspanned 234 to 72, with bibliography, heading, file-tree and possible other residue still materiality-unreviewed). Total 13 new exact original-span units; existing Science/Current HOW gained dated owner-specific interpretation, conditional physical architecture and explicit negative qualifications. All these findings remain producer provenance geometry, **not independent material or reverse semantic certification**. CI passed the direct actual-FRG API fake-domain witness, 11 LCD candidate fragment packets and 14 fake probe functions. No product source changed.

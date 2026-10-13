@@ -90,12 +90,32 @@ def run() -> dict:
     after = nonblank - covered
     assert len(before) == 234, len(before)
     assert len(after) == 72, len(after)
+    source_inventory = {n for n in after if 1684 <= n <= 1735}
+    dated_size = {64}
+    file_tree_fragments = {106, 107, 136}
+    structural = after - source_inventory - dated_size - file_tree_fragments
+    assert len(source_inventory) == 41, sorted(source_inventory)
+    assert len(dated_size) == 1 and dated_size <= after
+    assert len(file_tree_fragments) == 3 and file_tree_fragments <= after
+    assert len(structural) == 27, sorted(structural)
+    assert all(source[n-1].strip().startswith("#")
+               or source[n-1].strip() == "---" for n in structural)
+    assert len(source_inventory | dated_size | file_tree_fragments | structural) == 72
+    # This is triage of line *roles*, not source meaning dispositions.
+    role_bins = {
+        "historical_code_size_line": len(dated_size),
+        "file_tree_display_lines": len(file_tree_fragments),
+        "structure_heading_delimiter_lines": len(structural),
+        "bibliography_and_evidence_inventory_lines": len(source_inventory),
+        "role_triage_authority": "PRODUCER_PROVISIONAL_NOT_INDEPENDENT",
+    }
     return {
         "verdict": "PRODUCER_FROZEN_0020_SOURCE_ROUTES_STRUCTURAL_ONLY",
         "original_source_lines": len(source),
         "new_exact_span_units": len(added),
         "prior_unspanned_nonblank_lines": len(before),
         "remaining_unspanned_nonblank_lines": len(after),
+        "unspanned_line_role_triage": role_bins,
         "independent_semantic_review": "OPEN",
         "source_material_state": "unaccounted",
         "native_runtime_conformance": "UNEXECUTED",
