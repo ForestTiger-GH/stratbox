@@ -1,5 +1,8 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Verified bounded original-span reconciliation — 2026-10-13:** [Actions 38382872928](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382872928), exact main@ade409f80d8ac27b81eb76dfb192891cdc739291 **SUCCESS** after correcting an intermediate verifier failure. Maintained Science now traces six previously unaddressed source-0046 system ownership/visual/diagnostic spans and seven source-0020 local-feature/physical-alternative spans. Two scoped nonblank gap geometries moved **62 to 11** and **234 to 72**; these are producer-built line addressing counts, not overall 53-original semantic certification. Existing whole-program gate snapshot is being enhanced to expose both checks explicitly (new exact SHA CI pending). Knowledge remains **115 Markdown documents**, 11 candidate LCD packets; independent Research review/Amputation, owner Product Decisions and installed host/native platforms are OPEN.
+
+
 **Producer Windows 0020 source routing (2026-10-13, own exact-SHA CI pending):** seven exact original Research spans for local background/presence/assignment scaffolds, managed foreground activation, dated implementation evidence, Android portability alternative and static-only research limits now route into the maintained [client Science](science/surfaces/semantic-portability-and-client-authority.md) and dated Current HOW. Ten previously selected ledger scopes had 234 unspanned nonblank lines; expected producer route geometry after this addition is 72, which still needs material evaluation. No independent Research lossless pass, Product Decision or hosted native claim is issued.
 
 

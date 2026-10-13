@@ -11,3 +11,7 @@ Exact new-commit CI must pass to qualify even this structural claim.
 ## Checker failure and audit-oracle repair
 
 At exact main@1d8b519eb8e9b4d367c9b61120254967f1e224f4 [Actions 38382746155](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382746155) **FAILED** specifically because item 07 matched a Russian source phrase case-sensitively; this is a checker-text defect. The same correction also changes the pre-change denominator from a subtract-new-ranges trick (incorrect for overlapping old/new spans) to two explicit old-only and old-plus-new covered sets. This guards real geometry comparisons rather than manufacturing a source gap reduction. New exact-SHA CI remains required; this does not change published Science or make a semantic independence claim.
+
+## Confirmed exact-version test after input-oracle repair
+
+main@ade409f80d8ac27b81eb76dfb192891cdc739291 [Actions 38382872928](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382872928) SUCCESS: source 0020 physical 1,742 lines, seven new exact units, ten prior bounded named ledgers 234 unspanned nonblank, after amendment 72. The previous 1d8b519e-run failure reflected test case-sensitivity; the later correct checker keeps old-only/new-inclusive covered sets separate. Remaining 72 still require role-appropriate substantive review, and no independent original material state changes.

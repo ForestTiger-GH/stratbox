@@ -15,3 +15,7 @@ Added **six** detailed original-span entries `SB-U-0046-111..116` to the existin
 **Limit:** the same producer authored Science, routes and executable checks. Code/marker coverage may pass while a real human finds omitted nuance, conflicting authority, misleading wording or a new external contract. The complete 0046 original and all 53 substantive Research sources still need qualified independent source-first and reverse checks. The frozen 566-source `CENSUS.csv` retains `unaccounted` dispositions. Publication remains public-safe and neutral; no closed implementation information, Windows/core code or external platform files were changed.
 
 **Own commit:** CI must run at the exact new HEAD before even the structural 11-heading residue proof can be called executed.
+
+## Confirmed exact-version test
+
+main@52d9fd3de2812d48b1ac122a529155dc693a7f02 [Actions 38382089093](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382089093) SUCCESS: reported 1,878 original lines, six new source units and 11 unspanned nonblank top-level headings under the explicitly named 0046 ledgers. Not independent semantic lossless assurance. A later checkpoint incorporates this scoped result into the unified Work Program gate report, pending its own CI.

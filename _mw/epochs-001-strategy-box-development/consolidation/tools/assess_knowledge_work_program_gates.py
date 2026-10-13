@@ -16,6 +16,8 @@ from collections import Counter
 from pathlib import Path
 
 from validate_source_first_assessor_handoff import packet as independent_packet, validate_response
+from verify_system_model_0046_residual_material_routes import run as verify_0046_material_routes
+from verify_windows_0020_residual_semantics import run as verify_0020_material_routes
 
 ROOT = Path(__file__).resolve().parents[4]
 BASE = ROOT / "_mw/epochs-001-strategy-box-development/consolidation"
@@ -176,6 +178,10 @@ def main() -> dict:
     original_first = check_source_first_original_handoff(
         head, bundles["knowledge_inner_zip_sha256"])
     native_posix = check_native_posix_evidence(head)
+    source_route_0046 = verify_0046_material_routes()
+    source_route_0020 = verify_0020_material_routes()
+    assert source_route_0046["remaining_unspanned_nonblank_lines"] == 11
+    assert source_route_0020["remaining_unspanned_nonblank_lines"] == 72
     assert sources["substantive_research_not_full_read"] == []
     # This program can PROVE OPEN through explicit census evidence.
     # It has no authority to infer that an absent human review is completed.
@@ -191,10 +197,16 @@ def main() -> dict:
         "reproducible_deliverables": bundles,
         "original_first_review_request": original_first,
         "bounded_native_posix_evidence": native_posix,
+        "bounded_recent_original_span_addressing": {
+            "system_0046": source_route_0046,
+            "windows_0020": source_route_0020,
+            "scope": "PRODUCER_PROVENANCE_GEOMETRY_ONLY_NOT_SEMANTIC_CERTIFICATION",
+        },
         "gates": {
             "source_identity_census": "PASS_EXACT_FROZEN_566",
             "all_53_substantive_research_read_producer": "PASS_PRODUCER_READ_STATE_ONLY",
             "all_material_meaning_independently_disposed": "BLOCKED_566_UNACCOUNTED",
+            "original_0020_0046_recent_source_span_routes": "CI_PRODUCER_STRUCTURAL_ONLY",
             "source_reverse_semantic_certification": "NO_AUTHORIZED_INDEPENDENT_RECEIPT",
             "knowledge_archive_structural_navigation": "PASS_BOUNDED_CHECKS",
             "question_only_22_case_independent_handoff": "PREPARED_NOT_ADMINISTERED",
