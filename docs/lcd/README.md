@@ -103,6 +103,10 @@ When a schema or IDL is the canonical owner, generated class/interface boilerpla
 
 These are **candidate pilot routes**. Their associated mechanisms and test vectors remain at their existing statuses until independently challenged and authorized. Do not create a mandatory LCD file per Scenario, Python module or Research topic.
 
+## Product offering projection — bounded October 13 follow-on
+
+The [domain Operation → curated product offering LCD](application/domain-operation-product-projection-construction.md) addresses a distinct application seam between direct callable analytical core and consumer-facing operation/scenario forms. It provides concrete versioned Python records, typed ports, parameter compilation and suggested negative tests. This is **LCD_CANDIDATE** for a local fake and **LCD_BLOCKED** for the accepted global catalog, trusted live defaults or deployment. It **does not** expand Product Authority or replace the existing ten packets.
+
 ## Scoped software-construction packets — 2026-10-12 continuation
 
 Ten concrete, **documentation-only** packets now complement the assembly contract. Their program skeletons are candidates, not source changes, independently verified implementations, or accepted APIs.
