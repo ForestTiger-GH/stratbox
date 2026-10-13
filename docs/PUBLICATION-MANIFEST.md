@@ -1,5 +1,8 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Producer fake probe exact-SHA result and integrity correction (2026-10-13):** main@91829771e0fc26a9923132e12be68a7174308788 [CI 38370737513](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370737513) SUCCESS for 115 Markdown documents, 11 candidate LCD AST coverage packets and 14 synthetic probe functions. Additional bounded compiler guards now require domain validation to preserve approved fixed offering values and canonical sealing to return the installed definition revision; their new exact-revision CI is still pending. This changes neither product implementation nor the independent source, Product Decision or native-platform gates.
+
+
 **2026-10-13 candidate verification update (new exact-SHA CI pending):** the established Work-only fake-port LCD candidate runner now includes the eleventh domain-to-offering packet. It tests compiled version bindings, forbidden/unknown fields, contextual defaults, catalog consistency, domain validation, exact sealed bytes and allowlisted client DTO. All 115 Knowledge Markdown documents remain standalone; tests are producer-designed and do not constitute independent Research losslessness, host authorization, real Windows/Web/Android proof or completed Product Decisions.
 
 

@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## 2026-10-13 continuation — installed validator and sealer consistency corrections
+
+Exact main@91829771e0fc26a9923132e12be68a7174308788 [CI 38370737513](https://github.com/ForestTiger-GH/stratbox/actions/runs/38370737513) SUCCESS: 115 Knowledge Markdown, eleven literal-AST LCD packets, fourteen synthetic probe functions, fourteen Product Offering negative cases. This continuation adds compiler fail-closed integrity checks for (1) a domain normalizer returning an altered previously fixed offering value and (2) a sealed result returning a schema revision different from the exact installed domain definition. Its candidate default service now advances context revision on relevant default changes and stale client revisions are refused. All remain producer-authored design fakes; next exact-SHA CI must be verified. Source semantic independence 566 UNACCOUNTED; 53 source-first and 22 blind cases externally UNEXECUTED, Product Decisions and installed host/native acceptance OPEN. Product/runtime source unchanged; no private extension specifics. Same Commission and single State; physical reset unavailable.
+
+---
+
+
 ## Current transition — 2026-10-13, eleventh LCD behavior runner candidate
 
 Entering main@ebf1c5050575d44fb34aa702626a2775c4631dca; exact [CI 38359988560](https://github.com/ForestTiger-GH/stratbox/actions/runs/38359988560) SUCCESS (115 Knowledge Markdown, 11 candidate LCD, 566 frozen source identities). Extended the existing documented-AST fake-port probe runner to exercise Domain Operation → Product Offering compiler, negative forgeries/revision/permission separations and immutable sealed-byte snapshots. Own new SHA and CI pending, so execution verdict remains provisional. No production code or protected extension material changed. All 566 original identities remain independently unaccounted; original-first 53 and blind 22 external assessments remain absent, as do target-host/native platform implementation evidence and Product Decisions. Same authoritative State; single Commission; logical rehydration; physical reset unavailable. Status PARTIAL / CONTINUING.

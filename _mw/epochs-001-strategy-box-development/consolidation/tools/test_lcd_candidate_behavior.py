@@ -1945,6 +1945,7 @@ def probe_product_offering() -> dict:
         calls = 0
         last = None
         deny = False
+        corrupt_fixed = False
         def exact(self, op, rev):
             return self.current
         def validate_effective(self, binding, values):
@@ -1952,7 +1953,10 @@ def probe_product_offering() -> dict:
             self.last = dict(values)
             if self.deny or not isinstance(values.get("period"), str):
                 raise d["ProjectionError"](fail.INVALID_PARAMETERS)
-            return dict(values)
+            result = dict(values)
+            if self.corrupt_fixed:
+                result["output_kind"] = "unexpected"
+            return result
     token = object()
     class Defaults:
         revision = "context-1"
@@ -1962,12 +1966,14 @@ def probe_product_offering() -> dict:
             return self.revision, dict(self.values)
     class Sealer:
         calls = 0
+        wrong_revision = False
         def seal(self, values, schema_revision):
             self.calls += 1
             raw = json.dumps({"revision": schema_revision, "values": dict(values)},
                              sort_keys=True, separators=(",", ":"),
                              allow_nan=False).encode("utf-8")
-            return Sealed(raw, hashlib.sha256(raw).hexdigest(), schema_revision)
+            return Sealed(raw, hashlib.sha256(raw).hexdigest(),
+                          "wrong-schema" if self.wrong_revision else schema_revision)
     catalog, installed, defaults, sealer = (
         Catalog(), Installed(), Defaults(), Sealer())
     compiler = d["ProductInvocationCompiler"](
@@ -2033,6 +2039,28 @@ def probe_product_offering() -> dict:
         raise AssertionError("domain validator denial ignored")
     installed.deny = False
 
+    # Validator/coercer must not relax server-fixed offering restrictions.
+    installed.corrupt_fixed = True
+    prior_seals = sealer.calls
+    try:
+        compiler.compile(form(), trusted_context=token)
+    except d["ProjectionError"] as ex:
+        assert ex.reason is fail.INVALID_PARAMETERS
+    else:
+        raise AssertionError("domain validator rewrote a fixed parameter")
+    assert sealer.calls == prior_seals
+    installed.corrupt_fixed = False
+
+    # Exact revision of the sealed snapshot is a contract, not a suggestion.
+    sealer.wrong_revision = True
+    try:
+        compiler.compile(form(), trusted_context=token)
+    except d["ProjectionError"] as ex:
+        assert ex.reason is fail.BINDING_MISMATCH
+    else:
+        raise AssertionError("wrong schema revision sealed into invocation")
+    sealer.wrong_revision = False
+
     catalog.current = make_offering("chart", "chart-v1")
     second = compiler.compile(
         form({"period": "2026-08"}, "chart", "chart-v1"),
@@ -2051,11 +2079,17 @@ def probe_product_offering() -> dict:
     assert not hasattr(first, "actor")
     old_bytes = first.parameters.canonical_bytes
     defaults.values = {"period": "2026-09"}
+    defaults.revision = "context-2"
+    rejects(form(name="chart", revision="chart-v1"), fail.CONTEXT_CHANGED)
     newest = compiler.compile(
-        form(name="chart", revision="chart-v1"), trusted_context=token)
+        form(name="chart", revision="chart-v1", ctx="context-2"),
+        trusted_context=token)
     assert newest.parameters.canonical_bytes != old_bytes
     assert first.parameters.canonical_bytes == old_bytes
-    return {"negative_rejection_cases": cases + 1,
+    return {"negative_rejection_cases": cases + 4,
+            "post_normalization_fixed_value_guard": True,
+            "sealed_schema_revision_guard": True,
+            "default_generation_requires_context_revision_refresh": True,
             "two_offerings_one_core": True,
             "fixed_field_and_binding_not_in_public_dto": True,
             "sealed_bytes_stable_when_defaults_change": True,

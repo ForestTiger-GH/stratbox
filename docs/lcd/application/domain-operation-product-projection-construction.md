@@ -155,6 +155,8 @@ class CanonicalParametersPort(Protocol):
              definition_revision: str) -> SealedParameters: ...
 ~~~
 
+The **domain normalizer must retain all fixed offering values exactly** after validation; type coercion applies only where the admitted typed schema permits it. The compiler checks this boundary before sealing and rejects a sealer result whose schema revision differs from the exact installed definition. A trusted context revision must be scoped to the relevant actor/resource/default generation and advance whenever effective defaults or relevant scope change; a constant revision cannot demonstrate freshness. These checks still do not grant host effect authority.
+
 The **canonical sealer** must reject nonportable objects, unbounded nested data, NaN/nonfinite numbers, ambiguous dates/units, duplicate/unknown keys, sensitive values and mutable references unless an approved typed schema provides an explicit representation. It produces an immutable bytes snapshot under versioned canonicalization, with the hash over exactly those bytes and relevant schema/domain revision identity. This is a **candidate local application record**, not a public wire format. File/resource input must resolve to an authorized scoped reference through the host/security boundary, not an arbitrary client pathname.
 
 ~~~python
@@ -211,8 +213,15 @@ class ProductInvocationCompiler:
         merged.update(offering.fixed_values)
         # Domain validator checks required values, units, types, resources,
         # effect target boundaries, semantic and period applicability.
-        validated = self.installed.validate_effective(binding, merged)
+        validated = dict(self.installed.validate_effective(binding, merged))
+        # A domain normalizer may coerce user values but cannot erase a
+        # trusted fixed offering restriction or silently replace its value.
+        if any(key not in validated or validated[key] != value
+               for key, value in offering.fixed_values.items()):
+            raise ProjectionError(ProjectionFailure.INVALID_PARAMETERS)
         sealed = self.sealer.seal(validated, binding.definition_revision)
+        if sealed.schema_revision != binding.definition_revision:
+            raise ProjectionError(ProjectionFailure.BINDING_MISMATCH)
         return ResolvedProductInvocation(
             offering.offering_id, offering.offering_revision,
             binding.operation_id, binding.definition_revision,
