@@ -68,8 +68,9 @@ def run() -> dict:
         assert match
         lo, hi = int(match[1]), int(match[2])
         body = "\n".join(source[lo-1:hi])
-        assert all(phrase in body for phrase in phrases), key
+        assert all(phrase.casefold() in body.casefold() for phrase in phrases), key
         newly.update(range(lo, hi + 1))
+    covered_prior = set()
     covered = set()
     for fname in OLD + (NEW,):
         for row in rows(fname):
@@ -79,9 +80,13 @@ def run() -> dict:
             if m:
                 lo, hi = int(m[1]), int(m[2] or m[1])
                 assert 1 <= lo <= hi <= len(source)
-                covered.update(range(lo, hi + 1))
+                selected = set(range(lo, hi + 1))
+                covered.update(selected)
+                if fname != NEW:
+                    covered_prior.update(selected)
     nonblank = {i for i, line in enumerate(source, 1) if line.strip()}
-    before = nonblank - (covered - newly)
+    before = nonblank - covered_prior
+    assert newly <= covered
     after = nonblank - covered
     assert len(before) == 234, len(before)
     assert len(after) == 72, len(after)

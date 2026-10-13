@@ -1,5 +1,12 @@
 # Consolidation Work State
 
+## 2026-10-13 correction — Windows original 0020 source checker oracle
+
+Original Windows residual source-route commit main@1d8b519eb8e9b4d367c9b61120254967f1e224f4 has [CI 38382746155](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382746155) **FAILURE** at the new 0020 verifier step (earlier unrelated steps passed; later steps were skipped). The exact failure was the test's case-sensitive source phrase for the original Russian capitalized word at item 07; it did not establish a Science defect. Separately corrected a potential overlap-accounting error in the pre-change denominator by computing prior covered spans explicitly from the ten OLD ledgers instead of subtracting the entire new unit range from a union. New commit CI pending; no PASS asserted until new exact SHA succeeds. The Work remains 566 independent material source states unaccounted, 53 original-first reviews and 22 blind-reader cases externally absent, host/native and owner Product Decisions still open. Public Knowledge/production modules unchanged by this correction.
+
+---
+
+
 ## Current transition — 2026-10-13, original 0020 residual source-span challenge
 
 Incoming main@52d9fd3de2812d48b1ac122a529155dc693a7f02; [Actions 38382089093](https://github.com/ForestTiger-GH/stratbox/actions/runs/38382089093) SUCCESS for six new exact original System Model 0046 provenance spans and the 11-heading structural residue. Next, original Windows Research SB-SRC-0020 was read in dated sections against ten existing Work ledgers and maintained Science/Current HOW. Seven new source units cover missing address spans for current-surface background, local presence/assignments, managed local platform activation, dated code/Git assessment, candidate Qt-free/Android directory reuse and static-only evidence limitations. Source geometry intended 234 → 72 unspanned nonblank lines, NOT zero missing meaning or independent signoff. Existing portability Science amended to retain original conditional tree and its disconfirming shared-host countercase. Own new exact-SHA CI pending. One Commission and State; no product changes; 566 independent source dispositions unaccounted, 22 blind cases unanswered, 53 original-first independent reviews absent; actual host/native and owner Product Decisions blocked.
