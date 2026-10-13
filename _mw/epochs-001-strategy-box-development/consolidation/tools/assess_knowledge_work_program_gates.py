@@ -15,6 +15,8 @@ import zipfile
 from collections import Counter
 from pathlib import Path
 
+from validate_source_first_assessor_handoff import packet as independent_packet, validate_response
+
 ROOT = Path(__file__).resolve().parents[4]
 BASE = ROOT / "_mw/epochs-001-strategy-box-development/consolidation"
 DOCS = ROOT / "docs"
@@ -114,6 +116,29 @@ def check_archives(expected_commit: str) -> dict:
     }
 
 
+def check_source_first_original_handoff(expected_commit: str, expected_knowledge_hash: str) -> dict:
+    """Read exact 53-original review request without claiming a reviewer exists."""
+    roster, template, manifest = independent_packet()
+    assert roster["publication_commit"] == expected_commit
+    assert manifest["git_commit"] == expected_commit
+    assert roster["knowledge_sha256"] == expected_knowledge_hash
+    outcome = validate_response(template, roster)
+    assert outcome["classification"] == "BLANK_UNEXECUTED_TEMPLATE"
+    assert outcome["claims_of_reviewed_sources"] == 0
+    assert outcome["global_losslessness"] == "NOT_CERTIFIED"
+    return {
+        "source_first_original_ids": 53,
+        "source_first_response_record_count": outcome["source_records"],
+        "source_first_assessor_reviews_received": 0,
+        "independent_reviewer_identity_authentication": "UNEXECUTED",
+        "original_to_science_meaning_attestation": "UNEXECUTED",
+        "source_first_handoff": "PREPARED_NOT_ADMINISTERED",
+        "other_census_source_roles": "513_REMAIN_SEPARATE",
+        "source_first_packet_exact_publication_binding": True,
+        "whole_program_completion": "BLOCKED",
+    }
+
+
 def check_native_posix_evidence(expected_commit: str) -> dict:
     path = ROOT / "native_storage_fault_audit.json"
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -147,20 +172,23 @@ def main() -> dict:
     head = commit()
     sources = read_census()
     bundles = check_archives(head)
+    original_first = check_source_first_original_handoff(
+        head, bundles["knowledge_inner_zip_sha256"])
     native_posix = check_native_posix_evidence(head)
     assert sources["substantive_research_not_full_read"] == []
     # This program can PROVE OPEN through explicit census evidence.
     # It has no authority to infer that an absent human review is completed.
     global_pass = sources["source_identities_with_unresolved_material"] == 0
     assert not global_pass, (
-        "No independent material-review receipt validator is defined; "
-        "never silently allow automated whole-corpus PASS")
+        "An input-integrity validator exists, but independently authenticated "
+        "whole-corpus material-verification receipts have NOT been supplied")
     data = {
         "git_commit": head,
         "classification": "PRODUCER_MACHINE_CHECKED_GATE_SNAPSHOT",
         "status": "PARTIAL_WITH_EXTERNAL_INDEPENDENT_AND_IMPLEMENTATION_GATES",
         "frozen_source_population": sources,
         "reproducible_deliverables": bundles,
+        "original_first_review_request": original_first,
         "bounded_native_posix_evidence": native_posix,
         "gates": {
             "source_identity_census": "PASS_EXACT_FROZEN_566",
@@ -169,6 +197,8 @@ def main() -> dict:
             "source_reverse_semantic_certification": "NO_AUTHORIZED_INDEPENDENT_RECEIPT",
             "knowledge_archive_structural_navigation": "PASS_BOUNDED_CHECKS",
             "question_only_22_case_independent_handoff": "PREPARED_NOT_ADMINISTERED",
+            "source_first_53_original_request": "PREPARED_NOT_ADMINISTERED",
+            "source_first_53_original_response_input_checks": "PASS_STRUCTURAL_ONLY",
             "blind_independent_knowledge_consumer_review": "UNEXECUTED",
             "independent_original_first_reverse_check": "UNEXECUTED",
             "ten_lcd_candidate_fragment_probes": "CI_PRODUCER_FAKE_ONLY",
@@ -203,5 +233,7 @@ if __name__ == "__main__":
         "status": out["status"],
         "gates": out["gates"],
         "question_count": out["reproducible_deliverables"]["questionnaire_cases"],
+        "original_first_requests": out["original_first_review_request"]["source_first_original_ids"],
+        "independent_original_reviews_received": out["original_first_review_request"]["source_first_assessor_reviews_received"],
         "unaccounted": out["frozen_source_population"]["source_identities_with_unresolved_material"],
     }, ensure_ascii=False))
