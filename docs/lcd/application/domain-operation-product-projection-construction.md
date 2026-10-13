@@ -1,14 +1,14 @@
 # LCD candidate — domain Operation to product offering projection
 
-**Grade:** \`LCD_CANDIDATE\` for a bounded Qt-independent operation-to-offering construction and cold-implementer fake; \`LCD_BLOCKED\` for a globally canonical domain registry, actual hosted publication/admission, dynamic provider trust and cross-platform release. **Edition:** 2026-10-13. **All Python below is CANDIDATE_DESIGN documentation, not existing Strategy Box source, an adopted public API or a runnable production feature.**
+**Grade:** `LCD_CANDIDATE` for a bounded Qt-independent operation-to-offering construction and cold-implementer fake; `LCD_BLOCKED` for a globally canonical domain registry, actual hosted publication/admission, dynamic provider trust and cross-platform release. **Edition:** 2026-10-13. **All Python below is CANDIDATE_DESIGN documentation, not existing Strategy Box source, an adopted public API or a runnable production feature.**
 
 **Consumer and authority.** The admitted architectural constraints are an independently callable analytical **stratbox** core, a separate Strategy Box application/presentation responsibility and an external managed platform boundary. The developer goal of a larger discoverable product-operation catalog is recorded as **U-01**, with the exact catalog ontology, stable IDs, exposure policy and physical package location still open in [Product commitments](../../what/strategy-box/commitment-census.md). A planned logical common host exists as a product direction; creating a separate physical **stratbox-application** repository is still a Product/Engineering Decision. The [application allocation](../../architecture/application-authority-placement.md), [Target HOW-A](../../how/application/invoke-and-interpret.md) and [capability Science](../../science/capabilities/composition-identity-and-user-machine-projections.md) constrain this design. The [local Scenario LCD](local-scenario-execution-construction.md) owns execution, the [host LCD](../hosting/host-authority-and-client-contract-construction.md) owns authoritative hosted admission, and the [machine LCD](../capabilities/curated-machine-operation-adapter-construction.md) owns any approved machine projection. This packet owns **only** the missing domain-definition → curated product-offering → validated invocation seam.
 
 ## 1. Exact brownfield limit and motivation
 
-At the pinned Windows implementation revision \`959e9c4ce1441124af5111c1e025041714e04d3b\`, **OperationSpec** in \`application/operations/catalog/models.py\` mixes product title/group, presentation controls, handler string, fixed values, workspace and danger flags. **OperationParamSpec** describes six basic field types; **build_operation_registry** statically defines three product operations. **resolve_params()** merges defaults and arbitrary supplied keys, then overlays fixed values; its implementation alone does **not** validate unknown keys, field applicability, effect permission or a stable core domain definition. One composite Scenario and an atomic wrapper reuse these specifications, but this is not a verified universal domain catalog.
+At the pinned Windows implementation revision `959e9c4ce1441124af5111c1e025041714e04d3b`, **OperationSpec** in `application/operations/catalog/models.py` mixes product title/group, presentation controls, handler string, fixed values, workspace and danger flags. **OperationParamSpec** describes six basic field types; **build_operation_registry** statically defines three product operations. **resolve_params()** merges defaults and arbitrary supplied keys, then overlays fixed values; its implementation alone does **not** validate unknown keys, field applicability, effect permission or a stable core domain definition. One composite Scenario and an atomic wrapper reuse these specifications, but this is not a verified universal domain catalog.
 
-The pinned core FRG API \`run_frg_stage1(root_dir, *, recursive=False, filestore=None) -> dict[str, object]\` returns catalog/latest/dispatch tables. A domain method and an application offering therefore have different consumers and completeness standards. Other core domains already use richer typed Requests/Results. A global operation registry is **not** entailed by these differences; first prove a stable binding for one real operation, with notebook calls untouched. Prior design alternatives—direct handwritten product wrappers, a limited explicit catalog, and fully automatic Python reflection—have different cost/trust profiles. Automatic exposure of every callable is rejected as unsafe and semantically indiscriminate.
+The pinned core FRG API `run_frg_stage1(root_dir, *, recursive=False, filestore=None) -> dict[str, object]` returns catalog/latest/dispatch tables. A domain method and an application offering therefore have different consumers and completeness standards. Other core domains already use richer typed Requests/Results. A global operation registry is **not** entailed by these differences; first prove a stable binding for one real operation, with notebook calls untouched. Prior design alternatives—direct handwritten product wrappers, a limited explicit catalog, and fully automatic Python reflection—have different cost/trust profiles. Automatic exposure of every callable is rejected as unsafe and semantically indiscriminate.
 
 **Current-to-target delta:** retain the independently imported core domain function and proven user-visible form semantics; replace the implicit trust in app-supplied parameter dictionaries with an explicitly **versioned curated binding**, **separate user presentation**, **server-side sealing of effective inputs**, and **host effect authorization**. Existing user history is a dated observation, not a promise to reinterpret old cases under new defaults.
 
@@ -103,6 +103,13 @@ class FormSuggestion:
     # Advisory and audience-scoped; it grants no authority.
 
 @dataclass(frozen=True, slots=True)
+class PublicOfferingView:
+    offering_id: str
+    offering_revision: str
+    fields: tuple[PublicField, ...]
+    # Safe rendering identity/labels only: no fixed inputs or bindings.
+
+@dataclass(frozen=True, slots=True)
 class ProductFormSubmission:
     offering_id: str
     offering_revision: str
@@ -168,6 +175,9 @@ class ProductInvocationCompiler:
         # Port errors are mapped to typed safe failures by the adapter.
         offering = self.offerings.exact(
             request.offering_id, request.offering_revision)
+        if (offering.offering_id != request.offering_id
+                or offering.offering_revision != request.offering_revision):
+            raise ProjectionError(ProjectionFailure.STALE_OFFERING)
         binding = self.installed.exact(
             offering.domain_operation_id, offering.domain_definition_revision)
         if (not binding.installed
@@ -181,10 +191,10 @@ class ProductInvocationCompiler:
                 or allowed != set(offering.permitted_user_keys)
                 or allowed.intersection(offering.fixed_values)):
             raise ProjectionError(ProjectionFailure.INVALID_PARAMETERS)
-        if set(request.user_values) - allowed:
-            raise ProjectionError(ProjectionFailure.UNKNOWN_PARAMETER)
         if set(request.user_values).intersection(offering.fixed_values):
             raise ProjectionError(ProjectionFailure.FORBIDDEN_PARAMETER)
+        if set(request.user_values) - allowed:
+            raise ProjectionError(ProjectionFailure.UNKNOWN_PARAMETER)
 
         # 3. Trusted contextual defaults must be re-evaluated on the host.
         context_revision, defaults = self.defaults.resolve(
@@ -222,6 +232,12 @@ class AuthorizedOfferingViewPort(Protocol):
                     offering: ProductOffering,
                     trusted_context: object) -> FormSuggestion: ...
 
+def safe_public_view(offering: ProductOffering) -> PublicOfferingView:
+    # Caller has already checked trusted actor read/discovery rights.
+    # Explicit allowlist, never blindly serialize the internal dataclass.
+    return PublicOfferingView(offering.offering_id,
+                              offering.offering_revision, offering.fields)
+
 # Pure semantic renderer in any Windows/Web/Android client:
 # render FormSuggestion + PublicField and send ProductFormSubmission.
 # Client state owns only form edits, loading/error feedback and read cursors.
@@ -229,7 +245,7 @@ class AuthorizedOfferingViewPort(Protocol):
 # The actual authentication/transport/display stack is intentionally unspecified.
 ~~~
 
-The client-visible projection must redact **fixed_values** and any protected binding metadata; the complete **ProductOffering** above is an internal application-authority record, so a real adapter must expose an explicit narrower DTO rather than serialize it whole. Displayability is never sufficient for effect admission. Stale form data receives a typed re-render/refresh outcome, not covert execution using new defaults. Form choices can be paginated/bounded but cannot remotely execute Python provider names.
+The client-visible projection must redact **fixed_values** and any protected binding metadata; the complete **ProductOffering** above is an internal application-authority record. **PublicOfferingView** and **safe_public_view** implement a minimal allowlisted DTO boundary; the transport must also filter offering visibility and validate field labels/options for audience safety. Displayability is never sufficient for effect admission. Stale form data receives a typed re-render/refresh outcome, not covert execution using new defaults. Form choices can be paginated/bounded but cannot remotely execute Python provider names.
 
 ## 5. Cold-implementer conformance plan — PROPOSED, UNEXECUTED
 
@@ -239,9 +255,8 @@ def test_unknown_client_parameter_is_rejected(compiler, forged_submission):
     assert compile_failure(compiler, forged_submission) == "unknown_parameter"
 
 def test_hidden_fixed_parameter_override_is_rejected(compiler, forged_fixed):
-    assert compile_failure(compiler, forged_fixed) == "unknown_parameter"
-    # A final adapter may use a distinct forbidden_parameter classification;
-    # disclosure-safe error policy must be chosen consistently.
+    assert compile_failure(compiler, forged_fixed) == "forbidden_parameter"
+    # The outward transport can map this to a coarser safe client error.
 
 def test_context_changed_requires_refresh(compiler, old_context_revision):
     assert compile_failure(compiler, old_context_revision) == "context_changed"

@@ -1,5 +1,13 @@
 # Consolidation Work State
 
+## CI corrective checkpoint — 2026-10-13, publication-count and candidate guard repair
+
+**Observed failure at exact Git HEAD:** `stratbox@42a0b218ac6fd53db34c032b1a1ec51b7a75bd71`, [Actions 38359834280](https://github.com/ForestTiger-GH/stratbox/actions/runs/38359834280) **FAILURE**. All preceding document-independent packaging and 53-source response-shape checks completed, but the existing Work Program gate asserted the historical fixed **114 Markdown** population after the edition legitimately grew to **115**. Later steps were **SKIPPED**, not passed. Corrective Work replaces this stale count with the actually enumerated doc population, retaining exact ZIP-vs-disk byte identity and all 566-source/53-original role checks. It also repairs the proposed LCD's backtick markup, explicit fixed-input override classification, exact offering-revision returned by port, and minimal safe public DTO. Existing ten source-fragment fake probes still cover only their named prior scopes; the eleventh product-offering pilot remains UNEXECUTED. New corrective HEAD and all its CI steps must be checked before a success claim.
+
+**No epistemic promotion:** 566/566 independent material states stay `unaccounted`; 22 blind consumer questions, 53 original-first reviews and Research Amputation remain undone. Host, real client and Product Decisions remain open. Documentation/Work tooling only, no production change. Same Commission, one authoritative STATE, logical reset, physical reset unavailable. Next: verify corrected exact-SHA CI, inspect new LCD Python fences, then independently challenge coding/authority semantics.
+
+---
+
 ## Current Transition Package — 2026-10-13, domain-to-product offering LCD seam proposed
 
 **Continuation of the same Knowledge Work Program.** Incoming exact `main@17881c64ceab9be8fa5d0050e150ece614a24a2b`, [Actions 38358741013](https://github.com/ForestTiger-GH/stratbox/actions/runs/38358741013) **SUCCESS**. The previously published ten LCD construction packages and cross-boundary matrix lacked a dedicated code-near consumer for the direct core domain Operation → curated product offering/form → host-validated invocation boundary. Read the pinned Windows OperationSpec/OperationParamSpec/registry, exact FRG core API, existing Science, WHAT/HOW/Architecture and LCD owners; created a **single bounded additional LCD candidate** with typed Python contracts, a parameter compiler, explicit authority split, negative tests and blocked-choice table. Updated the existing LCD handoff matrix and Knowledge navigation rather than creating a competing checkpoint or claiming new approval. Proposed **11th** LCD packet, not implementation; new HEAD's exact CI remains to be checked.
