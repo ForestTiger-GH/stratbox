@@ -25,3 +25,9 @@ CI uploads the new 53-original request artifact under `strategy-box-source-first
 - The public repositories remain implementation-neutral and all restricted contents stay outside this package.
 
 **Work status:** `PREPARED_FOR_INDEPENDENT_SOURCE_REVIEW / NOT_EXECUTED`; existing Work Program still `PARTIAL / CONTINUING`.
+
+## Receipt validation guardrail — 2026-10-13
+
+The existing exact-version source-first request remains a blank, unsigned invitation. To prevent the **review response carrier itself** from being mistaken for 53 completed source material checks, new Work-only `tools/validate_source_first_assessor_handoff.py` reads the actual current 53-ID ZIP and exact standalone Knowledge ZIP. It recomputes the included payload SHA-256s, verifies frozen 53 source IDs and 566-census denominator, verifies roster and response are initially unsigned/UNEXECUTED and checks seven tampered/incomplete **negative cases in memory only**. The test now runs between the generation of the source-first packet and the rest of the original workflow. No artificial positive assessor responses or signer identities are produced.
+
+When a separate authorized reviewer supplies a response file on their own machine, an optional `--response path.json` check can validate exact package version/IDs, blob comparison receipts and minimal claim-level fields, while still returning **`STRUCTURALLY_PRESENTED_REVIEW_REQUIRES_EXTERNAL_AUTHENTICATION`**. It **cannot** prove that a human did the reading, that answers are sound, that findings are safe to publish, that signer independence is genuine, or that the remaining 513 sources are accounted. The script **never** promotes the census, publishes raw responses, signs the review or issues a `LOSSLESS_PASS`. This is a producer-authored engineering input-integrity boundary only. New exact-SHA CI must confirm the test wiring.

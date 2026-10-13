@@ -70,6 +70,8 @@ jobs:
             dist/strategy-box-source-first-reviewer-roster.sha256
           if-no-files-found: error
           retention-days: 14
+      - name: Fail-closed checks of 53-original blank source-first reviewer packet (no reviewer simulated)
+        run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/validate_source_first_assessor_handoff.py
       - name: Characterize local SQLite Run+dispatch transaction crash windows (not deployed host)
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/test_native_sqlite_outbox_crash_characterization.py > native_sqlite_dispatch_audit.json
       - name: Characterize real POSIX path, staging and create-only races at exact Git revision (Linux only)
