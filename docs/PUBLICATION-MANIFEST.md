@@ -1,5 +1,8 @@
 # Strategy Box — standalone Knowledge publication manifest
 
+**Producer Windows 0020 source routing (2026-10-13, own exact-SHA CI pending):** seven exact original Research spans for local background/presence/assignment scaffolds, managed foreground activation, dated implementation evidence, Android portability alternative and static-only research limits now route into the maintained [client Science](science/surfaces/semantic-portability-and-client-authority.md) and dated Current HOW. Ten previously selected ledger scopes had 234 unspanned nonblank lines; expected producer route geometry after this addition is 72, which still needs material evaluation. No independent Research lossless pass, Product Decision or hosted native claim is issued.
+
+
 **Source conservation producer reconciliation — 2026-10-13 (own CI pending):** pinned original System Model `SB-SRC-0046` §12.2, §14.2 and §19 direct gaps were checked against maintained Science. Six new exact-span Work ledger rows and expanded [system Science](science/architecture/product-system-model-actors-and-repository-boundaries.md) preserve lost-confirmation-versus-domain-outcome distinctions, visual-token role set and granular ownership boundaries. For the two named 0046 Work ledgers, source line-addressing residue is expected to fall from 62 nonblank lines to **11 headings**; this does **not** certify complete original meaning or independent assent. Whole census remains 566 `unaccounted`; Product and native gates remain open.
 
 

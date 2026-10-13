@@ -286,6 +286,22 @@ The historical Windows source study also proposed an **ordered five-stage roadma
 
 **Cross-study ordering conflict:** staged cleanup is sensible for a local prototype, while the later admitted *logical* application-host direction and user-backed Web interest can bring identity, multi-client truth and actual host lifecycle forward. Resolve release sequence from accepted Product/Platform Decisions, a measured vertical and native tests, not from the old roadmap numbering. This producer review of the frozen Windows original retains all **five dated stage intentions** and their contrary cases, without treating the source's proposed module tree as the current directory structure.
 
+## Windows original 0020: the dated local scaffolds and a competing portability tree
+
+The 2026-10-06 Windows research separated **rendered product vocabulary** from the installed execution mechanism. Those distinctions remain valuable even after later acceptance of a planned host capability.
+
+| Original dated observation | Conserved limit |
+| --- | --- |
+| A Node information view and three declared background entries have enabled/status/last/next/error properties. | A node view is not a running shared application host; an enabled control cannot supply an unseen scheduler, restart recovery or actual background effect. |
+| Presence lists the current local user and historic Case authors with badges/visual metadata. | No remotely authenticated directory, network-presence subscription or live collaboration permission can be inferred. |
+| New local Cases can create a review-result assignment in JSON history. | The follow-up convention provides no recipient delivery, acceptance, comments, SLA or server-owned task. |
+| The desktop consumes substantial managed activation, paths, node/session information and diagnostics. | The **same pinned manifest** declares a local, foreground, Windows surface; the external platform's remote/mobile aspirations are not released Strategy Box features. |
+| The old study saw real domain-core isolation, Scenario/Case controls, a common semantic chat projector and degraded diagnostics. | Those are dated implementation positives, not native host conformance, reliable Job control or evidence of current release state. |
+
+**Preserved historical alternative.** The original §§91–92 proposed a Windows directory layout with application operations, scenarios, orchestration, jobs, Cases, artifacts, presence and assignments; Qt-independent runtime/context; separate desktop and external-environment adapters; a shared presentation/common layer; and Qt-specific rendering. It suggested later Android directory isomorphism for selected semantic segments and, once stable, possible extraction into a separate shared package. This option was sensible as *local toolkit separation*, but its **physical tree is a research sketch**, neither an authorized package map nor an instruction to duplicate application authorities between Windows, Web and Android. An admitted shared-host capability instead needs one accountable Run/effect/permission owner, transport-neutral client contracts and actual native evidence; the most suitable packaging remains an owner-held Product/Engineering Decision.
+
+**Historical evidence limit:** the source study examined pinned Git files and metadata and reported no full native Qt acceptance run. A direct, contradictory checked-in manifest versus smoke-test assertion can be established statically; a running installed release, deployment or domain correctness cannot. Source-era issue/release counts and commit age have no present-tense force.
+
 ## Original application note 0014 — dated Git launcher and core-embedded GUI model
 
 **Research-only provenance:** exact historical original, Git blob `c10ee7d96f24996f6480d95adf2b005c0651122e`, 125 physical lines. It proposed a self-updating Launcher and GUI co-located inside the analytical core; **the contemporary owner split and accepted host need differ**. Material original wishes about easy installation, FileStore-independence, transparent progress, logs, watcher reuse and graceful failure remain useful as qualified UX/reliability constraints. Original branch names, paths and EXE descriptions are not active Product Decisions.
