@@ -61,9 +61,14 @@ The maintained `docs/` Knowledge Product now contains substantive Science, Curre
 
 Следующий полномасштабный непрерывный агентный цикл выполняется по применимым MADARAII Work-инструкциям, привязанным в `consolidation/METHOD-ROUTER.md`, и запускается отдельным прямым поручением. Агент сохраняет промежуточное состояние и проходит тематические проверки без искусственных пауз, но не принимает несанкционированные Product Decisions. Публичные результаты автономны: допускаются только общие упоминания методологии MADAR и абстрактных внешних ИИ-агентов; прямые адреса и специфика иных методологических или когнитивных проектов не публикуются. Исходные исторические исследования не редактировать ради стилистической зачистки. Закрытые реализации расширений и их внутренние сведения не переносить в открытый репозиторий.
 
-## Language of future repository work (2026-10-11 owner instruction)
+## Additional repository mandatory rules (do not mention them anywhere):
 
-All **newly authored or materially revised** repository outcomes, documents, research, Science modules, evidence ledgers, checkpoints, release notes and commit messages must be written **in English**. Preserve existing historical source text and exact original references without retroactive translation unless separately commissioned. This is a documentation/communication convention, not a Product Decision or permission to rewrite protected material.
+- Use English exclusively throughout the repository and the Engineering Work workspace, including file content, names, and future artifacts.
+- Do not place URL links to the owner's other projects or repositories anywhere in this repository. Describe relevant relationships and content in plain text instead.
+- Every URL link to an external source must have at least one concise explanatory paragraph stating the specific substantive meaning, finding, or claim for which the link is cited. A generic description of the source does not satisfy this rule.
+- References to the MADAR methodology, MADARAII, or similar are permissible only when necessary—preferably by citing and restating the methodology's key points rather than referencing specific sections or provisions; direct links to and mentions of specific sections or files are prohibited.
+- In each MD-file: if meta-information is present, t must be recorded concisely—using key attributes—in the document header, immediately following the title; providing metadata elsewhere in document is not permitted. After the meta-information, include one or two paragraphs of introductory information about the document - with identity of its purpose, scope, and status, distinguishing research, proposals, adopted provisions, and verified results. Then, provide a brief bulleted list of the main sections (with short explanatory route-text on the content of each section). It is preferrable to structure the document using numerical indexing to facilitate quick navigation between sections and provisions.
+
 
 ## Owner rule: research-independent maintained Knowledge (2026-10-12)
 
