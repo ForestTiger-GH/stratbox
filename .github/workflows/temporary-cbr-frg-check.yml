@@ -64,4 +64,4 @@ jobs:
                           traceback.print_exc()
           PY
       - name: Regression tests
-        run: pytest -q tests/unit/macrobanks/cbr_forms tests/unit/macrobanks/test_frg_operations.py
+        run: pytest -q tests/unit/macrobanks/cbr_forms tests/unit/macrobanks/test_frg_operations.py tests/unit/macrobanks/test_frg_stream_archive.py
