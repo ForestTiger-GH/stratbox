@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import math
 import re
 import warnings
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from io import BytesIO
-from typing import Iterable
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -31,146 +28,17 @@ from stratbox.macrobanks.cbr_industries.schema import (
     resolve_cbr_0105a_debt_corp_sheet_spec,
 )
 from stratbox.macrobanks.cbr_industries.sources import report_date_from_cbr_0105a_filename
+from .streams import (
+    STREAM_COLUMNS, concat_cbr_0105a_debt_corp_streams,
+    optimize_cbr_0105a_debt_corp_stream_dtypes,
+)
+from .shared_parsing import (
+    _coerce_numeric_value, _non_empty_industry_headers,
+    _region_names, _validate_sheet_region_names,
+)
 
 
 _REPORT_DATE_RE = re.compile(r"(?<!\d)(\d{2})[./](\d{2})[./](\d{4})(?!\d)")
-_CATEGORY_COLUMNS = (
-    "series_code",
-    "report_date",
-    "sheet_code",
-    "measure",
-    "measure_name_ru",
-    "currency_scope",
-    "currency_scope_name_ru",
-    "unit",
-    "unit_name_ru",
-    "region_code",
-    "region_name",
-    "region_source_name",
-    "region_kind",
-    "federal_district_name",
-    "industry_code",
-    "industry_name_ru",
-    "industry_source_name",
-    "industry_parent_code",
-    "source_id",
-    "source_url",
-    "source_name",
-    "source_sha256",
-    "source_sheet_name",
-    "source_sheet_title",
-    "source_column",
-)
-
-STREAM_COLUMNS = (
-    "series_code",
-    "report_date",
-    "sheet_code",
-    "sheet_order",
-    "measure",
-    "measure_name_ru",
-    "currency_scope",
-    "currency_scope_name_ru",
-    "unit",
-    "unit_name_ru",
-    "region_code",
-    "region_name",
-    "region_source_name",
-    "region_kind",
-    "federal_district_name",
-    "region_order",
-    "industry_code",
-    "industry_name_ru",
-    "industry_source_name",
-    "industry_parent_code",
-    "industry_hierarchy_level",
-    "industry_order",
-    "value",
-    "source_id",
-    "source_url",
-    "source_name",
-    "source_sha256",
-    "source_sheet_name",
-    "source_sheet_title",
-    "source_row",
-    "source_column",
-)
-
-
-def optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream: pd.DataFrame) -> pd.DataFrame:
-    """Уплотняет измерения потока для полной месячной истории."""
-    stream = df_stream.copy()
-    for column in _CATEGORY_COLUMNS:
-        if column in stream.columns:
-            stream[column] = stream[column].astype("category")
-    integer_dtypes = {
-        "sheet_order": "int8",
-        "region_order": "int16",
-        "industry_hierarchy_level": "int8",
-        "industry_order": "int8",
-        "source_row": "int16",
-    }
-    for column, dtype in integer_dtypes.items():
-        if column in stream.columns:
-            stream[column] = stream[column].astype(dtype)
-    if "value" in stream.columns:
-        stream["value"] = pd.array(stream["value"], dtype="Float64")
-    return stream
-
-
-def _ordered_categories(frames: tuple[pd.DataFrame, ...], column: str) -> list[object]:
-    categories: list[object] = []
-    seen: set[object] = set()
-    for frame in frames:
-        if column not in frame.columns:
-            continue
-        series = frame[column]
-        values = (
-            series.cat.categories.tolist()
-            if isinstance(series.dtype, pd.CategoricalDtype)
-            else series.dropna().unique().tolist()
-        )
-        for value in values:
-            if pd.isna(value) or value in seen:
-                continue
-            seen.add(value)
-            categories.append(value)
-    return categories
-
-
-def concat_cbr_0105a_debt_corp_streams(
-    frames: Iterable[pd.DataFrame],
-) -> pd.DataFrame:
-    """Объединяет месячные потоки без распаковки категорий в тяжелый ``object``.
-
-    Pandas сохраняет categorical dtype только при одинаковом наборе категорий во
-    всех частях. Поэтому категории сначала выравниваются на небольших справочниках,
-    а затем выполняется concat.
-    """
-    frame_tuple = tuple(frame for frame in frames if frame is not None and not frame.empty)
-    if not frame_tuple:
-        return pd.DataFrame(columns=STREAM_COLUMNS)
-
-    category_dtypes: dict[str, pd.CategoricalDtype] = {}
-    for column in _CATEGORY_COLUMNS:
-        if any(column in frame.columns for frame in frame_tuple):
-            category_dtypes[column] = pd.CategoricalDtype(
-                categories=_ordered_categories(frame_tuple, column),
-                ordered=False,
-            )
-
-    aligned: list[pd.DataFrame] = []
-    for frame in frame_tuple:
-        current = frame.copy(deep=False)
-        for column, dtype in category_dtypes.items():
-            if column in current.columns:
-                current[column] = current[column].astype(dtype)
-        aligned.append(current)
-
-    stream = pd.concat(aligned, ignore_index=True)
-    return optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
-
-
 def _report_date_from_cell(value: object) -> str:
     if isinstance(value, datetime):
         return value.date().isoformat()
@@ -181,104 +49,6 @@ def _report_date_from_cell(value: object) -> str:
     if not match:
         raise ValueError(f"01_05_A_Debt_corp report date is not found in row 2: {value!r}")
     return date(int(match.group(3)), int(match.group(2)), int(match.group(1))).isoformat()
-
-
-def _coerce_numeric_value(value: object, *, coordinate: str, sheet_name: str) -> int | float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        raise ValueError(
-            f"Boolean value in 01_05_A_Debt_corp data cell: sheet={sheet_name!r}, cell={coordinate}"
-        )
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError(
-                f"Non-finite value in 01_05_A_Debt_corp: sheet={sheet_name!r}, cell={coordinate}"
-            )
-        return int(value) if value.is_integer() else value
-
-    text = str(value).replace("\xa0", " ").strip()
-    if not text:
-        return None
-    normalized = text.replace(" ", "").replace(",", ".")
-    try:
-        number = Decimal(normalized)
-    except InvalidOperation as exc:
-        raise ValueError(
-            "Non-numeric value in 01_05_A_Debt_corp data cell: "
-            f"sheet={sheet_name!r}, cell={coordinate}, value={value!r}"
-        ) from exc
-    if not number.is_finite():
-        raise ValueError(
-            f"Non-finite value in 01_05_A_Debt_corp: sheet={sheet_name!r}, cell={coordinate}"
-        )
-    if number == number.to_integral_value():
-        return int(number)
-    return float(number)
-
-
-def _non_empty_industry_headers(
-    sheet_rows: list[tuple[object, ...]],
-    *,
-    sheet_name: str,
-) -> list[tuple[int, object]]:
-    if len(sheet_rows) < 3:
-        raise ValueError(f"01_05_A_Debt_corp sheet has fewer than 3 rows: {sheet_name!r}")
-    headers: list[tuple[int, object]] = []
-    for column, value in enumerate(sheet_rows[2][1:], start=2):
-        if normalize_cbr_0105a_text(value):
-            headers.append((column, value))
-    expected_columns = list(range(2, 2 + len(headers)))
-    actual_columns = [column for column, _ in headers]
-    if actual_columns != expected_columns:
-        raise ValueError(
-            "01_05_A_Debt_corp industry columns must be contiguous from column B: "
-            f"sheet={sheet_name!r}, columns={actual_columns}"
-        )
-    return headers
-
-
-def _region_names(
-    sheet_rows: list[tuple[object, ...]],
-    *,
-    sheet_name: str,
-) -> tuple[list[int], list[str]]:
-    rows: list[int] = []
-    names: list[str] = []
-    for row, values in enumerate(sheet_rows[3:], start=4):
-        value = values[0] if values else None
-        if value is None or not str(value).replace("\xa0", " ").strip():
-            continue
-        rows.append(row)
-        names.append(re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip())
-    if not rows:
-        raise ValueError(f"01_05_A_Debt_corp contains no regions: sheet={sheet_name!r}")
-    if rows != list(range(rows[0], rows[0] + len(rows))):
-        raise ValueError(
-            "01_05_A_Debt_corp geographic rows are not contiguous: "
-            f"sheet={sheet_name!r}, rows={rows[:5]}...{rows[-5:]}"
-        )
-    return rows, names
-
-
-def _validate_sheet_region_names(
-    expected: list[str] | None,
-    actual: list[str],
-    *,
-    sheet_name: str,
-) -> list[str]:
-    if expected is None:
-        return actual
-    normalized_expected = [normalize_cbr_0105a_text(value) for value in expected]
-    normalized_actual = [normalize_cbr_0105a_text(value) for value in actual]
-    if normalized_expected != normalized_actual:
-        raise ValueError(
-            "Geographic rows differ between 01_05_A_Debt_corp sheets: "
-            f"sheet={sheet_name!r}"
-        )
-    return expected
 
 
 def _build_validation_issues(
