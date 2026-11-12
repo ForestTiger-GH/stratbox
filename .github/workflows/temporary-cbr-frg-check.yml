@@ -63,5 +63,37 @@ jobs:
                       except Exception:
                           traceback.print_exc()
           PY
+      - name: Live CBR one-period end-to-end for all six forms
+        run: |
+          python - <<'PY'
+          from datetime import date
+          from stratbox.base.net import RequestsTransport
+          from stratbox.base.ioapi.archive_bytes import RarArchiveReader
+          from stratbox.macrobanks import cbr_forms as forms
+
+          transport = RequestsTransport()
+          rar_reader = RarArchiveReader()
+          banks = (forms.BankSelection("1000", "Test Bank"),)
+          for code in ("101", "102", "123", "135", "802", "805"):
+              key = forms.FormKey(code, date(2024,1,1))
+              downloaded = forms.acquire(key, transport=transport)
+              print("LIVE6", code, "acquire", downloaded.outcome, [x.code for x in downloaded.diagnostics],flush=True)
+              assert downloaded.outcome=="succeeded", code
+              parsed = forms.parse_form(
+                  forms.ParseFormRequest(key, downloaded.value.payload), rar_reader=rar_reader
+              )
+              print("LIVE6", code, "parse", parsed.outcome, [x.code for x in parsed.diagnostics],flush=True)
+              assert parsed.outcome=="succeeded", code
+              data = forms.build_form_data(forms.BuildFormDataRequest(
+                  (parsed.value,), banks=banks,
+              ))
+              print("LIVE6", code, "build", data.outcome, [x.code for x in data.diagnostics],flush=True)
+              assert data.outcome=="succeeded", code
+              views = forms.build_form_views(data.value)
+              assert views.outcome=="succeeded", (code, views.diagnostics)
+              rendered = forms.render_workbook(views.value)
+              print("LIVE6", code, "xlsx", rendered.outcome,flush=True)
+              assert rendered.outcome=="succeeded", (code, rendered.diagnostics)
+          PY
       - name: Regression tests
         run: pytest -q tests/unit/macrobanks/cbr_forms tests/unit/macrobanks/test_frg_operations.py tests/unit/macrobanks/test_frg_stream_archive.py
