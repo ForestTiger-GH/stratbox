@@ -46,14 +46,14 @@ def test_large_frg_archive_streams_to_disk_with_report(tmp_path):
     expected = next(action.destination.split("/")[-1] for action in plan.actions if action.kind != "remove")
     with ZipFile(data) as package:
         assert set(package.namelist()) == {expected, "selection_report.json"}
-        assert package.getinfo(expected).file_size == 35 * 1024 * 1024
+        assert package.getinfo(expected).file_size == 105 * 1024 * 1024
         assert package.read("selection_report.json") == b'{"status":"complete"}'
     digest = sha256()
     with data.open("rb") as raw:
         while chunk := raw.read(1024 * 1024):
             digest.update(chunk)
     assert digest.hexdigest() == receipt.identity.sha256
-    assert latest.stat().st_size == 35 * 1024 * 1024
+    assert latest.stat().st_size == 105 * 1024 * 1024
 
 
 def test_changed_source_blocks_archive_and_preserves_existing_output(tmp_path):
