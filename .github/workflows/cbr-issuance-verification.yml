@@ -1,5 +1,7 @@
 name: Verify CBR issuance 01_04_A
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [feat/cbr-industry-issuance-0104]
     paths:
