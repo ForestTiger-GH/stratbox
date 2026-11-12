@@ -8,7 +8,7 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpIndustrySpec,
 )
-from stratbox.macrobanks.cbr_industries.parser import (
+from stratbox.macrobanks.cbr_industries.streams import (
     STREAM_COLUMNS,
     concat_cbr_0105a_debt_corp_streams,
     optimize_cbr_0105a_debt_corp_stream_dtypes,
