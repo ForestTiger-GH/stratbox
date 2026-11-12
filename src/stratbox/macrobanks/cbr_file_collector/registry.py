@@ -26,7 +26,7 @@ DEFAULT_CBR_FILE_SOURCES: tuple[CbrFileRegistryItem, ...] = (
     CbrFileRegistryItem("sme_debt_subj_f", "https://www.cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/01_13_F_Debt_sme_subj.xlsx", "МСП: долг по субъектам F"),
     CbrFileRegistryItem("sme_debt_subj_i", "https://www.cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/01_13_I_Debt_sme_subj.xlsx", "МСП: долг по субъектам I"),
     CbrFileRegistryItem("corp_debt_subj", "https://www.cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/01_05_D_Debt_subj.xlsx", "Корпорации: долг по субъектам"),
-    CbrFileRegistryItem("debt_structure_benchmark_rate", "https://cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/02_03_Debt_structure_by_benchmark_interest_rate_type.xlsx", "Структура долга по типу бенчмарк-ставки"),
+    CbrFileRegistryItem("structure_by_benchmark_interest_rate_type", "https://cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/02_03_Debt_structure_by_benchmark_interest_rate_type.xlsx", "Структура долга по типу бенчмарк-ставки"),
     CbrFileRegistryItem("sme_borrowers_info", "https://www.cbr.ru/vfs/statistics/banksector/loans_to_corporations/02_02_SME_Borrowers_info.xlsx", "МСП: сведения о заёмщиках"),
 
     CbrFileRegistryItem("sme_by_activity", "https://www.cbr.ru/vfs/statistics/BankSector/Loans_to_corporations/01_10_F_New_loans_sme_by_activity.xlsx", "МСП: выдачи по видам деятельности"),
