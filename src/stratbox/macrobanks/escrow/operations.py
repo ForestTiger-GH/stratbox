@@ -38,7 +38,9 @@ from .contracts import (
     ParsedEscrowFile,
 )
 
-_ROOTS = ("/vfs/", "/content/document/file/")
+from .sources import ESCROW_SOURCE_ROOTS
+
+_ROOTS = ESCROW_SOURCE_ROOTS
 DISCOVER = OperationDefinition(
     "cbr.escrow.discover", 1, "cbr-escrow-index-1", DiscoverEscrowRequest, tuple
 )
