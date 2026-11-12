@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from stratbox.base.filestore import FileStore, MutationRejected
+from stratbox.base.filestore import FileStore, LocalFileStore, MutationRejected
+from stratbox.base.ioapi.archive_paths import PathArchiveEntry, PathArchiveReceipt, zip_paths
 from stratbox.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, zip_bytes
 from stratbox.base.utils.optional_deps import require_extra
@@ -33,6 +34,15 @@ from .cleanup import (
 
 
 @dataclass(frozen=True, slots=True)
+class StreamArchiveRequest:
+    """Publish the approved FRG latest-file selection as a disk-streamed ZIP."""
+    plan: CleanupPlan
+    destination: str
+    report_json: bytes | None = None
+    compression: str = "stored"
+
+
+@dataclass(frozen=True, slots=True)
 class ScanRequest:
     directory: str
     recursive: bool = False
@@ -45,6 +55,16 @@ class Catalog:
     dispatch: DataFrame
 
 
+_STREAM_STORES = frozenset({"filestore", "output_filestore"})
+STREAM_ARCHIVE = OperationDefinition(
+    "frg.prepare_archive_to_store",
+    1,
+    "frg-verified-streaming-zip-1",
+    StreamArchiveRequest,
+    PathArchiveReceipt,
+    _STREAM_STORES,
+    frozenset({"storage.write"}),
+)
 _STORE = frozenset({"filestore"})
 _EFFECTS = frozenset({"storage.copy", "storage.rename", "storage.remove"})
 SCAN = OperationDefinition("frg.scan", 1, "frg-catalog-1", ScanRequest, Catalog, _STORE)
@@ -280,3 +300,72 @@ def prepare_archive(
             raise OperationFailure("archive.preparation_failed") from None
 
     return run(ARCHIVE, request, work, context=context, providers={"filestore": store})
+
+
+def prepare_archive_to_store(
+    request: StreamArchiveRequest,
+    *,
+    store: LocalFileStore | None = None,
+    output_store: LocalFileStore | None = None,
+    context: ExecutionContext | None = None,
+) -> OperationResult[PathArchiveReceipt]:
+    """Stream approved latest-file bytes into a verified, atomic local ZIP.
+
+    Both stores may point to mounted filesystem directories. The output store
+    uses its own root and destination name. Selection is always revalidated
+    from the source directory before the write; source bytes must match the
+    version recorded in the plan.
+    """
+    def work(req, invocation):
+        invocation.stage("revalidate")
+        if not isinstance(store, LocalFileStore) or not isinstance(output_store, LocalFileStore):
+            raise OperationFailure("provider.capability_missing")
+        if not req.destination or req.destination in {".", ".."}:
+            raise OperationFailure("effect.destination_invalid")
+        try:
+            if store.directory_identity(req.plan.request.directory) != req.plan.directory_identity:
+                raise OperationFailure("effect.directory_scope_changed")
+            current = create_plan(req.plan.request, store, invocation)
+            if current != req.plan:
+                raise OperationFailure("effect.plan_stale")
+            entries = []
+            for action in current.actions:
+                invocation.check_cancelled()
+                if action.kind == "remove":
+                    continue
+                if action.destination is None:
+                    raise OperationFailure("source.archive_name_missing")
+                archive_name = action.destination.replace("\\", "/").rsplit("/", 1)[-1]
+                entries.append(PathArchiveEntry(
+                    store.checked_file_path(action.source.path),
+                    archive_name,
+                    action.source.identity,
+                ))
+            invocation.stage("prepare_archive")
+            result = zip_paths(
+                tuple(entries),
+                output_store.checked_file_path(req.destination),
+                extras=({"selection_report.json": req.report_json}
+                        if req.report_json is not None else None),
+                compression=req.compression,
+            )
+        except (OSError, ValueError) as error:
+            if isinstance(error, OperationFailure):
+                raise
+            if isinstance(error, ArchiveError):
+                raise OperationFailure(str(error)) from None
+            raise OperationFailure("storage.archive_unavailable") from None
+        for action in current.actions:
+            if action.kind != "remove":
+                invocation.use(UsedInputReceipt(
+                    "frg_archive_file", action.source.identity,
+                    "application/octet-stream", "reference_only",
+                    source_id=action.source.path,
+                ))
+        invocation.effects.append(EffectReceipt("storage.write", "confirmed", req.destination))
+        return result
+
+    return run(
+        STREAM_ARCHIVE, request, work, context=context,
+        providers={"filestore": store, "output_filestore": output_store},
+    )

@@ -16,7 +16,7 @@ format primitives are reusable across domains.
 | `macrobanks.cbr_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
 | `macrobanks.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
 | `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
-| `macrobanks.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts and an independently prepared ZIP. |
+| `macrobanks.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
 | `notifications` | `prepare`, `deliver`, `qualify` | Stable intent from qualified facts, route authorization and one attempted delivery with a qualified acknowledgement. |
 
 ## Execution and observations
