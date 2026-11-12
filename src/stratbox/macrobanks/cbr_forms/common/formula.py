@@ -34,6 +34,7 @@ class FormulaDatasetSpec:
     preferred_stem: str
     normalize_account: Callable[[object], str] = plain_account
     side_fields: tuple[str, ...] = ()
+    account_plan: str | None = None
 
 
 def _number(value: object) -> Decimal | None:
@@ -78,8 +79,21 @@ def build_formula_long(snapshots, banks, model, spec):
         )
     result = []
     for as_of, frame in snapshots:
+        # The form 101 DBF contains several account-plan chapters with
+        # overlapping account numbers. Formula indicators refer only to
+        # chapter А (balance-sheet accounts); other chapters are separate
+        # financial meanings and must not be summed or resolved as duplicates.
+        if spec.account_plan is not None:
+            if "PLAN" not in frame.columns:
+                raise ValueError("Required account-plan chapter is missing")
+            normalized = frame["PLAN"].astype("string").str.strip().str.upper()
+            chapter = normalized.isin({"А", "A"}) if spec.account_plan == "А" else normalized.eq(spec.account_plan)
+            frame = frame.loc[chapter]
+        columns = ["REGN", "CODE", "VALUE"]
+        if "SIDE" in frame.columns:
+            columns.append("SIDE")
         values = {}
-        for bank, account, value, *sides in frame.itertuples(index=False, name=None):
+        for bank, account, value, *sides in frame[columns].itertuples(index=False, name=None):
             side = integer_account(sides[0]) if sides else ""
             key = (normalize_regn(bank), spec.normalize_account(account), side)
             if not all(key[:2]):
