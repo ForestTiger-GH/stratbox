@@ -14,12 +14,16 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
       - name: Dependencies
         run: |
           sudo apt-get update -qq
@@ -74,8 +78,9 @@ jobs:
           transport = RequestsTransport()
           rar_reader = RarArchiveReader()
           banks = (forms.BankSelection("1000", "Test Bank"),)
-          for code in ("101", "102", "123", "135", "802", "805"):
-              key = forms.FormKey(code, date(2024,1,1))
+          for as_of in (date(2024,1,1), date(2026,7,1)):
+            for code in ("101", "102", "123", "135", "802", "805"):
+              key = forms.FormKey(code, as_of)
               downloaded = forms.acquire(key, transport=transport)
               print("LIVE6", code, "acquire", downloaded.outcome, [x.code for x in downloaded.diagnostics],flush=True)
               assert downloaded.outcome=="succeeded", code
