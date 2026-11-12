@@ -63,7 +63,7 @@ _DIMENSION_ORDER_COLUMNS: dict[str, str | None] = {
     "currency_scope": None,
 }
 
-_MEASURE_ORDER = {"debt": 1, "overdue_debt": 2}
+_MEASURE_ORDER = {"debt": 1, "overdue_debt": 2, "new_loans": 3}
 _CURRENCY_ORDER = {
     "rubles": 1,
     "foreign_currency_and_precious_metals": 2,
@@ -72,6 +72,7 @@ _CURRENCY_ORDER = {
 _MEASURE_SHEET_LABELS = {
     "debt": "Задолженность",
     "overdue_debt": "Просрочка",
+    "new_loans": "Выдачи",
 }
 _CURRENCY_SHEET_LABELS = {
     "rubles": "рубли",
