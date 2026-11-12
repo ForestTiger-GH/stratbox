@@ -47,7 +47,7 @@ jobs:
               print("BANK_REGISTRY",len(banks),banks.columns.tolist(), banks.head(2).to_dict("records"))
               model=parse_form_model(files("stratbox.macrobanks.cbr_forms.models").joinpath("form101.csv").read_bytes(),"101")
               print("MODEL",len(model))
-              frame=pd.DataFrame([("1481","45.2",10,"1")],columns=["REGN","CODE","VALUE","SIDE"])
+              frame=pd.DataFrame([("1481","45.2",10,"А","1")],columns=["REGN","CODE","VALUE","PLAN","SIDE"])
               print("SYNTHETIC",build_formula_long([("01.01.2024",frame)],banks,model,DEFAULT_SPEC)[0].shape)
           except Exception:
               print("SYNTHETIC_FAILURE")
