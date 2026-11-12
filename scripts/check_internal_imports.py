@@ -24,6 +24,7 @@ CRITICAL_MODULES = [
     "stratbox.notifications",
     "stratbox.macrobanks.cbr_file_collector",
     "stratbox.macrobanks.cbr_industries",
+    "stratbox.macrobanks.cbr_industries.issuance_0104",
     "stratbox.macrobanks.cbr_forms",
     "stratbox.macrobanks.cbr_offices",
     "stratbox.macrobanks.cbr_offices_reg",
