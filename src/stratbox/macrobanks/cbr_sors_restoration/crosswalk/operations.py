@@ -919,6 +919,8 @@ def _primary_grid(
 def run_sors_crosswalk(
     strict_result: SorsRestorationResult,
     config: SorsCrosswalkConfig,
+    *,
+    checkpoint=lambda: None,
 ) -> SorsCrosswalkResult:
     if config.mode == 'disabled':
         raise ValueError(
@@ -935,10 +937,10 @@ def run_sors_crosswalk(
         strict_result.summary.strict_model_id,
         config,
     )
-    executions = [
-        _run_scenario(strict_result, config, scenario_id)
-        for scenario_id in config.scenario_ids
-    ]
+    executions = []
+    for scenario_id in config.scenario_ids:
+        checkpoint()
+        executions.append(_run_scenario(strict_result, config, scenario_id))
     policy = RoundingPolicy(step=strict_result.summary.publication_step)
     robust = _robust_envelope(
         strict_result,

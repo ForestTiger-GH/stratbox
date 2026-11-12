@@ -3,9 +3,12 @@ from __future__ import annotations
 import hashlib
 import re
 from datetime import date, datetime, timedelta
-from pathlib import Path
+from io import BytesIO
 
 import pandas as pd
+
+from stratbox.base.utils.optional_deps import require_extra
+from stratbox.data import SourcePayload
 
 from stratbox.macrobanks.cbr_sors_restoration.metrics import source_metric
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
@@ -14,8 +17,9 @@ from stratbox.macrobanks.cbr_sors_restoration.schema import normalize_text
 _DATE_RE = re.compile(r'(?<!\d)(\d{2})[./](\d{2})[./](\d{4})(?!\d)')
 
 
-def sha256_file(path: str | Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def open_source_workbook(source: SourcePayload):
+    openpyxl = require_extra("openpyxl", "excel")
+    return openpyxl.load_workbook(BytesIO(source.data), read_only=True, data_only=True, keep_links=False)
 
 
 def iso_date(value: object) -> str | None:
@@ -102,19 +106,18 @@ def canonicalize_observations(
 
 def source_manifest_record(
     source_series: str,
-    path: str | Path,
+    source: SourcePayload,
     rows: int,
     *,
     required: bool,
     role: str,
 ) -> dict[str, object]:
-    actual = Path(path)
     return {
         'source_series': source_series,
         'source_role': role,
         'required': bool(required),
-        'path': str(actual),
-        'source_file_actual': actual.name,
-        'sha256': sha256_file(actual),
+        'source_file_actual': source.source_id or source_series,
+        'sha256': source.identity.sha256,
+        'size_bytes': source.identity.size,
         'rows': int(rows),
     }

@@ -51,7 +51,7 @@ def _pick_display_name(df: pd.DataFrame) -> pd.Series:
     return result.fillna("").astype(str)
 
 
-def load_legacy_banks() -> pd.DataFrame:
+def load_legacy_banks(*, inputs=None) -> pd.DataFrame:
     """
     Возвращает DataFrame для legacy-банков:
       - bank (str)  : имя банка для выгрузки
@@ -62,13 +62,13 @@ def load_legacy_banks() -> pd.DataFrame:
     - Если is_legacy=False — банк исключается.
     - По умолчанию для bank используется bank_name_norm, если колонка есть.
     """
-    df = cbr_banks.read().copy()
+    df = cbr_banks.read(inputs=inputs).copy()
 
     if "is_legacy" not in df.columns:
         raise RuntimeError("cbr_banks registry has no column 'is_legacy'. Please update registry.")
 
     # Оставляются только legacy-банки
-    mask = df["is_legacy"].apply(lambda x: x is not False and x is not None)
+    mask = df["is_legacy"].map(lambda value: not isinstance(value, bool) and pd.notna(value))
     df = df[mask].copy()
 
     # Приведение типов

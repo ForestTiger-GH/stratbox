@@ -4,9 +4,11 @@ from dataclasses import replace
 
 import pandas as pd
 
+from stratbox.data import UsedInputReceipt
+
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsSourceBundle,
-    SorsSourceFiles,
+    SorsSourceInputs,
 )
 from stratbox.macrobanks.cbr_sors_restoration.portfolio import PORTFOLIO_SCOPES
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
@@ -42,8 +44,8 @@ def _manifest(series: str, path, rows: int, role: str) -> dict[str, object]:
     return source_manifest_record(series, path, rows, required=True, role=role)
 
 
-def load_sors_sources(
-    files: SorsSourceFiles,
+def parse_source_inputs(
+    files: SorsSourceInputs,
     as_of_date: str,
     publication_step: float = 1.0,
 ) -> SorsSourceBundle:
@@ -115,7 +117,8 @@ def load_sors_sources(
         source_series='01_13_I',
     )
 
-    classes = read_okved2_classes()
+    registry_inputs = []
+    classes = read_okved2_classes(inputs=registry_inputs)
     categories = build_publication_categories(classes)
     classes = enrich_okved2_classes(classes, categories)
     expected_other = tuple(sorted(PUBLISHED_OTHER_CLASSES))
@@ -190,6 +193,16 @@ def load_sors_sources(
             )
         )
 
+    by_name = {
+        '01_05_A': files.regional_traditional, '01_02_A': files.national_traditional,
+        '01_02_C': files.national_okved2, '01_03_C': files.federal_district_okved2,
+        '01_11': files.sme_national_totals, '01_11_F': files.sme_national_okved2,
+        '01_11_I': files.sme_ie_national_okved2, '01_12_A': files.sme_federal_district_okved2,
+        '01_13_F': files.sme_regional_totals, '01_13_I': files.sme_ie_regional_totals,
+        '01_05_D': files.regional_totals_history,
+    }
+    lineage = tuple(UsedInputReceipt.for_payload(payload, key)
+                    for key, payload in by_name.items() if payload is not None) + tuple(registry_inputs)
     bundle = SorsSourceBundle(
         source_grid=source_grid,
         regional_traditional_grid=regional,
@@ -210,6 +223,7 @@ def load_sors_sources(
         observation_bindings_grid=pd.DataFrame(),
         source_manifest_grid=pd.DataFrame(manifest_rows),
         validation_grid=pd.DataFrame(),
+        lineage=lineage,
     )
     validation = validate_source_bundle(bundle, raise_on_error=True)
     return replace(bundle, validation_grid=validation)

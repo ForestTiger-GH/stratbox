@@ -1,5 +1,7 @@
 # Current HOW — regulatory forms, semantic indicator models and skipped source dates
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Evidence status:** direct read-only code and model schema review at pinned `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; no downloaded regulatory archive, live run or Excel package test was executed in this consolidation. The subject owner is `src/stratbox/macrobanks/cbr_forms`.
 
 ## 1. Supported user-facing work and physical domain structure

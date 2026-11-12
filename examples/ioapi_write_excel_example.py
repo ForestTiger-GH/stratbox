@@ -23,7 +23,7 @@ def main() -> int:
     parser.add_argument("--out", required=True, help="Output path for .xlsx file (local or corp).")
     args = parser.parse_args()
 
-    providers = runtime.get_providers()
+    providers = runtime.local_providers()
     print(f"INFO: providers source = {providers.source}")
 
     df = pd.DataFrame(

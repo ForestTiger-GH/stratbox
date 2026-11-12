@@ -1,39 +1,22 @@
-from stratbox.macrobanks.cbr_sors_restoration import (
-    SorsCrosswalkConfig,
-    SorsRunConfig,
-    SorsSourceFiles,
-    SorsTargetScope,
-    run_sors_crosswalk,
-    run_sors_restoration,
-)
+"""Run the SORS strict and crosswalk feasibility passes on selected sources."""
 
-files = SorsSourceFiles(
-    regional_traditional='01_05_A.xlsx',
-    national_okved2='01_02_C.xlsx',
-    federal_district_okved2='01_03_C.xlsx',
-    national_traditional='01_02_A.xlsx',
-    sme_national_totals='01_11.xlsx',
-    sme_national_okved2='01_11_F.xlsx',
-    sme_ie_national_okved2='01_11_I.xlsx',
-    sme_federal_district_okved2='01_12_A.xlsx',
-    sme_regional_totals='01_13_F.xlsx',
-    sme_ie_regional_totals='01_13_I.xlsx',
-)
-strict = run_sors_restoration(
-    files,
-    SorsRunConfig(as_of_date='2026-06-01'),
-)
-crosswalk = run_sors_crosswalk(
-    strict,
-    SorsCrosswalkConfig(
-        mode='targets',
-        scenario_ids=('core',),
-        scope=SorsTargetScope(
-            region_names=('Белгородская область',),
-            class_codes=('01', '02'),
-        ),
-    ),
-)
-print(crosswalk.status)
-print(crosswalk.crosswalk_facts_grid)
-print(crosswalk.crosswalk_bounds_grid)
+import argparse
+
+from cbr_sors_restoration_colab import require_value, run, source_files
+from stratbox.macrobanks import cbr_sors_restoration as sors
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source_paths_json")
+    parser.add_argument("date")
+    args = parser.parse_args()
+    strict = run(source_files(args.source_paths_json), sors.SorsRunConfig(as_of_date=args.date))
+    result = require_value(sors.crosswalk(sors.CrosswalkSorsRequest(
+        strict, sors.SorsCrosswalkConfig(mode="feasibility"),
+    )))
+    print(result.status, result.crosswalk_run_id)
+
+
+if __name__ == "__main__":
+    main()

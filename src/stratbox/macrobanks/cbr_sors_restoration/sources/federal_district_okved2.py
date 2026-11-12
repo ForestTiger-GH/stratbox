@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from stratbox.data import SourcePayload
 
 import pandas as pd
-from openpyxl import load_workbook
 
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
 from stratbox.macrobanks.cbr_sors_restoration.schema import (
@@ -14,12 +13,12 @@ from stratbox.macrobanks.cbr_sors_restoration.schema import (
 from stratbox.macrobanks.cbr_sors_restoration.sources.common import (
     canonicalize_observations,
     iso_date,
-    sha256_file,
+    open_source_workbook,
 )
 
 
 def parse_federal_district_okved2(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     policy: RoundingPolicy,
     *,
@@ -27,9 +26,9 @@ def parse_federal_district_okved2(
     source_role: str = 'STRICT_FD_OKVED2',
     portfolio_scope: str = 'CORPORATE_TOTAL',
 ) -> pd.DataFrame:
-    actual = Path(path)
-    digest = sha256_file(actual)
-    workbook = load_workbook(actual, read_only=True, data_only=True)
+    actual_name = path.source_id or "source.xlsx"
+    digest = path.identity.sha256
+    workbook = open_source_workbook(path)
     rows: list[dict[str, object]] = []
     seen_date = False
     try:
@@ -87,8 +86,8 @@ def parse_federal_district_okved2(
                     rows.append(
                         {
                             'source_series': source_series,
-                            'source_file_actual': actual.name,
-                            'source_file_logical': actual.name,
+                            'source_file_actual': actual_name,
+                            'source_file_logical': actual_name,
                             'source_sha256': digest,
                             'source_sheet': ws.title,
                             'source_row': row_no,

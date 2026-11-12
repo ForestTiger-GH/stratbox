@@ -1,96 +1,18 @@
-# stratbox
+# Stratbox
 
-`stratbox` — библиотечное ядро для прикладной аналитики и обработки данных в задачах Strategy Box.
+Stratbox provides reusable Python operations for acquiring, interpreting and
+presenting banking and economic data. Applications pass their own providers,
+dates and destinations.
 
-Репозиторий содержит только core-слой:
+- [Core API and domain operations](docs/current-how/universal-business-core.md)
+- [Installation and offline quickstart](docs/how/install-and-run-core.md)
+- [Execution and storage boundaries](docs/architecture/core-operation-boundaries.md)
+- [Strategy Box Knowledge Product](docs/README.md)
 
-- доменную бизнес-логику;
-- нейтральную инфраструктуру;
-- встроенные реестры и ресурсы;
-- стабильные extension/runtime-контракты;
-- примеры использования и тесты библиотеки.
-
-Application/UI surfaces Strategy Box живут в отдельных репозиториях. Windows surface находится в `stratbox-windows`. AppDock является отдельным внешним проектом и в этот репозиторий не входит.
-
-## Состав репозитория
-
-- `src/stratbox/` — основной пакет библиотеки;
-- `examples/` — примеры использования функций библиотеки;
-- `scripts/` — инженерные проверки репозитория;
-- `docs/` — единый корпус Knowledge Product Strategy Box: подтверждённые ограниченные научные и текущие материалы, а также явно условные целевые проекты; полная консолидация ещё открыта;
-- `docs_old/` — побайтно сохранённая прежняя документация core, исторический вход для сведения;
-- `tests/` — smoke/unit тесты core-слоя;
-- `_mw/` — центральное инженерное рабочее пространство Strategy Box: Research, provenance и материалы развития, не входящие в продуктовый core.
-
-## Инженерное рабочее пространство
-
-Точка входа для инженерной работы и Research — `_mw/AGENTS.md`. Это паспорт центрального workspace Strategy Box, физически размещённого в этом репозитории.
-
-Workspace может содержать исследования нескольких implementation owners Strategy Box. Размещение Research в `stratbox/_mw` не переносит ownership кода: текущее состояние каждого surface определяется его собственным репозиторием.
-
-Активная первая эпоха находится в `_mw/epochs-001-strategy-box-development/`. Текущие Research-ветки:
-
-- `01-old-notes` — исторические и исходные материалы;
-- `02-base-study` — свежее базовое исследование текущего Strategy Box и тематические Research Results;
-- `03-consolidation-research` — исследовательский синтез накопленного корпуса;
-- `consolidation/` — active Knowledge consolidation covering Science, Current HOW, Target WHAT/HOW, Architecture, selective Low-Level Design (LDD) and implementation-near Low Code Design (LCD), with durable checkpoints, assurance and explicit partial status.
-
-Материалы `_mw/` сами по себе не меняют текущую продуктовую семантику и не входят в библиотечный пакет.
-
-## Установка
-
-Базовая установка:
-
-```bash
-python -m pip install -e .
-```
-
-Установка с PDF-поддержкой:
-
-```bash
-python -m pip install -e ".[pdf]"
-```
-
-Установка с тестовым контуром:
-
-```bash
+```sh
+python -m pip install .
 python -m pip install -e ".[test]"
+python -B scripts/check_release_integrity.py
+python -B scripts/check_internal_imports.py
+python -B -m pytest -q
 ```
-
-Установка с Solver для восстановления SORS:
-
-```bash
-python -m pip install -e ".[sors-restoration]"
-```
-
-## Что находится внутри пакета
-
-`src/stratbox` разделён на несколько слоёв:
-
-- `base` — файловый транспорт, IO API, сетевой слой, runtime-провайдеры, секреты и Excel-стили;
-- `common` — общие утилиты без привязки к конкретному домену;
-- `macrobanks` — прикладные домены для макроэкономических задач;
-- `registries` — встроенные справочники и ресурсные таблицы;
-- `text` — вспомогательные текстовые нормализаторы.
-
-## Как это связано с `stratbox-windows`
-
-`stratbox-windows` использует `stratbox` как внешнюю runtime-зависимость и отвечает за Windows application/surface Strategy Box.
-
-При запуске через внешний managed runtime core должен устанавливаться как отдельная зависимость surface, а не копироваться внутрь surface-репозитория.
-
-## Полезные команды
-
-Smoke-проверка репозитория:
-
-```bash
-python scripts/check_release_integrity.py
-python scripts/check_internal_imports.py
-pytest -q
-```
-
-## Документация
-
-- [Единый корпус знаний Strategy Box](docs/README.md) — уже опубликованные ограниченные научные/технические статьи и явно отмеченные кандидаты целевой модели; полнота и общее Product admission ещё открыты.
-- [Архив прежней core-документации](docs_old/README.md) — сохранён без изменения содержания, включая SORS.
-- [Подготовка единого цикла консолидации](_mw/epochs-001-strategy-box-development/consolidation/README.md) — рабочий процесс, source accounting и контроль полноты; не часть текущей спецификации продукта.

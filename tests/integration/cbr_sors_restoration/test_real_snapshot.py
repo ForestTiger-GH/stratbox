@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from stratbox.macrobanks.cbr_sors_restoration import SorsSourceFiles, load_sors_sources
+from stratbox.base.filestore import LocalFileStore
+from stratbox.macrobanks.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
+from stratbox.macrobanks.cbr_sors_restoration import SorsSourceFiles
 from stratbox.macrobanks.cbr_sors_restoration.publication import (
     RoundingPolicy,
     SorsPublicationLedger,
@@ -35,7 +37,11 @@ def _files(root: Path, yyyymmdd: str) -> SorsSourceFiles:
 
 
 def _snapshot(root: Path, as_of_date: str, yyyymmdd: str):
-    bundle = load_sors_sources(_files(root, yyyymmdd), as_of_date)
+    inputs = read_source_files(_files(root, yyyymmdd), store=LocalFileStore())
+    assert inputs.outcome == "succeeded", inputs.diagnostics
+    loaded = load_sources(LoadSorsRequest(inputs.value, SorsRunConfig(as_of_date=as_of_date)))
+    assert loaded.outcome == "succeeded", loaded.diagnostics
+    bundle = loaded.value
     graph = build_quantity_graph(bundle)
     state = SorsIntervalClosureState(graph, tolerance=1e-7, max_passes=100)
     ledger = SorsPublicationLedger()

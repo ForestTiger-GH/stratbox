@@ -5,11 +5,13 @@ from pathlib import Path
 import pandas as pd
 from openpyxl import load_workbook
 
-from stratbox.macrobanks.cbr_forms.api import _resolve_form_dates
+from datetime import date
+from io import BytesIO
+
+from stratbox.macrobanks.cbr_forms import FormData, FormKey, SelectFormSourcesRequest, build_form_views, render_workbook, select_sources
 from stratbox.macrobanks.cbr_forms.common.direct_form import build_direct_long
 from stratbox.macrobanks.cbr_forms.common.excel_profiles import build_hierarchical_statement_sheets
 from stratbox.macrobanks.cbr_forms.common.models import get_model_for, load_models
-from stratbox.macrobanks.cbr_forms.common.output import export_form_excel
 from stratbox.macrobanks.cbr_forms.forms import form802
 from stratbox.macrobanks.cbr_forms.forms.registry import FORM_REGISTRY
 
@@ -48,34 +50,13 @@ def _long() -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
 
 
 
-def test_form802_uses_quarter_start_reporting_dates_inside_monthly_run_all() -> None:
-    dates = _resolve_form_dates(
-        entry=FORM_REGISTRY["802"],
-        date_from="2026-01-01",
-        date_to="2026-08-19",
-        default_freq="M",
-        default_anchor="start",
-    )
-    assert [date.strftime("%Y-%m-%d") for date in dates] == [
-        "2026-01-01",
-        "2026-04-01",
-        "2026-07-01",
-    ]
-
-
-def test_standard_form_keeps_global_monthly_schedule() -> None:
-    dates = _resolve_form_dates(
-        entry=FORM_REGISTRY["101"],
-        date_from="2026-01-01",
-        date_to="2026-03-01",
-        default_freq="M",
-        default_anchor="start",
-    )
-    assert [date.strftime("%Y-%m-%d") for date in dates] == [
-        "2026-01-01",
-        "2026-02-01",
-        "2026-03-01",
-    ]
+def test_source_selection_preserves_dates_supplied_by_the_consumer() -> None:
+    keys = (FormKey("802", date(2026, 4, 1)), FormKey("101", date(2026, 5, 1)))
+    result = select_sources(SelectFormSourcesRequest(keys))
+    assert result.outcome == "succeeded"
+    assert tuple(item.key for item in result.value) == keys
+    assert result.value[0].url.endswith("/802-20260401.rar")
+    assert result.value[1].url.endswith("/101-20260501.rar")
 
 
 def test_registry_assigns_hierarchical_profile_only_to_802() -> None:
@@ -156,18 +137,11 @@ def test_hierarchical_data_keeps_canonical_columns_and_adds_model_structure() ->
 
 def test_hierarchical_export_creates_formatted_three_sheet_workbook(tmp_path: Path) -> None:
     long, model, order = _long()
-    out_path = tmp_path / "CBR_0409802_LEGACY.xlsx"
-
-    export_form_excel(
-        out_path=str(out_path),
-        excel_profile="hierarchical_statement",
-        df_long=long,
-        df_banks=_banks(),
-        model_df=model,
-        indicator_order=order,
-    )
-
-    wb = load_workbook(out_path)
+    view = build_form_views(FormData("802", long, _banks(), model, order, ()))
+    assert view.outcome == "succeeded"
+    result = render_workbook(view.value)
+    assert result.outcome == "succeeded"
+    wb = load_workbook(BytesIO(result.value.data))
     assert wb.sheetnames == ["Обзор", "Полная форма", "Данные"]
     assert wb["Обзор"].freeze_panes == "E2"
     assert wb["Полная форма"].freeze_panes == "F2"

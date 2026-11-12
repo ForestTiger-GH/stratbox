@@ -1,10 +1,1 @@
-"""
-Пакет содержит обработчики отдельных отчетных форм Банка России.
-
-Модули форм получают банки, семантическую модель и настройки извне. Физическая
-структура DBF остается внутри соответствующего ``formXXX.py``.
-"""
-
-from . import form101, form102, form123, form135, form802, form805  # noqa: F401
-
-__all__ = ["form101", "form102", "form123", "form135", "form802", "form805"]
+"""Physical source profiles for individual CBR reporting forms."""

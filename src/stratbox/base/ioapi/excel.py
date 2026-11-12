@@ -56,8 +56,6 @@ def _ext(path: str) -> str:
 def read_df(
     path: str,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
     ext = _ext(path)
@@ -65,35 +63,33 @@ def read_df(
     if ext == ".xlsx":
         from stratbox.base.ioapi import excel_xlsx
 
-        return excel_xlsx.read_df(path, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsx.read_df(path, store=store, **kwargs)
 
     if ext == ".xlsm":
         from stratbox.base.ioapi import excel_xlsm
 
-        return excel_xlsm.read_df(path, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsm.read_df(path, store=store, **kwargs)
 
     if ext == ".xls":
         from stratbox.base.ioapi import excel_xls
 
-        return excel_xls.read_df(path, store=store, auto_install=auto_install, **kwargs)
+        return excel_xls.read_df(path, store=store, **kwargs)
 
     if ext == ".xlsb":
         from stratbox.base.ioapi import excel_xlsb
 
-        return excel_xlsb.read_df(path, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsb.read_df(path, store=store, **kwargs)
 
     # Фоллбек: считаем, что это xlsx-совместимый
     from stratbox.base.ioapi import excel_xlsx
 
-    return excel_xlsx.read_df(path, store=store, auto_install=auto_install, **kwargs)
+    return excel_xlsx.read_df(path, store=store, **kwargs)
 
 
 def write_df(
     path: str,
     df: pd.DataFrame,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> None:
     ext = _ext(path)
@@ -101,24 +97,24 @@ def write_df(
     if ext == ".xlsx":
         from stratbox.base.ioapi import excel_xlsx
 
-        return excel_xlsx.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsx.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xlsm":
         from stratbox.base.ioapi import excel_xlsm
 
-        return excel_xlsm.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsm.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xls":
         from stratbox.base.ioapi import excel_xls
 
-        return excel_xls.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
+        return excel_xls.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xlsb":
         from stratbox.base.ioapi import excel_xlsb
 
-        return excel_xlsb.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
+        return excel_xlsb.write_df(path, df, store=store, **kwargs)
 
     # Фоллбек: пишем как xlsx
     from stratbox.base.ioapi import excel_xlsx
 
-    return excel_xlsx.write_df(path, df, store=store, auto_install=auto_install, **kwargs)
+    return excel_xlsx.write_df(path, df, store=store, **kwargs)

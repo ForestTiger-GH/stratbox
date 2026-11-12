@@ -1,23 +1,20 @@
-"""
-Пример запуска первого этапа FRG.
+"""Scan a selected FRG directory and show the latest recognized files."""
 
-Сценарий:
-- пользователь указывает путь к папке с файлами;
-- пакет строит каталог, выбирает latest и запускает заглушки.
-"""
+import argparse
 
-from stratbox.macrobanks.frg import run_frg_stage1
+from stratbox.base.filestore import LocalFileStore
+from stratbox.macrobanks import frg
 
 
-ROOT_DIR = "."
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory")
+    args = parser.parse_args()
+    result = frg.scan(frg.ScanRequest("."), store=LocalFileStore(root=args.directory))
+    if result.outcome != "succeeded":
+        raise SystemExit(tuple(item.code for item in result.diagnostics))
+    print(result.value.latest)
 
 
-result = run_frg_stage1(ROOT_DIR, recursive=False)
-
-catalog_df = result["catalog"]
-latest_df = result["latest"]
-dispatch_df = result["dispatch"]
-
-print("INFO: catalog rows =", len(catalog_df))
-print("INFO: latest rows =", len(latest_df))
-print("INFO: dispatch rows =", len(dispatch_df))
+if __name__ == "__main__":
+    main()

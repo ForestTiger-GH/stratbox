@@ -1,157 +1,65 @@
-from __future__ import annotations
+"""Physical DBF variants and archive lineage through the public API."""
 
-from pathlib import Path
+from datetime import date
+from struct import pack
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_forms.common import dbf_picker, runner
+from stratbox.base.ioapi.archive_bytes import zip_bytes
+from stratbox.data import ByteIdentity, SourcePayload
+from stratbox.macrobanks import cbr_forms as forms
 
 
-def test_picker_accepts_802_dbf_without_optional_korr_gr(tmp_path: Path, monkeypatch) -> None:
-    pk = tmp_path / "PK8022512.dbf"
-    meta = tmp_path / "F802META.dbf"
-    pk.write_bytes(b"x")
-    meta.write_bytes(b"x")
+def dbf_bytes(fields, records):
+    header = pack("<BBBBIHH20x", 3, 126, 4, 1, len(records), 33 + 32 * len(fields), 1 + 12 * len(fields))
+    columns = b"".join(pack("<11sc4xBB14x", name.encode("ascii"), b"C", 12, 0) for name in fields)
+    rows = b"".join(b" " + b"".join(str(item).encode("ascii").ljust(12) for item in row) for row in records)
+    return header + columns + b"\r" + rows + b"\x1a"
 
-    fields_by_name = {
-        "PK8022512.dbf": ["REGN_GKO", "STR", "KORR_P", "KORR_M", "VSEGO"],
-        "F802META.dbf": ["FSORT", "FRAZD", "FSECTION", "FSTR", "FVALUE"],
-    }
 
-    class FakeDBF:
-        def __init__(self, path: str, **kwargs):
-            self.field_names = fields_by_name[Path(path).name]
-
-    monkeypatch.setattr(dbf_picker, "DBF", FakeDBF)
-
-    chosen, field_map = dbf_picker.pick_dbf_fields(
-        tmp_path,
-        field_candidates={
-            "REGN": ("REGN_GKO",),
-            "CODE": ("STR",),
-            "total": ("VSEGO",),
-        },
-        optional_field_candidates={
-            "consolidation_plus": ("KORR_P",),
-            "consolidation_minus": ("KORR_M",),
-            "intragroup_adjustment": ("KORR_GR",),
-        },
-        prefer_stem_contains="PK802",
+def test_historical_form802_keeps_optional_adjustment_empty_and_proves_archive_member():
+    dbf = dbf_bytes(
+        ["REGN_GKO", "STR", "KORR_P", "KORR_M", "VSEGO"], [("1000", "14", "", "", "0")],
     )
+    unrelated = dbf_bytes(["FSORT", "FRAZD"], [("1", "2")])
+    source = SourcePayload(zip_bytes({"PK8022512.dbf": dbf, "F802META.dbf": unrelated}))
+    key = forms.FormKey("802", date(2026, 4, 1))
+    parsed = forms.parse_form(forms.ParseFormRequest(key, source))
+    assert parsed.outcome == "succeeded", parsed.diagnostics
+    assert parsed.value.rows.loc[0, "total"] == "0"
+    assert pd.isna(parsed.value.rows.loc[0, "intragroup_adjustment"])
+    member = parsed.used_inputs[1]
+    assert member.member == "PK8022512.dbf"
+    assert member.identity == ByteIdentity.of(dbf)
+    assert member.container == source.identity
 
-    assert chosen.name == "PK8022512.dbf"
-    assert field_map == {
-        "REGN": "REGN_GKO",
-        "CODE": "STR",
-        "total": "VSEGO",
-        "consolidation_plus": "KORR_P",
-        "consolidation_minus": "KORR_M",
-    }
 
-
-def test_picker_reads_korr_gr_when_current_802_schema_contains_it(tmp_path: Path, monkeypatch) -> None:
-    pk = tmp_path / "PK8022603.dbf"
-    pk.write_bytes(b"x")
-
-    class FakeDBF:
-        def __init__(self, path: str, **kwargs):
-            self.field_names = [
-                "REGN_GKO",
-                "STR",
-                "KORR_P",
-                "KORR_M",
-                "KORR_GR",
-                "VSEGO",
-            ]
-
-    monkeypatch.setattr(dbf_picker, "DBF", FakeDBF)
-
-    _, field_map = dbf_picker.pick_dbf_fields(
-        tmp_path,
-        field_candidates={
-            "REGN": ("REGN_GKO",),
-            "CODE": ("STR",),
-            "total": ("VSEGO",),
-        },
-        optional_field_candidates={
-            "consolidation_plus": ("KORR_P",),
-            "consolidation_minus": ("KORR_M",),
-            "intragroup_adjustment": ("KORR_GR",),
-        },
-        prefer_stem_contains="PK802",
+def test_current_form802_can_read_present_adjustment_from_standalone_dbf():
+    dbf = dbf_bytes(
+        ["REGN_GKO", "STR", "VSEGO", "KORR_GR"], [("1000", "14", "10", "1")],
     )
+    parsed = forms.parse_form(forms.ParseFormRequest(forms.FormKey("802", date(2026, 4, 1)), SourcePayload(dbf)))
+    assert parsed.outcome == "succeeded", parsed.diagnostics
+    assert parsed.value.physical_fields["intragroup_adjustment"] == "KORR_GR"
+    assert parsed.value.rows.loc[0, "intragroup_adjustment"] == "1"
+    built = forms.build_form_data(forms.BuildFormDataRequest(
+        (parsed.value,), (forms.BankSelection("1000", "Bank"),),
+    ))
+    assert built.outcome == "succeeded", built.diagnostics
+    by_code = built.value.long.set_index("Код")["Значение"]
+    assert by_code["14"] == 10
+    assert by_code["15.4"] == ""
 
-    assert field_map["intragroup_adjustment"] == "KORR_GR"
 
-
-def test_runner_fills_missing_optional_physical_columns(monkeypatch, tmp_path: Path) -> None:
-    class Result:
-        ok = True
-        content = b"rar"
-
-    def fake_make_workdir(prefix: str) -> str:
-        work = tmp_path / "work"
-        work.mkdir(parents=True, exist_ok=True)
-        return str(work)
-
-    monkeypatch.setattr(runner, "make_workdir", fake_make_workdir)
-    monkeypatch.setattr(runner, "download_bytes", lambda **kwargs: Result())
-    monkeypatch.setattr(runner, "_extract_rar", lambda archive_path, out_dir: out_dir.mkdir(parents=True, exist_ok=True))
-    monkeypatch.setattr(
-        runner,
-        "pick_dbf_fields",
-        lambda extracted_dir, **kwargs: (
-            extracted_dir / "PK8022512.dbf",
-            {
-                "REGN": "REGN_GKO",
-                "CODE": "STR",
-                "total": "VSEGO",
-                "consolidation_plus": "KORR_P",
-                "consolidation_minus": "KORR_M",
-            },
-        ),
-    )
-    monkeypatch.setattr(
-        runner,
-        "read_dbf_columns",
-        lambda path, field_map: pd.DataFrame(
-            [
-                {
-                    "REGN": 1000,
-                    "CODE": "14",
-                    "total": 10,
-                    "consolidation_plus": None,
-                    "consolidation_minus": None,
-                }
-            ]
-        ),
-    )
-
-    loaded = runner.run_dates_to_selected_dbf_df(
-        dates=[pd.Timestamp("2026-01-01")],
-        build_url=lambda date: "https://example.invalid/802.rar",
-        field_candidates={
-            "REGN": ("REGN_GKO",),
-            "CODE": ("STR",),
-            "total": ("VSEGO",),
-        },
-        optional_field_candidates={
-            "consolidation_plus": ("KORR_P",),
-            "consolidation_minus": ("KORR_M",),
-            "intragroup_adjustment": ("KORR_GR",),
-        },
-        prefer_stem_contains="PK802",
-        show_progress=False,
-    )
-
-    assert len(loaded) == 1
-    _, frame = loaded[0]
-    assert frame.columns.tolist() == [
-        "REGN",
-        "CODE",
-        "total",
-        "consolidation_plus",
-        "consolidation_minus",
-        "intragroup_adjustment",
-    ]
-    assert pd.isna(frame.loc[0, "intragroup_adjustment"])
+def test_formula_source_absence_is_not_coerced_to_zero():
+    dbf = dbf_bytes(["REGN", "C1", "C3"], [("1000", "000", "0"), ("1000", "102", "10")])
+    parsed = forms.parse_form(forms.ParseFormRequest(forms.FormKey("123", date(2026, 4, 1)), SourcePayload(dbf)))
+    assert parsed.outcome == "succeeded", parsed.diagnostics
+    built = forms.build_form_data(forms.BuildFormDataRequest(
+        (parsed.value,), (forms.BankSelection("1000", "Bank"),),
+    ))
+    assert built.outcome == "succeeded", built.diagnostics
+    values = built.value.long.set_index("IndicatorId")["Значение"]
+    assert values["capital_total"] == 0
+    assert values["base_capital"] == 10
+    assert values["main_capital"] == ""

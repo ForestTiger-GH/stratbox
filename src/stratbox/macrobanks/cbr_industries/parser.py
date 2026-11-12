@@ -16,7 +16,6 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 from stratbox.macrobanks.cbr_industries.contracts import (
-    Cbr0105ADebtCorpDownloadedSource,
     Cbr0105ADebtCorpValidationIssue,
     ParsedCbr0105ADebtCorpFile,
 )
@@ -168,7 +167,7 @@ def concat_cbr_0105a_debt_corp_streams(
                 current[column] = current[column].astype(dtype)
         aligned.append(current)
 
-    stream = pd.concat(aligned, ignore_index=True, copy=False)
+    stream = pd.concat(aligned, ignore_index=True)
     return optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
 
 
@@ -392,13 +391,16 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
     source_id: str | None = None,
     source_url: str | None = None,
     source_sha256: str | None = None,
+    checkpoint=None,
 ) -> ParsedCbr0105ADebtCorpFile:
     """Разбирает одну исходную книгу в полный нормализованный поток."""
     filename_date = report_date_from_cbr_0105a_filename(source_name)
     source_identifier = source_id or (
         f"{CBR_0105A_DEBT_CORP_SERIES_CODE}_{filename_date.replace('-', '')}"
     )
-    digest = source_sha256 or sha256(file_bytes).hexdigest()
+    digest = sha256(file_bytes).hexdigest()
+    if source_sha256 is not None and source_sha256 != digest:
+        raise ValueError("Source workbook digest mismatch")
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -406,7 +408,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             message="Workbook contains no default style.*",
             category=UserWarning,
         )
-        workbook = load_workbook(BytesIO(file_bytes), read_only=True, data_only=True)
+        workbook = load_workbook(BytesIO(file_bytes), read_only=True, data_only=True, keep_links=False)
 
     try:
         if not workbook.sheetnames:
@@ -421,6 +423,8 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         industries = None
 
         for worksheet in workbook.worksheets:
+            if checkpoint is not None:
+                checkpoint()
             # Some official CBR workbooks contain an incorrect worksheet
             # ``dimension`` declaration.  In particular, a sheet may declare
             # ``A1:Z99`` while real cells in column AA are present in the XML.
@@ -576,25 +580,3 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         )
     finally:
         workbook.close()
-
-
-def parse_cbr_0105a_debt_corp_source(
-    source: Cbr0105ADebtCorpDownloadedSource,
-) -> ParsedCbr0105ADebtCorpFile:
-    """Разбирает структурированный результат операции скачивания."""
-    return parse_cbr_0105a_debt_corp_excel_bytes(
-        source.content,
-        source_name=source.source_name,
-        source_id=source.source_id,
-        source_url=source.url,
-        source_sha256=source.sha256,
-    )
-
-
-__all__ = [
-    "STREAM_COLUMNS",
-    "concat_cbr_0105a_debt_corp_streams",
-    "optimize_cbr_0105a_debt_corp_stream_dtypes",
-    "parse_cbr_0105a_debt_corp_excel_bytes",
-    "parse_cbr_0105a_debt_corp_source",
-]

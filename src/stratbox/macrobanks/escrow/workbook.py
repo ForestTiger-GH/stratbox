@@ -34,25 +34,17 @@ def build_escrow_workbook(
     indicator_specs: list[EscrowIndicatorSpec],
     *,
     title_row_font: Font | None = None,
-    show_progress: bool = True,
+    checkpoint=None,
 ) -> Workbook:
     """Формирует книгу Excel: один показатель — один лист."""
     workbook = Workbook()
     workbook.remove(workbook.active)
 
     title_font = title_row_font or Font(name="Times New Roman", size=10, bold=True)
-    iterator = indicator_specs
-    if show_progress:
-        try:
-            from tqdm.auto import tqdm
-
-            iterator = tqdm(indicator_specs, desc="Escrow workbook", leave=False)
-        except Exception:
-            iterator = indicator_specs
-
-    used_sheet_names: set[str] = set()
-
-    for spec in iterator:
+    used_sheet_names = set()
+    for spec in indicator_specs:
+        if checkpoint is not None:
+            checkpoint()
         pivot_df = pivots[spec.code].reset_index()
         sheet_name = spec.sheet_code
         if sheet_name in used_sheet_names:

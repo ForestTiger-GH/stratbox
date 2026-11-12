@@ -124,7 +124,9 @@ def normalize_header_text(value: object) -> str:
 
 def is_subject_header_cell(value: object) -> bool:
     """Проверяет, что ячейка похожа на заголовок второго столбца таблицы."""
-    normalized = normalize_header_text(value)
+    # Parentheses can identify the geography level in this particular header.
+    text = str(value).replace("(", " ").replace(")", " ") if value is not None else ""
+    normalized = normalize_header_text(text)
     tokens = set(normalized.split())
     return (
         "субъект" in tokens

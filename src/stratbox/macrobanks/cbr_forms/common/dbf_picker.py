@@ -1,182 +1,52 @@
-"""
-Модуль отвечает за выбор "правильного" DBF внутри распакованного архива.
+"""Select and decode the DBF that implements the form's declared physical layout."""
 
-Идея:
-- После распаковки в папке может быть несколько DBF.
-- Нужный выбирается по наличию требуемых полей (кандидаты задаёт форма).
-"""
+from pathlib import PurePosixPath
+from struct import error as StructError
 
-from __future__ import annotations
+import pandas as pd
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterable
+from stratbox.base.ioapi.dbf_bytes import open_dbf_bytes
+from stratbox.base.utils.optional_deps import MissingExtra
 
-from dbfread import DBF
-
-from stratbox.macrobanks.cbr_forms.common.dbf import CBRFieldParser, DBFLayout
+from .dbf import CBRFieldParser
 
 
-@dataclass(frozen=True)
-class LayoutCandidates:
-    """
-    Кандидаты имён полей (в UPPER).
-
-    Требование:
-- regn_candidates: варианты поля REGN
-- a_candidates: варианты поля A (например C1_3 / C1 / ...)
-- b_candidates: варианты поля B (например C2_3 / C3 / ...)
-    """
-    regn_candidates: list[str]
-    a_candidates: list[str]
-    b_candidates: list[str]
-
-
-def list_dbf_files(root: Path) -> list[Path]:
-    """
-    Находит все DBF в каталоге рекурсивно.
-    """
-    return sorted(list(root.rglob("*.dbf")) + list(root.rglob("*.DBF")))
-
-
-def pick_dbf_and_layout(
-    extracted_dir: Path,
-    candidates: LayoutCandidates,
-    prefer_stem_contains: str | None = None,
-) -> tuple[Path, DBFLayout]:
-    """
-    Выбирает DBF и возвращает:
-      (path_to_dbf, DBFLayout(regn, a, b))
-
-    prefer_stem_contains:
-      - необязательный "бонус" к скорингу, если имя файла содержит строку (например "123" или "135").
-    """
-    dbfs = list_dbf_files(extracted_dir)
-    if not dbfs:
-        raise FileNotFoundError("No DBF found after extracting archive.")
-
-    best = None  # (score, path, layout)
-
-    for p in dbfs:
+def pick_dbf_fields(members, *, field_candidates, optional_field_candidates, prefer_stem_contains):
+    if set(field_candidates) & set(optional_field_candidates):
+        raise ValueError("Required and optional DBF fields overlap")
+    candidates = []
+    for name, data in members.items():
         try:
-            tmp = DBF(str(p), parserclass=CBRFieldParser, load=False)
-            fn = {f.upper(): f for f in tmp.field_names}  # upper -> real
-        except Exception:
+            with open_dbf_bytes(data, parserclass=CBRFieldParser) as table:
+                fields = {field.upper(): field for field in table.field_names}
+        except MissingExtra:
+            raise
+        except (ValueError, OSError, UnicodeError, StructError):
             continue
-
-        regn_real = next((fn[c] for c in candidates.regn_candidates if c in fn), None)
-        a_real = next((fn[c] for c in candidates.a_candidates if c in fn), None)
-        b_real = next((fn[c] for c in candidates.b_candidates if c in fn), None)
-
-        if not (regn_real and a_real and b_real):
-            continue
-
-        score = 0
-        if prefer_stem_contains and prefer_stem_contains.lower() in p.stem.lower():
-            score += 10
-
-        # Бонус типовым именам полей. Функция учитывает как расчетные формы
-        # (C1/C3), так и метрические формы нормативов (C1_3/C2_3, NAME_NORM/FAKT_ZN).
-        if a_real.upper() in ("C1", "C_1", "C1_3", "NAME_NORM", "CODE"):
-            score += 3
-        if b_real.upper() in ("C3", "C_3", "C2_3", "FAKT_ZN", "SIM_ITOGO", "SIM_ITOG", "SIM_R"):
-            score += 3
-
-        cand = (score, p, DBFLayout(regn=regn_real, a=a_real, b=b_real))
-        if best is None or cand[0] > best[0]:
-            best = cand
-
-    if best is None:
-        # диагностика: покажем поля первого файла
-        sample = dbfs[0]
-        tmp = DBF(str(sample), parserclass=CBRFieldParser, load=False)
-        raise RuntimeError(f"Could not pick suitable DBF layout. Sample='{sample.name}', fields={tmp.field_names}")
-
-    _, chosen, layout = best
-    return chosen, layout
+        resolved = {}
+        score = 20 if prefer_stem_contains and prefer_stem_contains.casefold() in PurePosixPath(name).stem.casefold() else 0
+        for field, names in {**field_candidates, **optional_field_candidates}.items():
+            physical = next((fields[alias] for alias in names if alias in fields), None)
+            if physical is not None:
+                resolved[field] = physical
+                score += physical.upper() == names[0]
+        if field_candidates.keys() <= resolved.keys():
+            candidates.append((score, name, resolved))
+    if not candidates:
+        raise ValueError("DBF_LAYOUT_UNRECOGNIZED")
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    if len(candidates) > 1 and candidates[0][0] == candidates[1][0]:
+        raise ValueError("DBF_LAYOUT_AMBIGUOUS")
+    _, name, field_map = candidates[0]
+    return name, field_map
 
 
-def pick_dbf_fields(
-    extracted_dir: Path,
-    *,
-    field_candidates: dict[str, list[str] | tuple[str, ...]],
-    optional_field_candidates: dict[str, list[str] | tuple[str, ...]] | None = None,
-    prefer_stem_contains: str | None = None,
-) -> tuple[Path, dict[str, str]]:
-    """
-    Функция выбирает DBF по обязательным полям и подхватывает опциональные.
-
-    ``field_candidates`` задает поля, без которых DBF не может быть выбран.
-    ``optional_field_candidates`` описывает физические поля, которые могут
-    отсутствовать в отдельных исторических версиях схемы Банка России.
-    Возвращаемый словарь содержит только фактически найденные поля.
-    """
-    dbfs = list_dbf_files(extracted_dir)
-    if not dbfs:
-        raise FileNotFoundError("No DBF found after extracting archive.")
-
-    optional_field_candidates = optional_field_candidates or {}
-    overlap = set(field_candidates) & set(optional_field_candidates)
-    if overlap:
-        raise ValueError(f"Fields cannot be both required and optional: {sorted(overlap)}")
-
-    best: tuple[int, Path, dict[str, str]] | None = None
-
-    for path in dbfs:
-        try:
-            dbf = DBF(str(path), parserclass=CBRFieldParser, load=False)
-            fields = {field.upper(): field for field in dbf.field_names}
-        except Exception:
-            continue
-
-        resolved: dict[str, str] = {}
-        for canonical_name, candidates in field_candidates.items():
-            real = next((fields[str(candidate).upper()] for candidate in candidates if str(candidate).upper() in fields), None)
-            if real is None:
-                resolved = {}
-                break
-            resolved[canonical_name] = real
-
-        if not resolved:
-            continue
-
-        for canonical_name, candidates in optional_field_candidates.items():
-            real = next(
-                (fields[str(candidate).upper()] for candidate in candidates if str(candidate).upper() in fields),
-                None,
-            )
-            if real is not None:
-                resolved[canonical_name] = real
-
-        score = 0
-        if prefer_stem_contains and prefer_stem_contains.lower() in path.stem.lower():
-            score += 20
-
-        # Первый кандидат считается предпочтительным физическим именем поля.
-        all_candidates = {**field_candidates, **optional_field_candidates}
-        for canonical_name, candidates in all_candidates.items():
-            if canonical_name not in resolved:
-                continue
-            first = str(next(iter(candidates))).upper()
-            if resolved[canonical_name].upper() == first:
-                score += 1
-
-        candidate = (score, path, resolved)
-        if best is None or candidate[0] > best[0]:
-            best = candidate
-
-    if best is None:
-        diagnostics: list[str] = []
-        for sample in dbfs[:5]:
-            try:
-                dbf = DBF(str(sample), parserclass=CBRFieldParser, load=False)
-                diagnostics.append(f"{sample.name}: {list(dbf.field_names)}")
-            except Exception:
-                diagnostics.append(f"{sample.name}: <unreadable>")
-        raise RuntimeError(
-            "Could not pick DBF with required fields. "
-            f"Required={field_candidates}; optional={optional_field_candidates}; samples={diagnostics}"
-        )
-
-    _, chosen, resolved = best
-    return chosen, resolved
+def decode_dbf(data: bytes, fields: dict[str, str], columns: tuple[str, ...], *, checkpoint):
+    values = {name: [] for name in columns}
+    with open_dbf_bytes(data, parserclass=CBRFieldParser) as table:
+        for index, record in enumerate(table):
+            if index % 8192 == 0:
+                checkpoint()
+            for column in columns:
+                values[column].append(record.get(fields[column]) if column in fields else None)
+    return pd.DataFrame({column: pd.Series(value, dtype="object") for column, value in values.items()})

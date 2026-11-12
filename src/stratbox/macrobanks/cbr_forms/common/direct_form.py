@@ -16,12 +16,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 import re
+from decimal import Decimal, InvalidOperation
 
 import numpy as np
 import pandas as pd
 
 from stratbox.macrobanks.cbr_forms.common.models import get_model_rows
-from stratbox.macrobanks.cbr_forms.common.runner import RunnerConfig, run_dates_to_selected_dbf_df
 
 
 def _is_missing_scalar(value: Any) -> bool:
@@ -79,14 +79,16 @@ def normalize_code_metric(value: Any) -> str:
     return text.replace("Н", "H")
 
 
-def _value_to_output(value: Any) -> float | str:
+def _value_to_output(value: Any) -> int | Decimal | str:
     """
     Функция сохраняет различие между пустым значением и настоящим нулем.
     """
     if _is_missing_scalar(value):
         return ""
-    if isinstance(value, (int, float, np.integer, np.floating)):
-        return float(value)
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, Decimal):
+        return value
 
     text = str(value).strip()
     if not text:
@@ -94,9 +96,12 @@ def _value_to_output(value: Any) -> float | str:
 
     numeric = text.replace(" ", "").replace("\xa0", "").replace(",", ".")
     try:
-        return float(numeric)
-    except Exception:
+        decimal = Decimal(numeric)
+    except InvalidOperation:
         return text
+    if not decimal.is_finite():
+        return text
+    return int(decimal) if decimal == decimal.to_integral_value() else decimal
 
 
 @dataclass(frozen=True)
@@ -113,8 +118,6 @@ class DirectDatasetSpec:
 
     form: str
     dataset: str
-    progress_desc: str
-    build_url: Callable[[pd.Timestamp], str]
     bank_fields: tuple[str, ...]
     code_fields: tuple[str, ...]
     measure_fields: dict[str, tuple[str, ...]]
@@ -145,54 +148,12 @@ def _normalize_code(value: Any, spec: DirectDatasetSpec, alias_map: dict[str, st
     return alias_map.get(code, code)
 
 
-def run_direct_dataset_raw(
-    *,
-    dates: list[pd.Timestamp],
-    spec: DirectDatasetSpec,
-    cfg: RunnerConfig | None = None,
-    show_progress: bool = True,
-) -> list[tuple[str, pd.DataFrame]]:
-    """
-    Функция загружает физические данные dataset и возвращает normalized raw.
-
-    Каждый DataFrame содержит ``REGN``, ``CODE`` и стабильный набор обязательных
-    и опциональных measure. Отсутствующие опциональные физические поля становятся
-    пустыми колонками, а исходные пустые значения не заменяются нулями.
-    """
-    field_candidates: dict[str, list[str] | tuple[str, ...]] = {
-        "REGN": spec.bank_fields,
-        "CODE": spec.code_fields,
-    }
-    field_candidates.update(spec.measure_fields)
-
-    overlap = set(spec.measure_fields) & set(spec.optional_measure_fields)
-    if overlap:
-        raise RuntimeError(
-            f"Physical measures cannot be both required and optional for "
-            f"form={spec.form}, dataset={spec.dataset}: {sorted(overlap)}"
-        )
-
-    loaded = run_dates_to_selected_dbf_df(
-        dates=dates,
-        build_url=spec.build_url,
-        field_candidates=field_candidates,
-        optional_field_candidates=spec.optional_measure_fields,
-        prefer_stem_contains=spec.prefer_stem_contains,
-        cfg=cfg,
-        show_progress=show_progress,
-        progress_desc=spec.progress_desc,
-    )
-
+def normalize_direct_snapshot(raw: pd.DataFrame, spec: DirectDatasetSpec) -> pd.DataFrame:
     alias_map = _build_alias_map(spec)
-    normalized: list[tuple[str, pd.DataFrame]] = []
-    for date_str, raw in loaded:
-        frame = raw.copy()
-        frame["REGN"] = frame["REGN"].map(normalize_regn)
-        frame["CODE"] = frame["CODE"].map(lambda value: _normalize_code(value, spec, alias_map))
-        frame = frame[(frame["REGN"] != "") & (frame["CODE"] != "")].copy()
-        normalized.append((date_str, frame.reset_index(drop=True)))
-
-    return normalized
+    frame = raw.copy()
+    frame["REGN"] = frame["REGN"].map(normalize_regn)
+    frame["CODE"] = frame["CODE"].map(lambda value: _normalize_code(value, spec, alias_map))
+    return frame.loc[frame["REGN"].ne("") & frame["CODE"].ne("")].reset_index(drop=True)
 
 
 def build_direct_long(
@@ -292,31 +253,4 @@ def build_direct_long(
         "Единица",
     ]
     result = pd.DataFrame(output_rows, columns=columns)
-    print(f"[INFO] {spec.form} long rows: {len(result)}")
     return result, indicator_order
-
-
-def run_direct_form(
-    *,
-    dates: list[pd.Timestamp],
-    banks_df: pd.DataFrame,
-    model_df: pd.DataFrame,
-    spec: DirectDatasetSpec,
-    cfg: RunnerConfig | None = None,
-    show_progress: bool = True,
-) -> tuple[pd.DataFrame, dict[str, int]]:
-    """
-    Функция выполняет полный цикл одного direct-dataset формы.
-    """
-    raw = run_direct_dataset_raw(
-        dates=dates,
-        spec=spec,
-        cfg=cfg,
-        show_progress=show_progress,
-    )
-    return build_direct_long(
-        date_raw_list=raw,
-        banks_df=banks_df,
-        model_df=model_df,
-        spec=spec,
-    )

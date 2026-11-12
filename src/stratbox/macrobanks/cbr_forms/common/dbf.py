@@ -8,11 +8,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from decimal import Decimal
 
-import numpy as np
-import pandas as pd
-from dbfread import DBF
 from dbfread.field_parser import FieldParser
 
 
@@ -37,7 +34,7 @@ class CBRFieldParser(FieldParser):
             return int(cleaned)
         except Exception:
             try:
-                return float(cleaned.replace(b",", b"."))
+                return Decimal(cleaned.decode("ascii").replace(",", "."))
             except Exception:
                 # Бинарный вариант
                 if len(data) in (2, 4, 8):
@@ -48,7 +45,7 @@ class CBRFieldParser(FieldParser):
                 try:
                     return int(s)
                 except Exception:
-                    return float(s)
+                    return Decimal(s)
 
     def parseI(self, field, data):
         if data is None:
@@ -56,65 +53,3 @@ class CBRFieldParser(FieldParser):
         if len(data) in (2, 4, 8):
             return int.from_bytes(data, byteorder="little", signed=True)
         return super().parseI(field, data)
-
-
-@dataclass(frozen=True)
-class DBFLayout:
-    """
-    Описание фактических имён полей в выбранном DBF.
-    """
-    regn: str
-    a: str
-    b: str
-
-
-def read_dbf_fields(path: str) -> list[str]:
-    """
-    Возвращает список полей DBF без загрузки записей.
-    """
-    dbf = DBF(path, parserclass=CBRFieldParser, load=False)
-    return list(dbf.field_names)
-
-
-def read_dbf_to_df(path: str, layout: DBFLayout) -> pd.DataFrame:
-    """
-    Читает DBF и возвращает DataFrame с колонками:
-      - REGN
-      - A
-      - B
-
-    Примечание:
-    - Конкретный смысл A/B зависит от формы:
-      * для 123: A=номер счета, B=значение
-      * для 135: A=метка, B=значение
-    """
-    dbf = DBF(path, parserclass=CBRFieldParser)
-
-    regn_list = []
-    a_list = []
-    b_list = []
-
-    for rec in dbf:
-        regn_list.append(rec.get(layout.regn))
-        a_list.append(rec.get(layout.a))
-        b_list.append(rec.get(layout.b))
-
-    return pd.DataFrame({"REGN": regn_list, "A": a_list, "B": b_list})
-
-def read_dbf_columns(path: str, field_map: dict[str, str]) -> pd.DataFrame:
-    """
-    Функция читает выбранные физические поля DBF в канонические колонки.
-
-    ``field_map`` задается как ``каноническое_имя -> физическое_поле_DBF``.
-    Это позволяет форме отделить физическую структуру источника от
-    семантической модели показателей.
-    """
-    dbf = DBF(path, parserclass=CBRFieldParser)
-    data: dict[str, list] = {name: [] for name in field_map}
-
-    for rec in dbf:
-        for name, physical_field in field_map.items():
-            data[name].append(rec.get(physical_field))
-
-    return pd.DataFrame(data)
-

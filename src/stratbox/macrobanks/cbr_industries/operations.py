@@ -1,367 +1,400 @@
-"""Публичные операции серии Банка России ``01_05_A_Debt_corp``."""
+"""Independent acquisition, normalization, calculation and rendering for 01_05_A_Debt_corp."""
 
-from __future__ import annotations
+from pathlib import PurePosixPath
 
-import pandas as pd
+from stratbox.base.net import HttpTransport
+from stratbox.base.utils.optional_deps import require_extra
+from stratbox.data import AcquiredSource
+from stratbox.execution import (
+    Completion,
+    ExecutionContext,
+    OperationDefinition,
+    OperationFailure,
+    OperationResult,
+    run,
+)
+from stratbox.execution.source_validation import use_payload
+from stratbox.macrobanks._cbr import (
+    HTML_TYPES,
+    WORKBOOK_LIMIT,
+    XLSX_TYPES,
+    official_url,
+    receive_cbr,
+    validate_workbook,
+)
 
-from stratbox.base.filestore import FileStore
-from stratbox.base.runtime import get_filestore
-from stratbox.macrobanks.cbr_industries.contracts import (
+from .contracts import (
+    BuildIndustryStreamRequest,
+    CalculateApkRequest,
     Cbr0105ADebtCorpApkCalculationResult,
-    Cbr0105ADebtCorpDownloadBatchResult,
-    Cbr0105ADebtCorpDownloadedSource,
-    Cbr0105ADebtCorpDownloadRequest,
-    Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotSetResult,
-    Cbr0105ADebtCorpPivotWorkbookRequest,
     Cbr0105ADebtCorpPivotWorkbookResult,
     Cbr0105ADebtCorpSourceFailure,
     Cbr0105ADebtCorpSourceLink,
-    Cbr0105ADebtCorpStreamBuildRequest,
     Cbr0105ADebtCorpStreamResult,
+    DiscoverIndustriesRequest,
+    ParseIndustryRequest,
     ParsedCbr0105ADebtCorpFile,
+    PivotInput,
+    RenderIndustryRequest,
+    RenderPivotRequest,
 )
-from stratbox.macrobanks.cbr_industries.derived import (
-    calculate_cbr_0105a_debt_corp_apk_industry as _calculate_apk_industry,
+
+_DATASET = "cbr.industries.0105a"
+_ROOTS = ("/vfs/statistics/", "/content/document/file/")
+_METHOD = "cbr-0105a-workbook-1"
+_HTTP = frozenset({"http"})
+DISCOVER = OperationDefinition(
+    f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple
 )
-from stratbox.macrobanks.cbr_industries.download import (
-    try_download_cbr_0105a_debt_corp_source,
+ACQUIRE = OperationDefinition(
+    f"{_DATASET}.acquire",
+    1,
+    "cbr-0105a-source-1",
+    Cbr0105ADebtCorpSourceLink,
+    AcquiredSource,
+    _HTTP,
 )
-from stratbox.macrobanks.cbr_industries.export import (
-    save_cbr_0105a_debt_corp_industry_workbook as _save_industry_workbook,
-    save_cbr_0105a_debt_corp_pivot_workbook as _save_pivot_workbook,
+PARSE = OperationDefinition(
+    f"{_DATASET}.parse", 1, _METHOD, ParseIndustryRequest, ParsedCbr0105ADebtCorpFile
 )
-from stratbox.macrobanks.cbr_industries.parser import (
-    concat_cbr_0105a_debt_corp_streams,
-    parse_cbr_0105a_debt_corp_source,
+BUILD_STREAM = OperationDefinition(
+    f"{_DATASET}.build_stream",
+    1,
+    "cbr-0105a-stream-1",
+    BuildIndustryStreamRequest,
+    Cbr0105ADebtCorpStreamResult,
+    partial_allowed=True,
 )
-from stratbox.macrobanks.cbr_industries.pivots import (
-    build_cbr_0105a_debt_corp_pivot_set as _build_pivot_set,
+CALCULATE_APK = OperationDefinition(
+    f"{_DATASET}.calculate_apk",
+    1,
+    "cbr-0105a-derived-apk-1",
+    CalculateApkRequest,
+    Cbr0105ADebtCorpApkCalculationResult,
 )
-from stratbox.macrobanks.cbr_industries.regions import (
-    normalize_cbr_0105a_debt_corp_regions_to_latest,
+PIVOT = OperationDefinition(
+    f"{_DATASET}.build_pivots",
+    1,
+    "cbr-0105a-pivots-1",
+    PivotInput,
+    Cbr0105ADebtCorpPivotSetResult,
 )
-from stratbox.macrobanks.cbr_industries.sources import (
-    CBR_SORS_INDEX_URL,
-    DEFAULT_HEADERS,
-    discover_cbr_0105a_debt_corp_source_links,
+RENDER_PIVOTS = OperationDefinition(
+    f"{_DATASET}.render_pivots",
+    1,
+    "cbr-0105a-pivot-xlsx-1",
+    RenderPivotRequest,
+    Cbr0105ADebtCorpPivotWorkbookResult,
+)
+RENDER_INDUSTRY = OperationDefinition(
+    f"{_DATASET}.render_industry",
+    1,
+    "cbr-0105a-industry-xlsx-1",
+    RenderIndustryRequest,
+    Cbr0105ADebtCorpIndustryWorkbookResult,
 )
 
 
-def _normalize_error_policy(value: str) -> str:
-    policy = str(value).strip().lower()
-    if policy not in {"fail_fast", "collect_partial"}:
-        raise ValueError(f"Unsupported source_error_policy: {value!r}")
-    return policy
-
-
-def _progress(items, *, enabled: bool, description: str):
-    if not enabled:
-        return items
-    try:
-        from tqdm.auto import tqdm
-
-        return tqdm(items, desc=description, leave=False)
-    except Exception:
-        return items
-
-
-def discover_cbr_0105a_debt_corp_sources(
+def discover(
+    request: DiscoverIndustriesRequest,
     *,
-    index_url: str = CBR_SORS_INDEX_URL,
-    date_from: str | None = None,
-    date_to: str | None = None,
-    timeout: int = 60,
-    retries: int = 2,
-    backoff: float = 0.5,
-    min_bytes_ok: int = 512,
-    headers: dict[str, str] | None = None,
-    plugin_only: bool = True,
-) -> tuple[Cbr0105ADebtCorpSourceLink, ...]:
-    """Возвращает официальный каталог книг ``01_05_A_Debt_corp``."""
-    return discover_cbr_0105a_debt_corp_source_links(
-        index_url=index_url,
-        date_from=date_from,
-        date_to=date_to,
-        timeout=timeout,
-        retries=retries,
-        backoff=backoff,
-        min_bytes_ok=min_bytes_ok,
-        headers=headers,
-        plugin_only=plugin_only,
-    )
-
-
-def download_cbr_0105a_debt_corp_sources(
-    request: Cbr0105ADebtCorpDownloadRequest,
-    *,
-    filestore: FileStore | None = None,
-) -> Cbr0105ADebtCorpDownloadBatchResult:
-    """Обнаруживает и скачивает исходные книги, не выполняя парсинг."""
-    policy = _normalize_error_policy(request.source_error_policy)
-    store = filestore or get_filestore()
-    source_links = discover_cbr_0105a_debt_corp_sources(
-        index_url=request.index_url,
-        date_from=request.date_from,
-        date_to=request.date_to,
-        timeout=request.timeout,
-        retries=request.retries,
-        backoff=request.backoff,
-        min_bytes_ok=request.min_bytes_ok,
-        headers=dict(request.headers) if request.headers is not None else None,
-        plugin_only=request.plugin_only,
-    )
-    if not source_links:
-        raise RuntimeError("No 01_05_A_Debt_corp sources found for the selected period")
-
-    downloaded = []
-    failures = []
-    for source in _progress(
-        source_links,
-        enabled=request.show_progress,
-        description="CBR 01_05_A_Debt_corp download",
-    ):
-        result, failure = try_download_cbr_0105a_debt_corp_source(
-            source,
-            store=store,
-            source_cache_dir=request.source_cache_dir,
-            refresh=request.refresh,
-            timeout=request.timeout,
-            retries=request.retries,
-            backoff=request.backoff,
-            min_bytes_ok=request.min_bytes_ok,
-            headers=dict(request.headers) if request.headers is not None else None,
-            plugin_only=request.plugin_only,
+    transport: HttpTransport | None = None,
+    context: ExecutionContext | None = None,
+) -> OperationResult[tuple[Cbr0105ADebtCorpSourceLink, ...]]:
+    def work(req, invocation):
+        from .sources import (
+            CBR_SORS_INDEX_URL,
+            discover_cbr_0105a_debt_corp_links_from_html,
         )
-        if failure is not None:
-            failures.append(failure)
-            if policy == "fail_fast":
-                raise RuntimeError(
-                    f"Failed to download {failure.source_name}: {failure.error}"
-                )
-            continue
-        assert result is not None
-        downloaded.append(result)
 
-    return Cbr0105ADebtCorpDownloadBatchResult(
-        source_links=source_links,
-        downloaded_sources=tuple(downloaded),
-        failures=tuple(failures),
-    )
-
-
-def parse_cbr_0105a_debt_corp_downloaded_source(
-    source: Cbr0105ADebtCorpDownloadedSource,
-) -> ParsedCbr0105ADebtCorpFile:
-    """Публичная операция разбора одной ранее скачанной книги."""
-    return parse_cbr_0105a_debt_corp_source(source)
-
-
-def build_cbr_0105a_debt_corp_stream(
-    request: Cbr0105ADebtCorpStreamBuildRequest,
-    *,
-    filestore: FileStore | None = None,
-) -> Cbr0105ADebtCorpStreamResult:
-    """Скачивает, разбирает и объединяет книги в нормализованный поток."""
-    policy = _normalize_error_policy(request.source_error_policy)
-    download_result = download_cbr_0105a_debt_corp_sources(
-        Cbr0105ADebtCorpDownloadRequest(
-            index_url=request.index_url,
-            date_from=request.date_from,
-            date_to=request.date_to,
-            source_cache_dir=request.source_cache_dir,
-            refresh=request.refresh,
-            timeout=request.timeout,
-            retries=request.retries,
-            backoff=request.backoff,
-            min_bytes_ok=request.min_bytes_ok,
-            headers=request.headers or DEFAULT_HEADERS,
-            plugin_only=request.plugin_only,
-            show_progress=request.show_progress,
-            source_error_policy=request.source_error_policy,
-        ),
-        filestore=filestore,
-    )
-
-    failures = list(download_result.failures)
-    parsed_files: list[ParsedCbr0105ADebtCorpFile] = []
-    for source in _progress(
-        download_result.downloaded_sources,
-        enabled=request.show_progress,
-        description="CBR 01_05_A_Debt_corp parse",
-    ):
+        invocation.stage("discover")
+        payload = req.index
+        if payload is None:
+            payload = receive_cbr(
+                CBR_SORS_INDEX_URL,
+                roots=("/statistics/",),
+                media_types=HTML_TYPES,
+                limit=5_000_000,
+                source_id=f"{_DATASET}.index",
+                transport=transport,
+                invocation=invocation,
+            ).payload
+        use_payload(payload, invocation, role="source_index", limit=5_000_000)
         try:
-            parsed_files.append(parse_cbr_0105a_debt_corp_source(source))
-        except Exception as exc:
-            failure = Cbr0105ADebtCorpSourceFailure(
-                stage="parse",
-                source_id=source.source_id,
-                url=source.url,
-                source_name=source.source_name,
-                report_date=source.report_date,
-                error=f"{type(exc).__name__}: {exc}",
-                status_code=None,
-                attempts_used=1,
-                used_url=source.used_url,
-                final_url=source.final_url,
+            found = discover_cbr_0105a_debt_corp_links_from_html(payload.data)
+        except ValueError:
+            raise OperationFailure("source.index_invalid") from None
+        if not found:
+            raise OperationFailure("source.index_empty")
+        for source in found:
+            official_url(source.url, roots=_ROOTS)
+        return found
+
+    return run(DISCOVER, request, work, context=context)
+
+
+def _validate_link(source):
+    from .sources import report_date_from_cbr_0105a_filename
+
+    path = official_url(source.url, roots=_ROOTS)
+    try:
+        day = report_date_from_cbr_0105a_filename(source.source_name)
+    except ValueError:
+        raise OperationFailure("request.source_filename_invalid") from None
+    if (
+        PurePosixPath(path).name != source.source_name
+        or day != source.report_date
+        or source.source_id != f"01_05_A_Debt_corp_{day.replace('-', '')}"
+    ):
+        raise OperationFailure("request.source_identity_mismatch")
+
+
+def acquire(
+    request: Cbr0105ADebtCorpSourceLink,
+    *,
+    transport: HttpTransport | None = None,
+    context: ExecutionContext | None = None,
+) -> OperationResult[AcquiredSource]:
+    def work(req, invocation):
+        invocation.stage("acquire")
+        _validate_link(req)
+        acquired = receive_cbr(
+            req.url,
+            roots=_ROOTS,
+            media_types=XLSX_TYPES,
+            limit=WORKBOOK_LIMIT,
+            source_id=req.source_id,
+            transport=transport,
+            invocation=invocation,
+        )
+        validate_workbook(acquired.payload.data)
+        return acquired
+
+    return run(ACQUIRE, request, work, context=context, providers={"http": transport})
+
+
+def _parse(req, invocation):
+    require_extra("pandas", "dataframe")
+    require_extra("openpyxl", "excel")
+    from .parser import parse_cbr_0105a_debt_corp_excel_bytes
+
+    use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
+    if req.source is not None:
+        _validate_link(req.source)
+        if req.source.source_name != req.source_name:
+            raise OperationFailure("request.source_identity_mismatch")
+    validate_workbook(req.payload.data)
+    try:
+        return parse_cbr_0105a_debt_corp_excel_bytes(
+            req.payload.data,
+            source_name=req.source_name,
+            source_sha256=req.payload.identity.sha256,
+            source_url=req.source.url if req.source is not None else None,
+            checkpoint=invocation.check_cancelled,
+        )
+    except (ValueError, KeyError, OSError):
+        raise OperationFailure("source.workbook_invalid") from None
+
+
+def parse(
+    request: ParseIndustryRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[ParsedCbr0105ADebtCorpFile]:
+    def work(req, invocation):
+        invocation.stage("parse")
+        value = _parse(req, invocation)
+        if any(issue.severity == "error" for issue in value.validation_issues):
+            return Completion(value, "failed", "source.validation_failed")
+        return value
+
+    return run(PARSE, request, work, context=context)
+
+
+def build_stream(
+    request: BuildIndustryStreamRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[Cbr0105ADebtCorpStreamResult]:
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from .parser import concat_cbr_0105a_debt_corp_streams
+        from .regions import normalize_cbr_0105a_debt_corp_regions_to_latest
+        from .sources import report_date_from_cbr_0105a_filename
+
+        invocation.stage("parse")
+        if not req.sources:
+            raise OperationFailure("request.source_selection_empty")
+        try:
+            selected = tuple(
+                report_date_from_cbr_0105a_filename(item.source_name)
+                for item in req.sources
             )
-            failures.append(failure)
-            if policy == "fail_fast":
-                raise RuntimeError(
-                    f"Failed to parse {failure.source_name}: {failure.error}"
-                ) from exc
+        except ValueError:
+            raise OperationFailure("request.source_filename_invalid") from None
+        if len(set(selected)) != len(selected):
+            raise OperationFailure("request.duplicate_release")
+        parsed, failures = [], []
+        for index, (item, day) in enumerate(zip(req.sources, selected), 1):
+            invocation.progress(index - 1, len(selected))
+            try:
+                parsed.append(_parse(item, invocation))
+            except OperationFailure as error:
+                if not req.continue_on_error or error.outcome == "cancelled":
+                    raise
+                source = item.source
+                failures.append(
+                    Cbr0105ADebtCorpSourceFailure(
+                        "parse",
+                        source.source_id if source else item.source_name,
+                        source.url if source else "",
+                        item.source_name,
+                        day,
+                        error.diagnostic.code,
+                    )
+                )
+        if not parsed:
+            raise OperationFailure("source.no_valid_workbooks")
+        invocation.stage("normalize_geography")
+        files = normalize_cbr_0105a_debt_corp_regions_to_latest(parsed)
+        stream = concat_cbr_0105a_debt_corp_streams(item.df_stream for item in files)
+        stream = stream.sort_values(
+            ["report_date", "sheet_order", "region_order", "industry_order"],
+            kind="stable",
+        ).reset_index(drop=True)
+        dates = tuple(sorted(item.report_date for item in files))
+        latest = max(files, key=lambda item: item.report_date)
+        value = Cbr0105ADebtCorpStreamResult(
+            tuple(item.source for item in req.sources if item.source is not None),
+            tuple(failures),
+            files,
+            tuple(issue for item in files for issue in item.validation_issues),
+            stream,
+            dates,
+            latest.report_date,
+            max(selected),
+            latest.report_date,
+            latest.report_date == max(selected),
+            latest.regions,
+            latest.industries,
+            len(stream),
+        )
+        if not value.validation_ok:
+            return Completion(value, "failed", "source.validation_failed")
+        if failures:
+            return Completion(value, "partial", "source.selection_incomplete")
+        return value
 
-    if not parsed_files:
-        raise RuntimeError("No 01_05_A_Debt_corp workbooks were parsed successfully")
-
-    normalized_files = normalize_cbr_0105a_debt_corp_regions_to_latest(parsed_files)
-    stream = concat_cbr_0105a_debt_corp_streams(
-        item.df_stream for item in normalized_files
-    )
-    stream = stream.sort_values(
-        ["report_date", "sheet_order", "region_order", "industry_order"],
-        kind="stable",
-    ).reset_index(drop=True)
-    dates = tuple(sorted(str(value) for value in stream["report_date"].dropna().unique()))
-    latest_file = max(normalized_files, key=lambda item: item.report_date)
-    latest_discovered_report_date = max(
-        item.report_date for item in download_result.source_links
-    )
-    validation_issues = tuple(
-        issue for parsed in normalized_files for issue in parsed.validation_issues
-    )
-
-    return Cbr0105ADebtCorpStreamResult(
-        source_links=download_result.source_links,
-        downloaded_sources=download_result.downloaded_sources,
-        failures=tuple(failures),
-        parsed_files=normalized_files,
-        validation_issues=validation_issues,
-        df_stream=stream,
-        dates=dates,
-        latest_report_date=latest_file.report_date,
-        latest_discovered_report_date=latest_discovered_report_date,
-        region_normalization_date=latest_file.report_date,
-        region_normalization_is_latest_discovered=(
-            latest_file.report_date == latest_discovered_report_date
-        ),
-        regions=latest_file.regions,
-        industries=latest_file.industries,
-        rows_stream=int(len(stream)),
-    )
-
-
-def calculate_cbr_0105a_debt_corp_apk_industry(
-    df_stream: pd.DataFrame,
-) -> Cbr0105ADebtCorpApkCalculationResult:
-    """Дополняет поток расчетной отраслью ``АПК`` для всех наблюдений."""
-    return _calculate_apk_industry(df_stream)
-
-
-def build_cbr_0105a_debt_corp_pivot_set(
-    df_stream: pd.DataFrame,
-    request: Cbr0105ADebtCorpPivotRequest,
-    *,
-    stream_result: Cbr0105ADebtCorpStreamResult | None = None,
-) -> Cbr0105ADebtCorpPivotSetResult:
-    """Преобразует предварительно отфильтрованный поток в набор двумерных таблиц."""
-    return _build_pivot_set(df_stream, request, stream_result=stream_result)
+    return run(BUILD_STREAM, request, work, context=context)
 
 
-def export_cbr_0105a_debt_corp_industry_workbook(
-    stream_result: Cbr0105ADebtCorpStreamResult,
-    request: Cbr0105ADebtCorpIndustryWorkbookRequest,
-    *,
-    filestore: FileStore | None = None,
-) -> Cbr0105ADebtCorpIndustryWorkbookResult:
-    """Формирует CBR-подобную шестилистовую книгу по одной выбранной отрасли.
-
-    ``industry_code="apk"`` рассчитывает АПК автоматически. Любой исходный
-    код, включая опубликованное ``industry_code="total"``, выгружается без
-    пересчета из канонического потока.
-    """
-    if not stream_result.ok:
-        raise RuntimeError(
-            "Industry workbook export requires a complete and valid stream result"
+def calculate_apk(
+    request: CalculateApkRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[Cbr0105ADebtCorpApkCalculationResult]:
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from .derived import (
+            Cbr0105ADebtCorpDerivedIndustryError,
+            calculate_cbr_0105a_debt_corp_apk_industry,
         )
 
-    industry_code = str(request.industry_code).strip()
-    if not industry_code:
-        raise ValueError("Industry workbook industry_code is empty")
+        invocation.stage("calculate_derived")
+        try:
+            return calculate_cbr_0105a_debt_corp_apk_industry(req.stream)
+        except Cbr0105ADebtCorpDerivedIndustryError as error:
+            raise OperationFailure(f"derived.{error.code.lower()}") from None
 
-    stream = stream_result.df_stream
-    industry_codes = stream["industry_code"].astype("object")
-    if not industry_codes.eq(industry_code).any():
-        if industry_code == "apk" and request.calculate_apk_if_missing:
-            stream = _calculate_apk_industry(stream).df_stream
-            industry_codes = stream["industry_code"].astype("object")
-        else:
-            available = tuple(
-                sorted(str(value) for value in industry_codes.dropna().unique())
-            )
-            raise ValueError(
-                f"Industry code {industry_code!r} is absent from the stream; "
-                f"available={available}"
-            )
+    return run(CALCULATE_APK, request, work, context=context)
 
-    filtered = stream.loc[industry_codes.eq(industry_code)].copy()
-    names = tuple(
-        str(value)
-        for value in filtered["industry_name_ru"].astype("object").dropna().unique()
-    )
-    if len(names) != 1:
-        raise ValueError(
-            "Industry workbook requires one unambiguous industry name: "
-            f"industry_code={industry_code!r}, names={names}"
+
+def build_pivots(
+    request: PivotInput, *, context: ExecutionContext | None = None
+) -> OperationResult[Cbr0105ADebtCorpPivotSetResult]:
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from .pivots import (
+            Cbr0105ADebtCorpPivotError,
+            build_cbr_0105a_debt_corp_pivot_set,
         )
-    industry_name_ru = names[0]
 
-    pivot_set = _build_pivot_set(
-        filtered,
-        Cbr0105ADebtCorpPivotRequest(
-            row_dimension="region_code",
-            column_dimension="report_date",
-            value_columns=("value",),
-            sheet_dimensions=("currency_scope", "measure"),
-            require_complete_stream=True,
-            max_sheet_count=6,
-        ),
-        stream_result=stream_result,
-    )
-    normalized_request = Cbr0105ADebtCorpIndustryWorkbookRequest(
-        out_path=request.out_path,
-        industry_code=industry_code,
-        overwrite=request.overwrite,
-        calculate_apk_if_missing=request.calculate_apk_if_missing,
-        include_metadata_sheet=request.include_metadata_sheet,
-    )
-    return _save_industry_workbook(
-        pivot_set,
-        normalized_request,
-        industry_name_ru=industry_name_ru,
-        filestore=filestore,
-    )
+        invocation.stage("build_views")
+        try:
+            return build_cbr_0105a_debt_corp_pivot_set(
+                req.stream, req.pivot, stream_result=req.source
+            )
+        except Cbr0105ADebtCorpPivotError as error:
+            raise OperationFailure(f"pivot.{error.code.lower()}") from None
+
+    return run(PIVOT, request, work, context=context)
 
 
-def save_cbr_0105a_debt_corp_pivot_workbook(
-    pivot_set: Cbr0105ADebtCorpPivotSetResult,
-    request: Cbr0105ADebtCorpPivotWorkbookRequest,
-    *,
-    filestore: FileStore | None = None,
-) -> Cbr0105ADebtCorpPivotWorkbookResult:
-    """Сохраняет готовый набор таблиц отдельными листами одной XLSX-книги."""
-    return _save_pivot_workbook(pivot_set, request, filestore=filestore)
+def render_pivots(
+    request: RenderPivotRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[Cbr0105ADebtCorpPivotWorkbookResult]:
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from .export import render_cbr_0105a_debt_corp_pivot_workbook
+
+        invocation.stage("render")
+        if not req.tables.tables:
+            raise OperationFailure("request.empty_views")
+        return render_cbr_0105a_debt_corp_pivot_workbook(req.tables, req.format)
+
+    return run(RENDER_PIVOTS, request, work, context=context)
 
 
-__all__ = [
-    "calculate_cbr_0105a_debt_corp_apk_industry",
-    "build_cbr_0105a_debt_corp_pivot_set",
-    "build_cbr_0105a_debt_corp_stream",
-    "discover_cbr_0105a_debt_corp_sources",
-    "download_cbr_0105a_debt_corp_sources",
-    "export_cbr_0105a_debt_corp_industry_workbook",
-    "parse_cbr_0105a_debt_corp_downloaded_source",
-    "save_cbr_0105a_debt_corp_pivot_workbook",
-]
+def render_industry(
+    request: RenderIndustryRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[Cbr0105ADebtCorpIndustryWorkbookResult]:
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from .derived import (
+            Cbr0105ADebtCorpDerivedIndustryError,
+            calculate_cbr_0105a_debt_corp_apk_industry,
+        )
+        from .export import render_cbr_0105a_debt_corp_industry_workbook
+        from .pivots import (
+            Cbr0105ADebtCorpPivotError,
+            build_cbr_0105a_debt_corp_pivot_set,
+        )
+
+        if not req.stream.ok:
+            raise OperationFailure("source.stream_incomplete")
+        invocation.stage("select_industry")
+        stream = req.stream.df_stream
+        code = req.format.industry_code
+        try:
+            if (
+                code == "apk"
+                and not stream["industry_code"].eq(code).any()
+                and req.format.calculate_apk_if_missing
+            ):
+                stream = calculate_cbr_0105a_debt_corp_apk_industry(stream).df_stream
+            filtered = stream.loc[stream["industry_code"].eq(code)]
+            names = filtered["industry_name_ru"].dropna().unique()
+            if len(names) != 1:
+                raise OperationFailure("request.industry_unresolved")
+            pivot = build_cbr_0105a_debt_corp_pivot_set(
+                filtered,
+                Cbr0105ADebtCorpPivotRequest(
+                    "region_code",
+                    "report_date",
+                    sheet_dimensions=("currency_scope", "measure"),
+                    max_sheet_count=6,
+                ),
+                stream_result=req.stream,
+            )
+            invocation.stage("render")
+            return render_cbr_0105a_debt_corp_industry_workbook(
+                pivot, req.format, industry_name_ru=str(names[0])
+            )
+        except Cbr0105ADebtCorpDerivedIndustryError as error:
+            raise OperationFailure(f"derived.{error.code.lower()}") from None
+        except (Cbr0105ADebtCorpPivotError, ValueError):
+            raise OperationFailure("source.industry_views_invalid") from None
+
+    return run(RENDER_INDUSTRY, request, work, context=context)

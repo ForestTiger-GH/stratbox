@@ -1,9 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pandas as pd
+from stratbox.data import Representation
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+def _empty_frame():
+    from pandas import DataFrame
+
+    return DataFrame()
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,17 +70,17 @@ class SorsRestorationResult:
     conflicts_grid: pd.DataFrame
     audit_grid: pd.DataFrame
     summary: SorsRunSummary
-    facts_ledger_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    current_component_facts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    publication_partitions_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    inheritance_events_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    publication_tokens_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    promotion_events_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    fixed_point_passes_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    optimization_rounds_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    target_bounds_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    rounding_profiles_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
-    selection_attempts_grid: pd.DataFrame = field(default_factory=pd.DataFrame)
+    facts_ledger_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    current_component_facts_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    publication_partitions_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    inheritance_events_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    publication_tokens_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    promotion_events_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    fixed_point_passes_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    optimization_rounds_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    target_bounds_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    rounding_profiles_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    selection_attempts_grid: pd.DataFrame = field(default_factory=_empty_frame)
     _source_bundle: object | None = None
     _strict_problem: object | None = None
 
@@ -112,8 +121,6 @@ class SorsPivotResult:
 
 @dataclass(frozen=True, slots=True)
 class SorsWorkbookResult:
-    output_path: Path
+    representation: Representation
     sheet_names: tuple[str, ...]
     sheet_count: int
-    file_size: int
-    sha256: str

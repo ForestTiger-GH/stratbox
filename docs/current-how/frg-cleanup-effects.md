@@ -1,5 +1,7 @@
 # Current HOW — file-family cleanup plans, effects, and failure handling
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Maintained scope:** the FRG file-family cleanup mechanism in the analytical core, **not** a general durable JobManager, transactional artifact service, or full FRG domain study.  
 **Implementation owner:** `ForestTiger-GH/stratbox`; exact code `8459dc58922b7e8df853cf1d9e8131fa9e132580`, file `src/stratbox/macrobanks/frg/cleanup.py`, blob `a51e1a905ddc9290dc1593e6d887564714b0bce4`.  
 **Evidence:** direct static code read. No execution, filesystem mutation, synthetic fault injection, installed-environment check or user acceptance was performed.

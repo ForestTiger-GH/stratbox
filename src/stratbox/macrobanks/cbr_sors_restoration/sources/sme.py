@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
+from stratbox.data import SourcePayload
 
 import pandas as pd
-from openpyxl import load_workbook
 
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
 from stratbox.macrobanks.cbr_sors_restoration.schema import (
@@ -14,7 +13,7 @@ from stratbox.macrobanks.cbr_sors_restoration.schema import (
 from stratbox.macrobanks.cbr_sors_restoration.sources.common import (
     canonicalize_observations,
     iso_date,
-    sha256_file,
+    open_source_workbook,
     sheet_semantics,
 )
 from stratbox.macrobanks.cbr_sors_restoration.sources.national_common import (
@@ -32,15 +31,15 @@ def _date_column_from_row(values: tuple[object, ...], as_of_date: str) -> int:
 
 
 def parse_sme_national_totals(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     policy: RoundingPolicy,
 ) -> pd.DataFrame:
     """Parse 01_11 national SME totals and its SME-IE subset."""
 
-    actual = Path(path)
-    digest = sha256_file(actual)
-    workbook = load_workbook(actual, read_only=True, data_only=True)
+    actual_name = path.source_id or "source.xlsx"
+    digest = path.identity.sha256
+    workbook = open_source_workbook(path)
     rows: list[dict[str, object]] = []
     try:
         for ws in workbook.worksheets:
@@ -62,8 +61,8 @@ def parse_sme_national_totals(
                 rows.append(
                     {
                         'source_series': '01_11',
-                        'source_file_actual': actual.name,
-                        'source_file_logical': actual.name,
+                        'source_file_actual': actual_name,
+                        'source_file_logical': actual_name,
                         'source_sha256': digest,
                         'source_sheet': ws.title,
                         'source_row': row_no,
@@ -96,7 +95,7 @@ def parse_sme_national_totals(
 
 
 def parse_sme_national_okved2(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     policy: RoundingPolicy,
     *,
@@ -126,7 +125,7 @@ def parse_sme_national_okved2(
 
 
 def parse_sme_regional_totals(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     policy: RoundingPolicy,
     geography_nodes: pd.DataFrame,
@@ -136,13 +135,13 @@ def parse_sme_regional_totals(
 ) -> pd.DataFrame:
     if portfolio_scope not in {'SME', 'SME_IE'}:
         raise ValueError(f'Unsupported SME regional scope {portfolio_scope!r}')
-    actual = Path(path)
-    digest = sha256_file(actual)
+    actual_name = path.source_id or "source.xlsx"
+    digest = path.identity.sha256
     by_name = {
         normalize_key(row.geography_name): row
         for row in geography_nodes.itertuples(index=False)
     }
-    workbook = load_workbook(actual, read_only=True, data_only=True)
+    workbook = open_source_workbook(path)
     rows: list[dict[str, object]] = []
     try:
         for ws in workbook.worksheets:
@@ -167,8 +166,8 @@ def parse_sme_regional_totals(
                 rows.append(
                     {
                         'source_series': source_series,
-                        'source_file_actual': actual.name,
-                        'source_file_logical': actual.name,
+                        'source_file_actual': actual_name,
+                        'source_file_logical': actual_name,
                         'source_sha256': digest,
                         'source_sheet': ws.title,
                         'source_row': row_no,

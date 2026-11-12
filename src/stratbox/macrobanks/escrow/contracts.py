@@ -14,7 +14,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Mapping
 
-import pandas as pd
+from datetime import date
+from typing import TYPE_CHECKING
+
+from stratbox.data import SourcePayload
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 SourceErrorPolicy = Literal["fail_fast", "collect_partial"]
@@ -82,22 +88,6 @@ class EscrowSourceLink:
 
 
 @dataclass(frozen=True, slots=True)
-class EscrowSourceDownloadResult:
-    """Успешно скачанный или прочитанный из кэша исходный файл."""
-
-    source_id: str
-    url: str
-    source_name: str
-    file_date_hint: str | None
-    content: bytes = field(repr=False)
-    size_bytes: int = 0
-    used_url: str = ""
-    final_url: str | None = None
-    cache_path: str | None = None
-    from_cache: bool = False
-
-
-@dataclass(frozen=True, slots=True)
 class EscrowSourceFailure:
     """Ошибка обработки одного источника ежемесячного файла."""
 
@@ -112,20 +102,21 @@ class EscrowSourceFailure:
 
 
 @dataclass(frozen=True, slots=True)
-class EscrowHistoryBuildRequest:
-    """Запрос на построение исторического набора данных по счетам эскроу."""
+class DiscoverEscrowRequest:
+    index: SourcePayload | None = None
 
-    index_url: str
-    source_cache_dir: str | None = None
-    refresh: bool = False
-    timeout: int = 60
-    retries: int = 2
-    backoff: float = 0.5
-    min_bytes_ok: int = 512
-    headers: Mapping[str, str] | None = None
-    plugin_only: bool = True
-    show_progress: bool = True
-    source_error_policy: SourceErrorPolicy = "fail_fast"
+
+@dataclass(frozen=True, slots=True)
+class ParseEscrowRequest:
+    payload: SourcePayload
+    source_name: str
+    as_of: date | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EscrowHistoryBuildRequest:
+    sources: tuple[ParseEscrowRequest, ...]
+    continue_on_error: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,22 +127,10 @@ class EscrowViewBuildRequest:
     custom_regions: tuple[str, ...] = ()
 
 
-@dataclass(frozen=True, slots=True)
-class EscrowWorkbookExportRequest:
-    """Запрос на экспорт workbook по данным эскроу."""
-
-    out_path: str
-    archive: bool = False
-    archive_member_name: str | None = None
-    show_progress: bool = True
-
-
 @dataclass(frozen=True)
 class EscrowHistoryResult:
     """Канонический результат построения исторического набора данных."""
 
-    source_links: tuple[EscrowSourceLink, ...]
-    downloaded_sources: tuple[EscrowSourceDownloadResult, ...]
     failures: tuple[EscrowSourceFailure, ...]
     parsed_files: tuple[ParsedEscrowFile, ...]
     df_long: pd.DataFrame
@@ -174,39 +153,7 @@ class EscrowPivotPack:
     date_order: tuple[str, ...]
 
 
-@dataclass(frozen=True, slots=True)
-class EscrowExportResult:
-    """Итог экспорта workbook по счетам эскроу."""
-
-    output_path: str
-    archive: bool
-    source_files: tuple[str, ...]
-    dates: tuple[str, ...]
-    indicators: tuple[str, ...]
-    regions: tuple[str, ...]
-    rows_long: int
-    source_links_count: int
-    failure_count: int
-
-    @property
-    def ok(self) -> bool:
-        return self.failure_count == 0
-
-
-__all__ = [
-    "EscrowIndicatorSpec",
-    "ResolvedEscrowColumn",
-    "EscrowParsedRow",
-    "ParsedEscrowFile",
-    "EscrowSourceLink",
-    "EscrowSourceDownloadResult",
-    "EscrowSourceFailure",
-    "EscrowHistoryBuildRequest",
-    "EscrowViewBuildRequest",
-    "EscrowWorkbookExportRequest",
-    "EscrowHistoryResult",
-    "EscrowPivotPack",
-    "EscrowExportResult",
-    "SourceErrorPolicy",
-    "RegionOrderMode",
-]
+@dataclass(frozen=True)
+class BuildEscrowViewsRequest:
+    history: EscrowHistoryResult
+    view: EscrowViewBuildRequest = EscrowViewBuildRequest()

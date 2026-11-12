@@ -1,34 +1,27 @@
-"""
-Пример запуска зачистки каталога FRG.
+"""Preview an FRG directory plan and apply it when given the reviewed digest."""
 
-Сценарий:
-- пользователь указывает путь к папке с файлами;
-- пакет готовит план операций без захода во вложенные папки;
-- затем по желанию выполняет копирование/переименование и удаление.
-"""
+import argparse
 
-from stratbox.macrobanks.frg import run_frg_cleanup
+from stratbox.base.filestore import LocalFileStore
+from stratbox.macrobanks import frg
 
 
-ROOT_DIR = "."
-DELETE_OTHERS = False
-ARCHIVE_LATEST = False
-EXECUTE = False
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory")
+    parser.add_argument("--delete-older", action="store_true")
+    parser.add_argument("--apply-digest")
+    args = parser.parse_args()
+    store = LocalFileStore(root=args.directory)
+    planned = frg.plan_cleanup(frg.PlanCleanupRequest(".", args.delete_older), store=store)
+    if planned.outcome != "succeeded":
+        raise SystemExit(tuple(item.code for item in planned.diagnostics))
+    plan = planned.value
+    print(plan.identity.sha256, plan.actions)
+    if args.apply_digest:
+        applied = frg.apply_cleanup(frg.ApplyCleanupRequest(plan, ".", args.apply_digest), store=store)
+        print(applied.outcome, applied.value, applied.diagnostics)
 
 
-result = run_frg_cleanup(
-    ROOT_DIR,
-    delete_others=DELETE_OTHERS,
-    archive_latest=ARCHIVE_LATEST,
-    execute=EXECUTE,
-)
-
-catalog_df = result["catalog"]
-latest_df = result["latest"]
-plan_df = result["plan"]
-execution_df = result["execution"]
-
-print("INFO: catalog rows =", len(catalog_df))
-print("INFO: latest rows =", len(latest_df))
-print("INFO: plan rows =", len(plan_df))
-print("INFO: execution rows =", len(execution_df))
+if __name__ == "__main__":
+    main()

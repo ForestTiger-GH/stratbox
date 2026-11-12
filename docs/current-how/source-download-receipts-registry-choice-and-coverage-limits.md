@@ -1,5 +1,7 @@
 # Current HOW — source downloads, registry selection and evidence limits
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Observed implementation:** direct static code reading at `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; no HTTP request, published archive, live registration comparison, installed wheel or fault-injection suite was run in this investigation. This is a **current implementation evidence sheet**, not a future API requirement, scientific claim of true source contents or certification of every URL/release.
 
 ## 1. Byte download currently has a transport-result contract

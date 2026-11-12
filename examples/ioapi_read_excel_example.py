@@ -22,7 +22,7 @@ def main() -> int:
     parser.add_argument("--sheet", default=0, help="Sheet name or index (default: 0).")
     args = parser.parse_args()
 
-    providers = runtime.get_providers()
+    providers = runtime.local_providers()
     print(f"INFO: providers source = {providers.source}")
 
     df = ia.excel.read_df(args.path, sheet_name=args.sheet)

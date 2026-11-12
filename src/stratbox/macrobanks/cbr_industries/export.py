@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import math
 from datetime import date, datetime
-from hashlib import sha256
-from io import BytesIO
 
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from stratbox.base.filestore import FileStore
-from stratbox.base.runtime import get_filestore
+from stratbox.base.ioapi.workbook_bytes import openpyxl_bytes
+from stratbox.data import Representation
+from stratbox.data.representation import XLSX
 from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
@@ -33,13 +32,6 @@ _HEADER_FILL = PatternFill(fill_type="solid", fgColor="D9EAF7")
 _HEADER_FONT = Font(bold=True)
 _THIN_GRAY = Side(style="thin", color="B7C3CF")
 _HEADER_BORDER = Border(bottom=_THIN_GRAY)
-
-
-def _normalize_xlsx_path(path: str) -> str:
-    text = str(path).strip()
-    if not text:
-        raise ValueError("Pivot workbook output path is empty")
-    return text if text.lower().endswith(".xlsx") else f"{text}.xlsx"
 
 
 def _excel_value(value: object) -> object:
@@ -163,26 +155,13 @@ def _write_metadata_sheet(workbook: Workbook, pivot_set: Cbr0105ADebtCorpPivotSe
     worksheet.column_dimensions["B"].width = 40
 
 
-def _workbook_bytes(workbook: Workbook) -> bytes:
-    buffer = BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
-
-
-def save_cbr_0105a_debt_corp_pivot_workbook(
+def render_cbr_0105a_debt_corp_pivot_workbook(
     pivot_set: Cbr0105ADebtCorpPivotSetResult,
     request: Cbr0105ADebtCorpPivotWorkbookRequest,
-    *,
-    filestore: FileStore | None = None,
 ) -> Cbr0105ADebtCorpPivotWorkbookResult:
     """Сохраняет все pivot-таблицы отдельными листами одной XLSX-книги."""
     if not pivot_set.tables:
         raise ValueError("Pivot set contains no tables")
-    store = filestore or get_filestore()
-    output_path = _normalize_xlsx_path(request.out_path)
-    if store.exists(output_path) and not request.overwrite:
-        raise FileExistsError(f"Pivot workbook already exists: {output_path}")
-
     workbook = Workbook()
     workbook.remove(workbook.active)
     try:
@@ -197,21 +176,18 @@ def save_cbr_0105a_debt_corp_pivot_workbook(
                 enable_auto_filter=request.enable_auto_filter,
                 adjust_column_widths=request.adjust_column_widths,
             )
-        content = _workbook_bytes(workbook)
+        content = openpyxl_bytes(workbook, literal_text=True)
     finally:
         workbook.close()
 
-    store.write_bytes(output_path, content)
     sheet_names = tuple(
         (["_Параметры"] if request.include_metadata_sheet else [])
         + [table.suggested_sheet_name for table in pivot_set.tables]
     )
     return Cbr0105ADebtCorpPivotWorkbookResult(
-        output_path=output_path,
+        representation=Representation("cbr.industries.pivot-xlsx", 1, XLSX, content),
         sheet_names=sheet_names,
         sheet_count=len(sheet_names),
-        file_size=len(content),
-        sha256=sha256(content).hexdigest(),
     )
 
 
@@ -448,12 +424,11 @@ def _write_industry_metadata_sheet(
     worksheet.sheet_view.showGridLines = False
 
 
-def save_cbr_0105a_debt_corp_industry_workbook(
+def render_cbr_0105a_debt_corp_industry_workbook(
     pivot_set: Cbr0105ADebtCorpPivotSetResult,
     request: Cbr0105ADebtCorpIndustryWorkbookRequest,
     *,
     industry_name_ru: str,
-    filestore: FileStore | None = None,
 ) -> Cbr0105ADebtCorpIndustryWorkbookResult:
     """Сохраняет динамику одной отрасли по регионам в стиле публикации Банка России."""
     if pivot_set.row_dimension != "region_code" or pivot_set.column_dimension != "report_date":
@@ -488,11 +463,6 @@ def save_cbr_0105a_debt_corp_industry_workbook(
     if any(_industry_table_dates(table) != dates for table in tables_by_key.values()):
         raise ValueError("Industry workbook sheets contain different report dates")
 
-    store = filestore or get_filestore()
-    output_path = _normalize_xlsx_path(request.out_path)
-    if store.exists(output_path) and not request.overwrite:
-        raise FileExistsError(f"Industry workbook already exists: {output_path}")
-
     workbook = Workbook()
     workbook.remove(workbook.active)
     try:
@@ -520,30 +490,27 @@ def save_cbr_0105a_debt_corp_industry_workbook(
                 subtitle=subtitle,
                 dates=dates,
             )
-        content = _workbook_bytes(workbook)
+        content = openpyxl_bytes(workbook, literal_text=True)
     finally:
         workbook.close()
 
-    store.write_bytes(output_path, content)
     sheet_names = tuple(
         (["_Параметры"] if request.include_metadata_sheet else [])
         + [spec.workbook_sheet_name for spec in ordered_specs]
     )
     rows_per_sheet = first_table.rows
     return Cbr0105ADebtCorpIndustryWorkbookResult(
-        output_path=output_path,
+        representation=Representation("cbr.industries.industry-xlsx", 1, XLSX, content),
         industry_code=request.industry_code,
         industry_name_ru=industry_name_ru,
         sheet_names=sheet_names,
         sheet_count=len(sheet_names) - (1 if request.include_metadata_sheet else 0),
         dates=dates,
         rows_per_sheet=rows_per_sheet,
-        file_size=len(content),
-        sha256=sha256(content).hexdigest(),
     )
 
 
 __all__ = [
-    "save_cbr_0105a_debt_corp_industry_workbook",
-    "save_cbr_0105a_debt_corp_pivot_workbook",
+    "render_cbr_0105a_debt_corp_industry_workbook",
+    "render_cbr_0105a_debt_corp_pivot_workbook",
 ]

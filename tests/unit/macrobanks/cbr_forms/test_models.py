@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.resources import files
 from pathlib import Path
 
 import pandas as pd
@@ -36,11 +37,15 @@ def _frame(*rows: dict[str, str]) -> pd.DataFrame:
 
 
 def test_each_model_csv_has_exact_schema() -> None:
-    models_dir = Path(__file__).resolve().parents[4] / "src/stratbox/macrobanks/cbr_forms/models"
-    paths = sorted(models_dir.glob("form*.csv"))
+    models_dir = files("stratbox.macrobanks.cbr_forms.models")
+    paths = [
+        path for path in models_dir.iterdir()
+        if path.name.startswith("form") and path.name.endswith(".csv")
+    ]
     assert paths
     for path in paths:
-        frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+        with path.open("rb") as model:
+            frame = pd.read_csv(model, dtype=str, keep_default_na=False)
         assert list(frame.columns) == list(MODEL_COLUMNS)
 
 

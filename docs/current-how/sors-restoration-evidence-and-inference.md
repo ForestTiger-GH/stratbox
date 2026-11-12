@@ -1,5 +1,7 @@
 # Current HOW — SORS publication/latent restoration and the evidence ledger
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Evidence status:** static direct code reconstruction, pinned `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; **no solver run or installed end-to-end conformance performed here**. Owner: `src/stratbox/macrobanks/cbr_sors_restoration`. The module's [direct README](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/README.md) is useful for conceptual intent; individual code paths below establish actual mechanisms at this revision.
 
 ## 1. The problem is an underdetermined, rounding-constrained reconstruction

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from stratbox.macrobanks.cbr_sors_restoration.publication import (
-    PublicationInterval,
-    RoundingPolicy,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from stratbox.macrobanks.cbr_sors_restoration.publication.rounding import PublicationInterval, RoundingPolicy
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,11 +1,4 @@
-"""
-sources — получение ссылок на ежемесячные Excel-файлы ЦБ по счетам эскроу.
-
-Принцип:
-- доменный код не знает про корпоративные шлюзы напрямую;
-- страница и файлы скачиваются через stratbox.base.net.download_bytes();
-- при наличии плагина URL будет переписан на уровне base.net.
-"""
+"""Discover escrow workbook links from the official publication index."""
 
 from __future__ import annotations
 
@@ -14,19 +7,14 @@ from hashlib import sha1
 from posixpath import basename as posix_basename
 from urllib.parse import urljoin, urlsplit
 
-from bs4 import BeautifulSoup
+from stratbox.base.ioapi.html import link_targets
 
-from stratbox.base.net import download_bytes
+from stratbox.macrobanks._cbr import official_url
+from stratbox.execution import OperationFailure
 from stratbox.macrobanks.escrow.contracts import EscrowSourceLink
 
 
 CBR_ESCROW_INDEX_URL = "https://www.cbr.ru/statistics/bank_sector/equity_const_financing/"
-DEFAULT_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    )
-}
 _DATE_RE = re.compile(r"(\d{2})(\d{2})(\d{4})")
 
 
@@ -55,48 +43,19 @@ def _date_hint_from_name(name: str) -> str | None:
 
 
 
-def discover_escrow_source_links(
-    *,
-    index_url: str = CBR_ESCROW_INDEX_URL,
-    timeout: int = 60,
-    retries: int = 2,
-    backoff: float = 0.5,
-    min_bytes_ok: int = 512,
-    headers: dict[str, str] | None = None,
-    plugin_only: bool = True,
-) -> tuple[EscrowSourceLink, ...]:
-    """
-    Возвращает структурированный список ссылок на ежемесячные .xlsx по счетам эскроу.
-
-    Ссылки возвращаются в том порядке, в котором они встретились на странице.
-    Дубликаты удаляются без потери исходного порядка.
-    """
-    download = download_bytes(
-        index_url,
-        timeout=timeout,
-        retries=retries,
-        backoff=backoff,
-        min_bytes_ok=min_bytes_ok,
-        headers=headers or DEFAULT_HEADERS,
-        plugin_only=plugin_only,
-    )
-    if not download.ok or not download.content:
-        raise RuntimeError(
-            f"Failed to fetch escrow index page: {download.error or 'unknown error'}"
-        )
-
-    soup = BeautifulSoup(download.content, "html.parser")
-
+def discover_escrow_source_links(html: bytes, *, index_url: str = CBR_ESCROW_INDEX_URL) -> tuple[EscrowSourceLink, ...]:
+    text = html.decode("utf-8")
     links: list[EscrowSourceLink] = []
     seen: set[str] = set()
-    for node in soup.find_all("a", href=True):
-        href = str(node["href"] or "").strip()
-        if not href:
-            continue
+    for href in link_targets(text):
         if not href.lower().endswith(".xlsx"):
             continue
 
         absolute = urljoin(index_url, href)
+        try:
+            official_url(absolute, roots=("/vfs/", "/content/document/file/"))
+        except OperationFailure:
+            continue
         if absolute in seen:
             continue
         seen.add(absolute)
@@ -111,11 +70,3 @@ def discover_escrow_source_links(
         )
 
     return tuple(links)
-
-
-
-__all__ = [
-    "CBR_ESCROW_INDEX_URL",
-    "DEFAULT_HEADERS",
-    "discover_escrow_source_links",
-]

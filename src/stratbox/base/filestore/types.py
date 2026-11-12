@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from stratbox.data import ByteIdentity
+
 
 @dataclass(frozen=True, slots=True)
 class FileStat:
@@ -29,3 +31,22 @@ class FileStat:
     mtime: float | None = None
     atime: float | None = None
     ctime: float | None = None
+    is_symlink: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class FileVersion:
+    path: str
+    revision: str
+    identity: ByteIdentity
+
+
+class MutationRejected(OSError):
+    """The backend rejected a command before changing a target."""
+
+    def __init__(self, message: str, *, capability_missing: bool = False):
+        super().__init__(message)
+        self.capability_missing = capability_missing
+
+
+DIRECTORY_GUARD_NAME = ".stratbox-directory.lock"

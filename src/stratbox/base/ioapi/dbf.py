@@ -17,13 +17,14 @@ DBF — старый, но живой формат (часто встречае�
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
 
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
 from stratbox.base.ioapi.bytes import read_bytes, write_bytes
+from .dbf_bytes import open_dbf_bytes
+from stratbox.base.utils.optional_deps import require_extra
 
 
 def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, **kwargs: Any) -> pd.DataFrame:
@@ -34,28 +35,9 @@ def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, 
     - encoding: часто для русских DBF подходит cp866 или cp1251 (зависит от источника)
     - kwargs: пробрасывается в dbfread.DBF(...)
     """
-    try:
-        from dbfread import DBF  # type: ignore
-    except Exception as e:
-        raise ImportError(
-            "DBF support requires optional dependency 'dbfread'. "
-            "Install: pip install dbfread"
-        ) from e
-
-    
     data = read_bytes(path, store=store)
-
-    import tempfile
-    from pathlib import Path
-
-    # dbfread надёжнее всего работает с файловым путём.
-    with tempfile.TemporaryDirectory() as td:
-        tmp_path = Path(td) / "tmp.dbf"
-        tmp_path.write_bytes(data)
-
-        table = DBF(str(tmp_path), encoding=encoding, **kwargs)
-        records = list(table)  # список dict
-        return pd.DataFrame.from_records(records)
+    with open_dbf_bytes(data, encoding=encoding, **kwargs) as table:
+        return pd.DataFrame.from_records(list(table))
 
 
 def write_df(path: str, df: pd.DataFrame, store: FileStore | None = None) -> None:
@@ -69,13 +51,7 @@ def write_df(path: str, df: pd.DataFrame, store: FileStore | None = None) -> Non
 
     Требует: pip install dbf
     """
-    try:
-        import dbf  # type: ignore
-    except Exception as e:
-        raise ImportError(
-            "DBF write support requires optional dependency 'dbf'. "
-            "Install: pip install dbf"
-        ) from e
+    dbf = require_extra("dbf", "dbf-write")
 
     def _field_spec(col: str, series: pd.Series) -> str:
         # Упрощенные правила:

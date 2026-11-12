@@ -4,7 +4,7 @@ cbr_banks.py — реестр банков (ЦБ), хранится в виде 
 Принцип обновления:
 - в папку src/stratbox/registries/_resources/cbr_banks/ кладётся новый xlsx
 - имя файла может быть любым
-- если xlsx несколько — будет выбран самый свежий по времени изменения
+- если xlsx несколько — будет выбран самый свежий по версии в имени файла
 
 Выход:
 - DataFrame с каноническими колонками:
@@ -22,6 +22,8 @@ import json
 
 import pandas as pd
 
+from stratbox.data import SourcePayload, UsedInputReceipt
+from stratbox.data.representation import XLSX, CSV
 from stratbox.registries._loader import pick_latest_by_suffix, pick_latest_by_prefix, read_resource_bytes
 from stratbox.text.banks import normalize_bank_name
 
@@ -37,7 +39,7 @@ _REL_DIR_STANDART = "_resources/cbr_standart"
 _REL_DIR_LEGACY = "_resources/cbr_legacy"
 
 
-def _load_raw_xlsx() -> pd.DataFrame:
+def _load_raw_xlsx(inputs) -> pd.DataFrame:
     """
     Читает самый свежий XLSX из ресурсов и возвращает DataFrame как есть.
     """
@@ -46,10 +48,12 @@ def _load_raw_xlsx() -> pd.DataFrame:
 
     # engine обычно определяется автоматически; если в окружении нет openpyxl,
     # pandas выдаст понятную ошибку.
+    if inputs is not None:
+        inputs.append(UsedInputReceipt.for_payload(SourcePayload(raw, XLSX, rf.path), "bank_registry"))
     df = pd.read_excel(BytesIO(raw))
     return df
 
-def _read_latest_csv(rel_dir: str, prefix: str | None = None) -> pd.DataFrame:
+def _read_latest_csv(rel_dir: str, prefix: str | None = None, *, inputs=None) -> pd.DataFrame:
     """
     Читает самый свежий CSV в указанной папке ресурсов.
 
@@ -66,16 +70,18 @@ def _read_latest_csv(rel_dir: str, prefix: str | None = None) -> pd.DataFrame:
         return pd.DataFrame()
 
     raw = read_resource_bytes(_PACKAGE, rf.path)
+    if inputs is not None:
+        inputs.append(UsedInputReceipt.for_payload(SourcePayload(raw, CSV, rf.path), "bank_registry"))
     return pd.read_csv(BytesIO(raw), dtype=str, encoding="utf-8-sig")
 
 
-def _load_replacements() -> dict[str, list[str]]:
+def _load_replacements(inputs) -> dict[str, list[str]]:
     """
     Словарь:
       CANON -> [ALIAS1, ALIAS2, ...]
     Всё приводится к UPPER и strip.
     """
-    df = _read_latest_csv(_REL_DIR_REPL, prefix="cbr_replacements")
+    df = _read_latest_csv(_REL_DIR_REPL, prefix="cbr_replacements", inputs=inputs)
     if df.empty:
         return {}
 
@@ -104,14 +110,14 @@ def _load_replacements() -> dict[str, list[str]]:
     return out
 
 
-def _load_standart_enabled() -> set[str]:
+def _load_standart_enabled(inputs) -> set[str]:
     """
     Возвращает множество банков, у которых enabled=True в cbr_standart.csv.
 
     Важно: чтобы коллегам не нужно было вручную следить за точным каноном,
     каждое значение bank прогоняется через normalize_bank_name().
     """
-    df = _read_latest_csv(_REL_DIR_STANDART, prefix="cbr_standart")
+    df = _read_latest_csv(_REL_DIR_STANDART, prefix="cbr_standart", inputs=inputs)
     if df.empty:
         return set()
 
@@ -138,7 +144,7 @@ def _load_standart_enabled() -> set[str]:
     return set([b for b in banks if b and b != "NAN"])
 
 
-def _load_legacy_regn_sort_map() -> dict[str, int]:
+def _load_legacy_regn_sort_map(inputs) -> dict[str, int]:
     """
     Возвращает словарь regn -> sort (int) из cbr_legacy.csv.
 
@@ -148,7 +154,7 @@ def _load_legacy_regn_sort_map() -> dict[str, int]:
     Требования к cbr_legacy.csv:
     - колонки: regn, sort
     """
-    df = _read_latest_csv(_REL_DIR_LEGACY, prefix="cbr_legacy")
+    df = _read_latest_csv(_REL_DIR_LEGACY, prefix="cbr_legacy", inputs=inputs)
     if df.empty:
         return {}
 
@@ -193,7 +199,7 @@ def _load_legacy_regn_sort_map() -> dict[str, int]:
     return regn_to_sort
 
 
-def read() -> pd.DataFrame:
+def read(*, inputs: list[UsedInputReceipt] | None = None) -> pd.DataFrame:
     """
     Возвращает нормализованный DataFrame реестра банков.
 
@@ -202,7 +208,7 @@ def read() -> pd.DataFrame:
     - bank_name: исходное имя банка
     - bank_name_norm: нормализованное имя (пока заглушка)
     """
-    df = _load_raw_xlsx()
+    df = _load_raw_xlsx(inputs)
 
     # ожидаемые колонки в файле ЦБ (по твоему примеру):
     # cregnum, bnk_name, lic_status, ...
@@ -229,11 +235,11 @@ def read() -> pd.DataFrame:
     # --- Подмешивание кастомных реестров: standart / replacements / legacy ---
 
     # 1) standart: включённые канонические банки
-    standart_enabled = _load_standart_enabled()
+    standart_enabled = _load_standart_enabled(inputs)
     out["is_canonical"] = out["bank_name_norm"].astype(str).str.strip().str.upper().isin(standart_enabled)
 
     # 2) replacements: CANON -> [ALIAS...]
-    rep_map = _load_replacements()
+    rep_map = _load_replacements(inputs)
 
     def _aliases_for(bank_norm: str):
         key = str(bank_norm).strip().upper()
@@ -246,7 +252,7 @@ def read() -> pd.DataFrame:
     out["replacements_json"] = out["replacements_list"].map(lambda x: json.dumps(x, ensure_ascii=False))
 
     # 3) legacy: интеграция строго по regn
-    regn_to_sort = _load_legacy_regn_sort_map()
+    regn_to_sort = _load_legacy_regn_sort_map(inputs)
 
     legacy_sort = out["regn"].astype(str).str.replace(".0", "", regex=False).str.strip().map(regn_to_sort)
 

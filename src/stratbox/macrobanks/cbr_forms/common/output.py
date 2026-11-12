@@ -5,13 +5,11 @@
 from __future__ import annotations
 
 from copy import copy
-from io import BytesIO
 from typing import Mapping
 
 import pandas as pd
 
-from stratbox.base import ioapi as ia
-from stratbox.base.ioapi.bytes import write_bytes
+from stratbox.base.ioapi.workbook_bytes import openpyxl_bytes
 from stratbox.base.styles.excel.main import apply_preset
 from stratbox.macrobanks.cbr_forms.common.excel_profiles import (
     HIERARCHICAL_STATEMENT_PROFILE,
@@ -26,20 +24,6 @@ EXCEL_META = {
     "title": "Strategy Box Table Export",
     "category": "CMAF DATA",
 }
-
-
-def export_excel(path: str, df: pd.DataFrame) -> None:
-    """
-    Функция экспортирует стандартный DataFrame в Excel через общий ``stratbox.ioapi``.
-    """
-    ia.excel.write_df(
-        path,
-        df,
-        sheet_name="data",
-        meta=EXCEL_META,
-        style_preset="DEFAULT",
-    )
-    print(f"[OK] Exported: {path}")
 
 
 def _set_workbook_meta(wb) -> None:
@@ -132,89 +116,33 @@ def _format_hierarchical_workbook(wb, sheets: dict[str, pd.DataFrame]) -> None:
                             cell.font = font
 
 
-def export_excel_workbook(path: str, sheets: dict[str, pd.DataFrame]) -> None:
-    """
-    Функция экспортирует несколько DataFrame в одну оформленную XLSX-книгу.
-    """
-    from openpyxl import load_workbook
-
-    bio = BytesIO()
-    with pd.ExcelWriter(bio, engine="openpyxl") as writer:
-        for sheet_name, frame in sheets.items():
-            frame.to_excel(writer, sheet_name=sheet_name, index=False)
-
-    wb = load_workbook(BytesIO(bio.getvalue()))
-    _set_workbook_meta(wb)
-    _format_hierarchical_workbook(wb, sheets)
-
-    out = BytesIO()
-    wb.save(out)
-    write_bytes(path, out.getvalue())
-    print(f"[OK] Exported workbook: {path}")
-
-
-def make_and_export_wide(
-    out_path: str,
-    df_long: pd.DataFrame,
-    df_banks: pd.DataFrame,
-    indicator_order: dict[str, int] | None = None,
-    date_col: str = "Дата",
-    bank_col: str = "Банк",
-    indicator_id_col: str = "IndicatorId",
-    code_col: str = "Код",
-    indicator_col: str = "Показатель",
-    value_col: str = "Значение",
-) -> pd.DataFrame:
-    """
-    Функция собирает стандартную wide-таблицу и экспортирует ее в Excel.
-    """
-    wide_df = build_wide_table(
-        df_long=df_long,
-        df_banks=df_banks,
-        indicator_order=indicator_order,
-        date_col=date_col,
-        bank_col=bank_col,
-        indicator_id_col=indicator_id_col,
-        code_col=code_col,
-        indicator_col=indicator_col,
-        value_col=value_col,
-    )
-    export_excel(out_path, wide_df)
-    return wide_df
-
-
-def export_form_excel(
-    *,
-    out_path: str,
-    excel_profile: str,
-    df_long: pd.DataFrame,
-    df_banks: pd.DataFrame,
-    model_df: pd.DataFrame,
-    indicator_order: dict[str, int] | None = None,
-) -> dict[str, pd.DataFrame]:
-    """
-    Функция выбирает Excel-представление формы по профилю из реестра.
-
-    Стандартный профиль сохраняет прежний одно-листовый формат. Профиль
-    ``hierarchical_statement`` формирует обзор, полную форму и canonical long.
-    """
-    profile = str(excel_profile).strip().lower()
+def build_form_sheets(*, profile, df_long, df_banks, model_df, indicator_order):
     if profile == STANDARD_PROFILE:
-        wide_df = make_and_export_wide(
-            out_path=out_path,
-            df_long=df_long,
-            df_banks=df_banks,
-            indicator_order=indicator_order,
-        )
-        return {"data": wide_df}
-
+        return {"data": build_wide_table(df_long=df_long, df_banks=df_banks,
+                                         indicator_order=indicator_order)}
     if profile == HIERARCHICAL_STATEMENT_PROFILE:
-        sheets = build_hierarchical_statement_sheets(
-            df_long=df_long,
-            df_banks=df_banks,
-            model_df=model_df,
-        )
-        export_excel_workbook(out_path, sheets)
-        return sheets
+        return build_hierarchical_statement_sheets(df_long=df_long, df_banks=df_banks, model_df=model_df)
+    raise ValueError("Unknown form workbook profile")
 
-    raise ValueError(f"Unknown CBR forms Excel profile: {excel_profile!r}")
+
+def render_form_workbook(sheets, *, profile):
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+    try:
+        for name, frame in sheets.items():
+            sheet = workbook.create_sheet(name)
+            sheet.append([str(value) for value in frame.columns])
+            for row in frame.itertuples(index=False, name=None):
+                sheet.append([None if pd.isna(value) else value for value in row])
+        _set_workbook_meta(workbook)
+        if profile == HIERARCHICAL_STATEMENT_PROFILE:
+            _format_hierarchical_workbook(workbook, sheets)
+        else:
+            sheet = workbook["data"]
+            apply_preset(sheet, "DEFAULT")
+            sheet.auto_filter.ref = sheet.dimensions
+        return openpyxl_bytes(workbook, literal_text=True)
+    finally:
+        workbook.close()

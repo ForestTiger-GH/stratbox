@@ -7,15 +7,21 @@ from time import perf_counter
 
 import pytest
 
+from stratbox.base.filestore import LocalFileStore
+
 from stratbox.macrobanks.cbr_sors_restoration import (
     SorsCrosswalkConfig,
     SorsOptimizationConfig,
     SorsRunConfig,
     SorsSourceFiles,
     SorsWorkbookRequest,
-    export_sors_workbook,
-    run_sors_crosswalk,
-    run_sors_restoration,
+    CrosswalkSorsRequest,
+    RenderSorsRequest,
+    RestoreSorsRequest,
+    crosswalk,
+    read_source_files,
+    render_workbook,
+    restore,
 )
 
 _REAL_ROOT = os.environ.get('STRATBOX_SORS_REAL_DATA_DIR')
@@ -54,10 +60,14 @@ def _files() -> SorsSourceFiles:
 
 def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     started = perf_counter()
-    result = run_sors_restoration(
-        _files(),
+    inputs = read_source_files(_files(), store=LocalFileStore())
+    assert inputs.outcome == "succeeded", inputs.diagnostics
+    operation = restore(RestoreSorsRequest(
+        inputs.value,
         SorsRunConfig(as_of_date='2026-06-01'),
-    )
+    ))
+    assert operation.outcome == "succeeded", operation.diagnostics
+    result = operation.value
     structural_seconds = perf_counter() - started
     assert structural_seconds < 120
     assert len(result.regional_okved2_grid) == 44_880
@@ -65,15 +75,11 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     assert int(component_zeros['published_value'].astype(float).eq(0.0).sum()) == 11_274
 
     started = perf_counter()
-    workbook = export_sors_workbook(
-        result,
-        SorsWorkbookRequest(
-            output_path=tmp_path / 'sors.xlsx',
-            overwrite=True,
-        ),
-    )
+    exported = render_workbook(RenderSorsRequest(result, SorsWorkbookRequest()))
+    assert exported.outcome == "succeeded", exported.diagnostics
+    workbook = exported.value
     assert perf_counter() - started < 60
-    assert workbook.file_size > 0
+    assert workbook.representation.identity.size > 0
 
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')
@@ -83,8 +89,10 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
 )
 def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
     started = perf_counter()
-    result = run_sors_restoration(
-        _files(),
+    inputs = read_source_files(_files(), store=LocalFileStore())
+    assert inputs.outcome == "succeeded", inputs.diagnostics
+    operation = restore(RestoreSorsRequest(
+        inputs.value,
         SorsRunConfig(
             as_of_date='2026-06-01',
             optimization=SorsOptimizationConfig(
@@ -93,7 +101,9 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
                 per_solve_time_limit_seconds=30,
             ),
         ),
-    )
+    ))
+    assert operation.outcome == "succeeded", operation.diagnostics
+    result = operation.value
     assert perf_counter() - started < maximum_seconds
     assert result.summary.strict_status == 'OPTIMAL'
     assert result.summary.optimization_targets_attempted <= target_budget
@@ -101,17 +111,18 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')
 def test_crosswalk_feasibility_gate() -> None:
-    strict = run_sors_restoration(
-        _files(),
-        SorsRunConfig(as_of_date='2026-06-01'),
-    )
+    inputs = read_source_files(_files(), store=LocalFileStore())
+    assert inputs.outcome == "succeeded", inputs.diagnostics
+    strict = restore(RestoreSorsRequest(inputs.value, SorsRunConfig(as_of_date='2026-06-01')))
+    assert strict.outcome == "succeeded", strict.diagnostics
     started = perf_counter()
-    crosswalk = run_sors_crosswalk(
-        strict,
+    operation = crosswalk(CrosswalkSorsRequest(
+        strict.value,
         SorsCrosswalkConfig(
             mode='feasibility',
             per_solve_time_limit_seconds=1_800,
         ),
-    )
+    ))
+    assert operation.outcome == "succeeded", operation.diagnostics
     assert perf_counter() - started < 3_600
-    assert crosswalk.status in {'OPTIMAL', 'PARTIAL'}
+    assert operation.value.status in {'OPTIMAL', 'PARTIAL'}

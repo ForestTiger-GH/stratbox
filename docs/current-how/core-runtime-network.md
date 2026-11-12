@@ -1,5 +1,7 @@
 # Current HOW — аналитическое ядро: runtime и сетевой транспорт
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Статус:** ограниченная реконструкция по исходным файлам; **не** полная модель core.  
 **Implementation owner:** `ForestTiger-GH/stratbox`. **Source Baseline:** `8459dc58922b7e8df853cf1d9e8131fa9e132580`; diff до исполнения `5cff9157460c2035aa42758b505cce65b7c53f47` не затронул `src/`, `tests/` и `scripts/`.  
 **Метод доказательства:** чтение конкретных исходных файлов целиком, без запуска, network calls, проверки установленного пакета или среды.

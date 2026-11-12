@@ -4,35 +4,38 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stratbox"
-version = "0.8.0"
+dynamic = ["version"]
+readme = "README.md"
 description = "Strategy Box core library with business domains and neutral infrastructure."
 requires-python = ">=3.10"
-dependencies = [
-  "numpy>=1.24",
-  "pandas>=2.0",
-  "openpyxl>=3.1",
-  "XlsxWriter>=3.2",
-  "requests>=2.31",
-  "tqdm>=4.66",
-  "beautifulsoup4>=4.12",
-  "dbfread>=2.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
-sors-restoration = [
-  "highspy>=1.11,<2",
-]
-pdf = [
-  "pypdf>=4.0",
-]
+http = ["requests>=2.32", "urllib3>=2.2"]
+dataframe = ["numpy>=1.24", "pandas>=2.0"]
+excel = ["openpyxl>=3.1", "XlsxWriter>=3.2"]
+excel-legacy = ["xlrd>=2.0.2", "xlwt>=1.3"]
+excel-binary = ["pyxlsb>=1.0.10"]
+dbf = ["dbfread>=2.0.7"]
+dbf-write = ["dbf>=0.99"]
+rar = ["rarfile>=4.2"]
+pdf = ["pypdf>=4.0"]
+documents = ["python-docx>=1.1", "python-pptx>=1.0", "Pillow>=10"]
+sors-restoration = ["stratbox[dataframe,excel]", "highspy>=1.11,<2"]
 test = [
   "pytest>=8.0",
+  "scipy>=1.10",
+  "stratbox[http,dataframe,excel,excel-legacy,dbf,rar,sors-restoration]",
 ]
 
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.dynamic]
+version = {attr = "stratbox.__version__"}
+
 [tool.setuptools.package-data]
+"stratbox" = ["py.typed"]
 "stratbox.registries" = ["_resources/**/*"]
 "stratbox.macrobanks.cbr_forms.models" = ["*.csv"]
 "stratbox.macrobanks.cbr_sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]

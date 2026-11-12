@@ -16,9 +16,10 @@ FileStore — универсальный интерфейс транспорта
 
 from __future__ import annotations
 
-from typing import BinaryIO, Iterator, Protocol, Tuple
+from typing import BinaryIO, ContextManager, Iterator, Protocol, Tuple
 
-from stratbox.base.filestore.types import FileStat
+from stratbox.base.filestore.paths import child_path
+from stratbox.base.filestore.types import FileStat, FileVersion
 
 
 class FileStore(Protocol):
@@ -104,17 +105,6 @@ class FileStore(Protocol):
         Бэкенд может переопределить walk() для эффективности.
         """
 
-        def _join(parent: str, name: str) -> str:
-            # Нормальная склейка для POSIX-путей.
-            # Важно: корректно обрабатывает корень "/" (иначе теряется ведущий слэш).
-            if parent == "/":
-                return f"/{name}"
-            p = parent.rstrip("/")
-            if not p or p == ".":
-                return name
-            return f"{p}/{name}"
-
-
         stack: list[str] = [top]
 
         while stack:
@@ -126,7 +116,7 @@ class FileStore(Protocol):
             filenames: list[str] = []
 
             for name in names:
-                full = _join(dirpath, name)
+                full = child_path(dirpath, name)
                 if self.is_dir(full):
                     dirnames.append(name)
                 elif self.is_file(full):
@@ -138,7 +128,7 @@ class FileStore(Protocol):
             yield dirpath, dirnames, filenames
 
             for d in reversed(dirnames):
-                stack.append(_join(dirpath, d))
+                stack.append(child_path(dirpath, d))
 
                 
     def glob(self, pattern: str) -> list[str]:
@@ -188,27 +178,45 @@ class FileStore(Protocol):
             base = prefix + "/".join(base_parts)
         else:
             # если паттерн типа "/**/*.xlsx", base должен быть "/" (а не ".")
-            base = prefix.rstrip("/") if prefix else "."
+            base = prefix or "."
 
         p_pat = PurePosixPath(pat)
         out: list[str] = []
 
-        def _join(parent: str, name: str) -> str:
-            if parent == "/":
-                return f"/{name}"
-            p = parent.rstrip("/")
-            if p in ("", "."):
-                return name
-            return f"{p}/{name}"
-
         for dirpath, dirnames, filenames in self.walk(base):
             for dn in dirnames:
-                full = _join(dirpath, dn)
+                full = child_path(dirpath, dn)
                 if PurePosixPath(full).match(str(p_pat)):
                     out.append(full)
             for fn in filenames:
-                full = _join(dirpath, fn)
+                full = child_path(dirpath, fn)
                 if PurePosixPath(full).match(str(p_pat)):
                     out.append(full)
 
         return sorted(set(out))
+
+
+class AtomicCreateStore(Protocol):
+    """Commit bytes only if the destination is absent at the commit point."""
+
+    def create_if_absent(self, path: str, data: bytes) -> bool: ...
+
+
+class RevisionStore(Protocol):
+    """Commit only if the authoritative revision still matches."""
+
+    def replace_if_revision(self, path: str, data: bytes, expected_revision: str) -> bool: ...
+
+
+class GuardedDirectoryStore(Protocol):
+    """Conditional file effects within a caller-owned directory.
+
+    The guard serializes writers participating in the store's contract.
+    Methods must reject unsupported conditional effects before mutation.
+    """
+
+    def directory_identity(self, path: str) -> str: ...
+    def guard_directory(self, path: str) -> ContextManager[None]: ...
+    def inspect_file(self, path: str) -> FileVersion: ...
+    def remove_expected(self, expected: FileVersion) -> bool: ...
+    def rename_expected(self, expected: FileVersion, target: str) -> bool: ...

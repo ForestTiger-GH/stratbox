@@ -1,5 +1,7 @@
 # Target HOW — механизмы Strategy Box
 
+[Install and call the core library](install-and-run-core.md)
+
 **Candidate design baseline:** `TH-SB-2026-10-09-CANDIDATE-1` на ограниченной предметной модели [Target WHAT](../what/README.md), `TW-SB-2026-10-09-CANDIDATE-1`.  
 **2026-10-12 authority update:** [Host target](../what/strategy-box/host-deployment-commitment.md) is now **admitted as necessary and planned** for both Web/domain and Windows/AppDock-hosted connections. Host-specific HOW details remain candidate until deployment/security/storage choices are approved.
 

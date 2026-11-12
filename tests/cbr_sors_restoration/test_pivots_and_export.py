@@ -1,4 +1,5 @@
 from pathlib import Path
+from io import BytesIO
 
 import openpyxl
 
@@ -6,7 +7,7 @@ from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsPivotRequest,
     SorsWorkbookRequest,
 )
-from stratbox.macrobanks.cbr_sors_restoration.export import export_sors_workbook
+from stratbox.macrobanks.cbr_sors_restoration import RenderSorsRequest, render_workbook
 from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
 
 
@@ -23,17 +24,14 @@ def test_class_pivot_has_regions_as_rows(small_result) -> None:
 
 
 def test_workbook_export_uses_pivot_contract(tmp_path: Path, small_result) -> None:
-    output = tmp_path / 'sors.xlsx'
-    exported = export_sors_workbook(
+    operation = render_workbook(RenderSorsRequest(
         small_result,
         SorsWorkbookRequest(
-            output,
             pivots=(SorsPivotRequest(region_name='Регион 1'),),
         ),
-    )
-    assert exported.output_path == output
-    assert exported.sha256
-    workbook = openpyxl.load_workbook(output, read_only=True)
+    ))
+    assert operation.outcome == "succeeded"
+    workbook = openpyxl.load_workbook(BytesIO(operation.value.representation.data), read_only=True)
     assert 'Regional_OKVED2' in workbook.sheetnames
     assert any(name.startswith('Pivot_1_') for name in workbook.sheetnames)
 
@@ -80,19 +78,16 @@ def test_crosswalk_workbook_exports_primary_facts_bounds_and_mapping(
         status='OPTIMAL',
         _strict_result=small_result,
     )
-    output = tmp_path / 'crosswalk.xlsx'
-    exported = export_sors_workbook(
+    operation = render_workbook(RenderSorsRequest(
         result,
         SorsWorkbookRequest(
-            output,
             include_crosswalk_bounds=True,
             include_crosswalk_mapping=True,
             pivots=(SorsPivotRequest(region_name='Регион 1'),),
         ),
-    )
-
-    workbook = openpyxl.load_workbook(output, read_only=True)
-    assert exported.file_size > 0
+    ))
+    assert operation.outcome == "succeeded"
+    workbook = openpyxl.load_workbook(BytesIO(operation.value.representation.data), read_only=True)
     assert 'Crosswalk_Facts' in workbook.sheetnames
     assert 'Crosswalk_Bounds' in workbook.sheetnames
     assert 'Crosswalk_Scenarios' in workbook.sheetnames

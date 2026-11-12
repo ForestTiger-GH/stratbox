@@ -1,5 +1,9 @@
 # Current HOW — observed Strategy Box mechanisms
 
+[Stratbox 0.9 core operations](universal-business-core.md)
+
+[Core operation construction](core-operation-construction.md)
+
 **Status:** nine bounded static implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
 
 - [Public AppDock Recorder and exact ProblemQuery](appdock-public-problem-contracts.md) — existing neutral contracts for recorded occurrences, unconfirmed references and five lookup outcomes; installed app-client integration unverified.

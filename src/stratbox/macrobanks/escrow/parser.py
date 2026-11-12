@@ -114,21 +114,19 @@ def _find_header_row(sheet_df: pd.DataFrame) -> tuple[int, list[object]]:
 
 def _select_sheet_with_header(file_bytes: bytes) -> tuple[str, pd.DataFrame, int, list[object]]:
     """Выбирает лист с таблицей по регионам и возвращает его вместе с заголовком."""
-    excel_file = pd.ExcelFile(BytesIO(file_bytes))
-    prioritized = sorted(
-        excel_file.sheet_names,
-        key=lambda name: (0 if "регион" in str(name).lower() else 1, str(name).lower()),
-    )
-
-    last_error: Exception | None = None
-    for sheet_name in prioritized:
-        sheet_df = pd.read_excel(BytesIO(file_bytes), sheet_name=sheet_name, header=None)
-        try:
-            header_row_index, header_values = _find_header_row(sheet_df)
-            return sheet_name, sheet_df, header_row_index, header_values
-        except Exception as exc:
-            last_error = exc
-            continue
+    last_error: ValueError | None = None
+    with pd.ExcelFile(BytesIO(file_bytes), engine="openpyxl") as workbook:
+        prioritized = sorted(
+            workbook.sheet_names,
+            key=lambda name: (0 if "регион" in str(name).lower() else 1, str(name).lower()),
+        )
+        for sheet_name in prioritized:
+            sheet_df = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+            try:
+                header_row_index, header_values = _find_header_row(sheet_df)
+                return sheet_name, sheet_df, header_row_index, header_values
+            except ValueError as error:
+                last_error = error
 
     if last_error is not None:
         raise ValueError(f"Escrow sheet with header row is not found. Last error: {last_error}")
@@ -149,7 +147,7 @@ def _build_rows_frame(parsed_rows) -> pd.DataFrame:
     return df_rows
 
 
-def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEscrowFile:
+def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str, as_of: str | None = None) -> ParsedEscrowFile:
     """
     Читает один xlsx-файл и возвращает семантически распознанные данные.
 
@@ -157,7 +155,7 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str) -> ParsedEs
     - df_rows: строки итоговой витрины с типом и порядком;
     - df_long: длинный поток значений с метаданными строки и показателя.
     """
-    file_date = extract_date_from_filename(source_name)
+    file_date = as_of if as_of is not None else extract_date_from_filename(source_name)
     sheet_name, sheet_df, header_row_index, header_values = _select_sheet_with_header(file_bytes)
     resolved_columns = resolve_indicator_columns(header_values, allow_unknown=False)
 

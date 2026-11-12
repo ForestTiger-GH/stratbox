@@ -1,17 +1,11 @@
-"""
-_loader.py — служебные функции для чтения ресурсов (файлов), встроенных в пакет.
-
-Важно:
-- реестры лежат в src/stratbox/registries/_resources/...
-- чтение идёт через importlib.resources, чтобы работало и из исходников, и из установленного пакета
-"""
+"""Locate packaged registry snapshots by their published filename versions."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import resources
-from pathlib import Path
-from typing import Iterable
+from datetime import date
+import re
 
 
 @dataclass(frozen=True)
@@ -42,24 +36,22 @@ def _list_resource_paths(package: str, rel_dir: str) -> list[str]:
     return out
 
 
-def _resource_mtime(package: str, rel_path: str) -> float:
-    """
-    Пытается получить mtime ресурса. В установленном wheel ресурсы обычно
-    доступны как реальные файлы (или временная распаковка), поэтому stat() часто работает.
-
-    Если вдруг stat недоступен, возвращает 0.0 — тогда "самый новый" не определится,
-    но при наличии единственного файла это не важно.
-    """
-    try:
-        p = resources.files(package).joinpath(rel_path)
-        return p.stat().st_mtime
-    except Exception:
-        return 0.0
+def _resource_version(rel_path: str) -> tuple[date, str]:
+    name = rel_path.rsplit("/", 1)[-1]
+    stamp = re.search(r"_T([0-9]{2})_([0-9]{2})_([0-9]{4})(?:\.|_)", name)
+    if stamp:
+        day, month, year = map(int, stamp.groups())
+        return date(year, month, day), name
+    stamp = re.search(r"(?<![0-9])(20[0-9]{6})(?![0-9])", name)
+    if stamp:
+        value = stamp[1]
+        return date(int(value[:4]), int(value[4:6]), int(value[6:])), name
+    return date.min, name
 
 
 def pick_latest_by_suffix(package: str, rel_dir: str, suffix: str) -> RegistryFile:
     """
-    Выбирает самый свежий файл (по времени изменения) с заданным suffix в папке rel_dir.
+    Выбирает самый свежий файл (by its versioned filename) с заданным suffix в папке rel_dir.
 
     Если файлов нет — кидает понятную ошибку.
     """
@@ -70,14 +62,14 @@ def pick_latest_by_suffix(package: str, rel_dir: str, suffix: str) -> RegistryFi
             f'Registry resource not found: package="{package}", dir="{rel_dir}", suffix="{suffix}"'
         )
 
-    latest = max(matches, key=lambda rp: _resource_mtime(package, rp))
+    latest = max(matches, key=_resource_version)
     name = latest.split("/")[-1]
     return RegistryFile(path=latest, name=name, kind=suffix.lstrip(".").lower())
 
 
 def pick_latest_by_prefix(package: str, rel_dir: str, prefix: str, suffix: str = ".csv") -> RegistryFile:
     """
-    Выбирает самый свежий файл (по времени изменения) с именем prefix*suffix в папке rel_dir.
+    Выбирает самый свежий файл (by its versioned filename) с именем prefix*suffix в папке rel_dir.
     """
     paths = _list_resource_paths(package, rel_dir)
     matches = []
@@ -91,7 +83,7 @@ def pick_latest_by_prefix(package: str, rel_dir: str, prefix: str, suffix: str =
             f'Registry resource not found: package="{package}", dir="{rel_dir}", pattern="{prefix}*{suffix}"'
         )
 
-    latest = max(matches, key=lambda rp: _resource_mtime(package, rp))
+    latest = max(matches, key=_resource_version)
     name = latest.split("/")[-1]
     kind = prefix.lower().rstrip("_").rstrip("-")
     return RegistryFile(path=latest, name=name, kind=kind)

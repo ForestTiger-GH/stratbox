@@ -10,7 +10,6 @@ from stratbox import __version__ as STRATBOX_VERSION
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsRunConfig,
     SorsSourceBundle,
-    SorsSourceFiles,
 )
 from stratbox.macrobanks.cbr_sors_restoration.linear.elastic import diagnose_infeasibility
 from stratbox.macrobanks.cbr_sors_restoration.optimization import run_optimization_fixed_point
@@ -32,7 +31,6 @@ from stratbox.macrobanks.cbr_sors_restoration.results import (
     SorsRestorationResult,
     SorsRunSummary,
 )
-from stratbox.macrobanks.cbr_sors_restoration.sources import load_sors_sources
 from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import SorsIntervalClosureState
 from stratbox.macrobanks.cbr_sors_restoration.strict.compiler import (
     compile_strict_problem,
@@ -80,6 +78,7 @@ def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, s
             'portfolio_scopes': PORTFOLIO_SCOPES,
             'regions': tuple(bundle.atomic_regions_grid['region_code'].astype(str)),
             'classes': tuple(bundle.okved2_classes_grid['class_code'].astype(str)),
+            'classifiers': [item.identity.sha256 for item in bundle.lineage if item.role == 'okved2_registry'],
         }
     )
     execution_run_id = _hash_payload(
@@ -98,9 +97,11 @@ def _concat(frames: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(usable, ignore_index=True, sort=False) if usable else pd.DataFrame()
 
 
-def run_sors_restoration(
-    source: SorsSourceFiles | SorsSourceBundle,
+def restore_bundle(
+    bundle: SorsSourceBundle,
     config: SorsRunConfig,
+    *,
+    stage=lambda name: None,
 ) -> SorsRestorationResult:
     """Restore one CBR SORS publication slice.
 
@@ -113,15 +114,6 @@ def run_sors_restoration(
        deterministic fixed point before another optimization wave starts.
     """
 
-    bundle = (
-        source
-        if isinstance(source, SorsSourceBundle)
-        else load_sors_sources(
-            source,
-            config.as_of_date,
-            publication_step=config.publication_step,
-        )
-    )
     if 'portfolio_scope' not in bundle.source_grid:
         raise ValueError(
             'SORS source bundle must carry portfolio_scope in source provenance'
@@ -143,6 +135,7 @@ def run_sors_restoration(
     dataset_id, strict_model_id, execution_run_id = _identities(bundle, config)
     policy = RoundingPolicy(step=config.publication_step)
 
+    stage("build_quantities")
     graph = build_quantity_graph(bundle)
     bundle = attach_observation_bindings(bundle, graph)
     publication_graph = build_publication_graph(graph)
@@ -153,6 +146,7 @@ def run_sors_restoration(
         max_passes=config.deterministic.interval_closure_max_passes,
     )
 
+    stage("deterministic_closure")
     deterministic = run_publication_fixed_point(
         closure_state,
         publication_graph,
@@ -163,6 +157,7 @@ def run_sors_restoration(
         inheritance_enabled=config.deterministic.inheritance_enabled,
     )
 
+    stage("feasibility")
     compilation = compile_strict_problem(
         bundle,
         graph,
@@ -178,6 +173,7 @@ def run_sors_restoration(
     if feasibility.feasibility.success:
         strict_status = 'OPTIMAL'
         ledger.confirm_feasibility(True)
+        stage("optimization")
         optimization = run_optimization_fixed_point(
             bundle,
             publication_graph,
@@ -239,6 +235,7 @@ def run_sors_restoration(
                 }
             ])
 
+    stage("build_result")
     final_problem = refresh_strict_problem_bounds(
         compilation.problem, closure_state.quantities_grid
     )

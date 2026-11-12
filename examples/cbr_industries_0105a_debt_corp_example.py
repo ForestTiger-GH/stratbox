@@ -1,52 +1,22 @@
-"""Поток, pivot set и Excel-книга Банка России 01_05_A_Debt_corp."""
+"""Parse a caller-selected set of 01_05_A_Debt_corp workbooks."""
 
-from stratbox.macrobanks.cbr_industries import (
-    CBR_SORS_INDEX_URL,
-    Cbr0105ADebtCorpPivotRequest,
-    Cbr0105ADebtCorpPivotWorkbookRequest,
-    Cbr0105ADebtCorpStreamBuildRequest,
-    build_cbr_0105a_debt_corp_pivot_set,
-    calculate_cbr_0105a_debt_corp_apk_industry,
-    build_cbr_0105a_debt_corp_stream,
-    save_cbr_0105a_debt_corp_pivot_workbook,
-)
+import argparse
+from pathlib import Path
+
+from stratbox.data import SourcePayload
+from stratbox.macrobanks import cbr_industries as industries
 
 
-stream_result = build_cbr_0105a_debt_corp_stream(
-    Cbr0105ADebtCorpStreamBuildRequest(
-        index_url=CBR_SORS_INDEX_URL,
-        date_from="2026-04-01",
-        date_to="2026-06-01",
-        source_cache_dir="cache/cbr_industries/01_05_A_Debt_corp",
-    )
-)
+def load(paths):
+    inputs = tuple(industries.ParseIndustryRequest(SourcePayload(path.read_bytes()), path.name) for path in paths)
+    result = industries.build_stream(industries.BuildIndustryStreamRequest(inputs))
+    if result.outcome != "succeeded":
+        raise RuntimeError(tuple(item.code for item in result.diagnostics))
+    return result.value
 
-# Промежуточная операция добавляет расчетную отрасль АПК.
-apk_result = calculate_cbr_0105a_debt_corp_apk_industry(stream_result.df_stream)
 
-# Фильтр выполняется до pivot: здесь выбирается только рассчитанный АПК.
-filtered_stream = apk_result.df_stream.loc[
-    apk_result.df_stream["industry_code"].astype("object") == "apk"
-].copy()
-
-pivot_set = build_cbr_0105a_debt_corp_pivot_set(
-    filtered_stream,
-    Cbr0105ADebtCorpPivotRequest(
-        row_dimension="region_code",
-        column_dimension="report_date",
-        value_columns=("value",),
-        sheet_dimensions=("measure", "currency_scope"),
-    ),
-    stream_result=stream_result,
-)
-
-saved = save_cbr_0105a_debt_corp_pivot_workbook(
-    pivot_set,
-    Cbr0105ADebtCorpPivotWorkbookRequest(
-        out_path="output/01_05_A_Debt_corp_apk_by_regions.xlsx",
-        overwrite=True,
-    ),
-)
-
-print(saved.output_path)
-print(saved.sheet_names)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("workbooks", nargs="+", type=Path)
+    result = load(parser.parse_args().workbooks)
+    print(result.df_stream.head())

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from stratbox.data import SourcePayload
 
 import pandas as pd
 
@@ -27,7 +27,7 @@ def _label_is_compatible(raw: str, canonical: str) -> bool:
 
 
 def parse_national_traditional(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     policy: RoundingPolicy,
 ) -> pd.DataFrame:

@@ -1,5 +1,7 @@
 # Current HOW — LocalFileStore missingness and publication limits
 
+> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+
 **Scope:** direct static reading of `src/stratbox/base/filestore/{base,local,types}.py` at `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`. No filesystem fault-injection or live backend test executed. This document reports **ordinary public local storage behavior**, not environment-specific adapters.
 
 ## Directly established

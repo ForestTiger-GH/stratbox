@@ -8,7 +8,6 @@ excel_xlsm — чтение/запись XLSM поверх FileStore.
 
 Зависимости:
 - pandas
-- openpyxl (опционально; автоподкачка через STRATBOX_AUTO_PIP=1)
 """
 
 from __future__ import annotations
@@ -25,20 +24,16 @@ from stratbox.base.ioapi.excel_xlsx import write_df as _write_xlsx_df
 def read_df(
     path: str,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    return _read_xlsx_df(path, store=store, auto_install=auto_install, **kwargs)
+    return _read_xlsx_df(path, store=store, **kwargs)
 
 
 def write_df(
     path: str,
     df: pd.DataFrame,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> None:
     # Запись DataFrame в xlsm возможна, но макросы не гарантируются.
-    _write_xlsx_df(path, df, store=store, auto_install=auto_install, **kwargs)
+    _write_xlsx_df(path, df, store=store, **kwargs)

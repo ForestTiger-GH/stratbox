@@ -18,7 +18,7 @@ import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
 from stratbox.base.ioapi.bytes import read_bytes, write_bytes
-from stratbox.base.utils.optional_deps import ensure_import
+from stratbox.base.utils.optional_deps import require_extra
 
 
 # -----------------------------
@@ -364,12 +364,10 @@ def _fit_column_widths(
 def read_df(
     path: str,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
     # openpyxl нужен pandas'у как engine для xlsx
-    ensure_import("openpyxl", "openpyxl>=3.1", auto_install=auto_install)
+    require_extra("openpyxl", "excel")
 
     data = read_bytes(path, store=store)
     return pd.read_excel(BytesIO(data), engine="openpyxl", **kwargs)
@@ -392,7 +390,6 @@ def write_df(
     col_width_header_max_chars: int = 22,
     col_width_padding: float = 2.8,
     col_width_filter_padding: float = 2.0,
-    auto_install: bool | None = None,
     index: bool = False,
     **kwargs: Any,
 ) -> None:
@@ -413,7 +410,7 @@ def write_df(
     - можно передать autofilter_range="A1:Z200" через kwargs или engine_kwargs
     - этот параметр НЕ прокидывается в pandas, чтобы не ловить несовместимость версий
     """
-    ensure_import("openpyxl", "openpyxl>=3.1", auto_install=auto_install)
+    require_extra("openpyxl", "excel")
 
     from openpyxl import load_workbook
     from stratbox.base.styles.excel.main import apply_preset

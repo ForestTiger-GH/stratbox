@@ -1,9 +1,4 @@
-"""
-net — сетевые утилиты stratbox.
+"""Technical HTTP requests and explicit transport implementations."""
 
-Назначение:
-- дать единый интерфейс для обработки URL
-- работать одинаково и в публичной среде, и внутри контура
-"""
-from .http import DownloadResult, download_bytes  # noqa: F401
-from .url import url  # noqa: F401
+from .contracts import HttpFailure, HttpRequest, HttpResponse, HttpTransport, HttpsEndpoint
+from .transport import RequestsTransport, RetryPolicy, exchange

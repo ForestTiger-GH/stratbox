@@ -1,33 +1,93 @@
-"""
-LocalFileStore — реализация FileStore для локальной файловой системы.
-
-Используется вне контура, когда плагин не установлен.
-"""
+"""Local file and directory commands."""
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from errno import ENOTSUP, EXDEV
+from hashlib import sha256
 import os
+import stat
 import shutil
+import tempfile
 from pathlib import Path
 from typing import BinaryIO, Iterator, Tuple
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.filestore.types import FileStat
+from stratbox.base.filestore.types import (
+    DIRECTORY_GUARD_NAME,
+    FileStat,
+    FileVersion,
+    MutationRejected,
+)
+from stratbox.data import ByteIdentity
 
 
 class LocalFileStore(FileStore):
-    """Локальная реализация FileStore."""
+    """Local paths with optional confinement to a caller-owned directory."""
+
+    store_id = "local"
 
     def __init__(self, root: str | None = None):
-        # root используется как базовый каталог для относительных путей
-        self._root = Path(root).expanduser().resolve() if root else None
+        self._root = Path(root).expanduser().resolve() if root is not None else None
 
     def _abs(self, path: str) -> Path:
-        # Нормализация: обратные слэши приводятся к '/', pathlib на Windows это понимает.
-        p = Path(str(path).replace("\\", "/"))
-        if self._root and not p.is_absolute():
-            p = self._root / p
-        return p
+        candidate = Path(str(path).replace("\\", "/"))
+        if self._root is None:
+            return candidate
+        candidate = candidate if candidate.is_absolute() else self._root / candidate
+        if ".." in candidate.parts or not candidate.resolve().is_relative_to(
+            self._root
+        ):
+            raise PermissionError("Path is outside the store root")
+        return candidate
+
+    def checked_file_path(self, path: str) -> Path:
+        """Reject symlinks, including those in the parent chain."""
+        candidate = self._abs(path).absolute()
+        for component in (candidate, *candidate.parents):
+            if (
+                component.is_symlink()
+                or getattr(component, "is_junction", lambda: False)()
+            ):
+                raise PermissionError(
+                    "Symbolic file path is outside the write contract"
+                )
+        return candidate
+
+    def _commit_bytes(self, path: str, data: bytes, *, create: bool) -> bool:
+        try:
+            target = self.checked_file_path(path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise MutationRejected("Storage destination is unavailable") from error
+        fd, name = tempfile.mkstemp(prefix=".stratbox-", dir=target.parent)
+        try:
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(data)
+                stream.flush()
+                os.fsync(stream.fileno())
+            if create:
+                try:
+                    os.link(name, target)
+                except FileExistsError:
+                    return False
+                except OSError as error:
+                    if error.errno in {ENOTSUP, EXDEV}:
+                        raise MutationRejected(
+                            "Atomic creation is unavailable", capability_missing=True
+                        ) from error
+                    raise
+            else:
+                os.replace(name, target)
+            return True
+        finally:
+            Path(name).unlink(missing_ok=True)
+
+    def create_if_absent(self, path: str, data: bytes) -> bool:
+        return self._commit_bytes(path, data, create=True)
+
+    def write_bytes(self, path: str, data: bytes) -> None:
+        self._commit_bytes(path, data, create=False)
 
     # --- Потоки ---
 
@@ -52,11 +112,13 @@ class LocalFileStore(FileStore):
 
     def stat(self, path: str) -> FileStat:
         p = self._abs(path)
-        st = p.stat()
+        st = p.lstat()
         return FileStat(
             path=str(path),
-            is_file=p.is_file(),
-            is_dir=p.is_dir(),
+            is_file=stat.S_ISREG(st.st_mode),
+            is_dir=stat.S_ISDIR(st.st_mode),
+            is_symlink=stat.S_ISLNK(st.st_mode)
+            or getattr(p, "is_junction", lambda: False)(),
             size=int(st.st_size),
             mtime=float(st.st_mtime),
             atime=float(st.st_atime),
@@ -65,8 +127,6 @@ class LocalFileStore(FileStore):
 
     def listdir(self, path: str) -> list[str]:
         p = self._abs(path)
-        if not p.exists() or not p.is_dir():
-            return []
         return sorted([x.name for x in p.iterdir()])
 
     def makedirs(self, path: str) -> None:
@@ -94,7 +154,10 @@ class LocalFileStore(FileStore):
         if not top_p.exists() or not top_p.is_dir():
             return
 
-        for dirpath, dirnames, filenames in os.walk(top_p):
+        def onerror(error: OSError) -> None:
+            raise error
+
+        for dirpath, dirnames, filenames in os.walk(top_p, onerror=onerror):
             dp = Path(dirpath)
 
             # Возвращаем пути "в координатах пользователя":
@@ -109,3 +172,97 @@ class LocalFileStore(FileStore):
                 dirpath_out = dp.as_posix()
 
             yield dirpath_out, sorted(list(dirnames)), sorted(list(filenames))
+
+    def directory_identity(self, path: str) -> str:
+        directory = self.checked_file_path(path)
+        info = directory.lstat()
+        if not stat.S_ISDIR(info.st_mode):
+            raise MutationRejected("Expected a directory")
+        namespace = f"{os.path.normcase(str(directory))}:{info.st_dev}:{info.st_ino}"
+        return sha256(namespace.encode("utf-8")).hexdigest()
+
+    @contextmanager
+    def guard_directory(self, path: str):
+        directory = self.checked_file_path(path)
+        if not directory.is_dir():
+            raise MutationRejected("Directory is unavailable")
+        lock = directory / DIRECTORY_GUARD_NAME
+        try:
+            fd = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except OSError as error:
+            raise MutationRejected("Directory guard is unavailable") from error
+        try:
+            os.close(fd)
+            yield
+        finally:
+            lock.unlink(missing_ok=True)
+
+    @staticmethod
+    def _revision(info: os.stat_result) -> str:
+        return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}:{info.st_ctime_ns}"
+
+    def inspect_file(self, path: str) -> FileVersion:
+        candidate = self.checked_file_path(path)
+        initial = candidate.lstat()
+        if not stat.S_ISREG(initial.st_mode):
+            raise MutationRejected("Expected a regular file")
+        digest = sha256()
+        size = 0
+        with candidate.open("rb") as stream:
+            opened = os.fstat(stream.fileno())
+            if self._revision(opened) != self._revision(initial):
+                raise MutationRejected("File changed while opening it")
+            while chunk := stream.read(65536):
+                digest.update(chunk)
+                size += len(chunk)
+            if (
+                self._revision(os.fstat(stream.fileno())) != self._revision(initial)
+                or self._revision(candidate.lstat()) != self._revision(initial)
+                or size != initial.st_size
+            ):
+                raise MutationRejected("File changed while reading it")
+        return FileVersion(
+            path, self._revision(initial), ByteIdentity(digest.hexdigest(), size)
+        )
+
+    def remove_expected(self, expected: FileVersion) -> bool:
+        if self.inspect_file(expected.path) != expected:
+            return False
+        source = self.checked_file_path(expected.path)
+        source.unlink()
+        if os.path.lexists(source):
+            raise OSError("File removal could not be confirmed")
+        return True
+
+    def rename_expected(self, expected: FileVersion, target: str) -> bool:
+        if self.inspect_file(expected.path) != expected:
+            return False
+        source = self.checked_file_path(expected.path)
+        destination = self.checked_file_path(target)
+        if source.parent != destination.parent:
+            raise MutationRejected("Expected a same-directory move")
+        before = source.lstat()
+        if self._revision(before) != expected.revision:
+            return False
+        try:
+            # A hard link commits the same inode without overwriting a target.
+            # Only then may the old name be removed.
+            os.link(source, destination, follow_symlinks=False)
+        except FileExistsError:
+            return False
+        old = source.lstat()
+        new = destination.lstat()
+        if (old.st_dev, old.st_ino, old.st_size, old.st_mtime_ns) != (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+        ) or (new.st_dev, new.st_ino) != (old.st_dev, old.st_ino):
+            raise OSError("Move could not be confirmed")
+        source.unlink()
+        if (
+            os.path.lexists(source)
+            or self.inspect_file(target).identity != expected.identity
+        ):
+            raise OSError("Move could not be confirmed")
+        return True

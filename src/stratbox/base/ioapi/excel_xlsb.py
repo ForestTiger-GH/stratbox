@@ -7,7 +7,6 @@ excel_xlsb — чтение XLSB поверх FileStore.
 - запись XLSB обычно не делается через pandas стандартно -> NotImplementedError
 
 Автоподкачка:
-- STRATBOX_AUTO_PIP=1 (или auto_install=True)
 """
 
 from __future__ import annotations
@@ -19,17 +18,15 @@ import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
 from stratbox.base.ioapi.bytes import read_bytes
-from stratbox.base.utils.optional_deps import ensure_import
+from stratbox.base.utils.optional_deps import require_extra
 
 
 def read_df(
     path: str,
     store: FileStore | None = None,
-    *,
-    auto_install: bool | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    ensure_import("pyxlsb", "pyxlsb>=1.0.10", auto_install=auto_install)
+    require_extra("pyxlsb", "excel-binary")
 
     data = read_bytes(path, store=store)
     return pd.read_excel(BytesIO(data), engine="pyxlsb", **kwargs)

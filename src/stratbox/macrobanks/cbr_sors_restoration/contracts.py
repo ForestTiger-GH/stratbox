@@ -3,7 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import pandas as pd
+from typing import TYPE_CHECKING
+
+from stratbox.data import SourcePayload, UsedInputReceipt
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from stratbox.macrobanks.cbr_sors_restoration.portfolio import PRIMARY_PORTFOLIO_SCOPE
 from stratbox.macrobanks.cbr_sors_restoration.schema import TARGET_METRICS
@@ -28,6 +33,21 @@ class SorsSourceFiles:
     sme_regional_totals: str | Path
     sme_ie_regional_totals: str | Path
     regional_totals_history: str | Path | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SorsSourceInputs:
+    regional_traditional: SourcePayload
+    national_okved2: SourcePayload
+    federal_district_okved2: SourcePayload
+    national_traditional: SourcePayload
+    sme_national_totals: SourcePayload
+    sme_national_okved2: SourcePayload
+    sme_ie_national_okved2: SourcePayload
+    sme_federal_district_okved2: SourcePayload
+    sme_regional_totals: SourcePayload
+    sme_ie_regional_totals: SourcePayload
+    regional_totals_history: SourcePayload | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,6 +274,7 @@ class SorsSourceBundle:
     observation_bindings_grid: pd.DataFrame
     source_manifest_grid: pd.DataFrame
     validation_grid: pd.DataFrame
+    lineage: tuple[UsedInputReceipt, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -281,8 +302,6 @@ class SorsPivotRequest:
 
 @dataclass(frozen=True, slots=True)
 class SorsWorkbookRequest:
-    output_path: str | Path
-    overwrite: bool = False
     include_source_grid: bool = False
     include_primary_grid: bool = True
     include_restored_facts: bool = True

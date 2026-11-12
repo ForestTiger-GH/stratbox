@@ -49,8 +49,8 @@ _SECTION_NAMES = {
     'U': 'Деятельность экстерриториальных организаций и органов',
 }
 
-def read_okved2_classes() -> pd.DataFrame:
-    source = rosstat_okved2.read().copy()
+def read_okved2_classes(*, inputs=None) -> pd.DataFrame:
+    source = rosstat_okved2.read(inputs=inputs).copy()
     source['code'] = source['code'].astype(str).str.strip()
     class_codes = sorted(
         {

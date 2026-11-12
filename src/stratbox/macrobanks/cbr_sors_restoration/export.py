@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import gc
-import hashlib
 import math
 import re
 from dataclasses import asdict
+from io import BytesIO
+
+from stratbox.data import Representation
+from stratbox.data.representation import XLSX
 from datetime import date, datetime
-from pathlib import Path
-from threading import Lock
 from typing import Any
 
 import pandas as pd
 import xlsxwriter
-import xlsxwriter.workbook as xlsxwriter_workbook
-from zipfile import ZipFile
 
 from stratbox.macrobanks.cbr_sors_restoration.contracts import SorsWorkbookRequest
 from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
@@ -23,17 +21,6 @@ from stratbox.macrobanks.cbr_sors_restoration.results import (
     SorsWorkbookResult,
 )
 
-
-
-_XLSXWRITER_ZIP_LOCK = Lock()
-
-
-class _FastZipFile(ZipFile):
-    """Use fast Deflate for large analytical workbooks."""
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('compresslevel', 1)
-        super().__init__(*args, **kwargs)
 
 
 _PRIMARY_COLUMNS = (
@@ -123,16 +110,12 @@ def _write_frame(workbook, frame: pd.DataFrame, sheet: str, header_format) -> No
         worksheet.set_column(column_index, column_index, width)
 
 
-def export_sors_workbook(
+def render_sors_workbook(
     result: SorsRestorationResult | SorsCrosswalkResult,
     request: SorsWorkbookRequest,
+    *,
+    checkpoint=lambda: None,
 ) -> SorsWorkbookResult:
-    output = Path(request.output_path)
-    if output.exists() and not request.overwrite:
-        raise FileExistsError(f'SORS workbook already exists: {output}')
-    output.parent.mkdir(parents=True, exist_ok=True)
-    if output.exists():
-        output.unlink()
     used: set[str] = set()
     frames: list[tuple[str, pd.DataFrame]] = []
 
@@ -256,37 +239,16 @@ def export_sors_workbook(
         selector = pivot.selected_region_name if pivot.orientation == 'REGION_TO_CLASSES' else pivot.selected_class_code
         queue(pivot.table, f'Pivot_{position}_{selector}')
 
-    workbook = xlsxwriter.Workbook(output, {'constant_memory': True})
-    header_format = workbook.add_format(
-        {'bold': True, 'bg_color': '#D9EAF7', 'border': 1}
-    )
-    closed = False
-    gc_was_enabled = gc.isenabled()
-    if gc_was_enabled:
-        gc.disable()
-    try:
+    if not frames:
+        raise ValueError("SORS workbook has no selected sheets")
+    output = BytesIO()
+    with xlsxwriter.Workbook(output, {"constant_memory": True, "strings_to_formulas": False,
+                                      "strings_to_urls": False}) as workbook:
+        workbook.set_properties({"created": datetime(1980, 1, 1)})
+        header_format = workbook.add_format({"bold": True, "bg_color": "#D9EAF7", "border": 1})
         for sheet, frame in frames:
+            checkpoint()
             _write_frame(workbook, frame, sheet, header_format)
-        with _XLSXWRITER_ZIP_LOCK:
-            original_zip_file = xlsxwriter_workbook.ZipFile
-            try:
-                xlsxwriter_workbook.ZipFile = _FastZipFile
-                workbook.close()
-                closed = True
-            finally:
-                xlsxwriter_workbook.ZipFile = original_zip_file
-    finally:
-        if not closed:
-            workbook.close()
-        if gc_was_enabled:
-            gc.enable()
-
-    digest = hashlib.sha256(output.read_bytes()).hexdigest()
     sheets = tuple(sheet for sheet, _ in frames)
-    return SorsWorkbookResult(
-        output_path=output,
-        sheet_names=sheets,
-        sheet_count=len(sheets),
-        file_size=output.stat().st_size,
-        sha256=digest,
-    )
+    return SorsWorkbookResult(Representation("cbr.sors.workbook", 1, XLSX, output.getvalue()),
+                              sheets, len(sheets))

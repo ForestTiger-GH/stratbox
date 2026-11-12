@@ -6,7 +6,6 @@ pdf — чтение PDF поверх FileStore.
 
 Принципы:
 - библиотека опциональна: используется pypdf
-- при отсутствии зависимости выдаётся понятная ошибка (или автопип при STRATBOX_AUTO_PIP=1)
 
 Ограничения:
 - извлечение текста из PDF зависит от наличия текстового слоя
@@ -16,18 +15,17 @@ pdf — чтение PDF поверх FileStore.
 from __future__ import annotations
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.runtime import get_filestore
-from stratbox.base.utils.optional_deps import ensure_import
+from stratbox.base.filestore import LocalFileStore
+from stratbox.base.utils.optional_deps import require_extra
 
 
 def read_text(
     path: str,
     store: FileStore | None = None,
     *,
-    auto_install: bool | None = None,
     max_pages: int | None = None,
 ) -> str:
-    pages = read_pages_text(path, store=store, auto_install=auto_install, max_pages=max_pages)
+    pages = read_pages_text(path, store=store, max_pages=max_pages)
     return "\n\n".join(pages)
 
 
@@ -35,17 +33,11 @@ def read_pages_text(
     path: str,
     store: FileStore | None = None,
     *,
-    auto_install: bool | None = None,
     max_pages: int | None = None,
 ) -> list[str]:
-    fs = store or get_filestore()
+    fs = store if store is not None else LocalFileStore()
 
-    pypdf = ensure_import(
-        "pypdf",
-        pip_requirement="pypdf",
-        auto_install=auto_install,
-        hint="For PDF text extraction, install optional dependency: pypdf",
-    )
+    pypdf = require_extra("pypdf", "pdf")
 
     data = fs.read_bytes(path)
 

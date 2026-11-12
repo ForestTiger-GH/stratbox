@@ -1,93 +1,29 @@
-"""
-main-API для Excel-стилей.
-
-Здесь реализовано:
-- дефолтный пресет (core или plugin)
-- список доступных пресетов (core + plugin при наличии)
-- валидация имени пресета
-- применение пресета к worksheet
-"""
-
-from __future__ import annotations
-
-from openpyxl.worksheet.worksheet import Worksheet
+"""Apply explicitly selected Excel presentation styles."""
 
 from .apply import apply_style
-from .registry import get_registry, list_preset_names
+from .registry import BUILTIN_STYLES, ExcelStylesRegistry
 
 
-_DEFAULT_ALIAS = "DEFAULT"
+def list_available_presets(*, registry: ExcelStylesRegistry = BUILTIN_STYLES) -> list[str]:
+    return sorted(registry.presets)
 
 
-def list_available_presets() -> list[str]:
-    """
-    Возвращает список доступных пресетов.
-
-    Если плагин подключён, в списке будут и корпоративные.
-    """
-    names, _ = list_preset_names()
-    return names
+def get_default_preset_name(*, registry: ExcelStylesRegistry = BUILTIN_STYLES) -> str:
+    return registry.default_preset_name
 
 
-def get_default_preset_name() -> str:
-    """
-    Возвращает дефолтный пресет:
-    - если есть plugin default => он
-    - иначе builtin default
-    """
-    reg = get_registry()
-    return reg.default_preset_name
-
-
-def resolve_preset_name(name: str | None) -> str | None:
-    """
-    Приводит имя пресета к нормализованному виду.
-
-    Правила:
-    - None => None (значит "не применять стили")
-    - "DEFAULT" (любой регистр) => дефолт из реестра
-    - иначе => нормализованное имя
-    """
-    if name is None:
+def resolve_preset_name(name: str | None, *, registry: ExcelStylesRegistry = BUILTIN_STYLES) -> str | None:
+    if name is None or not name.strip():
         return None
-
-    n = str(name).strip()
-    if not n:
-        return None
-
-    n_up = n.upper()
-    if n_up == _DEFAULT_ALIAS:
-        return get_default_preset_name()
-
-    return n_up
+    key = name.strip().upper()
+    return registry.default_preset_name if key == "DEFAULT" else key
 
 
-def _raise_unknown_preset(requested: str) -> None:
-    names, plugin_connected = list_preset_names()
-    scope = "core + plugin" if plugin_connected else "core"
-    available = ", ".join(names) if names else "(no presets)"
-    raise ValueError(
-        f"Unknown style preset: '{requested}'. "
-        f"Available presets ({scope}): {available}"
-    )
-
-
-def apply_preset(ws: Worksheet, preset_name: str | None, *, freeze_panes: str | None = None) -> None:
-    """
-    Применяет пресет по имени.
-
-    preset_name:
-    - None => ничего не делает
-    - "DEFAULT" => применяет дефолт (core или plugin)
-    - "COMPANY GREEN" / "MACROBANKS_GREEN" => применяет конкретный
-    """
-    resolved = resolve_preset_name(preset_name)
+def apply_preset(worksheet, name: str | None, *, freeze_panes: str | None = None,
+                 registry: ExcelStylesRegistry = BUILTIN_STYLES) -> None:
+    resolved = resolve_preset_name(name, registry=registry)
     if resolved is None:
         return
-
-    reg = get_registry()
-    if resolved not in reg.presets:
-        _raise_unknown_preset(resolved)
-
-    spec = reg.presets[resolved]
-    apply_style(ws, spec, freeze_panes=freeze_panes)
+    if resolved not in registry.presets:
+        raise ValueError(f"Unknown Excel style preset: {resolved!r}")
+    apply_style(worksheet, registry.presets[resolved], freeze_panes=freeze_panes)

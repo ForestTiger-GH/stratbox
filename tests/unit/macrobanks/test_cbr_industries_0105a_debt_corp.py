@@ -19,14 +19,12 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpStreamResult,
     Cbr0105ADebtCorpValidationIssue,
 )
-from stratbox.macrobanks.cbr_industries.download import (
-    try_download_cbr_0105a_debt_corp_source,
+from stratbox.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
+from stratbox.data import ByteIdentity, SourcePayload
+from stratbox.macrobanks.cbr_industries import (
+    ParseIndustryRequest, RenderIndustryRequest, RenderPivotRequest, parse, render_industry, render_pivots,
 )
-from stratbox.macrobanks.cbr_industries.operations import (
-    build_cbr_0105a_debt_corp_pivot_set,
-    export_cbr_0105a_debt_corp_industry_workbook,
-    save_cbr_0105a_debt_corp_pivot_workbook,
-)
+from stratbox.macrobanks.cbr_industries.pivots import build_cbr_0105a_debt_corp_pivot_set
 from stratbox.macrobanks.cbr_industries.parser import (
     concat_cbr_0105a_debt_corp_streams,
     parse_cbr_0105a_debt_corp_excel_bytes,
@@ -186,7 +184,6 @@ def _stream_result() -> Cbr0105ADebtCorpStreamResult:
     latest = parsed[-1]
     return Cbr0105ADebtCorpStreamResult(
         source_links=(),
-        downloaded_sources=(),
         failures=(),
         parsed_files=parsed,
         validation_issues=tuple(
@@ -305,38 +302,20 @@ def test_region_names_are_normalized_to_current_local_layout() -> None:
     assert old_region.canonical_name == "Кемеровская область - Кузбасс"
 
 
-def test_download_reads_valid_source_from_year_cache(tmp_path: Path) -> None:
+def test_parse_uses_exact_bytes_read_from_explicit_store(tmp_path: Path) -> None:
     content = _workbook_bytes(
         report_date="01.06.2026",
         kemerovo_name="Кемеровская область - Кузбасс",
     )
-    source = Cbr0105ADebtCorpSourceLink(
-        source_id="01_05_A_Debt_corp_20260601",
-        url="https://example.invalid/01_05_A_Debt_corp_20260601.xlsx",
-        source_name="01_05_A_Debt_corp_20260601.xlsx",
-        report_date="2026-06-01",
-    )
     store = LocalFileStore(root=str(tmp_path))
-    cache_path = "cache/2026/01_05_A_Debt_corp_20260601.xlsx"
-    store.write_bytes(cache_path, content)
-
-    downloaded, failure = try_download_cbr_0105a_debt_corp_source(
-        source,
-        store=store,
-        source_cache_dir="cache",
-        refresh=False,
-        timeout=1,
-        retries=0,
-        backoff=0,
-        min_bytes_ok=512,
-        headers=None,
-        plugin_only=False,
-    )
-    assert failure is None
-    assert downloaded is not None
-    assert downloaded.from_cache is True
-    assert downloaded.cache_path == cache_path
-    assert downloaded.content == content
+    filename = "01_05_A_Debt_corp_20260601.xlsx"
+    path = f"cache/{filename}"
+    store.write_bytes(path, content)
+    payload = SourcePayload(read_bounded_bytes(path, store=store, limit=len(content)))
+    result = parse(ParseIndustryRequest(payload, filename))
+    assert result.outcome == "succeeded"
+    assert result.value.report_date == "2026-06-01"
+    assert result.used_inputs[0].identity == ByteIdentity.of(content)
 
 
 def test_concat_preserves_categorical_dtypes() -> None:
@@ -439,7 +418,7 @@ def test_pivot_supports_multiple_numeric_value_columns() -> None:
     assert any(isinstance(column, tuple) for column in table.df_table.columns)
 
 
-def test_save_pivot_workbook_writes_all_tables(tmp_path: Path) -> None:
+def test_render_pivot_workbook_includes_all_tables(tmp_path: Path) -> None:
     result = _stream_result()
     filtered = result.df_stream.loc[
         result.df_stream["industry_code"].astype("object") == "total"
@@ -453,21 +432,13 @@ def test_save_pivot_workbook_writes_all_tables(tmp_path: Path) -> None:
         ),
         stream_result=result,
     )
-    store = LocalFileStore(root=str(tmp_path))
-    saved = save_cbr_0105a_debt_corp_pivot_workbook(
-        pivot_set,
-        Cbr0105ADebtCorpPivotWorkbookRequest(
-            out_path="result",
-            include_metadata_sheet=True,
-        ),
-        filestore=store,
-    )
-
-    assert saved.ok
-    assert saved.output_path == "result.xlsx"
+    operation = render_pivots(RenderPivotRequest(
+        pivot_set, Cbr0105ADebtCorpPivotWorkbookRequest(include_metadata_sheet=True),
+    ))
+    assert operation.outcome == "succeeded"
+    saved = operation.value
     assert saved.sheet_count == 7
-    assert saved.file_size > 0
-    workbook = load_workbook(tmp_path / "result.xlsx", read_only=True, data_only=True)
+    workbook = load_workbook(BytesIO(saved.representation.data), read_only=True, data_only=True)
     try:
         assert workbook.sheetnames == [
             "_Параметры",
@@ -486,7 +457,7 @@ def test_save_pivot_workbook_writes_all_tables(tmp_path: Path) -> None:
         workbook.close()
 
 
-def test_save_pivot_workbook_respects_overwrite_flag(tmp_path: Path) -> None:
+def test_pivot_representation_can_be_saved_without_overwriting(tmp_path: Path) -> None:
     result = _stream_result()
     filtered = result.df_stream.loc[
         (result.df_stream["region_code"].astype("object") == "0105a_region_001")
@@ -502,10 +473,15 @@ def test_save_pivot_workbook_respects_overwrite_flag(tmp_path: Path) -> None:
         stream_result=result,
     )
     store = LocalFileStore(root=str(tmp_path))
-    request = Cbr0105ADebtCorpPivotWorkbookRequest(out_path="result.xlsx")
-    save_cbr_0105a_debt_corp_pivot_workbook(pivot_set, request, filestore=store)
-    with pytest.raises(FileExistsError):
-        save_cbr_0105a_debt_corp_pivot_workbook(pivot_set, request, filestore=store)
+    rendered = render_pivots(RenderPivotRequest(pivot_set))
+    assert rendered.outcome == "succeeded"
+    data = rendered.value.representation
+    saved = write_verified_bytes("result.xlsx", data.data, store=store, expected_sha256=data.identity.sha256)
+    assert saved.status == "stored"
+    different = ByteIdentity.of(b"different")
+    conflict = write_verified_bytes("result.xlsx", b"different", store=store, expected_sha256=different.sha256)
+    assert conflict.diagnostic_code == "effect.conflict"
+    assert store.read_bytes("result.xlsx") == data.data
 
 
 def test_parser_reports_negative_values_as_validation_error() -> None:
@@ -576,7 +552,7 @@ def test_apk_calculation_uses_corrected_lpk_formula() -> None:
         CBR_0105A_DEBT_CORP_APK_FORMULA_RU,
         CBR_0105A_DEBT_CORP_LPK_FORMULA_RU,
     )
-    from stratbox.macrobanks.cbr_industries.operations import (
+    from stratbox.macrobanks.cbr_industries.derived import (
         calculate_cbr_0105a_debt_corp_apk_industry,
     )
 
@@ -620,7 +596,7 @@ def test_apk_calculation_rejects_incomplete_component_group() -> None:
     from stratbox.macrobanks.cbr_industries.derived import (
         Cbr0105ADebtCorpDerivedIndustryError,
     )
-    from stratbox.macrobanks.cbr_industries.operations import (
+    from stratbox.macrobanks.cbr_industries.derived import (
         calculate_cbr_0105a_debt_corp_apk_industry,
     )
 
@@ -644,7 +620,7 @@ def test_apk_calculation_rejects_incomplete_component_group() -> None:
 
 
 def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
-    from stratbox.macrobanks.cbr_industries.operations import (
+    from stratbox.macrobanks.cbr_industries.derived import (
         calculate_cbr_0105a_debt_corp_apk_industry,
     )
 
@@ -672,17 +648,11 @@ def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
 
 def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) -> None:
     result = _stream_result()
-    store = LocalFileStore(root=str(tmp_path))
-
-    exported = export_cbr_0105a_debt_corp_industry_workbook(
-        result,
-        Cbr0105ADebtCorpIndustryWorkbookRequest(
-            out_path="apk_by_regions.xlsx",
+    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="apk",
-            overwrite=True,
-        ),
-        filestore=store,
-    )
+    )))
+    assert rendered.outcome == "succeeded"
+    exported = rendered.value
 
     assert exported.ok
     assert exported.industry_code == "apk"
@@ -698,7 +668,7 @@ def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) 
     assert exported.dates == ("2019-02-01", "2026-06-01")
     assert exported.rows_per_sheet == 96
 
-    workbook = load_workbook(tmp_path / "apk_by_regions.xlsx", data_only=True)
+    workbook = load_workbook(BytesIO(exported.representation.data), data_only=True)
     try:
         assert workbook.sheetnames == list(exported.sheet_names)
         sheet = workbook["в рублях"]
@@ -728,22 +698,16 @@ def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) 
 
 def test_industry_workbook_uses_published_total_without_recalculation(tmp_path: Path) -> None:
     result = _stream_result()
-    store = LocalFileStore(root=str(tmp_path))
-
-    exported = export_cbr_0105a_debt_corp_industry_workbook(
-        result,
-        Cbr0105ADebtCorpIndustryWorkbookRequest(
-            out_path="total_by_regions.xlsx",
+    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="total",
-            overwrite=True,
-        ),
-        filestore=store,
-    )
+    )))
+    assert rendered.outcome == "succeeded"
+    exported = rendered.value
 
     assert exported.ok
     assert exported.industry_code == "total"
     assert exported.industry_name_ru == "ВСЕГО"
-    workbook = load_workbook(tmp_path / "total_by_regions.xlsx", data_only=True)
+    workbook = load_workbook(BytesIO(exported.representation.data), data_only=True)
     try:
         sheet = workbook["в рублях"]
         assert "всего по видам экономической деятельности" in sheet["A1"].value
@@ -757,22 +721,16 @@ def test_industry_workbook_uses_published_total_without_recalculation(tmp_path: 
 
 def test_industry_workbook_supports_fast_selection_of_source_industry(tmp_path: Path) -> None:
     result = _stream_result()
-    store = LocalFileStore(root=str(tmp_path))
-
-    exported = export_cbr_0105a_debt_corp_industry_workbook(
-        result,
-        Cbr0105ADebtCorpIndustryWorkbookRequest(
-            out_path="manufacturing.xlsx",
+    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="manufacturing",
-            overwrite=True,
             include_metadata_sheet=True,
-        ),
-        filestore=store,
-    )
+    )))
+    assert rendered.outcome == "succeeded"
+    exported = rendered.value
 
     assert exported.ok
     assert exported.industry_name_ru == "Обрабатывающие производства"
-    workbook = load_workbook(tmp_path / "manufacturing.xlsx", data_only=True)
+    workbook = load_workbook(BytesIO(exported.representation.data), data_only=True)
     try:
         assert workbook.sheetnames[0] == "_Параметры"
         assert "Обрабатывающие производства" in workbook["итого"]["A1"].value
@@ -781,16 +739,9 @@ def test_industry_workbook_supports_fast_selection_of_source_industry(tmp_path: 
         workbook.close()
 
 
-def test_industry_workbook_rejects_unknown_industry(tmp_path: Path) -> None:
-    result = _stream_result()
-    store = LocalFileStore(root=str(tmp_path))
-
-    with pytest.raises(ValueError, match="is absent from the stream"):
-        export_cbr_0105a_debt_corp_industry_workbook(
-            result,
-            Cbr0105ADebtCorpIndustryWorkbookRequest(
-                out_path="unknown.xlsx",
-                industry_code="unknown",
-            ),
-            filestore=store,
-        )
+def test_industry_workbook_rejects_unknown_industry() -> None:
+    result = render_industry(RenderIndustryRequest(
+        _stream_result(), Cbr0105ADebtCorpIndustryWorkbookRequest(industry_code="unknown"),
+    ))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "request.industry_unresolved"

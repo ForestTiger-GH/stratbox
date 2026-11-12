@@ -1,37 +1,29 @@
-"""
-Примеры запуска домена загрузки исходных файлов Банка России.
+"""Collect explicitly selected official files and save an original-byte ZIP."""
 
-Файл является примером использования, а не частью доменной логики.
-"""
+import argparse
 
-from stratbox.macrobanks.cbr_file_collector import CbrFileCollectRequest, collect_cbr_files
-
-
-# ZIP в базовой папке Colab/Jupyter.
-result_zip = collect_cbr_files(
-    CbrFileCollectRequest(
-        target_path="/content/CBR Collected Files.zip",
-        save_mode="zip",
-        overwrite=True,
-        continue_on_error=True,
-        retry_attempts=3,
-    )
-)
-print("ZIP output:", result_zip.target_path)
-print("Downloaded:", result_zip.success_count)
-print("Failed:", result_zip.failure_count)
+from stratbox.base.ioapi.bytes import write_verified_bytes
+from stratbox.base.runtime import local_providers
+from stratbox.macrobanks import cbr_file_collector as collector
 
 
-# Пачка файлов в базовой папке Colab/Jupyter.
-# Раскомментировать при необходимости.
-# result_files = collect_cbr_files(
-#     CbrFileCollectRequest(
-#         target_path="/content/CBR Collected Files",
-#         save_mode="files",
-#         overwrite=True,
-#         continue_on_error=True,
-#     )
-# )
-# print("Files output:", result_files.target_path)
-# print("Downloaded:", result_files.success_count)
-# print("Failed:", result_files.failure_count)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output")
+    parser.add_argument("source_ids", nargs="+")
+    args = parser.parse_args()
+    providers = local_providers()
+    result = collector.collect_raw(collector.CollectFilesRequest(tuple(args.source_ids)), transport=providers.http)
+    if result.outcome != "succeeded":
+        raise SystemExit(tuple(item.code for item in result.diagnostics))
+    packed = collector.prepare_archive(collector.PrepareArchiveRequest(result.value.completed))
+    if packed.outcome != "succeeded":
+        raise SystemExit(tuple(item.code for item in packed.diagnostics))
+    artifact = packed.value
+    saved = write_verified_bytes(args.output, artifact.data, store=providers.filestore,
+                                 expected_sha256=artifact.identity.sha256)
+    print(saved.status, saved.identity.sha256)
+
+
+if __name__ == "__main__":
+    main()

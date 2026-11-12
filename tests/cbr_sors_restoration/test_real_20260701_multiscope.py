@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from stratbox.base.filestore import LocalFileStore
+from stratbox.macrobanks.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
 from stratbox.macrobanks.cbr_sors_restoration import SorsSourceFiles
 from stratbox.macrobanks.cbr_sors_restoration.publication import (
     RoundingPolicy,
@@ -12,7 +14,6 @@ from stratbox.macrobanks.cbr_sors_restoration.publication import (
     build_publication_graph,
     run_publication_fixed_point,
 )
-from stratbox.macrobanks.cbr_sors_restoration.sources.loader import load_sors_sources
 from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import (
     SorsIntervalClosureState,
 )
@@ -40,7 +41,11 @@ def test_real_20260701_sme_constraints_restore_corporate_udmurtia_47_overdue_fx(
         sme_regional_totals=root / '01_13_F_Debt_sme_subj.xlsx',
         sme_ie_regional_totals=root / '01_13_I_Debt_sme_subj.xlsx',
     )
-    bundle = load_sors_sources(files, '2026-07-01')
+    inputs = read_source_files(files, store=LocalFileStore())
+    assert inputs.outcome == "succeeded", inputs.diagnostics
+    loaded = load_sources(LoadSorsRequest(inputs.value, SorsRunConfig(as_of_date="2026-07-01")))
+    assert loaded.outcome == "succeeded", loaded.diagnostics
+    bundle = loaded.value
     assert len(bundle.source_grid) == 18266
     assert set(bundle.source_grid['portfolio_scope']) == {
         'CORPORATE_TOTAL', 'SME', 'SME_IE'

@@ -7,7 +7,7 @@ rosstat_okved2.py — ОКВЭД2 (Росстат), хранится в виде
   - meta*.csv       (метаданные)       <-- может быть кривым, читается отдельно и мягко
   - structure*.csv  (описание полей)   <-- может быть кривым, читается отдельно и мягко
 - имена могут быть любыми (как скачались)
-- если файлов несколько — берём самый свежий для каждого типа (по времени изменения)
+- если файлов несколько — берём самый свежий для каждого типа (по версии в имени файла)
 
 Важно по формату твоих файлов:
 - encoding = cp1251
@@ -28,19 +28,23 @@ from io import BytesIO
 
 import pandas as pd
 
+from stratbox.data import SourcePayload, UsedInputReceipt
 from stratbox.registries._loader import pick_latest_by_prefix, read_resource_bytes
 
 _PACKAGE = "stratbox.registries"
 _REL_DIR = "_resources/rosstat_okved2"
 
 
-def _read_csv_strict(prefix: str) -> pd.DataFrame:
+def _read_csv_strict(prefix: str, *, inputs=None) -> pd.DataFrame:
     """
     Строгое чтение CSV (ожидаем корректный формат).
     Используется для data*.csv, который нам реально нужен.
     """
     rf = pick_latest_by_prefix(_PACKAGE, _REL_DIR, prefix=prefix, suffix=".csv")
     raw = read_resource_bytes(_PACKAGE, rf.path)
+
+    if inputs is not None:
+        inputs.append(UsedInputReceipt.for_payload(SourcePayload(raw, "text/csv", rf.path), "okved2_registry"))
 
     if prefix == "data":
         # В файле data*.csv заголовков нет, первая строка — это данные.
@@ -110,11 +114,11 @@ def read_structure() -> pd.DataFrame:
     return _read_csv_soft("structure")
 
 
-def read() -> pd.DataFrame:
+def read(*, inputs: list[UsedInputReceipt] | None = None) -> pd.DataFrame:
     """
     Возвращает нормализованный справочник ОКВЭД2: section/code/name.
     """
-    df = _read_csv_strict("data").copy()
+    df = _read_csv_strict("data", inputs=inputs).copy()
 
     # ожидаемые колонки: Razdel, Code, Name
     cols = {c.lower(): c for c in df.columns}

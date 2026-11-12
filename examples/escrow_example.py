@@ -1,47 +1,33 @@
-"""
-Пример запуска домена счетов эскроу.
+"""Build escrow views from explicit workbook inputs."""
 
-Сценарий:
-- месячные источники ЦБ сохраняются в кэш-папку;
-- строится исторический набор данных;
-- итоговый workbook выгружается в zip-архив;
-- один и тот же код работает с local FileStore и с plugin FileStore.
-"""
+import argparse
+from pathlib import Path
 
-from stratbox.base import runtime
-from stratbox.macrobanks.escrow import (
-    EscrowHistoryBuildRequest,
-    EscrowViewBuildRequest,
-    EscrowWorkbookExportRequest,
-    build_escrow_history,
-    export_escrow_workbook,
-)
+from stratbox.base.filestore import LocalFileStore
+from stratbox.base.ioapi.bytes import write_verified_bytes
+from stratbox.data import SourcePayload
+from stratbox.macrobanks import escrow
 
 
-providers = runtime.get_providers()
-print(f"INFO: providers source = {providers.source}")
+def require_value(result):
+    if result.outcome != "succeeded":
+        raise RuntimeError(tuple(item.code for item in result.diagnostics))
+    return result.value
 
-history = build_escrow_history(
-    EscrowHistoryBuildRequest(
-        index_url="https://www.cbr.ru/statistics/bank_sector/equity_const_financing/",
-        source_cache_dir="cache/escrow",
-        show_progress=True,
-    )
-)
 
-result = export_escrow_workbook(
-    history,
-    EscrowWorkbookExportRequest(
-        out_path="outputs/Escrow Accounts.zip",
-        archive=True,
-        show_progress=True,
-    ),
-    view_request=EscrowViewBuildRequest(regions_mode="latest"),
-)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output")
+    parser.add_argument("sources", nargs="+", type=Path)
+    args = parser.parse_args()
+    inputs = tuple(escrow.ParseEscrowRequest(SourcePayload(path.read_bytes()), path.name) for path in args.sources)
+    history = require_value(escrow.build_history(escrow.EscrowHistoryBuildRequest(inputs)))
+    views = require_value(escrow.build_views(escrow.BuildEscrowViewsRequest(history)))
+    artifact = require_value(escrow.render_workbook(views))
+    saved = write_verified_bytes(args.output, artifact.data, store=LocalFileStore(),
+                                 expected_sha256=artifact.identity.sha256)
+    print(saved.status, saved.identity.sha256)
 
-print(f"INFO: output path = {result.output_path}")
-print(f"INFO: source files = {len(result.source_files)}")
-print(f"INFO: dates = {len(result.dates)}")
-print(f"INFO: indicators = {len(result.indicators)}")
-print(f"INFO: regions = {len(result.regions)}")
-print(f"INFO: long rows = {result.rows_long}")
+
+if __name__ == "__main__":
+    main()

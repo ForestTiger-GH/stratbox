@@ -198,3 +198,11 @@ def get_model_rows(
 
     out["_order_num"] = pd.to_numeric(out["order"], errors="raise").astype(int)
     return out.sort_values("_order_num", kind="stable").drop(columns=["_order_num"]).reset_index(drop=True)
+
+
+def parse_form_model(data: bytes, form: str) -> pd.DataFrame:
+    from io import BytesIO
+
+    frame = pd.read_csv(BytesIO(data), dtype=str, keep_default_na=False)
+    validate_model(frame, expected_form=form)
+    return get_model_for(_normalize_model(frame), form=form)

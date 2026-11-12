@@ -1,14 +1,5 @@
-"""
-stratbox.base.styles.excel
+"""Built-in Excel presets and explicit style registry contracts."""
 
-Пакет Excel-стилей: модели, builtin-пресеты, подключение оверлеев из плагина,
-и публичное API через main.py.
-"""
-
-from .models import FontTheme, BlockStyle, StyleSpec  # noqa: F401
-from .main import (  # noqa: F401
-    list_available_presets,
-    get_default_preset_name,
-    resolve_preset_name,
-    apply_preset,
-)
+from .main import apply_preset, get_default_preset_name, list_available_presets, resolve_preset_name
+from .models import BlockStyle, FontTheme, StyleSpec
+from .registry import BUILTIN_STYLES, ExcelStylesRegistry

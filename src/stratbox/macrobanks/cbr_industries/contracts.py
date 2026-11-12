@@ -10,10 +10,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Mapping
 
-import pandas as pd
+from typing import TYPE_CHECKING
+
+from stratbox.data import Representation, SourcePayload
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
-Cbr0105ADebtCorpSourceErrorPolicy = Literal["fail_fast", "collect_partial"]
 Cbr0105ADebtCorpFailureStage = Literal["download", "parse"]
 Cbr0105ADebtCorpMeasure = Literal["debt", "overdue_debt"]
 Cbr0105ADebtCorpCurrencyScope = Literal[
@@ -77,23 +81,6 @@ class Cbr0105ADebtCorpSourceLink:
 
 
 @dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpDownloadedSource:
-    """Скачанный или прочитанный из кэша исходный XLSX."""
-
-    source_id: str
-    url: str
-    source_name: str
-    report_date: str
-    content: bytes = field(repr=False)
-    size_bytes: int = 0
-    sha256: str = ""
-    used_url: str = ""
-    final_url: str | None = None
-    cache_path: str | None = None
-    from_cache: bool = False
-
-
-@dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpSourceFailure:
     """Ошибка получения или разбора одной книги."""
 
@@ -138,58 +125,21 @@ class ParsedCbr0105ADebtCorpFile:
 
 
 @dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpDownloadRequest:
-    """Запрос на обнаружение и скачивание книг выбранного периода."""
-
-    index_url: str
-    date_from: str | None = None
-    date_to: str | None = None
-    source_cache_dir: str | None = None
-    refresh: bool = False
-    timeout: int = 60
-    retries: int = 2
-    backoff: float = 0.5
-    min_bytes_ok: int = 512
-    headers: Mapping[str, str] | None = None
-    plugin_only: bool = True
-    show_progress: bool = True
-    source_error_policy: Cbr0105ADebtCorpSourceErrorPolicy = "fail_fast"
-
-
-@dataclass(frozen=True)
-class Cbr0105ADebtCorpDownloadBatchResult:
-    """Результат операции скачивания набора исходных книг."""
-
-    source_links: tuple[Cbr0105ADebtCorpSourceLink, ...]
-    downloaded_sources: tuple[Cbr0105ADebtCorpDownloadedSource, ...]
-    failures: tuple[Cbr0105ADebtCorpSourceFailure, ...]
-
-    @property
-    def ok(self) -> bool:
-        return not self.failures
-
-    @property
-    def is_partial(self) -> bool:
-        return bool(self.failures) and bool(self.downloaded_sources)
+class DiscoverIndustriesRequest:
+    index: SourcePayload | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpStreamBuildRequest:
-    """Запрос на построение нормализованного потокового набора."""
+class ParseIndustryRequest:
+    payload: SourcePayload
+    source_name: str
+    source: Cbr0105ADebtCorpSourceLink | None = None
 
-    index_url: str
-    date_from: str | None = None
-    date_to: str | None = None
-    source_cache_dir: str | None = None
-    refresh: bool = False
-    timeout: int = 60
-    retries: int = 2
-    backoff: float = 0.5
-    min_bytes_ok: int = 512
-    headers: Mapping[str, str] | None = None
-    plugin_only: bool = True
-    show_progress: bool = True
-    source_error_policy: Cbr0105ADebtCorpSourceErrorPolicy = "fail_fast"
+
+@dataclass(frozen=True, slots=True)
+class BuildIndustryStreamRequest:
+    sources: tuple[ParseIndustryRequest, ...]
+    continue_on_error: bool = False
 
 
 @dataclass(frozen=True)
@@ -197,7 +147,6 @@ class Cbr0105ADebtCorpStreamResult:
     """Канонический результат построения потока ``01_05_A_Debt_corp``."""
 
     source_links: tuple[Cbr0105ADebtCorpSourceLink, ...]
-    downloaded_sources: tuple[Cbr0105ADebtCorpDownloadedSource, ...]
     failures: tuple[Cbr0105ADebtCorpSourceFailure, ...]
     parsed_files: tuple[ParsedCbr0105ADebtCorpFile, ...]
     validation_issues: tuple[Cbr0105ADebtCorpValidationIssue, ...]
@@ -210,6 +159,7 @@ class Cbr0105ADebtCorpStreamResult:
     regions: tuple[Cbr0105ADebtCorpRegionSpec, ...]
     industries: tuple[Cbr0105ADebtCorpIndustrySpec, ...]
     rows_stream: int
+    geography_method_version: str = "cbr-0105a-geography-1"
 
     @property
     def sources_ok(self) -> bool:
@@ -301,8 +251,6 @@ class Cbr0105ADebtCorpPivotSetResult:
 class Cbr0105ADebtCorpPivotWorkbookRequest:
     """Запрос на сохранение готового набора pivot-таблиц в одну книгу Excel."""
 
-    out_path: str
-    overwrite: bool = False
     freeze_headers: bool = True
     enable_auto_filter: bool = True
     adjust_column_widths: bool = True
@@ -313,24 +261,20 @@ class Cbr0105ADebtCorpPivotWorkbookRequest:
 class Cbr0105ADebtCorpPivotWorkbookResult:
     """Результат отдельной операции сохранения Excel-книги."""
 
-    output_path: str
+    representation: Representation
     sheet_names: tuple[str, ...]
     sheet_count: int
-    file_size: int
-    sha256: str
 
     @property
     def ok(self) -> bool:
-        return bool(self.output_path) and self.sheet_count > 0
+        return self.sheet_count > 0
 
 
 @dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpIndustryWorkbookRequest:
     """Запрос на CBR-подобную книгу динамики одной отрасли по регионам."""
 
-    out_path: str
     industry_code: str = "apk"
-    overwrite: bool = False
     calculate_apk_if_missing: bool = True
     include_metadata_sheet: bool = False
 
@@ -339,50 +283,42 @@ class Cbr0105ADebtCorpIndustryWorkbookRequest:
 class Cbr0105ADebtCorpIndustryWorkbookResult:
     """Результат экспорта одной отрасли в шестилистовую CBR-подобную книгу."""
 
-    output_path: str
+    representation: Representation
     industry_code: str
     industry_name_ru: str
     sheet_names: tuple[str, ...]
     sheet_count: int
     dates: tuple[str, ...]
     rows_per_sheet: int
-    file_size: int
-    sha256: str
 
     @property
     def ok(self) -> bool:
         return (
-            bool(self.output_path)
-            and bool(self.industry_code)
+            bool(self.industry_code)
             and self.sheet_count == 6
             and self.rows_per_sheet > 0
         )
 
 
-__all__ = [
-    "Cbr0105ADebtCorpApkCalculationResult",
-    "Cbr0105ADebtCorpCurrencyScope",
-    "Cbr0105ADebtCorpDownloadBatchResult",
-    "Cbr0105ADebtCorpDownloadedSource",
-    "Cbr0105ADebtCorpDownloadRequest",
-    "Cbr0105ADebtCorpFailureStage",
-    "Cbr0105ADebtCorpIndustrySpec",
-    "Cbr0105ADebtCorpIndustryWorkbookRequest",
-    "Cbr0105ADebtCorpIndustryWorkbookResult",
-    "Cbr0105ADebtCorpMeasure",
-    "Cbr0105ADebtCorpPivotDimension",
-    "Cbr0105ADebtCorpPivotRequest",
-    "Cbr0105ADebtCorpPivotSetResult",
-    "Cbr0105ADebtCorpPivotTable",
-    "Cbr0105ADebtCorpPivotWorkbookRequest",
-    "Cbr0105ADebtCorpPivotWorkbookResult",
-    "Cbr0105ADebtCorpRegionSpec",
-    "Cbr0105ADebtCorpSheetSpec",
-    "Cbr0105ADebtCorpSourceErrorPolicy",
-    "Cbr0105ADebtCorpSourceFailure",
-    "Cbr0105ADebtCorpSourceLink",
-    "Cbr0105ADebtCorpStreamBuildRequest",
-    "Cbr0105ADebtCorpStreamResult",
-    "Cbr0105ADebtCorpValidationIssue",
-    "ParsedCbr0105ADebtCorpFile",
-]
+@dataclass(frozen=True)
+class CalculateApkRequest:
+    stream: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class PivotInput:
+    stream: pd.DataFrame
+    pivot: Cbr0105ADebtCorpPivotRequest
+    source: Cbr0105ADebtCorpStreamResult | None = None
+
+
+@dataclass(frozen=True)
+class RenderPivotRequest:
+    tables: Cbr0105ADebtCorpPivotSetResult
+    format: Cbr0105ADebtCorpPivotWorkbookRequest = Cbr0105ADebtCorpPivotWorkbookRequest()
+
+
+@dataclass(frozen=True)
+class RenderIndustryRequest:
+    stream: Cbr0105ADebtCorpStreamResult
+    format: Cbr0105ADebtCorpIndustryWorkbookRequest = Cbr0105ADebtCorpIndustryWorkbookRequest()

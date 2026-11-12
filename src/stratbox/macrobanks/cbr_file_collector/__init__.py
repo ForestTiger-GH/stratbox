@@ -1,28 +1,7 @@
-"""cbr_file_collector — загрузка и сохранение исходных статистических файлов Банка России."""
+"""Bank of Russia original-file catalog and acquisition."""
 
-from stratbox.macrobanks.cbr_file_collector.contracts import (
-    CbrCollectedFile,
-    CbrFileRegistryItem,
-    CbrFileCollectRequest,
-    CbrFileCollectResult,
-    CbrFileCollectFailure,
+from .contracts import (
+    CbrFileRegistryItem, CollectedFile, Collection, CollectFailure, CollectFilesRequest,
+    DiscoverFilesRequest, PrepareArchiveRequest,
 )
-from stratbox.macrobanks.cbr_file_collector.operations import collect_cbr_files, list_cbr_file_sources
-from stratbox.macrobanks.cbr_file_collector.registry import (
-    DEFAULT_CBR_FILE_SOURCES,
-    DEFAULT_CBR_FILES_ARCHIVE_NAME,
-    DEFAULT_CBR_FILES_DIRECTORY_NAME,
-)
-
-__all__ = [
-    "CbrCollectedFile",
-    "CbrFileRegistryItem",
-    "CbrFileCollectRequest",
-    "CbrFileCollectResult",
-    "CbrFileCollectFailure",
-    "DEFAULT_CBR_FILE_SOURCES",
-    "DEFAULT_CBR_FILES_ARCHIVE_NAME",
-    "DEFAULT_CBR_FILES_DIRECTORY_NAME",
-    "collect_cbr_files",
-    "list_cbr_file_sources",
-]
+from .operations import ARCHIVE, COLLECT, DISCOVER, collect_raw, discover, prepare_archive

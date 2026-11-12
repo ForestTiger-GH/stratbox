@@ -1,22 +1,21 @@
 from __future__ import annotations
 
-from pathlib import Path
+from stratbox.data import SourcePayload
 
 import pandas as pd
-from openpyxl import load_workbook
 
 from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
 from stratbox.macrobanks.cbr_sors_restoration.sources.common import (
     canonicalize_observations,
     iso_date,
-    sha256_file,
+    open_source_workbook,
     sheet_semantics,
 )
 from stratbox.macrobanks.cbr_sors_restoration.schema import normalize_text
 
 
 def parse_national_book(
-    path: str | Path,
+    path: SourcePayload,
     as_of_date: str,
     *,
     classifier_id: str,
@@ -31,9 +30,9 @@ def parse_national_book(
     SME and SME-IE add two more national class books to every run.
     """
 
-    actual = Path(path)
-    digest = sha256_file(actual)
-    workbook = load_workbook(actual, read_only=True, data_only=True)
+    actual_name = path.source_id or "source.xlsx"
+    digest = path.identity.sha256
+    workbook = open_source_workbook(path)
     rows: list[dict[str, object]] = []
     try:
         for ws in workbook.worksheets:
@@ -55,8 +54,8 @@ def parse_national_book(
                     continue
                 rows.append({
                     'source_series': source_series,
-                    'source_file_actual': actual.name,
-                    'source_file_logical': actual.name,
+                    'source_file_actual': actual_name,
+                    'source_file_logical': actual_name,
                     'source_sha256': digest,
                     'source_sheet': ws.title,
                     'source_row': row_no,
@@ -76,5 +75,5 @@ def parse_national_book(
         workbook.close()
     out = pd.DataFrame(rows)
     if out.empty:
-        raise ValueError(f'No observations parsed from {actual}')
+        raise ValueError(f'No observations parsed from {actual_name}')
     return canonicalize_observations(out, policy, source_role=source_role)

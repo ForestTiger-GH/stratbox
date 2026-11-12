@@ -10,30 +10,18 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
 from stratbox.base.filestore import FileStore
-from stratbox.base.runtime import get_filestore
+from stratbox.base.filestore.paths import child_path
+from stratbox.base.filestore.types import DIRECTORY_GUARD_NAME
 from stratbox.macrobanks.frg.models import FrgCatalogRecord
 from stratbox.macrobanks.frg.naming import parse_file_name
 
 
 DEFAULT_ALLOWED_EXTENSIONS = {".xlsx", ".xlsb", ".xlsm", ".xls"}
-
-
-def _join_path(parent: str, name: str) -> str:
-    """Склеивает путь в унифицированном виде с косыми слэшами."""
-    left = str(parent).replace("\\", "/").rstrip("/")
-    right = str(name).replace("\\", "/").lstrip("/")
-
-    if left in ("", "."):
-        return right
-    if left == "/":
-        return f"/{right}"
-    return f"{left}/{right}"
-
 
 
 def _iter_paths(
@@ -43,34 +31,40 @@ def _iter_paths(
     recursive: bool,
 ) -> list[str]:
     """Возвращает список путей к файлам, найденным в каталоге."""
+    if not filestore.is_dir(root_dir):
+        raise FileNotFoundError("Catalog directory is unavailable")
     if recursive:
         paths: list[str] = []
         for dirpath, _dirnames, filenames in filestore.walk(root_dir):
             for file_name in filenames:
-                paths.append(_join_path(dirpath, file_name))
+                if file_name != DIRECTORY_GUARD_NAME:
+                    path = child_path(dirpath, file_name)
+                    info = filestore.stat(path)
+                    if info.is_file and not info.is_symlink:
+                        paths.append(path)
         return sorted(paths)
 
     names = filestore.listdir(root_dir)
-    paths = [_join_path(root_dir, name) for name in names if filestore.is_file(_join_path(root_dir, name))]
+    paths = []
+    for name in names:
+        if name == DIRECTORY_GUARD_NAME:
+            continue
+        path = child_path(root_dir, name)
+        info = filestore.stat(path)
+        if info.is_symlink:
+            raise PermissionError("Catalog contains a symbolic directory entry")
+        if info.is_file:
+            paths.append(path)
     return sorted(paths)
 
 
 
-def _safe_stat(path: str, *, filestore: FileStore) -> tuple[int | None, float | None, str | None]:
-    """Безопасно читает метаданные файла, не роняя сканирование каталога."""
-    try:
-        stat = filestore.stat(path)
-    except Exception:
-        return None, None, None
-
-    mtime_iso = None
-    if stat.mtime is not None:
-        try:
-            mtime_iso = datetime.fromtimestamp(stat.mtime).isoformat(sep=" ", timespec="seconds")
-        except Exception:
-            mtime_iso = None
-    return stat.size, stat.mtime, mtime_iso
-
+def _file_metadata(path: str, *, filestore: FileStore):
+    info = filestore.stat(path)
+    if not info.is_file or info.is_symlink:
+        raise PermissionError("Catalog entry is no longer a regular file")
+    mtime = datetime.fromtimestamp(info.mtime, timezone.utc).isoformat(timespec="seconds") if info.mtime is not None else None
+    return info.size, info.mtime, mtime
 
 
 def _build_record(
@@ -82,7 +76,7 @@ def _build_record(
 ) -> FrgCatalogRecord:
     """Строит одну запись каталога по конкретному пути."""
     parsed = parse_file_name(path)
-    size_bytes, mtime, mtime_iso = _safe_stat(path, filestore=filestore)
+    size_bytes, mtime, mtime_iso = _file_metadata(path, filestore=filestore)
 
     is_supported_extension = parsed.extension in allowed_extensions
     family_rule = parsed.family_rule
@@ -170,19 +164,18 @@ def build_frg_catalog(
     root_dir: str,
     *,
     recursive: bool = False,
-    filestore: FileStore | None = None,
+    filestore: FileStore,
     allowed_extensions: set[str] | None = None,
 ) -> pd.DataFrame:
     """Сканирует каталог FRG и возвращает полный каталог файлов."""
-    fs = filestore or get_filestore()
     extensions = allowed_extensions or DEFAULT_ALLOWED_EXTENSIONS
 
-    paths = _iter_paths(root_dir, filestore=fs, recursive=recursive)
+    paths = _iter_paths(root_dir, filestore=filestore, recursive=recursive)
     records = [
         _build_record(
             path,
             root_dir=root_dir,
-            filestore=fs,
+            filestore=filestore,
             allowed_extensions=extensions,
         )
         for path in paths

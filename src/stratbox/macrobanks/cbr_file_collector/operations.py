@@ -1,90 +1,125 @@
-"""
-operations — публичные операции домена загрузки исходных файлов Банка России.
-"""
+"""Discover catalog entries, receive selected originals and assemble an archive."""
 
-from __future__ import annotations
+from pathlib import PurePosixPath
+import re
+from time import monotonic
 
-from typing import Iterable
+from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
+from stratbox.base.net import HttpTransport
+from stratbox.data import Representation, UsedInputReceipt
+from stratbox.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
+from stratbox.macrobanks._cbr import WORKBOOK_LIMIT, XLSX_TYPES, official_url, receive_cbr, validate_workbook
 
-from stratbox.base.filestore import FileStore
-from stratbox.base.runtime import get_filestore
-from stratbox.macrobanks.cbr_file_collector.contracts import (
-    CbrFileRegistryItem,
-    CbrFileCollectRequest,
-    CbrFileCollectResult,
-)
-from stratbox.macrobanks.cbr_file_collector.downloader import download_sources
-from stratbox.macrobanks.cbr_file_collector.file_names import ensure_unique_download_file_names
-from stratbox.macrobanks.cbr_file_collector.registry import DEFAULT_CBR_FILE_SOURCES
-from stratbox.macrobanks.cbr_file_collector.save import save_downloaded_sources
+from .contracts import CbrFileRegistryItem, Collection, CollectedFile, CollectFailure, CollectFilesRequest, DiscoverFilesRequest, PrepareArchiveRequest
+from .registry import DEFAULT_CBR_FILE_SOURCES
 
-
-def list_cbr_file_sources(*, registry: Iterable[CbrFileRegistryItem] | None = None) -> tuple[CbrFileRegistryItem, ...]:
-    items = tuple(registry) if registry is not None else DEFAULT_CBR_FILE_SOURCES
-    return tuple(items)
+DISCOVER = OperationDefinition("cbr.file_collector.discover", 1, "cbr-file-catalog-1", DiscoverFilesRequest, tuple)
+COLLECT = OperationDefinition("cbr.file_collector.collect_raw", 1, "cbr-file-acquisition-1",
+                              CollectFilesRequest, Collection, frozenset({"http"}), partial_allowed=True)
+ARCHIVE = OperationDefinition("cbr.file_collector.prepare_archive", 1, "cbr-file-zip-1",
+                              PrepareArchiveRequest, Representation)
+_ROOTS = ("/vfs/statistics/", "/content/document/file/")
+_ARCHIVE_LIMITS = ArchiveLimits(100, 256 * 1024 * 1024, WORKBOOK_LIMIT, 256 * 1024 * 1024)
 
 
-def collect_cbr_files(
-    request: CbrFileCollectRequest,
-    *,
-    registry: Iterable[CbrFileRegistryItem] | None = None,
-    filestore: FileStore | None = None,
-) -> CbrFileCollectResult:
-    target_path = str(request.target_path).strip()
-    if not target_path:
-        raise ValueError("target_path must not be empty")
-    if request.save_mode not in {"zip", "files"}:
-        raise ValueError("save_mode must be either 'zip' or 'files'")
-    if request.retry_attempts < 1:
-        raise ValueError("retry_attempts must be at least 1")
-    if request.timeout_sec < 1:
-        raise ValueError("timeout_sec must be at least 1")
-    if request.min_bytes_ok < 1:
-        raise ValueError("min_bytes_ok must be at least 1")
-    if request.save_mode == "zip" and not target_path.lower().endswith(".zip"):
-        raise ValueError("save_mode='zip' requires target_path that ends with .zip")
-    if request.save_mode == "files" and target_path.lower().endswith(".zip"):
-        raise ValueError("save_mode='files' requires target_path that points to a directory")
-
-    store = filestore or get_filestore()
-    sources = list_cbr_file_sources(registry=registry)
-
-    downloaded, failures = download_sources(
-        sources,
-        timeout_sec=request.timeout_sec,
-        retry_attempts=request.retry_attempts,
-        retry_backoff_sec=request.retry_backoff_sec,
-        min_bytes_ok=request.min_bytes_ok,
-        headers=dict(request.headers) if request.headers is not None else None,
-        plugin_only=request.plugin_only,
-        try_case_variants=request.try_case_variants,
-        continue_on_error=request.continue_on_error,
-        show_progress=request.show_progress,
-    )
-    downloaded = ensure_unique_download_file_names(downloaded)
-
-    saved_target_path = target_path
-    saved_paths: tuple[str, ...] = tuple()
-    collected_files = tuple()
-    if downloaded:
-        saved_target_path, saved_paths, collected_files = save_downloaded_sources(
-            downloaded,
-            target_path=target_path,
-            save_mode=request.save_mode,
-            store=store,
-            overwrite=request.overwrite,
-        )
-
-    return CbrFileCollectResult(
-        target_path=saved_target_path,
-        save_mode=request.save_mode,
-        saved_paths=saved_paths,
-        collected_files=collected_files,
-        failures=tuple(failures),
-        requested_count=len(sources),
-        success_count=len(collected_files),
-        failure_count=len(failures),
-    )
+def discover(request: DiscoverFilesRequest, *, context: ExecutionContext | None = None
+             ) -> OperationResult[tuple[CbrFileRegistryItem, ...]]:
+    return run(DISCOVER, request, lambda req, invocation: DEFAULT_CBR_FILE_SOURCES, context=context)
 
 
-__all__ = ["collect_cbr_files", "list_cbr_file_sources"]
+def _variants(url: str) -> tuple[str, ...]:
+    candidates = [url]
+    for pair in (("BankSector", "banksector"), ("Mortgage", "mortgage"),
+                 ("Loans_to_corporations", "loans_to_corporations")):
+        candidates.extend(re.sub(rf"/{pair[0]}/", f"/{variant}/", candidate, flags=re.I)
+                          for candidate in tuple(candidates) for variant in pair)
+    return tuple(dict.fromkeys(candidates))
+
+
+def _download(entry, req, invocation, transport, remaining_batch):
+    deadline = monotonic() + req.deadline_per_source_seconds
+    last_failure = OperationFailure("http.timeout")
+    for url in _variants(entry.url) if req.try_case_variants else (entry.url,):
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            break
+        try:
+            source = receive_cbr(url, roots=_ROOTS, media_types=XLSX_TYPES,
+                                 limit=min(WORKBOOK_LIMIT, remaining_batch), source_id=entry.source_id,
+                                 transport=transport, invocation=invocation, retry=req.retry, deadline=remaining)
+        except OperationFailure as error:
+            if error.diagnostic.code != "http.status_404":
+                raise
+            last_failure = error
+            continue
+        validate_workbook(source.payload.data)
+        name = entry.expected_file_name or PurePosixPath(official_url(url, roots=_ROOTS)).name
+        if not safe_member_name(name) or PurePosixPath(name).name != name:
+            raise OperationFailure("source.filename_invalid")
+        return CollectedFile(entry.source_id, name, source)
+    raise last_failure
+
+
+def collect_raw(request: CollectFilesRequest, *, transport: HttpTransport | None = None,
+                context: ExecutionContext | None = None) -> OperationResult[Collection]:
+    def work(req, invocation):
+        registry = {entry.source_id: entry for entry in DEFAULT_CBR_FILE_SOURCES}
+        selected = req.source_ids
+        if not selected or len(set(selected)) != len(selected) or any(key not in registry for key in selected):
+            raise OperationFailure("request.source_selection_invalid")
+        if not 0 < req.deadline_per_source_seconds <= 600 or not 0 < req.max_batch_bytes <= _ARCHIVE_LIMITS.unpacked_bytes:
+            raise OperationFailure("request.acquisition_limits_invalid")
+        attempted, completed, failed = [], [], []
+        remaining = req.max_batch_bytes
+        invocation.stage("acquire")
+        for key in selected:
+            if remaining == 0 or (invocation.context.cancellation is not None
+                                  and invocation.context.cancellation.is_set()):
+                break
+            attempted.append(key)
+            try:
+                item = _download(registry[key], req, invocation, transport, remaining)
+            except OperationFailure as error:
+                failed.append(CollectFailure(key, error.diagnostic.code))
+                if error.outcome == "cancelled" or not req.continue_on_error:
+                    break
+            else:
+                completed.append(item)
+                remaining -= item.source.payload.identity.size
+        value = Collection(selected, tuple(attempted), tuple(completed), tuple(failed), selected[len(attempted):])
+        if failed or value.not_attempted:
+            code = failed[0].code if failed else "operation.selection_incomplete"
+            return Completion(value, "partial" if completed else "failed", code)
+        return value
+
+    return run(COLLECT, request, work, context=context, providers={"http": transport})
+
+
+def prepare_archive(request: PrepareArchiveRequest, *,
+                    context: ExecutionContext | None = None) -> OperationResult[Representation]:
+    def work(req, invocation):
+        invocation.stage("prepare_archive")
+        files = {}
+        names = set()
+        for item in req.files:
+            invocation.check_cancelled()
+            if not safe_member_name(item.file_name) or "/" in item.file_name or "\\" in item.file_name:
+                raise OperationFailure("request.archive_filename_invalid")
+            if item.source.receipt.identity != item.source.payload.identity:
+                raise OperationFailure("input.digest_mismatch")
+            file = PurePosixPath(item.file_name)
+            name = file.name
+            index = 2
+            while name.casefold() in names:
+                name = f"{file.stem}_{index}{file.suffix}"
+                index += 1
+            names.add(name.casefold())
+            files[name] = item.source.payload.data
+            invocation.use(UsedInputReceipt.for_payload(item.source.payload, item.source_id))
+        try:
+            data = zip_bytes(files, limits=_ARCHIVE_LIMITS)
+        except ArchiveError as error:
+            raise OperationFailure(str(error)) from None
+        return Representation("cbr.file_collector.original-zip", 1, "application/zip", data)
+
+    return run(ARCHIVE, request, work, context=context)
