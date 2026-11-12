@@ -1,0 +1,27 @@
+name: Verify escrow official Collection sources
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/escrow-source-verification.yml
+      - src/stratbox/macrobanks/escrow/**
+      - tests/unit/macrobanks/test_escrow_operations.py
+
+jobs:
+  escrow-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -e '.[http,dataframe,excel]' pytest
+      - name: Check imports and Python syntax
+        run: |
+          python scripts/check_internal_imports.py
+          python -m compileall -q src/stratbox/macrobanks/escrow
+      - name: Run offline escrow source and export regressions
+        run: pytest -q tests/unit/macrobanks/test_escrow_operations.py
