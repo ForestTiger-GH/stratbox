@@ -13,6 +13,14 @@ from stratbox.macrobanks._cbr import official_url
 from stratbox.execution import OperationFailure
 from stratbox.macrobanks.escrow.contracts import EscrowSourceLink
 
+# Official CBR reports use both legacy VFS/document paths and the
+# Collection/Collection/File publication archive.
+ESCROW_SOURCE_ROOTS = (
+    "/vfs/",
+    "/content/document/file/",
+    "/collection/collection/file/",
+)
+
 
 CBR_ESCROW_INDEX_URL = "https://www.cbr.ru/statistics/bank_sector/equity_const_financing/"
 _DATE_RE = re.compile(r"(\d{2})(\d{2})(\d{4})")
@@ -53,7 +61,7 @@ def discover_escrow_source_links(html: bytes, *, index_url: str = CBR_ESCROW_IND
 
         absolute = urljoin(index_url, href)
         try:
-            official_url(absolute, roots=("/vfs/", "/content/document/file/"))
+            official_url(absolute, roots=ESCROW_SOURCE_ROOTS)
         except OperationFailure:
             continue
         if absolute in seen:
