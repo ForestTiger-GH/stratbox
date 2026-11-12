@@ -131,7 +131,7 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from stratbox.macrobanks.cbr_industries.parser import concat_cbr_0105a_debt_corp_streams
+        from stratbox.macrobanks.cbr_industries.streams import concat_cbr_0105a_debt_corp_streams
         from stratbox.macrobanks.cbr_industries.regions import normalize_cbr_0105a_debt_corp_regions_to_latest
 
         invocation.stage("parse")
