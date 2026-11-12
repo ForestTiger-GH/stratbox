@@ -14,10 +14,12 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpValidationIssue
-from stratbox.macrobanks.cbr_industries.parser import (
-    STREAM_COLUMNS, _coerce_numeric_value, _non_empty_industry_headers,
+from stratbox.macrobanks.cbr_industries.shared_parsing import (
+    _coerce_numeric_value, _non_empty_industry_headers,
     _region_names, _validate_sheet_region_names,
-    optimize_cbr_0105a_debt_corp_stream_dtypes,
+)
+from stratbox.macrobanks.cbr_industries.streams import (
+    STREAM_COLUMNS, optimize_cbr_0105a_debt_corp_stream_dtypes,
 )
 from stratbox.macrobanks.cbr_industries.regions import build_cbr_0105a_debt_corp_region_specs
 from stratbox.macrobanks.cbr_industries.schema import (
