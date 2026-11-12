@@ -26,6 +26,7 @@ ARCHIVE_TYPES = frozenset(
         "application/zip",
         "application/x-zip-compressed",
         "application/vnd.rar",
+        "application/rar",
         "application/x-rar-compressed",
         "application/x-rar",
     }
