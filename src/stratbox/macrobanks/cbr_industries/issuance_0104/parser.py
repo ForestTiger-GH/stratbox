@@ -12,7 +12,8 @@ import pandas as pd
 from openpyxl.utils import get_column_letter
 
 from stratbox.base.ioapi.workbook_input import open_ooxml_workbook
-from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpValidationIssue
+from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
+from stratbox.macrobanks.cbr_industries.selection import resolve_industry_codes
 from stratbox.macrobanks.cbr_industries.shared_parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
     _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,
@@ -113,7 +114,10 @@ def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[Cbr0105ADe
 
 
 def parse_workbook(content: bytes, *, source_name: str, source_url: str | None = None,
-                   source_sha256: str | None = None, checkpoint=None) -> ParsedIssuanceFile:
+                   source_sha256: str | None = None, checkpoint=None,
+                   selection: IndustrySelection = IndustrySelection()) -> ParsedIssuanceFile:
+    selected_codes = resolve_industry_codes(selection)
+    selected_set = set(selected_codes) if selected_codes is not None else None
     report_date = report_date_from_filename(source_name)
     period = reference_period(report_date)
     digest = sha256(content).hexdigest()
@@ -126,6 +130,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
     try:
         seen: set[str] = set()
         records: list[dict[str, object]] = []
+        validation_rows: list[tuple] | None = [] if selected_set is not None else None
         regions = None
         industries = None
         unmapped_headers = []
@@ -164,6 +169,10 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                     cell = f"{get_column_letter(source_column)}{source_row}"
                     raw = row_values[source_column - 1] if source_column - 1 < len(row_values) else None
                     value = _coerce_numeric_value(raw, coordinate=cell, sheet_name=worksheet.title)
+                    if validation_rows is not None:
+                        validation_rows.append((region.code, industry.code, spec.currency_scope, value))
+                    if selected_set is not None and industry.code not in selected_set:
+                        continue
                     records.append({
                         "series_code": SERIES_CODE, "report_date": report_date,
                         "reference_period": period,
@@ -193,10 +202,14 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
             raise ValueError(f"Expected exactly three issuance indicators, found {sorted(seen)}")
         assert regions is not None and industries is not None
         stream = pd.DataFrame.from_records(records, columns=[*STREAM_COLUMNS, "reference_period"])
-        issues = _validate_stream(stream, report_date)
+        checked = (stream if validation_rows is None else pd.DataFrame.from_records(
+            validation_rows, columns=["region_code", "industry_code", "currency_scope", "value"]
+        ))
+        issues = _validate_stream(checked, report_date)
         stream = optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
         return ParsedIssuanceFile(source_id, source_name, source_url, digest, report_date,
                                   period, _SHEETS, industries, regions, issues, stream, len(stream),
-                                  unmapped_headers=tuple(unmapped_headers))
+                                  unmapped_headers=tuple(unmapped_headers),
+                                  selection=selection)
     finally:
         workbook.close()

@@ -15,7 +15,8 @@ series adapter in the industry-statistics domain. It reads the Bank of Russia
 | `build_stream` | `BuildIssuanceStreamRequest` | Canonical regional-industry history |
 | `calculate_apk` | `CalculateIssuanceApkRequest` | Shared APK calculation and augmented stream |
 | `build_pivots` | `PivotIssuanceRequest` | Generic two-dimensional pivots |
-| `render_industry` | `IssuanceWorkbookRequest` | In-memory XLSX representation |
+| `render_industry` | `IssuanceWorkbookRequest` | One independently verified XLSX representation |
+| `render_industries` | `RenderIssuanceIndustriesRequest` | Batch of XLSX representations from one verified snapshot |
 
 Use `OperationResult.outcome` and diagnostics before consuming `.value`. Only
 complete streams can be rendered by `render_industry`; partial collection is
@@ -41,7 +42,11 @@ month; the returned `IssuanceWorkbookResult` exposes both time scales.
 - APK uses the same additive **industry formula** as 01_05, per period,
   currency and region. A missing source component blocks the computation.
 - The complete ordered 26-industry schema and 96-row geographic schema are
-  checked against the current validated SORS publication layout. Alias
+  checked against the current validated SORS publication layout.
+  `IndustrySelection(("apk", "total"))` only reduces materialized observations;
+  **all original numerical cells** still participate in the full validation.
+  APK automatically expands to five published source industries. The published
+  total remains a source value, not a sum. Alias
   handling is reused with the portfolio series. A structural change fails
   closed and requires an explicit adapter update.
 - Currency component differences greater than 1 million RUB are reported as
@@ -57,14 +62,20 @@ from stratbox.macrobanks.cbr_industries import issuance_0104 as loans
 
 path = Path("01_04_A_New_loans_corp_20260801.xlsx")
 request = loans.ParseIssuanceRequest(SourcePayload(path.read_bytes()), path.name)
-stream_run = loans.build_stream(loans.BuildIssuanceStreamRequest((request,)))
+from stratbox.macrobanks.cbr_industries import IndustrySelection
+
+stream_run = loans.build_stream(loans.BuildIssuanceStreamRequest(
+    (request,), selection=IndustrySelection(("apk", "total")),
+))
 if stream_run.outcome != "succeeded":
     raise RuntimeError(stream_run.diagnostics)
-for industry in ("apk", "total"):
-    workbook_run = loans.render_industry(loans.IssuanceWorkbookRequest(stream_run.value, industry))
-    if workbook_run.outcome != "succeeded":
-        raise RuntimeError(workbook_run.diagnostics)
-    Path(f"{industry}.xlsx").write_bytes(workbook_run.value.representation.data)
+workbook_run = loans.render_industries(loans.RenderIssuanceIndustriesRequest(
+    stream_run.value, ("apk", "total"),
+))
+if workbook_run.outcome != "succeeded":
+    raise RuntimeError(workbook_run.diagnostics)
+for book in workbook_run.value.items:
+    Path(f"{book.industry_code}.xlsx").write_bytes(book.representation.data)
 ```
 
 Consumers that need historical reports discover the published dates, acquire

@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 
 from stratbox.base.net import HttpTransport
 from stratbox.base.utils.optional_deps import require_extra
-from stratbox.data import AcquiredSource
+from stratbox.data import AcquiredSource, ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import (
     Completion, ExecutionContext, OperationDefinition, OperationFailure,
     OperationResult, run,
@@ -24,12 +24,15 @@ from stratbox.macrobanks._cbr import (
 from .contracts import (
     BuildIssuanceStreamRequest, CalculateIssuanceApkRequest, DiscoverIssuanceRequest,
     IssuanceSourceFailure, IssuanceSourceLink, IssuanceStreamResult,
-    IssuanceWorkbookRequest, IssuanceWorkbookResult, ParseIssuanceRequest, ParsedIssuanceFile,
+    IssuanceWorkbookRequest, IssuanceWorkbookResult, RenderIssuanceIndustriesRequest,
+    IssuanceWorkbooksResult, ParseIssuanceRequest, ParsedIssuanceFile,
     PivotIssuanceRequest,
 )
 from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpPivotSetResult,
 )
+from stratbox.macrobanks.cbr_industries.selection import resolve_industry_codes, selection_parameters
+from stratbox.macrobanks.cbr_industries.contracts import IndustrySelection
 from stratbox.macrobanks.cbr_industries.operations import (
     _TABLE_LIMITS, _seal_pivots, _select_industry, _stream_metadata,
 )
@@ -40,9 +43,9 @@ _ROOTS = ("/vfs/statistics/", "/content/document/file/")
 DISCOVER = OperationDefinition(f"{_DATASET}.discover", 1, "cbr-0104a-index-1", DiscoverIssuanceRequest, tuple)
 ACQUIRE = OperationDefinition(f"{_DATASET}.acquire", 1, "cbr-0104a-source-1", IssuanceSourceLink,
                               AcquiredSource, frozenset({"http"}))
-PARSE = OperationDefinition(f"{_DATASET}.parse", 2, "cbr-0104a-workbook-2", ParseIssuanceRequest,
+PARSE = OperationDefinition(f"{_DATASET}.parse", 3, "cbr-0104a-workbook-3", ParseIssuanceRequest,
                             ParsedIssuanceFile, limits=_TABLE_LIMITS)
-BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 2, "cbr-0104a-stream-2",
+BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 3, "cbr-0104a-stream-3",
                                    BuildIssuanceStreamRequest, IssuanceStreamResult,
                                    partial_allowed=True, limits=_TABLE_LIMITS)
 CALCULATE_APK = OperationDefinition(f"{_DATASET}.calculate_apk", 2, "cbr-industry-apk-1",
@@ -52,6 +55,12 @@ PIVOT = OperationDefinition(f"{_DATASET}.build_pivots", 2, "cbr-industry-pivot-1
                             PivotIssuanceRequest, Cbr0105ADebtCorpPivotSetResult, limits=_TABLE_LIMITS)
 RENDER_INDUSTRY = OperationDefinition(f"{_DATASET}.render_industry", 2, "cbr-0104a-xlsx-1",
                                       IssuanceWorkbookRequest, IssuanceWorkbookResult, limits=_TABLE_LIMITS)
+
+
+RENDER_INDUSTRIES = OperationDefinition(
+    f"{_DATASET}.render_industries", 1, "cbr-0104a-industry-batch-1",
+    RenderIssuanceIndustriesRequest, IssuanceWorkbooksResult, limits=_TABLE_LIMITS,
+)
 
 
 def _check_source(source: IssuanceSourceLink) -> None:
@@ -103,11 +112,16 @@ def acquire(request: IssuanceSourceLink, *, transport: HttpTransport | None = No
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
 
 
-def _parse(req: ParseIssuanceRequest, invocation) -> ParsedIssuanceFile:
+def _parse(req: ParseIssuanceRequest, invocation, *, selection: IndustrySelection | None = None) -> ParsedIssuanceFile:
     require_extra("pandas", "dataframe")
     require_extra("openpyxl", "excel")
     from .parser import parse_workbook
 
+    chosen = req.selection if selection is None else selection
+    try:
+        resolve_industry_codes(chosen)
+    except ValueError:
+        raise OperationFailure("request.industry_selection_invalid") from None
     use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
     if req.source is not None:
         _check_source(req.source)
@@ -118,7 +132,7 @@ def _parse(req: ParseIssuanceRequest, invocation) -> ParsedIssuanceFile:
         return parse_workbook(req.payload.data, source_name=req.source_name,
                               source_url=req.source.url if req.source else None,
                               source_sha256=req.payload.identity.sha256,
-                              checkpoint=invocation.check_cancelled)
+                              checkpoint=invocation.check_cancelled, selection=chosen)
     except (ValueError, KeyError, OSError, IndexError, TypeError):
         raise OperationFailure("source.workbook_layout_unresolved") from None
 
@@ -131,6 +145,7 @@ def parse(request: ParseIssuanceRequest, *, context: ExecutionContext | None = N
         parsed = seal_stream(invocation, parsed, parameters={
             "report_date": parsed.report_date, "reference_period": parsed.reference_period,
             "unmapped_headers": parsed.unmapped_headers,
+            **selection_parameters(parsed.selection),
         })
         if any(issue.severity == "error" for issue in parsed.validation_issues):
             return Completion(parsed, "failed", "source.validation_failed")
@@ -150,12 +165,16 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
         if not req.sources:
             raise OperationFailure("request.source_selection_empty")
         try:
+            resolve_industry_codes(req.selection)
+        except ValueError:
+            raise OperationFailure("request.industry_selection_invalid") from None
+        try:
             selected = tuple(report_date_from_filename(x.source_name) for x in req.sources)
         except ValueError:
             raise OperationFailure("request.source_filename_invalid") from None
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
-        batch = attempt_batch(req.sources, lambda item: _parse(item, invocation), invocation,
+        batch = attempt_batch(req.sources, lambda item: _parse(item, invocation, selection=req.selection), invocation,
                               continue_on_error=req.continue_on_error)
         require_batch_values(batch, "source.no_valid_workbooks")
         failures = [
@@ -181,9 +200,11 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
             latest.report_date, latest.report_date == max(selected),
             latest.regions, latest.industries, len(stream),
             stop_reason=batch.stopped.code if batch.stopped else None,
+            selection=req.selection,
         )
         result = seal_stream(invocation, result, parameters={
             "selected": selected, "accepted": result.dates,
+            **selection_parameters(req.selection),
             "quantity_kind": "flow", "period_basis": "reference_month", "unit": "million_rubles",
             "reference_periods": result.reference_periods, "geography_anchor": latest.report_date,
             "geography_method": "cbr-0105a-geography-1", "coverage": "subset" if failures or batch.stopped else "complete",
@@ -260,52 +281,100 @@ def build_pivots(request: PivotIssuanceRequest, *, context: ExecutionContext | N
     return run(PIVOT, request, work, context=context)
 
 
+def _render_one_issuance(source, private_stream, industry_code, include_metadata_sheet, invocation, periods):
+    """Build from an admitted private snapshot; one implementation for one or many books."""
+    from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpPivotRequest
+    from stratbox.macrobanks.cbr_industries.pivots import (
+        Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
+    )
+    from .export import render_issuance_workbook
+
+    derived = (industry_code == "apk"
+               and not private_stream["industry_code"].astype("object").eq("apk").any())
+    frame = _apk(private_stream, budget=invocation.budget).df_stream if derived else private_stream
+    selected = frame.loc[frame["industry_code"].astype("object").eq(industry_code)]
+    names = selected["industry_name_ru"].dropna().unique()
+    if len(names) != 1:
+        raise OperationFailure("request.industry_unresolved")
+    invocation.stage("build_views")
+    try:
+        tables = build_cbr_0105a_debt_corp_pivot_set(
+            selected,
+            Cbr0105ADebtCorpPivotRequest(
+                "region_code", "report_date",
+                sheet_dimensions=("measure", "currency_scope"), max_sheet_count=3,
+            ),
+            stream_result=source, budget=invocation.budget,
+        )
+        invocation.stage("render")
+        value = render_issuance_workbook(
+            tables, industry_code=industry_code, industry_name_ru=str(names[0]),
+            reference_periods=periods, include_metadata_sheet=include_metadata_sheet,
+            budget=invocation.budget,
+        )
+        return value, derived
+    except (Cbr0105ADebtCorpPivotError, ValueError):
+        raise OperationFailure("source.industry_views_invalid") from None
+
+
 def render_industry(request: IssuanceWorkbookRequest, *, context: ExecutionContext | None = None):
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpPivotRequest
-        from stratbox.macrobanks.cbr_industries.pivots import (
-            Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
-        )
-        from .export import render_issuance_workbook
-
         if not req.stream.ok:
             raise OperationFailure("source.stream_incomplete")
         invocation.stage("select_industry")
         frame = use_stream(invocation, req.stream)
         periods = tuple(sorted(frame["reference_period"].dropna().unique()))
-        derived = (req.industry_code == "apk" and req.calculate_apk_if_missing
-                   and not frame["industry_code"].astype("object").eq("apk").any())
-        if derived:
-            frame = _apk(frame, budget=invocation.budget).df_stream
-        subset = frame.loc[frame["industry_code"].astype("object").eq(req.industry_code)]
-        names = subset["industry_name_ru"].dropna().unique()
-        if len(names) != 1:
+        if (req.industry_code == "apk" and not req.calculate_apk_if_missing
+                and not frame["industry_code"].astype("object").eq("apk").any()):
             raise OperationFailure("request.industry_unresolved")
-        invocation.stage("build_views")
-        try:
-            tables = build_cbr_0105a_debt_corp_pivot_set(
-                subset,
-                Cbr0105ADebtCorpPivotRequest("region_code", "report_date",
-                                               sheet_dimensions=("measure", "currency_scope"),
-                                               max_sheet_count=3),
-                stream_result=req.stream,
-                budget=invocation.budget,
-            )
-            invocation.stage("render")
-            value = render_issuance_workbook(
-                tables, industry_code=req.industry_code, industry_name_ru=str(names[0]),
-                reference_periods=periods,
-                include_metadata_sheet=req.include_metadata_sheet,
-                budget=invocation.budget,
-            )
-            invocation.record(value.representation.identity, parameters={
-                "profile": value.representation.profile_id, "industry": req.industry_code,
-                "metadata_sheet": req.include_metadata_sheet, "reference_periods": periods,
-                "derived_method": CALCULATE_APK.method_version if derived else None,
-            })
-            return value
-        except (Cbr0105ADebtCorpPivotError, ValueError):
-            raise OperationFailure("source.industry_views_invalid") from None
+        value, derived = _render_one_issuance(
+            req.stream, frame, req.industry_code, req.include_metadata_sheet, invocation, periods,
+        )
+        invocation.record(value.representation.identity, parameters={
+            "profile": value.representation.profile_id, "industry": req.industry_code,
+            "metadata_sheet": req.include_metadata_sheet, "reference_periods": periods,
+            "derived_method": CALCULATE_APK.method_version if derived else None,
+        })
+        return value
     return run(RENDER_INDUSTRY, request, work, context=context)
+
+
+def render_industries(
+    request: RenderIssuanceIndustriesRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[IssuanceWorkbooksResult]:
+    """Create multiple source-equivalent issuance workbooks with one input verification."""
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        try:
+            resolve_industry_codes(IndustrySelection(req.industry_codes))
+        except ValueError:
+            raise OperationFailure("request.industry_selection_invalid") from None
+        if not req.stream.ok:
+            raise OperationFailure("source.stream_incomplete")
+        invocation.stage("admit_stream")
+        frame = use_stream(invocation, req.stream)
+        periods = tuple(sorted(frame["reference_period"].dropna().unique()))
+        items = []
+        for code in req.industry_codes:
+            invocation.check_cancelled()
+            value, _ = _render_one_issuance(
+                req.stream, frame, code, req.include_metadata_sheet, invocation, periods,
+            )
+            invocation.budget.charge("output_bytes", value.representation.identity.size)
+            items.append(value)
+        result = IssuanceWorkbooksResult(tuple(items))
+        if not result.ok:
+            raise OperationFailure("source.industry_views_invalid")
+        manifest = [{"industry": item.industry_code, "profile": item.representation.profile_id,
+                     "sha256": item.representation.identity.sha256, "size": item.representation.identity.size}
+                    for item in items]
+        invocation.record(ByteIdentity.of(canonical_manifest_bytes(manifest)), parameters={
+            "industries": req.industry_codes, "reference_periods": periods,
+            "include_metadata_sheet": req.include_metadata_sheet,
+            "derived_method": CALCULATE_APK.method_version if "apk" in req.industry_codes else None,
+        })
+        return result
+    return run(RENDER_INDUSTRIES, request, work, context=context)
