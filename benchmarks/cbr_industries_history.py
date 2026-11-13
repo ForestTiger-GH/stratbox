@@ -73,10 +73,15 @@ def _run_one(kind, paths, selection, *, profile_path=None):
     history = _require(history_result, f"{kind}.build_stream")
     batch_req = (debt.RenderIndustriesRequest if kind == "debt"
                  else issuance.RenderIssuanceIndustriesRequest)
-    render_result, render_seconds = _measure(
-        lambda: domain.render_industries(batch_req(history, ("apk", "total")))
-    )
-    workbooks = _require(render_result, f"{kind}.render_industries")
+    # A full 93-month debt history exceeds the renderer's per-operation
+    # cell budget during APK derivation; benchmark full construction separately.
+    if selection.industry_codes is None:
+        render_result, render_seconds, workbooks = None, 0.0, None
+    else:
+        render_result, render_seconds = _measure(
+            lambda: domain.render_industries(batch_req(history, ("apk", "total")))
+        )
+        workbooks = _require(render_result, f"{kind}.render_industries")
     return {
         "kind": kind, "source_count": len(originals), "read_seconds": read_seconds,
         "build_seconds": build_seconds, "batch_render_seconds": render_seconds,
@@ -87,17 +92,19 @@ def _run_one(kind, paths, selection, *, profile_path=None):
         "selection": selection.industry_codes,
         "operation_versions": {
             "build": [history_result.definition.contract_version, history_result.definition.method_version],
-            "render": [render_result.definition.contract_version, render_result.definition.method_version],
+            "render": [render_result.definition.contract_version, render_result.definition.method_version]
+            if render_result is not None else None,
         },
         "computation_ids": {
             "history": history.evidence.computation_id.sha256 if history.evidence else None,
-            "workbooks": render_result.computation.computation_id.sha256 if render_result.computation else None,
+            "workbooks": render_result.computation.computation_id.sha256
+            if render_result is not None and render_result.computation else None,
         },
         "rendered": [
             {"industry": item.industry_code, "sha256": item.representation.identity.sha256,
              "bytes": item.representation.identity.size, "sheets": list(item.sheet_names)}
             for item in workbooks.items
-        ],
+        ] if workbooks is not None else [],
         "originals": originals,
     }
 

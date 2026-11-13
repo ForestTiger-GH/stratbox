@@ -1,0 +1,34 @@
+name: Stratbox industry core regression
+
+on:
+  pull_request:
+    paths:
+      - 'src/stratbox/macrobanks/cbr_industries/**'
+      - 'src/stratbox/catalog.py'
+      - 'src/stratbox/__init__.py'
+      - 'tests/unit/macrobanks/test_cbr_industries*'
+      - 'benchmarks/cbr_industries_history.py'
+      - '.github/workflows/industries-core-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  industries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused test dependencies
+        run: python -m pip install -e '.[http,dataframe,excel]' pytest
+      - name: Source and packaging checks
+        run: |
+          python -B scripts/check_release_integrity.py
+          python -B scripts/check_internal_imports.py
+      - name: Industry debt and issuance regressions
+        run: |
+          python -B -m pytest -q tests/unit/macrobanks/test_cbr_industries_0105a_debt_corp.py tests/unit/macrobanks/test_cbr_industries_0104a_issuance.py

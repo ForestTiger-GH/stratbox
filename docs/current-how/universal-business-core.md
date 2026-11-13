@@ -1,4 +1,4 @@
-# Stratbox 0.11 core operations
+# Stratbox 0.12 core operations
 
 The Python package exposes independent acquisition, parsing, comparison,
 calculation and representation operations. Each domain owns its source
@@ -13,7 +13,7 @@ format primitives are reusable across domains.
 | `organizations.fns_sme` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
 | `organizations.fns_1yur` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Part I from BIFF, OOXML, ZIP or a supplied RAR reader. The dated field map retains identity-equivalent columns, records omissions and keeps original geographic perimeters. |
 | `macrobanks.cbr_file_collector` | `discover`, `collect_raw`, `collect_to_store`, `prepare_archive`, `archive_to_store` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
-| `macrobanks.cbr_industries` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry` | Monthly 01_05_A_Debt_corp **stock** data and 01_04_A_New_loans_corp **flow** data via `issuance_0104`; typed source identity, reference month, geographic schema, shared derived APK and in-memory Excel views. |
+| `macrobanks.cbr_industries` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry`, `render_industries` | Monthly 01_05_A_Debt_corp **stock** and 01_04_A_New_loans_corp **flow** via `issuance_0104`. `IndustrySelection` validates all source cells while materializing only needed published industry codes; `apk` expands to its five source ingredients. Batch rendering verifies one mutable input snapshot and generates multiple individually identified XLSX representations. |
 | `macrobanks.cbr_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
 | `macrobanks.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
 | `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
@@ -91,3 +91,25 @@ publication and delivery integrations is qualified per environment.
 [Installation and examples](../how/install-and-run-core.md)
 
 [Execution, admission and recovery](core-execution-and-admission.md)
+
+## Selective industry history and batch rendering
+
+For a full industry history, use `IndustrySelection()`. For APK and the published
+TOTAL, supply `IndustrySelection(("apk", "total"))` to `build_stream`.
+All 26 source industry headers, all 96 geography positions, all relevant sheets,
+and **all original numerical cells** are still validated. Only selected published
+observations are materialized. The observed validation scope is `full`, while
+`selection.industry_codes` and computation parameters describe the narrower output.
+A standalone `parse` also accepts a selection.
+
+`render_industries(RenderIndustriesRequest(stream, ("apk", "total")))` for debt and
+`issuance_0104.render_industries(RenderIssuanceIndustriesRequest(...))` for issuance
+perform one admitted-input copy and identity check per batch, then produce separate
+`Representation` objects for each workbook. Existing `render_industry`
+is an independent operation and checks its mutable input at that boundary.
+Unexpected/mutated source tables, missing APK components, and incomplete history
+fail with typed diagnostics; no implicit partial workbook is returned.
+
+For reproducible local timings without network I/O, run
+`python benchmarks/cbr_industries_history.py --debt-dir PATH --issuance-dir PATH`.
+The report includes source hashes, operation versions, timings, RSS and result hashes.

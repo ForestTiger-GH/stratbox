@@ -7,9 +7,9 @@ from stratbox.data import SourcePayload
 from stratbox.macrobanks import cbr_industries as industries
 
 
-def load(paths):
+def load(paths, selection=industries.IndustrySelection()):
     inputs = tuple(industries.ParseIndustryRequest(SourcePayload(path.read_bytes()), path.name) for path in paths)
-    result = industries.build_stream(industries.BuildIndustryStreamRequest(inputs))
+    result = industries.build_stream(industries.BuildIndustryStreamRequest(inputs, selection=selection))
     if result.outcome != "succeeded":
         raise RuntimeError(tuple(item.code for item in result.diagnostics))
     return result.value
