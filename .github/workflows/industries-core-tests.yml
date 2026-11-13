@@ -32,3 +32,6 @@ jobs:
       - name: Industry debt and issuance regressions
         run: |
           python -B -m pytest -q tests/unit/macrobanks/test_cbr_industries_0105a_debt_corp.py tests/unit/macrobanks/test_cbr_industries_0104a_issuance.py
+      - name: Shared computation and admission regressions
+        run: |
+          python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py
