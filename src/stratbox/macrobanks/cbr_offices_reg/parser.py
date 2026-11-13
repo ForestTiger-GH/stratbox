@@ -8,7 +8,7 @@ import re
 
 from stratbox.base.ioapi.archive_bytes import ArchiveLimits, open_zip
 from stratbox.base.ioapi.xml import XmlError, parse_xml
-from .representation import serialize
+from .representation import count_label, serialize
 
 
 XML = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -276,7 +276,8 @@ def is_column_number_guide(cells):
 
 def convert_xlsx(
     blob, *, return_formula_lineage=False, expected_date: date | None = None,
-    sheet_name: str | None = None, budget=None, checkpoint=None, evidence=None,
+    sheet_name: str | None = None, national_row: int | None = None,
+    budget=None, checkpoint=None, evidence=None,
 ):
     """Keep only the published table and attach source-derived district context."""
     sheets = xlsx_rows(blob, budget=budget, checkpoint=checkpoint)
@@ -289,19 +290,30 @@ def convert_xlsx(
         if "российская федерация" in value.casefold()
         and sum(is_quantitative(v) for v in cells.values()) >= 2
     ]
-    if len(starts) > 1:
-        raise AmbiguousBlock(tuple((sheet, rows[i][0], col) for sheet, rows, _, _, i, col in starts[:32]))
-    require(len(starts) == 1, "XLSX_NATIONAL_TOTAL_AMBIGUOUS")
-    sheet, rows, formulas, tree, idx, territory_col = starts[0]
+    selected = [item for item in starts if national_row is None or item[1][item[4]][0] == national_row]
+    if len(selected) > 1:
+        raise AmbiguousBlock(tuple((sheet, rows[i][0], col) for sheet, rows, _, _, i, col in selected[:32]))
+    require(bool(selected), "XLSX_NATIONAL_TOTAL_NOT_FOUND")
+    sheet, rows, formulas, tree, idx, territory_col = selected[0]
     require(
         "российская федерация" in rows[idx][1].get(territory_col, "").casefold(),
         "XLSX_NATIONAL_TOTAL_POSITION",
     )
 
+    previous = rows[max(0, idx - 6):idx]
+    for offset in range(len(previous) - 1, -1, -1):
+        cells = previous[offset][1]
+        if (sum(is_quantitative(v) for v in cells.values()) >= 2
+                and not is_column_number_guide(cells)):
+            previous = previous[offset + 1:]
+            break
     if expected_date is not None:
+        titles = previous
+        if not any(item[0] == sheet and item[4] < idx for item in starts):
+            titles = rows[:idx]
         printed_dates = {
             date(int(year), int(month), int(day))
-            for _, cells in rows[:idx]
+            for _, cells in titles
             for text in cells.values()
             for day, month, year in re.findall(
                 r"\b(?:на|по состоянию на)\s+(\d{1,2})\.(\d{1,2})\.(20\d{2})\b",
@@ -313,7 +325,6 @@ def convert_xlsx(
             "XLSX_REPORT_DATE_MISMATCH",
         )
 
-    previous = rows[max(0, idx - 6) : idx]
     # The title is not a table heading. Numbered column guides (1, 2, 3...)
     # are not source indicator names, even when adjacent to the heading row.
     header_candidates = {
@@ -324,13 +335,16 @@ def convert_xlsx(
     require(header_candidates, "XLSX_HEADER_ABSENT")
 
     data = []
+    next_block = min((item[4] for item in starts if item[0] == sheet and item[4] > idx), default=len(rows))
     footer_started = False
-    for rid, cells in rows[idx:]:
+    for rid, cells in rows[idx:next_block]:
         name = cells.get(territory_col, "")
         number_count = sum(
             is_quantitative(v) for k, v in cells.items() if k != territory_col
         )
-        if number_count >= 2:
+        if not name and is_column_number_guide(cells) and next_block < len(rows):
+            footer_started = True
+        elif number_count >= 2:
             require(not footer_started, "XLSX_DATA_AFTER_FOOTER")
             require(name, "XLSX_UNLABELLED_DATA_ROW")
             data.append((rid, cells))
@@ -379,8 +393,12 @@ def convert_xlsx(
         for i, (_, cells) in enumerate(data)
         if is_district_label(cells[territory_col])
     ]
+    qualified_columns = [
+        column for column, heading in zip(indicator_cols, header[1:])
+        if count_label(heading) is not None
+    ]
     final_boundary = (
-        last_district_boundary(data, districts[-1], territory_col, indicator_cols)
+        last_district_boundary(data, districts[-1], territory_col, qualified_columns or indicator_cols)
         if districts
         else None
     )

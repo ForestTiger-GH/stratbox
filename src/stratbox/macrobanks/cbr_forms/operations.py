@@ -60,7 +60,8 @@ ACQUIRE = OperationDefinition(
     frozenset({"http"}),
 )
 PARSE = OperationDefinition(
-    "cbr.forms.parse", 1, "cbr-forms-physical-layout-1", ParseFormRequest, FormSnapshot
+    "cbr.forms.parse", 1, "cbr-forms-physical-layout-1", ParseFormRequest, FormSnapshot,
+    optional_capabilities=frozenset({"archive_decoder"}),
 )
 BUILD = OperationDefinition(
     "cbr.forms.build_data",

@@ -250,20 +250,30 @@ def test_monthly_dynamic_roles_exact_block_and_ambiguity():
     baseline = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(sample_xlsx()), period))
     assert baseline.value.qualification.analysis == "qualified"
 
-    def workbook(*, group="Количество, ед.", printed="1.10.2026", duplicate=False, revision=0):
+    def workbook(*, group="Количество, ед.", printed="1.10.2026", duplicate=False,
+                 revision=0, extra=False, adjacent=False):
         book = openpyxl.Workbook()
         book.active.title = "Notes"
         book.active["A1"] = "=1+1"
         sheet = book.create_sheet("Published observations")
-        sheet.append(["Данные по состоянию на " + printed])
-        sheet["B2"] = group
-        sheet.merge_cells("B2:E2")
-        sheet.append(["Территория", "Всего", "Мобильные офисы", "Филиалы", "Кредитные организации"])
         names = ["Российская Федерация"] + [
             "Белгородская область", "Брянская область", "Республика Алтай",
         ] * 15
-        for index, name in enumerate(names):
-            sheet.append([name, 10 + (revision if index == 0 else 0), 5, 3, 2])
+
+        def add_block(title):
+            sheet.append(["Данные по состоянию на " + title])
+            sheet.append([None, group])
+            sheet.merge_cells(start_row=sheet.max_row, end_row=sheet.max_row,
+                              start_column=2, end_column=5)
+            captions = ["Территория", "Всего", "Мобильные офисы", "Филиалы", "Кредитные организации"]
+            sheet.append(captions + (["Дополнительная отметка"] if extra else []))
+            for index, name in enumerate(names):
+                values = [name, 10 + (revision if index == 0 else 0), 5, 3, 2]
+                sheet.append(values + (["новая категория"] if extra else []))
+
+        add_block(printed)
+        if adjacent:
+            add_block("1.11.2026")
         if duplicate:
             book.copy_worksheet(sheet).title = "Competing block"
         stream = BytesIO()
@@ -299,3 +309,23 @@ def test_monthly_dynamic_roles_exact_block_and_ambiguity():
     explicit = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(raw), period, sheet="Competing block"))
     assert explicit.outcome == "succeeded" and explicit.value.facts_identity == parsed.value.facts_identity
     assert explicit.value.source_details["selection"]["sheet"] == "Competing block"
+    extended = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(workbook(extra=True)), period))
+    assert extended.outcome == "succeeded"
+    assert extended.value.qualification.analysis == "qualified_subset"
+    assert extended.value.qualification.excluded_fields == ("Дополнительная отметка",)
+    assert extended.value.facts_identity == parsed.value.facts_identity
+    assert "новая категория".encode() in extended.value.representation.data
+    assert monthly.compare(CompareReleaseRequest(extended.value, parsed.value)).value.state == "unchanged"
+    one_sheet = SourcePayload(workbook(adjacent=True))
+    ambiguous = monthly.parse(monthly.ParseOfficesRegRequest(one_sheet, period))
+    assert ambiguous.outcome == "partial"
+    assert tuple(row for _, row, _ in ambiguous.value.blocks) == (4, 53)
+    chosen = monthly.parse(monthly.ParseOfficesRegRequest(
+        one_sheet, date(2026, 11, 1), sheet="Published observations", national_row=53,
+    ))
+    assert chosen.outcome == "succeeded", chosen.diagnostics
+    assert chosen.value.source_details["selection"]["first_row"] == 53
+    assert chosen.value.source_details["selection"]["date_basis"] == "printed"
+    assert chosen.value.row_count == parsed.value.row_count
+    wrong_period = monthly.parse(monthly.ParseOfficesRegRequest(one_sheet, period, national_row=53))
+    assert wrong_period.diagnostics[0].code == "source.xlsx_report_date_mismatch"

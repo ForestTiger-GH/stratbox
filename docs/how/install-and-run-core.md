@@ -2,7 +2,7 @@
 
 Stratbox 0.10 requires Python 3.10 or later. Install the verified wheel into
 the interpreter that runs the caller. In Jupyter or Colab use `%pip install
-/path/to/stratbox-0.10.0-py3-none-any.whl` in the target kernel.
+/path/to/stratbox-0.10.1-py3-none-any.whl` in the target kernel.
 
 | Install profile | Use |
 | --- | --- |
@@ -17,7 +17,7 @@ the interpreter that runs the caller. In Jupyter or Colab use `%pip install
 
 For an independently installed wheel, provide the selected extras on the
 wheel path, for example `python -m pip install
-'./stratbox-0.10.0-py3-none-any.whl[http,dataframe,excel]'`.
+'./stratbox-0.10.1-py3-none-any.whl[http,dataframe,excel]'`.
 
 ## Parse a saved HTML page
 

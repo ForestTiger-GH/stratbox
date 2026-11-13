@@ -78,9 +78,10 @@ apply their own published-series rules.
 Monthly CBR office parsing records the actual sheet, coordinates and date
 basis. Its v2 parse and capture can return `OfficesRegCandidates` as a
 partial result with the source identity and candidate coordinates. Supply
-`sheet` when a single block on that sheet is appropriate. A recognized
-block with uncertain economic roles can still produce a literal CSV with
-`literal_only` qualification. Use `spreadsheet_view` in
+`sheet` and, when needed, `national_row` to select the block. The literal
+CSV preserves additional columns. A result with `qualified_subset`
+identifies usable observations and lists excluded fields. A result with
+`literal_only` preserves the table for inspection. Use `spreadsheet_view` in
 `stratbox.base.ioapi.spreadsheet_view` for an interactive XLSX projection
 of literal CSV. This projection uses text cells. The literal CSV retains
 its exact bytes and distinct identity.

@@ -32,9 +32,10 @@ class ReadReleaseRequest:
 @dataclass(frozen=True, slots=True)
 class ReleaseQualification:
     provenance: Literal["offline_bytes", "literal_replay", "provider_reported", "tls_host", "peer_bound"]
-    analysis: Literal["qualified", "literal_only"]
+    analysis: Literal["qualified", "qualified_subset", "literal_only"]
     scope: str
     row_count: int
+    excluded_fields: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +77,7 @@ def build_release(
     resources=None,
     acquisition=None,
     source_details=None,
+    excluded_fields: tuple[str, ...] = (),
 ) -> ParsedRelease:
     representation = Representation(profile, 1, CSV, data, "utf-8")
     release_id = as_of.isoformat()
@@ -99,9 +101,10 @@ def build_release(
         else "literal_replay" if any(item.role == "csv_representation" for item in lineage)
         else "offline_bytes"
     )
-    qualification = ReleaseQualification(
-        provenance, "qualified" if batch is not None else "literal_only", dataset_id, row_count,
+    analysis = (
+        "literal_only" if batch is None else "qualified_subset" if excluded_fields else "qualified"
     )
+    qualification = ReleaseQualification(provenance, analysis, dataset_id, row_count, excluded_fields)
     facts_identity = None
     if observations is not None:
         facts = []

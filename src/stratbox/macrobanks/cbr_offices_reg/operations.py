@@ -1,5 +1,6 @@
 """Territorial office releases published in the Bank of Russia workbook."""
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -45,12 +46,12 @@ from stratbox.execution.source_validation import (
 )
 
 from .parser import AmbiguousBlock, CaptureError, LIMIT_XLSX, convert_xlsx
-from .representation import validate_csv
+from .representation import count_label, validate_csv
 from .source import LIMIT_HTML, SOURCE_PAGE, discover as discover_links, url_date
 
 DATASET = "cbr.offices_reg"
 PROFILE = "cbr.offices_reg.wide-csv"
-METHOD = "cbr-offices-reg-xlsx-2"
+METHOD = "cbr-offices-reg-xlsx-3"
 _HOSTS = ("www.cbr.ru", "cbr.ru")
 _HTTP = frozenset({"http"})
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
@@ -66,6 +67,7 @@ class ParseOfficesRegRequest:
     payload: SourcePayload
     as_of: date
     sheet: str | None = None
+    national_row: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,7 +98,7 @@ CAPTURE = OperationDefinition(
 READ = OperationDefinition(
     f"{DATASET}.read_representation",
     1,
-    "cbr-offices-reg-csv-1",
+    "cbr-offices-reg-csv-2",
     ReadReleaseRequest,
     ParsedRelease,
 )
@@ -198,26 +200,14 @@ def _check_date(as_of):
         raise OperationFailure("request.invalid_release_date")
 
 
-_COUNT_LABELS = frozenset({
-    "головной офис", "головные офисы", "кредитные организации",
-    "филиалы", "представительства", "дополнительные офисы",
-    "мобильные офисы", "операционные кассы вне кассового узла",
-    "кредитно-кассовые офисы", "операционные офисы",
-    "передвижные пункты кассовых операций", "всего",
-})
+_MISSING = frozenset({"", "-", "–", "—"})
 
 
-def _count_label(heading: str) -> str | None:
-    parts = [part.strip().casefold() for part in heading.split(" / ")]
-    if any(re.search(r"\b(?:рубл|валют|процент|млн|млрд)\w*|%", part) for part in parts):
-        return None
-    for part in reversed(parts):
-        part = re.sub(r"\s*\(ед\.?\)$|[1-9*]+$", "", part).strip()
-        if part in _COUNT_LABELS:
-            return part
-    return None
+def _count_token(token: str) -> bool:
+    return token in _MISSING or re.fullmatch(r"[0-9]{1,18}(?:[.,]0{1,10})?", token) is not None
 
-def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
+
+def _observations(data: bytes, as_of: date) -> tuple[tuple[Observation, ...] | None, tuple[str, ...]]:
     rows = csv_rows(data)
     header = rows[0]
     territories = [
@@ -229,30 +219,37 @@ def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
         )
     ]
     if len(territories) != 1:
-        return None
+        return None, tuple(header[2:])
     column = territories[0]
     period = PeriodRef("as_of", as_of)
-    metrics = tuple(_count_label(metric) for metric in header[column + 1 :])
-    if not metrics or None in metrics or len(set(metrics)) != len(metrics):
-        return None
+    metrics = [count_label(heading) for heading in header[column + 1:]]
+    duplicates = Counter(metrics)
+    fields = []
+    excluded = list(header[2:column])
+    for index, (heading, metric) in enumerate(zip(header[column + 1:], metrics), column + 1):
+        if (metric is None or duplicates[metric] != 1
+                or any(not _count_token(row[index]) for row in rows[1:])):
+            excluded.append(heading)
+        else:
+            fields.append((index, metric))
+    if not fields:
+        return None, tuple(excluded)
     result = []
     for row in rows[1:]:
         territory = row[column]
         if not territory:
-            return None
+            return None, tuple(header[2:])
         perimeter = (
             "national"
             if "российская федерация" in territory.casefold()
             else "territorial"
         )
-        for metric, token in zip(metrics, row[column + 1 :]):
-            if token in {"", "-", "–", "—"}:
+        for index, metric in fields:
+            token = row[index]
+            if token in _MISSING:
                 value, status = None, ("blank" if not token else "dash")
-            elif re.fullmatch(r"[0-9]{1,18}(?:[.,][0-9]{1,10})?", token):
-                value, status = Decimal(token.replace(",", ".")), "reported"
             else:
-                # Keep a literal projection when the source adds an unclassified column.
-                return None
+                value, status = Decimal(token.replace(",", ".")), "reported"
             result.append(
                 Observation(
                     SubjectRef("cbr.published_territory", territory),
@@ -266,18 +263,24 @@ def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
                     token,
                 )
             )
-    return tuple(result)
+    return tuple(result), tuple(excluded)
 
 
 def _parse(req, invocation, acquisition=None):
     invocation.stage("parse")
     _check_date(req.as_of)
+    if req.sheet is not None and (not isinstance(req.sheet, str) or not 1 <= len(req.sheet) <= 255):
+        raise OperationFailure("request.workbook_sheet_invalid")
+    if req.national_row is not None and (
+        type(req.national_row) is not int or not 1 <= req.national_row <= 1_048_576
+    ):
+        raise OperationFailure("request.workbook_row_invalid")
     use_payload(req.payload, invocation, role="source_workbook", limit=LIMIT_XLSX)
     evidence = {}
     try:
         data, formulas = convert_xlsx(
             req.payload.data, return_formula_lineage=True, expected_date=req.as_of,
-            sheet_name=req.sheet, budget=invocation.budget,
+            sheet_name=req.sheet, national_row=req.national_row, budget=invocation.budget,
             checkpoint=invocation.check_cancelled, evidence=evidence,
         )
         count = validate_csv(data)
@@ -289,6 +292,11 @@ def _parse(req, invocation, acquisition=None):
     except (ArchiveError, CaptureError, ParseError, ValueError) as error:
         raise source_failure(error) from None
     invocation.stage("validate")
+    observations, excluded = _observations(data, req.as_of)
+    parameters = {
+        key: value for key, value in {"sheet": req.sheet, "national_row": req.national_row}.items()
+        if value is not None
+    }
     return build_release(
         DATASET,
         PROFILE,
@@ -297,9 +305,9 @@ def _parse(req, invocation, acquisition=None):
         data,
         count,
         invocation.used_inputs,
-        observations=_observations(data, req.as_of),
+        observations=observations, excluded_fields=excluded,
         acquisition=acquisition,
-        parameters={"sheet": req.sheet} if req.sheet is not None else None,
+        parameters=parameters,
         source_details={"formula_lineage": formulas, "selection": evidence},
     )
 
@@ -340,6 +348,7 @@ def read_representation(
             count = validate_csv(req.payload.data)
         except (CaptureError, ValueError) as error:
             raise source_failure(error) from None
+        observations, excluded = _observations(req.payload.data, req.as_of)
         return build_release(
             DATASET,
             PROFILE,
@@ -348,7 +357,7 @@ def read_representation(
             req.payload.data,
             count,
             invocation.used_inputs,
-            observations=_observations(req.payload.data, req.as_of),
+            observations=observations, excluded_fields=excluded,
         )
 
     return run(READ, request, work, context=context)

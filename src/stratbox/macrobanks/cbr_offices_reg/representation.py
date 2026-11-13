@@ -2,6 +2,26 @@ from __future__ import annotations
 
 import csv
 import io
+import re
+
+_COUNT_LABELS = frozenset({
+    "головной офис", "головные офисы", "кредитные организации",
+    "филиалы", "представительства", "дополнительные офисы",
+    "мобильные офисы", "операционные кассы вне кассового узла",
+    "кредитно-кассовые офисы", "операционные офисы",
+    "передвижные пункты кассовых операций", "всего",
+})
+
+
+def count_label(heading: str) -> str | None:
+    parts = [part.strip().casefold() for part in heading.split(" / ")]
+    if any(re.search(r"\b(?:рубл|валют|процент|тыс|млн|млрд)\w*|%", part) for part in parts):
+        return None
+    for part in reversed(parts):
+        part = re.sub(r"\s*\(ед\.?\)$|[1-9*]+$", "", part).strip()
+        if part in _COUNT_LABELS:
+            return part
+    return None
 
 
 def serialize(records):
