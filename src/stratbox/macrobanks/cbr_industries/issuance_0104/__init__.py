@@ -1,5 +1,6 @@
 """Monthly corporate loan issuance by industry and region (01_04_A)."""
 
+from stratbox.macrobanks.cbr_industries.contracts import IndustrySelection
 from .contracts import (
     BuildIssuanceStreamRequest, CalculateIssuanceApkRequest, DiscoverIssuanceRequest,
     IssuanceSourceLink, IssuanceStreamResult, IssuanceWorkbookRequest,

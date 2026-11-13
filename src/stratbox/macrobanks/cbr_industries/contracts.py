@@ -107,6 +107,12 @@ class Cbr0105ADebtCorpValidationIssue:
     details: Mapping[str, object] = field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class IndustrySelection:
+    """Published industry codes to materialize; None requests all published codes."""
+    industry_codes: tuple[str, ...] | None = None
+
+
 @dataclass(frozen=True)
 class ParsedCbr0105ADebtCorpFile:
     """Результат семантического разбора одной книги."""
@@ -124,6 +130,8 @@ class ParsedCbr0105ADebtCorpFile:
     rows_stream: int
     evidence: ComputationReceipt | None = None
     unmapped_headers: tuple[tuple[str, str], ...] = ()
+    selection: IndustrySelection = IndustrySelection()
+    source_validation_scope: str = "full"
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,12 +144,14 @@ class ParseIndustryRequest:
     payload: SourcePayload
     source_name: str
     source: Cbr0105ADebtCorpSourceLink | None = None
+    selection: IndustrySelection = IndustrySelection()
 
 
 @dataclass(frozen=True, slots=True)
 class BuildIndustryStreamRequest:
     sources: tuple[ParseIndustryRequest, ...]
     continue_on_error: bool = False
+    selection: IndustrySelection = IndustrySelection()
 
 
 @dataclass(frozen=True)
@@ -164,6 +174,8 @@ class Cbr0105ADebtCorpStreamResult:
     geography_method_version: str = "cbr-0105a-geography-1"
     evidence: ComputationReceipt | None = None
     stop_reason: str | None = None
+    selection: IndustrySelection = IndustrySelection()
+    source_validation_scope: str = "full"
 
     @property
     def sources_ok(self) -> bool:

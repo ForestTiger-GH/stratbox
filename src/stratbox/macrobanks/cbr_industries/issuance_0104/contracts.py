@@ -13,6 +13,7 @@ from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpRegionSpec as RegionSpec,
     Cbr0105ADebtCorpValidationIssue as ValidationIssue,
+    IndustrySelection,
 )
 
 if TYPE_CHECKING:
@@ -51,12 +52,14 @@ class ParseIssuanceRequest:
     payload: SourcePayload
     source_name: str
     source: IssuanceSourceLink | None = None
+    selection: IndustrySelection = IndustrySelection()
 
 
 @dataclass(frozen=True, slots=True)
 class BuildIssuanceStreamRequest:
     sources: tuple[ParseIssuanceRequest, ...]
     continue_on_error: bool = False
+    selection: IndustrySelection = IndustrySelection()
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +86,8 @@ class ParsedIssuanceFile:
     rows_stream: int
     evidence: ComputationReceipt | None = None
     unmapped_headers: tuple[tuple[str, str], ...] = ()
+    selection: IndustrySelection = IndustrySelection()
+    source_validation_scope: str = "full"
 
 
 @dataclass(frozen=True)
@@ -103,6 +108,8 @@ class IssuanceStreamResult:
     rows_stream: int
     evidence: ComputationReceipt | None = None
     stop_reason: str | None = None
+    selection: IndustrySelection = IndustrySelection()
+    source_validation_scope: str = "full"
 
     @property
     def is_partial(self) -> bool:

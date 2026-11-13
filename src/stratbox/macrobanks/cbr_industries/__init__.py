@@ -1,7 +1,7 @@
 """Bank of Russia corporate debt by industry and region."""
 
 from .contracts import (
-    BuildIndustryStreamRequest, CalculateApkRequest, Cbr0105ADebtCorpIndustryWorkbookRequest, Cbr0105ADebtCorpPivotRequest,
+    BuildIndustryStreamRequest, IndustrySelection, CalculateApkRequest, Cbr0105ADebtCorpIndustryWorkbookRequest, Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotWorkbookRequest, Cbr0105ADebtCorpSourceLink, DiscoverIndustriesRequest,
     ParseIndustryRequest, PivotInput, RenderIndustryRequest, RenderPivotRequest,
 )
