@@ -35,11 +35,14 @@ def openpyxl_bytes(workbook, *, literal_text: bool = False) -> bytes:
     workbook.properties.created = _EPOCH
     workbook.properties.modified = _EPOCH
     if literal_text:
+        if workbook.vba_archive is not None or workbook._external_links:
+            raise ValueError("Interactive output requires a newly constructed workbook")
         for sheet in workbook.worksheets:
-            for row in sheet.iter_rows():
-                for cell in row:
-                    if cell.data_type == "f":
-                        cell.data_type = "s"
+            for cell in sheet._cells.values():
+                if cell.data_type == "f":
+                    cell.data_type = "s"
+                if getattr(cell, "hyperlink", None) is not None:
+                    cell.hyperlink = None
     buffer = BytesIO()
     with _WorkbookZip(buffer, "w", ZIP_DEFLATED) as archive:
         writer.ExcelWriter(workbook, archive).write_data()

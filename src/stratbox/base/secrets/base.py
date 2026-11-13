@@ -1,18 +1,7 @@
-"""
-SecretProvider — универсальный интерфейс для получения секретов.
-
-Вне контура: env/getpass.
-Внутри контура: через плагин(корпоративный провайдер).
-"""
-
-from __future__ import annotations
+"""Secret lookup for trusted adapters using configured symbolic names."""
 
 from typing import Protocol
 
 
 class SecretProvider(Protocol):
-    """Провайдер секретов."""
-
-    def get_secret(self, key: str) -> str | None:
-        """Возвращает секрет по ключу или None."""
-        ...
+    def get_secret(self, key: str) -> str | None: ...

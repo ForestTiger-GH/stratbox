@@ -67,7 +67,8 @@ class ParseSmeRequest:
 
 
 DISCOVER = OperationDefinition(
-    f"{DATASET}.discover", 1, "fns-sme-index-1", DiscoverSmeRequest, tuple
+    f"{DATASET}.discover", 1, "fns-sme-index-1", DiscoverSmeRequest, tuple,
+    optional_capabilities=frozenset({"http"}),
 )
 ACQUIRE = OperationDefinition(
     f"{DATASET}.acquire",
@@ -146,12 +147,13 @@ def _acquire(req, invocation, transport):
             {"accept": "application/json"},
             form_fields={"statDate": format_source_date(req.as_of)},
             max_response_bytes=LIMIT_JSON,
+            read_only_post=True,
         ),
         transport=transport,
         invocation=invocation,
         source_id=DATASET,
         media_types=frozenset({"application/json", "text/json", "text/plain"}),
-        retry=RetryPolicy(retry_read_only_post=True),
+        retry=RetryPolicy(),
     )
     if not source.payload.data.lstrip().startswith(b"["):
         raise OperationFailure("source.json_signature_invalid")

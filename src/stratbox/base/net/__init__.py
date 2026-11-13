@@ -2,3 +2,4 @@
 
 from .contracts import HttpFailure, HttpRequest, HttpResponse, HttpTransport, HttpsEndpoint
 from .transport import RequestsTransport, RetryPolicy, exchange
+from .peer import PeerBoundTransport

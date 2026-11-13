@@ -8,7 +8,11 @@ from io import BytesIO
 from pathlib import PurePosixPath, PureWindowsPath
 from stat import S_IFDIR, S_IFMT, S_IFREG
 from typing import BinaryIO, Callable, ContextManager, Iterator, Mapping, Protocol
+from unicodedata import normalize
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
+
+
+from stratbox.base.limits import BudgetExceeded, BudgetMeter
 
 
 class ArchiveError(ValueError):
@@ -69,7 +73,8 @@ def validate_members(members: tuple[ArchiveMember, ...], limits: ArchiveLimits) 
     ):
         raise ArchiveError("archive.size_limit")
     names = [
-        member.name.replace("\\", "/").rstrip("/").casefold() for member in members
+        normalize("NFC", member.name.replace("\\", "/").rstrip("/")).casefold()
+        for member in members
     ]
     if len(set(names)) != len(names) or any(
         not safe_member_name(member.name) or member.encrypted or not member.regular
@@ -92,13 +97,25 @@ def zip_members(archive: ZipFile) -> tuple[ArchiveMember, ...]:
 
 
 @contextmanager
-def open_zip(data: bytes, limits: ArchiveLimits = ArchiveLimits()) -> Iterator[ZipFile]:
+def open_zip(
+    data: bytes, limits: ArchiveLimits = ArchiveLimits(), *,
+    budget: BudgetMeter | None = None, depth: int = 1,
+) -> Iterator[ZipFile]:
+    if not 1 <= depth <= 4:
+        raise ArchiveError("archive.depth_limit")
+    if budget is not None:
+        budget.check("archive_depth", depth)
     if len(data) > limits.packed_bytes:
         raise ArchiveError("archive.size_limit")
     try:
         with ZipFile(BytesIO(data)) as archive:
-            validate_members(zip_members(archive), limits)
+            members = zip_members(archive)
+            validate_members(members, limits)
+            if budget is not None:
+                budget.charge("objects", len(members))
             yield archive
+    except BudgetExceeded:
+        raise
     except (BadZipFile, EOFError, NotImplementedError, RuntimeError) as error:
         raise ArchiveError("archive.invalid_zip") from error
 
@@ -142,10 +159,22 @@ class RarArchiveReader:
             raise ArchiveError("archive.invalid_rar") from error
 
 
-def _read_member(open_member, member: ArchiveMember) -> bytes:
+def _read_member(
+    open_member, member: ArchiveMember, budget: BudgetMeter | None = None,
+    checkpoint: Callable[[], None] | None = None,
+) -> bytes:
     data = bytearray()
     with open_member(member.name) as stream:
-        while chunk := stream.read(min(65536, member.size - len(data) + 1)):
+        while True:
+            if checkpoint is not None:
+                checkpoint()
+            if budget is not None:
+                budget.checkpoint()
+            chunk = stream.read(min(65536, member.size - len(data) + 1))
+            if not chunk:
+                break
+            if budget is not None:
+                budget.charge("decoded_bytes", len(chunk))
             data.extend(chunk)
             if len(data) > member.size:
                 raise ArchiveError("archive.member_size_mismatch")
@@ -173,7 +202,14 @@ def extract_members(
     select: Callable[[tuple[str, ...]], tuple[str, ...]],
     limits: ArchiveLimits = ArchiveLimits(),
     rar_reader: ArchiveReader | None = None,
+    budget: BudgetMeter | None = None,
+    depth: int = 1,
+    checkpoint: Callable[[], None] | None = None,
 ) -> dict[str, bytes]:
+    if not 1 <= depth <= 4:
+        raise ArchiveError("archive.depth_limit")
+    if budget is not None:
+        budget.check("archive_depth", depth)
     if len(data) > limits.packed_bytes:
         raise ArchiveError("archive.size_limit")
     if data.startswith(b"Rar!"):
@@ -182,15 +218,17 @@ def extract_members(
         with rar_reader.open(data) as contents:
             members = contents.members()
             validate_members(members, limits)
+            if budget is not None:
+                budget.charge("objects", len(members))
             return {
-                member.name: _read_member(contents.open, member)
+                member.name: _read_member(contents.open, member, budget, checkpoint)
                 for member in _selected_members(members, select)
             }
     if not data.startswith(b"PK"):
         raise ArchiveError("archive.format_unsupported")
-    with open_zip(data, limits) as archive:
+    with open_zip(data, limits, budget=budget, depth=depth) as archive:
         return {
-            member.name: _read_member(archive.open, member)
+            member.name: _read_member(archive.open, member, budget, checkpoint)
             for member in _selected_members(zip_members(archive), select)
         }
 

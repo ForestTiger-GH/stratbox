@@ -11,14 +11,11 @@ excel_xlsb — чтение XLSB поверх FileStore.
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
 
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.ioapi.bytes import read_bytes
-from stratbox.base.utils.optional_deps import require_extra
 
 
 def read_df(
@@ -26,10 +23,9 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    require_extra("pyxlsb", "excel-binary")
+    from .workbook_input import read_workbook_df
 
-    data = read_bytes(path, store=store)
-    return pd.read_excel(BytesIO(data), engine="pyxlsb", **kwargs)
+    return read_workbook_df(path, store=store, expected="xlsb", **kwargs)
 
 
 def write_df(*args: Any, **kwargs: Any) -> None:

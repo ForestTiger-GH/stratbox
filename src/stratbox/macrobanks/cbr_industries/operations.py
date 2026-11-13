@@ -20,6 +20,7 @@ from stratbox.macrobanks._cbr import (
     XLSX_TYPES,
     official_url,
     receive_cbr,
+    admit_workbook,
     validate_workbook,
 )
 
@@ -47,7 +48,8 @@ _ROOTS = ("/vfs/statistics/", "/content/document/file/")
 _METHOD = "cbr-0105a-workbook-1"
 _HTTP = frozenset({"http"})
 DISCOVER = OperationDefinition(
-    f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple
+    f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple,
+    optional_capabilities=frozenset({"http"}),
 )
 ACQUIRE = OperationDefinition(
     f"{_DATASET}.acquire",
@@ -170,7 +172,7 @@ def acquire(
             transport=transport,
             invocation=invocation,
         )
-        validate_workbook(acquired.payload.data)
+        validate_workbook(acquired.payload.data, budget=invocation.budget)
         return acquired
 
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
@@ -186,7 +188,7 @@ def _parse(req, invocation):
         _validate_link(req.source)
         if req.source.source_name != req.source_name:
             raise OperationFailure("request.source_identity_mismatch")
-    validate_workbook(req.payload.data)
+    admit_workbook(req.payload.data, invocation)
     try:
         return parse_cbr_0105a_debt_corp_excel_bytes(
             req.payload.data,

@@ -5,12 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from stratbox.base.filestore import FileStore, LocalFileStore, MutationRejected
-from stratbox.base.ioapi.archive_paths import PathArchiveEntry, PathArchiveReceipt, zip_paths
-from stratbox.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
+from stratbox.base.filestore import FileMutation, FileStore, MutationRejected, StagedWriter, WriteMode
+from stratbox.base.ioapi.archive_paths import ArchiveEntry, PathArchiveReceipt, zip_to_store
+from stratbox.base.ioapi.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, zip_bytes
+from stratbox.base.limits import BudgetExceeded
 from stratbox.base.utils.optional_deps import require_extra
-from stratbox.data import ByteIdentity, Representation, SourcePayload, UsedInputReceipt
+from stratbox.data import ByteIdentity, Representation, SourcePayload, UsedInputReceipt, canonical_manifest_bytes
 from stratbox.execution import (
     Completion,
     EffectReceipt,
@@ -40,6 +41,8 @@ class StreamArchiveRequest:
     destination: str
     report_json: bytes | None = None
     compression: str = "stored"
+    mode: WriteMode = "immutable"
+    expected_revision: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,8 +61,8 @@ class Catalog:
 _STREAM_STORES = frozenset({"filestore", "output_filestore"})
 STREAM_ARCHIVE = OperationDefinition(
     "frg.prepare_archive_to_store",
-    1,
-    "frg-verified-streaming-zip-1",
+    2,
+    "frg-verified-streaming-zip-2",
     StreamArchiveRequest,
     PathArchiveReceipt,
     _STREAM_STORES,
@@ -101,7 +104,8 @@ def scan(
         invocation.stage("scan")
         try:
             files = build_frg_catalog(
-                req.directory, recursive=req.recursive, filestore=store
+                req.directory, recursive=req.recursive, filestore=store,
+                budget=invocation.budget, checkpoint=invocation.check_cancelled,
             )
         except (OSError, ValueError):
             raise OperationFailure("storage.catalog_unreadable") from None
@@ -134,36 +138,56 @@ def plan_cleanup(
     return run(PLAN, request, work, context=context, providers={"filestore": store})
 
 
-def _mutate(action, store):
-    try:
-        if action.kind == "rename":
-            confirmed = store.rename_expected(action.source, action.destination)
-        elif action.kind == "remove":
-            confirmed = store.remove_expected(action.source)
-        else:
-            if store.inspect_file(action.source.path) != action.source:
+def _mutate(action, store, invocation, intent):
+    invocation.check_cancelled()
+    managed = invocation.context.profile == "managed"
+    data = None
+    if action.kind == "copy":
+        try:
+            if inspect_file_version(
+                action.source.path, store=store, budget=invocation.budget,
+                checkpoint=invocation.check_cancelled,
+            ) != action.source:
                 return CleanupReceipt(action, "failed", "effect.source_changed")
             data = read_bounded_bytes(
-                action.source.path, store=store, limit=action.source.identity.size
+                action.source.path, store=store, limit=action.source.identity.size,
+                budget=invocation.budget, checkpoint=invocation.check_cancelled,
             )
-            if ByteIdentity.of(data) != action.source.identity:
-                return CleanupReceipt(action, "failed", "effect.source_changed")
+        except (OSError, ValueError):
+            return CleanupReceipt(action, "failed", "effect.source_unreadable")
+        if ByteIdentity.of(data) != action.source.identity:
+            return CleanupReceipt(action, "failed", "effect.source_changed")
+        invocation.budget.charge("output_bytes", len(data))
+        invocation.check_cancelled()
+        if not managed:
             written = write_verified_bytes(
-                action.destination,
-                data,
-                store=store,
+                action.destination, data, store=store,
                 expected_sha256=action.source.identity.sha256,
             )
-            if written.status == "unknown":
-                return CleanupReceipt(action, "unknown", written.diagnostic_code)
-            confirmed = written.status in {"stored", "already_present"}
+            if written.status in {"stored", "already_present"}:
+                return CleanupReceipt(action, "confirmed")
+            return CleanupReceipt(action, written.status, written.diagnostic_code)
+    elif not managed:
+        # Local conditional removal and rename verify the source again.
+        reads = 2 if action.kind == "rename" else 1
+        invocation.budget.charge("input_bytes", action.source.identity.size * reads)
+        invocation.check_cancelled()
+    try:
+        if managed:
+            confirmed = store.commit_mutation(intent, data)
+        elif action.kind == "rename":
+            confirmed = store.rename_expected(action.source, action.destination)
+        else:
+            confirmed = store.remove_expected(action.source)
     except MutationRejected:
         return CleanupReceipt(action, "failed", "effect.rejected")
     except Exception:
         return CleanupReceipt(action, "unknown", "effect.outcome_unknown")
-    if not confirmed:
+    if confirmed is True:
+        return CleanupReceipt(action, "confirmed")
+    if confirmed is False:
         return CleanupReceipt(action, "failed", "effect.conflict")
-    return CleanupReceipt(action, "confirmed")
+    return CleanupReceipt(action, "unknown", "effect.outcome_unknown")
 
 
 def apply_cleanup(
@@ -180,14 +204,12 @@ def apply_cleanup(
             or req.plan.identity.sha256 != req.expected_sha256
         ):
             raise OperationFailure("effect.plan_not_authorized")
-        for name in (
-            "guard_directory",
-            "directory_identity",
-            "inspect_file",
-            "remove_expected",
-            "rename_expected",
-            "create_if_absent",
-        ):
+        methods = ("guard_directory", "directory_identity", "inspect_file")
+        if invocation.context.profile == "managed":
+            methods += ("commit_mutation",)
+        else:
+            methods += ("remove_expected", "rename_expected", "create_if_absent")
+        for name in methods:
             if not callable(getattr(store, name, None)):
                 raise OperationFailure("provider.capability_missing")
         receipts = []
@@ -202,26 +224,30 @@ def apply_cleanup(
                     if action.kind == "keep":
                         receipts.append(CleanupReceipt(action, "confirmed"))
                         continue
-                    token = invocation.context.cancellation
-                    if token is not None and token.is_set():
+                    effect_id = ByteIdentity.of(canonical_manifest_bytes({
+                        "plan": req.plan.identity.sha256, "index": index, "action": action.kind,
+                    })).sha256
+                    intent = FileMutation(
+                        APPLY.operation_id, effect_id, current.identity, action.kind,
+                        directory=current.request.directory, source=action.source,
+                        destination=action.destination, content=action.source.identity,
+                    )
+                    try:
+                        receipt = _mutate(action, store, invocation, intent)
+                    except (OperationFailure, BudgetExceeded) as error:
                         receipts.extend(
                             CleanupReceipt(item, "not_attempted")
                             for item in current.actions[index:]
                         )
                         if invocation.effects:
-                            return Completion(
-                                tuple(receipts), "partial", "operation.cancelled"
-                            )
-                        raise OperationFailure(
-                            "operation.cancelled", outcome="cancelled"
-                        )
-                    receipt = _mutate(action, store)
+                            code = error.code if isinstance(error, BudgetExceeded) else error.diagnostic.code
+                            return Completion(tuple(receipts), "partial", code)
+                        raise
                     receipts.append(receipt)
-                    invocation.effects.append(
-                        EffectReceipt(
-                            f"storage.{action.kind}", receipt.state, action.source.path
-                        )
-                    )
+                    invocation.effects.append(EffectReceipt(
+                        f"storage.{action.kind}", receipt.state, action.destination or action.source.path,
+                        effect_id, "commit", action.source.identity, "revision_guarded", "store",
+                    ))
                     if receipt.state != "confirmed":
                         receipts.extend(
                             CleanupReceipt(item, "not_attempted")
@@ -280,7 +306,8 @@ def prepare_archive(
                     source.path if store.exists(source.path) else action.destination
                 )
                 data = read_bounded_bytes(
-                    location, store=store, limit=source.identity.size
+                    location, store=store, limit=source.identity.size,
+                    budget=invocation.budget, checkpoint=invocation.check_cancelled,
                 )
             except ValueError:
                 raise OperationFailure("effect.source_changed") from None
@@ -288,6 +315,9 @@ def prepare_archive(
                 raise OperationFailure("storage.source_unreadable") from None
             if ByteIdentity.of(data) != source.identity:
                 raise OperationFailure("effect.source_changed")
+            invocation.budget.charge("objects", 1)
+            if name in files:
+                raise OperationFailure("archive.selection_invalid")
             files[name] = data
             invocation.use(
                 UsedInputReceipt.for_payload(SourcePayload(data), "latest_file")
@@ -305,23 +335,22 @@ def prepare_archive(
 def prepare_archive_to_store(
     request: StreamArchiveRequest,
     *,
-    store: LocalFileStore | None = None,
-    output_store: LocalFileStore | None = None,
+    store: FileStore | None = None,
+    output_store: StagedWriter | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[PathArchiveReceipt]:
-    """Stream approved latest-file bytes into a verified, atomic local ZIP.
+    """Stream selected inputs through a receiving store's staged commit."""
 
-    Both stores may point to mounted filesystem directories. The output store
-    uses its own root and destination name. Selection is always revalidated
-    from the source directory before the write; source bytes must match the
-    version recorded in the plan.
-    """
     def work(req, invocation):
         invocation.stage("revalidate")
-        if not isinstance(store, LocalFileStore) or not isinstance(output_store, LocalFileStore):
+        if any(not callable(getattr(store, name, None)) for name in (
+            "directory_identity", "inspect_file", "open_read",
+        )):
             raise OperationFailure("provider.capability_missing")
-        if not req.destination or req.destination in {".", ".."}:
+        if not req.destination or req.destination in {".", ".."} or "\\x00" in req.destination:
             raise OperationFailure("effect.destination_invalid")
+        if invocation.context.profile == "managed" and req.mode == "best_effort_verified":
+            raise OperationFailure("effect.mode_forbidden")
         try:
             if store.directory_identity(req.plan.request.directory) != req.plan.directory_identity:
                 raise OperationFailure("effect.directory_scope_changed")
@@ -335,34 +364,36 @@ def prepare_archive_to_store(
                     continue
                 if action.destination is None:
                     raise OperationFailure("source.archive_name_missing")
-                archive_name = action.destination.replace("\\", "/").rsplit("/", 1)[-1]
-                entries.append(PathArchiveEntry(
-                    store.checked_file_path(action.source.path),
-                    archive_name,
-                    action.source.identity,
-                ))
+                name = action.destination.replace("\\", "/").rsplit("/", 1)[-1]
+                entries.append(ArchiveEntry(action.source.path, name, action.source.identity))
             invocation.stage("prepare_archive")
-            result = zip_paths(
-                tuple(entries),
-                output_store.checked_file_path(req.destination),
-                extras=({"selection_report.json": req.report_json}
-                        if req.report_json is not None else None),
-                compression=req.compression,
+            result = zip_to_store(
+                tuple(entries), req.destination, source_store=store, output_store=output_store,
+                budget=invocation.budget, checkpoint=invocation.check_cancelled,
+                extras={"selection_report.json": req.report_json} if req.report_json is not None else None,
+                compression=req.compression, mode=req.mode, expected_revision=req.expected_revision,
+                plan_identity=current.identity, operation_id=STREAM_ARCHIVE.operation_id,
+                require_admission=invocation.context.profile == "managed",
+                source_directory=current.request.directory,
             )
-        except (OSError, ValueError) as error:
-            if isinstance(error, OperationFailure):
-                raise
-            if isinstance(error, ArchiveError):
-                raise OperationFailure(str(error)) from None
+        except ArchiveError as error:
+            raise OperationFailure(str(error)) from None
+        except OSError:
             raise OperationFailure("storage.archive_unavailable") from None
-        for action in current.actions:
-            if action.kind != "remove":
-                invocation.use(UsedInputReceipt(
-                    "frg_archive_file", action.source.identity,
-                    "application/octet-stream", "reference_only",
-                    source_id=action.source.path,
-                ))
-        invocation.effects.append(EffectReceipt("storage.write", "confirmed", req.destination))
+        for entry in entries:
+            invocation.use(UsedInputReceipt(
+                "frg_archive_file", entry.identity, "application/octet-stream",
+                "reference_only", source_id=entry.source,
+            ))
+        receipt = result.storage
+        state = {"stored": "confirmed", "already_present": "confirmed",
+                 "failed": "failed", "unknown": "unknown"}[receipt.status]
+        invocation.effects.append(EffectReceipt(
+            "storage.write", state, req.destination, result.effect_id, receipt.stage,
+            result.identity, receipt.guarantee, "store",
+        ))
+        if state != "confirmed":
+            return Completion(result, state, receipt.diagnostic_code)
         return result
 
     return run(

@@ -15,6 +15,7 @@ from stratbox.execution import (
 from stratbox.execution.source_validation import use_payload
 from stratbox.macrobanks._cbr import (
     HTML_TYPES, WORKBOOK_LIMIT, XLSX_TYPES, official_url, receive_cbr,
+    admit_workbook,
     validate_workbook,
 )
 
@@ -90,7 +91,7 @@ def acquire(request: IssuanceSourceLink, *, transport: HttpTransport | None = No
         received = receive_cbr(req.url, roots=_ROOTS, media_types=XLSX_TYPES,
                                limit=WORKBOOK_LIMIT, source_id=req.source_id,
                                transport=transport, invocation=invocation)
-        validate_workbook(received.payload.data)
+        validate_workbook(received.payload.data, budget=invocation.budget)
         return received
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
 
@@ -105,7 +106,7 @@ def _parse(req: ParseIssuanceRequest, invocation) -> ParsedIssuanceFile:
         _check_source(req.source)
         if req.source.source_name != req.source_name:
             raise OperationFailure("request.source_identity_mismatch")
-    validate_workbook(req.payload.data)
+    admit_workbook(req.payload.data, invocation)
     try:
         return parse_workbook(req.payload.data, source_name=req.source_name,
                               source_url=req.source.url if req.source else None,

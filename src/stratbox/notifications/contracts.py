@@ -1,6 +1,6 @@
 """Facts, intent and qualified acknowledgements for caller-owned delivery."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
 from stratbox.data import ByteIdentity, PublicationReceipt, StoredBytesReceipt
@@ -53,9 +53,10 @@ class NotificationRoute:
 class NotificationIntent:
     route: NotificationRoute
     effect_key: str
-    event_identity: bytes
-    payload: bytes
+    event_identity: bytes = field(repr=False)
+    payload: bytes = field(repr=False)
     payload_identity: ByteIdentity
+    route_revision: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,7 @@ class PrepareRequest:
     policy: NotificationPolicy
     route: NotificationRoute
     dry_run: bool = False
+    route_revision: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,11 +78,25 @@ class PrepareDecision:
 class SendReceipt:
     effect_key: str
     state: DeliveryState
-    acknowledgement: str | None = None
+    acknowledgement: str | None = field(default=None, repr=False)
+    route: NotificationRoute | None = None
+    payload_identity: ByteIdentity | None = None
+    route_revision: str | None = None
 
 
 class NotificationTransport(Protocol):
     def send(self, intent: NotificationIntent) -> SendReceipt: ...
+
+
+class ManagedNotificationChannel(Protocol):
+    """The receiving owner of a scoped, authoritatively checked delivery.
+
+    The owner verifies the publication/diagnostic fact, payload, current recipient
+    and grant at acceptance. It preserves the logical key across attempts.
+    """
+
+    def send_admitted(self, intent: NotificationIntent) -> SendReceipt: ...
+    def lookup(self, intent: NotificationIntent) -> SendReceipt: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,8 +104,10 @@ class DeliveryResult:
     state: DeliveryState
     effect_key: str
     payload_identity: ByteIdentity
-    acknowledgement: str | None
+    acknowledgement: str | None = field(repr=False)
     next_action: Literal["done", "retry", "reconcile"]
+    route: NotificationRoute | None = None
+    route_revision: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,10 +115,14 @@ class DeliverRequest:
     intent: NotificationIntent
     authorized_route: NotificationRoute
     previous: DeliveryResult | None = None
-    idempotent_channel_verified: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class QualifyDeliveryRequest:
     intent: NotificationIntent
     receipt: SendReceipt | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReconcileDeliveryRequest:
+    intent: NotificationIntent

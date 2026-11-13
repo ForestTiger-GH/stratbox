@@ -49,6 +49,19 @@ class DatasetVersion:
     manifest: bytes
 
 
+def _input_manifest(inputs: tuple[UsedInputReceipt, ...]) -> list[dict[str, object]]:
+    return [
+        {
+            "role": item.role,
+            "sha256": item.identity.sha256,
+            "size": item.identity.size,
+            "container": item.container.sha256 if item.container else None,
+            "member": item.member,
+        }
+        for item in inputs
+    ]
+
+
 def build_dataset_version(
     dataset_id: str,
     release_id: str,
@@ -65,16 +78,7 @@ def build_dataset_version(
             "dataset_id": dataset_id,
             "release_id": release_id,
             "method_version": method_version,
-            "inputs": [
-                {
-                    "role": item.role,
-                    "sha256": item.identity.sha256,
-                    "size": item.identity.size,
-                    "container": item.container.sha256 if item.container else None,
-                    "member": item.member,
-                }
-                for item in inputs
-            ],
+            "inputs": _input_manifest(inputs),
             "parameters": parameters or {},
             "resources": resources or {},
             "result": {"sha256": result.sha256, "size": result.size},
@@ -83,3 +87,32 @@ def build_dataset_version(
     return DatasetVersion(
         dataset_id, release_id, method_version, 1, ByteIdentity.of(manifest), manifest
     )
+
+def computation_identity(
+    operation_id: str,
+    contract_version: int,
+    method_version: str,
+    inputs: tuple[UsedInputReceipt, ...],
+    *,
+    parameters: Mapping[str, object] | None = None,
+    resources: Mapping[str, str] | None = None,
+    representation_profile: str | None = None,
+    representation_options: Mapping[str, object] | None = None,
+) -> ByteIdentity:
+    """Identify an immutable computation. A cache owner separately checks access."""
+    if representation_profile is None and representation_options:
+        raise ValueError("Representation options require a profile")
+    return ByteIdentity.of(canonical_manifest_bytes({
+        "version": 1,
+        "operation_id": operation_id,
+        "contract_version": contract_version,
+        "method_version": method_version,
+        "inputs": [
+            {**entry, "source_id": item.source_id, "media_type": item.media_type}
+            for entry, item in zip(_input_manifest(inputs), inputs)
+        ],
+        "parameters": parameters or {},
+        "resources": resources or {},
+        "representation_profile": representation_profile,
+        "representation_options": representation_options or {},
+    }))

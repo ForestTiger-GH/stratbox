@@ -4,7 +4,7 @@ from datetime import date, tzinfo
 import re
 
 from stratbox.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.data import Comparison, MetricRef, Observation, PeriodRef, SubjectRef
+from stratbox.data import Comparison, MetricRef, Observation, PeriodRef, SubjectRef, UsedInputReceipt
 from stratbox.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,
@@ -42,14 +42,14 @@ PARSE = OperationDefinition(
 )
 ACQUIRE = OperationDefinition(
     f"{DATASET}.acquire",
-    1,
-    "cbr-offices-http-1",
+    2,
+    "cbr-offices-http-2",
     AcquireOfficesRequest,
     AcquiredOffices,
     _HTTP,
 )
 CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 1, METHOD, AcquireOfficesRequest, ParsedRelease, _HTTP
+    f"{DATASET}.capture", 2, METHOD, AcquireOfficesRequest, ParsedRelease, _HTTP
 )
 READ = OperationDefinition(
     f"{DATASET}.read_representation",
@@ -80,13 +80,16 @@ def _acquire(request, invocation, transport):
         invocation=invocation,
         media_types=frozenset({"text/html", "application/xhtml+xml"}),
         retry=RetryPolicy(),
+        baseline=request.baseline,
     )
-    # A blocked or unrelated page is not an acquisition of this series.
+    # Retain the received-byte evidence even if the page is for a different series.
     if KNOWN_CONTEXT not in " ".join(decode_html(source.payload).split()):
+        invocation.use(UsedInputReceipt.for_payload(source.payload, "unqualified_response"))
         raise OperationFailure("source.context_changed")
     return AcquiredOffices(
         source, source.receipt.observed_at_utc.astimezone(request.capture_zone).date()
     )
+
 
 
 def acquire(
@@ -227,10 +230,20 @@ def compare(
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
-        old, new = req.baseline.representation.data, req.candidate.representation.data
+        old, new = req.baseline, req.candidate
+        old_periods = {item.period for item in old.batch.observations} if old.batch else set()
+        new_periods = {item.period for item in new.batch.observations} if new.batch else set()
+        if old_periods != new_periods or old.facts_identity is None or new.facts_identity is None:
+            return Comparison("indeterminate", "comparison.qualification_missing")
+        if old.facts_identity == new.facts_identity:
+            return Comparison("unchanged", "comparison.offices_observations")
+        old_metrics = {item.metric for item in old.batch.observations}
+        new_metrics = {item.metric for item in new.batch.observations}
+        if old_metrics != new_metrics:
+            return Comparison("indeterminate", "comparison.indicator_scope_changed")
         return Comparison(
-            "unchanged" if old == new else "revised",
-            "representation.literal_comparison",
+            "revised",
+            "comparison.offices_observations",
         )
 
     return run(COMPARE, request, work, context=context)

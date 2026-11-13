@@ -70,3 +70,32 @@ def test_failed_conditional_remove_does_not_claim_success(tmp_path):
     )
     assert result.outcome == "failed" and result.effects[0].state == "failed"
     assert (tmp_path / OLDER).exists()
+
+
+def test_cleanup_preserves_confirmed_and_unattempted_actions_on_cancellation(tmp_path):
+    from threading import Event
+
+    from stratbox.execution import ExecutionContext
+
+    cancelled = Event()
+
+    class CancellingStore(LocalFileStore):
+        def remove_expected(self, expected):
+            assert super().remove_expected(expected)
+            cancelled.set()
+            return True
+
+    populate(tmp_path)
+    extra = "2026-03-01_Экспресс выдачи.xlsx"
+    (tmp_path / extra).write_bytes(b"more history")
+    store = CancellingStore(root=str(tmp_path))
+    plan = frg.plan_cleanup(frg.PlanCleanupRequest(".", delete_others=True), store=store).value
+    result = frg.apply_cleanup(
+        frg.ApplyCleanupRequest(plan, ".", plan.identity.sha256), store=store,
+        context=ExecutionContext(cancellation=cancelled),
+    )
+    assert result.outcome == "partial"
+    assert [receipt.state for receipt in result.value] == ["confirmed", "confirmed", "not_attempted"]
+    assert len(result.effects) == 1 and result.effects[0].state == "confirmed"
+    assert not store.exists(result.value[1].action.source.path)
+    assert store.exists(result.value[2].action.source.path)

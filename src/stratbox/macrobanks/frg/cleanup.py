@@ -5,6 +5,7 @@ from typing import Literal
 
 from stratbox.base.filestore import FileVersion
 from stratbox.base.filestore.paths import child_path
+from stratbox.base.ioapi.bytes import inspect_file_version
 from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import OperationFailure
 
@@ -68,7 +69,8 @@ def create_plan(request, store, invocation):
     from .selection import select_latest_frg_files
 
     directory_identity = store.directory_identity(request.directory)
-    catalog = build_frg_catalog(request.directory, filestore=store)
+    budget, checkpoint = invocation.budget, invocation.check_cancelled
+    catalog = build_frg_catalog(request.directory, filestore=store, budget=budget, checkpoint=checkpoint)
     latest = select_latest_frg_files(catalog)
     latest_paths = set(latest["path"])
     actions = []
@@ -81,7 +83,7 @@ def create_plan(request, store, invocation):
             extension=row["extension"],
         )
         target = child_path(request.directory, target_name)
-        source = store.inspect_file(row["path"])
+        source = inspect_file_version(row["path"], store=store, budget=budget, checkpoint=checkpoint)
         if target.casefold() in destinations:
             raise OperationFailure("effect.destination_conflict")
         destinations.add(target.casefold())
@@ -96,7 +98,8 @@ def create_plan(request, store, invocation):
         for row in catalog.to_dict("records"):
             invocation.check_cancelled()
             if _should_remove(row, latest_paths):
-                actions.append(CleanupAction("remove", store.inspect_file(row["path"])))
+                source = inspect_file_version(row["path"], store=store, budget=budget, checkpoint=checkpoint)
+                actions.append(CleanupAction("remove", source))
     identity = ByteIdentity.of(
         canonical_manifest_bytes(
             {

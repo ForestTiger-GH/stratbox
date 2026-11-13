@@ -1,4 +1,4 @@
-# Stratbox 0.9 core operations
+# Stratbox 0.10 core operations
 
 The Python package exposes independent acquisition, parsing, comparison,
 calculation and representation operations. Each domain owns its source
@@ -17,7 +17,7 @@ format primitives are reusable across domains.
 | `macrobanks.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
 | `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
 | `macrobanks.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
-| `notifications` | `prepare`, `deliver`, `qualify` | Stable intent from qualified facts, route authorization and one attempted delivery with a qualified acknowledgement. |
+| `notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
 ## Execution and observations
 
@@ -27,8 +27,8 @@ A failed feasibility check can carry a diagnostic result. A partial result
 requires explicit support from the operation. An uncertain effect keeps its
 unknown status until the effect owner supplies a confirmation.
 
-`ExecutionContext` accepts a clock, a cooperative cancellation token, an
-event sink and caller-owned correlation IDs. Events serialize bounded fields
+`ExecutionContext` accepts a clock, a cooperative cancellation token, a
+resource budget, provider bindings, an event sink and correlation IDs. Events serialize bounded fields
 for start, stage, progress and finish. Optional sink failure increments
 the dropped counter. Cancellation is checked before effects and between
 declared stages. Long external calls observe cancellation at the next
@@ -66,10 +66,10 @@ removing the old name. A failure between those steps can leave both names
 and returns an unknown effect. A new plan starts from the inspected state.
 
 A delivery key includes the publication transition, route and destination.
-The payload has a separate digest. An unknown acknowledgement requires
-reconciliation or verified channel idempotency before repeating the same
-key and payload. The consumer owns any durable outbox and publication
-record.
+The payload has a separate digest. In the managed profile a channel checks
+the route revision and qualifies acceptance for the bound recipient. Use
+`reconcile` to obtain the receiving owner's determination after an unknown
+outcome. The consumer owns any durable outbox and publication record.
 
 ## Verified input coverage
 
@@ -81,3 +81,5 @@ Access to original historical books, a system RAR extractor, and live
 publication and delivery integrations is qualified per environment.
 
 [Installation and examples](../how/install-and-run-core.md)
+
+[Execution, admission and recovery](core-execution-and-admission.md)

@@ -5,6 +5,7 @@ from .evidence import (
     AcquiredSource, AcquisitionReceipt, ByteIdentity, PublicationReceipt,
     SourcePayload, StoredBytesReceipt, UsedInputReceipt,
 )
-from .identity import DatasetVersion, build_dataset_version, canonical_manifest_bytes
+from .identity import DatasetVersion, build_dataset_version, canonical_manifest_bytes, computation_identity
 from .observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef, ValueStatus
 from .representation import Representation
+from .releases import ReleaseQualification

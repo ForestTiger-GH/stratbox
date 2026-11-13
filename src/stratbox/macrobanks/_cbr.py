@@ -3,6 +3,7 @@
 from urllib.parse import unquote
 
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip
+from stratbox.base.ioapi.workbook_input import WorkbookError, workbook_profile
 from stratbox.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
 from stratbox.base.net.contracts import public_https_parts
 from stratbox.data.representation import XLSX
@@ -85,11 +86,32 @@ def receive_cbr(
     )
 
 
-def validate_workbook(data: bytes) -> None:
+def validate_workbook(data: bytes, *, budget=None) -> None:
     try:
-        with open_zip(data, WORKBOOK_ARCHIVE_LIMITS) as archive:
+        with open_zip(data, WORKBOOK_ARCHIVE_LIMITS, budget=budget) as archive:
             names = set(archive.namelist())
             if not {"[Content_Types].xml", "xl/workbook.xml"}.issubset(names):
                 raise OperationFailure("source.xlsx_signature_invalid")
     except ArchiveError:
         raise OperationFailure("source.xlsx_signature_invalid") from None
+
+
+def admit_workbook(data: bytes, invocation) -> None:
+    if len(data) > WORKBOOK_LIMIT:
+        raise OperationFailure("source.size_limit")
+    token = invocation.context.cancellation
+    try:
+        profile = workbook_profile(
+            data, budget=invocation.budget,
+            cancelled=token.is_set if token is not None else None,
+        )
+    except (ArchiveError, WorkbookError) as error:
+        if str(error) == "operation.cancelled":
+            raise OperationFailure("operation.cancelled", outcome="cancelled") from None
+        raise OperationFailure("source.workbook_invalid") from None
+    if profile.kind != "xlsx":
+        raise OperationFailure("source.xlsx_signature_invalid")
+    try:
+        profile.check_materialization(invocation.budget)
+    except WorkbookError:
+        raise OperationFailure("source.workbook_materialization_limit") from None

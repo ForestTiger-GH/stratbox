@@ -11,7 +11,7 @@ def serialize(records):
 
 
 def validate_csv(blob):
-    from .parser import CaptureError, MAX_WIDTH, clean, require
+    from .parser import CaptureError, MAX_ROW, MAX_WIDTH, clean, require
 
     require(
         blob and not blob.startswith(b"\xef\xbb\xbf") and len(blob) < 8_000_000,
@@ -38,7 +38,7 @@ def validate_csv(blob):
             len(row) == width and row[0].isascii() and row[0].isdecimal(),
             "CSV_ROW_INVALID",
         )
-        require(1 <= int(row[0]) <= 30000 and int(row[0]) > previous, "CSV_ROW_ORDER")
+        require(1 <= int(row[0]) <= MAX_ROW and int(row[0]) > previous, "CSV_ROW_ORDER")
         require(all(clean(value) == value for value in row), "CSV_CELL_NONCANONICAL")
         previous = int(row[0])
     require(serialize(rows) == blob, "CSV_NON_CANONICAL")

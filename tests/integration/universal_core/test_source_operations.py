@@ -239,3 +239,63 @@ def test_1yur_unsafe_archive_part_ii_and_unavailable_rar_reader():
     assert fns_1yur.parse(fns_1yur.Parse1YurRequest(part_ii, day)).outcome == "failed"
     rar = fns_1yur.parse(fns_1yur.Parse1YurRequest(SourcePayload(b"Rar!"), day))
     assert rar.diagnostics[0].code == "provider.capability_missing"
+
+
+def test_monthly_dynamic_roles_exact_block_and_ambiguity():
+    import openpyxl
+
+    from stratbox.base.ioapi.workbook_input import preview_workbook
+
+    period = date(2026, 10, 1)
+    baseline = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(sample_xlsx()), period))
+    assert baseline.value.qualification.analysis == "qualified"
+
+    def workbook(*, group="Количество, ед.", printed="1.10.2026", duplicate=False, revision=0):
+        book = openpyxl.Workbook()
+        book.active.title = "Notes"
+        book.active["A1"] = "=1+1"
+        sheet = book.create_sheet("Published observations")
+        sheet.append(["Данные по состоянию на " + printed])
+        sheet["B2"] = group
+        sheet.merge_cells("B2:E2")
+        sheet.append(["Территория", "Всего", "Мобильные офисы", "Филиалы", "Кредитные организации"])
+        names = ["Российская Федерация"] + [
+            "Белгородская область", "Брянская область", "Республика Алтай",
+        ] * 15
+        for index, name in enumerate(names):
+            sheet.append([name, 10 + (revision if index == 0 else 0), 5, 3, 2])
+        if duplicate:
+            book.copy_worksheet(sheet).title = "Competing block"
+        stream = BytesIO()
+        book.save(stream)
+        return stream.getvalue()
+
+    raw = workbook()
+    parsed = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(raw), period))
+    assert parsed.outcome == "succeeded", parsed.diagnostics
+    assert parsed.value.facts_identity == baseline.value.facts_identity
+    assert parsed.value.representation.identity != baseline.value.representation.identity
+    assert parsed.value.dataset_version != baseline.value.dataset_version
+    chosen = parsed.value.source_details["selection"]
+    assert chosen["sheet"] == "Published observations" and chosen["first_row"] == 4
+    assert chosen["header_rows"] == (2, 3) and chosen["date_basis"] == "printed"
+    assert parsed.value.source_details["formula_lineage"] == {}
+    assert monthly.compare(CompareReleaseRequest(parsed.value, baseline.value)).value.state == "unchanged"
+    revised = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(workbook(revision=1)), period))
+    assert monthly.compare(CompareReleaseRequest(revised.value, parsed.value)).value.state == "revised"
+    scaled = monthly.parse(monthly.ParseOfficesRegRequest(
+        SourcePayload(workbook(group="Остатки, млн рублей")), period,
+    ))
+    assert scaled.value.qualification.analysis == "literal_only" and scaled.value.batch is None
+    assert monthly.compare(CompareReleaseRequest(scaled.value, parsed.value)).value.state == "indeterminate"
+    conflict = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(workbook(printed="1.9.2026")), period))
+    assert conflict.diagnostics[0].code == "source.xlsx_report_date_mismatch"
+    raw = workbook(duplicate=True)
+    ambiguous = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(raw), period))
+    assert ambiguous.outcome == "partial"
+    assert ambiguous.value.source_identity == ByteIdentity.of(raw)
+    assert ambiguous.value.blocks == (("Published observations", 4, 1), ("Competing block", 4, 1))
+    assert preview_workbook(raw, sheet="Competing block", max_rows=1).rows[0][0].startswith("Данные")
+    explicit = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(raw), period, sheet="Competing block"))
+    assert explicit.outcome == "succeeded" and explicit.value.facts_identity == parsed.value.facts_identity
+    assert explicit.value.source_details["selection"]["sheet"] == "Competing block"

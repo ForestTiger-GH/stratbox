@@ -17,7 +17,7 @@ from typing import Any, Optional, Tuple
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.ioapi.bytes import read_bytes, write_bytes
+from stratbox.base.ioapi.bytes import write_bytes
 from stratbox.base.utils.optional_deps import require_extra
 
 
@@ -366,11 +366,9 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    # openpyxl нужен pandas'у как engine для xlsx
-    require_extra("openpyxl", "excel")
+    from .workbook_input import read_workbook_df
 
-    data = read_bytes(path, store=store)
-    return pd.read_excel(BytesIO(data), engine="openpyxl", **kwargs)
+    return read_workbook_df(path, store=store, expected="xlsx", **kwargs)
 
 
 def write_df(
@@ -495,6 +493,6 @@ def write_df(
         except Exception as e:
             print(f"[WARN] Auto column width failed: {e}")
 
-    out = BytesIO()
-    wb.save(out)
-    write_bytes(path, out.getvalue(), store=store)
+    from .workbook_bytes import openpyxl_bytes
+
+    write_bytes(path, openpyxl_bytes(wb, literal_text=True), store=store)

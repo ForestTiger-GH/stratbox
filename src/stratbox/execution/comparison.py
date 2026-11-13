@@ -24,6 +24,7 @@ def compare_release_inputs(
 
     def use(value: ParsedRelease, role: str) -> None:
         representation = value.representation
+        invocation.budget.charge("input_bytes", representation.identity.size)
         invocation.use(
             UsedInputReceipt.for_payload(
                 SourcePayload(

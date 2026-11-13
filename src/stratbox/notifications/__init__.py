@@ -4,6 +4,7 @@ from .contracts import (
     DeliverRequest,
     DeliveryResult,
     DiagnosticFact,
+    ManagedNotificationChannel,
     NotificationIntent,
     NotificationPolicy,
     NotificationRoute,
@@ -13,6 +14,7 @@ from .contracts import (
     PrepareRequest,
     PublicationConfirmed,
     QualifyDeliveryRequest,
+    ReconcileDeliveryRequest,
     SendReceipt,
 )
-from .operations import DELIVER, PREPARE, QUALIFY, deliver, prepare, qualify
+from .operations import DELIVER, PREPARE, QUALIFY, RECONCILE, deliver, prepare, qualify, reconcile

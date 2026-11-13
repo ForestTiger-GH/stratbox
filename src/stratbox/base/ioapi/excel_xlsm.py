@@ -17,7 +17,6 @@ from typing import Any
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.ioapi.excel_xlsx import read_df as _read_xlsx_df
 from stratbox.base.ioapi.excel_xlsx import write_df as _write_xlsx_df
 
 
@@ -26,7 +25,9 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    return _read_xlsx_df(path, store=store, **kwargs)
+    from .workbook_input import read_workbook_df
+
+    return read_workbook_df(path, store=store, expected="xlsm", **kwargs)
 
 
 def write_df(

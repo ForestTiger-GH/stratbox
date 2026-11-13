@@ -15,6 +15,7 @@ ValueStatus = Literal[
     "not_applicable",
     "withheld",
     "derived",
+    "reconstructed",
 ]
 
 
@@ -68,8 +69,10 @@ class Observation:
     raw_token: str | None = None
 
     def __post_init__(self) -> None:
-        if (self.value_status in {"reported", "derived"}) != (self.value is not None):
+        if (self.value_status in {"reported", "derived", "reconstructed"}) != (self.value is not None):
             raise ValueError("Observation value disagrees with its status")
+        if isinstance(self.value, Decimal) and not self.value.is_finite():
+            raise ValueError("Observation requires a finite value")
         if len({key for key, _ in self.dimensions}) != len(self.dimensions):
             raise ValueError("Duplicate observation dimension")
 

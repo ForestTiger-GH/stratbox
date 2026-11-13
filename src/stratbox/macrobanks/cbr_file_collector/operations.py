@@ -2,9 +2,9 @@
 
 from pathlib import PurePosixPath
 import re
-from time import monotonic
 
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
+from stratbox.base.limits import BudgetExceeded
 from stratbox.base.net import HttpTransport
 from stratbox.data import Representation, UsedInputReceipt
 from stratbox.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
@@ -37,10 +37,10 @@ def _variants(url: str) -> tuple[str, ...]:
 
 
 def _download(entry, req, invocation, transport, remaining_batch):
-    deadline = monotonic() + req.deadline_per_source_seconds
+    deadline = invocation.context.clock.monotonic() + req.deadline_per_source_seconds
     last_failure = OperationFailure("http.timeout")
     for url in _variants(entry.url) if req.try_case_variants else (entry.url,):
-        remaining = deadline - monotonic()
+        remaining = deadline - invocation.context.clock.monotonic()
         if remaining <= 0:
             break
         try:
@@ -52,7 +52,8 @@ def _download(entry, req, invocation, transport, remaining_batch):
                 raise
             last_failure = error
             continue
-        validate_workbook(source.payload.data)
+        invocation.use(UsedInputReceipt.for_payload(source.payload, "received_workbook"))
+        validate_workbook(source.payload.data, budget=invocation.budget)
         name = entry.expected_file_name or PurePosixPath(official_url(url, roots=_ROOTS)).name
         if not safe_member_name(name) or PurePosixPath(name).name != name:
             raise OperationFailure("source.filename_invalid")
@@ -79,6 +80,9 @@ def collect_raw(request: CollectFilesRequest, *, transport: HttpTransport | None
             attempted.append(key)
             try:
                 item = _download(registry[key], req, invocation, transport, remaining)
+            except BudgetExceeded as error:
+                failed.append(CollectFailure(key, error.code))
+                break
             except OperationFailure as error:
                 failed.append(CollectFailure(key, error.diagnostic.code))
                 if error.outcome == "cancelled" or not req.continue_on_error:
@@ -103,6 +107,8 @@ def prepare_archive(request: PrepareArchiveRequest, *,
         names = set()
         for item in req.files:
             invocation.check_cancelled()
+            invocation.budget.charge("objects", 1)
+            invocation.budget.charge("input_bytes", item.source.payload.identity.size)
             if not safe_member_name(item.file_name) or "/" in item.file_name or "\\" in item.file_name:
                 raise OperationFailure("request.archive_filename_invalid")
             if item.source.receipt.identity != item.source.payload.identity:

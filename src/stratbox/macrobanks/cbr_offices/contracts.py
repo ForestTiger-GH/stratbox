@@ -7,6 +7,7 @@ from stratbox.data import AcquiredSource, SourcePayload
 @dataclass(frozen=True, slots=True)
 class AcquireOfficesRequest:
     capture_zone: tzinfo
+    baseline: AcquiredSource | None = None
 
 
 @dataclass(frozen=True, slots=True)

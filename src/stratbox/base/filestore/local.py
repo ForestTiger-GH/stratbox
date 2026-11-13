@@ -10,16 +10,63 @@ import stat
 import shutil
 import tempfile
 from pathlib import Path
-from typing import BinaryIO, Iterator, Tuple
+from typing import BinaryIO, Callable, Iterator, Tuple
 
-from stratbox.base.filestore.base import FileStore
+from stratbox.base.filestore.base import FileStore, WriteMode
 from stratbox.base.filestore.types import (
     DIRECTORY_GUARD_NAME,
     FileStat,
     FileVersion,
     MutationRejected,
 )
+from stratbox.base.limits import BudgetMeter
 from stratbox.data import ByteIdentity
+
+
+class _LocalStage:
+    def __init__(self, stream: BinaryIO, staging: Path, destination: Path, store: LocalFileStore):
+        self.stream = stream
+        self.staging = staging
+        self.destination = destination
+        self.store = store
+        self.attempted = False
+
+    def commit(self, mode: WriteMode, expected_revision: str | None) -> bool:
+        if self.attempted:
+            raise MutationRejected("Staged write already attempted")
+        self.attempted = True
+        try:
+            self.stream.flush()
+            os.fsync(self.stream.fileno())
+            self.stream.close()
+            target = self.store.checked_file_path(str(self.destination))
+        except OSError as error:
+            raise MutationRejected("Unable to finalize staging") from error
+        if mode == "immutable":
+            try:
+                os.link(self.staging, target)
+            except FileExistsError:
+                return False
+            except OSError as error:
+                if error.errno in {ENOTSUP, EXDEV}:
+                    raise MutationRejected("Atomic creation unavailable", capability_missing=True) from error
+                raise
+        elif mode == "replace_expected_revision":
+            if not expected_revision:
+                raise MutationRejected("Expected revision is required")
+            with self.store.guard_directory(str(target.parent)):
+                try:
+                    actual = self.store.inspect_file(str(target))
+                except FileNotFoundError:
+                    return False
+                if actual.revision != expected_revision:
+                    return False
+                os.replace(self.staging, target)
+        elif mode == "best_effort_verified":
+            os.replace(self.staging, target)
+        else:
+            raise MutationRejected("Unsupported write mode")
+        return True
 
 
 class LocalFileStore(FileStore):
@@ -54,40 +101,36 @@ class LocalFileStore(FileStore):
                 )
         return candidate
 
-    def _commit_bytes(self, path: str, data: bytes, *, create: bool) -> bool:
+    @contextmanager
+    def stage_write(self, path: str):
         try:
             target = self.checked_file_path(path)
             target.parent.mkdir(parents=True, exist_ok=True)
+            target = self.checked_file_path(str(target))
+            fd, name = tempfile.mkstemp(prefix=".stratbox-", dir=target.parent)
         except OSError as error:
             raise MutationRejected("Storage destination is unavailable") from error
-        fd, name = tempfile.mkstemp(prefix=".stratbox-", dir=target.parent)
+        staging = Path(name)
         try:
-            with os.fdopen(fd, "wb") as stream:
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            if create:
-                try:
-                    os.link(name, target)
-                except FileExistsError:
-                    return False
-                except OSError as error:
-                    if error.errno in {ENOTSUP, EXDEV}:
-                        raise MutationRejected(
-                            "Atomic creation is unavailable", capability_missing=True
-                        ) from error
-                    raise
-            else:
-                os.replace(name, target)
-            return True
+            with os.fdopen(fd, "w+b") as stream:
+                yield _LocalStage(stream, staging, target, self)
         finally:
-            Path(name).unlink(missing_ok=True)
+            staging.unlink(missing_ok=True)
 
     def create_if_absent(self, path: str, data: bytes) -> bool:
-        return self._commit_bytes(path, data, create=True)
+        with self.stage_write(path) as stage:
+            stage.stream.write(data)
+            return stage.commit("immutable", None)
+
+    def replace_if_revision(self, path: str, data: bytes, expected_revision: str) -> bool:
+        with self.stage_write(path) as stage:
+            stage.stream.write(data)
+            return stage.commit("replace_expected_revision", expected_revision)
 
     def write_bytes(self, path: str, data: bytes) -> None:
-        self._commit_bytes(path, data, create=False)
+        with self.stage_write(path) as stage:
+            stage.stream.write(data)
+            stage.commit("best_effort_verified", None)
 
     # --- Потоки ---
 
@@ -126,8 +169,12 @@ class LocalFileStore(FileStore):
         )
 
     def listdir(self, path: str) -> list[str]:
-        p = self._abs(path)
-        return sorted([x.name for x in p.iterdir()])
+        return sorted(self.iter_names(path))
+
+    def iter_names(self, path: str) -> Iterator[str]:
+        with os.scandir(self._abs(path)) as entries:
+            for entry in entries:
+                yield entry.name
 
     def makedirs(self, path: str) -> None:
         self._abs(path).mkdir(parents=True, exist_ok=True)
@@ -202,19 +249,36 @@ class LocalFileStore(FileStore):
         return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}:{info.st_ctime_ns}"
 
     def inspect_file(self, path: str) -> FileVersion:
+        return self.inspect_file_budgeted(path, budget=None)
+
+    def inspect_file_budgeted(
+        self, path: str, *, budget: BudgetMeter | None,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> FileVersion:
         candidate = self.checked_file_path(path)
         initial = candidate.lstat()
         if not stat.S_ISREG(initial.st_mode):
             raise MutationRejected("Expected a regular file")
+        if budget is not None:
+            budget.check("input_bytes", initial.st_size)
         digest = sha256()
         size = 0
         with candidate.open("rb") as stream:
             opened = os.fstat(stream.fileno())
             if self._revision(opened) != self._revision(initial):
                 raise MutationRejected("File changed while opening it")
-            while chunk := stream.read(65536):
+            while True:
+                if checkpoint is not None:
+                    checkpoint()
+                chunk = stream.read(min(65536, initial.st_size - size + 1))
+                if not chunk:
+                    break
+                if budget is not None:
+                    budget.charge("input_bytes", len(chunk))
                 digest.update(chunk)
                 size += len(chunk)
+                if size > initial.st_size:
+                    raise MutationRejected("File grew while reading it")
             if (
                 self._revision(os.fstat(stream.fileno())) != self._revision(initial)
                 or self._revision(candidate.lstat()) != self._revision(initial)

@@ -11,12 +11,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Callable
 
 import pandas as pd
 
 from stratbox.base.filestore import FileStore
 from stratbox.base.filestore.paths import child_path
 from stratbox.base.filestore.types import DIRECTORY_GUARD_NAME
+from stratbox.base.limits import BudgetMeter
 from stratbox.macrobanks.frg.models import FrgCatalogRecord
 from stratbox.macrobanks.frg.naming import parse_file_name
 
@@ -29,26 +31,31 @@ def _iter_paths(
     *,
     filestore: FileStore,
     recursive: bool,
+    visit: Callable[[], None],
 ) -> list[str]:
     """Возвращает список путей к файлам, найденным в каталоге."""
     if not filestore.is_dir(root_dir):
         raise FileNotFoundError("Catalog directory is unavailable")
     if recursive:
         paths: list[str] = []
-        for dirpath, _dirnames, filenames in filestore.walk(root_dir):
+        for dirpath, dirnames, filenames in filestore.walk(root_dir):
+            for _ in dirnames:
+                visit()
             for file_name in filenames:
                 if file_name != DIRECTORY_GUARD_NAME:
+                    visit()
                     path = child_path(dirpath, file_name)
                     info = filestore.stat(path)
                     if info.is_file and not info.is_symlink:
                         paths.append(path)
         return sorted(paths)
 
-    names = filestore.listdir(root_dir)
+    iter_names = getattr(filestore, "iter_names", filestore.listdir)
     paths = []
-    for name in names:
+    for name in iter_names(root_dir):
         if name == DIRECTORY_GUARD_NAME:
             continue
+        visit()
         path = child_path(root_dir, name)
         info = filestore.stat(path)
         if info.is_symlink:
@@ -166,20 +173,26 @@ def build_frg_catalog(
     recursive: bool = False,
     filestore: FileStore,
     allowed_extensions: set[str] | None = None,
+    budget: BudgetMeter | None = None,
+    checkpoint: Callable[[], None] | None = None,
 ) -> pd.DataFrame:
     """Сканирует каталог FRG и возвращает полный каталог файлов."""
     extensions = allowed_extensions or DEFAULT_ALLOWED_EXTENSIONS
 
-    paths = _iter_paths(root_dir, filestore=filestore, recursive=recursive)
-    records = [
-        _build_record(
-            path,
-            root_dir=root_dir,
-            filestore=filestore,
-            allowed_extensions=extensions,
-        )
-        for path in paths
-    ]
+    def visit():
+        if checkpoint is not None:
+            checkpoint()
+        if budget is not None:
+            budget.charge("objects", 1)
+
+    paths = _iter_paths(root_dir, filestore=filestore, recursive=recursive, visit=visit)
+    records = []
+    for path in paths:
+        if checkpoint is not None:
+            checkpoint()
+        records.append(_build_record(
+            path, root_dir=root_dir, filestore=filestore, allowed_extensions=extensions,
+        ))
 
     if not records:
         return pd.DataFrame(

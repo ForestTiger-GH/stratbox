@@ -11,6 +11,7 @@ from stratbox.base.ioapi.archive_bytes import ArchiveError
 from stratbox.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.data import (
     AcquiredSource,
+    ByteIdentity,
     Comparison,
     MetricRef,
     Observation,
@@ -28,6 +29,7 @@ from stratbox.data.releases import (
 )
 from stratbox.data.representation import XLSX
 from stratbox.execution import (
+    Completion,
     ExecutionContext,
     OperationDefinition,
     OperationFailure,
@@ -42,13 +44,13 @@ from stratbox.execution.source_validation import (
     use_payload,
 )
 
-from .parser import CaptureError, LIMIT_XLSX, convert_xlsx
+from .parser import AmbiguousBlock, CaptureError, LIMIT_XLSX, convert_xlsx
 from .representation import validate_csv
 from .source import LIMIT_HTML, SOURCE_PAGE, discover as discover_links, url_date
 
 DATASET = "cbr.offices_reg"
 PROFILE = "cbr.offices_reg.wide-csv"
-METHOD = "cbr-offices-reg-xlsx-1"
+METHOD = "cbr-offices-reg-xlsx-2"
 _HOSTS = ("www.cbr.ru", "cbr.ru")
 _HTTP = frozenset({"http"})
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
@@ -63,6 +65,13 @@ class DiscoverOfficesRegRequest:
 class ParseOfficesRegRequest:
     payload: SourcePayload
     as_of: date
+    sheet: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class OfficesRegCandidates:
+    source_identity: ByteIdentity
+    blocks: tuple[tuple[str, int, int], ...]
 
 
 DISCOVER = OperationDefinition(
@@ -71,15 +80,18 @@ DISCOVER = OperationDefinition(
     "cbr-offices-reg-index-1",
     DiscoverOfficesRegRequest,
     tuple,
+    optional_capabilities=frozenset({"http"}),
 )
 ACQUIRE = OperationDefinition(
     f"{DATASET}.acquire", 1, METHOD, ReleaseLink, AcquiredSource, _HTTP
 )
 PARSE = OperationDefinition(
-    f"{DATASET}.parse", 1, METHOD, ParseOfficesRegRequest, ParsedRelease
+    f"{DATASET}.parse", 2, METHOD, ParseOfficesRegRequest,
+    (ParsedRelease, OfficesRegCandidates), partial_allowed=True,
 )
 CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 1, METHOD, ReleaseLink, ParsedRelease, _HTTP
+    f"{DATASET}.capture", 2, METHOD, ReleaseLink,
+    (ParsedRelease, OfficesRegCandidates), _HTTP, partial_allowed=True,
 )
 READ = OperationDefinition(
     f"{DATASET}.read_representation",
@@ -91,7 +103,7 @@ READ = OperationDefinition(
 COMPARE = OperationDefinition(
     f"{DATASET}.compare",
     1,
-    "cbr-offices-reg-compare-1",
+    "cbr-offices-reg-compare-2",
     CompareReleaseRequest,
     Comparison,
 )
@@ -186,6 +198,25 @@ def _check_date(as_of):
         raise OperationFailure("request.invalid_release_date")
 
 
+_COUNT_LABELS = frozenset({
+    "головной офис", "головные офисы", "кредитные организации",
+    "филиалы", "представительства", "дополнительные офисы",
+    "мобильные офисы", "операционные кассы вне кассового узла",
+    "кредитно-кассовые офисы", "операционные офисы",
+    "передвижные пункты кассовых операций", "всего",
+})
+
+
+def _count_label(heading: str) -> str | None:
+    parts = [part.strip().casefold() for part in heading.split(" / ")]
+    if any(re.search(r"\b(?:рубл|валют|процент|млн|млрд)\w*|%", part) for part in parts):
+        return None
+    for part in reversed(parts):
+        part = re.sub(r"\s*\(ед\.?\)$|[1-9*]+$", "", part).strip()
+        if part in _COUNT_LABELS:
+            return part
+    return None
+
 def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
     rows = csv_rows(data)
     header = rows[0]
@@ -201,6 +232,9 @@ def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
         return None
     column = territories[0]
     period = PeriodRef("as_of", as_of)
+    metrics = tuple(_count_label(metric) for metric in header[column + 1 :])
+    if not metrics or None in metrics or len(set(metrics)) != len(metrics):
+        return None
     result = []
     for row in rows[1:]:
         territory = row[column]
@@ -211,7 +245,7 @@ def _observations(data: bytes, as_of: date) -> tuple[Observation, ...] | None:
             if "российская федерация" in territory.casefold()
             else "territorial"
         )
-        for metric, token in zip(header[column + 1 :], row[column + 1 :]):
+        for metric, token in zip(metrics, row[column + 1 :]):
             if token in {"", "-", "–", "—"}:
                 value, status = None, ("blank" if not token else "dash")
             elif re.fullmatch(r"[0-9]{1,18}(?:[.,][0-9]{1,10})?", token):
@@ -239,11 +273,19 @@ def _parse(req, invocation, acquisition=None):
     invocation.stage("parse")
     _check_date(req.as_of)
     use_payload(req.payload, invocation, role="source_workbook", limit=LIMIT_XLSX)
+    evidence = {}
     try:
         data, formulas = convert_xlsx(
-            req.payload.data, return_formula_lineage=True, expected_date=req.as_of
+            req.payload.data, return_formula_lineage=True, expected_date=req.as_of,
+            sheet_name=req.sheet, budget=invocation.budget,
+            checkpoint=invocation.check_cancelled, evidence=evidence,
         )
         count = validate_csv(data)
+    except AmbiguousBlock as error:
+        return Completion(
+            OfficesRegCandidates(req.payload.identity, error.candidates),
+            "partial", "source.xlsx_national_total_ambiguous",
+        )
     except (ArchiveError, CaptureError, ParseError, ValueError) as error:
         raise source_failure(error) from None
     invocation.stage("validate")
@@ -257,13 +299,14 @@ def _parse(req, invocation, acquisition=None):
         invocation.used_inputs,
         observations=_observations(data, req.as_of),
         acquisition=acquisition,
-        source_details={"formula_lineage": formulas},
+        parameters={"sheet": req.sheet} if req.sheet is not None else None,
+        source_details={"formula_lineage": formulas, "selection": evidence},
     )
 
 
 def parse(
     request: ParseOfficesRegRequest, *, context: ExecutionContext | None = None
-) -> OperationResult[ParsedRelease]:
+) -> OperationResult[ParsedRelease | OfficesRegCandidates]:
     return run(PARSE, request, _parse, context=context)
 
 
@@ -272,7 +315,7 @@ def capture(
     *,
     transport: HttpTransport | None = None,
     context: ExecutionContext | None = None,
-) -> OperationResult[ParsedRelease]:
+) -> OperationResult[ParsedRelease | OfficesRegCandidates]:
     def work(req, invocation):
         original = _acquire(req, invocation, transport)
         return _parse(
@@ -318,10 +361,25 @@ def compare(
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
-        old, new = req.baseline.representation.data, req.candidate.representation.data
-        return Comparison(
-            "unchanged" if old == new else "revised",
-            "representation.literal_comparison",
-        )
+        old, new = req.baseline, req.candidate
+        if (old.facts_identity is not None and new.facts_identity is not None
+                and old.batch is not None and new.batch is not None):
+            old_metrics = {item.metric for item in old.batch.observations}
+            new_metrics = {item.metric for item in new.batch.observations}
+            if old_metrics != new_metrics:
+                return Comparison("indeterminate", "comparison.indicator_scope_changed")
+            old_geography = {item.subject for item in old.batch.observations}
+            new_geography = {item.subject for item in new.batch.observations}
+            if not old_geography <= new_geography:
+                return Comparison("indeterminate", "comparison.geographic_coverage_dropped")
+            return Comparison(
+                "unchanged" if old.facts_identity == new.facts_identity else "revised",
+                "comparison.territorial_observations",
+            )
+        if (old.representation.identity == new.representation.identity
+                and old.dataset_version.method_version == new.dataset_version.method_version
+                and old.qualification == new.qualification):
+            return Comparison("unchanged", "representation.literal_comparison")
+        return Comparison("indeterminate", "comparison.qualification_missing")
 
     return run(COMPARE, request, work, context=context)

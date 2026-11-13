@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Callable
+
 from dataclasses import dataclass
 from time import perf_counter
 
@@ -13,6 +17,20 @@ from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import (
 
 class SorsSolverDependencyError(ImportError):
     pass
+
+
+_solver_checkpoint: ContextVar[Callable[[], float] | None] = ContextVar(
+    "sors_solver_checkpoint", default=None,
+)
+
+
+@contextmanager
+def solver_budget(checkpoint: Callable[[], float]):
+    token = _solver_checkpoint.set(checkpoint)
+    try:
+        yield
+    finally:
+        _solver_checkpoint.reset(token)
 
 
 def _load_highs():
@@ -97,6 +115,7 @@ class HighsSession:
         self.highs.setOptionValue('run_crossover', str(run_crossover))
         self.highs.setOptionValue('random_seed', 0)
         self.solver = str(solver)
+        self._time_limit_seconds = time_limit_seconds
         self.run_crossover = str(run_crossover)
         if time_limit_seconds is not None:
             self.highs.setOptionValue('time_limit', float(time_limit_seconds))
@@ -178,8 +197,20 @@ class HighsSession:
         effective = -coefficients if maximize else coefficients
         self._set_cost(np.asarray(indices, dtype=np.int32), effective)
         self.highs.changeObjectiveSense(self._ObjSense.kMinimize)
+        checkpoint = _solver_checkpoint.get()
+        if checkpoint is not None:
+            from math import isfinite
+
+            left = checkpoint()
+            if isfinite(left):
+                cap = min(left, self._time_limit_seconds) if self._time_limit_seconds is not None else left
+                status = self.highs.setOptionValue('time_limit', cap)
+                if 'kOk' not in str(status):
+                    raise RuntimeError('HiGHS rejected the execution time limit')
         started = perf_counter()
         self.highs.run()
+        if checkpoint is not None:
+            checkpoint()
         runtime = perf_counter() - started
         raw_status = self.highs.getModelStatus()
         status = normalize_highs_status(raw_status)

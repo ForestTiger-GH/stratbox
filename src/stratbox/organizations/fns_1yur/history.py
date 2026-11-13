@@ -63,8 +63,11 @@ class XlsxBookAdapter:
         self._book.close()
 
 
-def open_source_workbook(file_bytes):
-    if file_bytes.startswith(modern.OLE):
+def open_source_workbook(file_bytes, *, budget=None, depth=1, checkpoint=None):
+    from .archive import profile_workbook
+
+    profile = profile_workbook(file_bytes, budget=budget, depth=depth, checkpoint=checkpoint)
+    if profile.kind == "xls":
         from stratbox.base.utils.optional_deps import require_extra
 
         xlrd = require_extra("xlrd", "excel-legacy")
@@ -72,12 +75,7 @@ def open_source_workbook(file_bytes):
             return xlrd.open_workbook(file_contents=file_bytes, on_demand=True)
         except Exception as exc:
             raise HistoryError("XLS_UNREADABLE") from exc
-    from .archive import check_workbook_xml, is_spreadsheet_ooxml
-
-    if is_spreadsheet_ooxml(file_bytes):
-        check_workbook_xml(file_bytes)
-        return XlsxBookAdapter(file_bytes)
-    raise HistoryError("SOURCE_WORKBOOK_TYPE_UNSUPPORTED")
+    return XlsxBookAdapter(file_bytes)
 
 
 def _header_row(sheet):
@@ -220,9 +218,9 @@ def is_registration_record_label(label):
     )
 
 
-def extract_observations(xls, reference_date, *, checkpoint=None):
+def extract_observations(xls, reference_date, *, checkpoint=None, budget=None, depth=1):
     """Preserve the complete printed geographic order and source metric coverage."""
-    book = open_source_workbook(xls)
+    book = open_source_workbook(xls, budget=budget, depth=depth, checkpoint=checkpoint)
     try:
         sheet_names = set(book.sheet_names())
         candidate_codes = sorted(

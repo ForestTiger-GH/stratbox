@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
+from stratbox.base.limits import BudgetExceeded
+from stratbox.execution import OperationFailure
+
 from stratbox import __version__ as STRATBOX_VERSION
 from stratbox.macrobanks.cbr_sors_restoration.contracts import (
     SorsRunConfig,
@@ -211,6 +214,8 @@ def restore_bundle(
                     threads=config.optimization.threads,
                 )
                 solver_frames.append(conflict_runs)
+            except (BudgetExceeded, OperationFailure):
+                raise
             except Exception as exc:
                 conflicts = pd.DataFrame([
                     {

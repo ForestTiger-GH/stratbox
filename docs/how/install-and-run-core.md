@@ -1,15 +1,15 @@
 # Install and call the core library
 
-Stratbox 0.9 requires Python 3.10 or later. Install the verified wheel into
+Stratbox 0.10 requires Python 3.10 or later. Install the verified wheel into
 the interpreter that runs the caller. In Jupyter or Colab use `%pip install
-/path/to/stratbox-0.9.0-py3-none-any.whl` in the target kernel.
+/path/to/stratbox-0.10.0-py3-none-any.whl` in the target kernel.
 
 | Install profile | Use |
 | --- | --- |
 | Base | Typed contracts, local storage, daily OFFICES, SME JSON and territorial office XLSX parsing. |
 | `http` | Built-in Requests HTTPS adapter. A supplied transport can satisfy the same contract. |
 | `dataframe`, `excel` | Banking analytics and workbook rendering. The `excel` extra also supplies the 1-YUR OOXML reader. |
-| `excel-legacy` | 1-YUR BIFF/XLS and legacy Excel format commands. |
+| `excel-legacy` | 1-YUR BIFF/XLS and legacy Excel commands, with OLE admission before decoding. |
 | `dbf`, `rar` | Bank form DBF and an explicitly constructed `RarArchiveReader`. Compressed RAR members can require a system extractor. |
 | `sors-restoration` | SORS analytical dependencies and HiGHS for the global feasibility and optimization stages. |
 | `excel-binary`, `pdf`, `documents`, `dbf-write` | Additional format commands. |
@@ -17,7 +17,7 @@ the interpreter that runs the caller. In Jupyter or Colab use `%pip install
 
 For an independently installed wheel, provide the selected extras on the
 wheel path, for example `python -m pip install
-'./stratbox-0.9.0-py3-none-any.whl[http,dataframe,excel]'`.
+'./stratbox-0.10.0-py3-none-any.whl[http,dataframe,excel]'`.
 
 ## Parse a saved HTML page
 
@@ -51,3 +51,5 @@ The second example substitutes a recorded HTTP response and an in-memory
 notification acknowledgement.
 
 [Operation and effect contracts](../current-how/universal-business-core.md)
+
+[Managed bindings, JSON invocation and workbook preview](../current-how/core-execution-and-admission.md)

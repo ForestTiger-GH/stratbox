@@ -157,6 +157,8 @@ def parse_form(
             required = spec.fields
             optional = {"SIDE": spec.side_fields} if spec.side_fields else {}
             preferred = spec.preferred_stem
+        if req.payload.data.startswith(b"Rar!") and invocation.context.profile == "managed":
+            invocation.require_provider("archive_decoder", rar_reader)
         archived = req.payload.data.startswith((b"Rar!", b"PK"))
         try:
             members = (
@@ -166,7 +168,8 @@ def parse_form(
                         name for name in names if name.lower().endswith(".dbf")
                     ),
                     limits=_LIMITS,
-                    rar_reader=rar_reader,
+                    rar_reader=rar_reader, budget=invocation.budget,
+                    checkpoint=invocation.check_cancelled,
                 )
                 if archived
                 else {"source.dbf": req.payload.data}
@@ -175,7 +178,7 @@ def parse_form(
                 members,
                 field_candidates=required,
                 optional_field_candidates=optional,
-                prefer_stem_contains=preferred,
+                prefer_stem_contains=preferred, budget=invocation.budget,
             )
             if archived:
                 member = SourcePayload(members[name], _DBF, req.payload.source_id)
@@ -192,7 +195,7 @@ def parse_form(
                 members[name],
                 fields,
                 tuple(required) + tuple(optional),
-                checkpoint=invocation.check_cancelled,
+                checkpoint=invocation.check_cancelled, budget=invocation.budget,
             )
         except (ArchiveError, OSError, ValueError) as error:
             raise source_failure(error) from None

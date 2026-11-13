@@ -41,6 +41,7 @@ from stratbox.base.ioapi.archive_bytes import (
     extract_members,
     open_zip,
 )
+from stratbox.base.ioapi.workbook_input import workbook_profile
 from stratbox.data import SourcePayload
 from stratbox.data.representation import XLSX
 
@@ -71,40 +72,19 @@ def is_spreadsheet_ooxml(data: bytes) -> bool:
         return {"[Content_Types].xml", "xl/workbook.xml"}.issubset(names)
 
 
-def check_workbook_xml(data: bytes) -> None:
-    # Inspect bounded members before handing XML to the workbook decoder.
-    with open_zip(data, _WORKBOOK_LIMITS) as archive:
-        for name in archive.namelist():
-            if name.casefold().endswith((".xml", ".rels")):
-                xml = archive.read(name)
-                if b"<!DOCTYPE" in xml.replace(b"\x00", b"").upper():
-                    raise HistoryError("XLSX_DTD_UNSUPPORTED")
-                if name.startswith("xl/worksheets/") and name.endswith(".xml"):
-                    _check_sheet_extent(xml)
+def profile_workbook(data: bytes, *, budget=None, depth=1, checkpoint=None):
+    def cancelled():
+        checkpoint()
+        return False
 
-
-def _check_sheet_extent(xml: bytes) -> None:
-    from io import BytesIO
-    from xml.etree.ElementTree import iterparse
-
-    namespace = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-    for _, element in iterparse(BytesIO(xml), events=("end",)):
-        if (
-            element.tag == namespace + "row"
-            and not 1 <= int(element.get("r", "1")) <= 3000
-        ):
-            raise HistoryError("XLSX_ROW_LIMIT")
-        if element.tag == namespace + "c":
-            ref = element.get("r", "")
-            match = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]{0,3})", ref)
-            if match is None:
-                raise HistoryError("XLSX_CELL_REFERENCE")
-            column = 0
-            for letter in match[1]:
-                column = column * 26 + ord(letter) - 64
-            if column > 256 or int(match[2]) > 3000:
-                raise HistoryError("XLSX_CELL_LIMIT")
-        element.clear()
+    profile = workbook_profile(
+        data, budget=budget, depth=depth, archive_limits=_WORKBOOK_LIMITS,
+        cancelled=cancelled if checkpoint is not None else None,
+    )
+    if profile.kind not in {"xls", "xlsx"} or profile.active_parts:
+        raise HistoryError("SOURCE_WORKBOOK_TYPE_UNSUPPORTED")
+    profile.check_materialization(budget)
+    return profile
 
 
 def select_workbook(
@@ -112,6 +92,8 @@ def select_workbook(
     as_of: date,
     *,
     rar_reader: ArchiveReader | None = None,
+    budget=None,
+    checkpoint=None,
 ) -> WorkbookMember:
     raw = source.data
     member = None
@@ -125,7 +107,7 @@ def select_workbook(
             raw,
             select=lambda names: (member_name(names),),
             limits=_CONTAINER_LIMITS,
-            rar_reader=rar_reader,
+            rar_reader=rar_reader, budget=budget, checkpoint=checkpoint,
         )
         member, raw = next(iter(extracted.items()))
         printed = DATE_RE.search(member.rsplit("/", 1)[-1])

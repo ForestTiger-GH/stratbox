@@ -15,6 +15,7 @@ def use_payload(
         raise OperationFailure("input.payload_required")
     if not 0 < payload.identity.size <= limit:
         raise OperationFailure("source.size_limit")
+    invocation.budget.charge("input_bytes", payload.identity.size)
     invocation.use(UsedInputReceipt.for_payload(payload, role))
 
 

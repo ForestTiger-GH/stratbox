@@ -57,6 +57,11 @@ class AcquisitionReceipt:
     media_type: str
     status_code: int
     safe_locator: str
+    origin_assurance: Literal["provider_reported", "tls_host", "peer_bound"] = "provider_reported"
+    request_sha256: str | None = None
+    target_sha256: str | None = None
+    etag: str | None = field(default=None, repr=False)
+    reused: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,12 +112,16 @@ class UsedInputReceipt:
 
 @dataclass(frozen=True, slots=True)
 class StoredBytesReceipt:
-    destination: str
+    destination: str = field(repr=False)
     identity: ByteIdentity
     status: Literal["stored", "already_present", "failed", "unknown"]
     guarantee: Literal["atomic_create", "compare_and_replace", "read_back"]
     store_id: str
     diagnostic_code: str | None = None
+    stage: Literal["preflight", "commit", "verify"] = "verify"
+    observed_identity: ByteIdentity | None = None
+    expected_revision: str | None = field(default=None, repr=False)
+    effect_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

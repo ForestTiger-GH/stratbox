@@ -81,16 +81,18 @@ class Parse1YurRequest:
 
 
 DISCOVER = OperationDefinition(
-    f"{DATASET}.discover", 1, "fns-1yur-index-1", Discover1YurRequest, ReleaseIndex
+    f"{DATASET}.discover", 1, "fns-1yur-index-1", Discover1YurRequest, ReleaseIndex,
+    optional_capabilities=frozenset({"http"}),
 )
 ACQUIRE = OperationDefinition(
     f"{DATASET}.acquire", 1, METHOD, ReleaseLink, AcquiredSource, _HTTP
 )
+_RAR = frozenset({"archive_decoder"})
 PARSE = OperationDefinition(
-    f"{DATASET}.parse", 1, METHOD, Parse1YurRequest, ParsedRelease
+    f"{DATASET}.parse", 1, METHOD, Parse1YurRequest, ParsedRelease, optional_capabilities=_RAR,
 )
 CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 1, METHOD, ReleaseLink, ParsedRelease, _HTTP
+    f"{DATASET}.capture", 1, METHOD, ReleaseLink, ParsedRelease, _HTTP, optional_capabilities=_RAR,
 )
 READ = OperationDefinition(
     f"{DATASET}.read_representation",
@@ -281,7 +283,12 @@ def _parse(req, invocation, rar_reader, acquisition=None):
     invocation.stage("identify_workbook")
     use_payload(req.payload, invocation, role="source_asset", limit=MAX_SOURCE)
     try:
-        workbook = select_workbook(req.payload, req.as_of, rar_reader=rar_reader)
+        if req.payload.data.startswith(b"Rar!") and invocation.context.profile == "managed":
+            invocation.require_provider("archive_decoder", rar_reader)
+        workbook = select_workbook(
+            req.payload, req.as_of, rar_reader=rar_reader, budget=invocation.budget,
+            checkpoint=invocation.check_cancelled,
+        )
         invocation.stage("parse_workbook")
         if workbook.member is not None:
             invocation.use(
@@ -293,7 +300,8 @@ def _parse(req, invocation, rar_reader, acquisition=None):
                 )
             )
         original, workbook_facts = extract_observations(
-            workbook.payload.data, req.as_of, checkpoint=invocation.check_cancelled
+            workbook.payload.data, req.as_of, checkpoint=invocation.check_cancelled,
+            budget=invocation.budget, depth=2 if workbook.member is not None else 1,
         )
         invocation.stage("map_source_fields")
         canonical, mapping_facts = convert(req.as_of, original)

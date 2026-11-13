@@ -2,6 +2,13 @@
 
 from dataclasses import dataclass
 
+from stratbox.base.capabilities import (
+    BindingError as BindingError,
+    CapabilityRequirement as CapabilityRequirement,
+    ProviderBinding as ProviderBinding,
+    probe_provider as probe_provider,
+    select_provider as select_provider,
+)
 from stratbox.base.filestore import FileStore, LocalFileStore
 from stratbox.base.net import HttpTransport, RequestsTransport
 from stratbox.base.secrets import EnvSecretProvider, SecretProvider

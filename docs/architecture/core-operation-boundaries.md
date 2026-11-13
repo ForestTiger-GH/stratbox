@@ -1,6 +1,6 @@
 # Core operation boundaries
 
-Stratbox 0.9 combines reusable technical commands with independently callable
+Stratbox 0.10 combines reusable technical commands with independently callable
 domain operations. A consumer binds providers and composes operations for
 its own publication, analysis or archive workflow.
 
@@ -10,6 +10,7 @@ its own publication, analysis or archive workflow.
 | `base.filestore`, `base.ioapi` | File and directory commands, bounded reads, verified writes, archive and format primitives. |
 | `data` | Payloads, byte identities, used-input and effect evidence, representations and canonical release manifests. |
 | `execution` | Operation definition, context, validation, stage events, cancellation and outcomes. |
+| `catalog` | Discovery of the owner definitions and explicit codecs for selected read-only operations. |
 | Domain modules | Official source parameters, interpretation, period semantics, calculations, comparisons and presentation profiles. |
 | Consumer | Selection and repetition of dates, scheduling, paths, permissions, publication, durable history and delivery state. |
 

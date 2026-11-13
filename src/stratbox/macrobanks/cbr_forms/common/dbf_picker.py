@@ -11,13 +11,13 @@ from stratbox.base.utils.optional_deps import MissingExtra
 from .dbf import CBRFieldParser
 
 
-def pick_dbf_fields(members, *, field_candidates, optional_field_candidates, prefer_stem_contains):
+def pick_dbf_fields(members, *, field_candidates, optional_field_candidates, prefer_stem_contains, budget=None):
     if set(field_candidates) & set(optional_field_candidates):
         raise ValueError("Required and optional DBF fields overlap")
     candidates = []
     for name, data in members.items():
         try:
-            with open_dbf_bytes(data, parserclass=CBRFieldParser) as table:
+            with open_dbf_bytes(data, parserclass=CBRFieldParser, budget=budget) as table:
                 fields = {field.upper(): field for field in table.field_names}
         except MissingExtra:
             raise
@@ -41,10 +41,12 @@ def pick_dbf_fields(members, *, field_candidates, optional_field_candidates, pre
     return name, field_map
 
 
-def decode_dbf(data: bytes, fields: dict[str, str], columns: tuple[str, ...], *, checkpoint):
+def decode_dbf(data: bytes, fields: dict[str, str], columns: tuple[str, ...], *, checkpoint, budget=None):
     values = {name: [] for name in columns}
-    with open_dbf_bytes(data, parserclass=CBRFieldParser) as table:
+    with open_dbf_bytes(data, parserclass=CBRFieldParser, budget=budget) as table:
         for index, record in enumerate(table):
+            if budget is not None:
+                budget.charge("objects", 1)
             if index % 8192 == 0:
                 checkpoint()
             for column in columns:

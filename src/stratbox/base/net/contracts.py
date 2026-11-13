@@ -11,6 +11,8 @@ from types import MappingProxyType
 from typing import Callable, Literal, Mapping, Protocol
 from urllib.parse import quote, unquote, urlsplit
 
+from stratbox.base.limits import BudgetMeter
+
 _HEADER = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", re.ASCII)
 _HOST = re.compile(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", re.ASCII)
 _BAD_URL = re.compile(r"[\x00-\x20\x7f\\]")
@@ -107,6 +109,8 @@ class HttpRequest:
     max_response_bytes: int = 10_000_000
     max_redirects: int = 3
     post_redirect: Literal["reject", "same_origin_307_308"] = "reject"
+    read_only_post: bool = False
+    budget: BudgetMeter | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.method not in {"GET", "POST"} or self.post_redirect not in {
@@ -122,7 +126,8 @@ class HttpRequest:
         ):
             raise ValueError("Invalid HTTP limits")
         if (
-            (self.body is not None and not isinstance(self.body, bytes))
+            (self.read_only_post and self.method != "POST")
+            or (self.body is not None and not isinstance(self.body, bytes))
             or (self.body is not None and self.form_fields is not None)
             or (
                 self.method == "GET"
@@ -173,8 +178,14 @@ class HttpResponse:
     headers: Mapping[str, str] = field(repr=False)
     observed_at_utc: datetime
     effective_locator_safe: str
+    origin_assurance: Literal["provider_reported", "tls_host", "peer_bound"] = "provider_reported"
+    target_sha256: str | None = None
 
     def __post_init__(self) -> None:
+        if self.target_sha256 is not None and not re.fullmatch(r"[a-f0-9]{64}", self.target_sha256):
+            raise ValueError("Invalid target identity")
+        if self.origin_assurance not in {"provider_reported", "tls_host", "peer_bound"}:
+            raise ValueError("Invalid origin assurance")
         if not 100 <= self.status_code <= 599 or not isinstance(self.body, bytes):
             raise ValueError("Invalid HTTP response")
         if (

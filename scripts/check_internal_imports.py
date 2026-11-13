@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
 
 CRITICAL_MODULES = [
     "stratbox",
+    "stratbox.catalog",
     "stratbox.base.runtime",
     "stratbox.base.ioapi",
     "stratbox.base.filestore",

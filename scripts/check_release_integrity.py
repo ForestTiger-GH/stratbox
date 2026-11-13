@@ -32,6 +32,7 @@ REQUIRED_FILES = [
     'docs_old/files_catalog_methods.md',
     'docs_old/frg_stage1.md',
     'docs/current-how/universal-business-core.md',
+    'docs/current-how/core-execution-and-admission.md',
     'docs/architecture/core-operation-boundaries.md',
     'docs/how/install-and-run-core.md',
     'src/stratbox/py.typed',

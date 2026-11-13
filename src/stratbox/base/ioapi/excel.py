@@ -17,9 +17,12 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+from typing import TYPE_CHECKING
 
 from stratbox.base.filestore.base import FileStore
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def _ext(path: str) -> str:
@@ -58,32 +61,9 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    ext = _ext(path)
+    from .workbook_input import read_workbook_df
 
-    if ext == ".xlsx":
-        from stratbox.base.ioapi import excel_xlsx
-
-        return excel_xlsx.read_df(path, store=store, **kwargs)
-
-    if ext == ".xlsm":
-        from stratbox.base.ioapi import excel_xlsm
-
-        return excel_xlsm.read_df(path, store=store, **kwargs)
-
-    if ext == ".xls":
-        from stratbox.base.ioapi import excel_xls
-
-        return excel_xls.read_df(path, store=store, **kwargs)
-
-    if ext == ".xlsb":
-        from stratbox.base.ioapi import excel_xlsb
-
-        return excel_xlsb.read_df(path, store=store, **kwargs)
-
-    # Фоллбек: считаем, что это xlsx-совместимый
-    from stratbox.base.ioapi import excel_xlsx
-
-    return excel_xlsx.read_df(path, store=store, **kwargs)
+    return read_workbook_df(path, store=store, **kwargs)
 
 
 def write_df(

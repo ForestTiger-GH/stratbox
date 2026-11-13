@@ -16,7 +16,7 @@ from stratbox.execution import (
     OperationResult,
     run,
 )
-from stratbox.macrobanks._cbr import WORKBOOK_LIMIT, validate_workbook
+from stratbox.macrobanks._cbr import WORKBOOK_LIMIT, admit_workbook, validate_workbook
 
 from .contracts import (
     SorsCrosswalkConfig,
@@ -118,7 +118,10 @@ def read_source_files(
                 continue
             path = str(location)
             try:
-                data = read_bounded_bytes(path, store=store, limit=WORKBOOK_LIMIT)
+                data = read_bounded_bytes(
+                    path, store=store, limit=WORKBOOK_LIMIT, budget=invocation.budget,
+                    checkpoint=invocation.check_cancelled,
+                )
             except ValueError:
                 raise OperationFailure("source.size_limit") from None
             except OSError:
@@ -143,7 +146,8 @@ def _load(sources, config, invocation):
         invocation.check_cancelled()
         payload = getattr(sources, field.name)
         if payload is not None:
-            validate_workbook(payload.data)
+            invocation.budget.charge("input_bytes", payload.identity.size)
+            admit_workbook(payload.data, invocation)
     try:
         bundle = parse_source_inputs(
             sources, config.as_of_date, publication_step=config.publication_step
@@ -166,12 +170,18 @@ def load_sources(
     )
 
 
+def _solver_time_left(invocation) -> float:
+    invocation.check_cancelled()
+    return invocation.budget.seconds_left()
+
+
 def restore(
     request: RestoreSorsRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[SorsRestorationResult]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         from .operations import restore_bundle
+        from .linear.highs import solver_budget
         from .optimization import SorsOptimizationFixedPointLimitError
         from .publication import SorsPublicationFixedPointLimitError
 
@@ -183,7 +193,8 @@ def restore(
         for receipt in bundle.lineage:
             invocation.use(receipt)
         try:
-            result = restore_bundle(bundle, req.config, stage=invocation.stage)
+            with solver_budget(lambda: _solver_time_left(invocation)):
+                result = restore_bundle(bundle, req.config, stage=invocation.stage)
         except (
             SorsOptimizationFixedPointLimitError,
             SorsPublicationFixedPointLimitError,
@@ -206,15 +217,17 @@ def crosswalk(
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         from .crosswalk.operations import run_sors_crosswalk
+        from .linear.highs import solver_budget
 
         invocation.stage("crosswalk")
         if req.strict._source_bundle is not None:
             for receipt in req.strict._source_bundle.lineage:
                 invocation.use(receipt)
         try:
-            value = run_sors_crosswalk(
-                req.strict, req.config, checkpoint=invocation.check_cancelled
-            )
+            with solver_budget(lambda: _solver_time_left(invocation)):
+                value = run_sors_crosswalk(
+                    req.strict, req.config, checkpoint=invocation.check_cancelled
+                )
         except ValueError:
             raise OperationFailure("sors.crosswalk_request_invalid") from None
         if value.status == "SOLVER_UNAVAILABLE":

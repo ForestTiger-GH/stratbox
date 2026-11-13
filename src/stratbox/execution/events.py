@@ -31,9 +31,11 @@ class ExecutionEvent:
     duration_ms: int | None = None
     completed: int | None = None
     total: int | None = None
+    reason_class: str | None = None
+    stage_elapsed_ms: int | None = None
 
     def __post_init__(self) -> None:
-        if self.version != 1 or self.kind not in {
+        if self.version != 2 or self.kind not in {
             "operation.started",
             "operation.stage",
             "operation.progress",
@@ -48,7 +50,7 @@ class ExecutionEvent:
         for value in (self.sequence, self.contract_version):
             if type(value) is not int or not 0 < value <= 2**53 - 1:
                 raise ValueError("Invalid event sequence or contract version")
-        for value in (self.duration_ms, self.completed, self.total):
+        for value in (self.duration_ms, self.completed, self.total, self.stage_elapsed_ms):
             if value is not None and (
                 type(value) is not int or not 0 <= value <= 2**53 - 1
             ):
@@ -75,10 +77,15 @@ class ExecutionEvent:
             self.method_version,
             self.stage,
             self.diagnostic_code,
+            self.reason_class,
             self.outcome,
         ):
             if token is not None:
                 safe_token(token)
+
+    @property
+    def event_id(self) -> str:
+        return f"{self.invocation_id}.{self.sequence}"
 
     def to_json(self) -> str:
         # Project only the base record's fields, even for subclasses.

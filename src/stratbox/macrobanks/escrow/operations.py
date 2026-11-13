@@ -23,6 +23,7 @@ from stratbox.macrobanks._cbr import (
     XLSX_TYPES,
     official_url,
     receive_cbr,
+    admit_workbook,
     validate_workbook,
 )
 
@@ -42,7 +43,8 @@ from .sources import ESCROW_SOURCE_ROOTS
 
 _ROOTS = ESCROW_SOURCE_ROOTS
 DISCOVER = OperationDefinition(
-    "cbr.escrow.discover", 1, "cbr-escrow-index-1", DiscoverEscrowRequest, tuple
+    "cbr.escrow.discover", 1, "cbr-escrow-index-1", DiscoverEscrowRequest, tuple,
+    optional_capabilities=frozenset({"http"}),
 )
 ACQUIRE = OperationDefinition(
     "cbr.escrow.acquire",
@@ -135,7 +137,7 @@ def acquire(
             transport=transport,
             invocation=invocation,
         )
-        validate_workbook(acquired.payload.data)
+        validate_workbook(acquired.payload.data, budget=invocation.budget)
         return acquired
 
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
@@ -147,7 +149,7 @@ def _parse(req, invocation):
     from .parser import extract_date_from_filename, parse_escrow_excel_bytes
 
     use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
-    validate_workbook(req.payload.data)
+    admit_workbook(req.payload.data, invocation)
     named_date = extract_date_from_filename(req.source_name)
     try:
         day = date.fromisoformat(named_date) if named_date is not None else req.as_of

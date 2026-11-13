@@ -16,10 +16,12 @@ FileStore — универсальный интерфейс транспорта
 
 from __future__ import annotations
 
-from typing import BinaryIO, ContextManager, Iterator, Protocol, Tuple
+from dataclasses import dataclass, field
+from typing import BinaryIO, ContextManager, Iterator, Literal, Protocol, Tuple
 
 from stratbox.base.filestore.paths import child_path
 from stratbox.base.filestore.types import FileStat, FileVersion
+from stratbox.data.evidence import ByteIdentity
 
 
 class FileStore(Protocol):
@@ -194,6 +196,60 @@ class FileStore(Protocol):
                     out.append(full)
 
         return sorted(set(out))
+
+
+class SourceStore(Protocol):
+    """Read one object within the provider's assigned scope."""
+
+    def open_read(self, path: str) -> BinaryIO: ...
+
+
+class FileVersionReader(Protocol):
+    def stat(self, path: str) -> FileStat: ...
+    def inspect_file(self, path: str) -> FileVersion: ...
+
+
+WriteMode = Literal["immutable", "replace_expected_revision", "best_effort_verified"]
+
+
+class StagedWrite(Protocol):
+    stream: BinaryIO
+
+    def commit(self, mode: WriteMode, expected_revision: str | None) -> bool:
+        """Commit once. False is a known create or revision conflict."""
+        ...
+
+
+class StagedWriter(SourceStore, Protocol):
+    """Private staging and commit owned by the same receiving provider."""
+
+    def stage_write(self, destination: str) -> ContextManager[StagedWrite]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class FileMutation:
+    operation_id: str
+    effect_id: str
+    plan_identity: ByteIdentity
+    kind: Literal["copy", "rename", "remove", "write"]
+    directory: str | None = field(default=None, repr=False)
+    source: FileVersion | None = field(default=None, repr=False)
+    destination: str | None = field(default=None, repr=False)
+    content: ByteIdentity | None = None
+    mode: WriteMode | None = None
+    expected_revision: str | None = field(default=None, repr=False)
+
+
+class ScopedMutationStore(Protocol):
+    """The store checks current scope, plan, versions and action at commit."""
+
+    def commit_mutation(self, intent: FileMutation, data: bytes | None) -> bool: ...
+
+
+class ScopedStagedWrite(StagedWrite, Protocol):
+    """The receiving writer checks the exact intent and staged bytes at commit."""
+
+    def commit_admitted(self, intent: FileMutation) -> bool: ...
 
 
 class AtomicCreateStore(Protocol):

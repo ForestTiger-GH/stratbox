@@ -149,3 +149,113 @@ def test_status_and_retry_after_preserve_http_response(monkeypatch):
         HttpRequest("GET", URL, (ENDPOINT,)), transport=RequestsTransport()
     )
     assert result.status_code == 304 and result.body == b""
+
+
+def test_budget_covers_retries_and_redirects_before_next_connection(monkeypatch):
+    from stratbox.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+
+    retry = RetryPolicy(attempts=2, initial_delay_seconds=0, max_delay_seconds=0)
+    for first in (Response(503, {}), Response(302, {"Location": "/public/next"})):
+        calls = install_responses(monkeypatch, first)
+        budget = BudgetMeter(ExecutionBudget(requests=1))
+        with pytest.raises(BudgetExceeded, match="budget.requests"):
+            exchange(HttpRequest("GET", URL, (ENDPOINT,)), transport=RequestsTransport(),
+                     retry=retry, budget=budget)
+        assert len(calls) == budget.used("requests") == 1
+
+
+def test_post_retry_and_cross_origin_headers_are_admitted_separately(monkeypatch):
+    retry = RetryPolicy(attempts=2, initial_delay_seconds=0, max_delay_seconds=0)
+    for safe in (False, True):
+        calls = install_responses(monkeypatch, Response(503, {}), Response(200, {}, b"ok"))
+        result = exchange(HttpRequest("POST", URL, (ENDPOINT,), form_fields={"date": "x"},
+                                      read_only_post=safe), transport=RequestsTransport(), retry=retry)
+        assert result.status_code == (200 if safe else 503)
+        assert len(calls) == (2 if safe else 1)
+    next_url = "https://fixture.example/public/next"
+    calls = install_responses(monkeypatch, Response(302, {"Location": next_url}),
+                              Response(200, {}, b"ok"))
+    request = HttpRequest("GET", URL, (ENDPOINT, HttpsEndpoint("fixture.example", "/public/next")),
+                          headers={"authorization": "private", "if-none-match": '"source"'})
+    assert exchange(request, transport=RequestsTransport()).body == b"ok"
+    assert calls[0].headers["authorization"] == "private"
+    assert "authorization" not in calls[1].headers and "if-none-match" not in calls[1].headers
+
+
+def test_peer_admission_and_tls_use_actual_connection(tmp_path, monkeypatch):
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from shutil import which
+    import socket
+    import ssl
+    import subprocess
+    from threading import Thread
+
+    from stratbox.base.net import PeerBoundTransport
+
+    openssl = which("openssl")
+    if openssl is None:
+        pytest.skip("OpenSSL command required to generate a loopback fixture certificate")
+    cert, key = tmp_path / "cert.pem", tmp_path / "key.pem"
+    subprocess.run(
+        [openssl, "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+         "-subj", "/CN=fixture.example", "-addext", "subjectAltName=DNS:fixture.example",
+         "-keyout", str(key), "-out", str(cert)],
+        check=True, capture_output=True, timeout=30,
+    )
+    requests_seen = []
+    names = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            requests_seen.append((self.path, self.headers["Host"]))
+            self.send_response(200)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+        def log_message(self, *_):
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.load_cert_chain(str(cert), str(key))
+        tls.set_servername_callback(lambda _, name, __: names.append(name))
+        server.socket = tls.wrap_socket(server.socket, server_side=True)
+        serving = Thread(target=server.serve_forever, daemon=True)
+        serving.start()
+        try:
+            connections = []
+            lookups = []
+
+            def resolver(host, port):
+                lookups.append((host, port))
+                return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("127.0.0.1", port))]
+
+            real_socket = socket.socket
+
+            class FixtureSocket(real_socket):
+                def connect(self, address):
+                    connections.append(address)
+                    assert address == ("127.0.0.1", 443)
+                    return super().connect(server.server_address)
+
+            monkeypatch.setattr(socket, "socket", FixtureSocket)
+            client = ssl.create_default_context(cafile=str(cert))
+            req = HttpRequest("GET", "https://fixture.example/public", (HttpsEndpoint("fixture.example", "/public"),))
+            denied = exchange(req, transport=PeerBoundTransport(resolver=resolver, tls_context=client))
+            assert denied.reason == "destination_forbidden" and not connections
+            transport = PeerBoundTransport(resolver=resolver, tls_context=client, allow_peer=lambda peer: peer.is_loopback)
+            allowed = exchange(req, transport=transport)
+            assert isinstance(allowed, HttpResponse), (allowed, names, connections, requests_seen)
+            assert allowed.origin_assurance == "peer_bound" and allowed.body == b"ok"
+            mismatch = HttpRequest("GET", "https://different.example/public",
+                                   (HttpsEndpoint("different.example", "/public"),))
+            rejected = exchange(mismatch, transport=transport)
+            assert rejected.reason == "destination_forbidden"
+            assert len(connections) == 2
+            assert names == ["fixture.example", "different.example"]
+            assert [name for name, _ in lookups] == ["fixture.example", "fixture.example", "different.example"]
+            assert requests_seen == [("/public", "fixture.example")]
+        finally:
+            server.shutdown()
+            serving.join(3)

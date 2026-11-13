@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import date
 
 import re
-import xml.etree.ElementTree as ET
 
 from stratbox.base.ioapi.archive_bytes import ArchiveLimits, open_zip
+from stratbox.base.ioapi.xml import XmlError, parse_xml
 from .representation import serialize
 
 
@@ -29,11 +29,18 @@ LIMIT_UNPACKED = 30_000_000
 LIMIT_CELLS = 80_000
 
 
-MAX_WIDTH = 70
+MAX_WIDTH = 16_384
+MAX_ROW = 1_048_576
 
 
 class CaptureError(Exception):
     pass
+
+
+class AmbiguousBlock(CaptureError):
+    def __init__(self, candidates: tuple[tuple[str, int, int], ...]):
+        self.candidates = candidates
+        super().__init__("XLSX_NATIONAL_TOTAL_AMBIGUOUS")
 
 
 def require(ok, reason):
@@ -52,30 +59,56 @@ def clean(value):
 
 
 def colnum(ref):
-    letters = re.match(r"[A-Z]+", ref)
+    letters = re.fullmatch(r"([A-Z]{1,3})[1-9][0-9]{0,6}", ref)
     require(letters is not None, "XLSX_CELL_REFERENCE")
     n = 0
-    for ch in letters[0]:
+    for ch in letters[1]:
         n = n * 26 + ord(ch) - 64
     require(1 <= n <= MAX_WIDTH, "XLSX_COLUMN_LIMIT")
     return n
 
 
-def xlsx_rows(blob):
+def xlsx_rows(blob, *, budget=None, checkpoint=None):
     require(len(blob) <= LIMIT_XLSX and blob[:2] == b"PK", "XLSX_NOT_ZIP")
     limits = ArchiveLimits(250, LIMIT_UNPACKED, LIMIT_UNPACKED, LIMIT_XLSX)
-    with open_zip(blob, limits) as archive:
-        return _xlsx_rows(archive)
+    with open_zip(blob, limits, budget=budget) as archive:
+        return _xlsx_rows(archive, budget=budget, checkpoint=checkpoint)
 
 
-def _xml(archive, name):
-    data = archive.read(name)
-    if b"<!DOCTYPE" in data.replace(b"\x00", b"").upper():
-        raise CaptureError("XLSX_DTD_UNSUPPORTED")
-    return ET.fromstring(data)
+def _xml(archive, name, budget):
+    if budget is not None:
+        budget.check("decoded_bytes", archive.getinfo(name).file_size)
+    try:
+        return parse_xml(archive.read(name), budget=budget)
+    except XmlError as error:
+        code = "XLSX_DTD_UNSUPPORTED" if str(error) == "xml.dtd_forbidden" else "XLSX_XML_INVALID"
+        raise CaptureError(code) from None
 
 
-def _xlsx_rows(z):
+def _header_columns(tree, previous, candidates, columns, territory_column):
+    groups = {}
+    for item in tree.iter(XML + "mergeCell"):
+        ref = item.get("ref", "")
+        match = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]{0,6}):([A-Z]{1,3})([1-9][0-9]{0,6})", ref)
+        require(match is not None, "XLSX_BAD_MERGE_RANGE")
+        first_col = colnum(match[1] + match[2])
+        last_col = colnum(match[3] + match[4])
+        first_row, last_row = int(match[2]), int(match[4])
+        require(first_col <= last_col and first_row <= last_row <= MAX_ROW, "XLSX_BAD_MERGE_RANGE")
+        anchor = previous.get(first_row, {}).get(first_col)
+        if not anchor or first_col <= territory_column <= last_col:
+            continue
+        selected = [col for col in columns if first_col <= col <= last_col]
+        if len(selected) < 2:
+            continue
+        candidates.setdefault(first_row, previous[first_row])
+        for col in selected:
+            require((first_row, col) not in groups, "XLSX_OVERLAPPING_HEADERS")
+            groups[first_row, col] = anchor
+    return groups
+
+
+def _xlsx_rows(z, *, budget=None, checkpoint=None):
     files = set(z.namelist())
     require(
         "xl/workbook.xml" in files and "xl/_rels/workbook.xml.rels" in files,
@@ -83,18 +116,20 @@ def _xlsx_rows(z):
     )
     shared = []
     if "xl/sharedStrings.xml" in files:
-        ss = _xml(z, "xl/sharedStrings.xml")
+        ss = _xml(z, "xl/sharedStrings.xml", budget)
         for item in ss.findall(XML + "si"):
             shared.append("".join(n.text or "" for n in item.iter(XML + "t")))
-    relations = _xml(z, "xl/_rels/workbook.xml.rels")
+    relations = _xml(z, "xl/_rels/workbook.xml.rels", budget)
     relmap = {}
+    relation_ids = set()
     for relationship in relations.findall(PKGREL + "Relationship"):
         key = relationship.get("Id")
         target = relationship.get("Target")
-        require(key and key not in relmap and target, "XLSX_BAD_RELATION_ID")
+        require(key and key not in relation_ids and target, "XLSX_BAD_RELATION_ID")
+        relation_ids.add(key)
         if relationship.get("TargetMode") != "External":
             relmap[key] = target
-    wb = _xml(z, "xl/workbook.xml")
+    wb = _xml(z, "xl/workbook.xml", budget)
     sheets = wb.find(XML + "sheets")
     require(sheets is not None, "XLSX_NO_SHEETS")
     out = []
@@ -111,33 +146,43 @@ def _xlsx_rows(z):
         )
         target = relation.lstrip("/") if relation.startswith("/") else "xl/" + relation
         require(target in files, "XLSX_MISSING_SHEET")
-        tree = _xml(z, target)
+        if checkpoint is not None:
+            checkpoint()
+        tree = _xml(z, target, budget)
         sheetdata = tree.find(XML + "sheetData")
         if sheetdata is None:
             continue
         data = []
         formulas = {}
+        seen_rows = set()
         for r in sheetdata.findall(XML + "row"):
             rid = int(r.get("r", "0"))
-            require(1 <= rid <= 30000, "XLSX_ROW_LIMIT")
+            require(1 <= rid <= MAX_ROW, "XLSX_ROW_LIMIT")
+            require(rid not in seen_rows, "XLSX_DUPLICATE_ROW")
+            seen_rows.add(rid)
+            if checkpoint is not None:
+                checkpoint()
             cells = {}
+            seen_cols = set()
             for c in r.findall(XML + "c"):
                 count += 1
+                if budget is not None:
+                    budget.charge("cells", 1)
                 require(count <= LIMIT_CELLS, "XLSX_CELL_LIMIT")
                 ref = c.get("r", "")
                 column = colnum(ref)
+                require(int(ref.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ")) == rid, "XLSX_CELL_REFERENCE")
+                require(column not in seen_cols, "XLSX_DUPLICATE_CELL")
+                seen_cols.add(column)
                 kind = c.get("t", "n")
                 v = c.find(XML + "v")
                 formula = c.find(XML + "f")
                 if formula is not None:
                     # Preserve the publisher's cached value, NEVER evaluate the formula.
-                    require(
-                        v is not None and v.text is not None,
-                        "XLSX_FORMULA_CACHE_MISSING",
-                    )
                     formulas[(rid, column)] = {
                         "formula": formula.text or "",
                         "attributes": dict(sorted(formula.attrib.items())),
+                        **({"cache_missing": True} if v is None or v.text is None else {}),
                     }
                 if kind == "inlineStr":
                     x = c.find(XML + "is")
@@ -157,19 +202,18 @@ def _xlsx_rows(z):
                     require(v is not None and v.text in ("0", "1"), "XLSX_BAD_BOOLEAN")
                     value = "TRUE" if v.text == "1" else "FALSE"
                 elif kind == "e":
-                    raise CaptureError("XLSX_SOURCE_ERROR_VALUE")
+                    value = ""
+                    formulas.setdefault((rid, column), {})["error_value"] = True
                 else:
                     raise CaptureError("XLSX_UNSUPPORTED_TYPE")
                 value = clean(value)
-                require(column not in cells, "XLSX_DUPLICATE_CELL")
                 if value:
                     cells[column] = value
             if cells:
                 data.append((rid, cells))
         if data:
-            out.append((name, data, formulas))
-    require(len(out) == 1, "XLSX_EXPECTED_SINGLE_DATA_SHEET")
-    return out[0]
+            out.append((name, data, formulas, tree))
+    return out
 
 
 def is_quantitative(value):
@@ -231,19 +275,24 @@ def is_column_number_guide(cells):
 
 
 def convert_xlsx(
-    blob, *, return_formula_lineage=False, expected_date: date | None = None
+    blob, *, return_formula_lineage=False, expected_date: date | None = None,
+    sheet_name: str | None = None, budget=None, checkpoint=None, evidence=None,
 ):
     """Keep only the published table and attach source-derived district context."""
-    sheet, rows, formulas = xlsx_rows(blob)
+    sheets = xlsx_rows(blob, budget=budget, checkpoint=checkpoint)
     starts = [
-        (i, k)
+        (sheet, rows, formulas, tree, i, k)
+        for sheet, rows, formulas, tree in sheets
+        if sheet_name is None or sheet == sheet_name
         for i, (_, cells) in enumerate(rows)
         for k, value in cells.items()
         if "российская федерация" in value.casefold()
         and sum(is_quantitative(v) for v in cells.values()) >= 2
     ]
+    if len(starts) > 1:
+        raise AmbiguousBlock(tuple((sheet, rows[i][0], col) for sheet, rows, _, _, i, col in starts[:32]))
     require(len(starts) == 1, "XLSX_NATIONAL_TOTAL_AMBIGUOUS")
-    idx, territory_col = starts[0]
+    sheet, rows, formulas, tree, idx, territory_col = starts[0]
     require(
         "российская федерация" in rows[idx][1].get(territory_col, "").casefold(),
         "XLSX_NATIONAL_TOTAL_POSITION",
@@ -255,7 +304,8 @@ def convert_xlsx(
             for _, cells in rows[:idx]
             for text in cells.values()
             for day, month, year in re.findall(
-                r"\bна\s+(\d{2})\.(\d{2})\.(20\d{2})\b", text, flags=re.I
+                r"\b(?:на|по состоянию на)\s+(\d{1,2})\.(\d{1,2})\.(20\d{2})\b",
+                text, flags=re.I,
             )
         }
         require(
@@ -266,23 +316,19 @@ def convert_xlsx(
     previous = rows[max(0, idx - 6) : idx]
     # The title is not a table heading. Numbered column guides (1, 2, 3...)
     # are not source indicator names, even when adjacent to the heading row.
-    header_candidates = [
-        cells
-        for _, cells in previous
-        if any(k > territory_col for k in cells) and not is_column_number_guide(cells)
-    ]
+    header_candidates = {
+        row: cells
+        for row, cells in previous
+        if len(cells) > 1 and not is_column_number_guide(cells)
+    }
     require(header_candidates, "XLSX_HEADER_ABSENT")
-    require(
-        not any(rid in {r for r, _ in previous} for rid, _ in formulas),
-        "XLSX_FORMULA_IN_HEADER",
-    )
 
     data = []
     footer_started = False
     for rid, cells in rows[idx:]:
         name = cells.get(territory_col, "")
         number_count = sum(
-            is_quantitative(v) for k, v in cells.items() if k > territory_col
+            is_quantitative(v) for k, v in cells.items() if k != territory_col
         )
         if number_count >= 2:
             require(not footer_started, "XLSX_DATA_AFTER_FOOTER")
@@ -297,13 +343,30 @@ def convert_xlsx(
     )
     cols = sorted({k for _, cells in data for k in cells})
     require(territory_col in cols and len(cols) >= 4, "XLSX_FEW_INDICATORS")
-    indicator_cols = [k for k in cols if k > territory_col]
+    indicator_cols = [k for k in cols if k != territory_col]
+    used_rows = {rid for rid, _ in data}
+    groups = _header_columns(tree, dict(previous), header_candidates, cols, territory_col)
+    for (rid, column), formula in formulas.items():
+        if column not in cols:
+            continue
+        require(rid not in header_candidates, "XLSX_FORMULA_IN_HEADER")
+        if rid in used_rows:
+            require(not formula.get("cache_missing"), "XLSX_FORMULA_CACHE_MISSING")
+            require(not formula.get("error_value"), "XLSX_SOURCE_ERROR_VALUE")
+    header_candidates = dict(sorted(header_candidates.items()))
+    cols = [territory_col, *indicator_cols]
+    if evidence is not None:
+        evidence.update(
+            sheet=sheet, header_rows=tuple(header_candidates), first_row=data[0][0],
+            last_row=data[-1][0], territory_column=territory_col,
+            column_order=tuple(cols), date_basis="printed" if expected_date is not None and printed_dates else "release",
+        )
 
     header = []
     for k in cols:
         parts = []
-        for candidate in header_candidates:
-            value = candidate.get(k)
+        for row, candidate in header_candidates.items():
+            value = candidate.get(k) or groups.get((row, k))
             if value and (not parts or parts[-1] != value):
                 parts.append(value)
         if not parts:
