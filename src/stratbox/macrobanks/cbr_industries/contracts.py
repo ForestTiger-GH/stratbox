@@ -341,3 +341,20 @@ class RenderPivotRequest:
 class RenderIndustryRequest:
     stream: Cbr0105ADebtCorpStreamResult
     format: Cbr0105ADebtCorpIndustryWorkbookRequest = Cbr0105ADebtCorpIndustryWorkbookRequest()
+
+
+@dataclass(frozen=True, slots=True)
+class RenderIndustriesRequest:
+    stream: Cbr0105ADebtCorpStreamResult
+    industry_codes: tuple[str, ...]
+    include_metadata_sheet: bool = False
+
+
+@dataclass(frozen=True)
+class IndustryWorkbooksResult:
+    items: tuple[Cbr0105ADebtCorpIndustryWorkbookResult, ...]
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.items) and all(item.ok for item in self.items)
+

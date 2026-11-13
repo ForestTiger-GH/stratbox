@@ -160,3 +160,18 @@ class IssuanceWorkbookResult:
     @property
     def ok(self) -> bool:
         return self.sheet_count == 3 and self.rows_per_sheet > 0
+
+@dataclass(frozen=True, slots=True)
+class RenderIssuanceIndustriesRequest:
+    stream: IssuanceStreamResult
+    industry_codes: tuple[str, ...]
+    include_metadata_sheet: bool = False
+
+
+@dataclass(frozen=True)
+class IssuanceWorkbooksResult:
+    items: tuple[IssuanceWorkbookResult, ...]
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.items) and all(item.ok for item in self.items)
