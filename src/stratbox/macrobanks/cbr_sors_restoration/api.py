@@ -80,14 +80,14 @@ READ = OperationDefinition(
 )
 LOAD = OperationDefinition(
     "cbr.sors.load_sources",
-    2,
+    3,
     "sors-source-bundle-1",
     LoadSorsRequest,
     SorsSourceBundle, limits=_TABLES,
 )
 RESTORE = OperationDefinition(
     "cbr.sors.restore",
-    2,
+    3,
     "sors-multiscope-rounding-dominance-2026.7",
     RestoreSorsRequest,
     SorsRestorationResult, limits=_TABLES,
@@ -179,6 +179,11 @@ def _parameters(value):
 
 
 def _grid_metadata(value):
+    if isinstance(value, SorsSourceBundle):
+        return {
+            "as_of_date": value.as_of_date, "publication_step": _parameters(value.publication_step),
+            "lineage": [(item.role, item.identity.sha256, item.identity.size) for item in value.lineage],
+        }
     if isinstance(value, SorsRestorationResult):
         return _parameters(asdict(value.summary))
     if isinstance(value, SorsCrosswalkResult):
@@ -235,6 +240,10 @@ def restore(
             if isinstance(req.source, SorsSourceBundle)
             else _load(req.source, req.config, invocation)
         )
+        if bundle.as_of_date is not None and bundle.as_of_date != req.config.as_of_date:
+            raise OperationFailure("sors.source_period_mismatch")
+        if bundle.publication_step is not None and bundle.publication_step != req.config.publication_step:
+            raise OperationFailure("sors.source_publication_step_mismatch")
         regions, classes = len(bundle.atomic_regions_grid), len(bundle.okved2_classes_grid)
         invocation.budget.check("cells", regions * classes * 6 * 30)
         try:

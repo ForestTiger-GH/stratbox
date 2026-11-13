@@ -186,3 +186,39 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
     with ZipFile(tmp_path / "package.zip") as reader:
         assert reader.namelist() == [saved.value.completed[0].file_name]
         assert reader.read(reader.namelist()[0]) == raw
+
+
+def test_404_followed_by_cancellation_remains_cancellation():
+    from datetime import datetime, timezone
+    from stratbox.base.net import HttpResponse
+
+    event = Event()
+    ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
+
+    class MissingThenCancelled:
+        def exchange(self, req, *, cancelled=None):
+            event.set()
+            return HttpResponse(404, b"", {}, datetime.now(timezone.utc), "https://www.cbr.ru")
+
+    request = collector.CollectFilesRequest(ids, try_case_variants=False, retry=RetryPolicy(1))
+    result = collector.collect_raw(request, transport=MissingThenCancelled(),
+                                   context=ExecutionContext(cancellation=event))
+    assert result.outcome == "cancelled" and result.diagnostics[0].code == "operation.cancelled"
+    assert not result.effects
+
+
+def test_stream_decompresses_with_bounded_output_chunks():
+    from stratbox.base.net import exchange_into
+
+    raw = b"x" * 500_000
+    compressed = compress(raw)
+
+    class ChunkSink(BytesIO):
+        def write(self, data):
+            assert len(data) <= 65536
+            return super().write(data)
+
+    provider = BodyTransport((200, {"content-encoding": "gzip"}, compressed))
+    buffer = ChunkSink()
+    response = exchange_into(_request().request, buffer, transport=provider)
+    assert response.identity == ByteIdentity.of(raw) and buffer.getvalue() == raw

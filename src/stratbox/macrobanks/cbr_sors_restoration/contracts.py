@@ -276,6 +276,8 @@ class SorsSourceBundle:
     validation_grid: pd.DataFrame
     lineage: tuple[UsedInputReceipt, ...] = ()
     evidence: ComputationReceipt | None = None
+    as_of_date: str | None = None
+    publication_step: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

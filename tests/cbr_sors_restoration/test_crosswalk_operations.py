@@ -268,3 +268,34 @@ def test_overall_crosswalk_status_treats_proven_infeasible_scenario_as_resolved(
     assert operations._overall_crosswalk_status(
         {'INFEASIBLE', 'INFEASIBLE_BY_CLOSURE'}
     ) == 'INFEASIBLE'
+
+
+def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
+    from dataclasses import replace
+    from io import BytesIO
+    from openpyxl import Workbook
+
+    from stratbox.data import SourcePayload
+    from stratbox.macrobanks.cbr_sors_restoration import (
+        LoadSorsRequest, RestoreSorsRequest, SorsRunConfig, SorsSourceInputs, load_sources, restore,
+    )
+    from stratbox.macrobanks.cbr_sors_restoration.sources import loader
+
+    config = SorsRunConfig(as_of_date="2026-06-01")
+    fixture = replace(_strict_with_bundle()._source_bundle,
+                      as_of_date=config.as_of_date, publication_step=config.publication_step)
+    monkeypatch.setattr(loader, "parse_source_inputs", lambda *args, **kwargs: fixture)
+    book = Workbook()
+    book.active.append(["Fixture", 1])
+    buffer = BytesIO()
+    book.save(buffer)
+    book.close()
+    sources = SorsSourceInputs(*([SourcePayload(buffer.getvalue())] * 10))
+    loaded = load_sources(LoadSorsRequest(sources, config))
+    assert loaded.outcome == "succeeded", loaded.diagnostics
+    changed = restore(RestoreSorsRequest(loaded.value, replace(config, publication_step=0.5)))
+    assert changed.diagnostics[0].code == "sors.source_publication_step_mismatch"
+    changed = restore(RestoreSorsRequest(loaded.value, replace(config, as_of_date="2026-07-01")))
+    assert changed.diagnostics[0].code == "sors.source_period_mismatch"
+    loaded.value.atomic_regions_grid.loc[0, "region_order"] = 2
+    assert restore(RestoreSorsRequest(loaded.value, config)).diagnostics[0].code == "input.identity_mismatch"

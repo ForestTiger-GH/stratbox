@@ -160,7 +160,7 @@ def _collect(req, invocation, transport, *, destinations=None, store=None):
         else:
             completed.append(item)
             remaining -= size
-    if stop == "operation.cancelled" and not completed and not failed:
+    if stop == "operation.cancelled" and not completed:
         raise OperationFailure(stop, outcome="cancelled")
     reason = stop if isinstance(stop, str) else stop.code if stop is not None else None
     value = Collection(

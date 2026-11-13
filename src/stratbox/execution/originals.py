@@ -245,9 +245,13 @@ def _material_admission(material, store, invocation, limit):
         raise OperationFailure("input.material_required")
     if not 0 <= limit <= _MATERIAL_LIMIT or material.identity.size > limit:
         raise OperationFailure("source.size_limit")
-    if store_identity(store) != material.store_id or (
-        material.store_scope is not None and storage_scope(store, material.locator) != material.store_scope
-    ):
+    try:
+        matches = store_identity(store) == material.store_id and (
+            material.store_scope is None or storage_scope(store, material.locator) == material.store_scope
+        )
+    except OSError:
+        raise OperationFailure("input.material_unavailable") from None
+    if not matches:
         raise OperationFailure("input.material_store_mismatch")
     invocation.budget.check("input_bytes", material.identity.size)
 
@@ -316,12 +320,12 @@ def reconcile_original(request: ReconcileOriginalRequest, *, store: SourceStore,
     def work(req, invocation):
         invocation.stage("verify_destination")
         prior = req.receipt
-        if store_identity(store) != prior.store_id or prior.effect_id is None or (
-            prior.store_scope is not None and storage_scope(store, prior.destination) != prior.store_scope
-        ):
+        if store_identity(store) != prior.store_id or prior.effect_id is None:
             raise OperationFailure("input.material_store_mismatch")
         invocation.budget.charge("input_bytes", prior.identity.size)
         try:
+            if prior.store_scope is not None and storage_scope(store, prior.destination) != prior.store_scope:
+                raise OperationFailure("input.material_store_mismatch")
             revision = current_revision(store, prior.destination)
             actual = file_identity(prior.destination, store=store, limit=prior.identity.size,
                                    checkpoint=invocation.check_cancelled)

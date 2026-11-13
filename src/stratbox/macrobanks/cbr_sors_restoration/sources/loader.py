@@ -224,6 +224,8 @@ def parse_source_inputs(
         source_manifest_grid=pd.DataFrame(manifest_rows),
         validation_grid=pd.DataFrame(),
         lineage=lineage,
+        as_of_date=as_of_date,
+        publication_step=publication_step,
     )
     validation = validate_source_bundle(bundle, raise_on_error=True)
     return replace(bundle, validation_grid=validation)
