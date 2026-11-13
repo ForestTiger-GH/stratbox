@@ -29,6 +29,14 @@ material, paths and URLs. Python operations remain available by direct
 import, including the operations that write or send.
 
 The default local context is for trusted Python with the selected adapters.
+When a call omits its HTTP or storage adapter and the role has no explicit
+binding, it can use a default provider installed in the environment. The
+runtime looks for one factory under the `default` entry point in the
+`stratbox.runtime` group or under `stratbox_*/_stratbox_runtime.py` beside
+the core package. A sibling factory exposes `create_providers()`. The
+factory returns a `Providers` bundle, which the runtime caches for the
+process. Ambiguous or invalid configurations raise a provider error.
+
 A managed `ExecutionContext` requires one matching `ProviderBinding` for
 each capability used, with the expected version and guarantees. Use
 `select_provider` or an explicit `probe_provider` to test binding and readiness.
@@ -66,6 +74,10 @@ carries provenance, analysis qualification, a manifest digest and, when
 available, a separate facts digest. The literal representation has its own
 digest. An offline source ID is a label whose provenance is `offline_bytes`.
 An HTTP observation qualifies to the level reported by the selected provider.
+`RoutedTransport` validates the original endpoint and its configured HTTPS
+gateway. Routed receipts carry the logical and physical target hashes and
+qualify TLS to the gateway host. They require a full response. Managed
+acquisition requires separately verified upstream identity.
 
 For a workbook, call `preview_workbook` in `stratbox.base.ioapi.workbook_input`.
 It accepts a sheet name, one-based row and column and a bounded width and

@@ -364,11 +364,14 @@ def build_form_views(
 
 
 def render_workbook(
-    request: FormViews, *, context: ExecutionContext | None = None
+    request: FormViews, *, style_registry=None, context: ExecutionContext | None = None
 ) -> OperationResult[Representation]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
+        from dataclasses import asdict
+        from stratbox.base.styles.excel.main import active_styles
+        from stratbox.base.styles.excel.registry import BUILTIN_STYLES
         from .common.output import render_form_workbook
 
         invocation.stage("render")
@@ -381,11 +384,19 @@ def render_workbook(
             for receipt in req.evidence.inputs:
                 invocation.use(receipt)
         sheets = dict(zip((name for name, _ in tables), frames, strict=True))
-        return Representation(
+        selected = BUILTIN_STYLES if invocation.context.profile == "managed" and style_registry is None else style_registry
+        registry = active_styles(selected)
+        result = Representation(
             f"cbr.forms.{req.profile}-xlsx",
             1,
             XLSX,
-            render_form_workbook(sheets, profile=req.profile, budget=invocation.budget),
+            render_form_workbook(sheets, profile=req.profile, budget=invocation.budget, style_registry=registry),
         )
+        invocation.record(result.identity, parameters={
+            "profile": req.profile,
+            "style": registry.default_preset_name,
+            "style_spec": asdict(registry.presets[registry.default_preset_name]),
+        })
+        return result
 
     return run(RENDER, request, work, context=context)

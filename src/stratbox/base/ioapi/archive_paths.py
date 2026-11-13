@@ -97,6 +97,12 @@ def zip_to_store(
         raise ArchiveError("archive.size_limit")
     if source_store is output_store and any(item.source == destination for item in entries):
         raise ArchiveError("archive.source_destination_conflict")
+    source_scope = getattr(source_store, "storage_scope", None)
+    output_scope = getattr(output_store, "storage_scope", None)
+    if callable(source_scope) and callable(output_scope):
+        target_scope = output_scope(destination)
+        if any(source_scope(entry.source) == target_scope for entry in entries):
+            raise ArchiveError("archive.source_destination_conflict")
     local_source = getattr(source_store, "checked_file_path", None)
     local_destination = getattr(output_store, "checked_file_path", None)
     if callable(local_source) and callable(local_destination):

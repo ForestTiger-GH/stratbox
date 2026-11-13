@@ -113,7 +113,8 @@ def read_source_files(
     store: FileStore | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[SorsSourceInputs]:
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         invocation.stage("read_sources")
         loaded = {}
         for field in fields(SorsSourceFiles):

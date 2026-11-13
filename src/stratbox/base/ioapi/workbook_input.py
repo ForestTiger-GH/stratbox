@@ -13,7 +13,8 @@ from typing import Callable, Literal, Protocol
 from xml.etree import ElementTree as ET
 
 from stratbox.base.capabilities import BindingError, CapabilityRequirement, ProviderBinding, select_provider
-from stratbox.base.filestore import FileStore, LocalFileStore
+from stratbox.base.filestore import FileStore
+from stratbox.base.runtime import default_filestore
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip
 from stratbox.base.ioapi.bytes import read_bounded_bytes
 from stratbox.base.ioapi.xml import XmlError, inspect_xml, parse_xml
@@ -344,7 +345,7 @@ def read_workbook_df(
     path: str, store: FileStore | None = None, *,
     expected: WorkbookKind | None = None, budget: BudgetMeter | None = None, **options,
 ):
-    target = store if store is not None else LocalFileStore()
+    target = default_filestore(store)
     remaining = budget.remaining("input_bytes") if budget is not None else None
     limit = min(_MAX_PACKED, remaining) if remaining is not None else _MAX_PACKED
     data = read_bounded_bytes(path, store=target, limit=limit, budget=budget)

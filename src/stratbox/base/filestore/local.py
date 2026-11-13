@@ -6,11 +6,13 @@ from contextlib import contextmanager
 from errno import ENOTSUP, EXDEV
 from hashlib import sha256
 import os
+import re
 import stat
 import shutil
 import tempfile
 from pathlib import Path
 from typing import BinaryIO, Callable, Iterator, Tuple
+from urllib.parse import unquote, urlsplit
 
 from stratbox.base.filestore.base import FileStore, WriteMode
 from stratbox.base.filestore.types import (
@@ -81,7 +83,28 @@ class LocalFileStore(FileStore):
         self._root = Path(root).expanduser().resolve() if root is not None else None
 
     def _abs(self, path: str) -> Path:
-        candidate = Path(str(path).replace("\\", "/"))
+        value = str(path).replace("\\", "/")
+        if value[:7].casefold() == "file://":
+            parts = urlsplit(value)
+            if "?" in value or "#" in value or not parts.path:
+                raise ValueError("Invalid file URI")
+            value = unquote(parts.path, errors="strict").replace("\\", "/")
+            if parts.netloc and parts.netloc.casefold() != "localhost":
+                if os.name != "nt":
+                    raise ValueError("File URI requires a locally mounted path")
+                if re.fullmatch(r"[A-Za-z]:", parts.netloc):
+                    value = parts.netloc + value
+                elif re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*", parts.netloc):
+                    value = "//" + parts.netloc + value
+                else:
+                    raise ValueError("Invalid UNC host")
+            elif os.name == "nt" and re.match(r"^/[A-Za-z]:(?:/|$)", value):
+                value = value[1:]
+        elif re.match(r"^[A-Za-z][A-Za-z0-9+.-]+://", value):
+            raise ValueError("Expected a filesystem path")
+        if os.name != "nt" and (re.match(r"^/?[A-Za-z]:(?:/|$)", value) or value.startswith("//")):
+            raise ValueError("Windows path requires a mapped filesystem")
+        candidate = Path(value)
         if self._root is None:
             return candidate
         candidate = candidate if candidate.is_absolute() else self._root / candidate

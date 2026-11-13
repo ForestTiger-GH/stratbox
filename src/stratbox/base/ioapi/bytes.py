@@ -6,7 +6,8 @@ from hashlib import sha256
 from io import BytesIO
 from typing import BinaryIO, Callable
 
-from stratbox.base.filestore import FileStore, FileVersion, LocalFileStore, MutationRejected, SourceStore, WriteMode
+from stratbox.base.filestore import FileStore, FileVersion, MutationRejected, SourceStore, WriteMode
+from stratbox.base.runtime import default_filestore
 from stratbox.base.filestore.base import FileVersionReader
 from stratbox.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
 from stratbox.base.limits import BudgetMeter
@@ -30,15 +31,15 @@ class OutputBuffer(BytesIO):
 
 
 def open_read(path: str, store: FileStore | None = None) -> BinaryIO:
-    return (store if store is not None else LocalFileStore()).open_read(path)
+    return default_filestore(store).open_read(path)
 
 
 def open_write(path: str, store: FileStore | None = None) -> BinaryIO:
-    return (store if store is not None else LocalFileStore()).open_write(path)
+    return default_filestore(store).open_write(path)
 
 
 def read_bytes(path: str, store: FileStore | None = None) -> bytes:
-    return (store if store is not None else LocalFileStore()).read_bytes(path)
+    return default_filestore(store).read_bytes(path)
 
 
 def file_identity(
@@ -83,7 +84,7 @@ def write_verified_bytes(
     destination: str,
     data: bytes,
     *,
-    store: FileStore,
+    store: FileStore | None = None,
     expected_sha256: str,
     mode: WriteMode = "immutable",
     expected_revision: str | None = None,
@@ -92,6 +93,7 @@ def write_verified_bytes(
     """Return observed storage evidence and the guarantee the store provided."""
     data = bytes(data)
     identity = ByteIdentity.of(data)
+    store = default_filestore(store)
     store_id = getattr(store, "store_id", type(store).__name__)
     guarantees = {
         "immutable": "atomic_create",
@@ -135,12 +137,7 @@ def write_verified_bytes(
         else:
             committed = commit(destination, data)
     except MutationRejected as error:
-        return receipt(
-            "failed",
-            "provider.capability_missing"
-            if error.capability_missing
-            else "effect.rejected",
-        )
+        return receipt("failed", error.code)
     except Exception:
         return receipt("unknown", "effect.outcome_unknown", stage="commit")
     if mode == "replace_expected_revision" and committed is False:
@@ -171,7 +168,7 @@ def write_bytes(
     path: str, data: bytes, store: FileStore | None = None
 ) -> StoredBytesReceipt:
     """Write bytes with read-back qualification using the selected store."""
-    target = store if store is not None else LocalFileStore()
+    target = default_filestore(store)
     result = write_verified_bytes(
         path,
         data,

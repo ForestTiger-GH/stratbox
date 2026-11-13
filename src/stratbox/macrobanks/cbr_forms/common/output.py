@@ -49,7 +49,7 @@ def _set_column_widths(ws, widths: Mapping[str, float], *, date_width: float = 1
             ws.column_dimensions[cell.column_letter].width = float(width)
 
 
-def _format_hierarchical_workbook(wb, sheets: dict[str, pd.DataFrame]) -> None:
+def _format_hierarchical_workbook(wb, sheets: dict[str, pd.DataFrame], registry) -> None:
     """
     Функция применяет оформление иерархической книги без изменения данных.
     """
@@ -77,7 +77,7 @@ def _format_hierarchical_workbook(wb, sheets: dict[str, pd.DataFrame]) -> None:
 
     for sheet_name, frame in sheets.items():
         ws = wb[sheet_name]
-        apply_preset(ws, "DEFAULT", freeze_panes=freeze[sheet_name])
+        apply_preset(ws, "DEFAULT", freeze_panes=freeze[sheet_name], registry=registry)
         if ws.max_row > 1 and ws.max_column > 0:
             ws.auto_filter.ref = ws.dimensions
         _set_column_widths(ws, widths)
@@ -125,7 +125,7 @@ def build_form_sheets(*, profile, df_long, df_banks, model_df, indicator_order):
     raise ValueError("Unknown form workbook profile")
 
 
-def render_form_workbook(sheets, *, profile, budget=None):
+def render_form_workbook(sheets, *, profile, budget=None, style_registry=None):
     from openpyxl import Workbook
 
     workbook = Workbook()
@@ -138,10 +138,10 @@ def render_form_workbook(sheets, *, profile, budget=None):
                 sheet.append([None if pd.isna(value) else value for value in row])
         _set_workbook_meta(workbook)
         if profile == HIERARCHICAL_STATEMENT_PROFILE:
-            _format_hierarchical_workbook(workbook, sheets)
+            _format_hierarchical_workbook(workbook, sheets, style_registry)
         else:
             sheet = workbook["data"]
-            apply_preset(sheet, "DEFAULT")
+            apply_preset(sheet, "DEFAULT", registry=style_registry)
             sheet.auto_filter.ref = sheet.dimensions
         return openpyxl_bytes(workbook, literal_text=True, budget=budget)
     finally:

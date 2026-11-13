@@ -145,8 +145,6 @@ def discover(
         page = req.index_url or (
             f"{BASE}{PAGES[req.year]}/" if req.year in PAGES else None
         )
-        if req.index is None and transport is None:
-            raise OperationFailure("provider.capability_missing")
         try:
             if page is None:
                 if req.index is not None:

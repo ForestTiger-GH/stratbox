@@ -12,6 +12,7 @@ types — типы для FileStore.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from stratbox.data import ByteIdentity
 
@@ -44,9 +45,12 @@ class FileVersion:
 class MutationRejected(OSError):
     """The backend rejected a command before changing a target."""
 
-    def __init__(self, message: str, *, capability_missing: bool = False):
+    def __init__(self, message: str, *, capability_missing: bool = False, code: str | None = None):
         super().__init__(message)
+        if code is not None and not re.fullmatch(r"[a-z][a-z0-9_.-]{0,95}", code):
+            raise ValueError("Invalid storage diagnostic code")
         self.capability_missing = capability_missing
+        self.code = code or ("provider.capability_missing" if capability_missing else "effect.rejected")
 
 
 DIRECTORY_GUARD_NAME = ".stratbox-directory.lock"

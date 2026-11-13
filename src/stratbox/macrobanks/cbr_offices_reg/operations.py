@@ -122,8 +122,6 @@ def discover(
         payload = req.index
         if payload is None:
             invocation.stage("acquire_index")
-            if transport is None:
-                raise OperationFailure("provider.capability_missing")
             endpoints = tuple(
                 HttpsEndpoint(host, urlsplit(SOURCE_PAGE).path) for host in _HOSTS
             )

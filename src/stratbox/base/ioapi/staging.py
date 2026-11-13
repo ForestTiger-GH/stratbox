@@ -125,8 +125,7 @@ def commit_staged(
         else:
             committed = stage.commit(mode, expected_revision)
     except MutationRejected as error:
-        return receipt("failed", "provider.capability_missing" if error.capability_missing
-                       else "effect.rejected", stage="commit")
+        return receipt("failed", error.code, stage="commit")
     except Exception:
         return receipt("unknown", "effect.outcome_unknown", stage="commit")
     if type(committed) is not bool:

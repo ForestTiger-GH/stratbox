@@ -15,9 +15,8 @@ excel — фасад для чтения/записи Excel в DataFrame пов�
 
 from __future__ import annotations
 
-from typing import Any
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote, urlsplit
 
 from stratbox.base.filestore.base import FileStore
 
@@ -26,34 +25,13 @@ if TYPE_CHECKING:
 
 
 def _ext(path: str) -> str:
-    """
-    Возвращает расширение в виде ".xlsx" (с точкой) или "".
-
-    Учитывает:
-    - file:///... (копипаста из Windows/Excel)
-    - обратные слэши
-    - query/fragment (на всякий случай)
-    """
-    s = str(path).strip()
-
-    # отрезает query/fragment, если внезапно прилетели
-    for sep in ("?", "#"):
-        if sep in s:
-            s = s.split(sep, 1)[0]
-
-    # нормализует слэши
-    s = s.replace("\\", "/")
-
-    low = s.lower()
-    if low.startswith("file://"):
-        s = s[len("file://") :]
-        s = s.lstrip("/")
-
-    name = s.split("/")[-1]
-    if "." not in name:
-        return ""
-
-    return "." + name.rsplit(".", 1)[1].lower()
+    """Identify the format without changing the path sent to the file store."""
+    value = str(path).strip().strip('"').replace("\\", "/")
+    if value.casefold().startswith(("file://", "smb://")):
+        value = unquote(urlsplit(value).path)
+    name = value.rsplit("/", 1)[-1]
+    _, dot, extension = name.rpartition(".")
+    return dot + extension.lower() if dot else ""
 
 
 def read_df(

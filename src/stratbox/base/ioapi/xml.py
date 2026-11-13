@@ -7,7 +7,8 @@ from typing import BinaryIO, Callable
 from xml.etree import ElementTree as ET
 from xml.parsers import expat
 
-from stratbox.base.filestore import FileStore, LocalFileStore
+from stratbox.base.filestore import FileStore
+from stratbox.base.runtime import default_filestore
 from stratbox.base.ioapi.bytes import read_bounded_bytes, write_bytes
 from stratbox.base.limits import BudgetMeter
 
@@ -92,7 +93,7 @@ def parse_xml(
 
 
 def read_root(path: str, store: FileStore | None = None) -> ET.Element:
-    target = store if store is not None else LocalFileStore()
+    target = default_filestore(store)
     return parse_xml(read_bounded_bytes(path, store=target, limit=MAX_XML_BYTES))
 
 

@@ -1,6 +1,7 @@
 """ZIP format commands over FileStore and in-memory data."""
 
-from stratbox.base.filestore import FileStore, LocalFileStore
+from stratbox.base.filestore import FileStore
+from stratbox.base.runtime import default_filestore
 from stratbox.base.limits import BudgetMeter
 
 from .archive_bytes import ArchiveError, ArchiveLimits, extract_members, open_zip, zip_bytes
@@ -21,7 +22,7 @@ def extract_to_memory(path: str, store: FileStore | None = None, *,
 
 def _read(path, store, limits, budget):
     try:
-        return read_bounded_bytes(path, store=store if store is not None else LocalFileStore(),
+        return read_bounded_bytes(path, store=default_filestore(store),
                                   limit=limits.packed_bytes, budget=budget)
     except ValueError:
         raise ArchiveError("archive.size_limit") from None

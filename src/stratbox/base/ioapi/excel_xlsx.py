@@ -12,13 +12,16 @@ excel_xlsx — чтение/запись XLSX поверх FileStore.
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import pandas as pd
 
 from stratbox.base.filestore.base import FileStore
 from stratbox.base.ioapi.bytes import write_bytes
 from stratbox.base.utils.optional_deps import require_extra
+
+if TYPE_CHECKING:
+    from stratbox.base.styles.excel.registry import ExcelStylesRegistry
 
 
 # -----------------------------
@@ -379,6 +382,7 @@ def write_df(
     sheet_name: str = "data",
     meta: dict[str, Any] | None = None,
     style_preset: str | None = "DEFAULT",
+    style_registry: ExcelStylesRegistry | None = None,
     freeze_panes: str | None = None,
     auto_col_width: bool = True,
     col_width_min: float | None = 6.0,
@@ -456,7 +460,7 @@ def write_df(
 
     # 2.2) стили (если заданы)
     if style_preset is not None:
-        apply_preset(ws, style_preset, freeze_panes=freeze_panes)
+        apply_preset(ws, style_preset, freeze_panes=freeze_panes, registry=style_registry)
 
     # 2.3) автофильтр — обязательно ДО автоширины
     if autofilter_range:

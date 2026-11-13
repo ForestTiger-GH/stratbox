@@ -64,6 +64,9 @@ class AcquisitionReceipt:
     reused: bool = False
     content_encoding: str | None = None
     wire_size: int | None = None
+    route_id: str | None = None
+    logical_target_sha256: str | None = None
+    transport_assurance: Literal["provider_reported", "tls_host", "peer_bound"] | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,5 @@
 from gzip import compress
+from hashlib import sha256
 from io import BytesIO
 
 import pytest
@@ -10,9 +11,12 @@ from stratbox.base.net import (
     HttpRequest,
     HttpResponse,
     HttpsEndpoint,
+    HttpsRoute,
     RequestsTransport,
     RetryPolicy,
+    RoutedTransport,
     exchange,
+    exchange_into,
 )
 
 HOST = "example.org"
@@ -57,6 +61,40 @@ def install_responses(monkeypatch, *responses):
 
     monkeypatch.setattr(requests, "Session", Session)
     return calls
+
+
+def test_fixed_gateway_keeps_source_and_transport_evidence(monkeypatch):
+    source = "https://example.org/public/Keep%20Case?date=2026-11-13"
+    wire = "https://relay.example/source/public/Keep%20Case?date=2026-11-13"
+    endpoint = HttpsEndpoint(HOST, "/public/", subtree=True, allow_query=True)
+    req = HttpRequest("GET", source, (endpoint,))
+    route = HttpsRoute("relay", (HOST,), "https://relay.example/source/")
+    transport = RoutedTransport(RequestsTransport(), (route,))
+    calls = install_responses(monkeypatch, Response(200, {}, b"data"), Response(200, {}, b"data"))
+    result = exchange(req, transport=transport)
+    assert result.effective_locator_safe == "https://relay.example"
+    assert result.route_id == "relay"
+    assert result.logical_target_sha256 == sha256(source.encode()).hexdigest()
+    assert result.target_sha256 == sha256(wire.encode()).hexdigest()
+    assert result.origin_assurance == "provider_reported"
+    assert result.transport_assurance == "tls_host"
+    sink = BytesIO()
+    streamed = exchange_into(req, sink, transport=transport)
+    assert sink.getvalue() == result.body == b"data"
+    assert streamed.response.target_sha256 == result.target_sha256
+    assert [call.url for call in calls] == [wire, wire]
+
+
+def test_gateway_rejects_sensitive_headers_and_unqualified_redirect(monkeypatch):
+    route = HttpsRoute("relay", (HOST,), "https://relay.example/source/")
+    transport = RoutedTransport(RequestsTransport(), (route,))
+    calls = install_responses(monkeypatch, Response(302, {"Location": "/elsewhere"}))
+    req = HttpRequest("GET", URL, (ENDPOINT,), {"Authorization": "synthetic"})
+    assert exchange(req, transport=transport) == HttpFailure("destination_forbidden", "admission")
+    assert not calls
+    req = HttpRequest("GET", URL, (ENDPOINT,))
+    assert exchange(req, transport=transport).reason == "redirect_forbidden"
+    assert len(calls) == 1
 
 
 @pytest.mark.parametrize(

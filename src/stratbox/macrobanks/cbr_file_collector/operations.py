@@ -181,10 +181,11 @@ def collect_raw(request: CollectFilesRequest, *, transport: HttpTransport | None
                context=context, providers={"http": transport})
 
 
-def collect_to_store(request: CollectToStoreRequest, *, transport: StreamingHttpTransport, store,
+def collect_to_store(request: CollectToStoreRequest, *, transport: StreamingHttpTransport | None = None, store=None,
                      context: ExecutionContext | None = None) -> OperationResult[Collection]:
     def work(req, invocation):
-        return _collect(req.selection, invocation, transport, destinations=dict(req.destinations), store=store)
+        return _collect(req.selection, invocation, invocation.provider("http", transport),
+                        destinations=dict(req.destinations), store=invocation.provider("output_filestore", store))
     return run(COLLECT_TO_STORE, request, work, context=context,
                providers={"http": transport, "output_filestore": store})
 
@@ -221,9 +222,11 @@ def prepare_archive(request: PrepareArchiveRequest, *,
     return run(ARCHIVE, request, work, context=context)
 
 
-def archive_to_store(request: StoreArchiveRequest, *, source_store, output_store,
+def archive_to_store(request: StoreArchiveRequest, *, source_store=None, output_store=None,
                      context: ExecutionContext | None = None) -> OperationResult[PathArchiveReceipt]:
-    def work(req, invocation):
+    def work(req, invocation, given_source_store=source_store, given_output_store=output_store):
+        source_store = invocation.provider("filestore", given_source_store)
+        output_store = invocation.provider("output_filestore", given_output_store)
         invocation.stage("prepare_archive")
         entries = []
         for item in req.files:

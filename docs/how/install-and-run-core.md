@@ -1,8 +1,8 @@
 # Install and call the core library
 
-Stratbox 0.12 requires Python 3.10 or later. Install the verified wheel into
+Stratbox 0.12.1 requires Python 3.10 or later. Install the verified wheel into
 the interpreter that runs the caller. In Jupyter or Colab use `%pip install
-/path/to/stratbox-0.12.0-py3-none-any.whl` in the target kernel.
+/path/to/stratbox-0.12.1-py3-none-any.whl` in the target kernel.
 
 | Install profile | Use |
 | --- | --- |
@@ -17,7 +17,7 @@ the interpreter that runs the caller. In Jupyter or Colab use `%pip install
 
 For an independently installed wheel, provide the selected extras on the
 wheel path, for example `python -m pip install
-'./stratbox-0.12.0-py3-none-any.whl[http,dataframe,excel]'`.
+'./stratbox-0.12.1-py3-none-any.whl[http,dataframe,excel]'`.
 
 ## Parse a saved HTML page
 
@@ -41,9 +41,12 @@ identified original. Use `write_verified_bytes` for a separate storage
 operation. Supply the destination, exact bytes, expected digest and an
 explicit FileStore. Inspect the returned status before reporting completion.
 
-For network acquisition, construct an approved `HttpTransport` and pass it
-to `acquire` or `capture`. Domain discovery returns official release links
-and dates. The caller supplies the selection and controls repetition.
+For network acquisition, pass an approved `HttpTransport` to `acquire` or
+`capture`, or use the runtime's installed default in a trusted local
+context. General-purpose file and Excel commands also use the installed
+default when their provider argument is omitted. Domain discovery returns
+official release links and dates. The caller supplies the selection and
+controls repetition.
 
 The offline examples `parse_offices_from_bytes.py` and
 `acquire_store_parse_notify.py` use the synthetic office HTML fixture.

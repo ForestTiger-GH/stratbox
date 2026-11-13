@@ -1,8 +1,8 @@
 # Stratbox
 
 Stratbox provides reusable Python operations for acquiring, interpreting and
-presenting banking and economic data. Applications pass their own providers,
-dates and destinations.
+presenting banking and economic data. Applications pass dates and
+destinations and can choose their own infrastructure providers.
 
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)

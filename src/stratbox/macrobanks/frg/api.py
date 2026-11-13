@@ -96,7 +96,8 @@ def scan(
     store: FileStore | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[Catalog]:
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         require_extra("pandas", "dataframe")
         from .catalog import build_frg_catalog
         from .dispatch import dispatch_latest_frg_files
@@ -123,7 +124,8 @@ def plan_cleanup(
     store: FileStore | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[CleanupPlan]:
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         require_extra("pandas", "dataframe")
         if any(
             not callable(getattr(store, name, None))
@@ -207,7 +209,8 @@ def apply_cleanup(
     store: FileStore | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[tuple[CleanupReceipt, ...]]:
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         require_extra("pandas", "dataframe")
         invocation.stage("authorize")
         if (
@@ -287,7 +290,8 @@ def prepare_archive(
     store: FileStore | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[Representation]:
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         invocation.stage("prepare_archive")
         if (
             not callable(getattr(store, "directory_identity", None))
@@ -349,7 +353,9 @@ def prepare_archive_to_store(
 ) -> OperationResult[PathArchiveReceipt]:
     """Stream selected inputs through a receiving store's staged commit."""
 
-    def work(req, invocation):
+    def work(req, invocation, given_store=store, given_output_store=output_store):
+        store = invocation.provider("filestore", given_store)
+        output_store = invocation.provider("output_filestore", given_output_store)
         invocation.stage("revalidate")
         if any(not callable(getattr(store, name, None)) for name in (
             "directory_identity", "inspect_file", "open_read",

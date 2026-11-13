@@ -99,7 +99,7 @@ def _receive_options(req, invocation):
                 default_media_type=req.default_media_type, retry=req.retry, baseline=req.baseline)
 
 
-def receive_original(request: ReceiveOriginalRequest, *, transport: HttpTransport,
+def receive_original(request: ReceiveOriginalRequest, *, transport: HttpTransport | None = None,
                      context: ExecutionContext | None = None):
     def work(req, invocation):
         invocation.stage("receive")
@@ -163,7 +163,7 @@ def _store(invocation, target, store, produce):
             result = StoredOriginal(storage, material, acquisition)
     except MutationRejected as error:
         if result is None:
-            raise OperationFailure("provider.capability_missing" if error.capability_missing else "effect.rejected") from None
+            raise OperationFailure(error.code) from None
     except OSError:
         if result is None:
             raise OperationFailure("effect.staging_failed") from None
@@ -176,9 +176,10 @@ def _stored_completion(value):
     return Completion(value, value.storage.status, value.storage.diagnostic_code)
 
 
-def save_original(request: SaveOriginalRequest, *, store: StagedWriter,
+def save_original(request: SaveOriginalRequest, *, store: StagedWriter | None = None,
                   context: ExecutionContext | None = None):
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("output_filestore", given_store)
         acquired = req.source if isinstance(req.source, AcquiredSource) else None
         payload = acquired.payload if acquired else req.source
         if not isinstance(payload, SourcePayload):
@@ -229,12 +230,15 @@ def receive_original_to_store(req, *, transport, store, invocation, validate=Non
     return _store(invocation, req.destination, store, produce)
 
 
-def receive_to_store(request: ReceiveToStoreRequest, *, transport: StreamingHttpTransport, store: StagedWriter,
+def receive_to_store(request: ReceiveToStoreRequest, *, transport: StreamingHttpTransport | None = None,
+                     store: StagedWriter | None = None,
                      baseline_store: SourceStore | None = None,
                      context: ExecutionContext | None = None):
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("output_filestore", given_store)
         return _stored_completion(receive_original_to_store(
-            req, transport=transport, store=store, invocation=invocation, baseline_store=baseline_store,
+            req, transport=invocation.provider("http", transport), store=store,
+            invocation=invocation, baseline_store=baseline_store,
         ))
     return run(RECEIVE_TO_STORE, request, work, context=context,
                providers={"http": transport, "output_filestore": store})
@@ -308,16 +312,18 @@ def read_material(material, store, invocation, *, limit):
     return payload
 
 
-def read_original(request: ReadOriginalRequest, *, store: SourceStore, context: ExecutionContext | None = None):
-    def work(req, invocation):
+def read_original(request: ReadOriginalRequest, *, store: SourceStore | None = None, context: ExecutionContext | None = None):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         invocation.stage("read_original")
         return read_material(req.material, store, invocation, limit=req.limit)
     return run(READ, request, work, context=context, providers={"filestore": store})
 
 
-def reconcile_original(request: ReconcileOriginalRequest, *, store: SourceStore,
+def reconcile_original(request: ReconcileOriginalRequest, *, store: SourceStore | None = None,
                        context: ExecutionContext | None = None):
-    def work(req, invocation):
+    def work(req, invocation, given_store=store):
+        store = invocation.provider("filestore", given_store)
         invocation.stage("verify_destination")
         prior = req.receipt
         if store_identity(store) != prior.store_id or prior.effect_id is None:

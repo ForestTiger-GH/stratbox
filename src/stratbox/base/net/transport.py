@@ -12,7 +12,7 @@ from math import isfinite
 import re
 from time import monotonic, sleep
 from typing import BinaryIO, Callable
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin, urlunsplit
 import zlib
 
 from stratbox import __version__
@@ -25,6 +25,7 @@ from .contracts import (
     HttpResponse,
     HttpStreamResponse,
     HttpTransport,
+    HttpsEndpoint,
     StreamingHttpTransport,
     public_https_parts,
 )
@@ -65,7 +66,7 @@ def _retry_after(value: str | None, now: datetime) -> float:
 def exchange(
     request: HttpRequest,
     *,
-    transport: HttpTransport | None,
+    transport: HttpTransport | None = None,
     retry: RetryPolicy | None = None,
     cancelled: Callable[[], bool] | None = None,
     budget: BudgetMeter | None = None,
@@ -76,7 +77,7 @@ def exchange(
 
 def exchange_into(
     request: HttpRequest, sink: BinaryIO, *,
-    transport: StreamingHttpTransport | None,
+    transport: StreamingHttpTransport | None = None,
     retry: RetryPolicy | None = None,
     cancelled: Callable[[], bool] | None = None,
     budget: BudgetMeter | None = None,
@@ -97,7 +98,12 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
     if not request.permits(request.url):
         return HttpFailure("destination_forbidden", "admission")
     if transport is None:
-        return HttpFailure("capability_missing", "admission")
+        from stratbox.base.runtime import active_providers
+
+        defaults = active_providers()
+        if defaults is None:
+            return HttpFailure("capability_missing", "admission")
+        transport = defaults.http
     if sink is not None and not callable(getattr(transport, "exchange_into", None)):
         return HttpFailure("capability_missing", "admission")
     if budget is None:
@@ -146,8 +152,12 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
                 reported = budget.used("decoded_bytes") - observed_decoded
                 if reported < size:
                     budget.charge("decoded_bytes", size - reported)
-            effective = public_https_parts(response.effective_locator_safe).hostname
-            if not any(endpoint.host == effective for endpoint in request.endpoints):
+            if isinstance(transport, RoutedTransport):
+                admitted = transport.accepts_response(request, response)
+            else:
+                effective = public_https_parts(response.effective_locator_safe).hostname
+                admitted = response.route_id is None and any(endpoint.host == effective for endpoint in request.endpoints)
+            if not admitted:
                 return HttpFailure("destination_forbidden", "headers")
             if size > request.max_response_bytes:
                 return HttpFailure("response_too_large", "body")
@@ -326,6 +336,11 @@ class RequestsTransport:
 
     accounts_http_budget = True
 
+    def __init__(self, *, ca_bundle: str | None = None):
+        if ca_bundle is not None and (not isinstance(ca_bundle, str) or not ca_bundle.strip()):
+            raise ValueError("CA bundle must be a nonempty path")
+        self._tls_options = {"verify": ca_bundle} if ca_bundle is not None else {}
+
     def exchange(
         self, request: HttpRequest, *, cancelled: Callable[[], bool] | None = None
     ) -> HttpResponse | HttpFailure:
@@ -359,7 +374,7 @@ class RequestsTransport:
                         raise _ReadFailure("destination_forbidden")
                     # Session.send may consume a redirect body even when redirects are disabled.
                     with session.get_adapter(prepared.url).send(
-                        prepared, timeout=Timeout(total=remaining), stream=True,
+                        prepared, timeout=Timeout(total=remaining), stream=True, **self._tls_options,
                     ) as response:
                         yield (
                             response.status_code, response.headers,
@@ -377,3 +392,134 @@ class RequestsTransport:
             return HttpFailure("connection_error", "connection")
         except (requests.RequestException, ValueError, zlib.error):
             return HttpFailure("invalid_http", "headers")
+
+
+_GATEWAY_HEADERS = frozenset({"accept", "accept-encoding", "content-type", "user-agent"})
+
+
+@dataclass(frozen=True, slots=True)
+class HttpsRoute:
+    """Map admitted source hosts to a fixed HTTPS gateway and path prefix."""
+
+    route_id: str
+    source_hosts: tuple[str, ...]
+    gateway_base: str
+    methods: frozenset[str] = frozenset({"GET"})
+
+    def __post_init__(self):
+        if not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", self.route_id):
+            raise ValueError("Invalid route identifier")
+        if isinstance(self.source_hosts, str) or isinstance(self.methods, str):
+            raise ValueError("Expected host and method collections")
+        hosts = tuple(self.source_hosts)
+        if not hosts or len(set(hosts)) != len(hosts):
+            raise ValueError("Invalid source hosts")
+        for host in hosts:
+            HttpsEndpoint(host, "/")
+        base = public_https_parts(self.gateway_base)
+        methods = frozenset(self.methods)
+        if "?" in self.gateway_base or not base.path.endswith("/") or not methods or not methods <= {"GET", "POST"}:
+            raise ValueError("Invalid gateway route")
+        object.__setattr__(self, "source_hosts", hosts)
+        object.__setattr__(self, "methods", methods)
+
+    def wire_request(self, request: HttpRequest) -> HttpRequest:
+        source = public_https_parts(request.url)
+        if (
+            source.hostname not in self.source_hosts or request.method not in self.methods
+            or not request.permits(request.url) or not request.headers.keys() <= _GATEWAY_HEADERS
+        ):
+            raise ValueError("Request is outside the configured route")
+        gateway = public_https_parts(self.gateway_base)
+        path = gateway.path + source.path.lstrip("/")
+        url = urlunsplit((gateway.scheme, gateway.hostname, path, source.query, ""))
+        endpoint = HttpsEndpoint(gateway.hostname, unquote(path), allow_query="?" in request.url)
+        return replace(request, url=url, endpoints=(endpoint,), max_redirects=0)
+
+
+class RoutedTransport:
+    """Keep the logical policy and the observed gateway identity distinct."""
+
+    def __init__(self, backend: StreamingHttpTransport, routes: tuple[HttpsRoute, ...], *,
+                 direct_hosts: frozenset[str] | None = None):
+        self._backend = backend
+        self._routes = {}
+        ids = set()
+        for route in routes:
+            if route.route_id in ids or any(host in self._routes for host in route.source_hosts):
+                raise ValueError("Duplicate HTTP route")
+            ids.add(route.route_id)
+            self._routes.update((host, route) for host in route.source_hosts)
+        if direct_hosts is not None:
+            for host in direct_hosts:
+                HttpsEndpoint(host, "/")
+        self._direct_hosts = None if direct_hosts is None else frozenset(direct_hosts)
+
+    @property
+    def accounts_http_budget(self):
+        return getattr(self._backend, "accounts_http_budget", False)
+
+    def route_for(self, request: HttpRequest) -> HttpsRoute | None:
+        return self._routes.get(public_https_parts(request.url).hostname)
+
+    def exchange(self, request, *, cancelled=None):
+        return self._perform(request, cancelled)
+
+    def exchange_into(self, request, sink, *, cancelled=None):
+        return self._perform(request, cancelled, sink)
+
+    def _perform(self, request, cancelled, sink=None):
+        if not request.permits(request.url):
+            return HttpFailure("destination_forbidden", "admission")
+        route = self.route_for(request)
+        if route is None:
+            hosts = self._direct_hosts
+            if hosts is not None:
+                request = replace(request, endpoints=tuple(item for item in request.endpoints if item.host in hosts))
+                if not request.permits(request.url):
+                    return HttpFailure("destination_forbidden", "admission")
+            return self._send(request, cancelled, sink)
+        try:
+            wire = route.wire_request(request)
+        except ValueError:
+            return HttpFailure("destination_forbidden", "admission")
+        result = self._send(wire, cancelled, sink)
+        if isinstance(result, HttpFailure):
+            return result
+        response = result.response if isinstance(result, HttpStreamResponse) else result
+        if not isinstance(response, HttpResponse) or response.route_id is not None or not self._wire_matches(wire, response):
+            return HttpFailure("destination_forbidden", "headers")
+        qualified = replace(
+            response, route_id=route.route_id, logical_target_sha256=sha256(request.url.encode()).hexdigest(),
+            transport_assurance=response.origin_assurance, origin_assurance="provider_reported",
+        )
+        return replace(result, response=qualified) if isinstance(result, HttpStreamResponse) else qualified
+
+    def _send(self, request, cancelled, sink):
+        if sink is None:
+            return self._backend.exchange(request, cancelled=cancelled)
+        return self._backend.exchange_into(request, sink, cancelled=cancelled)
+
+    @staticmethod
+    def _wire_matches(wire, response):
+        return (
+            public_https_parts(response.effective_locator_safe).hostname == wire.endpoints[0].host
+            and response.target_sha256 == sha256(wire.url.encode()).hexdigest()
+        )
+
+    def accepts_response(self, request, response):
+        route = self.route_for(request)
+        if route is None:
+            effective = public_https_parts(response.effective_locator_safe).hostname
+            return (
+                response.route_id is None and (self._direct_hosts is None or effective in self._direct_hosts)
+                and any(endpoint.host == effective for endpoint in request.endpoints)
+            )
+        try:
+            wire = route.wire_request(request)
+        except ValueError:
+            return False
+        return (
+            response.route_id == route.route_id and self._wire_matches(wire, response)
+            and response.logical_target_sha256 == sha256(request.url.encode()).hexdigest()
+        )

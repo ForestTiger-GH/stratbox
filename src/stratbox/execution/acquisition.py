@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from email.message import Message
 from typing import BinaryIO, Callable
 
-from stratbox.base.net import HttpFailure, HttpRequest, HttpTransport, RetryPolicy, exchange, exchange_into
+from stratbox.base.net import HttpFailure, HttpRequest, HttpTransport, RetryPolicy, RoutedTransport, exchange, exchange_into
 from stratbox.data import AcquiredSource, AcquisitionReceipt, ByteIdentity, SourcePayload, canonical_manifest_bytes
 
 from .contracts import OperationFailure
@@ -73,13 +73,16 @@ def _receive(
     request, *, transport, source_id, invocation, media_types,
     default_media_type, retry, baseline, sink=None,
 ):
-    invocation.require_provider("http", transport)
+    transport = invocation.provider("http", transport)
     fingerprint = _request_identity(request, invocation, transport)
     managed = invocation.context.profile == "managed"
+    routed = isinstance(transport, RoutedTransport) and request.permits(request.url) and transport.route_for(request) is not None
+    if managed and routed:
+        raise OperationFailure("http.destination_unqualified")
     if managed and not getattr(transport, "accounts_http_budget", False):
         raise OperationFailure("provider.guarantee_missing")
     prior = (
-        baseline.receipt if baseline is not None and request.method == "GET"
+        baseline.receipt if baseline is not None and not routed and request.method == "GET"
         and baseline.receipt.source_id == source_id
         and baseline.receipt.request_sha256 == fingerprint
         and request.headers.keys() <= {"accept", "accept-encoding", "user-agent"}
@@ -158,6 +161,7 @@ def _receive(
         response.effective_locator_safe, response.origin_assurance, fingerprint,
         response.target_sha256, response.headers.get("etag"),
         content_encoding=response.headers.get("content-encoding", "identity").strip().lower() or "identity",
-        wire_size=response.wire_size,
+        wire_size=response.wire_size, route_id=response.route_id,
+        logical_target_sha256=response.logical_target_sha256, transport_assurance=response.transport_assurance,
     )
     return receipt, metadata.get_content_charset(), response.body

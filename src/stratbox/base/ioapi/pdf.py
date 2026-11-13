@@ -15,7 +15,7 @@ pdf — чтение PDF поверх FileStore.
 from __future__ import annotations
 
 from stratbox.base.filestore.base import FileStore
-from stratbox.base.filestore import LocalFileStore
+from stratbox.base.runtime import default_filestore
 from stratbox.base.utils.optional_deps import require_extra
 
 
@@ -35,7 +35,7 @@ def read_pages_text(
     *,
     max_pages: int | None = None,
 ) -> list[str]:
-    fs = store if store is not None else LocalFileStore()
+    fs = default_filestore(store)
 
     pypdf = require_extra("pypdf", "pdf")
 

@@ -21,7 +21,8 @@ from typing import Any
 
 import pandas as pd
 
-from stratbox.base.filestore import FileStore, LocalFileStore
+from stratbox.base.filestore import FileStore
+from stratbox.base.runtime import default_filestore
 from stratbox.base.ioapi.bytes import read_bounded_bytes, write_bytes
 from stratbox.base.limits import BudgetMeter
 from .dbf_bytes import open_dbf_bytes
@@ -37,7 +38,7 @@ def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, 
     - encoding: часто для русских DBF подходит cp866 или cp1251 (зависит от источника)
     - kwargs: пробрасывается в dbfread.DBF(...)
     """
-    data = read_bounded_bytes(path, store=store if store is not None else LocalFileStore(),
+    data = read_bounded_bytes(path, store=default_filestore(store),
                               limit=limit, budget=budget)
     with open_dbf_bytes(data, encoding=encoding, budget=budget, **kwargs) as table:
         rows = []

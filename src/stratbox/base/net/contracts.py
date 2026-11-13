@@ -182,6 +182,9 @@ class HttpResponse:
     origin_assurance: Literal["provider_reported", "tls_host", "peer_bound"] = "provider_reported"
     target_sha256: str | None = None
     wire_size: int | None = None
+    route_id: str | None = None
+    logical_target_sha256: str | None = None
+    transport_assurance: Literal["provider_reported", "tls_host", "peer_bound"] | None = None
 
     def __post_init__(self) -> None:
         if self.target_sha256 is not None and not re.fullmatch(r"[a-f0-9]{64}", self.target_sha256):
@@ -190,6 +193,13 @@ class HttpResponse:
             raise ValueError("Invalid response wire size")
         if self.origin_assurance not in {"provider_reported", "tls_host", "peer_bound"}:
             raise ValueError("Invalid origin assurance")
+        if any(value is not None for value in (self.route_id, self.logical_target_sha256, self.transport_assurance)) and (
+            self.route_id is None or not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", self.route_id)
+            or self.logical_target_sha256 is None or not re.fullmatch(r"[a-f0-9]{64}", self.logical_target_sha256)
+            or self.transport_assurance not in {"provider_reported", "tls_host", "peer_bound"}
+            or self.origin_assurance != "provider_reported"
+        ):
+            raise ValueError("Invalid routed response evidence")
         if not 100 <= self.status_code <= 599 or not isinstance(self.body, bytes):
             raise ValueError("Invalid HTTP response")
         if (

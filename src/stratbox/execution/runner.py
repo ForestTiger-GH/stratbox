@@ -9,6 +9,7 @@ from uuid import uuid4
 from stratbox.data import ComputationReceipt, Representation, UsedInputReceipt, build_dataset_version, computation_identity
 from stratbox.base.capabilities import BindingError, select_provider
 from stratbox.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+from stratbox.base.runtime import RuntimeProviderError, active_providers
 from stratbox.base.utils.optional_deps import MissingExtra
 
 from .contracts import (
@@ -80,6 +81,18 @@ class Invocation:
             except Exception:
                 self._incidents_dropped += 1
         return Diagnostic("internal.error", incident_id=incident_id)
+
+    def provider(self, role: str, provider: object | None = None):
+        if (
+            provider is None and self.context.profile == "local"
+            and role in {"http", "filestore", "output_filestore"}
+            and not any(binding.capability.role == role for binding in self.context.bindings)
+        ):
+            defaults = active_providers()
+            if defaults is not None:
+                provider = defaults.http if role == "http" else defaults.filestore
+        self.require_provider(role, provider)
+        return provider
 
     def require_provider(self, role: str, provider: object) -> None:
         if provider is None:
@@ -237,7 +250,7 @@ def run(
             raise OperationFailure("request.invalid_type")
         available = providers if providers is not None else {}
         for role in sorted(definition.required_capabilities):
-            invocation.require_provider(role, available.get(role))
+            invocation.provider(role, available.get(role))
         completed = work(request, invocation)
         if isinstance(completed, Completion):
             outcome, value, diagnostics = (
@@ -262,7 +275,7 @@ def run(
                 invocation.budget.checkpoint()
     except OperationFailure as error:
         outcome, diagnostics, value = error.outcome, (error.diagnostic,), None
-    except (BudgetExceeded, BindingError) as error:
+    except (BudgetExceeded, BindingError, RuntimeProviderError) as error:
         outcome, diagnostics, value = "failed", (Diagnostic(error.code),), None
     except MissingExtra:
         outcome, diagnostics, value = (
