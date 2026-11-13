@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter
 
 from stratbox.base.ioapi.workbook_input import open_ooxml_workbook
 from stratbox.macrobanks.cbr_industries.contracts import (
+    IndustrySelection,
     Cbr0105ADebtCorpValidationIssue,
     ParsedCbr0105ADebtCorpFile,
 )
@@ -27,6 +28,7 @@ from stratbox.macrobanks.cbr_industries.schema import (
     resolve_cbr_0105a_debt_corp_sheet_spec,
 )
 from stratbox.macrobanks.cbr_industries.sources import report_date_from_cbr_0105a_filename
+from .selection import resolve_industry_codes
 from .streams import (
     STREAM_COLUMNS, concat_cbr_0105a_debt_corp_streams,
     optimize_cbr_0105a_debt_corp_stream_dtypes,
@@ -161,8 +163,11 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
     source_url: str | None = None,
     source_sha256: str | None = None,
     checkpoint=None,
+    selection: IndustrySelection = IndustrySelection(),
 ) -> ParsedCbr0105ADebtCorpFile:
     """Разбирает одну исходную книгу в полный нормализованный поток."""
+    selected_codes = resolve_industry_codes(selection)
+    selected_set = set(selected_codes) if selected_codes is not None else None
     filename_date = report_date_from_cbr_0105a_filename(source_name)
     source_identifier = source_id or (
         f"{CBR_0105A_DEBT_CORP_SERIES_CODE}_{filename_date.replace('-', '')}"
@@ -184,6 +189,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             raise ValueError("01_05_A_Debt_corp workbook has no worksheets")
 
         records: list[dict[str, object]] = []
+        validation_rows: list[tuple] | None = [] if selected_set is not None else None
         seen_sheet_codes: set[str] = set()
         parsed_sheet_specs = []
         common_regions = None
@@ -248,6 +254,11 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                         coordinate=coordinate,
                         sheet_name=worksheet.title,
                     )
+                    if validation_rows is not None:
+                        validation_rows.append((region.code, industry.code, sheet_spec.measure,
+                                                sheet_spec.currency_scope, value))
+                    if selected_set is not None and industry.code not in selected_set:
+                        continue
                     records.append(
                         {
                             "series_code": CBR_0105A_DEBT_CORP_SERIES_CODE,
@@ -302,7 +313,11 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             "region_code",
             "industry_code",
         ]
-        duplicate_count = int(df_stream.duplicated(key_columns, keep=False).sum())
+        checked = (df_stream if validation_rows is None else pd.DataFrame.from_records(
+            validation_rows, columns=["region_code", "industry_code", "measure", "currency_scope", "value"]
+        ))
+        duplicate_columns = ["region_code", "industry_code", "measure", "currency_scope"]
+        duplicate_count = int(checked.duplicated(duplicate_columns, keep=False).sum())
         if duplicate_count:
             raise ValueError(
                 "Duplicate observations in 01_05_A_Debt_corp stream: "
@@ -314,7 +329,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             kind="stable",
         ).reset_index(drop=True)
         validation_issues = _build_validation_issues(
-            df_stream,
+            checked,
             report_date=filename_date,
             source_name=source_name,
         )
@@ -332,6 +347,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             df_stream=df_stream,
             rows_stream=int(len(df_stream)),
             unmapped_headers=tuple(unmapped_headers),
+            selection=selection,
         )
     finally:
         workbook.close()
