@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from stratbox.base.limits import ExecutionBudget
 from stratbox.base.net import HttpTransport
 from stratbox.base.utils.optional_deps import require_extra
-from stratbox.data import AcquiredSource
+from stratbox.data import AcquiredSource, ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import (
     Completion,
     ExecutionContext,
@@ -46,6 +46,8 @@ from .contracts import (
     ParsedCbr0105ADebtCorpFile,
     PivotInput,
     RenderIndustryRequest,
+    RenderIndustriesRequest,
+    IndustryWorkbooksResult,
     RenderPivotRequest,
 )
 
@@ -110,6 +112,12 @@ RENDER_INDUSTRY = OperationDefinition(
     RenderIndustryRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
     limits=_TABLE_LIMITS,
+)
+
+
+RENDER_INDUSTRIES = OperationDefinition(
+    f"{_DATASET}.render_industries", 1, "cbr-0105a-industry-batch-1",
+    RenderIndustriesRequest, IndustryWorkbooksResult, limits=_TABLE_LIMITS,
 )
 
 
@@ -440,63 +448,106 @@ def render_pivots(
     return run(RENDER_PIVOTS, request, work, context=context)
 
 
+def _render_one_industry(source, private_stream, fmt, invocation):
+    """Reuse the exact economic calculation and Excel exporter for one or many books."""
+    from .derived import (
+        Cbr0105ADebtCorpDerivedIndustryError,
+        calculate_cbr_0105a_debt_corp_apk_industry,
+    )
+    from .export import render_cbr_0105a_debt_corp_industry_workbook
+    from .pivots import (
+        Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
+    )
+
+    derived = False
+    try:
+        frame = private_stream
+        if (fmt.industry_code == "apk" and not frame["industry_code"].eq("apk").any()
+                and fmt.calculate_apk_if_missing):
+            frame = calculate_cbr_0105a_debt_corp_apk_industry(
+                frame, budget=invocation.budget,
+            ).df_stream
+            derived = True
+        selected = frame.loc[frame["industry_code"].eq(fmt.industry_code)]
+        names = selected["industry_name_ru"].dropna().unique()
+        if len(names) != 1:
+            raise OperationFailure("request.industry_unresolved")
+        pivot = build_cbr_0105a_debt_corp_pivot_set(
+            selected,
+            Cbr0105ADebtCorpPivotRequest(
+                "region_code", "report_date",
+                sheet_dimensions=("currency_scope", "measure"), max_sheet_count=6,
+            ),
+            stream_result=source, budget=invocation.budget,
+        )
+        invocation.stage("render")
+        value = render_cbr_0105a_debt_corp_industry_workbook(
+            pivot, fmt, industry_name_ru=str(names[0]), budget=invocation.budget,
+        )
+        return value, derived
+    except Cbr0105ADebtCorpDerivedIndustryError as error:
+        raise OperationFailure(f"derived.{error.code.lower()}") from None
+    except (Cbr0105ADebtCorpPivotError, ValueError):
+        raise OperationFailure("source.industry_views_invalid") from None
+
+
 def render_industry(
     request: RenderIndustryRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[Cbr0105ADebtCorpIndustryWorkbookResult]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from .derived import (
-            Cbr0105ADebtCorpDerivedIndustryError,
-            calculate_cbr_0105a_debt_corp_apk_industry,
-        )
-        from .export import render_cbr_0105a_debt_corp_industry_workbook
-        from .pivots import (
-            Cbr0105ADebtCorpPivotError,
-            build_cbr_0105a_debt_corp_pivot_set,
-        )
-
         if not req.stream.ok:
             raise OperationFailure("source.stream_incomplete")
         invocation.stage("select_industry")
-        stream = use_stream(invocation, req.stream)
-        code = req.format.industry_code
-        derived = False
-        try:
-            if (
-                code == "apk"
-                and not stream["industry_code"].eq(code).any()
-                and req.format.calculate_apk_if_missing
-            ):
-                stream = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=invocation.budget).df_stream
-                derived = True
-            filtered = stream.loc[stream["industry_code"].eq(code)]
-            names = filtered["industry_name_ru"].dropna().unique()
-            if len(names) != 1:
-                raise OperationFailure("request.industry_unresolved")
-            pivot = build_cbr_0105a_debt_corp_pivot_set(
-                filtered,
-                Cbr0105ADebtCorpPivotRequest(
-                    "region_code",
-                    "report_date",
-                    sheet_dimensions=("currency_scope", "measure"),
-                    max_sheet_count=6,
-                ),
-                stream_result=req.stream,
-                budget=invocation.budget,
-            )
-            invocation.stage("render")
-            value = render_cbr_0105a_debt_corp_industry_workbook(
-                pivot, req.format, industry_name_ru=str(names[0]), budget=invocation.budget,
-            )
-            invocation.record(value.representation.identity, parameters={
-                "profile": value.representation.profile_id, **asdict(req.format),
-                "derived_method": CALCULATE_APK.method_version if derived else None,
-            })
-            return value
-        except Cbr0105ADebtCorpDerivedIndustryError as error:
-            raise OperationFailure(f"derived.{error.code.lower()}") from None
-        except (Cbr0105ADebtCorpPivotError, ValueError):
-            raise OperationFailure("source.industry_views_invalid") from None
+        private_stream = use_stream(invocation, req.stream)
+        value, derived = _render_one_industry(req.stream, private_stream, req.format, invocation)
+        invocation.record(value.representation.identity, parameters={
+            "profile": value.representation.profile_id, **asdict(req.format),
+            "derived_method": CALCULATE_APK.method_version if derived else None,
+        })
+        return value
 
     return run(RENDER_INDUSTRY, request, work, context=context)
+
+
+def render_industries(
+    request: RenderIndustriesRequest, *, context: ExecutionContext | None = None
+) -> OperationResult[IndustryWorkbooksResult]:
+    """Admit a caller-owned DataFrame once; return distinct verified output identities."""
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        try:
+            resolve_industry_codes(IndustrySelection(req.industry_codes))
+        except ValueError:
+            raise OperationFailure("request.industry_selection_invalid") from None
+        if not req.stream.ok:
+            raise OperationFailure("source.stream_incomplete")
+        invocation.stage("admit_stream")
+        private_stream = use_stream(invocation, req.stream)
+        items = []
+        for code in req.industry_codes:
+            invocation.check_cancelled()
+            fmt = Cbr0105ADebtCorpIndustryWorkbookRequest(
+                industry_code=code, include_metadata_sheet=req.include_metadata_sheet,
+            )
+            value, _ = _render_one_industry(req.stream, private_stream, fmt, invocation)
+            invocation.budget.charge("output_bytes", value.representation.identity.size)
+            items.append(value)
+        result = IndustryWorkbooksResult(tuple(items))
+        if not result.ok:
+            raise OperationFailure("source.industry_views_invalid")
+        manifest = [
+            {"industry": item.industry_code, "profile": item.representation.profile_id,
+             "sha256": item.representation.identity.sha256, "size": item.representation.identity.size}
+            for item in items
+        ]
+        invocation.record(ByteIdentity.of(canonical_manifest_bytes(manifest)), parameters={
+            "industries": req.industry_codes,
+            "include_metadata_sheet": req.include_metadata_sheet,
+            "derived_method": CALCULATE_APK.method_version if "apk" in req.industry_codes else None,
+        })
+        return result
+
+    return run(RENDER_INDUSTRIES, request, work, context=context)
