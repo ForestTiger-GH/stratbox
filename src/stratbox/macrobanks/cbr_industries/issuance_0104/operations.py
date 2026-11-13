@@ -30,6 +30,8 @@ from .contracts import (
 from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpPivotSetResult,
 )
+from stratbox.macrobanks.cbr_industries.selection import resolve_industry_codes, selection_parameters
+from stratbox.macrobanks.cbr_industries.contracts import IndustrySelection
 from stratbox.macrobanks.cbr_industries.operations import (
     _TABLE_LIMITS, _seal_pivots, _select_industry, _stream_metadata,
 )
@@ -40,9 +42,9 @@ _ROOTS = ("/vfs/statistics/", "/content/document/file/")
 DISCOVER = OperationDefinition(f"{_DATASET}.discover", 1, "cbr-0104a-index-1", DiscoverIssuanceRequest, tuple)
 ACQUIRE = OperationDefinition(f"{_DATASET}.acquire", 1, "cbr-0104a-source-1", IssuanceSourceLink,
                               AcquiredSource, frozenset({"http"}))
-PARSE = OperationDefinition(f"{_DATASET}.parse", 2, "cbr-0104a-workbook-2", ParseIssuanceRequest,
+PARSE = OperationDefinition(f"{_DATASET}.parse", 3, "cbr-0104a-workbook-3", ParseIssuanceRequest,
                             ParsedIssuanceFile, limits=_TABLE_LIMITS)
-BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 2, "cbr-0104a-stream-2",
+BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 3, "cbr-0104a-stream-3",
                                    BuildIssuanceStreamRequest, IssuanceStreamResult,
                                    partial_allowed=True, limits=_TABLE_LIMITS)
 CALCULATE_APK = OperationDefinition(f"{_DATASET}.calculate_apk", 2, "cbr-industry-apk-1",
@@ -103,11 +105,16 @@ def acquire(request: IssuanceSourceLink, *, transport: HttpTransport | None = No
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
 
 
-def _parse(req: ParseIssuanceRequest, invocation) -> ParsedIssuanceFile:
+def _parse(req: ParseIssuanceRequest, invocation, *, selection: IndustrySelection | None = None) -> ParsedIssuanceFile:
     require_extra("pandas", "dataframe")
     require_extra("openpyxl", "excel")
     from .parser import parse_workbook
 
+    chosen = req.selection if selection is None else selection
+    try:
+        resolve_industry_codes(chosen)
+    except ValueError:
+        raise OperationFailure("request.industry_selection_invalid") from None
     use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
     if req.source is not None:
         _check_source(req.source)
@@ -118,7 +125,7 @@ def _parse(req: ParseIssuanceRequest, invocation) -> ParsedIssuanceFile:
         return parse_workbook(req.payload.data, source_name=req.source_name,
                               source_url=req.source.url if req.source else None,
                               source_sha256=req.payload.identity.sha256,
-                              checkpoint=invocation.check_cancelled)
+                              checkpoint=invocation.check_cancelled, selection=chosen)
     except (ValueError, KeyError, OSError, IndexError, TypeError):
         raise OperationFailure("source.workbook_layout_unresolved") from None
 
@@ -131,6 +138,7 @@ def parse(request: ParseIssuanceRequest, *, context: ExecutionContext | None = N
         parsed = seal_stream(invocation, parsed, parameters={
             "report_date": parsed.report_date, "reference_period": parsed.reference_period,
             "unmapped_headers": parsed.unmapped_headers,
+            **selection_parameters(parsed.selection),
         })
         if any(issue.severity == "error" for issue in parsed.validation_issues):
             return Completion(parsed, "failed", "source.validation_failed")
@@ -150,12 +158,16 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
         if not req.sources:
             raise OperationFailure("request.source_selection_empty")
         try:
+            resolve_industry_codes(req.selection)
+        except ValueError:
+            raise OperationFailure("request.industry_selection_invalid") from None
+        try:
             selected = tuple(report_date_from_filename(x.source_name) for x in req.sources)
         except ValueError:
             raise OperationFailure("request.source_filename_invalid") from None
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
-        batch = attempt_batch(req.sources, lambda item: _parse(item, invocation), invocation,
+        batch = attempt_batch(req.sources, lambda item: _parse(item, invocation, selection=req.selection), invocation,
                               continue_on_error=req.continue_on_error)
         require_batch_values(batch, "source.no_valid_workbooks")
         failures = [
@@ -181,9 +193,11 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
             latest.report_date, latest.report_date == max(selected),
             latest.regions, latest.industries, len(stream),
             stop_reason=batch.stopped.code if batch.stopped else None,
+            selection=req.selection,
         )
         result = seal_stream(invocation, result, parameters={
             "selected": selected, "accepted": result.dates,
+            **selection_parameters(req.selection),
             "quantity_kind": "flow", "period_basis": "reference_month", "unit": "million_rubles",
             "reference_periods": result.reference_periods, "geography_anchor": latest.report_date,
             "geography_method": "cbr-0105a-geography-1", "coverage": "subset" if failures or batch.stopped else "complete",

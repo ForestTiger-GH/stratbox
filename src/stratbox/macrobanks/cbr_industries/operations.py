@@ -28,6 +28,7 @@ from stratbox.macrobanks._cbr import (
     validate_workbook,
 )
 
+from .selection import resolve_industry_codes, selection_parameters
 from .contracts import (
     BuildIndustryStreamRequest,
     CalculateApkRequest,
@@ -41,6 +42,7 @@ from .contracts import (
     Cbr0105ADebtCorpStreamResult,
     DiscoverIndustriesRequest,
     ParseIndustryRequest,
+    IndustrySelection,
     ParsedCbr0105ADebtCorpFile,
     PivotInput,
     RenderIndustryRequest,
@@ -65,13 +67,13 @@ ACQUIRE = OperationDefinition(
     _HTTP,
 )
 PARSE = OperationDefinition(
-    f"{_DATASET}.parse", 2, _METHOD, ParseIndustryRequest, ParsedCbr0105ADebtCorpFile,
+    f"{_DATASET}.parse", 3, _METHOD + "-selective", ParseIndustryRequest, ParsedCbr0105ADebtCorpFile,
     limits=_TABLE_LIMITS,
 )
 BUILD_STREAM = OperationDefinition(
     f"{_DATASET}.build_stream",
-    2,
-    "cbr-0105a-stream-2",
+    3,
+    "cbr-0105a-stream-3",
     BuildIndustryStreamRequest,
     Cbr0105ADebtCorpStreamResult,
     partial_allowed=True,
@@ -189,11 +191,16 @@ def acquire(
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
 
 
-def _parse(req, invocation):
+def _parse(req, invocation, *, selection: IndustrySelection | None = None):
     require_extra("pandas", "dataframe")
     require_extra("openpyxl", "excel")
     from .parser import parse_cbr_0105a_debt_corp_excel_bytes
 
+    chosen = req.selection if selection is None else selection
+    try:
+        resolve_industry_codes(chosen)
+    except ValueError:
+        raise OperationFailure("request.industry_selection_invalid") from None
     use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
     if req.source is not None:
         _validate_link(req.source)
@@ -207,6 +214,7 @@ def _parse(req, invocation):
             source_sha256=req.payload.identity.sha256,
             source_url=req.source.url if req.source is not None else None,
             checkpoint=invocation.check_cancelled,
+            selection=chosen,
         )
     except (ValueError, KeyError, OSError):
         raise OperationFailure("source.workbook_layout_unresolved") from None
@@ -218,7 +226,10 @@ def parse(
     def work(req, invocation):
         invocation.stage("parse")
         value = _parse(req, invocation)
-        value = seal_stream(invocation, value, parameters={"report_date": value.report_date, "unmapped_headers": value.unmapped_headers})
+        value = seal_stream(invocation, value, parameters={
+            "report_date": value.report_date, "unmapped_headers": value.unmapped_headers,
+            **selection_parameters(value.selection),
+        })
         if any(issue.severity == "error" for issue in value.validation_issues):
             return Completion(value, "failed", "source.validation_failed")
         return value
@@ -240,6 +251,10 @@ def build_stream(
         if not req.sources:
             raise OperationFailure("request.source_selection_empty")
         try:
+            resolve_industry_codes(req.selection)
+        except ValueError:
+            raise OperationFailure("request.industry_selection_invalid") from None
+        try:
             selected = tuple(
                 report_date_from_cbr_0105a_filename(item.source_name)
                 for item in req.sources
@@ -249,7 +264,7 @@ def build_stream(
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
         batch = attempt_batch(tuple(zip(req.sources, selected, strict=True)),
-                              lambda pair: _parse(pair[0], invocation), invocation,
+                              lambda pair: _parse(pair[0], invocation, selection=req.selection), invocation,
                               continue_on_error=req.continue_on_error)
         require_batch_values(batch, "source.no_valid_workbooks")
         failures = [
@@ -286,9 +301,11 @@ def build_stream(
             latest.regions,
             latest.industries,
             len(stream), stop_reason=batch.stopped.code if batch.stopped else None,
+            selection=req.selection,
         )
         value = seal_stream(invocation, value, parameters={
             "selected": selected, "accepted": dates,
+            **selection_parameters(req.selection),
             "quantity_kind": "stock", "period_basis": "as_of", "unit": "million_rubles",
             "geography_anchor": latest.report_date, "geography_method": value.geography_method_version,
             "coverage": "subset" if failures or batch.stopped else "complete",
