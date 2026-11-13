@@ -33,6 +33,7 @@ from .contracts import (
     BuildIndustryStreamRequest,
     CalculateApkRequest,
     Cbr0105ADebtCorpApkCalculationResult,
+    Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotSetResult,
