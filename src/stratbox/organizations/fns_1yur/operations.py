@@ -34,7 +34,7 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.acquisition import receive_source
-from stratbox.execution.comparison import compare_release_inputs
+from stratbox.execution.comparison import compare_release_inputs, explain_comparison
 from stratbox.execution.source_validation import source_failure, use_payload
 
 from .archive import select_workbook
@@ -102,7 +102,7 @@ READ = OperationDefinition(
     ParsedRelease,
 )
 COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 1, "fns-1yur-compare-1", CompareReleaseRequest, Comparison
+    f"{DATASET}.compare", 2, "fns-1yur-compare-1", CompareReleaseRequest, Comparison
 )
 
 
@@ -272,7 +272,8 @@ def _build(as_of, data, invocation, *, method, acquisition=None, details=None):
         invocation.used_inputs,
         observations=tuple(observations),
         parameters={"epoch": epoch(as_of)},
-        resources={"field_map": MAP_VERSION} if method == METHOD else None,
+        resources={"field_map": MAP_VERSION},
+        facts_method=METHOD if method != METHOD else None,
         acquisition=acquisition,
         source_details=details,
     )
@@ -376,7 +377,7 @@ def read_representation(
 def compare(
     request: CompareReleaseRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[Comparison]:
-    def work(req, invocation):
+    def evaluate(req, invocation):
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
@@ -392,10 +393,11 @@ def compare(
             for code, label in sorted(old.keys() | new.keys())
             if old.get((code, label)) != new.get((code, label))
         )
-        if not changed and tuple(old) != tuple(new):
-            return Comparison("revised", "source.geography_order_changed")
         return Comparison(
             "revised" if changed else "unchanged", "source.geography_rows", changed
         )
+
+    def work(req, invocation):
+        return explain_comparison(evaluate(req, invocation), req, invocation)
 
     return run(COMPARE, request, work, context=context)

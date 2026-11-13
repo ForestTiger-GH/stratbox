@@ -27,7 +27,7 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.acquisition import receive_source
-from stratbox.execution.comparison import compare_release_inputs
+from stratbox.execution.comparison import compare_release_inputs, explain_comparison
 from stratbox.execution.source_validation import source_failure, use_payload
 
 from .parser import (
@@ -92,7 +92,7 @@ READ = OperationDefinition(
     ParsedRelease,
 )
 COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 1, "fns-sme-compare-1", CompareReleaseRequest, Comparison
+    f"{DATASET}.compare", 2, "fns-sme-compare-1", CompareReleaseRequest, Comparison
 )
 
 
@@ -201,6 +201,7 @@ def _release(day, rows, data, invocation, *, method=METHOD, acquisition=None):
         len(rows),
         invocation.used_inputs,
         observations=observations,
+        facts_method=METHOD if method != METHOD else None,
         acquisition=acquisition,
     )
 
@@ -263,7 +264,7 @@ def read_representation(
 def compare(
     request: CompareReleaseRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[Comparison]:
-    def work(req, invocation):
+    def evaluate(req, invocation):
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
@@ -284,5 +285,8 @@ def compare(
         return Comparison(
             "revised" if changed else "unchanged", "source.regional_rows", changed
         )
+
+    def work(req, invocation):
+        return explain_comparison(evaluate(req, invocation), req, invocation)
 
     return run(COMPARE, request, work, context=context)

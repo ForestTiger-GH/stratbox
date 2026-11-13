@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import timezone
+from collections import deque
 from typing import Callable, Generic, Mapping, TypeVar
 from uuid import uuid4
 
-from stratbox.data import Representation, UsedInputReceipt
+from stratbox.data import ComputationReceipt, Representation, UsedInputReceipt, build_dataset_version, computation_identity
 from stratbox.base.capabilities import BindingError, select_provider
 from stratbox.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.base.utils.optional_deps import MissingExtra
@@ -21,7 +22,7 @@ from .contracts import (
     Outcome,
     safe_token,
 )
-from .events import ExecutionEvent
+from .events import ExecutionEvent, TechnicalIncident
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -39,10 +40,13 @@ class Invocation:
         )
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0
+        self._incidents_dropped = 0
         self._stage: str | None = None
         self._stage_started = self._started
         self.used_inputs: list[UsedInputReceipt] = []
         self.effects: list[EffectReceipt] = []
+        self.parents: list[tuple[str, ComputationReceipt]] = []
+        self.computation: ComputationReceipt | None = None
 
     def now(self):
         value = self.context.clock.now()
@@ -51,9 +55,31 @@ class Invocation:
         return value.astimezone(timezone.utc)
 
     def check_cancelled(self) -> None:
-        if self.context.cancellation is not None and self.context.cancellation.is_set():
+        if self.cancelled():
             raise OperationFailure("operation.cancelled", outcome="cancelled")
         self.budget.checkpoint()
+
+    def cancelled(self) -> bool:
+        token = self.context.cancellation
+        return token is not None and token.is_set()
+
+    def incident(self, error: Exception) -> Diagnostic:
+        incident_id = uuid4().hex
+        sink = self.context.incident_sink
+        if sink is not None:
+            try:
+                frames = deque(maxlen=12)
+                trace = error.__traceback__
+                while trace is not None:
+                    frames.append((trace.tb_frame.f_code.co_name[:128], trace.tb_lineno))
+                    trace = trace.tb_next
+                sink.emit(TechnicalIncident(
+                    incident_id, self.id, self.definition.operation_id, self._stage or "admission",
+                    type(error).__name__[:128], tuple(frames),
+                ))
+            except Exception:
+                self._incidents_dropped += 1
+        return Diagnostic("internal.error", incident_id=incident_id)
 
     def require_provider(self, role: str, provider: object) -> None:
         if provider is None:
@@ -88,6 +114,34 @@ class Invocation:
         if receipt not in self.used_inputs:
             self.used_inputs.append(receipt)
 
+    def record(self, identity, *, parameters=None, resources=None, inputs=None):
+        definition = self.definition
+        receipts = tuple(self.used_inputs) if inputs is None else inputs
+        version = build_dataset_version(
+            definition.operation_id,
+            f"contract-{definition.contract_version}",
+            definition.method_version,
+            receipts,
+            identity,
+            parameters=parameters,
+            resources=resources,
+        )
+        computation_id = computation_identity(
+            definition.operation_id, definition.contract_version, definition.method_version,
+            receipts, parameters=parameters, resources=resources,
+        )
+        self.computation = ComputationReceipt(version, identity, receipts, computation_id, tuple(self.parents))
+        return self.computation
+
+    def effect(self, receipt: EffectReceipt) -> None:
+        if receipt.kind not in self.definition.possible_effects:
+            raise ValueError("Undeclared effect")
+        for index, existing in enumerate(self.effects):
+            if existing.effect_id == receipt.effect_id and existing.kind == receipt.kind:
+                self.effects[index] = receipt
+                return
+        self.effects.append(receipt)
+
     def _emit(self, kind, **fields) -> None:
         sink = self.context.sink
         if sink is None:
@@ -96,7 +150,7 @@ class Invocation:
         try:
             sink.emit(
                 ExecutionEvent(
-                    2,
+                    3,
                     kind,
                     self.id,
                     self.definition.operation_id,
@@ -141,22 +195,25 @@ class Invocation:
             outcome=outcome,
             diagnostic_code=diagnostic.code if diagnostic else None,
             reason_class=diagnostic.reason_class if diagnostic else None,
+            incident_id=diagnostic.incident_id if diagnostic else None,
             duration_ms=elapsed,
         )
-        return ObservabilitySummary(self._emitted, self._dropped)
+        return ObservabilitySummary(self._emitted, self._dropped, self._incidents_dropped)
 
 
 class Completion(Generic[T]):
     """A value with a qualified incomplete outcome."""
 
-    def __init__(self, value: T, outcome: Outcome, *diagnostics: str):
+    def __init__(self, value: T, outcome: Outcome, *diagnostics: str | Diagnostic):
         if outcome not in {"partial", "unknown", "failed"} or not diagnostics:
             raise ValueError(
                 "Incomplete completion requires an outcome and diagnostics"
             )
         self.value = value
         self.outcome = outcome
-        self.diagnostics = tuple(Diagnostic(code) for code in diagnostics)
+        self.diagnostics = tuple(
+            item if isinstance(item, Diagnostic) else Diagnostic(item) for item in diagnostics
+        )
 
 
 def run(
@@ -194,11 +251,15 @@ def run(
             outcome == "partial" and not definition.partial_allowed
         ):
             raise TypeError("Operation returned a value outside its contract")
-        if outcome == "succeeded" and not invocation.effects:
-            invocation.check_cancelled()
+        if outcome in {"succeeded", "partial"} and not invocation.effects:
             output = value if isinstance(value, Representation) else getattr(value, "representation", None)
             if isinstance(output, Representation):
-                invocation.budget.charge("output_bytes", output.identity.size)
+                invocation.budget.charge("output_bytes", output.identity.size, completed=outcome == "partial")
+                if invocation.computation is None:
+                    invocation.record(output.identity, parameters={"profile": output.profile_id,
+                                                                    "profile_version": output.version})
+            elif outcome == "succeeded" and not definition.partial_allowed:
+                invocation.budget.checkpoint()
     except OperationFailure as error:
         outcome, diagnostics, value = error.outcome, (error.diagnostic,), None
     except (BudgetExceeded, BindingError) as error:
@@ -209,11 +270,9 @@ def run(
             (Diagnostic("provider.capability_missing"),),
             None,
         )
-    except Exception:
-        outcome, diagnostics, value = "failed", (Diagnostic("internal.error"),), None
-    if outcome != "partial" and any(
-        effect.state == "unknown" for effect in invocation.effects
-    ):
+    except Exception as error:
+        outcome, diagnostics, value = "failed", (invocation.incident(error),), None
+    if any(effect.state == "unknown" for effect in invocation.effects):
         outcome = "unknown"
         diagnostics = diagnostics or (Diagnostic("effect.outcome_unknown"),)
     diagnostics = tuple(invocation.describe(item, outcome) for item in diagnostics)
@@ -227,4 +286,6 @@ def run(
         tuple(invocation.used_inputs),
         tuple(invocation.effects),
         summary,
+        invocation.computation if value is not None else None,
+        invocation.budget.usage(),
     )

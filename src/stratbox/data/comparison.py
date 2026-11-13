@@ -8,6 +8,25 @@ ComparisonState = Literal[
     "first_seen", "new_release", "revised", "unchanged", "indeterminate"
 ]
 BaselineState = Literal["available", "confirmed_absent", "unavailable"]
+LayerState = Literal["same", "changed", "unavailable", "incompatible"]
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonLayers:
+    original: LayerState = "unavailable"
+    structure: LayerState = "unavailable"
+    facts: LayerState = "unavailable"
+    method: LayerState = "unavailable"
+    representation: LayerState = "unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonCoverage:
+    common_observations: int
+    baseline_observations: int
+    candidate_observations: int
+    common_subjects: int
+    scope: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +34,8 @@ class Comparison:
     state: ComparisonState
     reason: str
     changed_subjects: tuple[str, ...] = ()
+    layers: ComparisonLayers = ComparisonLayers()
+    coverage: ComparisonCoverage | None = None
 
     @property
     def changed_count(self) -> int:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from stratbox.data import Representation
+from stratbox.data import ComputationReceipt, Representation
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -83,6 +83,7 @@ class SorsRestorationResult:
     selection_attempts_grid: pd.DataFrame = field(default_factory=_empty_frame)
     _source_bundle: object | None = None
     _strict_problem: object | None = None
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,7 @@ class SorsCrosswalkResult:
     crosswalk_run_id: str
     status: str
     _strict_result: object | None = None
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True)
@@ -117,6 +119,7 @@ class SorsPivotResult:
     output_rows: int
     identified_cells: int
     unidentified_cells: int
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True, slots=True)

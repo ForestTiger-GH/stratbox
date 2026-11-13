@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from stratbox.base.filestore import FileMutation, FileStore, MutationRejected, StagedWriter, WriteMode
 from stratbox.base.ioapi.archive_paths import ArchiveEntry, PathArchiveReceipt, zip_to_store
+from stratbox.execution.originals import storage_effect
 from stratbox.base.ioapi.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
 from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, zip_bytes
 from stratbox.base.limits import BudgetExceeded
@@ -160,6 +161,7 @@ def _mutate(action, store, invocation, intent):
         invocation.budget.charge("output_bytes", len(data))
         invocation.check_cancelled()
         if not managed:
+            invocation.effect(_cleanup_effect(intent, "unknown"))
             written = write_verified_bytes(
                 action.destination, data, store=store,
                 expected_sha256=action.source.identity.sha256,
@@ -172,6 +174,8 @@ def _mutate(action, store, invocation, intent):
         reads = 2 if action.kind == "rename" else 1
         invocation.budget.charge("input_bytes", action.source.identity.size * reads)
         invocation.check_cancelled()
+    invocation.check_cancelled()
+    invocation.effect(_cleanup_effect(intent, "unknown"))
     try:
         if managed:
             confirmed = store.commit_mutation(intent, data)
@@ -188,6 +192,13 @@ def _mutate(action, store, invocation, intent):
     if confirmed is False:
         return CleanupReceipt(action, "failed", "effect.conflict")
     return CleanupReceipt(action, "unknown", "effect.outcome_unknown")
+
+
+def _cleanup_effect(intent, state):
+    return EffectReceipt(
+        f"storage.{intent.kind}", state, intent.destination or intent.source.path,
+        intent.effect_id, "commit", intent.content, "revision_guarded", "store",
+    )
 
 
 def apply_cleanup(
@@ -244,10 +255,7 @@ def apply_cleanup(
                             return Completion(tuple(receipts), "partial", code)
                         raise
                     receipts.append(receipt)
-                    invocation.effects.append(EffectReceipt(
-                        f"storage.{action.kind}", receipt.state, action.destination or action.source.path,
-                        effect_id, "commit", action.source.identity, "revision_guarded", "store",
-                    ))
+                    invocation.effect(_cleanup_effect(intent, receipt.state))
                     if receipt.state != "confirmed":
                         receipts.extend(
                             CleanupReceipt(item, "not_attempted")
@@ -324,7 +332,7 @@ def prepare_archive(
             )
         try:
             return Representation(
-                "frg.latest-zip", 1, "application/zip", zip_bytes(files, limits=limits)
+                "frg.latest-zip", 1, "application/zip", zip_bytes(files, limits=limits, budget=invocation.budget)
             )
         except ArchiveError:
             raise OperationFailure("archive.preparation_failed") from None
@@ -375,6 +383,7 @@ def prepare_archive_to_store(
                 plan_identity=current.identity, operation_id=STREAM_ARCHIVE.operation_id,
                 require_admission=invocation.context.profile == "managed",
                 source_directory=current.request.directory,
+                on_effect=lambda receipt: storage_effect(invocation, receipt),
             )
         except ArchiveError as error:
             raise OperationFailure(str(error)) from None
@@ -388,10 +397,6 @@ def prepare_archive_to_store(
         receipt = result.storage
         state = {"stored": "confirmed", "already_present": "confirmed",
                  "failed": "failed", "unknown": "unknown"}[receipt.status]
-        invocation.effects.append(EffectReceipt(
-            "storage.write", state, req.destination, result.effect_id, receipt.stage,
-            result.identity, receipt.guarantee, "store",
-        ))
         if state != "confirmed":
             return Completion(result, state, receipt.diagnostic_code)
         return result

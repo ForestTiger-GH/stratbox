@@ -13,6 +13,7 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 from stratbox.base.limits import BudgetExceeded, BudgetMeter
+from .bytes import OutputBuffer
 
 
 class ArchiveError(ValueError):
@@ -101,14 +102,23 @@ def open_zip(
     data: bytes, limits: ArchiveLimits = ArchiveLimits(), *,
     budget: BudgetMeter | None = None, depth: int = 1,
 ) -> Iterator[ZipFile]:
+    with open_zip_stream(BytesIO(data), len(data), limits, budget=budget, depth=depth) as archive:
+        yield archive
+
+
+@contextmanager
+def open_zip_stream(
+    stream: BinaryIO, size: int, limits: ArchiveLimits = ArchiveLimits(), *,
+    budget: BudgetMeter | None = None, depth: int = 1,
+) -> Iterator[ZipFile]:
     if not 1 <= depth <= 4:
         raise ArchiveError("archive.depth_limit")
     if budget is not None:
         budget.check("archive_depth", depth)
-    if len(data) > limits.packed_bytes:
+    if not 0 < size <= limits.packed_bytes:
         raise ArchiveError("archive.size_limit")
     try:
-        with ZipFile(BytesIO(data)) as archive:
+        with ZipFile(stream) as archive:
             members = zip_members(archive)
             validate_members(members, limits)
             if budget is not None:
@@ -234,18 +244,20 @@ def extract_members(
 
 
 def zip_bytes(
-    files: Mapping[str, bytes], *, limits: ArchiveLimits = ArchiveLimits()
+    files: Mapping[str, bytes], *, limits: ArchiveLimits = ArchiveLimits(),
+    budget: BudgetMeter | None = None,
 ) -> bytes:
     validate_members(
         tuple(ArchiveMember(name, len(data)) for name, data in files.items()), limits
     )
-    buffer = BytesIO()
-    with ZipFile(buffer, "w") as archive:
-        for name, data in files.items():
-            info = ZipInfo(name)
-            info.compress_type = ZIP_DEFLATED
-            info.external_attr = 0o100644 << 16
-            archive.writestr(info, data)
-    if buffer.tell() > limits.packed_bytes:
-        raise ArchiveError("archive.size_limit")
+    buffer = OutputBuffer(budget, limit=limits.packed_bytes)
+    try:
+        with ZipFile(buffer, "w") as archive:
+            for name, data in files.items():
+                info = ZipInfo(name)
+                info.compress_type = ZIP_DEFLATED
+                info.external_attr = 0o100644 << 16
+                archive.writestr(info, data)
+    except ValueError:
+        raise ArchiveError("archive.size_limit") from None
     return buffer.getvalue()

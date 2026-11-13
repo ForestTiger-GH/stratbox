@@ -8,10 +8,11 @@ from ipaddress import ip_address
 from math import isfinite
 import re
 from types import MappingProxyType
-from typing import Callable, Literal, Mapping, Protocol
+from typing import BinaryIO, Callable, Literal, Mapping, Protocol
 from urllib.parse import quote, unquote, urlsplit
 
 from stratbox.base.limits import BudgetMeter
+from stratbox.data.evidence import ByteIdentity
 
 _HEADER = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", re.ASCII)
 _HOST = re.compile(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", re.ASCII)
@@ -180,10 +181,13 @@ class HttpResponse:
     effective_locator_safe: str
     origin_assurance: Literal["provider_reported", "tls_host", "peer_bound"] = "provider_reported"
     target_sha256: str | None = None
+    wire_size: int | None = None
 
     def __post_init__(self) -> None:
         if self.target_sha256 is not None and not re.fullmatch(r"[a-f0-9]{64}", self.target_sha256):
             raise ValueError("Invalid target identity")
+        if self.wire_size is not None and (type(self.wire_size) is not int or self.wire_size < 0):
+            raise ValueError("Invalid response wire size")
         if self.origin_assurance not in {"provider_reported", "tls_host", "peer_bound"}:
             raise ValueError("Invalid origin assurance")
         if not 100 <= self.status_code <= 599 or not isinstance(self.body, bytes):
@@ -211,6 +215,16 @@ class HttpResponse:
         object.__setattr__(self, "headers", MappingProxyType(headers))
 
 
+@dataclass(frozen=True, slots=True)
+class HttpStreamResponse:
+    response: HttpResponse
+    identity: ByteIdentity
+
+    def __post_init__(self):
+        if self.response.body:
+            raise ValueError("Streamed responses carry metadata and an identity")
+
+
 FailureReason = Literal[
     "destination_forbidden",
     "connection_error",
@@ -221,6 +235,7 @@ FailureReason = Literal[
     "invalid_http",
     "cancelled",
     "capability_missing",
+    "staging_failed",
 ]
 
 
@@ -234,3 +249,10 @@ class HttpTransport(Protocol):
     def exchange(
         self, request: HttpRequest, *, cancelled: Callable[[], bool] | None = None
     ) -> HttpResponse | HttpFailure: ...
+
+
+class StreamingHttpTransport(HttpTransport, Protocol):
+    def exchange_into(
+        self, request: HttpRequest, sink: BinaryIO, *,
+        cancelled: Callable[[], bool] | None = None,
+    ) -> HttpStreamResponse | HttpFailure: ...

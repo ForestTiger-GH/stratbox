@@ -57,6 +57,7 @@ def _input_manifest(inputs: tuple[UsedInputReceipt, ...]) -> list[dict[str, obje
             "size": item.identity.size,
             "container": item.container.sha256 if item.container else None,
             "member": item.member,
+            **({"version": item.version.sha256} if item.version else {}),
         }
         for item in inputs
     ]

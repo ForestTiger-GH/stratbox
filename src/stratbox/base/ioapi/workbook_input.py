@@ -47,13 +47,13 @@ class WorkbookProfile:
     external_relations: bool
     observed_cells: int | None
     largest_sheet_extent: int = 0
+    total_sheet_extent: int = 0
 
     def check_materialization(self, budget: BudgetMeter | None = None) -> None:
         if self.largest_sheet_extent > _CELL_LIMIT:
             raise WorkbookError("workbook.materialization_limit")
-        if budget is not None and budget.limits.cells is not None:
-            if self.largest_sheet_extent > budget.limits.cells:
-                raise WorkbookError("workbook.materialization_limit")
+        if budget is not None:
+            budget.check("cells", self.total_sheet_extent or self.largest_sheet_extent)
 
     @property
     def decoder(self) -> str:
@@ -219,6 +219,7 @@ def workbook_profile(
     external = False
     row_limit = column_limit = 0
     largest_extent = 0
+    total_extent = 0
     relation_ids: set[str] = set()
     current_part = ""
 
@@ -317,11 +318,13 @@ def workbook_profile(
                     with package.open(name) as stream:
                         inspect_xml(stream, budget=budget, start=node, text_limit=131_072, cancelled=cancelled)
                     largest_extent = max(largest_extent, row_limit * column_limit)
+                    total_extent += row_limit * column_limit
                 elif kind == "xlsb" and name.startswith("xl/worksheets/") and name.endswith(".bin"):
                     with package.open(name) as stream:
                         count, extent = _binary_sheet(stream, budget=budget, cancelled=cancelled)
                     cells += count
                     largest_extent = max(largest_extent, extent)
+                    total_extent += extent
                     binary_bytes += package.getinfo(name).file_size
                 elif kind == "xlsb" and name in {main, "xl/sharedStrings.bin"}:
                     with package.open(name) as stream:
@@ -332,7 +335,7 @@ def workbook_profile(
                     raise WorkbookError("workbook.cell_limit")
             if kind == "xlsb" and budget is not None:
                 budget.charge("temporary_bytes", binary_bytes)
-            return WorkbookProfile(kind, active, external, cells, largest_extent)
+            return WorkbookProfile(kind, active, external, cells, largest_extent, total_extent)
     except (XmlError, ArchiveError) as error:
         raise WorkbookError(str(error)) from None
 
@@ -359,6 +362,18 @@ def read_workbook_df(
     return pandas.read_excel(BytesIO(data), engine=engine, **options)
 
 
+def open_ooxml_workbook(data: bytes, *, reset_dimensions: bool = False):
+    """Open admitted OOXML in cached-value mode. The caller closes the workbook."""
+    engine = require_extra("openpyxl", "excel")
+    book = engine.load_workbook(
+        BytesIO(data), read_only=True, data_only=True, keep_links=False, keep_vba=False,
+    )
+    if reset_dimensions:
+        for sheet in book.worksheets:
+            sheet.reset_dimensions()
+    return book
+
+
 @dataclass(frozen=True, slots=True)
 class WorkbookPreview:
     kind: WorkbookKind
@@ -370,6 +385,7 @@ class WorkbookPreview:
     value_basis: str
     start_row: int = 1
     start_column: int = 1
+    contract_version: int = 1
 
 
 class WorkbookWorker(Protocol):
@@ -388,15 +404,11 @@ def _select_sheet(names, sheet):
 def _preview_local(data, profile, sheet, start_row, start_column, max_rows, max_columns):
     end_row, end_column = start_row + max_rows, start_column + max_columns
     if profile.kind in {"xlsx", "xlsm"}:
-        engine = require_extra("openpyxl", "excel")
-        book = engine.load_workbook(
-            BytesIO(data), read_only=True, data_only=True, keep_links=False, keep_vba=False,
-        )
+        book = open_ooxml_workbook(data, reset_dimensions=True)
         try:
             names = tuple(book.sheetnames)
             selected = _select_sheet(names, sheet)
             table = book[selected]
-            table.reset_dimensions()
             rows = tuple(table.iter_rows(
                 min_row=start_row, min_col=start_column, max_row=end_row,
                 max_col=end_column, values_only=True,
@@ -469,12 +481,15 @@ def preview_workbook(
             raise WorkbookError("provider.binding_mismatch")
     identity = ByteIdentity.of(data)
     if worker is not None:
+        if not callable(getattr(worker, "preview", None)):
+            raise WorkbookError("provider.capability_missing")
         value = worker.preview(data, sheet=sheet, start_row=start_row, start_column=start_column,
                                max_rows=max_rows, max_columns=max_columns, budget=budget)
         if budget is not None:
             budget.checkpoint()
         if (
             not isinstance(value, WorkbookPreview) or value.identity != identity
+            or type(value.contract_version) is not int or value.contract_version != 1
             or value.kind not in _ENGINES or value.selected_sheet not in value.sheets
             or (sheet is not None and value.selected_sheet != sheet)
             or type(value.start_row) is not int or value.start_row != start_row
@@ -484,6 +499,8 @@ def preview_workbook(
             or any(type(row) is not tuple or len(row) > max_columns for row in value.rows)
         ):
             raise WorkbookError("workbook.worker_result_invalid")
+        if budget is not None:
+            budget.charge("cells", sum(map(len, value.rows)))
         _check_preview(value, budget)
         return value
     profile = workbook_profile(data, budget=budget)

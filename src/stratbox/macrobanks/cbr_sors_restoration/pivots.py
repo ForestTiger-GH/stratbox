@@ -38,7 +38,7 @@ def _flatten_measure_columns(table: pd.DataFrame) -> pd.DataFrame:
 
 def build_sors_pivot(
     result: SorsRestorationResult | SorsCrosswalkResult,
-    request: SorsPivotRequest,
+    request: SorsPivotRequest, *, budget=None,
 ) -> SorsPivotResult:
     frame = result.regional_okved2_grid
     if request.evidence_layer != 'PRIMARY':
@@ -86,6 +86,9 @@ def build_sors_pivot(
     if request.include_status:
         value_fields.append('identification_status')
 
+    if budget is not None:
+        rows = len(selected[index_columns].drop_duplicates())
+        budget.check("cells", rows * (len(index_columns) + len(request.metrics) * len(value_fields)))
     duplicate_keys = selected.duplicated(index_columns + ['metric'])
     if duplicate_keys.any():
         raise ValueError('SORS pivot source contains duplicate region/class/metric rows')

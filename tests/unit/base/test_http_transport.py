@@ -190,7 +190,7 @@ def test_peer_admission_and_tls_use_actual_connection(tmp_path, monkeypatch):
     import subprocess
     from threading import Thread
 
-    from stratbox.base.net import PeerBoundTransport
+    from stratbox.base.net import PeerBoundTransport, exchange_into
 
     openssl = which("openssl")
     if openssl is None:
@@ -206,9 +206,16 @@ def test_peer_admission_and_tls_use_actual_connection(tmp_path, monkeypatch):
     names = []
 
     class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
         def do_GET(self):
             requests_seen.append((self.path, self.headers["Host"]))
             self.send_response(200)
+            if self.path == "/chunked":
+                self.send_header("Transfer-Encoding", "chunked")
+                self.end_headers()
+                self.wfile.write(b"2\r\nok\r\n3\r\n123\r\n0\r\n\r\n")
+                return
             self.send_header("Content-Length", "2")
             self.end_headers()
             self.wfile.write(b"ok")
@@ -256,6 +263,13 @@ def test_peer_admission_and_tls_use_actual_connection(tmp_path, monkeypatch):
             assert names == ["fixture.example", "different.example"]
             assert [name for name, _ in lookups] == ["fixture.example", "fixture.example", "different.example"]
             assert requests_seen == [("/public", "fixture.example")]
+            chunked = HttpRequest("GET", "https://fixture.example/chunked",
+                                  (HttpsEndpoint("fixture.example", "/chunked"),))
+            sink = BytesIO()
+            streamed = exchange_into(chunked, sink, transport=transport)
+            assert streamed.response.origin_assurance == "peer_bound"
+            assert streamed.response.wire_size == streamed.identity.size == 5
+            assert sink.getvalue() == b"ok123"
         finally:
             server.shutdown()
             serving.join(3)

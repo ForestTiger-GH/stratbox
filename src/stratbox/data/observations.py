@@ -29,6 +29,13 @@ class SubjectRef:
 class MetricRef:
     id: str
     unit: str
+    quantity_kind: Literal["stock", "flow", "ratio", "index", "count"] | None = None
+    definition_version: str | None = None
+    scale: Decimal | None = None
+
+    def __post_init__(self) -> None:
+        if self.scale is not None and (not self.scale.is_finite() or self.scale <= 0):
+            raise ValueError("Invalid measurement scale")
 
 
 @dataclass(frozen=True, slots=True)

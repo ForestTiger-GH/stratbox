@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import replace
+from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -174,31 +175,20 @@ def _parsed_pair():
     return normalize_cbr_0105a_debt_corp_regions_to_latest([old, latest])
 
 
+@lru_cache(maxsize=1)
 def _stream_result() -> Cbr0105ADebtCorpStreamResult:
-    parsed = _parsed_pair()
-    stream = concat_cbr_0105a_debt_corp_streams(item.df_stream for item in parsed)
-    stream = stream.sort_values(
-        ["report_date", "sheet_order", "region_order", "industry_order"],
-        kind="stable",
-    ).reset_index(drop=True)
-    latest = parsed[-1]
-    return Cbr0105ADebtCorpStreamResult(
-        source_links=(),
-        failures=(),
-        parsed_files=parsed,
-        validation_issues=tuple(
-            issue for item in parsed for issue in item.validation_issues
-        ),
-        df_stream=stream,
-        dates=("2019-02-01", "2026-06-01"),
-        latest_report_date="2026-06-01",
-        latest_discovered_report_date="2026-06-01",
-        region_normalization_date="2026-06-01",
-        region_normalization_is_latest_discovered=True,
-        regions=latest.regions,
-        industries=latest.industries,
-        rows_stream=len(stream),
-    )
+    from stratbox.macrobanks.cbr_industries import BuildIndustryStreamRequest, build_stream
+
+    inputs = tuple(ParseIndustryRequest(
+        SourcePayload(_workbook_bytes(report_date=printed, kemerovo_name=region)),
+        f"01_05_A_Debt_corp_{day}.xlsx",
+    ) for day, printed, region in (
+        ("20190201", "01.02.2019", "Кемеровская область"),
+        ("20260601", "01.06.2026", "Кемеровская область - Кузбасс"),
+    ))
+    result = build_stream(BuildIndustryStreamRequest(inputs))
+    assert result.outcome == "succeeded", result.diagnostics
+    return result.value
 
 
 def test_discovery_filters_exact_series_and_period() -> None:
@@ -745,3 +735,40 @@ def test_industry_workbook_rejects_unknown_industry() -> None:
     ))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "request.industry_unresolved"
+
+
+def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
+    from stratbox.execution import ExecutionBudget, ExecutionContext
+    from stratbox.macrobanks import cbr_industries as domain
+
+    original = SourcePayload(_workbook_bytes(
+        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
+    ))
+    source = domain.ParseIndustryRequest(original, "01_05_A_Debt_corp_20260601.xlsx")
+    history = domain.build_stream(domain.BuildIndustryStreamRequest((source,)))
+    assert history.outcome == "succeeded", history.diagnostics
+    apk = domain.calculate_apk(domain.CalculateApkRequest(history.value))
+    assert apk.outcome == "succeeded", apk.diagnostics
+    pivot = Cbr0105ADebtCorpPivotRequest(
+        "region_code", "report_date", sheet_dimensions=("measure", "currency_scope"),
+    )
+    req = domain.PivotInput(apk.value, pivot, industry_code="apk")
+    constrained = domain.build_pivots(req, context=ExecutionContext(
+        budget=ExecutionBudget(cells=apk.value.df_stream.size + 10),
+    ))
+    assert constrained.diagnostics[0].code == "budget.cells"
+    views = domain.build_pivots(req)
+    assert views.outcome == "succeeded", views.diagnostics
+    rendered = domain.render_pivots(domain.RenderPivotRequest(views.value))
+    assert rendered.outcome == "succeeded", rendered.diagnostics
+    receipt = rendered.computation
+    for _ in range(3):
+        receipt = receipt.parents[0][1]
+    assert receipt.inputs[0].identity == original.identity
+    changed = history.value.df_stream.copy()
+    changed.loc[changed.index[0], "value"] = 999
+    rejected = domain.build_pivots(domain.PivotInput(changed, pivot, source=history.value))
+    assert rejected.diagnostics[0].code == "input.identity_mismatch"
+    own = domain.calculate_apk(domain.CalculateApkRequest(changed))
+    assert own.outcome == "succeeded" and own.used_inputs[0].role == "user_table"
+    assert not own.computation.parents and own.computation.version != apk.computation.version

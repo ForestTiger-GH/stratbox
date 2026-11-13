@@ -277,6 +277,7 @@ def is_column_number_guide(cells):
 def convert_xlsx(
     blob, *, return_formula_lineage=False, expected_date: date | None = None,
     sheet_name: str | None = None, national_row: int | None = None,
+    last_row: int | None = None,
     budget=None, checkpoint=None, evidence=None,
 ):
     """Keep only the published table and attach source-derived district context."""
@@ -336,12 +337,18 @@ def convert_xlsx(
 
     data = []
     next_block = min((item[4] for item in starts if item[0] == sheet and item[4] > idx), default=len(rows))
+    require(last_row is None or last_row >= rows[idx][0], "XLSX_SELECTION_EMPTY")
+    defective_columns = {}
+    for (row, column), formula in formulas.items():
+        if formula.get("cache_missing") or formula.get("error_value"):
+            defective_columns.setdefault(row, set()).add(column)
     footer_started = False
     for rid, cells in rows[idx:next_block]:
+        if last_row is not None and rid > last_row:
+            break
         name = cells.get(territory_col, "")
-        number_count = sum(
-            is_quantitative(v) for k, v in cells.items() if k != territory_col
-        )
+        measures = {k for k, v in cells.items() if k != territory_col and is_quantitative(v)}
+        number_count = len(measures | (defective_columns.get(rid, set()) - {territory_col}))
         if not name and is_column_number_guide(cells) and next_block < len(rows):
             footer_started = True
         elif number_count >= 2:
@@ -352,21 +359,18 @@ def convert_xlsx(
             require(not number_count, "XLSX_AMBIGUOUS_NON_DATA_ROW")
             footer_started = True
     require(
-        len(data) >= 30 and len({r for r, _ in data}) == len(data),
+        len(data) >= (1 if last_row is not None else 30) and len({r for r, _ in data}) == len(data),
         "XLSX_TOO_FEW_REGIONS",
     )
-    cols = sorted({k for _, cells in data for k in cells})
+    cols = sorted({k for rid, cells in data for k in cells.keys() | defective_columns.get(rid, set())})
     require(territory_col in cols and len(cols) >= 4, "XLSX_FEW_INDICATORS")
     indicator_cols = [k for k in cols if k != territory_col]
     used_rows = {rid for rid, _ in data}
     groups = _header_columns(tree, dict(previous), header_candidates, cols, territory_col)
-    for (rid, column), formula in formulas.items():
+    for rid, column in formulas:
         if column not in cols:
             continue
         require(rid not in header_candidates, "XLSX_FORMULA_IN_HEADER")
-        if rid in used_rows:
-            require(not formula.get("cache_missing"), "XLSX_FORMULA_CACHE_MISSING")
-            require(not formula.get("error_value"), "XLSX_SOURCE_ERROR_VALUE")
     header_candidates = dict(sorted(header_candidates.items()))
     cols = [territory_col, *indicator_cols]
     if evidence is not None:
@@ -387,6 +391,10 @@ def convert_xlsx(
             parts = [f"source_column_{k}"]
         header.append(" / ".join(parts))
     require(len(set(header)) == len(header), "XLSX_DUPLICATE_HEADER")
+    invalid = set().union(*(columns for row, columns in defective_columns.items() if row in used_rows))
+    if evidence is not None:
+        evidence["unresolved_fields"] = tuple(heading for column, heading in zip(cols, header) if column in invalid)
+        evidence["scope"] = "selected_fragment" if last_row is not None else "published_table"
 
     districts = [
         i
@@ -395,7 +403,7 @@ def convert_xlsx(
     ]
     qualified_columns = [
         column for column, heading in zip(indicator_cols, header[1:])
-        if count_label(heading) is not None
+        if count_label(heading) is not None and column not in invalid
     ]
     final_boundary = (
         last_district_boundary(data, districts[-1], territory_col, qualified_columns or indicator_cols)

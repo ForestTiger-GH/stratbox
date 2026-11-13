@@ -7,21 +7,25 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from hashlib import sha256
+from io import BytesIO
 from math import isfinite
 import re
 from time import monotonic, sleep
-from typing import Callable
+from typing import BinaryIO, Callable
 from urllib.parse import urljoin
 import zlib
 
 from stratbox import __version__
 from stratbox.base.limits import BudgetMeter
+from stratbox.data.evidence import ByteIdentity
 
 from .contracts import (
     HttpFailure,
     HttpRequest,
     HttpResponse,
+    HttpStreamResponse,
     HttpTransport,
+    StreamingHttpTransport,
     public_https_parts,
 )
 
@@ -67,9 +71,34 @@ def exchange(
     budget: BudgetMeter | None = None,
 ) -> HttpResponse | HttpFailure:
     """Check admission, perform a bounded exchange, and optionally retry a read."""
+    return _exchange(request, transport, retry, cancelled, budget)
+
+
+def exchange_into(
+    request: HttpRequest, sink: BinaryIO, *,
+    transport: StreamingHttpTransport | None,
+    retry: RetryPolicy | None = None,
+    cancelled: Callable[[], bool] | None = None,
+    budget: BudgetMeter | None = None,
+) -> HttpStreamResponse | HttpFailure:
+    """Receive into private seekable staging, resetting it before each attempt."""
+    accepted = False
+    try:
+        result = _exchange(request, transport, retry, cancelled, budget, sink)
+        accepted = isinstance(result, HttpStreamResponse)
+        return result
+    finally:
+        if not accepted:
+            sink.seek(0)
+            sink.truncate(0)
+
+
+def _exchange(request, transport, retry, cancelled, budget, sink=None):
     if not request.permits(request.url):
         return HttpFailure("destination_forbidden", "admission")
     if transport is None:
+        return HttpFailure("capability_missing", "admission")
+    if sink is not None and not callable(getattr(transport, "exchange_into", None)):
         return HttpFailure("capability_missing", "admission")
     if budget is None:
         budget = request.budget
@@ -97,27 +126,35 @@ def exchange(
                 budget.charge("requests", 1)
             remaining = min(remaining, budget.seconds_left())
             observed_decoded = budget.used("decoded_bytes")
-        result = transport.exchange(
-            replace(request, deadline_seconds=remaining, budget=budget), cancelled=cancelled
-        )
+        attempt_request = replace(request, deadline_seconds=remaining, budget=budget)
+        if sink is None:
+            result = transport.exchange(attempt_request, cancelled=cancelled)
+            response = result
+            size = len(result.body) if isinstance(result, HttpResponse) else 0
+        else:
+            sink.seek(0)
+            sink.truncate(0)
+            result = transport.exchange_into(attempt_request, sink, cancelled=cancelled)
+            response = result.response if isinstance(result, HttpStreamResponse) else None
+            size = result.identity.size if isinstance(result, HttpStreamResponse) else 0
         if budget is not None:
             budget.checkpoint()
         if monotonic() >= deadline:
             return HttpFailure("timeout", "body")
-        if isinstance(result, HttpResponse):
+        if isinstance(response, HttpResponse):
             if budget is not None:
                 reported = budget.used("decoded_bytes") - observed_decoded
-                if reported < len(result.body):
-                    budget.charge("decoded_bytes", len(result.body) - reported)
-            effective = public_https_parts(result.effective_locator_safe).hostname
+                if reported < size:
+                    budget.charge("decoded_bytes", size - reported)
+            effective = public_https_parts(response.effective_locator_safe).hostname
             if not any(endpoint.host == effective for endpoint in request.endpoints):
                 return HttpFailure("destination_forbidden", "headers")
-            if len(result.body) > request.max_response_bytes:
+            if size > request.max_response_bytes:
                 return HttpFailure("response_too_large", "body")
-            if result.status_code not in _RETRY_STATUS:
+            if response.status_code not in _RETRY_STATUS:
                 return result
             wait = _retry_after(
-                result.headers.get("retry-after"), result.observed_at_utc
+                response.headers.get("retry-after"), response.observed_at_utc
             )
         elif isinstance(result, HttpFailure):
             if result.reason not in {"connection_error", "timeout", "truncated"}:
@@ -154,7 +191,7 @@ def _remaining(request: HttpRequest, deadline: float) -> float:
     return remaining
 
 
-def _read_body(read, headers, request, deadline, cancelled) -> bytes:
+def _read_body(read, headers, request, deadline, cancelled, write):
     max_bytes = request.max_response_bytes
     budget = request.budget
     wire_limit = max_bytes
@@ -179,13 +216,32 @@ def _read_body(read, headers, request, deadline, cancelled) -> bytes:
     decoder = None
     if encoding in {"gzip", "deflate"}:
         decoder = zlib.decompressobj(31 if encoding == "gzip" else zlib.MAX_WBITS)
-    body = bytearray()
+    digest = sha256()
+    decoded_size = 0
     wire_size = 0
-    while True:
+
+    def checkpoint():
         if cancelled is not None and cancelled():
             raise _ReadFailure("cancelled")
         if _remaining(request, deadline) <= 0:
             raise _ReadFailure("timeout")
+
+    def accept(chunk):
+        nonlocal decoded_size
+        if budget is not None:
+            budget.charge("decoded_bytes", len(chunk))
+        decoded_size += len(chunk)
+        if decoded_size > decoded_limit:
+            raise _ReadFailure("response_too_large")
+        digest.update(chunk)
+        try:
+            if chunk and write(chunk) != len(chunk):
+                raise OSError("Short staging write")
+        except OSError:
+            raise _ReadFailure("staging_failed") from None
+
+    while True:
+        checkpoint()
         chunk = read(min(_CHUNK, wire_limit - wire_size + 1))
         if not chunk:
             break
@@ -194,23 +250,23 @@ def _read_body(read, headers, request, deadline, cancelled) -> bytes:
         wire_size += len(chunk)
         if wire_size > wire_limit:
             raise _ReadFailure("response_too_large")
-        if decoder is not None:
-            chunk = decoder.decompress(chunk, decoded_limit - len(body) + 1)
+        if decoder is None:
+            accept(chunk)
+            continue
+        while chunk:
+            checkpoint()
+            decoded = decoder.decompress(chunk, min(_CHUNK, decoded_limit - decoded_size + 1))
             if decoder.unused_data:
                 raise _ReadFailure("invalid_http")
-        if budget is not None:
-            budget.charge("decoded_bytes", len(chunk))
-        if len(body) + len(chunk) > decoded_limit or (decoder and decoder.unconsumed_tail):
-            raise _ReadFailure("response_too_large")
-        body.extend(chunk)
-    if _remaining(request, deadline) <= 0:
-        raise _ReadFailure("timeout")
+            accept(decoded)
+            chunk = decoder.unconsumed_tail
+    checkpoint()
     if (length is not None and wire_size != length) or (decoder and not decoder.eof):
         raise _ReadFailure("truncated")
-    return bytes(body)
+    return ByteIdentity(digest.hexdigest(), decoded_size), wire_size
 
 
-def _follow(request, open_response, cancelled, assurance):
+def _follow(request, open_response, cancelled, assurance, sink=None):
     url = request.url
     deadline = monotonic() + request.deadline_seconds
     headers = {
@@ -250,16 +306,18 @@ def _follow(request, open_response, cancelled, assurance):
                 url = target
                 continue
             try:
-                body = b"" if status in {204, 304} else _read_body(
-                    read, incoming, request, deadline, cancelled
+                buffer = BytesIO() if sink is None else sink
+                identity, wire_size = (ByteIdentity.of(b""), 0) if status in {204, 304} else _read_body(
+                    read, incoming, request, deadline, cancelled, buffer.write,
                 )
             except _ReadFailure as error:
                 return HttpFailure(error.reason, "body")
-            return HttpResponse(
-                status, body, incoming, datetime.now(timezone.utc),
+            response = HttpResponse(
+                status, buffer.getvalue() if sink is None else b"", incoming, datetime.now(timezone.utc),
                 f"https://{public_https_parts(url).hostname}", assurance,
-                sha256(url.encode("utf-8")).hexdigest(),
+                sha256(url.encode("utf-8")).hexdigest(), wire_size,
             )
+            return response if sink is None else HttpStreamResponse(response, identity)
     raise AssertionError("Redirect limit exhausted")
 
 
@@ -271,6 +329,14 @@ class RequestsTransport:
     def exchange(
         self, request: HttpRequest, *, cancelled: Callable[[], bool] | None = None
     ) -> HttpResponse | HttpFailure:
+        return self._exchange(request, cancelled)
+
+    def exchange_into(
+        self, request: HttpRequest, sink: BinaryIO, *, cancelled: Callable[[], bool] | None = None,
+    ) -> HttpStreamResponse | HttpFailure:
+        return self._exchange(request, cancelled, sink)
+
+    def _exchange(self, request, cancelled, sink=None):
         if not request.permits(request.url):
             return HttpFailure("destination_forbidden", "admission")
         try:
@@ -300,7 +366,7 @@ class RequestsTransport:
                             lambda size: response.raw.read1(size, decode_content=False),
                         )
 
-                return _follow(request, open_response, cancelled, "tls_host")
+                return _follow(request, open_response, cancelled, "tls_host", sink)
         except _ReadFailure as error:
             return HttpFailure(error.reason, "admission")
         except (requests.Timeout, urllib_errors.TimeoutError):

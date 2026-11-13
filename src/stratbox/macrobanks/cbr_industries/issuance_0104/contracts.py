@@ -6,9 +6,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
 
-from stratbox.data import Representation, SourcePayload
+from stratbox.data import ComputationReceipt, Representation, SourcePayload
 from stratbox.macrobanks.cbr_industries.contracts import (
+    Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpIndustrySpec as IndustrySpec,
+    Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpRegionSpec as RegionSpec,
     Cbr0105ADebtCorpValidationIssue as ValidationIssue,
 )
@@ -79,6 +81,8 @@ class ParsedIssuanceFile:
     validation_issues: tuple[ValidationIssue, ...]
     df_stream: pd.DataFrame
     rows_stream: int
+    evidence: ComputationReceipt | None = None
+    unmapped_headers: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -97,26 +101,31 @@ class IssuanceStreamResult:
     regions: tuple[RegionSpec, ...]
     industries: tuple[IndustrySpec, ...]
     rows_stream: int
+    evidence: ComputationReceipt | None = None
+    stop_reason: str | None = None
 
     @property
     def is_partial(self) -> bool:
-        return bool(self.failures) and bool(self.parsed_files)
+        return bool(self.failures or self.stop_reason) and bool(self.parsed_files)
 
     @property
     def ok(self) -> bool:
-        return not self.failures and not any(x.severity == "error" for x in self.validation_issues)
+        return not self.failures and self.stop_reason is None and not any(
+            x.severity == "error" for x in self.validation_issues
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class CalculateIssuanceApkRequest:
-    stream: pd.DataFrame
+    stream: pd.DataFrame | IssuanceStreamResult | ParsedIssuanceFile
 
 
 @dataclass(frozen=True, slots=True)
 class PivotIssuanceRequest:
-    stream: pd.DataFrame
-    pivot: object
+    stream: pd.DataFrame | IssuanceStreamResult | Cbr0105ADebtCorpApkCalculationResult
+    pivot: Cbr0105ADebtCorpPivotRequest
     source: IssuanceStreamResult | None = None
+    industry_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

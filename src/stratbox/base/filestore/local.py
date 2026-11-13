@@ -51,6 +51,9 @@ class _LocalStage:
                 if error.errno in {ENOTSUP, EXDEV}:
                     raise MutationRejected("Atomic creation unavailable", capability_missing=True) from error
                 raise
+            # Removing the staging link also changes the destination inode's
+            # ctime. Finish that transition before observing its revision.
+            self.staging.unlink()
         elif mode == "replace_expected_revision":
             if not expected_revision:
                 raise MutationRejected("Expected revision is required")
@@ -247,6 +250,15 @@ class LocalFileStore(FileStore):
     @staticmethod
     def _revision(info: os.stat_result) -> str:
         return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}:{info.st_ctime_ns}"
+
+    def current_revision(self, path: str) -> str:
+        info = self.checked_file_path(path).lstat()
+        if not stat.S_ISREG(info.st_mode):
+            raise MutationRejected("Expected a regular file")
+        return self._revision(info)
+
+    def storage_scope(self, path: str) -> str:
+        return sha256(os.path.normcase(str(self.checked_file_path(path).resolve())).encode("utf-8")).hexdigest()
 
     def inspect_file(self, path: str) -> FileVersion:
         return self.inspect_file_budgeted(path, budget=None)

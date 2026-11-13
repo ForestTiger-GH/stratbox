@@ -62,6 +62,8 @@ class AcquisitionReceipt:
     target_sha256: str | None = None
     etag: str | None = field(default=None, repr=False)
     reused: bool = False
+    content_encoding: str | None = None
+    wire_size: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +89,7 @@ class UsedInputReceipt:
     source_id: str | None = None
     container: ByteIdentity | None = None
     member: str | None = None
+    version: ByteIdentity | None = None
 
     @classmethod
     def for_payload(
@@ -122,6 +125,22 @@ class StoredBytesReceipt:
     observed_identity: ByteIdentity | None = None
     expected_revision: str | None = field(default=None, repr=False)
     effect_id: str | None = None
+    observed_revision: str | None = field(default=None, repr=False)
+    store_scope: str | None = field(default=None, repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class MaterialReference:
+    """A store-owned object identified by its observed revision and exact bytes."""
+
+    locator: str = field(repr=False)
+    store_id: str
+    identity: ByteIdentity
+    media_type: str
+    source_id: str | None = None
+    revision: str | None = field(default=None, repr=False)
+    charset: str | None = None
+    store_scope: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)

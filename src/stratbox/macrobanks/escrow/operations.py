@@ -1,10 +1,12 @@
 """Source discovery, history, views and workbook representation for escrow accounts."""
 
+from dataclasses import asdict, replace
 from datetime import date
 from pathlib import PurePosixPath
 
 from stratbox.base.ioapi.workbook_bytes import openpyxl_bytes
 from stratbox.base.net import HttpTransport
+from stratbox.base.limits import ExecutionBudget
 from stratbox.base.utils.optional_deps import require_extra
 from stratbox.data import AcquiredSource, Representation
 from stratbox.data.representation import XLSX
@@ -17,6 +19,8 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.source_validation import use_payload
+from stratbox.execution.batch import attempt_batch, require_batch_values
+from stratbox.execution.tables import record_tables, use_tables
 from stratbox.macrobanks._cbr import (
     HTML_TYPES,
     WORKBOOK_LIMIT,
@@ -42,6 +46,7 @@ from .contracts import (
 from .sources import ESCROW_SOURCE_ROOTS
 
 _ROOTS = ESCROW_SOURCE_ROOTS
+_TABLES = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
 DISCOVER = OperationDefinition(
     "cbr.escrow.discover", 1, "cbr-escrow-index-1", DiscoverEscrowRequest, tuple,
     optional_capabilities=frozenset({"http"}),
@@ -55,29 +60,32 @@ ACQUIRE = OperationDefinition(
     frozenset({"http"}),
 )
 PARSE = OperationDefinition(
-    "cbr.escrow.parse", 1, "cbr-escrow-layout-1", ParseEscrowRequest, ParsedEscrowFile
+    "cbr.escrow.parse", 2, "cbr-escrow-layout-2", ParseEscrowRequest, ParsedEscrowFile, limits=_TABLES
 )
 HISTORY = OperationDefinition(
     "cbr.escrow.build_history",
-    1,
-    "cbr-escrow-history-1",
+    2,
+    "cbr-escrow-history-2",
     EscrowHistoryBuildRequest,
     EscrowHistoryResult,
     partial_allowed=True,
+    limits=_TABLES,
 )
 VIEWS = OperationDefinition(
     "cbr.escrow.build_views",
-    1,
+    2,
     "cbr-escrow-views-1",
     BuildEscrowViewsRequest,
     EscrowPivotPack,
+    limits=_TABLES,
 )
 RENDER = OperationDefinition(
     "cbr.escrow.render_workbook",
-    1,
+    2,
     "cbr-escrow-xlsx-1",
     EscrowPivotPack,
     Representation,
+    limits=_TABLES,
 )
 
 
@@ -163,7 +171,9 @@ def _parse(req, invocation):
         value = parse_escrow_excel_bytes(
             req.payload.data, source_name=req.source_name, as_of=day.isoformat()
         )
-    except (ValueError, KeyError, OSError):
+    except ValueError:
+        raise OperationFailure("source.workbook_layout_unresolved") from None
+    except (KeyError, OSError):
         raise OperationFailure("source.workbook_invalid") from None
     if value.df_long.empty:
         raise OperationFailure("source.observations_empty")
@@ -175,7 +185,11 @@ def parse(
 ) -> OperationResult[ParsedEscrowFile]:
     def work(req, invocation):
         invocation.stage("parse")
-        return _parse(req, invocation)
+        value = _parse(req, invocation)
+        evidence = record_tables(invocation, (("rows", value.df_rows), ("observations", value.df_long)),
+                                 parameters={"date": value.file_date, "sheet": value.sheet_name,
+                                             "unmapped_headers": value.unmapped_headers})
+        return replace(value, evidence=evidence)
 
     return run(PARSE, request, work, context=context)
 
@@ -191,32 +205,21 @@ def build_history(
         invocation.stage("parse")
         if not req.sources:
             raise OperationFailure("request.source_selection_empty")
-        parsed, failures = [], []
-        dates = set()
-        for index, source in enumerate(req.sources):
-            invocation.progress(index, len(req.sources))
-            try:
-                item = _parse(source, invocation)
-            except OperationFailure as error:
-                if not req.continue_on_error or error.outcome == "cancelled":
-                    raise
-                failures.append(
-                    EscrowSourceFailure(
-                        source.payload.source_id or source.source_name,
-                        "",
-                        source.source_name,
-                        error.diagnostic.code,
-                    )
-                )
-                continue
-            if item.file_date in dates:
-                raise OperationFailure("source.duplicate_release")
-            dates.add(item.file_date)
-            parsed.append(item)
-        if not parsed:
-            raise OperationFailure("source.no_valid_workbooks")
-        invocation.stage("build_history")
-        parsed.sort(key=lambda item: item.file_date)
+        batch = attempt_batch(req.sources, lambda source: _parse(source, invocation), invocation,
+                              continue_on_error=req.continue_on_error)
+        require_batch_values(batch, "source.no_valid_workbooks")
+        failures = [
+            EscrowSourceFailure(source.payload.source_id or source.source_name, "", source.source_name, diagnostic.code)
+            for source, diagnostic in batch.failed
+        ]
+        parsed = sorted(batch.values, key=lambda item: item.file_date)
+        dates = tuple(item.file_date for item in parsed)
+        if len(set(dates)) != len(dates):
+            raise OperationFailure("source.duplicate_release")
+        checkpoint = (lambda: None) if batch.stopped is not None else None
+        if checkpoint is None:
+            invocation.stage("build_history")
+        invocation.budget.check("cells", sum(item.df_long.size for item in parsed), completed=checkpoint is not None)
         long = pd.concat([item.df_long for item in parsed], ignore_index=True)
         present = set(long["Показатель"].dropna())
         indicators = tuple(
@@ -228,15 +231,37 @@ def build_history(
             tuple(failures),
             tuple(parsed),
             long,
-            tuple(sorted(dates)),
+            dates,
             indicators,
             len(long),
+            stop_reason=batch.stopped.code if batch.stopped else None,
         )
-        if failures:
-            return Completion(result, "partial", "source.selection_incomplete")
+        tables, metadata = _history_tables(result)
+        result = replace(result, evidence=record_tables(
+            invocation, tables, metadata=metadata, checkpoint=checkpoint, parameters={
+                "coverage": "complete" if result.ok else "subset",
+                "unmapped_headers": [item.unmapped_headers for item in parsed],
+                "not_started": [item.source_name for item in batch.remaining],
+                "interrupted": batch.interrupted.source_name if batch.interrupted else None,
+            },
+        ))
+        if not result.ok:
+            return Completion(result, "partial", batch.stopped or "source.selection_incomplete")
         return result
 
     return run(HISTORY, request, work, context=context)
+
+
+def _history_tables(result):
+    tables = (("observations", result.df_long),) + tuple(
+        (item.file_date, item.df_rows) for item in result.parsed_files
+    )
+    return tables, {"dates": result.dates, "failed": bool(result.failures), "stop_reason": result.stop_reason}
+
+
+def _pivot_metadata(result):
+    return {"indicators": [asdict(spec) for spec in result.indicator_specs],
+            "regions": result.region_order, "dates": result.date_order}
 
 
 def build_views(
@@ -249,15 +274,22 @@ def build_views(
         invocation.stage("build_views")
         if req.view.regions_mode not in {"latest", "custom"}:
             raise OperationFailure("request.region_order_invalid")
-        if not req.history.ok:
+        if not req.history.ok and req.view.require_complete_history:
             raise OperationFailure("source.history_incomplete")
-        pivots, indicators, regions, dates = build_escrow_pivots(
-            req.history.df_long,
-            parsed_files=req.history.parsed_files,
-            regions_mode=req.view.regions_mode,
-            custom_regions=req.view.custom_regions,
-        )
-        return EscrowPivotPack(pivots, tuple(indicators), tuple(regions), tuple(dates))
+        tables, metadata = _history_tables(req.history)
+        long, *rows = use_tables(invocation, tables, receipt=req.history.evidence,
+                                 role="escrow_history", metadata=metadata)
+        files = tuple(replace(item, df_rows=frame) for item, frame in zip(req.history.parsed_files, rows, strict=True))
+        try:
+            pivots, indicators, regions, dates = build_escrow_pivots(
+                long, parsed_files=files, regions_mode=req.view.regions_mode,
+                custom_regions=req.view.custom_regions, budget=invocation.budget,
+            )
+        except ValueError:
+            raise OperationFailure("request.escrow_view_invalid") from None
+        value = EscrowPivotPack(pivots, tuple(indicators), tuple(regions), tuple(dates))
+        return replace(value, evidence=record_tables(invocation, tuple(pivots.items()),
+                                                    metadata=_pivot_metadata(value), parameters=asdict(req.view)))
 
     return run(VIEWS, request, work, context=context)
 
@@ -273,15 +305,18 @@ def render_workbook(
         invocation.stage("render")
         if not req.indicator_specs:
             raise OperationFailure("request.empty_views")
+        tables = tuple(req.pivots.items())
+        frames = use_tables(invocation, tables, receipt=req.evidence, role="escrow_views", metadata=_pivot_metadata(req))
+        pivots = dict(zip((name for name, _ in tables), frames, strict=True))
         workbook = build_escrow_workbook(
-            req.pivots, list(req.indicator_specs), checkpoint=invocation.check_cancelled
+            pivots, list(req.indicator_specs), checkpoint=invocation.check_cancelled
         )
         try:
             return Representation(
                 "cbr.escrow.workbook",
                 1,
                 XLSX,
-                openpyxl_bytes(workbook, literal_text=True),
+                openpyxl_bytes(workbook, literal_text=True, budget=invocation.budget),
             )
         finally:
             workbook.close()

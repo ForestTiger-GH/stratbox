@@ -3,11 +3,10 @@ from __future__ import annotations
 import hashlib
 import re
 from datetime import date, datetime, timedelta
-from io import BytesIO
 
 import pandas as pd
 
-from stratbox.base.utils.optional_deps import require_extra
+from stratbox.base.ioapi.workbook_input import open_ooxml_workbook
 from stratbox.data import SourcePayload
 
 from stratbox.macrobanks.cbr_sors_restoration.metrics import source_metric
@@ -18,8 +17,7 @@ _DATE_RE = re.compile(r'(?<!\d)(\d{2})[./](\d{2})[./](\d{4})(?!\d)')
 
 
 def open_source_workbook(source: SourcePayload):
-    openpyxl = require_extra("openpyxl", "excel")
-    return openpyxl.load_workbook(BytesIO(source.data), read_only=True, data_only=True, keep_links=False)
+    return open_ooxml_workbook(source.data)
 
 
 def iso_date(value: object) -> str | None:

@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import (
     Completion,
@@ -243,6 +245,11 @@ def deliver(
             if previous.state == "unknown":
                 return Completion(previous, "unknown", "notification.reconciliation_required")
         invocation.stage("send")
+        effect = EffectReceipt(
+            "notification.send", "unknown", effect_id=intent.effect_key, stage="send",
+            identity=intent.payload_identity, guarantee="channel_acceptance", reconciliation_owner="channel",
+        )
+        invocation.effect(effect)
         try:
             ack = transport.send_admitted(intent) if managed else transport.send(intent)
         except Exception:
@@ -251,11 +258,7 @@ def deliver(
         state = {"accepted": "confirmed", "not_accepted": "failed", "unknown": "unknown"}[
             result.state
         ]
-        invocation.effects.append(EffectReceipt(
-            "notification.send", state, effect_id=intent.effect_key, stage="acceptance",
-            identity=intent.payload_identity, guarantee="channel_acceptance",
-            reconciliation_owner="channel",
-        ))
+        invocation.effect(replace(effect, state=state, stage="acceptance"))
         if result.state == "accepted":
             return result
         if result.state == "not_accepted":

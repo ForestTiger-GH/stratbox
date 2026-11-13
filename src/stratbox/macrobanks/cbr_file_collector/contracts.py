@@ -1,9 +1,11 @@
 """Requests and source evidence for the CBR file catalog."""
 
 from dataclasses import dataclass
+from typing import Mapping
 
 from stratbox.base.net import RetryPolicy
 from stratbox.data import AcquiredSource
+from stratbox.execution.originals import OriginalDestination, StoredOriginal
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +39,19 @@ class CollectedFile:
 
 
 @dataclass(frozen=True, slots=True)
+class StoredCollectedFile:
+    source_id: str
+    file_name: str
+    source: StoredOriginal
+
+
+@dataclass(frozen=True, slots=True)
+class CollectToStoreRequest:
+    selection: CollectFilesRequest
+    destinations: Mapping[str, OriginalDestination]
+
+
+@dataclass(frozen=True, slots=True)
 class CollectFailure:
     source_id: str
     code: str
@@ -46,11 +61,20 @@ class CollectFailure:
 class Collection:
     selected: tuple[str, ...]
     attempted: tuple[str, ...]
-    completed: tuple[CollectedFile, ...]
+    completed: tuple[CollectedFile | StoredCollectedFile, ...]
     failed: tuple[CollectFailure, ...]
     not_attempted: tuple[str, ...]
+    interrupted: CollectFailure | None = None
+    stop_reason: str | None = None
+    unresolved: StoredCollectedFile | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class PrepareArchiveRequest:
     files: tuple[CollectedFile, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class StoreArchiveRequest:
+    files: tuple[StoredCollectedFile, ...]
+    destination: OriginalDestination

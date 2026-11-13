@@ -15,9 +15,10 @@ from stratbox.data.releases import CompareReleaseRequest, ParsedRelease
 from stratbox.execution import ExecutionContext, OperationDefinition, OperationResult
 
 _DECLARATIONS = {
+    "execution.originals": "RECEIVE SAVE RECEIVE_TO_STORE READ RECONCILE",
     "macrobanks.cbr_offices.operations": "ACQUIRE PARSE CAPTURE READ COMPARE",
     "macrobanks.cbr_offices_reg.operations": "DISCOVER ACQUIRE PARSE CAPTURE READ COMPARE",
-    "macrobanks.cbr_file_collector.operations": "DISCOVER COLLECT ARCHIVE",
+    "macrobanks.cbr_file_collector.operations": "DISCOVER COLLECT COLLECT_TO_STORE ARCHIVE ARCHIVE_TO_STORE",
     "macrobanks.cbr_forms.operations": "SELECT ACQUIRE PARSE BUILD VIEWS RENDER",
     "macrobanks.cbr_industries.operations": "DISCOVER ACQUIRE PARSE BUILD_STREAM CALCULATE_APK PIVOT RENDER_PIVOTS RENDER_INDUSTRY",
     "macrobanks.cbr_industries.issuance_0104.operations": "DISCOVER ACQUIRE PARSE BUILD_STREAM CALCULATE_APK PIVOT RENDER_INDUSTRY",
@@ -39,6 +40,12 @@ _REF_FIELD = {**_STRING, "pattern": f"^{_REF}$"}
 _DATE_FIELD = {**_STRING, "pattern": f"^{_DATE}$", "format": "date"}
 _DIGEST_FIELD = {**_STRING, "pattern": f"^{_HASH}$"}
 _INTEGER = {"type": "integer", "minimum": 0}
+_LAYER = {"enum": ["same", "changed", "unavailable", "incompatible"]}
+_LAYERS = ("original", "structure", "facts", "method", "representation")
+_COVERAGE = {
+    "common_observations": _INTEGER, "baseline_observations": _INTEGER,
+    "candidate_observations": _INTEGER, "common_subjects": _INTEGER, "scope": _STRING,
+}
 _INPUTS = {
     "cbr.offices.parse": (
         {"source_ref": _REF_FIELD, "expected_sha256": _DIGEST_FIELD, "capture_date": _DATE_FIELD},
@@ -56,7 +63,13 @@ _OUTPUTS = {
         "as_of": _DATE_FIELD, "row_count": _INTEGER,
         "dataset_sha256": _DIGEST_FIELD, "representation_sha256": _DIGEST_FIELD,
     },
-    "cbr.offices.compare": {"state": _STRING, "reason": _STRING, "changed_count": _INTEGER},
+    "cbr.offices.compare": {
+        "state": _STRING, "reason": _STRING, "changed_count": _INTEGER,
+        "layers": {"type": "object", "additionalProperties": False,
+                   "properties": dict.fromkeys(_LAYERS, _LAYER), "required": list(_LAYERS)},
+        "coverage": {"anyOf": [{"type": "object", "additionalProperties": False,
+                                "properties": _COVERAGE, "required": list(_COVERAGE)}, {"type": "null"}]},
+    },
     "frg.plan_cleanup": {"plan_sha256": _DIGEST_FIELD, "action_count": _INTEGER},
 }
 
@@ -111,7 +124,7 @@ class OperationCatalog:
                 "limits": asdict(item.limits) if item.limits else None,
                 "partial_allowed": item.partial_allowed,
                 "cancellation": "cooperative",
-                "diagnostic_envelope": 2,
+                "diagnostic_envelope": 3,
                 "machine_read_only": item.operation_id in _INPUTS,
             })
         return tuple(descriptions)
@@ -264,7 +277,8 @@ def _project(result: OperationResult) -> dict | None:
             "representation_sha256": value.representation.identity.sha256,
         }
     if result.operation_id == "cbr.offices.compare":
-        return {"state": value.state, "reason": value.reason, "changed_count": value.changed_count}
+        return {"state": value.state, "reason": value.reason, "changed_count": value.changed_count,
+                "layers": asdict(value.layers), "coverage": asdict(value.coverage) if value.coverage else None}
     return {"plan_sha256": value.identity.sha256, "action_count": len(value.actions)}
 
 

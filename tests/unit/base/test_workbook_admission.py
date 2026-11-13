@@ -174,6 +174,12 @@ def test_worker_protocol_rechecks_material_and_result_shape():
     worker.result = replace(preview, identity=ByteIdentity.of(b"substitution"))
     with pytest.raises(WorkbookError, match="workbook.worker_result_invalid"):
         preview_workbook(raw, worker=worker)
+    worker.result = replace(preview, start_row=2)
+    with pytest.raises(WorkbookError, match="workbook.worker_result_invalid"):
+        preview_workbook(raw, worker=worker)
+    worker.result = replace(preview, contract_version=2)
+    with pytest.raises(WorkbookError, match="workbook.worker_result_invalid"):
+        preview_workbook(raw, worker=worker)
     worker.result = replace(preview, rows=(("x" * 32_768,),))
     with pytest.raises(WorkbookError, match="workbook.text_limit"):
         preview_workbook(raw, worker=worker)

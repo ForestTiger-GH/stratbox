@@ -195,3 +195,42 @@ def test_render_optional_metadata_and_unknown_industry() -> None:
     assert rendered.value.sheet_count == 3
     invalid = issuance.render_industry(issuance.IssuanceWorkbookRequest(history, "unknown"))
     assert invalid.outcome == "failed"
+
+
+def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
+    from stratbox.macrobanks.cbr_industries import Cbr0105ADebtCorpPivotRequest, RenderPivotRequest, render_pivots
+
+    original = _request()
+    base = issuance.parse(original)
+    workbook = load_workbook(BytesIO(original.payload.data))
+    workbook.create_sheet("Справка")["A1"] = "Пояснения к публикации"
+    workbook["foreign"].insert_rows(5)
+    workbook["foreign"].insert_cols(4)
+    workbook["foreign"]["D3"] = "Пояснение к строке"
+    target = BytesIO()
+    workbook.save(target)
+    workbook.close()
+    changed = replace(original, payload=SourcePayload(target.getvalue()))
+    parsed = issuance.parse(changed)
+    assert parsed.outcome == "succeeded", parsed.diagnostics
+    assert parsed.value.unmapped_headers == (("foreign", "Пояснение к строке"),)
+    keys = ["region_code", "currency_scope", "industry_code", "reference_period", "value"]
+    assert parsed.value.df_stream[keys].equals(base.value.df_stream[keys])
+    history = issuance.build_stream(issuance.BuildIssuanceStreamRequest((changed,)))
+    assert history.outcome == "succeeded", history.diagnostics
+    calculated = issuance.calculate_apk(issuance.CalculateIssuanceApkRequest(history.value))
+    assert calculated.outcome == "succeeded", calculated.diagnostics
+    pivot = Cbr0105ADebtCorpPivotRequest(
+        "region_code", "report_date", sheet_dimensions=("currency_scope",),
+    )
+    tables = issuance.build_pivots(issuance.PivotIssuanceRequest(calculated.value, pivot, industry_code="apk"))
+    assert tables.outcome == "succeeded", tables.diagnostics
+    rendered = render_pivots(RenderPivotRequest(tables.value))
+    assert rendered.outcome == "succeeded", rendered.diagnostics
+    receipt = rendered.computation
+    for _ in range(3):
+        receipt = receipt.parents[0][1]
+    assert receipt.inputs[0].identity == changed.payload.identity
+    calculated.value.df_stream.loc[calculated.value.df_stream.index[0], "value"] = 999
+    rejected = issuance.build_pivots(issuance.PivotIssuanceRequest(calculated.value, pivot, industry_code="apk"))
+    assert rejected.diagnostics[0].code == "input.identity_mismatch"

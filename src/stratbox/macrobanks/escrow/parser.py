@@ -25,7 +25,6 @@ from stratbox.macrobanks.escrow.columns import (
     HEADER_SUBJECT_REQUIRED_TOKENS,
     is_subject_header_cell,
     probe_indicator_columns,
-    resolve_indicator_columns,
     resolve_indicator_spec_by_header,
 )
 from stratbox.macrobanks.escrow.contracts import ParsedEscrowFile
@@ -157,7 +156,7 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str, as_of: str 
     """
     file_date = as_of if as_of is not None else extract_date_from_filename(source_name)
     sheet_name, sheet_df, header_row_index, header_values = _select_sheet_with_header(file_bytes)
-    resolved_columns = resolve_indicator_columns(header_values, allow_unknown=False)
+    resolved_columns, unknown = probe_indicator_columns(header_values, allow_unknown=True)
 
     useful_columns_count = max([resolved.source_index for resolved in resolved_columns], default=1) + 1
     data_df = sheet_df.iloc[header_row_index + 1 :, :useful_columns_count].copy()
@@ -220,6 +219,7 @@ def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str, as_of: str 
         rows=parsed_rows,
         df_rows=df_rows,
         df_long=df_long,
+        unmapped_headers=tuple(label for _, label in unknown),
     )
 
 

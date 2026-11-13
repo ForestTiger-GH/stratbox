@@ -12,7 +12,7 @@ from typing import Literal, Mapping
 
 from typing import TYPE_CHECKING
 
-from stratbox.data import Representation, SourcePayload
+from stratbox.data import ComputationReceipt, Representation, SourcePayload
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -122,6 +122,8 @@ class ParsedCbr0105ADebtCorpFile:
     validation_issues: tuple[Cbr0105ADebtCorpValidationIssue, ...]
     df_stream: pd.DataFrame
     rows_stream: int
+    evidence: ComputationReceipt | None = None
+    unmapped_headers: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,10 +162,12 @@ class Cbr0105ADebtCorpStreamResult:
     industries: tuple[Cbr0105ADebtCorpIndustrySpec, ...]
     rows_stream: int
     geography_method_version: str = "cbr-0105a-geography-1"
+    evidence: ComputationReceipt | None = None
+    stop_reason: str | None = None
 
     @property
     def sources_ok(self) -> bool:
-        return not self.failures
+        return not self.failures and self.stop_reason is None
 
     @property
     def validation_ok(self) -> bool:
@@ -175,7 +179,7 @@ class Cbr0105ADebtCorpStreamResult:
 
     @property
     def is_partial(self) -> bool:
-        return bool(self.failures) and bool(self.parsed_files)
+        return bool(self.failures or self.stop_reason) and bool(self.parsed_files)
 
 
 @dataclass(frozen=True)
@@ -191,6 +195,7 @@ class Cbr0105ADebtCorpApkCalculationResult:
     source_rows_used: int
     groups_calculated: int
     rows_added: int
+    evidence: ComputationReceipt | None = None
 
     @property
     def ok(self) -> bool:
@@ -241,6 +246,7 @@ class Cbr0105ADebtCorpPivotSetResult:
     source_rows: int
     table_count: int
     is_partial: bool
+    evidence: ComputationReceipt | None = None
 
     @property
     def ok(self) -> bool:
@@ -302,14 +308,15 @@ class Cbr0105ADebtCorpIndustryWorkbookResult:
 
 @dataclass(frozen=True)
 class CalculateApkRequest:
-    stream: pd.DataFrame
+    stream: pd.DataFrame | Cbr0105ADebtCorpStreamResult | ParsedCbr0105ADebtCorpFile
 
 
 @dataclass(frozen=True)
 class PivotInput:
-    stream: pd.DataFrame
+    stream: pd.DataFrame | Cbr0105ADebtCorpStreamResult | Cbr0105ADebtCorpApkCalculationResult
     pivot: Cbr0105ADebtCorpPivotRequest
     source: Cbr0105ADebtCorpStreamResult | None = None
+    industry_code: str | None = None
 
 
 @dataclass(frozen=True)

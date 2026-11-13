@@ -245,7 +245,9 @@ def clean_cbr_0105a_source_label(value: object) -> str:
     return text
 
 
-def resolve_cbr_0105a_debt_corp_sheet_spec(title: object) -> Cbr0105ADebtCorpSheetSpec:
+def resolve_cbr_0105a_debt_corp_sheet_spec(
+    title: object, *, allow_unrelated: bool = False,
+) -> Cbr0105ADebtCorpSheetSpec | None:
     """Распознает смысл листа по полному заголовку в A1, а не по имени вкладки."""
     normalized = normalize_cbr_0105a_text(title)
     required = (
@@ -257,12 +259,16 @@ def resolve_cbr_0105a_debt_corp_sheet_spec(title: object) -> Cbr0105ADebtCorpShe
         "предпринимателям",
     )
     if not all(token in normalized.split() for token in required):
+        if allow_unrelated:
+            return None
         raise ValueError(f"01_05_A_Debt_corp sheet title is not recognized: {title!r}")
 
     measure = "overdue_debt" if "просроченная" in normalized.split() else "debt"
-    if "иностранной валюте" in normalized and "драгоценных металлах" in normalized:
+    if "иностранной валюте" in normalized and "драгоценных металлах" not in normalized:
+        raise ValueError("Unrecognized currency scope")
+    if "иностранной валюте" in normalized and "в рублях" not in normalized:
         currency_scope = "foreign_currency_and_precious_metals"
-    elif "в рублях" in normalized:
+    elif "в рублях" in normalized and "иностранной валюте" not in normalized:
         currency_scope = "rubles"
     else:
         currency_scope = "total"
@@ -279,24 +285,22 @@ def resolve_cbr_0105a_debt_corp_sheet_spec(title: object) -> Cbr0105ADebtCorpShe
 def resolve_cbr_0105a_debt_corp_industries(
     headers: list[object] | tuple[object, ...],
 ) -> tuple[Cbr0105ADebtCorpIndustrySpec, ...]:
-    """Строго сопоставляет 26 отраслевых столбцов с явным реестром."""
-    non_empty = [value for value in headers if normalize_cbr_0105a_text(value)]
-    if len(non_empty) != len(CBR_0105A_DEBT_CORP_INDUSTRY_SPECS):
-        raise ValueError(
-            "01_05_A_Debt_corp industry header count changed: "
-            f"expected={len(CBR_0105A_DEBT_CORP_INDUSTRY_SPECS)}, actual={len(non_empty)}"
-        )
+    """Resolve the complete method input in the published column order."""
+    known = {normalize_cbr_0105a_text(spec.canonical_name_ru): spec
+             for spec in CBR_0105A_DEBT_CORP_INDUSTRY_SPECS}
+    resolved = tuple(known.get(normalize_cbr_0105a_text(value)) for value in headers)
+    if None in resolved or len(set(resolved)) != len(resolved) or len(resolved) != len(known):
+        raise ValueError("CBR industry headers are incomplete or ambiguous")
+    return resolved
 
-    for source_value, spec in zip(non_empty, CBR_0105A_DEBT_CORP_INDUSTRY_SPECS, strict=True):
-        actual = normalize_cbr_0105a_text(source_value)
-        expected = normalize_cbr_0105a_text(spec.canonical_name_ru)
-        if actual != expected:
-            raise ValueError(
-                "01_05_A_Debt_corp industry header changed: "
-                f"order={spec.order}, expected={spec.canonical_name_ru!r}, "
-                f"actual={source_value!r}, normalized_actual={actual!r}"
-            )
-    return CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+
+def select_industry_headers(headers):
+    known = {normalize_cbr_0105a_text(spec.canonical_name_ru) for spec in CBR_0105A_DEBT_CORP_INDUSTRY_SPECS}
+    included, unmapped = [], []
+    for index, label in headers:
+        (included if normalize_cbr_0105a_text(label) in known else unmapped).append((index, label))
+    specs = resolve_cbr_0105a_debt_corp_industries([label for _, label in included])
+    return included, specs, tuple(clean_cbr_0105a_source_label(label) for _, label in unmapped)
 
 
 __all__ = [

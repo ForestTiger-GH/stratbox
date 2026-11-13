@@ -6,12 +6,11 @@ import re
 import warnings
 from datetime import date, datetime
 from hashlib import sha256
-from io import BytesIO
 
 import pandas as pd
-from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
+from stratbox.base.ioapi.workbook_input import open_ooxml_workbook
 from stratbox.macrobanks.cbr_industries.contracts import (
     Cbr0105ADebtCorpValidationIssue,
     ParsedCbr0105ADebtCorpFile,
@@ -24,7 +23,7 @@ from stratbox.macrobanks.cbr_industries.schema import (
     CBR_0105A_DEBT_CORP_UNIT_NAME_RU,
     clean_cbr_0105a_source_label,
     normalize_cbr_0105a_text,
-    resolve_cbr_0105a_debt_corp_industries,
+    select_industry_headers,
     resolve_cbr_0105a_debt_corp_sheet_spec,
 )
 from stratbox.macrobanks.cbr_industries.sources import report_date_from_cbr_0105a_filename
@@ -34,7 +33,7 @@ from .streams import (
 )
 from .shared_parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
-    _region_names, _validate_sheet_region_names,
+    _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,
 )
 
 
@@ -178,7 +177,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             message="Workbook contains no default style.*",
             category=UserWarning,
         )
-        workbook = load_workbook(BytesIO(file_bytes), read_only=True, data_only=True, keep_links=False)
+        workbook = open_ooxml_workbook(file_bytes, reset_dimensions=True)
 
     try:
         if not workbook.sheetnames:
@@ -187,26 +186,22 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         records: list[dict[str, object]] = []
         seen_sheet_codes: set[str] = set()
         parsed_sheet_specs = []
-        common_region_names: list[str] | None = None
-        common_region_rows: list[int] | None = None
         common_regions = None
         industries = None
+        unmapped_headers = []
 
         for worksheet in workbook.worksheets:
             if checkpoint is not None:
                 checkpoint()
-            # Some official CBR workbooks contain an incorrect worksheet
-            # ``dimension`` declaration.  In particular, a sheet may declare
-            # ``A1:Z99`` while real cells in column AA are present in the XML.
-            # Read-only openpyxl trusts that declaration and otherwise truncates
-            # the last industry column.  Resetting the cached dimensions makes
-            # the streaming reader derive the actual used range from cell data.
-            worksheet.reset_dimensions()
-            sheet_rows = [tuple(row) for row in worksheet.iter_rows(values_only=True)]
+            rows = iter(worksheet.iter_rows(values_only=True))
+            first = next(rows, ())
+            sheet_title = first[0] if first else None
+            sheet_spec = resolve_cbr_0105a_debt_corp_sheet_spec(sheet_title, allow_unrelated=True)
+            if sheet_spec is None:
+                continue
+            sheet_rows = _sheet_rows(rows, first, checkpoint=checkpoint)
             if len(sheet_rows) < 4:
                 raise ValueError(f"01_05_A_Debt_corp sheet is too short: {worksheet.title!r}")
-            sheet_title = sheet_rows[0][0] if sheet_rows[0] else None
-            sheet_spec = resolve_cbr_0105a_debt_corp_sheet_spec(sheet_title)
             if sheet_spec.code in seen_sheet_codes:
                 raise ValueError(
                     "Duplicate semantic sheet in 01_05_A_Debt_corp workbook: "
@@ -223,30 +218,19 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                     f"sheet={worksheet.title!r}, sheet_date={sheet_date}"
                 )
 
-            header_cells = _non_empty_industry_headers(sheet_rows, sheet_name=worksheet.title)
-            current_industries = resolve_cbr_0105a_debt_corp_industries(
-                [value for _, value in header_cells]
+            _check_published_unit(sheet_title)
+            header_cells, current_industries, unmapped = select_industry_headers(
+                _non_empty_industry_headers(sheet_rows, sheet_name=worksheet.title)
             )
+            unmapped_headers.extend((worksheet.title, label) for label in unmapped)
             if industries is None:
-                industries = current_industries
+                industries = tuple(sorted(current_industries, key=lambda item: item.order))
 
             region_rows, region_names = _region_names(sheet_rows, sheet_name=worksheet.title)
-            common_region_names = _validate_sheet_region_names(
-                common_region_names,
-                region_names,
-                sheet_name=worksheet.title,
-            )
-            if common_region_rows is None:
-                common_region_rows = region_rows
+            if common_regions is None:
                 common_regions = build_cbr_0105a_debt_corp_region_specs(region_names)
-            elif region_rows != common_region_rows:
-                raise ValueError(
-                    "Geographic row numbers differ between 01_05_A_Debt_corp sheets: "
-                    f"sheet={worksheet.title!r}"
-                )
-
-            assert common_regions is not None
-            for source_row, region in zip(region_rows, common_regions, strict=True):
+            matching_regions = _match_sheet_regions(common_regions, region_names)
+            for source_row, region in zip(region_rows, matching_regions, strict=True):
                 for (source_column, source_header), industry in zip(
                     header_cells,
                     current_industries,
@@ -347,6 +331,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             validation_issues=validation_issues,
             df_stream=df_stream,
             rows_stream=int(len(df_stream)),
+            unmapped_headers=tuple(unmapped_headers),
         )
     finally:
         workbook.close()

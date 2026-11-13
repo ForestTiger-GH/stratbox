@@ -30,6 +30,6 @@ def spreadsheet_view(
         sheet.append(row)
         for cell in sheet[index]:
             cell.data_type = "s"
-    data = openpyxl_bytes(workbook, literal_text=True)
+    data = openpyxl_bytes(workbook, literal_text=True, budget=meter)
     meter.charge("output_bytes", len(data))
     return Representation("spreadsheet.literal-text", 1, XLSX, data)

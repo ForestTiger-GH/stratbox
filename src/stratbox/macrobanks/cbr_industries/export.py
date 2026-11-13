@@ -157,7 +157,7 @@ def _write_metadata_sheet(workbook: Workbook, pivot_set: Cbr0105ADebtCorpPivotSe
 
 def render_cbr_0105a_debt_corp_pivot_workbook(
     pivot_set: Cbr0105ADebtCorpPivotSetResult,
-    request: Cbr0105ADebtCorpPivotWorkbookRequest,
+    request: Cbr0105ADebtCorpPivotWorkbookRequest, *, budget=None,
 ) -> Cbr0105ADebtCorpPivotWorkbookResult:
     """Сохраняет все pivot-таблицы отдельными листами одной XLSX-книги."""
     if not pivot_set.tables:
@@ -176,7 +176,7 @@ def render_cbr_0105a_debt_corp_pivot_workbook(
                 enable_auto_filter=request.enable_auto_filter,
                 adjust_column_widths=request.adjust_column_widths,
             )
-        content = openpyxl_bytes(workbook, literal_text=True)
+        content = openpyxl_bytes(workbook, literal_text=True, budget=budget)
     finally:
         workbook.close()
 
@@ -429,6 +429,7 @@ def render_cbr_0105a_debt_corp_industry_workbook(
     request: Cbr0105ADebtCorpIndustryWorkbookRequest,
     *,
     industry_name_ru: str,
+    budget=None,
 ) -> Cbr0105ADebtCorpIndustryWorkbookResult:
     """Сохраняет динамику одной отрасли по регионам в стиле публикации Банка России."""
     if pivot_set.row_dimension != "region_code" or pivot_set.column_dimension != "report_date":
@@ -490,7 +491,7 @@ def render_cbr_0105a_debt_corp_industry_workbook(
                 subtitle=subtitle,
                 dates=dates,
             )
-        content = openpyxl_bytes(workbook, literal_text=True)
+        content = openpyxl_bytes(workbook, literal_text=True, budget=budget)
     finally:
         workbook.close()
 

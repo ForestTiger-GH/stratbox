@@ -63,3 +63,21 @@ def test_formula_source_absence_is_not_coerced_to_zero():
     assert values["capital_total"] == 0
     assert values["base_capital"] == 10
     assert values["main_capital"] == ""
+
+
+def test_form_views_detect_mutated_calculation_and_keep_selected_model():
+    dbf = dbf_bytes(["REGN_GKO", "STR", "VSEGO"], [("1000", "14", "10")])
+    snapshot = forms.parse_form(forms.ParseFormRequest(
+        forms.FormKey("802", date(2026, 4, 1)), SourcePayload(dbf),
+    ))
+    data = forms.build_form_data(forms.BuildFormDataRequest(
+        (snapshot.value,), (forms.BankSelection("1000", "Bank"),),
+    ))
+    assert data.outcome == "succeeded", data.diagnostics
+    views = forms.build_form_views(data.value)
+    rendered = forms.render_workbook(views.value)
+    assert rendered.outcome == "succeeded", rendered.diagnostics
+    assert any(item.role == "form_semantic_model" for item in data.computation.inputs)
+    assert rendered.computation.parents[0][1] == views.computation
+    data.value.long.loc[data.value.long.index[0], "Значение"] = 90
+    assert forms.build_form_views(data.value).diagnostics[0].code == "input.identity_mismatch"

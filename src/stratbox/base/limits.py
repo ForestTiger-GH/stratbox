@@ -77,18 +77,22 @@ class BudgetMeter:
     def used(self, resource: Resource) -> int:
         return self._used.get(resource, 0)
 
+    def usage(self) -> tuple[tuple[Resource, int], ...]:
+        return tuple(sorted(self._used.items()))
+
     def remaining(self, resource: Resource) -> int | None:
         limit = getattr(self.limits, resource)
         return None if limit is None else limit - self.used(resource)
 
-    def check(self, resource: Resource, amount: int) -> None:
+    def check(self, resource: Resource, amount: int, *, completed: bool = False) -> None:
         if type(amount) is not int or amount < 0:
             raise ValueError("Invalid resource charge")
-        self.checkpoint()
+        if not completed:
+            self.checkpoint()
         remaining = self.remaining(resource)
         if remaining is not None and amount > remaining:
             raise BudgetExceeded(resource)
 
-    def charge(self, resource: Resource, amount: int) -> None:
-        self.check(resource, amount)
+    def charge(self, resource: Resource, amount: int, *, completed: bool = False) -> None:
+        self.check(resource, amount, completed=completed)
         self._used[resource] = self.used(resource) + amount

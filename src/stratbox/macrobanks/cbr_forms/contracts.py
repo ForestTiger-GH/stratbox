@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, TYPE_CHECKING
 
-from stratbox.data import SourcePayload, UsedInputReceipt
+from stratbox.data import ComputationReceipt, SourcePayload, UsedInputReceipt
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -41,6 +41,7 @@ class FormSnapshot:
     physical_fields: Mapping[str, str]
     rows: DataFrame
     lineage: tuple[UsedInputReceipt, ...]
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,7 @@ class FormData:
     model: DataFrame
     indicator_order: Mapping[str, int]
     lineage: tuple[UsedInputReceipt, ...]
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,3 +74,4 @@ class FormViews:
     profile: str
     sheets: Mapping[str, DataFrame]
     lineage: tuple[UsedInputReceipt, ...]
+    evidence: ComputationReceipt | None = None

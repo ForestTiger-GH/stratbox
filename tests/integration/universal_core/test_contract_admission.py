@@ -49,8 +49,8 @@ assert not {'requests', 'pandas', 'openpyxl', 'pyxlsb', 'highspy', 'xlrd'} & sys
         OperationCatalog((definition, definition))
 
 
-def _wire(operation_id, data):
-    return json.dumps({"operation_id": operation_id, "contract_version": 1, "input": data}).encode()
+def _wire(operation_id, data, version=1):
+    return json.dumps({"operation_id": operation_id, "contract_version": version, "input": data}).encode()
 
 
 @pytest.mark.parametrize(("raw", "code"), [
@@ -99,8 +99,10 @@ def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_pat
     assert result["value"]["row_count"] == parsed.value.row_count
     comparison = json.loads(invoke_read_only(_wire("cbr.offices.compare", {
         "candidate_ref": "fixture", "baseline_ref": "fixture",
-    }), materials=material))
+    }, version=2), materials=material))
     assert comparison["value"]["state"] == "unchanged"
+    assert comparison["value"]["layers"]["original"] == "same"
+    assert comparison["value"]["coverage"]["common_observations"] > 0
     plan = frg.plan_cleanup(frg.PlanCleanupRequest("."), store=store)
     projection = json.loads(invoke_read_only(_wire("frg.plan_cleanup", {"directory_ref": "fixture"}), materials=material))
     assert projection["value"]["plan_sha256"] == plan.value.identity.sha256
@@ -153,7 +155,7 @@ def test_budget_ceiling_stage_and_optional_sink_failure():
     ))
     assert result.diagnostics[0].code == "budget.objects"
     assert result.diagnostics[0].stage == "read"
-    assert events[-1].version == 2 and events[-1].correlation.cause_event_id
+    assert events[-1].version == 3 and events[-1].correlation.cause_event_id
     assert "unstructured" not in events[-1].to_json()
     with pytest.raises(ValueError):
         Correlation(run_id="x" * 129)

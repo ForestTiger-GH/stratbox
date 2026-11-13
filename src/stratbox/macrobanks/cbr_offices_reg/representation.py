@@ -30,7 +30,7 @@ def serialize(records):
     return stream.getvalue().encode("utf-8")
 
 
-def validate_csv(blob):
+def validate_csv(blob, *, minimum_rows: int = 30):
     from .parser import CaptureError, MAX_ROW, MAX_WIDTH, clean, require
 
     require(
@@ -43,7 +43,7 @@ def validate_csv(blob):
         )
     except (UnicodeError, csv.Error):
         raise CaptureError("CSV_READ_FAILED") from None
-    require(len(rows) >= 31, "CSV_TOO_FEW_ROWS")
+    require(len(rows) >= minimum_rows + 1, "CSV_TOO_FEW_ROWS")
     width = len(rows[0])
     require(
         6 <= width <= MAX_WIDTH + 2

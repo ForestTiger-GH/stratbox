@@ -1,29 +1,47 @@
 from __future__ import annotations
 
 import importlib.resources as resources
+from contextlib import contextmanager
+from contextvars import ContextVar
+from io import BytesIO
 import json
 import re
 
 import pandas as pd
+from stratbox.data import SourcePayload, UsedInputReceipt
 
 _RESOURCE_PACKAGE = 'stratbox.macrobanks.cbr_sors_restoration.crosswalk'
 _RESOURCE_DIR = '_resources'
+_capture = ContextVar("sors_mapping_inputs", default=None)
 
 
-def _resource(name: str):
-    return resources.files(_RESOURCE_PACKAGE).joinpath(_RESOURCE_DIR, name)
+@contextmanager
+def capture_mapping_inputs(record):
+    token = _capture.set((record, {}))
+    try:
+        yield
+    finally:
+        _capture.reset(token)
+
+
+def _resource_bytes(name: str, media_type: str) -> bytes:
+    capture = _capture.get()
+    if capture is not None and name in capture[1]:
+        return capture[1][name]
+    data = resources.files(_RESOURCE_PACKAGE).joinpath(_RESOURCE_DIR, name).read_bytes()
+    if capture is not None:
+        record, cached = capture
+        record(UsedInputReceipt.for_payload(SourcePayload(data, media_type, name), "sors_crosswalk_resource"))
+        cached[name] = data
+    return data
 
 
 def _read_csv(name: str) -> pd.DataFrame:
-    ref = _resource(name)
-    with resources.as_file(ref) as path:
-        return pd.read_csv(path, dtype=str).fillna('')
+    return pd.read_csv(BytesIO(_resource_bytes(name, "text/csv")), dtype=str).fillna('')
 
 
 def read_crosswalk_manifest() -> dict[str, object]:
-    ref = _resource('crosswalk_manifest.json')
-    with ref.open('r', encoding='utf-8') as stream:
-        return json.load(stream)
+    return json.loads(_resource_bytes('crosswalk_manifest.json', "application/json"))
 
 
 def validate_mapping_version(mapping_version: str) -> dict[str, object]:

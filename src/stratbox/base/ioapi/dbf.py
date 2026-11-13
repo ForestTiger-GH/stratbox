@@ -21,13 +21,15 @@ from typing import Any
 
 import pandas as pd
 
-from stratbox.base.filestore.base import FileStore
-from stratbox.base.ioapi.bytes import read_bytes, write_bytes
+from stratbox.base.filestore import FileStore, LocalFileStore
+from stratbox.base.ioapi.bytes import read_bounded_bytes, write_bytes
+from stratbox.base.limits import BudgetMeter
 from .dbf_bytes import open_dbf_bytes
 from stratbox.base.utils.optional_deps import require_extra
 
 
-def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, **kwargs: Any) -> pd.DataFrame:
+def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, *,
+            limit: int = 128 * 1024 * 1024, budget: BudgetMeter | None = None, **kwargs: Any) -> pd.DataFrame:
     """
     Читает DBF и возвращает pandas.DataFrame.
 
@@ -35,9 +37,15 @@ def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, 
     - encoding: часто для русских DBF подходит cp866 или cp1251 (зависит от источника)
     - kwargs: пробрасывается в dbfread.DBF(...)
     """
-    data = read_bytes(path, store=store)
-    with open_dbf_bytes(data, encoding=encoding, **kwargs) as table:
-        return pd.DataFrame.from_records(list(table))
+    data = read_bounded_bytes(path, store=store if store is not None else LocalFileStore(),
+                              limit=limit, budget=budget)
+    with open_dbf_bytes(data, encoding=encoding, budget=budget, **kwargs) as table:
+        rows = []
+        for row in table:
+            if budget is not None:
+                budget.charge("cells", len(row))
+            rows.append(row)
+        return pd.DataFrame.from_records(rows)
 
 
 def write_df(path: str, df: pd.DataFrame, store: FileStore | None = None) -> None:

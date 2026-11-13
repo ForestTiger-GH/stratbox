@@ -2,6 +2,7 @@
 
 from datetime import date
 from importlib.resources import files
+from types import MappingProxyType
 
 from stratbox.base.ioapi.archive_bytes import (
     ArchiveError,
@@ -10,6 +11,7 @@ from stratbox.base.ioapi.archive_bytes import (
     extract_members,
 )
 from stratbox.base.net import HttpTransport
+from stratbox.base.limits import ExecutionBudget
 from stratbox.base.utils.optional_deps import require_extra
 from stratbox.data import (
     AcquiredSource,
@@ -27,6 +29,7 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.source_validation import source_failure, use_payload
+from stratbox.execution.tables import record_tables, use_tables
 from stratbox.macrobanks._cbr import ARCHIVE_TYPES, receive_cbr
 
 from .contracts import (
@@ -44,6 +47,7 @@ from .forms.registry import FORM_REGISTRY
 _ROOT = "/vfs/credit/forms/"
 _LIMITS = ArchiveLimits(200, 256 * 1024 * 1024, 128 * 1024 * 1024, 64 * 1024 * 1024)
 _DBF = "application/x-dbf"
+_TABLES = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
 SELECT = OperationDefinition(
     "cbr.forms.select_sources",
     1,
@@ -60,23 +64,31 @@ ACQUIRE = OperationDefinition(
     frozenset({"http"}),
 )
 PARSE = OperationDefinition(
-    "cbr.forms.parse", 1, "cbr-forms-physical-layout-1", ParseFormRequest, FormSnapshot,
-    optional_capabilities=frozenset({"archive_decoder"}),
+    "cbr.forms.parse", 2, "cbr-forms-physical-layout-1", ParseFormRequest, FormSnapshot,
+    optional_capabilities=frozenset({"archive_decoder"}), limits=_TABLES,
 )
 BUILD = OperationDefinition(
     "cbr.forms.build_data",
-    1,
+    2,
     "cbr-forms-model-evaluation-1",
     BuildFormDataRequest,
     FormData,
+    limits=_TABLES,
 )
 VIEWS = OperationDefinition(
-    "cbr.forms.build_views", 1, "cbr-forms-views-1", FormData, FormViews
+    "cbr.forms.build_views", 2, "cbr-forms-views-1", FormData, FormViews, limits=_TABLES
 )
 RENDER = OperationDefinition(
-    "cbr.forms.render_workbook", 1, "cbr-forms-xlsx-1", FormViews, Representation
+    "cbr.forms.render_workbook", 2, "cbr-forms-xlsx-1", FormViews, Representation, limits=_TABLES
 )
 
+
+def _snapshot_metadata(key, physical_fields):
+    return {"form": key.code, "as_of": key.as_of, "fields": dict(physical_fields)}
+
+
+def _data_metadata(form, indicator_order):
+    return {"form": form, "indicator_order": dict(indicator_order)}
 
 def _source(key: FormKey) -> FormSource:
     if (
@@ -206,7 +218,9 @@ def parse_form(
             frame = normalize_direct_snapshot(frame, spec)
         if frame.empty:
             raise OperationFailure("source.dbf_no_observations")
-        return FormSnapshot(req.key, fields, frame, tuple(invocation.used_inputs))
+        evidence = record_tables(invocation, (("dbf_rows", frame),),
+                                 metadata=_snapshot_metadata(req.key, fields))
+        return FormSnapshot(req.key, MappingProxyType(dict(fields)), frame, tuple(invocation.used_inputs), evidence)
 
     return run(PARSE, request, work, context=context)
 
@@ -232,9 +246,16 @@ def build_form_data(
             req.snapshots
         ):
             raise OperationFailure("request.duplicate_release")
-        for snapshot in req.snapshots:
-            for receipt in snapshot.lineage:
-                invocation.use(receipt)
+        snapshots = []
+        for snapshot in sorted(req.snapshots, key=lambda item: item.key.as_of):
+            frame, = use_tables(
+                invocation, (("dbf_rows", snapshot.rows),), receipt=snapshot.evidence,
+                role="form_snapshot", metadata=_snapshot_metadata(snapshot.key, snapshot.physical_fields),
+            )
+            if snapshot.evidence is not None:
+                for receipt in snapshot.evidence.inputs:
+                    invocation.use(receipt)
+            snapshots.append((snapshot.key.as_of.strftime("%d.%m.%Y"), frame))
         if req.banks is None:
             require_extra("openpyxl", "excel")
             from .common.banks import load_legacy_banks
@@ -282,10 +303,7 @@ def build_form_data(
             model = SourcePayload(data, CSV, name)
         use_payload(model, invocation, role="form_semantic_model", limit=1_000_000)
         invocation.stage("calculate")
-        snapshots = [
-            (snapshot.key.as_of.strftime("%d.%m.%Y"), snapshot.rows)
-            for snapshot in sorted(req.snapshots, key=lambda item: item.key.as_of)
-        ]
+        invocation.budget.check("cells", len(banks) * len(snapshots))
         try:
             model_df = parse_form_model(model.data, code)
             if isinstance(spec, DirectDatasetSpec):
@@ -299,9 +317,12 @@ def build_form_data(
                 long, order = build_formula_long(snapshots, banks, model_df, spec)
         except (ValueError, KeyError, RuntimeError):
             raise OperationFailure("source.form_semantics_invalid") from None
-        return FormData(
-            code, long, banks, model_df, order, tuple(invocation.used_inputs)
+        evidence = record_tables(
+            invocation, (("long", long), ("banks", banks), ("model", model_df)),
+            metadata=_data_metadata(code, order), parameters={"form": code, "dates": tuple(x[0] for x in snapshots)},
         )
+        return FormData(code, long, banks, model_df, MappingProxyType(dict(order)),
+                        tuple(invocation.used_inputs), evidence)
 
     return run(BUILD, request, work, context=context)
 
@@ -316,17 +337,28 @@ def build_form_views(
         invocation.stage("build_views")
         if req.form not in FORM_REGISTRY:
             raise OperationFailure("request.form_key_invalid")
-        for receipt in req.lineage:
-            invocation.use(receipt)
+        order = dict(req.indicator_order)
+        long, banks, model = use_tables(
+            invocation, (("long", req.long), ("banks", req.banks), ("model", req.model)),
+            receipt=req.evidence, role="form_data", metadata=_data_metadata(req.form, order),
+        )
+        if req.evidence is not None:
+            for receipt in req.evidence.inputs:
+                invocation.use(receipt)
         profile = FORM_REGISTRY[req.form].excel_profile
+        if not long.empty:
+            date_col = next((name for name in ("date", "Дата") if name in long), None)
+            dates = long[date_col].nunique() if date_col is not None else 1
+            invocation.budget.check("cells", len(order) * len(banks) * max(1, dates))
         sheets = build_form_sheets(
             profile=profile,
-            df_long=req.long,
-            df_banks=req.banks,
-            model_df=req.model,
-            indicator_order=req.indicator_order,
+            df_long=long,
+            df_banks=banks,
+            model_df=model,
+            indicator_order=order,
         )
-        return FormViews(req.form, profile, sheets, tuple(invocation.used_inputs))
+        evidence = record_tables(invocation, tuple(sheets.items()), metadata={"form": req.form, "profile": profile})
+        return FormViews(req.form, profile, MappingProxyType(dict(sheets)), tuple(invocation.used_inputs), evidence)
 
     return run(VIEWS, request, work, context=context)
 
@@ -340,15 +372,20 @@ def render_workbook(
         from .common.output import render_form_workbook
 
         invocation.stage("render")
-        for receipt in req.lineage:
-            invocation.use(receipt)
         if not req.sheets:
             raise OperationFailure("request.empty_views")
+        tables = tuple(req.sheets.items())
+        frames = use_tables(invocation, tables, receipt=req.evidence, role="form_views",
+                            metadata={"form": req.form, "profile": req.profile})
+        if req.evidence is not None:
+            for receipt in req.evidence.inputs:
+                invocation.use(receipt)
+        sheets = dict(zip((name for name, _ in tables), frames, strict=True))
         return Representation(
             f"cbr.forms.{req.profile}-xlsx",
             1,
             XLSX,
-            render_form_workbook(req.sheets, profile=req.profile),
+            render_form_workbook(sheets, profile=req.profile, budget=invocation.budget),
         )
 
     return run(RENDER, request, work, context=context)

@@ -1,4 +1,4 @@
-# Stratbox 0.10 core operations
+# Stratbox 0.11 core operations
 
 The Python package exposes independent acquisition, parsing, comparison,
 calculation and representation operations. Each domain owns its source
@@ -7,15 +7,16 @@ format primitives are reusable across domains.
 
 | Domain | Public operations | Subject and result |
 | --- | --- | --- |
+| `execution.originals` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
 | `macrobanks.cbr_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
 | `macrobanks.cbr_offices_reg` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
 | `organizations.fns_sme` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
 | `organizations.fns_1yur` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Part I from BIFF, OOXML, ZIP or a supplied RAR reader. The dated field map retains identity-equivalent columns, records omissions and keeps original geographic perimeters. |
-| `macrobanks.cbr_file_collector` | `discover`, `collect_raw`, `prepare_archive` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
+| `macrobanks.cbr_file_collector` | `discover`, `collect_raw`, `collect_to_store`, `prepare_archive`, `archive_to_store` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
 | `macrobanks.cbr_industries` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry` | Monthly 01_05_A_Debt_corp **stock** data and 01_04_A_New_loans_corp **flow** data via `issuance_0104`; typed source identity, reference month, geographic schema, shared derived APK and in-memory Excel views. |
 | `macrobanks.cbr_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
 | `macrobanks.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
-| `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
+| `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
 | `macrobanks.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
 | `notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
@@ -40,6 +41,13 @@ representation digest. Offline replay uses the same method. CSV replay
 carries CSV input evidence. `first_seen` requires an explicitly confirmed
 absent baseline. An unavailable or incompatible baseline gives a successful
 comparison with an `indeterminate` decision.
+
+Computations carry their direct input receipts and parent manifests in
+`OperationResult.computation`. Pass the typed result of `build_stream` to
+`calculate_apk` to preserve provenance. A standalone DataFrame has its own
+identity. Consumers can inspect the manifest and keep the parent receipts
+with saved results. Comparison reports original, structure, facts, method
+and representation separately, with the number of shared observations.
 
 ## Transport and effects
 

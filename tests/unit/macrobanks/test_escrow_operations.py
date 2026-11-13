@@ -99,3 +99,12 @@ def test_escrow_acquire_accepts_official_collection_workbook():
     assert result.outcome == "succeeded", result.diagnostics
     assert result.value.payload.data == content
     assert result.value.payload.source_id == link.source_id
+
+
+def test_escrow_view_rejects_mutated_geography_snapshot():
+    request = escrow.ParseEscrowRequest(SourcePayload(workbook_bytes()), "escrow_01062026.xlsx")
+    history = escrow.build_history(escrow.EscrowHistoryBuildRequest((request,)))
+    assert history.outcome == "succeeded"
+    history.value.parsed_files[0].df_rows.iloc[0, 0] = 1000
+    result = escrow.build_views(escrow.BuildEscrowViewsRequest(history.value))
+    assert result.diagnostics[0].code == "input.identity_mismatch"

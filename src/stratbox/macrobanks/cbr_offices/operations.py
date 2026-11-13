@@ -20,6 +20,7 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.acquisition import receive_source
+from stratbox.execution.comparison import compare_release_inputs, explain_comparison
 from stratbox.execution.source_validation import (
     decode_html,
     source_failure,
@@ -59,7 +60,7 @@ READ = OperationDefinition(
     ParsedRelease,
 )
 COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 1, "cbr-offices-compare-1", CompareReleaseRequest, Comparison
+    f"{DATASET}.compare", 2, "cbr-offices-compare-1", CompareReleaseRequest, Comparison
 )
 
 
@@ -215,6 +216,7 @@ def read_representation(
             req.payload.data,
             count,
             invocation.used_inputs,
+            facts_method=METHOD,
             observations=_observations(rows, req.as_of, None),
         )
 
@@ -224,9 +226,7 @@ def read_representation(
 def compare(
     request: CompareReleaseRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[Comparison]:
-    def work(req, invocation):
-        from stratbox.execution.comparison import compare_release_inputs
-
+    def evaluate(req, invocation):
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
@@ -245,5 +245,8 @@ def compare(
             "revised",
             "comparison.offices_observations",
         )
+
+    def work(req, invocation):
+        return explain_comparison(evaluate(req, invocation), req, invocation)
 
     return run(COMPARE, request, work, context=context)

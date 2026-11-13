@@ -5,7 +5,7 @@ from pathlib import Path
 
 from typing import TYPE_CHECKING
 
-from stratbox.data import SourcePayload, UsedInputReceipt
+from stratbox.data import ComputationReceipt, SourcePayload, UsedInputReceipt
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -275,6 +275,7 @@ class SorsSourceBundle:
     source_manifest_grid: pd.DataFrame
     validation_grid: pd.DataFrame
     lineage: tuple[UsedInputReceipt, ...] = ()
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True, slots=True)

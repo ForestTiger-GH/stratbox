@@ -1,7 +1,9 @@
 """Independent acquisition, normalization, calculation and rendering for 01_05_A_Debt_corp."""
 
+from dataclasses import asdict, replace
 from pathlib import PurePosixPath
 
+from stratbox.base.limits import ExecutionBudget
 from stratbox.base.net import HttpTransport
 from stratbox.base.utils.optional_deps import require_extra
 from stratbox.data import AcquiredSource
@@ -13,7 +15,9 @@ from stratbox.execution import (
     OperationResult,
     run,
 )
+from stratbox.execution.batch import attempt_batch, require_batch_values
 from stratbox.execution.source_validation import use_payload
+from stratbox.execution.tables import record_tables, seal_stream, use_stream, use_tables
 from stratbox.macrobanks._cbr import (
     HTML_TYPES,
     WORKBOOK_LIMIT,
@@ -45,8 +49,9 @@ from .contracts import (
 
 _DATASET = "cbr.industries.0105a"
 _ROOTS = ("/vfs/statistics/", "/content/document/file/")
-_METHOD = "cbr-0105a-workbook-1"
+_METHOD = "cbr-0105a-workbook-2"
 _HTTP = frozenset({"http"})
+_TABLE_LIMITS = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
 DISCOVER = OperationDefinition(
     f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple,
     optional_capabilities=frozenset({"http"}),
@@ -60,43 +65,49 @@ ACQUIRE = OperationDefinition(
     _HTTP,
 )
 PARSE = OperationDefinition(
-    f"{_DATASET}.parse", 1, _METHOD, ParseIndustryRequest, ParsedCbr0105ADebtCorpFile
+    f"{_DATASET}.parse", 2, _METHOD, ParseIndustryRequest, ParsedCbr0105ADebtCorpFile,
+    limits=_TABLE_LIMITS,
 )
 BUILD_STREAM = OperationDefinition(
     f"{_DATASET}.build_stream",
-    1,
-    "cbr-0105a-stream-1",
+    2,
+    "cbr-0105a-stream-2",
     BuildIndustryStreamRequest,
     Cbr0105ADebtCorpStreamResult,
     partial_allowed=True,
+    limits=_TABLE_LIMITS,
 )
 CALCULATE_APK = OperationDefinition(
     f"{_DATASET}.calculate_apk",
-    1,
+    2,
     "cbr-0105a-derived-apk-1",
     CalculateApkRequest,
     Cbr0105ADebtCorpApkCalculationResult,
+    limits=_TABLE_LIMITS,
 )
 PIVOT = OperationDefinition(
     f"{_DATASET}.build_pivots",
-    1,
+    2,
     "cbr-0105a-pivots-1",
     PivotInput,
     Cbr0105ADebtCorpPivotSetResult,
+    limits=_TABLE_LIMITS,
 )
 RENDER_PIVOTS = OperationDefinition(
     f"{_DATASET}.render_pivots",
-    1,
+    2,
     "cbr-0105a-pivot-xlsx-1",
     RenderPivotRequest,
     Cbr0105ADebtCorpPivotWorkbookResult,
+    limits=_TABLE_LIMITS,
 )
 RENDER_INDUSTRY = OperationDefinition(
     f"{_DATASET}.render_industry",
-    1,
+    2,
     "cbr-0105a-industry-xlsx-1",
     RenderIndustryRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
+    limits=_TABLE_LIMITS,
 )
 
 
@@ -198,7 +209,7 @@ def _parse(req, invocation):
             checkpoint=invocation.check_cancelled,
         )
     except (ValueError, KeyError, OSError):
-        raise OperationFailure("source.workbook_invalid") from None
+        raise OperationFailure("source.workbook_layout_unresolved") from None
 
 
 def parse(
@@ -207,6 +218,7 @@ def parse(
     def work(req, invocation):
         invocation.stage("parse")
         value = _parse(req, invocation)
+        value = seal_stream(invocation, value, parameters={"report_date": value.report_date, "unmapped_headers": value.unmapped_headers})
         if any(issue.severity == "error" for issue in value.validation_issues):
             return Completion(value, "failed", "source.validation_failed")
         return value
@@ -236,29 +248,23 @@ def build_stream(
             raise OperationFailure("request.source_filename_invalid") from None
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
-        parsed, failures = [], []
-        for index, (item, day) in enumerate(zip(req.sources, selected), 1):
-            invocation.progress(index - 1, len(selected))
-            try:
-                parsed.append(_parse(item, invocation))
-            except OperationFailure as error:
-                if not req.continue_on_error or error.outcome == "cancelled":
-                    raise
-                source = item.source
-                failures.append(
-                    Cbr0105ADebtCorpSourceFailure(
-                        "parse",
-                        source.source_id if source else item.source_name,
-                        source.url if source else "",
-                        item.source_name,
-                        day,
-                        error.diagnostic.code,
-                    )
-                )
-        if not parsed:
-            raise OperationFailure("source.no_valid_workbooks")
-        invocation.stage("normalize_geography")
-        files = normalize_cbr_0105a_debt_corp_regions_to_latest(parsed)
+        batch = attempt_batch(tuple(zip(req.sources, selected, strict=True)),
+                              lambda pair: _parse(pair[0], invocation), invocation,
+                              continue_on_error=req.continue_on_error)
+        require_batch_values(batch, "source.no_valid_workbooks")
+        failures = [
+            Cbr0105ADebtCorpSourceFailure(
+                "parse", item.source.source_id if item.source else item.source_name,
+                item.source.url if item.source else "", item.source_name, day, diagnostic.code,
+            )
+            for (item, day), diagnostic in batch.failed
+        ]
+        checkpoint = (lambda: None) if batch.stopped is not None else None
+        if checkpoint is None:
+            invocation.stage("normalize_geography")
+        invocation.budget.check("cells", sum(item.df_stream.size for item in batch.values),
+                                completed=checkpoint is not None)
+        files = normalize_cbr_0105a_debt_corp_regions_to_latest(batch.values)
         stream = concat_cbr_0105a_debt_corp_streams(item.df_stream for item in files)
         stream = stream.sort_values(
             ["report_date", "sheet_order", "region_order", "industry_order"],
@@ -279,12 +285,21 @@ def build_stream(
             latest.report_date == max(selected),
             latest.regions,
             latest.industries,
-            len(stream),
+            len(stream), stop_reason=batch.stopped.code if batch.stopped else None,
         )
+        value = seal_stream(invocation, value, parameters={
+            "selected": selected, "accepted": dates,
+            "quantity_kind": "stock", "period_basis": "as_of", "unit": "million_rubles",
+            "geography_anchor": latest.report_date, "geography_method": value.geography_method_version,
+            "coverage": "subset" if failures or batch.stopped else "complete",
+            "not_started": [item[0].source_name if isinstance(item, tuple) else item.source_name for item in batch.remaining],
+            "interrupted": batch.interrupted[0].source_name if batch.interrupted else None,
+            "unmapped_headers": [pair for item in files for pair in item.unmapped_headers],
+        }, checkpoint=checkpoint)
         if not value.validation_ok:
             return Completion(value, "failed", "source.validation_failed")
-        if failures:
-            return Completion(value, "partial", "source.selection_incomplete")
+        if batch.stopped or failures:
+            return Completion(value, "partial", batch.stopped or "source.selection_incomplete")
         return value
 
     return run(BUILD_STREAM, request, work, context=context)
@@ -302,10 +317,20 @@ def calculate_apk(
         )
 
         invocation.stage("calculate_derived")
+        if isinstance(req.stream, Cbr0105ADebtCorpStreamResult) and not req.stream.ok:
+            raise OperationFailure("source.stream_incomplete")
+        if isinstance(req.stream, ParsedCbr0105ADebtCorpFile) and any(
+            item.severity == "error" for item in req.stream.validation_issues
+        ):
+            raise OperationFailure("source.validation_failed")
+        stream = use_stream(invocation, req.stream)
         try:
-            return calculate_cbr_0105a_debt_corp_apk_industry(req.stream)
+            value = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=invocation.budget)
         except Cbr0105ADebtCorpDerivedIndustryError as error:
             raise OperationFailure(f"derived.{error.code.lower()}") from None
+        return seal_stream(invocation, value, parameters={
+            "components": value.source_industry_codes, "apk": value.apk_formula_ru, "lpk": value.lpk_formula_ru,
+        })
 
     return run(CALCULATE_APK, request, work, context=context)
 
@@ -322,14 +347,55 @@ def build_pivots(
         )
 
         invocation.stage("build_views")
+        stream = use_stream(invocation, req.stream, source=req.source)
+        stream = _select_industry(stream, req.industry_code)
         try:
-            return build_cbr_0105a_debt_corp_pivot_set(
-                req.stream, req.pivot, stream_result=req.source
+            result = build_cbr_0105a_debt_corp_pivot_set(
+                stream, req.pivot, stream_result=_stream_metadata(req), budget=invocation.budget,
             )
         except Cbr0105ADebtCorpPivotError as error:
             raise OperationFailure(f"pivot.{error.code.lower()}") from None
+        return _seal_pivots(invocation, result, req.pivot, industry_code=req.industry_code)
 
     return run(PIVOT, request, work, context=context)
+
+
+def _stream_metadata(request):
+    if request.source is not None:
+        return request.source
+    return request.stream if hasattr(request.stream, "validation_issues") else None
+
+
+def _select_industry(stream, code):
+    if code is None:
+        return stream
+    if "industry_code" not in stream:
+        raise OperationFailure("request.industry_unresolved")
+    selected = stream.loc[stream["industry_code"].eq(code)]
+    if selected.empty:
+        raise OperationFailure("request.industry_unresolved")
+    return selected
+
+
+def _pivot_tables(result):
+    return tuple((table.suggested_sheet_name, table.df_table) for table in result.tables)
+
+
+def _pivot_metadata(result):
+    return {
+        "row_dimension": result.row_dimension, "column_dimension": result.column_dimension,
+        "value_columns": result.value_columns, "sheet_dimensions": result.sheet_dimensions,
+        "fixed_dimensions": result.fixed_dimensions, "source_rows": result.source_rows,
+        "partial": result.is_partial, "sheets": [
+            (table.sheet_key, table.rows, table.data_columns) for table in result.tables
+        ],
+    }
+
+
+def _seal_pivots(invocation, result, request, *, industry_code=None):
+    return replace(result, evidence=record_tables(invocation, _pivot_tables(result),
+                                                   parameters={**asdict(request), "industry": industry_code},
+                                                   metadata=_pivot_metadata(result)))
 
 
 def render_pivots(
@@ -343,7 +409,16 @@ def render_pivots(
         invocation.stage("render")
         if not req.tables.tables:
             raise OperationFailure("request.empty_views")
-        return render_cbr_0105a_debt_corp_pivot_workbook(req.tables, req.format)
+        frames = use_tables(invocation, _pivot_tables(req.tables), receipt=req.tables.evidence,
+                            role="pivots", metadata=_pivot_metadata(req.tables))
+        tables = replace(req.tables, tables=tuple(
+            replace(table, df_table=frame) for table, frame in zip(req.tables.tables, frames, strict=True)
+        ))
+        value = render_cbr_0105a_debt_corp_pivot_workbook(tables, req.format, budget=invocation.budget)
+        invocation.record(value.representation.identity, parameters={
+            "profile": value.representation.profile_id, **asdict(req.format),
+        })
+        return value
 
     return run(RENDER_PIVOTS, request, work, context=context)
 
@@ -367,15 +442,17 @@ def render_industry(
         if not req.stream.ok:
             raise OperationFailure("source.stream_incomplete")
         invocation.stage("select_industry")
-        stream = req.stream.df_stream
+        stream = use_stream(invocation, req.stream)
         code = req.format.industry_code
+        derived = False
         try:
             if (
                 code == "apk"
                 and not stream["industry_code"].eq(code).any()
                 and req.format.calculate_apk_if_missing
             ):
-                stream = calculate_cbr_0105a_debt_corp_apk_industry(stream).df_stream
+                stream = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=invocation.budget).df_stream
+                derived = True
             filtered = stream.loc[stream["industry_code"].eq(code)]
             names = filtered["industry_name_ru"].dropna().unique()
             if len(names) != 1:
@@ -389,11 +466,17 @@ def render_industry(
                     max_sheet_count=6,
                 ),
                 stream_result=req.stream,
+                budget=invocation.budget,
             )
             invocation.stage("render")
-            return render_cbr_0105a_debt_corp_industry_workbook(
-                pivot, req.format, industry_name_ru=str(names[0])
+            value = render_cbr_0105a_debt_corp_industry_workbook(
+                pivot, req.format, industry_name_ru=str(names[0]), budget=invocation.budget,
             )
+            invocation.record(value.representation.identity, parameters={
+                "profile": value.representation.profile_id, **asdict(req.format),
+                "derived_method": CALCULATE_APK.method_version if derived else None,
+            })
+            return value
         except Cbr0105ADebtCorpDerivedIndustryError as error:
             raise OperationFailure(f"derived.{error.code.lower()}") from None
         except (Cbr0105ADebtCorpPivotError, ValueError):

@@ -33,9 +33,10 @@ class ExecutionEvent:
     total: int | None = None
     reason_class: str | None = None
     stage_elapsed_ms: int | None = None
+    incident_id: str | None = None
 
     def __post_init__(self) -> None:
-        if self.version != 2 or self.kind not in {
+        if self.version != 3 or self.kind not in {
             "operation.started",
             "operation.stage",
             "operation.progress",
@@ -78,6 +79,7 @@ class ExecutionEvent:
             self.stage,
             self.diagnostic_code,
             self.reason_class,
+            self.incident_id,
             self.outcome,
         ):
             if token is not None:
@@ -104,6 +106,20 @@ class ExecutionEvent:
 
 class EventSink(Protocol):
     def emit(self, event: ExecutionEvent) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class TechnicalIncident:
+    incident_id: str
+    invocation_id: str
+    operation_id: str
+    stage: str
+    exception_type: str
+    frames: tuple[tuple[str, int], ...]
+
+
+class IncidentSink(Protocol):
+    def emit(self, incident: TechnicalIncident) -> None: ...
 
 
 class InMemorySink:

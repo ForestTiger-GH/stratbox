@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from http.client import HTTPSConnection, HTTPException, HTTPResponse, IncompleteRead
+from http.client import HTTPSConnection, HTTPException, HTTPResponse as WireResponse, IncompleteRead
 from io import BufferedReader, RawIOBase
 from ipaddress import IPv4Address, IPv6Address, ip_address
 import socket
 import ssl
 from time import monotonic
-from typing import Callable
+from typing import BinaryIO, Callable
 from urllib.parse import quote, urlencode
 import zlib
 
-from .contracts import HttpFailure, HttpRequest, HttpResponse, public_https_parts
+from .contracts import HttpFailure, HttpRequest, HttpResponse, HttpStreamResponse, public_https_parts
 from .transport import _ReadFailure, _follow
 
 Address = IPv4Address | IPv6Address
@@ -67,6 +67,14 @@ class PeerBoundTransport:
     def exchange(
         self, request: HttpRequest, *, cancelled: Callable[[], bool] | None = None
     ) -> HttpResponse | HttpFailure:
+        return self._exchange(request, cancelled)
+
+    def exchange_into(
+        self, request: HttpRequest, sink: BinaryIO, *, cancelled: Callable[[], bool] | None = None,
+    ) -> HttpStreamResponse | HttpFailure:
+        return self._exchange(request, cancelled, sink)
+
+    def _exchange(self, request, cancelled, sink=None):
         if not request.permits(request.url):
             return HttpFailure("destination_forbidden", "admission")
 
@@ -117,7 +125,7 @@ class PeerBoundTransport:
                         # Recompute the remaining time on each socket read,
                         # including a response that sends headers incrementally.
                         reader = _DeadlineReader(secured, seconds_left)
-                        with HTTPResponse(reader, method=request.method) as response:
+                        with WireResponse(reader, method=request.method) as response:
                             response.begin()
                             observed = {}
                             for name, value in response.getheaders():
@@ -133,7 +141,7 @@ class PeerBoundTransport:
                         conn.close()
 
         try:
-            return _follow(request, open_response, cancelled, "peer_bound")
+            return _follow(request, open_response, cancelled, "peer_bound", sink)
         except _ReadFailure as error:
             return HttpFailure(error.reason, "admission")
         except TimeoutError:

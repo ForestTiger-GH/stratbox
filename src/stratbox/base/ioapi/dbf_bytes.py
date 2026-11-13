@@ -15,6 +15,7 @@ def open_dbf_bytes(data: bytes, *, budget=None, **options):
     if not 33 <= header <= len(data) or not width or count * width > len(data) - header:
         raise ValueError("DBF record geometry is invalid")
     if budget is not None:
+        budget.check("cells", count * max(1, (header - 33) // 32))
         budget.charge("temporary_bytes", len(data))
     dbfread = require_extra("dbfread", "dbf")
     with workdir("stratbox-dbf-") as directory:

@@ -3,12 +3,30 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from io import BytesIO
 from typing import BinaryIO, Callable
 
 from stratbox.base.filestore import FileStore, FileVersion, LocalFileStore, MutationRejected, SourceStore, WriteMode
 from stratbox.base.filestore.base import FileVersionReader
 from stratbox.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
 from stratbox.base.limits import BudgetMeter
+
+
+class OutputBuffer(BytesIO):
+    """Enforce a size ceiling during materialization, before the caller charges the final bytes."""
+
+    def __init__(self, budget: BudgetMeter | None, *, limit: int | None = None):
+        super().__init__()
+        self.budget = budget
+        self.limit = limit
+
+    def write(self, data):
+        end = self.tell() + len(data)
+        if self.budget is not None:
+            self.budget.check("output_bytes", end)
+        if self.limit is not None and end > self.limit:
+            raise ValueError("Output exceeds the format limit")
+        return super().write(data)
 
 
 def open_read(path: str, store: FileStore | None = None) -> BinaryIO:

@@ -2,7 +2,9 @@
 
 from urllib.parse import unquote
 
-from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip
+from io import BytesIO
+
+from stratbox.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip_stream
 from stratbox.base.ioapi.workbook_input import WorkbookError, workbook_profile
 from stratbox.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
 from stratbox.base.net.contracts import public_https_parts
@@ -65,16 +67,7 @@ def receive_cbr(
     retry=None,
     deadline=60,
 ):
-    path = official_url(url, roots=roots)
-    endpoints = tuple(HttpsEndpoint(host, path) for host in HOSTS)
-    request = HttpRequest(
-        "GET",
-        url,
-        endpoints,
-        {"accept": ", ".join(sorted(media_types))},
-        max_response_bytes=limit,
-        deadline_seconds=deadline,
-    )
+    request = cbr_request(url, roots=roots, media_types=media_types, limit=limit, deadline=deadline)
     return receive_source(
         request,
         transport=transport,
@@ -86,9 +79,26 @@ def receive_cbr(
     )
 
 
+def cbr_request(url, *, roots, media_types, limit, deadline):
+    path = official_url(url, roots=roots)
+    endpoints = tuple(HttpsEndpoint(host, path) for host in HOSTS)
+    return HttpRequest(
+        "GET",
+        url,
+        endpoints,
+        {"accept": ", ".join(sorted(media_types))},
+        max_response_bytes=limit,
+        deadline_seconds=deadline,
+    )
+
+
 def validate_workbook(data: bytes, *, budget=None) -> None:
+    validate_workbook_stream(BytesIO(data), len(data), budget=budget)
+
+
+def validate_workbook_stream(stream, size, *, budget=None) -> None:
     try:
-        with open_zip(data, WORKBOOK_ARCHIVE_LIMITS, budget=budget) as archive:
+        with open_zip_stream(stream, size, WORKBOOK_ARCHIVE_LIMITS, budget=budget) as archive:
             names = set(archive.namelist())
             if not {"[Content_Types].xml", "xl/workbook.xml"}.issubset(names):
                 raise OperationFailure("source.xlsx_signature_invalid")
@@ -108,7 +118,9 @@ def admit_workbook(data: bytes, invocation) -> None:
     except (ArchiveError, WorkbookError) as error:
         if str(error) == "operation.cancelled":
             raise OperationFailure("operation.cancelled", outcome="cancelled") from None
-        raise OperationFailure("source.workbook_invalid") from None
+        reason = str(error)
+        code = "source.workbook_limit" if reason.endswith("_limit") else "source.workbook_invalid"
+        raise OperationFailure(code) from None
     if profile.kind != "xlsx":
         raise OperationFailure("source.xlsx_signature_invalid")
     try:

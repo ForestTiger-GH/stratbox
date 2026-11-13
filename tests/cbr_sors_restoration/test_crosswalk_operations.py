@@ -224,14 +224,21 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
-    result = operations.run_sors_crosswalk(
+    from stratbox.macrobanks.cbr_sors_restoration import CrosswalkSorsRequest, run_crosswalk
+
+    execution = run_crosswalk(CrosswalkSorsRequest(
         _strict_with_bundle(),
         SorsCrosswalkConfig(
             mode='feasibility',
             scenario_ids=('core',),
             scenario_policy='single',
         ),
-    )
+    ))
+    assert execution.outcome == "succeeded", execution.diagnostics
+    result = execution.value
+    assert {item.source_id for item in execution.used_inputs if item.role == "sors_crosswalk_resource"} == {
+        "legacy_atoms.csv", "legacy_node_membership.csv", "atom_class_edges.csv", "crosswalk_manifest.json",
+    }
 
     assert result.status == 'OPTIMAL'
     facts = result.crosswalk_facts_grid.set_index(['class_code', 'metric'])

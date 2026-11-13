@@ -2,6 +2,9 @@
 
 from .contracts import (
     CbrFileRegistryItem, CollectedFile, Collection, CollectFailure, CollectFilesRequest,
-    DiscoverFilesRequest, PrepareArchiveRequest,
+    CollectToStoreRequest, DiscoverFilesRequest, PrepareArchiveRequest, StoreArchiveRequest, StoredCollectedFile,
 )
-from .operations import ARCHIVE, COLLECT, DISCOVER, collect_raw, discover, prepare_archive
+from .operations import (
+    ARCHIVE, ARCHIVE_TO_STORE, COLLECT, COLLECT_TO_STORE, DISCOVER,
+    archive_to_store, collect_raw, collect_to_store, discover, prepare_archive,
+)

@@ -47,6 +47,7 @@ def build_escrow_pivots(
     parsed_files: Iterable[ParsedEscrowFile] | None = None,
     regions_mode: str = "latest",
     custom_regions: list[str] | tuple[str, ...] | None = None,
+    budget=None,
 ) -> tuple[dict[str, pd.DataFrame], list[EscrowIndicatorSpec], list[str], list[str]]:
     """
     Возвращает:
@@ -72,6 +73,8 @@ def build_escrow_pivots(
     else:
         raise ValueError("parsed_files is required to build escrow pivots reliably")
 
+    if budget is not None:
+        budget.check("cells", len(region_order) * len(date_order) * len(indicator_specs))
     pivots: dict[str, pd.DataFrame] = {}
     for spec in indicator_specs:
         pivots[spec.code] = build_escrow_pivot(

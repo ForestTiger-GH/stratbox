@@ -125,7 +125,7 @@ def build_form_sheets(*, profile, df_long, df_banks, model_df, indicator_order):
     raise ValueError("Unknown form workbook profile")
 
 
-def render_form_workbook(sheets, *, profile):
+def render_form_workbook(sheets, *, profile, budget=None):
     from openpyxl import Workbook
 
     workbook = Workbook()
@@ -143,6 +143,6 @@ def render_form_workbook(sheets, *, profile):
             sheet = workbook["data"]
             apply_preset(sheet, "DEFAULT")
             sheet.auto_filter.ref = sheet.dimensions
-        return openpyxl_bytes(workbook, literal_text=True)
+        return openpyxl_bytes(workbook, literal_text=True, budget=budget)
     finally:
         workbook.close()

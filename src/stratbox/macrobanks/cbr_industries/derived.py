@@ -79,7 +79,7 @@ def _object_frame(df_stream: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataF
 
 
 def calculate_cbr_0105a_debt_corp_apk_industry(
-    df_stream: pd.DataFrame,
+    df_stream: pd.DataFrame, *, budget=None,
 ) -> Cbr0105ADebtCorpApkCalculationResult:
     """Добавляет в поток расчетную отрасль ``АПК``.
 
@@ -149,6 +149,8 @@ def calculate_cbr_0105a_debt_corp_apk_industry(
         )
 
     expected_groups = _object_frame(df_stream, _OBSERVATION_KEY).drop_duplicates()
+    if budget is not None:
+        budget.check("cells", (len(df_stream) + len(expected_groups)) * len(df_stream.columns))
     expected_index = pd.MultiIndex.from_frame(expected_groups, names=_OBSERVATION_KEY)
 
     values = components.pivot(

@@ -19,7 +19,7 @@ from .sources import reference_period
 
 def render_issuance_workbook(pivots, *, industry_code: str, industry_name_ru: str,
                              reference_periods: tuple[str, ...],
-                             include_metadata_sheet: bool = False) -> IssuanceWorkbookResult:
+                             include_metadata_sheet: bool = False, budget=None) -> IssuanceWorkbookResult:
     if (pivots.row_dimension != "region_code" or pivots.column_dimension != "report_date"
         or pivots.value_columns != ("value",)
         or set(pivots.sheet_dimensions) != {"measure", "currency_scope"}
@@ -74,7 +74,7 @@ def render_issuance_workbook(pivots, *, industry_code: str, industry_name_ru: st
             for index, month in enumerate(actual_periods, start=2):
                 yyyy, mm = month.split("-")
                 sheet.cell(3, index, f"{mm}.{yyyy}")
-        data = openpyxl_bytes(workbook, literal_text=True)
+        data = openpyxl_bytes(workbook, literal_text=True, budget=budget)
     finally:
         workbook.close()
     names = tuple(("_Параметры",) if include_metadata_sheet else ()) + tuple(

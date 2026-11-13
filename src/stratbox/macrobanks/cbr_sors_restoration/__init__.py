@@ -2,8 +2,8 @@
 
 from .api import (
     CROSSWALK, LOAD, PIVOT, READ, RENDER, RESTORE, CrosswalkSorsRequest, LoadSorsRequest, PivotSorsRequest,
-    RenderSorsRequest, RestoreSorsRequest, build_pivot, crosswalk, load_sources, read_source_files,
-    render_workbook, restore,
+    RenderSorsRequest, RestoreSorsRequest, build_pivot, load_sources, read_source_files,
+    render_workbook, restore, run_crosswalk,
 )
 from .contracts import (
     SorsCrosswalkConfig, SorsDeterministicConfig, SorsOptimizationConfig, SorsPivotRequest,

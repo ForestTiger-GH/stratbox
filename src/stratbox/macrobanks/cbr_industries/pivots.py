@@ -248,7 +248,7 @@ def _validate_stream_result(
             "Pivot заблокирован: поток содержит ошибки валидации.",
             issue_codes=tuple(issue.code for issue in errors),
         )
-    if request.require_complete_stream and stream_result.failures:
+    if request.require_complete_stream and stream_result.is_partial:
         _raise(
             "PIVOT_PARTIAL_STREAM",
             "Pivot требует полный поток, но часть источников не обработана.",
@@ -402,6 +402,7 @@ def build_cbr_0105a_debt_corp_pivot_set(
     request: Cbr0105ADebtCorpPivotRequest,
     *,
     stream_result: Cbr0105ADebtCorpStreamResult | None = None,
+    budget=None,
 ) -> Cbr0105ADebtCorpPivotSetResult:
     """Строит набор таблиц из уже отфильтрованного потокового DataFrame.
 
@@ -425,9 +426,16 @@ def build_cbr_0105a_debt_corp_pivot_set(
 
     used_names: set[str] = set()
     tables: list[Cbr0105ADebtCorpPivotTable] = []
+    planned_cells = 0
     for key_values, group in groups:
         row_order = _ordered_dimension_values(group, request.row_dimension)
         column_order = _ordered_dimension_values(group, request.column_dimension)
+        width = len(column_order) * len(request.value_columns) + len(
+            _DIMENSION_DESCRIPTORS[request.row_dimension]
+        )
+        planned_cells += len(row_order) * width
+        if budget is not None:
+            budget.check("cells", planned_cells)
         matrix = _pivot_matrix(
             group,
             row_dimension=request.row_dimension,

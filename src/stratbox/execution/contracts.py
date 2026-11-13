@@ -7,12 +7,12 @@ from time import monotonic
 from typing import Generic, Literal, Protocol, TypeVar, TYPE_CHECKING
 
 from stratbox.base.capabilities import CapabilityRequirement, ProviderBinding
-from stratbox.base.limits import ExecutionBudget
-from stratbox.data import UsedInputReceipt
+from stratbox.base.limits import ExecutionBudget, Resource
+from stratbox.data import ComputationReceipt, UsedInputReceipt
 from stratbox.data.evidence import ByteIdentity
 
 if TYPE_CHECKING:
-    from .events import EventSink
+    from .events import EventSink, IncidentSink
 
 T = TypeVar("T")
 Outcome = Literal["succeeded", "partial", "failed", "cancelled", "unknown"]
@@ -134,6 +134,7 @@ class ExecutionContext:
     ceiling: ExecutionBudget | None = None
     profile: Literal["local", "managed"] = "local"
     bindings: tuple[ProviderBinding, ...] = ()
+    incident_sink: IncidentSink | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:
@@ -149,10 +150,11 @@ class Diagnostic:
     retry_disposition: Literal["none", "after_condition", "reconcile"] = "none"
     evidence_ref: str | None = None
     reconciliation_owner: str | None = None
+    incident_id: str | None = None
 
     def __post_init__(self) -> None:
         for value in (self.code, self.stage, self.component, self.reason_class,
-                      self.evidence_ref, self.reconciliation_owner):
+                      self.evidence_ref, self.reconciliation_owner, self.incident_id):
             if value is not None:
                 safe_token(value)
         if self.retry_disposition not in {"none", "after_condition", "reconcile"}:
@@ -183,10 +185,11 @@ class EffectReceipt:
 class ObservabilitySummary:
     emitted: int
     dropped: int
+    incidents_dropped: int = 0
 
     @property
     def degraded(self) -> bool:
-        return self.dropped > 0
+        return self.dropped > 0 or self.incidents_dropped > 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -199,6 +202,8 @@ class OperationResult(Generic[T]):
     used_inputs: tuple[UsedInputReceipt, ...]
     effects: tuple[EffectReceipt, ...]
     observability: ObservabilitySummary
+    computation: ComputationReceipt | None = None
+    resources_used: tuple[tuple[Resource, int], ...] = ()
 
     @property
     def operation_id(self) -> str:
@@ -241,11 +246,11 @@ class OperationFailure(Exception):
 
     def __init__(
         self,
-        code: str,
+        code: str | Diagnostic,
         *,
         outcome: Literal["failed", "cancelled", "unknown"] = "failed",
         component: str | None = None,
     ):
-        self.diagnostic = Diagnostic(code, component=component)
+        self.diagnostic = code if isinstance(code, Diagnostic) else Diagnostic(code, component=component)
         self.outcome = outcome
-        super().__init__(code)
+        super().__init__(self.diagnostic.code)

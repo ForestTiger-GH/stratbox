@@ -7,23 +7,22 @@ import warnings
 from dataclasses import replace
 from datetime import date
 from hashlib import sha256
-from io import BytesIO
 
 import pandas as pd
-from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
+from stratbox.base.ioapi.workbook_input import open_ooxml_workbook
 from stratbox.macrobanks.cbr_industries.contracts import Cbr0105ADebtCorpValidationIssue
 from stratbox.macrobanks.cbr_industries.shared_parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
-    _region_names, _validate_sheet_region_names,
+    _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,
 )
 from stratbox.macrobanks.cbr_industries.streams import (
     STREAM_COLUMNS, optimize_cbr_0105a_debt_corp_stream_dtypes,
 )
 from stratbox.macrobanks.cbr_industries.regions import build_cbr_0105a_debt_corp_region_specs
 from stratbox.macrobanks.cbr_industries.schema import (
-    normalize_cbr_0105a_text, resolve_cbr_0105a_debt_corp_industries,
+    normalize_cbr_0105a_text, select_industry_headers,
 )
 
 from .contracts import IssuanceSheetSpec, ParsedIssuanceFile
@@ -43,15 +42,15 @@ _MONTHS = (
 )
 
 
-def _recognize_sheet(title: object) -> IssuanceSheetSpec:
+def _recognize_sheet(title: object) -> IssuanceSheetSpec | None:
     text = normalize_cbr_0105a_text(title)
     words = set(text.split())
     if not {"объем", "кредитов", "юридическим", "лицам", "индивидуальным", "предпринимателям"} <= words:
-        raise ValueError(f"Unrecognized issuance indicator: {title!r}")
+        return None
     if "иностранной валюте" in text:
         if "драгоценных металлах" not in text:
             raise ValueError(f"Unrecognized currency scope: {title!r}")
-        return _SHEETS[1]
+        return _SHEETS[2] if "в рублях" in text else _SHEETS[1]
     if "в рублях" in text:
         return _SHEETS[0]
     return _SHEETS[2]
@@ -123,42 +122,43 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
     source_id = f"{SERIES_CODE}_{report_date.replace('-', '')}"
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Workbook contains no default style.*", category=UserWarning)
-        workbook = load_workbook(BytesIO(content), read_only=True, data_only=True, keep_links=False)
+        workbook = open_ooxml_workbook(content, reset_dimensions=True)
     try:
         seen: set[str] = set()
         records: list[dict[str, object]] = []
-        common_names: list[str] | None = None
-        common_rows: list[int] | None = None
         regions = None
         industries = None
+        unmapped_headers = []
         for worksheet in workbook.worksheets:
             if checkpoint is not None:
                 checkpoint()
-            worksheet.reset_dimensions()  # CBR spreadsheets can publish incorrect <dimension> bounds.
-            rows = [tuple(row) for row in worksheet.iter_rows(values_only=True)]
+            row_iterator = iter(worksheet.iter_rows(values_only=True))
+            first = next(row_iterator, ())
+            title = first[0] if first else None
+            spec = _recognize_sheet(title)
+            if spec is None:
+                continue
+            rows = _sheet_rows(row_iterator, first, checkpoint=checkpoint)
             if len(rows) < 4:
                 raise ValueError(f"Issuance worksheet is too short: {worksheet.title!r}")
-            title = rows[0][0] if rows[0] else None
-            spec = _recognize_sheet(title)
             if spec.code in seen:
                 raise ValueError(f"Duplicate issuance indicator: {spec.code}")
             seen.add(spec.code)
             observed_period = _verify_reference_month(rows[1][0] if rows[1] else None, report_date)
             if observed_period != period:
                 raise ValueError("Inconsistent issuance reference month")
-            headers = _non_empty_industry_headers(rows, sheet_name=worksheet.title)
-            current_industries = resolve_cbr_0105a_debt_corp_industries([x for _, x in headers])
+            _check_published_unit(title)
+            headers, current_industries, unmapped = select_industry_headers(
+                _non_empty_industry_headers(rows, sheet_name=worksheet.title)
+            )
+            unmapped_headers.extend((worksheet.title, label) for label in unmapped)
             if industries is None:
-                industries = current_industries
+                industries = tuple(sorted(current_industries, key=lambda item: item.order))
             region_rows, names = _region_names(rows, sheet_name=worksheet.title)
-            common_names = _validate_sheet_region_names(common_names, names, sheet_name=worksheet.title)
-            if common_rows is None:
-                common_rows = region_rows
+            if regions is None:
                 regions = build_cbr_0105a_debt_corp_region_specs(names)
-            elif region_rows != common_rows:
-                raise ValueError("Different region row positions between issuance sheets")
-            assert regions is not None
-            for source_row, region in zip(region_rows, regions, strict=True):
+            matching_regions = _match_sheet_regions(regions, names)
+            for source_row, region in zip(region_rows, matching_regions, strict=True):
                 row_values = rows[source_row - 1]
                 for (source_column, header), industry in zip(headers, current_industries, strict=True):
                     cell = f"{get_column_letter(source_column)}{source_row}"
@@ -196,6 +196,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
         issues = _validate_stream(stream, report_date)
         stream = optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
         return ParsedIssuanceFile(source_id, source_name, source_url, digest, report_date,
-                                  period, _SHEETS, industries, regions, issues, stream, len(stream))
+                                  period, _SHEETS, industries, regions, issues, stream, len(stream),
+                                  unmapped_headers=tuple(unmapped_headers))
     finally:
         workbook.close()

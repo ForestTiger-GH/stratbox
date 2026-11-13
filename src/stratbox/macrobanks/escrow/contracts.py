@@ -17,7 +17,7 @@ from typing import Literal, Mapping
 from datetime import date
 from typing import TYPE_CHECKING
 
-from stratbox.data import SourcePayload
+from stratbox.data import ComputationReceipt, SourcePayload
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -75,6 +75,8 @@ class ParsedEscrowFile:
     rows: list[EscrowParsedRow]
     df_rows: pd.DataFrame
     df_long: pd.DataFrame
+    evidence: ComputationReceipt | None = None
+    unmapped_headers: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +127,7 @@ class EscrowViewBuildRequest:
 
     regions_mode: RegionOrderMode = "latest"
     custom_regions: tuple[str, ...] = ()
+    require_complete_history: bool = True
 
 
 @dataclass(frozen=True)
@@ -137,10 +140,12 @@ class EscrowHistoryResult:
     dates: tuple[str, ...]
     indicators: tuple[str, ...]
     rows_long: int
+    evidence: ComputationReceipt | None = None
+    stop_reason: str | None = None
 
     @property
     def ok(self) -> bool:
-        return len(self.failures) == 0
+        return not self.failures and self.stop_reason is None
 
 
 @dataclass(frozen=True)
@@ -151,6 +156,7 @@ class EscrowPivotPack:
     indicator_specs: tuple[EscrowIndicatorSpec, ...]
     region_order: tuple[str, ...]
     date_order: tuple[str, ...]
+    evidence: ComputationReceipt | None = None
 
 
 @dataclass(frozen=True)

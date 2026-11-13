@@ -3,8 +3,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import asdict
-from io import BytesIO
-
+from stratbox.base.ioapi.bytes import OutputBuffer
 from stratbox.data import Representation
 from stratbox.data.representation import XLSX
 from datetime import date, datetime
@@ -98,11 +97,13 @@ def _widths(frame: pd.DataFrame) -> list[int]:
     return widths
 
 
-def _write_frame(workbook, frame: pd.DataFrame, sheet: str, header_format) -> None:
+def _write_frame(workbook, frame: pd.DataFrame, sheet: str, header_format, checkpoint) -> None:
     worksheet = workbook.add_worksheet(sheet)
     worksheet.freeze_panes(1, 0)
     worksheet.write_row(0, 0, list(frame.columns), header_format)
     for row_index, row in enumerate(frame.itertuples(index=False, name=None), start=1):
+        if row_index % 1024 == 0:
+            checkpoint()
         worksheet.write_row(row_index, 0, [_excel_value(value) for value in row])
     if len(frame.columns):
         worksheet.autofilter(0, 0, max(len(frame), 1), len(frame.columns) - 1)
@@ -115,6 +116,7 @@ def render_sors_workbook(
     request: SorsWorkbookRequest,
     *,
     checkpoint=lambda: None,
+    budget=None,
 ) -> SorsWorkbookResult:
     used: set[str] = set()
     frames: list[tuple[str, pd.DataFrame]] = []
@@ -235,20 +237,22 @@ def render_sors_workbook(
         if strict_source is not None:
             queue(pd.DataFrame([asdict(strict_source.summary)]), 'Parameters')
     for position, pivot_request in enumerate(request.pivots, start=1):
-        pivot = build_sors_pivot(result, pivot_request)
+        pivot = build_sors_pivot(result, pivot_request, budget=budget)
         selector = pivot.selected_region_name if pivot.orientation == 'REGION_TO_CLASSES' else pivot.selected_class_code
         queue(pivot.table, f'Pivot_{position}_{selector}')
 
     if not frames:
         raise ValueError("SORS workbook has no selected sheets")
-    output = BytesIO()
+    if budget is not None:
+        budget.charge("cells", sum((len(frame) + 1) * len(frame.columns) for _, frame in frames))
+    output = OutputBuffer(budget)
     with xlsxwriter.Workbook(output, {"constant_memory": True, "strings_to_formulas": False,
                                       "strings_to_urls": False}) as workbook:
         workbook.set_properties({"created": datetime(1980, 1, 1)})
         header_format = workbook.add_format({"bold": True, "bg_color": "#D9EAF7", "border": 1})
         for sheet, frame in frames:
             checkpoint()
-            _write_frame(workbook, frame, sheet, header_format)
+            _write_frame(workbook, frame, sheet, header_format, checkpoint)
     sheets = tuple(sheet for sheet, _ in frames)
     return SorsWorkbookResult(Representation("cbr.sors.workbook", 1, XLSX, output.getvalue()),
                               sheets, len(sheets))

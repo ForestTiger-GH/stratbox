@@ -38,7 +38,7 @@ from stratbox.execution import (
     run,
 )
 from stratbox.execution.acquisition import receive_source
-from stratbox.execution.comparison import compare_release_inputs
+from stratbox.execution.comparison import compare_release_inputs, explain_comparison
 from stratbox.execution.source_validation import (
     decode_html,
     source_failure,
@@ -51,7 +51,7 @@ from .source import LIMIT_HTML, SOURCE_PAGE, discover as discover_links, url_dat
 
 DATASET = "cbr.offices_reg"
 PROFILE = "cbr.offices_reg.wide-csv"
-METHOD = "cbr-offices-reg-xlsx-3"
+METHOD = "cbr-offices-reg-xlsx-4"
 _HOSTS = ("www.cbr.ru", "cbr.ru")
 _HTTP = frozenset({"http"})
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
@@ -68,6 +68,7 @@ class ParseOfficesRegRequest:
     as_of: date
     sheet: str | None = None
     national_row: int | None = None
+    last_row: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,11 +89,11 @@ ACQUIRE = OperationDefinition(
     f"{DATASET}.acquire", 1, METHOD, ReleaseLink, AcquiredSource, _HTTP
 )
 PARSE = OperationDefinition(
-    f"{DATASET}.parse", 2, METHOD, ParseOfficesRegRequest,
+    f"{DATASET}.parse", 3, METHOD, ParseOfficesRegRequest,
     (ParsedRelease, OfficesRegCandidates), partial_allowed=True,
 )
 CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 2, METHOD, ReleaseLink,
+    f"{DATASET}.capture", 3, METHOD, ReleaseLink,
     (ParsedRelease, OfficesRegCandidates), _HTTP, partial_allowed=True,
 )
 READ = OperationDefinition(
@@ -104,7 +105,7 @@ READ = OperationDefinition(
 )
 COMPARE = OperationDefinition(
     f"{DATASET}.compare",
-    1,
+    2,
     "cbr-offices-reg-compare-2",
     CompareReleaseRequest,
     Comparison,
@@ -207,7 +208,7 @@ def _count_token(token: str) -> bool:
     return token in _MISSING or re.fullmatch(r"[0-9]{1,18}(?:[.,]0{1,10})?", token) is not None
 
 
-def _observations(data: bytes, as_of: date) -> tuple[tuple[Observation, ...] | None, tuple[str, ...]]:
+def _observations(data: bytes, as_of: date, *, unresolved=()) -> tuple[tuple[Observation, ...] | None, tuple[str, ...]]:
     rows = csv_rows(data)
     header = rows[0]
     territories = [
@@ -227,7 +228,7 @@ def _observations(data: bytes, as_of: date) -> tuple[tuple[Observation, ...] | N
     fields = []
     excluded = list(header[2:column])
     for index, (heading, metric) in enumerate(zip(header[column + 1:], metrics), column + 1):
-        if (metric is None or duplicates[metric] != 1
+        if (metric is None or heading in unresolved or duplicates[metric] != 1
                 or any(not _count_token(row[index]) for row in rows[1:])):
             excluded.append(heading)
         else:
@@ -271,19 +272,18 @@ def _parse(req, invocation, acquisition=None):
     _check_date(req.as_of)
     if req.sheet is not None and (not isinstance(req.sheet, str) or not 1 <= len(req.sheet) <= 255):
         raise OperationFailure("request.workbook_sheet_invalid")
-    if req.national_row is not None and (
-        type(req.national_row) is not int or not 1 <= req.national_row <= 1_048_576
-    ):
-        raise OperationFailure("request.workbook_row_invalid")
+    for row in (req.national_row, req.last_row):
+        if row is not None and (type(row) is not int or not 1 <= row <= 1_048_576):
+            raise OperationFailure("request.workbook_row_invalid")
     use_payload(req.payload, invocation, role="source_workbook", limit=LIMIT_XLSX)
     evidence = {}
     try:
         data, formulas = convert_xlsx(
             req.payload.data, return_formula_lineage=True, expected_date=req.as_of,
             sheet_name=req.sheet, national_row=req.national_row, budget=invocation.budget,
-            checkpoint=invocation.check_cancelled, evidence=evidence,
+            last_row=req.last_row, checkpoint=invocation.check_cancelled, evidence=evidence,
         )
-        count = validate_csv(data)
+        count = validate_csv(data, minimum_rows=1 if req.last_row is not None else 30)
     except AmbiguousBlock as error:
         return Completion(
             OfficesRegCandidates(req.payload.identity, error.candidates),
@@ -292,9 +292,10 @@ def _parse(req, invocation, acquisition=None):
     except (ArchiveError, CaptureError, ParseError, ValueError) as error:
         raise source_failure(error) from None
     invocation.stage("validate")
-    observations, excluded = _observations(data, req.as_of)
+    observations, excluded = _observations(data, req.as_of, unresolved=evidence["unresolved_fields"])
     parameters = {
-        key: value for key, value in {"sheet": req.sheet, "national_row": req.national_row}.items()
+        key: value for key, value in {"sheet": req.sheet, "national_row": req.national_row,
+                                      "last_row": req.last_row}.items()
         if value is not None
     }
     return build_release(
@@ -309,6 +310,7 @@ def _parse(req, invocation, acquisition=None):
         acquisition=acquisition,
         parameters=parameters,
         source_details={"formula_lineage": formulas, "selection": evidence},
+        scope="selected_fragment" if req.last_row is not None else None,
     )
 
 
@@ -357,6 +359,7 @@ def read_representation(
             req.payload.data,
             count,
             invocation.used_inputs,
+            facts_method=METHOD,
             observations=observations, excluded_fields=excluded,
         )
 
@@ -366,7 +369,7 @@ def read_representation(
 def compare(
     request: CompareReleaseRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[Comparison]:
-    def work(req, invocation):
+    def evaluate(req, invocation):
         decision = compare_release_inputs(req, invocation, DATASET, PROFILE)
         if decision is not None:
             return decision
@@ -390,5 +393,8 @@ def compare(
                 and old.qualification == new.qualification):
             return Comparison("unchanged", "representation.literal_comparison")
         return Comparison("indeterminate", "comparison.qualification_missing")
+
+    def work(req, invocation):
+        return explain_comparison(evaluate(req, invocation), req, invocation)
 
     return run(COMPARE, request, work, context=context)

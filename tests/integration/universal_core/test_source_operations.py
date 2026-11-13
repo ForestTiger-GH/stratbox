@@ -134,7 +134,9 @@ def test_monthly_discovery_cached_formula_and_workbook_bytes():
     invalid = monthly.parse(
         monthly.ParseOfficesRegRequest(SourcePayload(zip_bytes(files)), link.as_of)
     )
-    assert invalid.diagnostics[0].code == "source.xlsx_formula_cache_missing"
+    assert invalid.outcome == "succeeded"
+    assert invalid.value.qualification.analysis == "qualified_subset"
+    assert invalid.value.source_details["formula_lineage"]["3"]["4"]["cache_missing"]
 
 
 def test_sme_post_and_offline_representations_match():
@@ -316,6 +318,16 @@ def test_monthly_dynamic_roles_exact_block_and_ambiguity():
     assert extended.value.facts_identity == parsed.value.facts_identity
     assert "новая категория".encode() in extended.value.representation.data
     assert monthly.compare(CompareReleaseRequest(extended.value, parsed.value)).value.state == "unchanged"
+    comparison = monthly.compare(CompareReleaseRequest(extended.value, parsed.value)).value
+    assert comparison.layers.original == comparison.layers.structure == comparison.layers.representation == "changed"
+    assert comparison.layers.facts == comparison.layers.method == "same"
+    assert comparison.coverage.common_observations == len(parsed.value.batch.observations)
+    fragment = monthly.parse(monthly.ParseOfficesRegRequest(
+        SourcePayload(workbook()), period, national_row=4, last_row=6,
+    ))
+    assert fragment.outcome == "succeeded", fragment.diagnostics
+    assert fragment.value.row_count == 3 and fragment.value.qualification.scope == "selected_fragment"
+    assert monthly.compare(CompareReleaseRequest(fragment.value, parsed.value)).value.state == "indeterminate"
     one_sheet = SourcePayload(workbook(adjacent=True))
     ambiguous = monthly.parse(monthly.ParseOfficesRegRequest(one_sheet, period))
     assert ambiguous.outcome == "partial"

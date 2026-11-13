@@ -1,6 +1,6 @@
 # Execution, admission and recovery
 
-Stratbox 0.10 exposes versioned Python operations and an optional read-only
+Stratbox 0.11 exposes versioned Python operations and an optional read-only
 JSON interface. Domain modules own release selection, labels, interpretation
 and calculations. General-purpose HTTP, file, archive and format commands
 live in the base package. Callers choose periods, repetition and destinations.
@@ -16,7 +16,7 @@ schemas of an enabled codec.
 | Read-only JSON operation | References resolved by the caller | Returned data |
 | --- | --- | --- |
 | `cbr.offices.parse` v1 | Source bytes, optional expected SHA-256 | Date, row count and result digests |
-| `cbr.offices.compare` v1 | Candidate and optional baseline | Change state, reason and count |
+| `cbr.offices.compare` v2 | Candidate and optional baseline | Change state, reason, count, evidence layers and coverage |
 | `frg.plan_cleanup` v1 | Scoped directory reference | Plan digest and action count |
 
 `invoke_read_only` accepts UTF-8 JSON bytes. The envelope contains
@@ -43,9 +43,10 @@ decoder calls, provider calls and OS lookups may complete at their next
 checkpoint. A consumer with a hard deadline or resource requirement uses
 an independently constrained adapter.
 
-Execution events use envelope version 2 and include correlation IDs, stage
-timing and classified outcomes. Failure of the optional event sink increments
-the dropped count. An acceptance policy requiring durable audit enforces it
+Execution events use envelope version 3 and include correlation IDs, stage
+timing, classified outcomes and incident IDs. A separate optional technical
+sink receives the incident ID, exception type and a bounded list of function
+names and line numbers. The result reports each sink's drop count. An acceptance policy requiring durable audit enforces it
 at the receiving provider before commit.
 
 ## Acquire, qualify and inspect
@@ -76,9 +77,11 @@ Selecting a cell range is a research operation. Known domain operations
 apply their own published-series rules.
 
 Monthly CBR office parsing records the actual sheet, coordinates and date
-basis. Its v2 parse and capture can return `OfficesRegCandidates` as a
+basis. Its v3 parse and capture can return `OfficesRegCandidates` as a
 partial result with the source identity and candidate coordinates. Supply
-`sheet` and, when needed, `national_row` to select the block. The literal
+`sheet` and, when needed, `national_row` to select the block. Set `last_row`
+to qualify an explicitly bounded fragment. A missing formula cache stays
+blank in the literal CSV and marks the affected indicator as unresolved. The literal
 CSV preserves additional columns. A result with `qualified_subset`
 identifies usable observations and lists excluded fields. A result with
 `literal_only` preserves the table for inspection. Use `spreadsheet_view` in
@@ -98,6 +101,7 @@ uses `excel-binary`.
 
 | Effect | Local API and outcome | Managed accepting port |
 | --- | --- | --- |
+| Original storage | `source.save_original`, `source.receive_to_store`, `source.read_original` and `source.reconcile_original` | The store admits a staged commit and owns the observed revision |
 | Byte storage | `write_verified_bytes`, with `immutable`, `replace_expected_revision` or `best_effort_verified` | Destination owner supplies conditional commit and actual evidence |
 | FRG mutation | `plan_cleanup` then `apply_cleanup`, with exact directory, plan digest and source revisions | `ScopedMutationStore.commit_mutation` checks the actual intent and current grant |
 | FRG ZIP | `prepare_archive_to_store` uses private staging, verifies selected bytes and reads back the destination | `ScopedStagedWrite.commit_admitted` checks the plan, scope, payload, mode and expected revision |
