@@ -234,3 +234,54 @@ def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
     calculated.value.df_stream.loc[calculated.value.df_stream.index[0], "value"] = 999
     rejected = issuance.build_pivots(issuance.PivotIssuanceRequest(calculated.value, pivot, industry_code="apk"))
     assert rejected.diagnostics[0].code == "input.identity_mismatch"
+
+
+def test_issuance_selected_observations_and_batch_export_match_individual() -> None:
+    from stratbox.macrobanks.cbr_industries import IndustrySelection
+
+    original = _request()
+    full = issuance.build_stream(issuance.BuildIssuanceStreamRequest((original,)))
+    projection = issuance.build_stream(issuance.BuildIssuanceStreamRequest(
+        (original,), selection=IndustrySelection(("apk", "total")),
+    ))
+    assert full.outcome == "succeeded", full.diagnostics
+    assert projection.outcome == "succeeded", projection.diagnostics
+    assert projection.value.rows_stream == 96 * 6 * 3
+    assert projection.value.selection.industry_codes == ("apk", "total")
+    assert projection.value.source_validation_scope == "full"
+    assert projection.value.reference_periods == ("2019-01",)
+    assert full.value.validation_issues == projection.value.validation_issues
+    assert full.value.evidence.computation_id != projection.value.evidence.computation_id
+    codes = set(("total", "agriculture_hunting_services", "agriculture_hunting_forestry",
+                 "manufacturing_food_beverages_tobacco", "manufacturing_machinery_agriculture_forestry",
+                 "manufacturing_wood_products"))
+    selected = full.value.df_stream.loc[
+        full.value.df_stream["industry_code"].isin(codes)
+    ].reset_index(drop=True)
+    cols = ["report_date", "reference_period", "region_code", "industry_code",
+            "currency_scope", "value", "source_row", "source_column"]
+    assert selected[cols].astype(object).to_dict("records") == (
+        projection.value.df_stream[cols].astype(object).to_dict("records")
+    )
+    batch = issuance.render_industries(issuance.RenderIssuanceIndustriesRequest(
+        projection.value, ("apk", "total"),
+    ))
+    assert batch.outcome == "succeeded", batch.diagnostics
+    assert batch.computation is not None
+    for item in batch.value.items:
+        individually = issuance.render_industry(
+            issuance.IssuanceWorkbookRequest(projection.value, item.industry_code),
+        )
+        assert individually.outcome == "succeeded", individually.diagnostics
+        assert individually.value.representation.data == item.representation.data
+
+
+def test_issuance_source_validation_checks_outside_selected_industries() -> None:
+    from stratbox.macrobanks.cbr_industries import IndustrySelection
+
+    run = issuance.parse(issuance.ParseIssuanceRequest(
+        SourcePayload(_book(negative=True)), "01_04_A_New_loans_corp_20190201.xlsx",
+        selection=IndustrySelection(("total",)),
+    ))
+    assert run.outcome == "failed"
+    assert run.diagnostics[0].code == "source.validation_failed"

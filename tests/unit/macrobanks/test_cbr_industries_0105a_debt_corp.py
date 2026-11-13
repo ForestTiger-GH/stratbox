@@ -772,3 +772,85 @@ def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
     own = domain.calculate_apk(domain.CalculateApkRequest(changed))
     assert own.outcome == "succeeded" and own.used_inputs[0].role == "user_table"
     assert not own.computation.parents and own.computation.version != apk.computation.version
+
+
+def test_selective_history_preserves_full_validation_and_batch_workbooks() -> None:
+    from stratbox.macrobanks import cbr_industries as domain
+    from stratbox.macrobanks.cbr_industries.selection import resolve_industry_codes
+
+    payload = SourcePayload(_workbook_bytes(
+        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
+    ))
+    source = domain.ParseIndustryRequest(payload, "01_05_A_Debt_corp_20260601.xlsx")
+    all_rows = domain.build_stream(domain.BuildIndustryStreamRequest((source,)))
+    selected = domain.build_stream(domain.BuildIndustryStreamRequest(
+        (source,), selection=domain.IndustrySelection(("apk", "total")),
+    ))
+    assert all_rows.outcome == "succeeded", all_rows.diagnostics
+    assert selected.outcome == "succeeded", selected.diagnostics
+    source_codes = resolve_industry_codes(domain.IndustrySelection(("apk", "total")))
+    assert len(source_codes) == 6
+    assert selected.value.rows_stream == 96 * 6 * 6
+    assert selected.value.source_validation_scope == "full"
+    assert selected.value.selection.industry_codes == ("apk", "total")
+    assert all_rows.value.evidence.computation_id != selected.value.evidence.computation_id
+    full_subset = all_rows.value.df_stream.loc[
+        all_rows.value.df_stream["industry_code"].isin(source_codes)
+    ].reset_index(drop=True)
+    selected_subset = selected.value.df_stream.reset_index(drop=True)
+    compare_columns = ["report_date", "region_code", "industry_code", "measure",
+                       "currency_scope", "value", "source_row", "source_column"]
+    assert full_subset[compare_columns].astype(object).to_dict("records") == (
+        selected_subset[compare_columns].astype(object).to_dict("records")
+    )
+    assert all_rows.value.validation_issues == selected.value.validation_issues
+
+    batch = domain.render_industries(domain.RenderIndustriesRequest(
+        selected.value, ("apk", "total"),
+    ))
+    assert batch.outcome == "succeeded", batch.diagnostics
+    assert batch.computation is not None
+    assert batch.value.ok
+    assert tuple(item.industry_code for item in batch.value.items) == ("apk", "total")
+    for item in batch.value.items:
+        individual = domain.render_industry(domain.RenderIndustryRequest(
+            selected.value, domain.Cbr0105ADebtCorpIndustryWorkbookRequest(item.industry_code),
+        ))
+        assert individual.outcome == "succeeded", individual.diagnostics
+        assert individual.value.representation.data == item.representation.data
+
+
+def test_selection_rejects_invalid_codes_and_detects_excluded_negative_cells() -> None:
+    from stratbox.macrobanks import cbr_industries as domain
+
+    raw = _workbook_bytes(
+        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
+    )
+    wrong = domain.parse(domain.ParseIndustryRequest(
+        SourcePayload(raw), "01_05_A_Debt_corp_20260601.xlsx",
+        selection=domain.IndustrySelection(("total", "missing")),
+    ))
+    assert wrong.outcome == "failed"
+    assert wrong.diagnostics[0].code == "request.industry_selection_invalid"
+
+    book = load_workbook(BytesIO(raw))
+    book.worksheets[0]["C4"] = -1  # Mining, excluded from the requested total-only projection.
+    stream = BytesIO()
+    book.save(stream)
+    book.close()
+    parsed = domain.parse(domain.ParseIndustryRequest(
+        SourcePayload(stream.getvalue()), "01_05_A_Debt_corp_20260601.xlsx",
+        selection=domain.IndustrySelection(("total",)),
+    ))
+    assert parsed.outcome == "failed"
+    assert parsed.diagnostics[0].code == "source.validation_failed"
+
+
+def test_batch_render_rejects_mutated_caller_table() -> None:
+    from stratbox.macrobanks import cbr_industries as domain
+
+    result = _stream_result()
+    result.df_stream.loc[result.df_stream.index[0], "value"] = 999
+    batch = domain.render_industries(domain.RenderIndustriesRequest(result, ("total",)))
+    assert batch.outcome == "failed"
+    assert batch.diagnostics[0].code == "input.identity_mismatch"
