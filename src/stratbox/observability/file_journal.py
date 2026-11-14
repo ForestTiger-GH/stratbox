@@ -208,8 +208,8 @@ class FileJournalReader:
                 issues.append(JournalReadIssue(path, "journal.segment_read_failed"))
         records = [item for ident, item in by_id.items() if ident not in conflicted]
         # Completeness must be positively asserted with an exact expected set.
-        proven = bool(capture_complete and expected_paths is not None and
-                      set(paths) == set(expected_paths) and not issues)
+        proven = bool(capture_complete and expected_paths is not None and expected is not None and
+                      set(paths) == set(expected_paths) == set(expected) and not issues)
         return JournalReadReport(tuple(records), tuple(issues), proven)
 
 

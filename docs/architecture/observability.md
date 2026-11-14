@@ -38,8 +38,8 @@ records = observer.records
 capture_losses = observer.dropped
 ```
 
-Capture limits can drop records independently of the execution runner's sink
-loss count. The in-memory sink is safe for concurrent `emit` calls. A composite
+Capture limits bound both record count and serialized bytes, and can drop
+records independently of the execution runner's sink loss count. The in-memory sink is safe for concurrent `emit` calls. A composite
 sink isolates errors between recipients and exposes its own dropped count.
 
 ## Pure records, history and projections
@@ -99,8 +99,9 @@ reconcile by checking the expected bytes and record identifiers. Reattempt an
 external effect only according to its own owner-confirmation and idempotency
 policy. `read_report(...).complete` stays false by default because a set of readable
 files alone does not prove that all planned segments were published. It can be
-claimed true only when the caller supplies an exact `expected_paths` manifest,
-sets `capture_complete=True`, and no segment is missing or corrupt.
+claimed true only when the caller supplies an exact `expected_paths` manifest
+and a matching `expected` map of SHA-256 byte identities, sets
+`capture_complete=True`, and no segment is missing or corrupt.
 
 `BufferedFileJournal` provides explicit `append`, `flush` and `close` with
 bounded memory. Unflushed data is volatile and its pending records remain

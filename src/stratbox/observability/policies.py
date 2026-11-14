@@ -11,10 +11,11 @@ class CapturePolicy:
     kinds: frozenset[str] | None = None
     progress: bool = False
     max_records: int = 10000
+    max_bytes: int = 16 * 1024 * 1024
 
     def __post_init__(self):
-        if self.max_records < 1:
-            raise ValueError("max_records must be positive")
+        if self.max_records < 1 or self.max_bytes < 1024:
+            raise ValueError("Capture limits must be positive")
 
     def accepts(self, record: JournalRecord) -> bool:
         return (self.record_types is None or record.record_type in self.record_types) and (

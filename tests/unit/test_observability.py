@@ -309,7 +309,10 @@ def test_read_report_complete_requires_evidence_manifest(tmp_path):
     receipt = FileJournalWriter(store, "complete", writer_id="run").write_batch((diagnostic_record(),))
     reader = FileJournalReader(store)
     assert not reader.read_report((receipt.locator,), expected_paths=frozenset((receipt.locator,))).complete
+    assert not reader.read_report((receipt.locator,), expected_paths=frozenset((receipt.locator,)),
+                                  capture_complete=True).complete
     assert reader.read_report((receipt.locator,), expected_paths=frozenset((receipt.locator,)),
+                              expected={receipt.locator: receipt.content_identity},
                               capture_complete=True).complete
 
 
@@ -373,3 +376,13 @@ def test_duplicate_segments_are_deduplicated(tmp_path):
     report = FileJournalReader(store).read_report((first.locator, first.locator))
     assert report.records == (diagnostic_record(1),)
     assert not report.issues
+
+
+def test_memory_sink_is_bounded_by_bytes_not_only_record_count():
+    a = diagnostic_record(payload={"description": "x" * 4000})
+    policy = CapturePolicy(max_records=10, max_bytes=4500)
+    sink = RecordMemorySink(policy)
+    assert sink.capture(a)
+    assert not sink.capture(diagnostic_record(2, payload={"description": "z" * 4000}))
+    assert sink.dropped == 1
+    assert 4000 < sink.bytes_used < 4500

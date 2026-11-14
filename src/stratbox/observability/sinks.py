@@ -14,17 +14,26 @@ class RecordMemorySink:
     def __init__(self, policy: CapturePolicy | None = None):
         self.policy = policy or CapturePolicy()
         self._records: list[JournalRecord] = []
+        self._bytes_used = 0
         self._dropped = 0
         self._lock = RLock()
 
     def capture(self, record: JournalRecord) -> bool:
         if not self.policy.accepts(record):
             return False
+        from .codecs import encode_record
+        try:
+            byte_size = len(encode_record(record))
+        except ValueError:
+            with self._lock:
+                self._dropped += 1
+            return False
         with self._lock:
-            if len(self._records) == self.policy.max_records:
+            if len(self._records) >= self.policy.max_records or self._bytes_used + byte_size > self.policy.max_bytes:
                 self._dropped += 1
                 return False
             self._records.append(record)
+            self._bytes_used += byte_size
             return True
 
     def emit(self, event: ExecutionEvent) -> None:
@@ -46,6 +55,11 @@ class RecordMemorySink:
     def dropped(self) -> int:
         with self._lock:
             return self._dropped
+
+    @property
+    def bytes_used(self) -> int:
+        with self._lock:
+            return self._bytes_used
 
 
 class CompositeEventSink:
