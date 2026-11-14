@@ -86,19 +86,23 @@ class CausalInspection:
 
 def inspect_causes(records: Iterable[JournalRecord], record_id: str) -> CausalInspection:
     by_id = {item.record_id: item for item in records}
+    alias = {f"{item.invocation_id}.{item.sequence}": item.record_id for item in by_id.values()
+             if item.record_type == "execution" and item.sequence is not None}
     visited, found, missing = set(), [], set()
 
     def visit(ident: str):
         if ident in visited:
             return
         visited.add(ident)
-        item = by_id.get(ident)
+        item = by_id.get(alias.get(ident, ident))
         if item is None:
             missing.add(ident)
             return
         found.append(item)
         for parent in item.cause_record_ids:
             visit(parent)
+        if item.correlation.cause_event_id:
+            visit(item.correlation.cause_event_id)
 
     visit(record_id)
     return CausalInspection(tuple(found), tuple(sorted(missing)))

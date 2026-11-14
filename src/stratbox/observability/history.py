@@ -21,8 +21,10 @@ class OperationHistory:
 
 
 def build_operation_history(records: Iterable[JournalRecord], invocation_id: str, *,
-                            known_dropped: int = 0, capture_complete: bool = False) -> OperationHistory:
-    selected = [r for r in records if r.invocation_id == invocation_id]
+                            known_dropped: int = 0, capture_complete: bool = False,
+                            progress_filtered: bool = False) -> OperationHistory:
+    all_records = tuple(records)
+    selected = [r for r in all_records if r.invocation_id == invocation_id]
     seen = {}
     problems = set()
     for r in selected:
@@ -40,7 +42,7 @@ def build_operation_history(records: Iterable[JournalRecord], invocation_id: str
         problems.add("journal.sequence_conflict")
     missing = tuple(set(range(1, max(seqs) + 1)) - set(seqs)) if seqs else ()
     missing = tuple(sorted(missing))
-    if missing:
+    if missing and not progress_filtered:
         problems.add("journal.sequence_gap")
     starts = [r for r in execution if r.kind == "operation.started"]
     finishes = [r for r in execution if r.kind == "operation.finished"]
@@ -50,8 +52,13 @@ def build_operation_history(records: Iterable[JournalRecord], invocation_id: str
         problems.add("journal.finish_missing")
     if len(starts) > 1 or len(finishes) > 1:
         problems.add("journal.lifecycle_conflict")
-    ids = {r.record_id for r in selected}
-    missing_causes = tuple(sorted({cause for r in selected for cause in r.cause_record_ids if cause not in ids}))
+    ids = {r.record_id for r in all_records}
+    aliases = {f"{r.invocation_id}.{r.sequence}" for r in all_records
+               if r.record_type == "execution" and r.sequence is not None}
+    missing_causes = tuple(sorted({cause for r in selected
+                                   for cause in (*r.cause_record_ids, *((r.correlation.cause_event_id,)
+                                                                      if r.correlation.cause_event_id else ()))
+                                   if cause not in ids and cause not in aliases}))
     if missing_causes:
         problems.add("journal.causal_parent_missing")
     if known_dropped > 0:

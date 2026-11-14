@@ -85,7 +85,7 @@ def project_source_state(records: Iterable[JournalRecord], source_id: str) -> So
                 if r.kind == "publication.discovered" and r.payload.get("confirmation") == "confirmed"
                 and r.payload.get("release_id") is not None}
     return SourceCheckState(source_id, checks[-1].occurred_at_utc.isoformat() if checks else None,
-                            checks[-1].outcome if checks else None,
+                            (checks[-1].outcome or checks[-1].payload.get("status")) if checks else None,
                             tuple(sorted(releases)), len(releases) > 1)
 
 

@@ -184,15 +184,29 @@ class FileJournalReader:
         issues = [JournalReadIssue(path, "journal.expected_segment_missing")
                   for path in sorted((expected_paths or frozenset()) - set(paths))]
         records: list[JournalRecord] = []
+        by_id: dict[str, JournalRecord] = {}
+        conflicted: set[str] = set()
         for path in paths:
             try:
-                records.extend(self.iter_segments((path,), expected=expected))
+                # A corrupt segment contributes no confirmed prefix records.
+                validated_segment = tuple(self.iter_segments((path,), expected=expected))
+                for item in validated_segment:
+                    previous = by_id.get(item.record_id)
+                    if item.record_id in conflicted:
+                        continue
+                    if previous is not None and previous != item:
+                        issues.append(JournalReadIssue(path, "journal.record_identity_conflict"))
+                        conflicted.add(item.record_id)
+                        continue
+                    if previous is None:
+                        by_id[item.record_id] = item
             except FileNotFoundError:
                 issues.append(JournalReadIssue(path, "journal.segment_missing"))
             except JournalDecodeError as exc:
                 issues.append(JournalReadIssue(path, exc.code, exc.line))
             except Exception:
                 issues.append(JournalReadIssue(path, "journal.segment_read_failed"))
+        records = [item for ident, item in by_id.items() if ident not in conflicted]
         # Completeness must be positively asserted with an exact expected set.
         proven = bool(capture_complete and expected_paths is not None and
                       set(paths) == set(expected_paths) and not issues)

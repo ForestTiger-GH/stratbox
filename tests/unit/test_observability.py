@@ -311,3 +311,65 @@ def test_read_report_complete_requires_evidence_manifest(tmp_path):
     assert not reader.read_report((receipt.locator,), expected_paths=frozenset((receipt.locator,))).complete
     assert reader.read_report((receipt.locator,), expected_paths=frozenset((receipt.locator,)),
                               capture_complete=True).complete
+
+
+def test_partial_corrupt_segment_never_yields_confirmed_prefix(tmp_path):
+    store = LocalFileStore(str(tmp_path))
+    writer = FileJournalWriter(store, "corruption", writer_id="run")
+    segment = writer.write_batch((diagnostic_record(1), diagnostic_record(2)))
+    path = tmp_path / segment.locator
+    path.write_bytes(encode_records((diagnostic_record(1),)) + b"{invalid\n")
+    report = FileJournalReader(store).read_report((segment.locator,))
+    assert report.records == ()
+    assert report.issues[0].code == "journal.json_invalid"
+    assert report.issues[0].line == 2
+
+
+def test_parent_from_another_invocation_is_known():
+    parent = diagnostic_record(1)
+    child = JournalRecord("dependent", "result_summary", "operation.result", UTC, {},
+                          invocation_id="invocation", operation_id="test",
+                          cause_record_ids=(parent.record_id,))
+    history = build_operation_history((parent, child), "invocation")
+    assert history.missing_causes == ()
+
+
+def test_source_check_state_exposes_payload_status():
+    from stratbox.observability import fact_for_source_check, project_source_state
+    rec = record_from_fact(fact_for_source_check(source_id="stats", checked_at_utc=UTC,
+                                                 status="succeeded"))
+    state = project_source_state((rec,), "stats")
+    assert state.last_check_outcome == "succeeded"
+
+
+def test_history_policy_filtered_progress_is_not_a_false_loss():
+    sink = RecordMemorySink(CapturePolicy(progress=False))
+    result = execute(sink)
+    history = build_operation_history(sink.records, result.invocation_id,
+                                      capture_complete=True, progress_filtered=True)
+    assert history.coverage == "complete"
+    assert history.missing_sequences
+    assert "journal.sequence_gap" not in history.problems
+
+
+def test_causal_aliases_resolve_execution_event_ids():
+    from stratbox.observability import record_from_execution_event
+    from stratbox.execution import ExecutionEvent
+    parent_event = ExecutionEvent(3, "operation.started", "parent", "op", 1, "method", 1, UTC, Correlation())
+    child_event = ExecutionEvent(3, "operation.started", "child", "op", 1, "method", 1, UTC,
+                                 Correlation(cause_event_id=parent_event.event_id))
+    parent = record_from_execution_event(parent_event)
+    child = record_from_execution_event(child_event)
+    inspection = inspect_causes((parent, child), child.record_id)
+    assert {x.record_id for x in inspection.roots} == {parent.record_id, child.record_id}
+    assert inspection.missing_parent_ids == ()
+    assert build_operation_history((parent, child), "child").missing_causes == ()
+
+
+def test_duplicate_segments_are_deduplicated(tmp_path):
+    store = LocalFileStore(str(tmp_path))
+    w = FileJournalWriter(store, "dup", writer_id="run")
+    first = w.write_batch((diagnostic_record(1),))
+    report = FileJournalReader(store).read_report((first.locator, first.locator))
+    assert report.records == (diagnostic_record(1),)
+    assert not report.issues

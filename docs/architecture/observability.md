@@ -59,8 +59,12 @@ restored = decode_records(encoded, format="jsonl")
 `capture_complete=True` is an explicit claim by the caller that all relevant
 events for the selected interval were captured. Without that evidence,
 operation-history completeness is `indeterminate` even when the visible start
-and finish records are present. Presence of gaps, conflicts or capture loss
-produces `incomplete`.
+and finish records are present. Presence of unexplained sequence gaps,
+conflicts or capture loss produces `incomplete`. If progress events were
+intentionally excluded by `CapturePolicy(progress=False)`, pass
+`progress_filtered=True` during reconstruction: missing sequence numbers are
+still surfaced, but deliberate progress suppression does not constitute
+capture loss.
 
 `project_source_state` and `project_dataset_state` retain competing confirmed
 versions as a set with a conflict flag. The library does not silently select
@@ -165,3 +169,12 @@ call `close()` to publish the final buffer and inspect its write receipts. Its
 `emit` path is **not** suitable for a required pre-effect registration, because
 `execution.run` intentionally catches ordinary sink failures. Use
 `RequiredJournalGate` explicitly before the action in those cases.
+
+## Causal links and segment conflicts
+
+`inspect_causes` follows explicit `cause_record_ids` and execution
+`Correlation.cause_event_id`, resolving existing execution event IDs to
+portable record IDs. Missing parents are reported rather than synthesized.
+Across segments the reader deduplicates identical record IDs; conflicting
+content using the same record ID is flagged and excluded from recovered facts.
+A malformed segment contributes no apparently confirmed prefix records.
