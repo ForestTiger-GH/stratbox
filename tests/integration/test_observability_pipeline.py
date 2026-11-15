@@ -22,7 +22,8 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
     source = SourcePayload(b"CBR sample source bytes", source_id="cbr_offices")
     request = SaveOriginalRequest(source, OriginalDestination("input/original.bin", mode="immutable"))
     plain = save_original(request, store=LocalFileStore(str(tmp_path / "plain")))
-    collector = RecordMemorySink(CapturePolicy(progress=False))
+    from stratbox.observability import OriginClaim
+    collector = RecordMemorySink(CapturePolicy(progress=False), origin=OriginClaim("tester", "collector", "generation_one"))
     observed = save_original(request, store=LocalFileStore(str(tmp_path / "observed")),
                              context=ExecutionContext(sink=collector))
     assert plain.outcome == observed.outcome == "succeeded"
@@ -49,7 +50,7 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
     manifest = build_manifest(writer_id="test_writer", generation_id="generation_one",
                               scope_id=coverage.scope_id,
                               segments=(SegmentDescriptor.from_receipt(batch),),
-                              assessment=assessment, sealed_at_utc=TIME,
+                              records=records, sealed_at_utc=TIME,
                               capture_evidence=(coverage,))
     manifest_receipt = writer.write_manifest(manifest)
     assert manifest_receipt.state == "confirmed"

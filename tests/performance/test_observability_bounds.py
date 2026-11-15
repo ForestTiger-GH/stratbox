@@ -41,3 +41,20 @@ def test_causal_cycle_iterative():
     )
     inspection = inspect_causes(nodes, "nodeA")
     assert len(inspection.roots) == 2 and not inspection.truncated
+
+
+def test_long_lived_collector_metadata_stops_at_configured_budget():
+    from stratbox.observability import RecordMemorySink, ObserverLimits, CapturePolicy
+    observer = RecordMemorySink(CapturePolicy(max_records=1),
+                                limits=ObserverLimits(max_tracked_invocations=3,
+                                                      max_total_sequence_ranges=9,
+                                                      max_ranges_per_invocation=3))
+    for n in range(25_000):
+        item = JournalRecord(f"event{n}", "execution", "operation.started", TIME, {},
+                             invocation_id=f"inv{n}", operation_id="test", sequence=1)
+        observer.capture(item)
+    health = observer.health_snapshot()
+    assert health.tracked_invocations == 3
+    assert health.tracked_sequence_ranges <= 9
+    assert health.metadata_overflow_events >= 24_997
+    assert health.degraded

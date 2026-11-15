@@ -49,6 +49,28 @@ class SourceCheckState:
     current_release_id: str | None = None
     current_release_qualification: str = "indeterminate"
     indeterminate: bool = True
+    observed_byte_versions: int = 0
+    revision_relation: str = "indeterminate"
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationObservation:
+    owner_id: str
+    release_id: str
+    sha256: str
+    observed_at_utc: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RevisionResolution:
+    relation: str  # same | supersedes | competing | indeterminate
+    authority: str = "domain_resolver"
+
+    def __post_init__(self):
+        if self.relation not in {"same", "supersedes", "competing", "indeterminate"}:
+            raise ValueError("journal.revision_relation_invalid")
+        if self.authority != "domain_resolver":
+            raise ValueError("journal.revision_authority_invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,7 +113,8 @@ def _identity_sha(obj: object) -> str | None:
 
 
 def project_source_state(records: Iterable[JournalRecord], source_id: str, *,
-                         resolver: Callable[[tuple[str, ...]], str | None] | None = None) -> SourceCheckState:
+                         resolver: Callable[[tuple[str, ...]], str | None] | None = None,
+                         revision_resolver: Callable[[tuple[PublicationObservation, ...]], RevisionResolution] | None = None) -> SourceCheckState:
     items = [rec for rec in records if rec.record_type == "domain_fact"
              and rec.kind in {"source.checked", "publication.discovered"}
              and ((rec.subject is not None and rec.subject.namespace == "source" and rec.subject.object_id == source_id)
@@ -99,6 +122,7 @@ def project_source_state(records: Iterable[JournalRecord], source_id: str, *,
     checks = sorted((rec for rec in items if rec.kind == "source.checked"),
                     key=lambda rec: (rec.observed_at_utc or rec.occurred_at_utc, rec.record_id))
     releases: dict[tuple[str, str], set[str]] = {}
+    observations: list[PublicationObservation] = []
     for rec in items:
         if rec.kind != "publication.discovered" or rec.payload.get("confirmation") != "confirmed":
             continue
@@ -110,15 +134,25 @@ def project_source_state(records: Iterable[JournalRecord], source_id: str, *,
         ident = _identity_sha(rec.payload.get("identity")) or (rec.subject.identity.sha256 if rec.subject and rec.subject.identity else None)
         if ident:
             releases.setdefault(key, set()).add(ident)
+            observations.append(PublicationObservation(str(scope), release, ident,
+                (rec.observed_at_utc or rec.occurred_at_utc).isoformat()))
     confirmed = tuple(sorted({release for (_, release) in releases}))
-    conflict = any(len(identities) > 1 for identities in releases.values())
+    ambiguous_revision = any(len(identities) > 1 for identities in releases.values())
+    relation = "indeterminate" if ambiguous_revision else "same" if releases else "indeterminate"
+    if revision_resolver is not None and observations:
+        resolved = revision_resolver(tuple(observations))
+        if not isinstance(resolved, RevisionResolution):
+            raise ValueError("journal.revision_resolution_invalid")
+        relation = resolved.relation
+    conflict = relation == "competing"
     current = resolver(confirmed) if resolver else None
     if current is not None and current not in confirmed:
         raise ValueError("Source resolver selected an unconfirmed release")
     last = checks[-1] if checks else None
     return SourceCheckState(source_id, (last.observed_at_utc or last.occurred_at_utc).isoformat() if last else None,
                             str(last.payload.get("status")) if last else None, confirmed, conflict, current,
-                            "domain_resolver" if current else "indeterminate", current is None or conflict)
+                            "domain_resolver" if current else "indeterminate", current is None or conflict or relation == "indeterminate",
+                            sum(len(values) for values in releases.values()), relation)
 
 
 def project_dataset_state(records: Iterable[JournalRecord], dataset_id: str, *,
@@ -145,22 +179,29 @@ def project_dataset_state(records: Iterable[JournalRecord], dataset_id: str, *,
 def project_artifact_state(records: Iterable[JournalRecord], artifact_id: str, *,
                            version_id: str | None = None) -> ArtifactState:
     items = _facts(records, frozenset({"artifact.produced", "artifact.stored"}), "artifact", artifact_id)
-    by_version: dict[str, set[str]] = {}
-    for item in items:
+    selected = [rec for rec in items if rec.subject is not None and rec.subject.version_id == version_id] \
+        if version_id is not None else items
+    by_version: dict[str | None, set[str]] = {}
+    for item in selected:
         if item.subject and item.subject.identity:
-            key = item.subject.version_id or "unqualified"
-            by_version.setdefault(key, set()).add(item.subject.identity.sha256)
-    chosen = by_version.get(version_id) if version_id is not None else (
-        next(iter(by_version.values())) if len(by_version) == 1 else set())
-    # Without a domain version key, different byte snapshots may be ordinary
-    # revisions. They are ambiguous, not automatically competing assertions.
-    conflict = (len(chosen or ()) > 1 if version_id is not None else
-                any(len(values) > 1 for key, values in by_version.items() if key != "unqualified"))
-    identity = next(iter(chosen)) if chosen and len(chosen) == 1 else None
-    confirms = [r for r in items if r.kind == "artifact.stored" and r.payload.get("status") in {"stored", "already_present", "confirmed"}
-                and (version_id is None or (r.subject and r.subject.version_id == version_id))]
-    return ArtifactState(artifact_id, identity, any(r.kind == "artifact.produced" for r in items),
-                         bool(confirms), conflict, identity is None and bool(by_version))
+            by_version.setdefault(item.subject.version_id, set()).add(item.subject.identity.sha256)
+    if version_id is not None:
+        chosen = by_version.get(version_id, set())
+        conflict = len(chosen) > 1
+    elif len(by_version) == 1:
+        chosen = next(iter(by_version.values()))
+        # Unknown revision identity may mean a sequence of ordinary snapshots.
+        conflict = len(chosen) > 1 and None not in by_version
+    else:
+        chosen = set()
+        conflict = False
+    identity = next(iter(chosen)) if len(chosen) == 1 else None
+    produced = any(rec.kind == "artifact.produced" for rec in selected)
+    confirmed = any(rec.kind == "artifact.stored" and
+                    rec.payload.get("status") in {"stored", "already_present", "confirmed"}
+                    for rec in selected)
+    return ArtifactState(artifact_id, identity, produced, confirmed, conflict,
+                         not selected or identity is None)
 
 
 def project_effect_state(records: Iterable[JournalRecord], effect_id: str) -> EffectState:

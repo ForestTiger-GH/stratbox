@@ -108,7 +108,8 @@ def test_source_same_release_competing_byte_id_conflict():
     right = PublicationReceipt("source_1", "dataset", "oct", "b", ByteIdentity.of(b"b"), "confirmed")
     records = (record_from_fact(fact_from_publication(left, occurred_at_utc=TIME)),
                record_from_fact(fact_from_publication(right, occurred_at_utc=TIME)))
-    assert project_source_state(records, "source_1").conflict
+    assert not project_source_state(records, "source_1").conflict
+    assert project_source_state(records, "source_1").indeterminate
 
 
 def test_dataset_sequential_pairs_not_conflict():
@@ -303,7 +304,7 @@ def test_buffer_unknown_then_reconcile(tmp_path):
 def test_file_manifest_seal_full_roundtrip(tmp_path):
     store=LocalFileStore(tmp_path)
     writer=FileJournalWriter(store,"journals",writer_id="writer1")
-    sink=RecordMemorySink(CapturePolicy(progress=False))
+    sink=RecordMemorySink(CapturePolicy(progress=False), origin=OriginClaim("test", "collector", "generation1"))
     result=run_test(sink)
     snapshot=sink.records
     cov=sink.coverage_for(result.invocation_id,producer=result.observability)
@@ -314,7 +315,7 @@ def test_file_manifest_seal_full_roundtrip(tmp_path):
     receipt=writer.write_batch(snapshot)
     assert receipt.state=="confirmed"
     manifest=build_manifest(writer_id="writer1", generation_id="generation1",scope_id=cov.scope_id,
-                            segments=(SegmentDescriptor.from_receipt(receipt),),assessment=assess,sealed_at_utc=TIME,
+                            segments=(SegmentDescriptor.from_receipt(receipt),),records=snapshot,sealed_at_utc=TIME,
                             capture_evidence=(cov,))
     assert manifest.seal_state=="sealed"
     manifest_receipt=writer.write_manifest(manifest)
@@ -382,10 +383,10 @@ def test_manifest_missing_segment_or_manifest_corrupt(tmp_path):
     writer=FileJournalWriter(store,"m",writer_id="one")
     receipt=writer.write_batch((record(1, "operation.started", "inv"), record(2, "operation.finished", "inv")))
     evidence_object=CaptureCoverage("inv","scope",2,(SequenceRange(1,2),),
-                       terminal_seen=True,evidence_quality="collector_observed",start_seen=True)
+                       terminal_seen=True,evidence_quality="collector_observed",start_seen=True,generation_id="gen")
     evidence=assess_coverage((1,2),evidence_object,start_seen=True,terminal_seen=True)
     manifest=build_manifest(writer_id="one",generation_id="gen",scope_id="scope",
-                segments=(SegmentDescriptor.from_receipt(receipt),),assessment=evidence,sealed_at_utc=TIME,
+                segments=(SegmentDescriptor.from_receipt(receipt),),records=(record(1, "operation.started", "inv"), record(2, "operation.finished", "inv")),sealed_at_utc=TIME,
                 capture_evidence=(evidence_object,))
     mr=writer.write_manifest(manifest)
     reader=FileJournalReader(store,namespace=writer.namespace)
@@ -523,7 +524,7 @@ def test_manifest_complete_needs_collector_evidence(tmp_path):
              terminal_seen=True,evidence_quality="collector_observed",start_seen=True),
              start_seen=True,terminal_seen=True)
     manifest=build_manifest(writer_id="w",generation_id="g",scope_id="scope",
-        segments=(SegmentDescriptor.from_receipt(receipt),),assessment=qualified,sealed_at_utc=TIME)
+        segments=(SegmentDescriptor.from_receipt(receipt),),records=(record(1,"operation.started"),record(2,"operation.finished")),sealed_at_utc=TIME)
     assert manifest.seal_state=="incomplete"
     mr=writer.write_manifest(manifest)
     assert not FileJournalReader(writer.store,namespace=writer.namespace).read_report(manifest_receipt=mr).complete

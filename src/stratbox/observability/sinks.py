@@ -10,7 +10,7 @@ from .adapters import record_from_execution_event, record_from_fact, record_from
 from .contracts import DomainFact, JournalRecord, OriginClaim
 from .coverage import CaptureCoverage, SequenceRange, merge_ranges
 from .health import ObserverHealthSnapshot
-from .policies import CapturePolicy
+from .policies import CapturePolicy, ObserverLimits
 from .codecs import encode_record
 
 
@@ -23,82 +23,126 @@ class CaptureDisposition:
         return self.state == "accepted"
 
 
+@dataclass(slots=True)
+class _InvocationTracker:
+    seen: list[SequenceRange]
+    excluded: list[SequenceRange]
+    lost: list[SequenceRange]
+    start_seen: bool = False
+    terminal_seen: bool = False
+    overflowed: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ObserverGenerationSnapshot:
+    records: tuple[JournalRecord, ...]
+    health: ObserverHealthSnapshot
+    invocation_ids: tuple[str, ...]
+    generation_id: str | None
+    # An in-memory snapshot is volatile, never automatically storage-confirmed.
+
+
 class _Counter:
-    def __init__(self):
+    def __init__(self, limits: ObserverLimits):
+        self.limits = limits
         self.received = self.accepted = self.filtered = self.dropped_capacity = self.failed = 0
-        self._seen: dict[str, list[SequenceRange]] = {}
-        self._excluded: dict[str, list[SequenceRange]] = {}
-        self._lost: dict[str, list[SequenceRange]] = {}
-        self._start: set[str] = set()
-        self._terminal: set[str] = set()
-        self._overflowed: set[str] = set()
+        self.metadata_overflow = 0
+        self._invocations: dict[str, _InvocationTracker] = {}
+        self._total_ranges = 0
+
+    @property
+    def tracked_ranges(self) -> int:
+        return self._total_ranges
 
     @staticmethod
-    def _put(table: dict[str, list[SequenceRange]], invocation: str, seq: int, overflow: set[str]):
-        if invocation in overflow:
+    def _merged_count(items: list[SequenceRange], seq: int) -> tuple[SequenceRange, ...]:
+        # Existing intervals are bounded; duplicates and adjacent sequences cost no new slot.
+        return merge_ranges((*items, SequenceRange(seq, seq)))
+
+    def observe(self, rec: JournalRecord, *, filtered: bool = False) -> bool:
+        if rec.record_type != "execution" or not rec.invocation_id or rec.sequence is None:
+            return True
+        key = rec.invocation_id
+        tracker = self._invocations.get(key)
+        if tracker is None:
+            if len(self._invocations) >= self.limits.max_tracked_invocations:
+                self.metadata_overflow += 1
+                return False
+            tracker = _InvocationTracker([], [], [])
+            self._invocations[key] = tracker
+        if tracker.overflowed:
+            self.metadata_overflow += 1
+            return False
+        seen = self._merged_count(tracker.seen, rec.sequence)
+        excluded = self._merged_count(tracker.excluded, rec.sequence) if filtered else tuple(tracker.excluded)
+        old_count = len(tracker.seen) + len(tracker.excluded) + len(tracker.lost)
+        new_count = len(seen) + len(excluded) + len(tracker.lost)
+        if new_count > self.limits.max_ranges_per_invocation or (self._total_ranges - old_count + new_count) > self.limits.max_total_sequence_ranges:
+            tracker.overflowed = True
+            self.metadata_overflow += 1
+            return False
+        self._total_ranges += new_count - old_count
+        tracker.seen = list(seen)
+        tracker.excluded = list(excluded)
+        tracker.start_seen |= rec.kind == "operation.started"
+        tracker.terminal_seen |= rec.kind == "operation.finished"
+        return True
+
+    def lost(self, rec: JournalRecord) -> None:
+        if rec.record_type != "execution" or not rec.invocation_id or rec.sequence is None:
             return
-        ranges = table.setdefault(invocation, [])
-        if ranges and seq == ranges[-1].last + 1:
-            ranges[-1] = SequenceRange(ranges[-1].first, seq)
-        elif ranges and ranges[-1].first <= seq <= ranges[-1].last:
+        tracker = self._invocations.get(rec.invocation_id)
+        if tracker is None or tracker.overflowed:
             return
-        elif ranges and seq < ranges[-1].first:
-            ranges[:] = merge_ranges((*ranges, SequenceRange(seq, seq)))
-        else:
-            if len(ranges) >= 50_000:
-                overflow.add(invocation)
-                return
-            ranges.append(SequenceRange(seq, seq))
-
-    def seen(self, rec: JournalRecord):
-        if rec.record_type == "execution" and rec.invocation_id and rec.sequence:
-            self._put(self._seen, rec.invocation_id, rec.sequence, self._overflowed)
-            if rec.kind == "operation.started":
-                self._start.add(rec.invocation_id)
-            if rec.kind == "operation.finished":
-                self._terminal.add(rec.invocation_id)
-
-    def note_filtered(self, rec: JournalRecord):
-        if rec.record_type == "execution" and rec.invocation_id and rec.sequence:
-            self._put(self._excluded, rec.invocation_id, rec.sequence, self._overflowed)
-
-    def lost(self, rec: JournalRecord):
-        if rec.record_type == "execution" and rec.invocation_id and rec.sequence:
-            self._put(self._lost, rec.invocation_id, rec.sequence, self._overflowed)
+        updated = self._merged_count(tracker.lost, rec.sequence)
+        growth = len(updated) - len(tracker.lost)
+        if (len(tracker.seen) + len(tracker.excluded) + len(updated) > self.limits.max_ranges_per_invocation
+                or self._total_ranges + growth > self.limits.max_total_sequence_ranges):
+            tracker.overflowed = True
+            self.metadata_overflow += 1
+            return
+        self._total_ranges += growth
+        tracker.lost = list(updated)
 
     def coverage(self, invocation: str, *, producer: ObservabilitySummary | None,
                  scope_id: str, generation_id: str | None = None) -> CaptureCoverage:
-        seen = tuple(self._seen.get(invocation, ()))
+        tracker = self._invocations.get(invocation)
+        seen = tuple(tracker.seen) if tracker else ()
         last = producer.emitted + producer.dropped if producer else None
+        unknown = int(tracker.overflowed) if tracker else (1 if self.metadata_overflow else 0)
         return CaptureCoverage(invocation, scope_id, last, seen,
-                               tuple(self._excluded.get(invocation, ())),
-                               tuple(self._lost.get(invocation, ())),
-                               1 if invocation in self._overflowed else 0,
+                               tuple(tracker.excluded) if tracker else (),
+                               tuple(tracker.lost) if tracker else (), unknown,
                                producer.dropped if producer else None,
-                               invocation in self._terminal, generation_id,
-                               "collector_observed" if producer is not None and seen and invocation not in self._overflowed else "claimed",
-                               invocation in self._start)
+                               tracker.terminal_seen if tracker else False, generation_id,
+                               "collector_observed" if producer is not None and seen and not unknown else "claimed",
+                               tracker.start_seen if tracker else False)
 
 
 class RecordMemorySink:
-    def __init__(self, policy: CapturePolicy | None = None, *, origin: OriginClaim | None = None):
+    def __init__(self, policy: CapturePolicy | None = None, *, origin: OriginClaim | None = None,
+                 limits: ObserverLimits | None = None):
         self.policy = policy or CapturePolicy()
         self.origin = origin
         self._records: list[JournalRecord] = []
         self._bytes_used = 0
-        self._counter = _Counter()
+        self._counter = _Counter(limits or ObserverLimits())
+        self._closed = False
         self._lock = RLock()
 
     def capture_disposition(self, rec: JournalRecord) -> CaptureDisposition:
         with self._lock:
             c = self._counter
             c.received += 1
-            c.seen(rec)
+            if self._closed:
+                c.failed += 1
+                return CaptureDisposition("failed", "journal.generation_closed")
             reason = self.policy.classify(rec)
+            if not c.observe(rec, filtered=reason != "accepted"):
+                c.dropped_capacity += 1
+                return CaptureDisposition("dropped", "journal.coverage_metadata_limit")
             if reason != "accepted":
                 c.filtered += 1
-                c.filtered_record = reason
-                c.note_filtered(rec)
                 return CaptureDisposition("filtered", reason)
             try:
                 size = len(encode_record(rec))
@@ -140,7 +184,9 @@ class RecordMemorySink:
             return ObserverHealthSnapshot(producer.emitted if producer else None,
                                           producer.dropped if producer else None, c.received,
                                           c.accepted, c.filtered, c.dropped_capacity + c.failed,
-                                          degraded=bool(c.dropped_capacity + c.failed + (producer.dropped if producer else 0)))
+                                          degraded=bool(c.dropped_capacity + c.failed + c.metadata_overflow + (producer.dropped if producer else 0)),
+                                          tracked_invocations=len(c._invocations), tracked_sequence_ranges=c.tracked_ranges,
+                                          metadata_overflow_events=c.metadata_overflow, generation_finalized=self._closed)
 
     @property
     def records(self) -> tuple[JournalRecord, ...]:
@@ -161,6 +207,13 @@ class RecordMemorySink:
     def bytes_used(self) -> int:
         with self._lock:
             return self._bytes_used
+
+    def finalize_generation(self) -> ObserverGenerationSnapshot:
+        with self._lock:
+            self._closed = True
+            return ObserverGenerationSnapshot(self.records, self.health_snapshot(),
+                tuple(sorted(self._counter._invocations)),
+                self.origin.generation_id if self.origin else None)
 
 
 class CompositeEventSink:
@@ -190,21 +243,28 @@ class CompositeEventSink:
 
 class FileEventSink:
     """Best-effort sink; append acceptance is not storage confirmation."""
-    def __init__(self, journal, policy: CapturePolicy | None = None):
+    def __init__(self, journal, policy: CapturePolicy | None = None, *,
+                 origin: OriginClaim | None = None, limits: ObserverLimits | None = None):
         self.journal = journal
         self.policy = policy or CapturePolicy()
+        self.origin = origin
         self._lock = RLock()
-        self._counter = _Counter()
+        self._counter = _Counter(limits or ObserverLimits())
+        self._closed = False
 
     def capture_disposition(self, record: JournalRecord) -> CaptureDisposition:
         with self._lock:
             c = self._counter
             c.received += 1
-            c.seen(record)
+            if self._closed:
+                c.failed += 1
+                return CaptureDisposition("failed", "journal.generation_closed")
             choice = self.policy.classify(record)
+            if not c.observe(record, filtered=choice != "accepted"):
+                c.dropped_capacity += 1
+                return CaptureDisposition("dropped", "journal.coverage_metadata_limit")
             if choice != "accepted":
                 c.filtered += 1
-                c.note_filtered(record)
                 return CaptureDisposition("filtered", choice)
             try:
                 receipt = self.journal.append(record)
@@ -231,12 +291,21 @@ class FileEventSink:
 
     def close(self):
         with self._lock:
+            self._closed = True
             return self.journal.close()
+
+    def finalize_generation(self) -> ObserverGenerationSnapshot:
+        with self._lock:
+            self.close()
+            return ObserverGenerationSnapshot((), self.health_snapshot(),
+                tuple(sorted(self._counter._invocations)),
+                self.origin.generation_id if self.origin else None)
 
     def coverage_for(self, invocation_id: str, *, producer: ObservabilitySummary | None = None) -> CaptureCoverage:
         policy_scope = "lifecycle_without_progress" if (not self.policy.progress and self.policy.kinds is None and self.policy.record_types is None) else "custom_capture"
         with self._lock:
-            return self._counter.coverage(invocation_id, producer=producer, scope_id=policy_scope)
+            return self._counter.coverage(invocation_id, producer=producer, scope_id=policy_scope,
+                                          generation_id=self.origin.generation_id if self.origin else None)
 
     def health_snapshot(self, *, producer: ObservabilitySummary | None = None) -> ObserverHealthSnapshot:
         with self._lock:
@@ -248,9 +317,12 @@ class FileEventSink:
                                           c.received, c.accepted, c.filtered,
                                           c.dropped_capacity + c.failed, pending,
                                           self.journal.pending_bytes, confirmed, failed, unknown,
-                                          degraded=bool(c.failed + failed + unknown + pending + (producer.dropped if producer else 0)))
+                                          degraded=bool(c.failed + c.dropped_capacity + c.metadata_overflow + failed + unknown + pending + (producer.dropped if producer else 0)),
+                                          tracked_invocations=len(c._invocations), tracked_sequence_ranges=c.tracked_ranges,
+                                          metadata_overflow_events=c.metadata_overflow,
+                                          retained_receipts=len(self.journal.receipts), generation_finalized=self._closed)
 
     @property
     def dropped(self) -> int:
         with self._lock:
-            return self._counter.failed
+            return self._counter.failed + self._counter.dropped_capacity

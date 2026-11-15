@@ -223,3 +223,36 @@ def assess_coverage(accepted_sequences: Iterable[int], evidence: CaptureCoverage
     return CoverageAssessment(status, evidence.scope_id, missing, count_ranges(missing),
                               excluded, evidence.lost_ranges, evidence.unknown_loss_count,
                               tuple(sorted(reasons)))
+
+
+@dataclass(frozen=True, slots=True)
+class GenerationCaptureAssessment:
+    """Qualified aggregate: numerical gaps stay local to their invocation."""
+    scope_id: str
+    generation_id: str
+    status: CoverageStatus
+    invocation_count: int
+    complete_count: int
+    incomplete_count: int
+    indeterminate_count: int
+    total_missing_events: int
+    total_unknown_losses: int
+    assessments_digest: str
+    reasons: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        safe_token(self.scope_id)
+        safe_token(self.generation_id)
+        if self.status not in {"complete", "incomplete", "indeterminate"}:
+            raise ValueError("journal.generation_status_invalid")
+        for name in ("invocation_count", "complete_count", "incomplete_count",
+                     "indeterminate_count", "total_missing_events", "total_unknown_losses"):
+            value = getattr(self, name)
+            if type(value) is not int or value < 0:
+                raise ValueError("journal.generation_count_invalid")
+        if self.complete_count + self.incomplete_count + self.indeterminate_count != self.invocation_count:
+            raise ValueError("journal.generation_counts_inconsistent")
+        if len(self.assessments_digest) != 64 or any(x not in "0123456789abcdef" for x in self.assessments_digest):
+            raise ValueError("journal.generation_digest_invalid")
+        if len(self.reasons) > 32 or any(not isinstance(x, str) or len(x) > 128 for x in self.reasons):
+            raise ValueError("journal.generation_reasons_invalid")

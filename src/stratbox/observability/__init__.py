@@ -3,17 +3,18 @@ from .contracts import (DomainFact, JournalBarrierError, JournalRecord, JournalW
                         ObjectRef, OriginClaim, OriginAttestation, PayloadLimits, make_fact_id)
 from .coverage import (SequenceRange, CaptureCoverage, CoverageEvidence, CoverageAssessment,
                        merge_ranges, subtract_ranges, intersect_ranges, count_ranges,
-                       find_gaps, assess_coverage)
+                       find_gaps, assess_coverage, GenerationCaptureAssessment)
 from .adapters import (fact_from_acquisition, fact_from_comparison, fact_from_publication,
                        fact_from_stored_bytes, effect_state_from_storage_status,
                        record_from_execution_event, record_from_fact, record_from_result)
-from .policies import CapturePolicy, PersistencePolicy, PresentationPolicy
+from .policies import CapturePolicy, PersistencePolicy, PresentationPolicy, ObserverLimits
 from .field_policy import (AllowedField, RecordFieldSchema, FieldSchemaRegistry, SCHEMAS, validate_builtin_fields)
 from .health import ObserverHealthSnapshot
-from .sinks import (CaptureDisposition, CompositeEventSink, RecordMemorySink, FileEventSink)
+from .sinks import (CaptureDisposition, CompositeEventSink, RecordMemorySink, FileEventSink, ObserverGenerationSnapshot)
 from .selection import CausalInspection, RecordFilter, group_records, inspect_causes, select_records
+from .lifecycle import ExecutionLifecycleAssessment, inspect_execution_lifecycle, assess_generation_coverage
 from .history import OperationHistory, OperationStatistics, build_operation_history, summarize_operations
-from .projections import (OperationState, SourceCheckState, DatasetState, ArtifactState, EffectState,
+from .projections import (OperationState, SourceCheckState, PublicationObservation, RevisionResolution, DatasetState, ArtifactState, EffectState,
                           project_operation_state, operation_state_from_result,
                           project_source_state, project_dataset_state, project_artifact_state,
                           project_effect_state, projection_rows, source_state_from_publication,

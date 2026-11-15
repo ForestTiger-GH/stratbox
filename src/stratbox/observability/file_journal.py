@@ -18,7 +18,8 @@ from stratbox.execution.contracts import safe_token
 from .codecs import (JournalDecodeError, decode_records, encode_record, encode_records,
                      DEFAULT_MAX_SEGMENT_BYTES)
 from .contracts import JournalBarrierError, JournalRecord, JournalWriteReceipt
-from .coverage import CaptureCoverage, assess_coverage
+from .coverage import CaptureCoverage, GenerationCaptureAssessment
+from .lifecycle import assess_generation_coverage, assess_invocation_lifecycle
 from .manifests import (JournalManifest, MAX_MANIFEST_BYTES, SegmentDescriptor,
                         _ids_digest, decode_manifest, encode_manifest)
 from .policies import PersistencePolicy
@@ -343,32 +344,39 @@ class FileJournalReader:
             issues.extend(JournalReadIssue(path, "journal.expected_segment_missing") for path in sorted(missing))
         storage_status = "incomplete" if issues else "complete" if manifest is not None and manifest.seal_state == "sealed" else "indeterminate"
         capture_status = "indeterminate"
-        if manifest is not None and manifest.capture_evidence:
-            capture_status = "complete"
-            for evidence in manifest.capture_evidence:
-                related = [r for r in by_id.values() if r.invocation_id == evidence.invocation_id
-                           and r.record_type == "execution"]
-                checked = assess_coverage((r.sequence for r in related if r.sequence is not None), evidence,
-                                          start_seen=sum(r.kind == "operation.started" for r in related) == 1,
-                                          terminal_seen=sum(r.kind == "operation.finished" for r in related) == 1)
-                if checked.status != "complete" or (len(manifest.capture_evidence) == 1 and checked != manifest.capture_assessment):
-                    capture_status = "incomplete"
-                    issues.append(JournalReadIssue("", "journal.capture_evidence_inconsistent"))
-            if manifest.capture_assessment.status != "complete":
+        if manifest is not None:
+            # Aggregate every recovered invocation using a single indexed pass.
+            # This assessment is independent of whether every physical segment
+            # survived; storage coverage is calculated separately above.
+            actual = assess_generation_coverage(by_id.values(), manifest.capture_evidence,
+                                                scope_id=manifest.scope_id,
+                                                generation_id=manifest.generation_id)
+            capture_status = actual.status
+            if actual != manifest.capture_assessment:
                 capture_status = "incomplete"
-        if issues and capture_status == "complete":
-            capture_status = "incomplete"
+                issues.append(JournalReadIssue("", "journal.generation_assessment_mismatch"))
+            if manifest.seal_state != "sealed":
+                capture_status = "incomplete" if capture_status == "complete" else capture_status
+            if actual.status != "complete":
+                issues.append(JournalReadIssue("", "journal.capture_evidence_inconsistent"))
+            # A verified byte corpus cannot prove a complete producer stream
+            # when missing or damaged segments hide entire invocations.
+            if storage_status != "complete":
+                capture_status = "incomplete" if capture_status == "complete" else capture_status
         return JournalReadReport(tuple(by_id.values()), tuple(issues), storage_status, capture_status,
                                  manifest.manifest_id if manifest else None)
 
 
 class BufferedFileJournal:
     """Bounded pending buffer with explicit reconciliation of unknown commits."""
-    def __init__(self, writer: FileJournalWriter):
+    def __init__(self, writer: FileJournalWriter, *, max_retained_receipts: int = 4096):
+        if not 1 <= max_retained_receipts <= 100_000:
+            raise ValueError("journal.receipt_limit_invalid")
+        self.max_retained_receipts = max_retained_receipts
         self.writer = writer
         self._buffer: list[JournalRecord] = []
         self._bytes = 0
-        self._receipts: list[JournalWriteReceipt] = []
+        self._receipts: dict[str, JournalWriteReceipt] = {}
         self._pending_receipt: JournalWriteReceipt | None = None
         self._closed = False
         self._lock = RLock()
@@ -405,8 +413,12 @@ class BufferedFileJournal:
                 return None
             if self._pending_receipt is not None:
                 return self._pending_receipt
+            # Capacity is checked BEFORE publishing, so a successfully committed
+            # segment can never be orphaned by an exhausted receipt catalogue.
+            if len(self._receipts) >= self.max_retained_receipts:
+                raise ValueError("journal.receipt_capacity_exceeded")
             receipt = self.writer.write_batch(tuple(self._buffer))
-            self._receipts.append(receipt)
+            self._receipts[receipt.segment_id] = receipt
             if receipt.state == "confirmed":
                 self._confirmed += 1
                 self._buffer.clear()
@@ -424,7 +436,7 @@ class BufferedFileJournal:
             if self._pending_receipt is None:
                 return None
             receipt = self.writer.reconcile(self._pending_receipt)
-            self._receipts.append(receipt)
+            self._receipts[receipt.segment_id] = receipt
             if receipt.state == "confirmed":
                 self._confirmed += 1
                 self._buffer.clear()
@@ -438,7 +450,7 @@ class BufferedFileJournal:
         with self._lock:
             if not self._closed and (self.flush() is None or self._pending_receipt is None):
                 self._closed = True
-            return tuple(self._receipts)
+            return tuple(self._receipts.values())
 
     @property
     def close_status(self) -> str:
@@ -460,8 +472,28 @@ class BufferedFileJournal:
     @property
     def receipts(self) -> tuple[JournalWriteReceipt, ...]:
         with self._lock:
-            return tuple(self._receipts)
+            return tuple(self._receipts.values())
 
+
+    def snapshot_receipts(self) -> tuple[JournalWriteReceipt, ...]:
+        """Bounded immutable handoff for a caller-controlled manifest or catalogue."""
+        return self.receipts
+
+    def acknowledge_receipts(self, segment_ids: Iterable[str]) -> int:
+        """Only independently handled *confirmed* receipts may be released."""
+        with self._lock:
+            requested = tuple(segment_ids)
+            if len(requested) > self.max_retained_receipts or len(set(requested)) != len(requested):
+                raise ValueError("journal.receipt_ack_invalid")
+            for segment_id in requested:
+                receipt = self._receipts.get(segment_id)
+                if receipt is None or receipt.state != "confirmed" or (
+                    self._pending_receipt is not None and self._pending_receipt.segment_id == segment_id
+                ):
+                    raise ValueError("journal.receipt_ack_unconfirmed")
+            for segment_id in requested:
+                del self._receipts[segment_id]
+            return len(requested)
     @property
     def flush_counts(self) -> tuple[int, int, int]:
         with self._lock:

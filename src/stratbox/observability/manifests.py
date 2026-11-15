@@ -15,7 +15,9 @@ from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution.contracts import safe_token
 
 from .contracts import JournalWriteReceipt, require_utc
-from .coverage import CaptureCoverage, CoverageAssessment, SequenceRange, MAX_RANGES
+from .coverage import CaptureCoverage, GenerationCaptureAssessment, SequenceRange, MAX_RANGES
+from .lifecycle import assess_generation_coverage
+from .contracts import JournalRecord
 
 MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 MAX_MANIFEST_SEGMENTS = 10_000
@@ -57,14 +59,11 @@ def _range_pairs(items: tuple[SequenceRange, ...]) -> list[list[int]]:
     return [[r.first, r.last] for r in items]
 
 
-def _assessment_obj(value: CoverageAssessment):
-    return {
-        "status": value.status, "scope_id": value.scope_id,
-        "missing_ranges": _range_pairs(value.missing_ranges), "missing_total": value.missing_total,
-        "explained_filter_ranges": _range_pairs(value.explained_filter_ranges),
-        "known_loss_ranges": _range_pairs(value.known_loss_ranges),
-        "unknown_loss_count": value.unknown_loss_count, "reasons": list(value.reasons),
-    }
+def _assessment_obj(value: GenerationCaptureAssessment) -> dict[str, object]:
+    return {name: getattr(value, name) for name in (
+        "scope_id", "generation_id", "status", "invocation_count", "complete_count",
+        "incomplete_count", "indeterminate_count", "total_missing_events",
+        "total_unknown_losses", "assessments_digest") } | {"reasons": list(value.reasons)}
 
 
 def _coverage_obj(value: CaptureCoverage) -> dict[str, object]:
@@ -83,7 +82,7 @@ def _coverage_obj(value: CaptureCoverage) -> dict[str, object]:
 
 def _data(manifest: JournalManifest, *, include_id: bool) -> dict[str, object]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         **({"manifest_id": manifest.manifest_id} if include_id else {}),
         "writer_id": manifest.writer_id, "generation_id": manifest.generation_id,
         "scope_id": manifest.scope_id,
@@ -107,7 +106,7 @@ class JournalManifest:
     generation_id: str
     scope_id: str
     segments: tuple[SegmentDescriptor, ...]
-    capture_assessment: CoverageAssessment
+    capture_assessment: GenerationCaptureAssessment
     sealed_at_utc: datetime
     seal_state: Literal["sealed", "incomplete"]
     origin_claim_id: str | None = None
@@ -115,15 +114,19 @@ class JournalManifest:
     capture_evidence: tuple[CaptureCoverage, ...] = ()
 
     def __post_init__(self) -> None:
-        if self.schema_version != 1:
+        if self.schema_version != 2:
             raise ValueError("Unsupported manifest schema")
         for x in (self.manifest_id, self.writer_id, self.generation_id, self.scope_id,
                   self.origin_claim_id, self.attestation_ref):
             if x is not None:
                 safe_token(x)
         require_utc(self.sealed_at_utc)
-        if self.capture_assessment.scope_id != self.scope_id or any(e.scope_id != self.scope_id for e in self.capture_evidence):
+        if (self.capture_assessment.scope_id != self.scope_id or self.capture_assessment.generation_id != self.generation_id
+                or any(e.scope_id != self.scope_id for e in self.capture_evidence)):
             raise ValueError("Manifest capture scope mismatch")
+        if any(e.generation_id is not None and e.generation_id != self.generation_id
+               for e in self.capture_evidence):
+            raise ValueError("journal.generation_mismatch")
         if len(self.capture_evidence) > MAX_MANIFEST_SEGMENTS or len({e.invocation_id for e in self.capture_evidence}) != len(self.capture_evidence):
             raise ValueError("Invalid manifest capture evidence")
         if len(self.segments) > MAX_MANIFEST_SEGMENTS:
@@ -131,7 +134,7 @@ class JournalManifest:
         if len({s.segment_id for s in self.segments}) != len(self.segments) or len({s.logical_locator for s in self.segments}) != len(self.segments):
             raise ValueError("Duplicate manifest segment")
         if self.seal_state == "sealed" and (self.capture_assessment.status != "complete" or
-                not self.capture_evidence or any(e.evidence_quality != "collector_observed" for e in self.capture_evidence) or
+                not self.capture_evidence or any(e.evidence_quality != "collector_observed" or e.generation_id is None for e in self.capture_evidence) or
                 any(s.write_state != "confirmed" for s in self.segments)):
             raise ValueError("Cannot seal an unconfirmed generation")
         if self.seal_state not in {"sealed", "incomplete"}:
@@ -144,16 +147,20 @@ class JournalManifest:
 
 
 def build_manifest(*, writer_id: str, generation_id: str, scope_id: str,
-                   segments: tuple[SegmentDescriptor, ...], assessment: CoverageAssessment,
-                   sealed_at_utc: datetime, origin_claim_id: str | None = None,
+                   segments: tuple[SegmentDescriptor, ...],
+                   records: tuple[JournalRecord, ...], sealed_at_utc: datetime,
+                   origin_claim_id: str | None = None,
                    attestation_ref: str | None = None,
                    capture_evidence: tuple[CaptureCoverage, ...] = ()) -> JournalManifest:
+    """Seal only the per-invocation corpus actually supplied, never a claimed summary."""
+    assessment = assess_generation_coverage(records, capture_evidence, scope_id=scope_id,
+                                            generation_id=generation_id)
     seal = "sealed" if assessment.status == "complete" and capture_evidence and all(
-        e.evidence_quality == "collector_observed" for e in capture_evidence) and all(
-        s.write_state == "confirmed" for s in segments) else "incomplete"
+        e.evidence_quality == "collector_observed" and e.generation_id == generation_id
+        for e in capture_evidence) and all(s.write_state == "confirmed" for s in segments) else "incomplete"
     provisional = object.__new__(JournalManifest)
     for name, value in {
-        "schema_version": 1, "manifest_id": "placeholder", "writer_id": writer_id,
+        "schema_version": 2, "manifest_id": "placeholder", "writer_id": writer_id,
         "generation_id": generation_id, "scope_id": scope_id, "segments": segments,
         "capture_assessment": assessment, "sealed_at_utc": sealed_at_utc,
         "seal_state": seal, "origin_claim_id": origin_claim_id,
@@ -161,8 +168,9 @@ def build_manifest(*, writer_id: str, generation_id: str, scope_id: str,
     }.items():
         object.__setattr__(provisional, name, value)
     digest = sha256(canonical_manifest_bytes(_data(provisional, include_id=False))).hexdigest()
-    return JournalManifest(1, digest, writer_id, generation_id, scope_id,
-                           segments, assessment, sealed_at_utc, seal, origin_claim_id, attestation_ref, capture_evidence)
+    return JournalManifest(2, digest, writer_id, generation_id, scope_id,
+                           segments, assessment, sealed_at_utc, seal, origin_claim_id,
+                           attestation_ref, capture_evidence)
 
 
 def encode_manifest(value: JournalManifest) -> bytes:
@@ -186,18 +194,16 @@ def decode_manifest(data: bytes) -> JournalManifest:
         segments = tuple(SegmentDescriptor(x["segment_id"], x["logical_locator"],
                                            ByteIdentity(**x["identity"]), x["record_count"],
                                            x["record_ids_digest"], x["write_state"]) for x in s)
+        if obj["schema_version"] != 2:
+            raise ValueError("journal.unsupported_manifest_schema")
         c = obj["capture_assessment"]
         if not isinstance(c, dict):
             raise ValueError("Invalid manifest coverage")
-        def ranges(name):
-            items = c[name]
-            if not isinstance(items, list) or len(items) > MAX_RANGES:
-                raise ValueError("Invalid ranges")
-            return tuple(SequenceRange(*p) for p in items)
-        assessment = CoverageAssessment(c["status"], c["scope_id"], ranges("missing_ranges"),
-                                        c["missing_total"], ranges("explained_filter_ranges"),
-                                        ranges("known_loss_ranges"), c["unknown_loss_count"],
-                                        tuple(c["reasons"]))
+        assessment = GenerationCaptureAssessment(
+            c["scope_id"], c["generation_id"], c["status"], c["invocation_count"],
+            c["complete_count"], c["incomplete_count"], c["indeterminate_count"],
+            c["total_missing_events"], c["total_unknown_losses"],
+            c["assessments_digest"], tuple(c["reasons"]))
         e = obj["capture_evidence"]
         if not isinstance(e, list) or len(e) > MAX_MANIFEST_SEGMENTS:
             raise ValueError("Invalid capture evidence list")
@@ -218,5 +224,7 @@ def decode_manifest(data: bytes) -> JournalManifest:
                                obj["writer_id"], obj["generation_id"], obj["scope_id"],
                                segments, assessment, datetime.fromisoformat(obj["sealed_at_utc"]),
                                obj["seal_state"], obj["origin_claim_id"], obj["attestation_ref"], captured)
-    except (KeyError, TypeError, ValueError, AttributeError, OverflowError, IndexError, RecursionError):
+    except (KeyError, TypeError, ValueError, AttributeError, OverflowError, IndexError, RecursionError) as exc:
+        if str(exc) == "journal.unsupported_manifest_schema":
+            raise ValueError("journal.unsupported_manifest_schema") from None
         raise ValueError("journal.manifest_invalid") from None

@@ -21,11 +21,17 @@ class ObserverHealthSnapshot:
     known_gap_count: int = 0
     unknown_gap_count: int = 0
     degraded: bool = False
+    tracked_invocations: int = 0
+    tracked_sequence_ranges: int = 0
+    metadata_overflow_events: int = 0
+    retained_receipts: int = 0
+    generation_finalized: bool = False
 
     def __post_init__(self):
         for key in ("producer_emitted", "producer_dropped", "collector_received", "collector_accepted",
                     "policy_filtered", "collector_dropped", "pending_records", "pending_bytes",
-                    "flush_confirmed", "flush_failed", "flush_unknown", "known_gap_count", "unknown_gap_count"):
+                    "flush_confirmed", "flush_failed", "flush_unknown", "known_gap_count", "unknown_gap_count",
+                    "tracked_invocations", "tracked_sequence_ranges", "metadata_overflow_events", "retained_receipts"):
             value = getattr(self, key)
             if value is not None and (type(value) is not int or value < 0):
                 raise ValueError("Invalid observer health counter")

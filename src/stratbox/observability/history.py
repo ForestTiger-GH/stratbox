@@ -5,8 +5,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from .contracts import JournalRecord
-from .coverage import (CaptureCoverage, CoverageStatus, SequenceRange, assess_coverage,
-                       count_ranges, find_gaps)
+from .coverage import (CaptureCoverage, CoverageStatus, SequenceRange, count_ranges, find_gaps)
+from .lifecycle import assess_invocation_lifecycle
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,39 +67,22 @@ def build_operation_history(records: Iterable[JournalRecord], invocation_id: str
     ordered = list(selected.values())
     execution = sorted((rec for rec in ordered if rec.record_type == "execution"),
                        key=lambda x: (x.sequence or 0, x.record_id))
-    seqs = [rec.sequence for rec in execution if rec.sequence is not None]
-    if any(value > 1 for value in Counter(seqs).values()):
-        problems.add("journal.sequence_conflict")
-    missing = find_gaps(seqs, expected_last=coverage.producer_last_sequence if coverage else None)
-    starts = [rec for rec in execution if rec.kind == "operation.started"]
-    finishes = [rec for rec in execution if rec.kind == "operation.finished"]
-    if not starts:
-        problems.add("journal.start_missing")
-    if not finishes:
-        problems.add("journal.finish_missing")
-    if len(starts) > 1 or len(finishes) > 1:
-        problems.add("journal.lifecycle_conflict")
-    if starts and starts[0].sequence != 1:
-        problems.add("journal.start_position_invalid")
-    if finishes and seqs and finishes[0].sequence != max(seqs):
-        problems.add("journal.finish_position_invalid")
     if coverage is not None and coverage.invocation_id != invocation_id:
         raise ValueError("Coverage invocation does not match")
-    assessment = assess_coverage(seqs, coverage,
-                                 start_seen=len(starts) == 1, terminal_seen=len(finishes) == 1)
+    lifecycle, assessment, state = assess_invocation_lifecycle(execution, invocation_id, coverage)
+    problems.update(lifecycle.problems)
     problems.update(assessment.reasons)
+    missing = find_gaps(lifecycle.accepted_sequences,
+                        expected_last=coverage.producer_last_sequence if coverage else None)
+    finishes = [rec for rec in execution if rec.kind == "operation.finished"]
     causes = {cause for rec in selected.values() for cause in
               (*rec.cause_record_ids, *((rec.correlation.cause_event_id,)
                                        if rec.correlation.cause_event_id else ()))
               if cause not in all_ids and cause not in aliases}
     if causes:
         problems.add("journal.causal_parent_outside_scope")
-    if "journal.history_truncated" in problems or "journal.record_identity_conflict" in problems or "journal.sequence_conflict" in problems or "journal.lifecycle_conflict" in problems or "journal.finish_position_invalid" in problems:
-        state: CoverageStatus = "incomplete"
-    elif assessment.status == "complete":
-        state = "complete"
-    else:
-        state = assessment.status
+    if "journal.history_truncated" in problems or "journal.record_identity_conflict" in problems:
+        state = "incomplete"
     finished = finishes[0] if len(finishes) == 1 else None
     order = tuple(execution + [r for r in ordered if r.record_type != "execution"])
     duration = finished.payload.get("duration_ms") if finished else None

@@ -54,3 +54,19 @@ class PresentationPolicy:
             raise ValueError("Invalid presentation mode")
         if len(set(self.permitted_columns)) != len(self.permitted_columns):
             raise ValueError("Duplicate export columns")
+
+
+@dataclass(frozen=True, slots=True)
+class ObserverLimits:
+    """Hard caps on collection metadata independent from captured byte limits."""
+    max_tracked_invocations: int = 10_000
+    max_total_sequence_ranges: int = 100_000
+    max_ranges_per_invocation: int = 5_000
+
+    def __post_init__(self):
+        if not 1 <= self.max_tracked_invocations <= 1_000_000:
+            raise ValueError("journal.invocation_budget_invalid")
+        if not 1 <= self.max_total_sequence_ranges <= 1_000_000:
+            raise ValueError("journal.range_budget_invalid")
+        if not 1 <= self.max_ranges_per_invocation <= self.max_total_sequence_ranges:
+            raise ValueError("journal.local_range_budget_invalid")
