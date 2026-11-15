@@ -1,181 +1,153 @@
-# Universal observability and journal history
+# Stratbox observability: qualified events, evidence, storage, and recovery
 
-`stratbox.observability` is an optional, reusable component for representing,
-querying, persisting and reconstructing facts about library operations. The
-existing `execution.run` remains the only operation runner. All business
-operations work without an observer or a storage backend.
+`stratbox.observability` is an **optional, storage-independent Python facility** for capturing, inspecting, serializing, and recovering events and qualified facts. `stratbox.execution.run` remains the single operation runner. Importing this module does not inspect host identity, create files, open network connections, or start threads. Normal business operations retain their full result and receipt semantics with no observer.
 
-## Meaning and ownership
+## 1. Six independently qualified propositions
 
-- `ExecutionEvent`: lifecycle of an invocation (`started`, `stage`, `progress`,
-  `finished`). `ExecutionContext.sink` is best effort: failures increment the
-  runner's `observability.dropped` counter without failing the operation.
-- `DomainFact`: domain-qualified observation with a stable *semantic* `fact_id`
-  and a separate `observation_id` for each occurrence. Its creator owns the
-  meaning and the comparability conditions. `make_fact_id` hashes only the
-  explicit identity components supplied by the domain.
-- `EffectReceipt` and other evidence receipts: reports from the corresponding
-  operation or capability. Recording a receipt does not substitute for it.
-- `JournalRecord`: storage-independent, versioned semantic envelope. References
-  identify resources independently from locators or storage paths. Payloads
-  contain bounded portable metadata, not raw tables, secret values or tracebacks.
+| Proposition | Competent source | What it establishes | What it does **not** establish |
+|---|---|---|---|
+| Operation outcome | `OperationResult` | The outcome reported by the operation contract | Completeness of its emitted event stream |
+| Domain fact | Domain owner and its evidence | An assertion in a named source, version and semantic scope | Publication, delivery or persistence of the fact |
+| External effect | Owner's `EffectReceipt` / `StoredBytesReceipt` | Owner-qualified `confirmed`, `failed`, or `unknown` effect | That its journal record has been persisted |
+| Journal write | `JournalWriteReceipt` after immutable write and read-back | Exact bytes matched the claimed digest at observation time | Producer authenticity, power-loss durability, or directory `fsync` |
+| Capture coverage | Actual collector observations and qualified producer counters | Event capture within a **named** scope and bounded producer range | Events that producer did not emit or could falsify |
+| Provenance / authority | A separate host or runtime attestor, if any | Host-bound identity under that attestor's authority | Domain truth, even when correctly signed |
 
-An `operation.finished` event can be missing while the operation has actually
-finished; an unsuccessful attempt can discover a real new publication. These
-facts must not be confused. The library never infers causality from timestamps
-or picks the newest source release purely from invocation order.
+A file hash and a manifest held in one writable namespace provide **internal consistency**, not independent authentication or resistance to coordinated replacement of that entire namespace. Do not infer successful execution of an external effect from a `finished` event or from a confirmed pre-action audit intent.
 
-## Observing in memory
+## 2. Records, identifiers and minimizing data
+
+- `ExecutionEvent` v3 describes `operation.started`, `operation.stage`, `operation.progress` and `operation.finished`; it is owned by `execution`.
+- `DomainFact` has a semantic `fact_id` and a separate `observation_id`. Rechecking an identical state creates another observation of the same fact, **not** a new release by itself.
+- `JournalRecord` schema **v1** is the frozen, portable, bounded envelope. Its semantic contents and event IDs survive encode/decode round-trips. `ObjectRef` identifies a domain object rather than a filesystem path.
+- `record_from_result` without `finished_event` represents a **new observation** of a result, with its own observation ID and `time_basis='observation'`. With a matching actual `operation.finished` event it produces one deterministic `result_final` ID and `time_basis='producer_finished_event'`.
+- `OriginClaim` is a **claim**. `OriginAttestation` is a separate host-supplied evidence type. Merely constructing a claim never establishes a verified host identity.
+- `PayloadLimits` and schema validators bound nested nodes, strings, numbers, record/segment sizes and permitted fields. All built-in adapters emit explicitly named metadata fields. Arbitrary exception text, raw parameters, paths, environment variables, secrets, DataFrames and document contents must remain outside portable records.
+
+Built-in schemas live in `field_policy.py`. Consumers may instantiate their own `FieldSchemaRegistry` with schemas for additional kinds; this is a **local, explicit** registry, not a global permission service. The ordinary summary projection is more restrictive than the technical record. A `technical` presentation selection does not grant filesystem access, roles or user authorization.
+
+## 3. Three distinct connection modes
+
+### 3.1 Optional best-effort event collection
 
 ```python
 from stratbox.execution import ExecutionContext
-from stratbox.observability import RecordMemorySink, CapturePolicy
+from stratbox.observability import CapturePolicy, RecordMemorySink, build_operation_history
 
-observer = RecordMemorySink(CapturePolicy(progress=False, max_records=10000))
-# result = some_stratbox_operation(..., context=ExecutionContext(sink=observer))
-# observer.capture_result(result)  # optional result summary
-records = observer.records
-capture_losses = observer.dropped
+collector = RecordMemorySink(CapturePolicy(progress=False, max_records=10_000))
+# result = existing_domain_operation(request, context=ExecutionContext(sink=collector))
+# collector.capture_result(result)  # optional *observation*; never re-executes the business operation
+# coverage = collector.coverage_for(result.invocation_id, producer=result.observability)
+# history = build_operation_history(collector.records, result.invocation_id, coverage=coverage)
+# observer_health = collector.health_snapshot(producer=result.observability)
 ```
 
-Capture limits bound both record count and serialized bytes, and can drop
-records independently of the execution runner's sink loss count. The in-memory sink is safe for concurrent `emit` calls. A composite
-sink isolates errors between recipients and exposes its own dropped count.
+A producer may call a best-effort sink and proceed even when the sink fails. `CaptureDisposition` differentiates accepted, policy-filtered, dropped, failed and unknown collection. A false return from an unknown third-party collector cannot be classified as intentional filtering. A counter or a missing record, without actual observation of the event kind, cannot prove that a gap was harmless progress filtering.
 
-## Pure records, history and projections
+`FileEventSink(BufferedFileJournal(writer))` also implements optional `EventSink`. Its `accepted` means **buffer accepted**. Call `flush()`/`close()`, inspect write receipts and the read-only `health_snapshot()` to determine storage state. An unknown flush retains pending records and requires explicit reconciliation. The sink cannot become mandatory through configuration.
 
-```python
-from stratbox.observability import (
-    RecordFilter, select_records, build_operation_history,
-    project_operation_state, encode_records, decode_records,
-)
-
-selected = tuple(select_records(records, RecordFilter(kinds=frozenset({"operation.finished"}))))
-# history = build_operation_history(records, result.invocation_id, capture_complete=True)
-encoded = encode_records(selected, format="jsonl")
-restored = decode_records(encoded, format="jsonl")
-```
-
-`capture_complete=True` is an explicit claim by the caller that all relevant
-events for the selected interval were captured. Without that evidence,
-operation-history completeness is `indeterminate` even when the visible start
-and finish records are present. Presence of unexplained sequence gaps,
-conflicts or capture loss produces `incomplete`. If progress events were
-intentionally excluded by `CapturePolicy(progress=False)`, pass
-`progress_filtered=True` during reconstruction: missing sequence numbers are
-still surfaced, but deliberate progress suppression does not constitute
-capture loss.
-
-`project_source_state` and `project_dataset_state` retain competing confirmed
-versions as a set with a conflict flag. The library does not silently select
-one without a domain-defined publication order. `operation_state_from_result`
-provides a direct projection without writing any journal.
-
-## Storage and durability
-
-`FileJournalWriter` creates one **immutable file per segment** under a root and
-writer identifier supplied by the caller. Multiple writers do not append to a
-shared file. The writer requires `stage_write(...).commit("immutable", None)` or
-`create_if_absent`. A regular overwrite-only `write_bytes` capability cannot
-satisfy the contract.
+### 3.2 Explicit verified publication of a batch
 
 ```python
-from stratbox.base.filestore.local import LocalFileStore
-from stratbox.observability import FileJournalWriter, FileJournalReader, reconcile_write
+from stratbox.base.filestore import LocalFileStore
+from stratbox.observability import FileJournalWriter
 
-store = LocalFileStore("/tmp/stratbox-logs")
-writer = FileJournalWriter(store, "journal", writer_id="sample_run")
+store = LocalFileStore("/path/chosen/by/caller")
+writer = FileJournalWriter(store, "journal", writer_id="writer1")
 # receipt = writer.write_batch(records)
-# if receipt.state == "unknown": receipt = reconcile_write(store, receipt)
-# recovered = FileJournalReader(store).read_report((receipt.locator,))
+# if receipt.state == "unknown":
+#     receipt = writer.reconcile(receipt)  # same namespace + one bounded read
 ```
 
-Receipt states are `confirmed`, `failed`, `unknown`. `confirmed` means an immutable
-file's exact bytes were read back and matched the expected SHA-256. It **does
-not guarantee survival of a power outage**: even local staged commits may lack
-a directory fsync and the underlying store may have different filesystem
-semantics. A lost acknowledgement after a possible commit yields `unknown`;
-reconcile by checking the expected bytes and record identifiers. Reattempt an
-external effect only according to its own owner-confirmation and idempotency
-policy. `read_report(...).complete` stays false by default because a set of readable
-files alone does not prove that all planned segments were published. It can be
-claimed true only when the caller supplies an exact `expected_paths` manifest
-and a matching `expected` map of SHA-256 byte identities, sets
-`capture_complete=True`, and no segment is missing or corrupt.
+`FileJournalWriter` requires an immutable-create-capable provider (`stage_write(...).commit('immutable', None)` or `create_if_absent`). An overwrite-only file store does not qualify. A logical root is **relative** and restricted to its single writer namespace; `reconcile_write(store, receipt, namespace=writer.namespace)` rejects other locators. Underlying physical path confinement remains the responsibility of the caller-supplied, correctly scoped FileStore.
 
-`BufferedFileJournal` provides explicit `append`, `flush` and `close` with
-bounded memory. Unflushed data is volatile and its pending records remain
-available when publication is unconfirmed. `RequiredJournalGate` invokes an
-action only after the corresponding immutable intent record is confirmed;
-this is a pre-action barrier, **not** an exactly-once transaction or workflow
-engine.
+`JournalWriteReceipt.state` is `confirmed`, `failed` or `unknown`. The write is checked through a bounded read-back; `reconcile_write` verifies digest **and** decoded record IDs against one and the same read buffer. The writer does not promise `fsync` of the containing directory, independent disaster recovery, exactly-once effects or indefinitely stable bytes after verification.
 
-## Formats and compatibility
-
-Version 1 supports deterministic UTF-8 JSON and JSONL. JSONL is the recommended
-segmented history format but not part of the semantic identity contract.
-Named projections can be exported to CSV with explicit columns. `Decimal`
-and integer values beyond JavaScript's exact-integer range use tagged JSON
-scalars and round-trip precisely. The parser rejects unknown schema versions,
-invalid UTC instants, malformed records and unsupported payload types.
-
-Python API backward compatibility is not a design constraint for the project.
-Previously **persisted** journal schema versions are a different matter: version
-1 is read strictly; future schema versions require explicit readers/migrations,
-never silent coercion.
-
-The core defines no mandatory log directory, source-specific filename,
-scheduler, UI, SQL schema, notification transport, retention schedule or
-central event bus. Operators of external runtimes choose those independently.
-
-## Failure boundaries
-
-- Best-effort observation failure: continue the business operation and expose
-  counts of lost observations.
-- Durable storage: surface the `JournalWriteReceipt`; never treat an unverified
-  write as confirmed.
-- Required pre-action barrier: reject action on `failed` and `unknown`, keeping
-  the receipt available for reconciliation.
-- Partial/corrupt history: retain good segments, surface the damaged or missing
-  segment separately and qualify the state as incomplete/indeterminate.
-- Unknown external effect: preserve `unknown` and use the effect owner's
-  qualified receipt or reconciliation operation rather than a journal guess.
-
-Local regression tests exercise independent execution, identity, codecs,
-selection, bounded buffers, concurrent immutable commits, fault injection,
-read-back reconciliation and crash-recovery boundaries. No CI workflow is
-required to use or test this module.
-
-## Post-processing existing operations
-
-The explicit `capture_operation_result` adapter adds a compact result record
-and, for supported result classes, an independently identified evidence fact.
-It currently recognizes acquired source receipts and qualified comparisons;
-when present it also understands stored-original receipts. Unknown values
-produce a summary without copying the result into the journal. Comparisons
-require caller-supplied dataset and baseline/candidate release IDs; an
-incompatible or indeterminate comparison stays indeterminate.
+### 3.3 Required pre-action journal barrier
 
 ```python
-from stratbox.observability import capture_operation_result
+from stratbox.observability import RequiredJournalGate
 
-# result = existing_operation(...)
-# report = capture_operation_result(result, observer, dataset_id="series",
-#                                   baseline_id="version_a", candidate_id="version_b")
+# intent_record = construct_explicit_effect_intent(effect_id, approved_metadata)
+# result, intent_receipt = RequiredJournalGate(writer).execute_after_record(
+#     intent_record, action=lambda: owner_performs_effect(effect_id)
+# )
+# Owner's *separate* EffectReceipt confirms or qualifies the resulting effect.
 ```
 
-`FileEventSink(BufferedFileJournal(writer))` is available as a best-effort
-`ExecutionContext.sink`. It writes bounded immutable segments at checkpoints;
-call `close()` to publish the final buffer and inspect its write receipts. Its
-`emit` path is **not** suitable for a required pre-effect registration, because
-`execution.run` intentionally catches ordinary sink failures. Use
-`RequiredJournalGate` explicitly before the action in those cases.
+`RequiredJournalGate` executes the action only when its intent record is confirmed. `failed` and `unknown` block it with `JournalBarrierError` and the original receipt. The gate cannot prevent an effect performed elsewhere, provide exactly-once execution, or create an effect receipt. A crash between accepted intent and actual effect leaves the effect unresolved until its owner reconciles it. There is **no** `PersistencePolicy(reliability='required')` switch and no global automatic audit gate.
 
-## Causal links and segment conflicts
+## 4. Producer/collector coverage and bounded history
 
-`inspect_causes` follows explicit `cause_record_ids` and execution
-`Correlation.cause_event_id`, resolving existing execution event IDs to
-portable record IDs. Missing parents are reported rather than synthesized.
-Across segments the reader deduplicates identical record IDs; conflicting
-content using the same record ID is flagged and excluded from recovered facts.
-A malformed segment contributes no apparently confirmed prefix records.
+`SequenceRange(first, last)` and `merge_ranges`, `subtract_ranges`, `intersect_ranges`, `find_gaps` and `count_ranges` operate on **intervals**. Missing sequences never require a set of all numbers between 1 and the highest observed ID. `OperationHistory` exposes `missing_sequence_ranges`, `missing_sequence_count` and a bounded `sample_missing_sequences()`.
+
+`CaptureCoverage` identifies an invocation, collector scope, observed sequence ranges, the ranges whose **actual types the collector saw** before intentionally filtering, known loss, unknown loss, qualified producer counter, terminal observation, generation and quality of evidence. `assess_coverage` returns a qualified `CoverageAssessment`:
+
+- `complete`: only relative to a stated capture scope, with a finite producer range, collector-observed evidence, matching lifecycle start and finish, proved policy exclusions, and zero unexplained gaps or losses.
+- `incomplete`: missing lifecycle, known loss, mismatched producer/collector counters, unexplained sequence gaps, conflicting identities or truncated input.
+- `indeterminate`: no competent collection evidence or unknown producer tail without positive contradiction.
+
+**Forbidden shortcuts:** `progress_filtered=True` suppressing arbitrary gaps; `capture_complete=True` asserted by an arbitrary caller; `set(range(1,max_sequence+1))`; treating `OperationResult.observability.degraded=False` as proof of a complete event history. `operation_state_from_result(result)` reports the result known with `event_coverage='not_collected'` regardless of event sink status.
+
+`select_records` is lazy, including diagnostic lookup inside frozen `MappingProxyType`; `group_records` explicitly materializes within budgets; `inspect_causes` uses bounded iterative traversal and reports cycles, truncated graphs, conflicting IDs and missing aliases. Missing foreign parents are qualified separately from an invocation's own lifecycle.
+
+## 5. Versioned domain projections and qualified external effects
+
+- Source checks and publications are chronologically observable. Multiple distinct confirmed releases are a **history**, not an automatic conflict. The current release is `None` without a domain-supplied resolver that selects among the confirmed candidates.
+- Dataset comparisons are keyed by `dataset + baseline + candidate + comparison scope + semantic method`. Different historical pairs may have different states. Conflicting assertions about the **same** pair/scope/method are a conflict. Incomparable pairs without a domain resolver produce an indeterminate latest state.
+- Artifact production does not imply stored confirmation. Multiple byte identities without a domain version key can be ambiguous, not necessarily conflicting. A coherent version/identity key allows qualified conflict detection.
+- `fact_from_stored_bytes` retains the owner's `status` (`stored`/`already_present`/`failed`/`unknown`) and provides normalized `effect_state` (`confirmed`/`failed`/`unknown`). When a real `effect_id` exists, a qualified `ObjectRef('effect', ..., 'receipt')` links that fact to `EffectReceipt`. A different unconfirmed attempt does not automatically erase a previous confirmed logical effect.
+- Projections are **read-only**: no source fetching, comparison replay, delivery or external effect execution occurs when reducing records.
+
+## 6. Immutable segments and a sealed generation manifest
+
+Individual batches can always be written without a manifest: they have qualified byte receipts but **not** a claim of completeness for an entire event generation.
+
+A `JournalManifest` is an independent immutable object containing `writer_id`, `generation_id`, `scope_id`, `SegmentDescriptor` entries (file identity, record count, record IDs digest, write status), `CaptureCoverage` evidence, a qualified `CoverageAssessment`, and origin/attestation references when supplied. The manifest ID is deterministic from its canonical content.
+
+To claim complete storage *within the locally declared scope*:
+
+1. Collect qualified producer/collector coverage through a real capture boundary.
+2. Write each immutable segment and retain its confirmed `JournalWriteReceipt`.
+3. Build a manifest with these receipts, the collector evidence and matching assessment; `seal_state='sealed'` requires confirmed segments and collector-observed coverage.
+4. Publish the manifest immutably, verify its own bytes and get a confirmed manifest receipt.
+5. `FileJournalReader(store, namespace=writer.namespace).read_report(manifest_receipt=...)` rereads the manifest, checks exact expected segments, each segment's byte identity and record IDs digest, deduplicates matching records, excludes conflicting IDs, and recalculates coverage from recovered execution records. Both `storage_coverage` and `capture_coverage` must be `complete` for the report's `.complete` to be true.
+
+The manifest is neither an external authority nor a cryptographic anchor. A compromised writer/root may forge a self-consistent replacement. This library does **not** build a remote collector, signatures, IAM, SIEM, scheduler, daemon or universal retention policy.
+
+## 7. Formats, exports and resource bounds
+
+JSON/JSONL schema v1 remains the atomic record format. Nested `Decimal` and large integers are encoded with explicit tags and recovered exactly; ambiguous single-field reserved tag mappings are rejected at construction. Decoders reject malformed encodings, duplicate JSON keys, unknown schemas and oversized inputs; bad segments produce diagnostic issues and never contribute a spurious valid prefix. Persisted schema v1 stays v1; no silent upgrade to stronger provenance guarantees.
+
+CSV projection requires explicitly named columns and rejects unexpected fields. `export_projection_csv(..., spreadsheet_safe=True)` is the default. Text beginning with `=`, `+`, `-` or `@`, including after hiding whitespace/control characters, is prefixed as text; numeric negative values remain numeric. A machine-oriented CSV profile must be consciously requested for consumers that **never** interpret fields as spreadsheet formulas. CSV/HTML/AI consumers must treat imported log content as untrusted data and enforce authorization independently.
+
+Default budgets, adjustable at call boundaries: journal record 2 MiB; segment 8 MiB; in-memory capture 10,000 records/16 MiB; buffered journal 256 records/1 MiB; reader 10,000 segments with separate total record/byte limits; causal traversal 10,000 nodes; bounded number of sequence intervals and manifest segments. Budget overruns are reported, never silently treated as a complete history.
+
+## 8. Failure table
+
+| Failure | Correct observed state | Incorrect inference |
+|---|---|---|
+| Optional sink fails | Business operation continues; observer reports loss | All emitted messages were stored |
+| Collector intentionally removes progress | Exclusion intervals backed by actually seen progress | Every gap is harmless progress |
+| Producer omits finish | `incomplete` lifecycle | Operation definitely failed |
+| Buffer crashes before flush | Pending / missing seal / indeterminate | Buffer was durable |
+| Commit acknowledged by no one | `unknown`, explicit reconcile on *same* bytes | Write definitely failed / effect should be retried |
+| Segment missing or corrupt | Issue; other segments readable; generation incomplete | Missing record never existed |
+| Source publishes historical revision | Multiple releases, no inferred order | Last checked release is current |
+| Effect owner reports `unknown` | Owner reconciliation required | Effect completed because its intent was journaled |
+| User-controlled content exported | Named allowlist + spreadsheet-safe text | CSV, HTML or AI can execute it |
+| Manifest and all local hashes replaced | Local checks may be fooled | Authenticity is proved |
+
+## 9. Local testing and deliberate API changes
+
+```sh
+python -m pytest -q tests/unit/observability
+python -m pytest -q tests/integration/test_observability_pipeline.py
+python -m pytest -q tests/integration/test_observability_storage.py
+python -m pytest -q tests/performance/test_observability_bounds.py
+python -B -m pytest -q
+```
+
+No GitHub Actions job is required or intentionally triggered. The old monolithic `tests/unit/test_observability.py` is replaced with deeper contract/regression, integration and bounded-performance tests. Deliberate breaking changes: removed `PersistencePolicy.reliability`, `capture_complete`, `progress_filtered`, and individual-number `missing_sequences`; `FileJournalReader` requires `JournalNamespace` for scoped reads; standalone `reconcile_write` requires `namespace`; result history uses qualified coverage and effect statuses instead of implicit claims.
+
+The library deliberately excludes platform-specific topology, desktop application history, deployment permissions, external monitoring services and employer-private implementation details. Any additional provenance attestation or access-control decision belongs to an explicitly competent host/runtime boundary.

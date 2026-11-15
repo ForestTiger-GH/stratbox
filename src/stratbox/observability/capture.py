@@ -1,8 +1,4 @@
-"""Optional composition of real operation results with typed business evidence.
-
-This is an explicit post-processing operation, not another execution engine.
-No source, download, storage or economic computation is re-executed.
-"""
+"""Explicit post-processing of qualified core results; no business work is rerun."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,6 +10,7 @@ from stratbox.execution import OperationResult
 from .adapters import (fact_from_acquisition, fact_from_comparison, fact_from_stored_bytes,
                        record_from_fact, record_from_result)
 from .contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
+from .sinks import CaptureDisposition
 
 
 class RecordCapture(Protocol):
@@ -24,25 +21,40 @@ class RecordCapture(Protocol):
 class CaptureReport:
     produced: int
     accepted: int
-    rejected: int
+    policy_filtered: int
+    rejected_capacity: int
+    failed_capture: int
+    unknown_capture: int
+
+    @property
+    def rejected(self) -> int:
+        return self.produced - self.accepted
 
 
 def fact_for_source_check(*, source_id: str, checked_at_utc: datetime, status: str,
-                          version_id: str | None = None, diagnostic_code: str | None = None) -> DomainFact:
-    """Check attempts are distinct observations, even when they find no change."""
+                          version_id: str | None = None, diagnostic_code: str | None = None,
+                          check_id: str | None = None) -> DomainFact:
+    """Stable assertion identity; every check is a separate observation.
+
+    Explicit check_id can identify the individual check where required; it does
+    not silently turn one stable fact into a new release on every polling run.
+    """
     subject = ObjectRef("source", source_id)
     identity = {"version_id": version_id, "status": status, "diagnostic": diagnostic_code}
-    return DomainFact("source.checked", subject, make_fact_id("source.checked", subject, identity),
+    if check_id is not None:
+        identity["check_id"] = check_id
+    return DomainFact("source.checked", subject,
+                      make_fact_id("source.checked", subject, identity),
                       require_utc(checked_at_utc), identity)
 
 
 def fact_for_artifact(*, artifact_id: str, identity: ByteIdentity,
                       occurred_at_utc: datetime, stored: bool = False,
-                      receipt_status: str | None = None) -> DomainFact:
+                      receipt_status: str | None = None, version_id: str | None = None) -> DomainFact:
     kind = "artifact.stored" if stored else "artifact.produced"
     if stored and receipt_status not in {"stored", "already_present", "confirmed"}:
         raise ValueError("Artifact storage confirmation required")
-    subject = ObjectRef("artifact", artifact_id, identity=identity)
+    subject = ObjectRef("artifact", artifact_id, version_id=version_id, identity=identity)
     payload = {"identity": {"sha256": identity.sha256, "size": identity.size},
                "status": receipt_status if stored else "produced"}
     return DomainFact(kind, subject, make_fact_id(kind, subject, payload),
@@ -54,37 +66,46 @@ def capture_operation_result(result: OperationResult, recorder: RecordCapture, *
                              dataset_id: str | None = None,
                              baseline_id: str | None = None,
                              candidate_id: str | None = None) -> CaptureReport:
-    """Capture a summary and established evidence for known core result classes.
-
-    A comparison requires explicit dataset/release identity from the caller.
-    Unknown result types produce only the portable result summary.
-    """
     instant = require_utc(occurred_at_utc or datetime.now(timezone.utc))
     records = [record_from_result(result, occurred_at_utc=instant)]
     value = result.value
     if isinstance(value, AcquiredSource):
         records.append(record_from_fact(fact_from_acquisition(value.receipt),
-                                        invocation_id=result.invocation_id,
-                                        operation_id=result.operation_id))
-    if isinstance(value, Comparison):
-        if dataset_id and candidate_id:
-            fact = fact_from_comparison(value, dataset_id=dataset_id, baseline_id=baseline_id,
-                                        candidate_id=candidate_id, occurred_at_utc=instant)
-            records.append(record_from_fact(fact, invocation_id=result.invocation_id,
-                                            operation_id=result.operation_id))
-    # StoredOriginal is created by execution.originals; load its type lazily.
+                                        invocation_id=result.invocation_id, operation_id=result.operation_id))
+    if isinstance(value, Comparison) and dataset_id and candidate_id:
+        records.append(record_from_fact(fact_from_comparison(value, dataset_id=dataset_id,
+                                                             baseline_id=baseline_id, candidate_id=candidate_id,
+                                                             occurred_at_utc=instant),
+                                        invocation_id=result.invocation_id, operation_id=result.operation_id))
     if value is not None and hasattr(value, "storage") and hasattr(value, "material"):
         from stratbox.execution.originals import StoredOriginal
         if isinstance(value, StoredOriginal):
             if value.acquisition is not None:
                 records.append(record_from_fact(fact_from_acquisition(value.acquisition),
-                                                invocation_id=result.invocation_id,
-                                                operation_id=result.operation_id))
+                                                invocation_id=result.invocation_id, operation_id=result.operation_id))
             source_id = (value.material.source_id if value.material else None) or (
                 value.acquisition.source_id if value.acquisition else None)
             if source_id is not None:
-                records.append(record_from_fact(fact_from_stored_bytes(
-                    value.storage, subject_id=source_id, observed_at_utc=instant),
-                    invocation_id=result.invocation_id, operation_id=result.operation_id))
-    accepted = sum(bool(recorder.capture(x)) for x in records)
-    return CaptureReport(len(records), accepted, len(records) - accepted)
+                records.append(record_from_fact(fact_from_stored_bytes(value.storage, subject_id=source_id,
+                                                                        observed_at_utc=instant),
+                                                invocation_id=result.invocation_id, operation_id=result.operation_id))
+    accepted = filtered = capacity = failed = unknown = 0
+    for rec in records:
+        classifier = getattr(recorder, "capture_disposition", None)
+        try:
+            disposition = classifier(rec) if callable(classifier) else (
+                CaptureDisposition("accepted", "journal.accepted") if recorder.capture(rec) else
+                CaptureDisposition("unknown", "journal.capture_unqualified"))
+        except Exception:
+            disposition = CaptureDisposition("failed", "journal.capture_failed")
+        if disposition.state == "accepted":
+            accepted += 1
+        elif disposition.state == "filtered":
+            filtered += 1
+        elif disposition.state == "dropped":
+            capacity += 1
+        elif disposition.state == "failed":
+            failed += 1
+        else:
+            unknown += 1
+    return CaptureReport(len(records), accepted, filtered, capacity, failed, unknown)

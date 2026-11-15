@@ -1,11 +1,12 @@
-"""Reconstruct bounded operation history without inventing missing lifecycle events."""
+"""Bounded operation reconstruction; proof of collection is explicit evidence."""
 from __future__ import annotations
-from dataclasses import dataclass
 from collections import Counter
-from typing import Iterable, Literal
-from .contracts import JournalRecord
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 
-Coverage = Literal["complete", "incomplete", "indeterminate"]
+from .contracts import JournalRecord
+from .coverage import (CaptureCoverage, CoverageStatus, SequenceRange, assess_coverage,
+                       count_ranges, find_gaps)
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,70 +15,98 @@ class OperationHistory:
     records: tuple[JournalRecord, ...]
     outcome: str | None
     duration_ms: int | None
-    coverage: Coverage
-    missing_sequences: tuple[int, ...]
+    coverage: CoverageStatus
+    missing_sequence_ranges: tuple[SequenceRange, ...]
+    missing_sequence_count: int
     problems: tuple[str, ...]
     missing_causes: tuple[str, ...]
+    causal_coverage: str = "indeterminate"
+
+    def sample_missing_sequences(self, limit: int = 20) -> tuple[int, ...]:
+        if not 0 <= limit <= 1000:
+            raise ValueError("Invalid sample size")
+        result: list[int] = []
+        for interval in self.missing_sequence_ranges:
+            for number in range(interval.first, min(interval.last + 1, interval.first + limit - len(result))):
+                result.append(number)
+            if len(result) >= limit:
+                break
+        return tuple(result)
 
 
 def build_operation_history(records: Iterable[JournalRecord], invocation_id: str, *,
-                            known_dropped: int = 0, capture_complete: bool = False,
-                            progress_filtered: bool = False) -> OperationHistory:
-    all_records = tuple(records)
-    selected = [r for r in all_records if r.invocation_id == invocation_id]
-    seen = {}
-    problems = set()
-    for r in selected:
-        old = seen.get(r.record_id)
-        if old is not None and old != r:
-            problems.add("journal.record_identity_conflict")
-        else:
-            seen[r.record_id] = r
-    selected = list(seen.values())
-    execution = sorted((r for r in selected if r.record_type == "execution"),
+                            coverage: CaptureCoverage | None = None,
+                            max_records: int = 100_000) -> OperationHistory:
+    if not 1 <= max_records <= 1_000_000:
+        raise ValueError("Invalid history limit")
+    # Only target-invocation records are retained. Unrelated record IDs are
+    # sampled for causal membership without retaining foreign payloads.
+    selected: dict[str, JournalRecord] = {}
+    all_ids: set[str] = set()
+    aliases: dict[str, str] = {}
+    problems: set[str] = set()
+    count = 0
+    for rec in records:
+        count += 1
+        if count > max_records:
+            problems.add("journal.history_truncated")
+            break
+        all_ids.add(rec.record_id)
+        if rec.record_type == "execution" and rec.sequence is not None:
+            alias = f"{rec.invocation_id}.{rec.sequence}"
+            prev = aliases.get(alias)
+            if prev is not None and prev != rec.record_id:
+                problems.add("journal.sequence_conflict")
+            aliases[alias] = rec.record_id
+        if rec.invocation_id == invocation_id:
+            prior = selected.get(rec.record_id)
+            if prior is not None and prior != rec:
+                problems.add("journal.record_identity_conflict")
+            else:
+                selected[rec.record_id] = rec
+    ordered = list(selected.values())
+    execution = sorted((rec for rec in ordered if rec.record_type == "execution"),
                        key=lambda x: (x.sequence or 0, x.record_id))
-    seqs = [r.sequence for r in execution if r.sequence is not None]
-    counts = Counter(seqs)
-    if any(n > 1 for n in counts.values()):
+    seqs = [rec.sequence for rec in execution if rec.sequence is not None]
+    if any(value > 1 for value in Counter(seqs).values()):
         problems.add("journal.sequence_conflict")
-    missing = tuple(set(range(1, max(seqs) + 1)) - set(seqs)) if seqs else ()
-    missing = tuple(sorted(missing))
-    if missing and not progress_filtered:
-        problems.add("journal.sequence_gap")
-    starts = [r for r in execution if r.kind == "operation.started"]
-    finishes = [r for r in execution if r.kind == "operation.finished"]
+    missing = find_gaps(seqs, expected_last=coverage.producer_last_sequence if coverage else None)
+    starts = [rec for rec in execution if rec.kind == "operation.started"]
+    finishes = [rec for rec in execution if rec.kind == "operation.finished"]
     if not starts:
         problems.add("journal.start_missing")
     if not finishes:
         problems.add("journal.finish_missing")
     if len(starts) > 1 or len(finishes) > 1:
         problems.add("journal.lifecycle_conflict")
-    ids = {r.record_id for r in all_records}
-    aliases = {f"{r.invocation_id}.{r.sequence}" for r in all_records
-               if r.record_type == "execution" and r.sequence is not None}
-    missing_causes = tuple(sorted({cause for r in selected
-                                   for cause in (*r.cause_record_ids, *((r.correlation.cause_event_id,)
-                                                                      if r.correlation.cause_event_id else ()))
-                                   if cause not in ids and cause not in aliases}))
-    if missing_causes:
-        problems.add("journal.causal_parent_missing")
-    if known_dropped > 0:
-        problems.add("journal.capture_loss")
-    if not capture_complete:
-        problems.add("journal.coverage_unverified")
-    if not selected:
-        coverage = "indeterminate"
-    elif problems - {"journal.coverage_unverified"}:
-        coverage = "incomplete"
-    elif capture_complete:
-        coverage = "complete"
+    if starts and starts[0].sequence != 1:
+        problems.add("journal.start_position_invalid")
+    if finishes and seqs and finishes[0].sequence != max(seqs):
+        problems.add("journal.finish_position_invalid")
+    if coverage is not None and coverage.invocation_id != invocation_id:
+        raise ValueError("Coverage invocation does not match")
+    assessment = assess_coverage(seqs, coverage,
+                                 start_seen=len(starts) == 1, terminal_seen=len(finishes) == 1)
+    problems.update(assessment.reasons)
+    causes = {cause for rec in selected.values() for cause in
+              (*rec.cause_record_ids, *((rec.correlation.cause_event_id,)
+                                       if rec.correlation.cause_event_id else ()))
+              if cause not in all_ids and cause not in aliases}
+    if causes:
+        problems.add("journal.causal_parent_outside_scope")
+    if "journal.history_truncated" in problems or "journal.record_identity_conflict" in problems or "journal.sequence_conflict" in problems or "journal.lifecycle_conflict" in problems or "journal.finish_position_invalid" in problems:
+        state: CoverageStatus = "incomplete"
+    elif assessment.status == "complete":
+        state = "complete"
     else:
-        coverage = "indeterminate"
-    finish = finishes[0] if len(finishes) == 1 else None
-    return OperationHistory(invocation_id, tuple(execution + [r for r in selected if r.record_type != "execution"]),
-                            finish.outcome if finish else None,
-                            finish.payload.get("duration_ms") if finish else None,
-                            coverage, missing, tuple(sorted(problems)), missing_causes)
+        state = assessment.status
+    finished = finishes[0] if len(finishes) == 1 else None
+    order = tuple(execution + [r for r in ordered if r.record_type != "execution"])
+    duration = finished.payload.get("duration_ms") if finished else None
+    return OperationHistory(invocation_id, order, finished.outcome if finished else None,
+                            duration if type(duration) is int else None,
+                            state, missing, count_ranges(missing), tuple(sorted(problems)),
+                            tuple(sorted(causes)), "incomplete" if causes else "indeterminate")
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,21 +120,29 @@ class OperationStatistics:
     coverage: str
 
 
-def summarize_operations(histories: Iterable[OperationHistory]) -> OperationStatistics:
-    items = tuple(histories)
+def summarize_operations(histories: Iterable[OperationHistory], *, max_histories: int = 100_000) -> OperationStatistics:
     outcomes: Counter[str] = Counter()
     diagnostics: Counter[str] = Counter()
     durations: list[int] = []
-    for h in items:
-        if h.outcome is not None:
-            outcomes[h.outcome] += 1
-        if h.duration_ms is not None:
-            durations.append(h.duration_ms)
-        for r in h.records:
-            if r.record_type == "result_summary":
-                diagnostics.update(d["code"] for d in r.payload.get("diagnostics", ()) if isinstance(d, dict))
-    incomplete = sum(x.coverage == "incomplete" for x in items)
-    indeterminate = sum(x.coverage == "indeterminate" for x in items)
-    return OperationStatistics(len(items), dict(outcomes), dict(diagnostics), tuple(durations),
+    total = incomplete = indeterminate = 0
+    for history in histories:
+        total += 1
+        if total > max_histories:
+            raise ValueError("journal.summary_limit")
+        if history.outcome is not None:
+            outcomes[history.outcome] += 1
+        if history.duration_ms is not None:
+            durations.append(history.duration_ms)
+        if history.coverage == "incomplete":
+            incomplete += 1
+        elif history.coverage == "indeterminate":
+            indeterminate += 1
+        for rec in history.records:
+            if rec.record_type == "result_summary":
+                entries = rec.payload.get("diagnostics", ())
+                if isinstance(entries, (tuple, list)):
+                    diagnostics.update(item["code"] for item in entries if isinstance(item, Mapping)
+                                       and type(item.get("code")) is str)
+    return OperationStatistics(total, dict(outcomes), dict(diagnostics), tuple(durations),
                                incomplete, indeterminate,
-                               "complete" if not incomplete and not indeterminate and items else "qualified")
+                               "complete" if total and not incomplete and not indeterminate else "qualified")
