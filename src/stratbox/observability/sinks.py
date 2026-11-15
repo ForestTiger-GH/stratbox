@@ -204,7 +204,7 @@ class FileEventSink:
             choice = self.policy.classify(record)
             if choice != "accepted":
                 c.filtered += 1
-                c.filtered(record)
+                c.note_filtered(record)
                 return CaptureDisposition("filtered", choice)
             try:
                 receipt = self.journal.append(record)
@@ -232,6 +232,11 @@ class FileEventSink:
     def close(self):
         with self._lock:
             return self.journal.close()
+
+    def coverage_for(self, invocation_id: str, *, producer: ObservabilitySummary | None = None) -> CaptureCoverage:
+        policy_scope = "lifecycle_without_progress" if (not self.policy.progress and self.policy.kinds is None and self.policy.record_types is None) else "custom_capture"
+        with self._lock:
+            return self._counter.coverage(invocation_id, producer=producer, scope_id=policy_scope)
 
     def health_snapshot(self, *, producer: ObservabilitySummary | None = None) -> ObserverHealthSnapshot:
         with self._lock:

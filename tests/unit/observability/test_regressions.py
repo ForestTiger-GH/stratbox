@@ -547,3 +547,21 @@ def test_finished_event_result_mismatch_rejected():
     mismatched = replace(mismatched, outcome="failed")
     with pytest.raises(ValueError):
         record_from_result(result,finished_event=mismatched)
+
+
+def test_file_event_sink_policy_filter_counts_as_seen_but_not_lost(tmp_path):
+    from stratbox.observability import FileEventSink
+    from stratbox.execution import ExecutionContext, OperationDefinition, run
+    store = LocalFileStore(str(tmp_path))
+    writer = FileJournalWriter(store, "sink", writer_id="collector")
+    collector = FileEventSink(BufferedFileJournal(writer), CapturePolicy(progress=False))
+    result = run(OperationDefinition("sample.file_sink", 1, "v1", str, str), "ok",
+                 lambda value, invocation: (invocation.stage("work"), invocation.progress(1, 1), value)[-1],
+                 context=ExecutionContext(sink=collector))
+    assert result.outcome == "succeeded"
+    assert collector.dropped == 0
+    assert collector.health_snapshot(producer=result.observability).policy_filtered == 1
+    coverage = collector.coverage_for(result.invocation_id, producer=result.observability)
+    assert coverage.policy_excluded_ranges == (SequenceRange(3, 3),)
+    receipts = collector.close()
+    assert all(x.state == "confirmed" for x in receipts)
