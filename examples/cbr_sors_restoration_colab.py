@@ -4,9 +4,9 @@ import argparse
 from pathlib import Path
 import json
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.bytes import write_verified_bytes
-from stratbox.macrobanks import cbr_sors_restoration as sors
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.domains import cbr_sors_restoration as sors
 
 
 def require_value(result):

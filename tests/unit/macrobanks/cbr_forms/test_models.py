@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from stratbox.macrobanks.cbr_forms.common.models import (
+from stratbox.domains.cbr_forms.common.models import (
     MODEL_COLUMNS,
     get_model_for,
     load_models,
@@ -37,7 +37,7 @@ def _frame(*rows: dict[str, str]) -> pd.DataFrame:
 
 
 def test_each_model_csv_has_exact_schema() -> None:
-    models_dir = files("stratbox.macrobanks.cbr_forms.models")
+    models_dir = files("stratbox.domains.cbr_forms.models")
     paths = [
         path for path in models_dir.iterdir()
         if path.name.startswith("form") and path.name.endswith(".csv")

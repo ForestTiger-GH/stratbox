@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.execution import Correlation, ExecutionContext, OperationDefinition, run
-from stratbox.observability import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.execution import Correlation, ExecutionContext, OperationDefinition, run
+from stratbox.system.observability import (
     DomainFact, FileJournalReader, FileJournalSource, FileJournalWriter, IndexedSegment,
     JournalDecodeError, JournalHead, JournalReadLimits, ObjectRef, RecordMemorySink,
     SegmentDescriptor, SnapshotJournalSource, StreamKey, build_operation_history,

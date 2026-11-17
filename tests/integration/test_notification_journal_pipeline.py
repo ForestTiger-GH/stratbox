@@ -3,17 +3,17 @@ from contextlib import closing
 from datetime import datetime, timezone
 import sqlite3
 
-from stratbox.base.capabilities import CapabilityRequirement, ProviderBinding
-from stratbox.base.filestore import LocalFileStore
-from stratbox.execution import ExecutionContext
-from stratbox.notifications import (
+from stratbox.system.base.capabilities import CapabilityRequirement, ProviderBinding
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.execution import ExecutionContext
+from stratbox.system.notifications import (
     AccessDecision, CheckpointKey, ConsumerBinding, DeliverRequest, ExternalDeliveryReceipt,
     HandoffReceipt, MemoryNotificationState, NotificationRoute, NotificationRuntime,
     NotificationTopic, PrepareRequest, Projection, ReconcileDeliveryRequest, SourceBinding,
     SubscriptionChange, SubscriptionSpec, build_catalog, configure_subscription, decode_state_mutation,
     deliver, encode_state_mutation, prepare, project_downstream, reconcile, record_external_delivery,
 )
-from stratbox.observability import (
+from stratbox.system.observability import (
     DomainFact, FieldRule, FieldSchemaRegistry, FileJournalReader, FileJournalSource,
     FileJournalWriter, IndexedSegment, JournalHead, ObjectRef, RecordDataSchema, SegmentDescriptor,
     StreamKey, ValueRule, record_from_fact,

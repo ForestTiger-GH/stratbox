@@ -1,5 +1,7 @@
 # Stratbox package
 
-Typed execution, source evidence, technical commands and economic data domains.
+The core is separated into `system` (execution and infrastructure), `shared`
+(reusable data contracts and resources), and `domains` (independent business
+operations with self-owned registrations).
 
-[Contracts and operations](../../docs/current-how/universal-business-core.md)
+[Operations and execution](../../docs/current-how/core-execution-and-admission.md)

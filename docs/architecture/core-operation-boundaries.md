@@ -1,17 +1,19 @@
 # Core operation boundaries
 
-Stratbox 0.11 combines reusable technical commands with independently callable
+Stratbox combines reusable technical commands with independently callable
 domain operations. A consumer binds providers and composes operations for
 its own publication, analysis or archive workflow.
 
 | Owner | Responsibilities |
 | --- | --- |
-| `base.net` | Typed HTTP request, response, failures, admission, streaming limits and bounded retries. |
-| `base.filestore`, `base.ioapi` | File and directory commands, bounded reads, verified writes, archive and format primitives. |
-| `data` | Payloads, byte identities, used-input and effect evidence, representations, table snapshots and canonical computation manifests. |
-| `execution` | Operation definition, context, validation, stage events, original acquisition and replay, cancellation and outcomes. |
-| `catalog` | Discovery of the owner definitions and explicit codecs for selected read-only operations. |
-| Domain modules | Official source parameters, interpretation, period semantics, calculations, comparisons and presentation profiles. |
+| `system.base.net` | Typed HTTP request, response, failures, admission, streaming limits and bounded retries. |
+| `system.base.filestore`, `system.base.ioapi` | File and directory commands, bounded reads, verified writes, archive and format primitives. |
+| `shared.data` | Payloads, byte identities, used-input and effect evidence, representations, table snapshots and canonical computation manifests. |
+| `system.execution` | Operation definition, context, validation, stage events, original acquisition and replay, cancellation and outcomes. |
+| `domains.registry` | Discovers independent domain registrations and composes them with system-owned references. |
+| `system.execution.registry` | Validates operation contracts and resolves handlers. |
+| `system.execution.machine` | Explicitly admitted, bounded read-only machine execution. |
+| `domains.<name>` | Official source parameters, interpretation, period semantics, calculations, comparisons and presentation profiles. |
 | Consumer | Selection and repetition of dates, scheduling, paths, permissions, publication, durable history and delivery state. |
 
 Providers are parameters to the operations that use them. `local_providers()`

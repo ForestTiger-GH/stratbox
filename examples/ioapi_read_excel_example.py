@@ -1,5 +1,5 @@
 """
-Пример: чтение Excel через stratbox.base.ioapi.
+Пример: чтение Excel через stratbox.system.base.ioapi.
 
 Плюс:
 - один код для local и corp (если установлен плагин)
@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import argparse
 
-from stratbox.base import runtime
-from stratbox.base import ioapi as ia
+from stratbox.system.base import runtime
+from stratbox.system.base import ioapi as ia
 
 
 def main() -> int:

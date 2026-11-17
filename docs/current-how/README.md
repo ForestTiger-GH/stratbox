@@ -1,6 +1,8 @@
 # Current HOW — observed Strategy Box mechanisms
 
-[Stratbox 0.9 core operations](universal-business-core.md)
+[Stratbox core operations](universal-business-core.md)
+
+[Automatic domain registration and operation discovery](domain-operation-registry.md)
 
 [Core operation construction](core-operation-construction.md)
 

@@ -6,15 +6,15 @@ from threading import Event
 
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.data import ByteIdentity
-from stratbox.execution import ExecutionContext
-from stratbox.notifications import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.shared.data import ByteIdentity
+from stratbox.system.execution import ExecutionContext
+from stratbox.system.notifications import (
     DeliverRequest, PrepareRequest, QualifyDeliveryRequest, ReconcileDeliveryRequest, SubscriptionChange,
     build_catalog, configure_subscription, deliver, inspect_dispatch, notification_health, prepare, qualify,
     reconcile, register_replay,
 )
-from stratbox.observability import FileJournalWriter, JournalWriteReceipt, RequiredJournalGate
+from stratbox.system.observability import FileJournalWriter, JournalWriteReceipt, RequiredJournalGate
 
 from conftest import Source, byte_event
 

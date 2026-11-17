@@ -6,8 +6,8 @@ selection directly to a filesystem ZIP with `frg.prepare_archive_to_store`.
 This operation keeps only a fixed-size transfer chunk in memory.
 
 ```python
-from stratbox.base.filestore import LocalFileStore
-from stratbox.macrobanks import frg
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.domains import frg
 
 inputs = LocalFileStore(root='/content')
 outputs = LocalFileStore(root='/content/stratbox_outputs/frg')

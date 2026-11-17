@@ -8,12 +8,12 @@ from openpyxl import load_workbook
 from datetime import date
 from io import BytesIO
 
-from stratbox.macrobanks.cbr_forms import FormData, FormKey, SelectFormSourcesRequest, build_form_views, render_workbook, select_sources
-from stratbox.macrobanks.cbr_forms.common.direct_form import build_direct_long
-from stratbox.macrobanks.cbr_forms.common.excel_profiles import build_hierarchical_statement_sheets
-from stratbox.macrobanks.cbr_forms.common.models import get_model_for, load_models
-from stratbox.macrobanks.cbr_forms.forms import form802
-from stratbox.macrobanks.cbr_forms.forms.registry import FORM_REGISTRY
+from stratbox.domains.cbr_forms import FormData, FormKey, SelectFormSourcesRequest, build_form_views, render_workbook, select_sources
+from stratbox.domains.cbr_forms.common.direct_form import build_direct_long
+from stratbox.domains.cbr_forms.common.excel_profiles import build_hierarchical_statement_sheets
+from stratbox.domains.cbr_forms.common.models import get_model_for, load_models
+from stratbox.domains.cbr_forms.forms import form802
+from stratbox.domains.cbr_forms.forms.registry import FORM_REGISTRY
 
 
 def _banks() -> pd.DataFrame:

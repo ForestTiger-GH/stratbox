@@ -5,9 +5,9 @@ from struct import pack
 
 import pandas as pd
 
-from stratbox.base.ioapi.archive_bytes import zip_bytes
-from stratbox.data import ByteIdentity, SourcePayload
-from stratbox.macrobanks import cbr_forms as forms
+from stratbox.system.base.ioapi.archive_bytes import zip_bytes
+from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.domains import cbr_forms as forms
 
 
 def dbf_bytes(fields, records):

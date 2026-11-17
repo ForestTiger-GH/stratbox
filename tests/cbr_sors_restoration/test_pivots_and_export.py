@@ -3,12 +3,12 @@ from io import BytesIO
 
 import openpyxl
 
-from stratbox.macrobanks.cbr_sors_restoration.contracts import (
+from stratbox.domains.cbr_sors_restoration.contracts import (
     SorsPivotRequest,
     SorsWorkbookRequest,
 )
-from stratbox.macrobanks.cbr_sors_restoration import RenderSorsRequest, render_workbook
-from stratbox.macrobanks.cbr_sors_restoration.pivots import build_sors_pivot
+from stratbox.domains.cbr_sors_restoration import RenderSorsRequest, render_workbook
+from stratbox.domains.cbr_sors_restoration.pivots import build_sors_pivot
 
 
 def test_region_pivot_has_classes_as_rows(small_result) -> None:
@@ -42,7 +42,7 @@ def test_crosswalk_workbook_exports_primary_facts_bounds_and_mapping(
 ) -> None:
     import pandas as pd
 
-    from stratbox.macrobanks.cbr_sors_restoration.results import SorsCrosswalkResult
+    from stratbox.domains.cbr_sors_restoration.results import SorsCrosswalkResult
 
     primary = small_result.regional_okved2_grid.copy()
     primary['bounds_certified'] = True

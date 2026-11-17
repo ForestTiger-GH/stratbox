@@ -4,6 +4,11 @@ Stratbox provides reusable Python operations for acquiring, interpreting and
 presenting banking and economic data. Applications pass dates and
 destinations and can choose their own infrastructure providers.
 
+The core organizes neutral execution and infrastructure under `stratbox.system`,
+shared data contracts and reference resources under `stratbox.shared`, and
+independent business packages under `stratbox.domains`.
+
+- [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
 - [Installation and offline quickstart](docs/how/install-and-run-core.md)

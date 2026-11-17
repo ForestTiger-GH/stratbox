@@ -7,16 +7,28 @@ import sys
 
 import pytest
 
-from stratbox.base.capabilities import (
+from stratbox.system.base.capabilities import (
     BindingError, CapabilityRequirement, ProviderBinding, probe_provider, select_provider,
 )
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.limits import ExecutionBudget
-from stratbox.base.net import HttpResponse
-from stratbox.catalog import DirectoryMaterial, OperationCatalog, WireRequestError, invoke_read_only, operation_catalog, wire_schemas
-from stratbox.data import SourcePayload
-from stratbox.execution import Correlation, ExecutionContext, OperationDefinition, run
-from stratbox.macrobanks import cbr_offices
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.limits import ExecutionBudget
+from stratbox.system.base.net import HttpResponse
+from stratbox.domains.registry import operation_catalog
+from stratbox.system.execution.registry import OperationCatalog
+from stratbox.system.execution.machine import DirectoryMaterial, WireRequestError
+from stratbox.system.execution.machine import invoke_read_only as _invoke_read_only
+from stratbox.system.execution.machine import wire_schemas as _wire_schemas
+
+
+def invoke_read_only(raw, *, materials):
+    return _invoke_read_only(raw, catalog=operation_catalog(), materials=materials)
+
+
+def wire_schemas(operation_id, contract_version):
+    return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
+from stratbox.shared.data import SourcePayload
+from stratbox.system.execution import Correlation, ExecutionContext, OperationDefinition, run
+from stratbox.domains import cbr_offices
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures/universal_core/offices-basic.html"
 _DAY = date(2026, 11, 12)
@@ -26,8 +38,8 @@ def test_catalog_imports_without_extras_and_covers_declared_operations():
     check = """
 import importlib
 import sys
-from stratbox.catalog import operation_catalog
-from stratbox.execution import OperationDefinition
+from stratbox.domains.registry import operation_catalog
+from stratbox.system.execution import OperationDefinition
 catalog = operation_catalog()
 descriptions = catalog.describe()
 registered = {(d['operation_id'], d['contract_version']) for d in descriptions}
@@ -44,7 +56,7 @@ assert not {'requests', 'pandas', 'openpyxl', 'pyxlsb', 'highspy', 'xlrd'} & sys
     package = Path(cbr_offices.__file__).resolve().parents[2]
     subprocess.run([sys.executable, "-B", "-S", "-c",
                     f"import sys; sys.path.insert(0, {str(package.parent)!r})\n" + check], check=True)
-    definition = operation_catalog().definitions[0]
+    definition = operation_catalog().references[0]
     with pytest.raises(ValueError, match="Duplicate operation"):
         OperationCatalog((definition, definition))
 
@@ -69,7 +81,7 @@ def test_invalid_wire_input_stops_before_material_provider(raw, code):
 
 
 def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_path):
-    from stratbox.macrobanks import frg
+    from stratbox.domains import frg
 
     source = SourcePayload(_FIXTURE.read_bytes(), "text/html")
     parsed = cbr_offices.parse(cbr_offices.ParseOfficesRequest(source, _DAY))
@@ -220,7 +232,7 @@ def test_only_matching_baseline_proves_conditional_http_reuse():
 
 
 def test_computation_identity_keeps_source_method_and_projection_distinct():
-    from stratbox.data import UsedInputReceipt, computation_identity
+    from stratbox.shared.data import UsedInputReceipt, computation_identity
 
     original = UsedInputReceipt.for_payload(SourcePayload(b"same", "text/csv", "scope-a"), "table")
 

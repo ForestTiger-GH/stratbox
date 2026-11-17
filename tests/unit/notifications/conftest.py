@@ -3,13 +3,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from stratbox.execution import ExecutionContext
-from stratbox.notifications import (
+from stratbox.system.execution import ExecutionContext
+from stratbox.system.notifications import (
     AccessDecision, CheckpointKey, ConsumerBinding, HandoffReceipt, MemoryNotificationState,
     NotificationRoute, NotificationRuntime, SourceBinding, SubscriptionChange, SubscriptionSpec,
     build_catalog, configure_subscription,
 )
-from stratbox.observability import (
+from stratbox.system.observability import (
     DomainFact, JournalEntry, JournalHead, JournalPage, ObjectRef, StreamKey, record_from_fact,
 )
 

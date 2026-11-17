@@ -4,14 +4,14 @@ import importlib
 
 MODULES = [
     'stratbox',
-    'stratbox.base.runtime',
-    'stratbox.base.ioapi',
-    'stratbox.base.filestore',
-    'stratbox.macrobanks.cbr_file_collector',
-    'stratbox.macrobanks.cbr_industries',
-    'stratbox.macrobanks.cbr_forms',
-    'stratbox.macrobanks.escrow',
-    'stratbox.macrobanks.frg',
+    'stratbox.system.base.runtime',
+    'stratbox.system.base.ioapi',
+    'stratbox.system.base.filestore',
+    'stratbox.domains.cbr_file_collector',
+    'stratbox.domains.cbr_industries',
+    'stratbox.domains.cbr_forms',
+    'stratbox.domains.escrow',
+    'stratbox.domains.frg',
 ]
 
 def test_core_imports() -> None:

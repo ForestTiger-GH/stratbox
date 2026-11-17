@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import (
+from stratbox.domains.cbr_sors_restoration.linear.contracts import (
     CsrMatrixData,
     SorsLinearProblem,
 )
-from stratbox.macrobanks.cbr_sors_restoration.linear.highs import (
+from stratbox.domains.cbr_sors_restoration.linear.highs import (
     SorsSolverDependencyError,
     _load_highs,
 )
@@ -25,11 +25,11 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
     monkeypatch,
     small_result,
 ) -> None:
-    from stratbox.macrobanks.cbr_sors_restoration.contracts import (
+    from stratbox.domains.cbr_sors_restoration.contracts import (
         SorsCrosswalkConfig,
     )
-    from stratbox.macrobanks.cbr_sors_restoration.crosswalk import operations
-    from stratbox.macrobanks.cbr_sors_restoration.crosswalk.problem import (
+    from stratbox.domains.cbr_sors_restoration.crosswalk import operations
+    from stratbox.domains.cbr_sors_restoration.crosswalk.problem import (
         CrosswalkCompilation,
     )
 
@@ -104,7 +104,7 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
 def test_highs_session_applies_solver_options_and_refreshes_bounds(monkeypatch) -> None:
     from types import SimpleNamespace
 
-    from stratbox.macrobanks.cbr_sors_restoration.linear import highs as highs_module
+    from stratbox.domains.cbr_sors_restoration.linear import highs as highs_module
 
     calls: dict[str, object] = {}
 

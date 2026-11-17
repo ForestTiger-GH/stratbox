@@ -18,9 +18,9 @@ from statistics import median
 import sys
 from time import perf_counter
 
-from stratbox.data import SourcePayload
-from stratbox.macrobanks import cbr_industries as debt
-from stratbox.macrobanks.cbr_industries import issuance_0104 as issuance
+from stratbox.shared.data import SourcePayload
+from stratbox.domains import cbr_industries as debt
+from stratbox.domains.cbr_industries import issuance_0104 as issuance
 
 
 PATTERNS = {

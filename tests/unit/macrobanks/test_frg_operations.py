@@ -1,7 +1,7 @@
 import pytest
 
-from stratbox.base.filestore import LocalFileStore, MutationRejected
-from stratbox.macrobanks import frg
+from stratbox.system.base.filestore import LocalFileStore, MutationRejected
+from stratbox.domains import frg
 
 LATEST = "2026-05-01_Экспресс выдачи.xlsx"
 OLDER = "2026-04-01_Экспресс выдачи.xlsx"
@@ -75,7 +75,7 @@ def test_failed_conditional_remove_does_not_claim_success(tmp_path):
 def test_cleanup_preserves_confirmed_and_unattempted_actions_on_cancellation(tmp_path):
     from threading import Event
 
-    from stratbox.execution import ExecutionContext
+    from stratbox.system.execution import ExecutionContext
 
     cancelled = Event()
 

@@ -3,15 +3,15 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from stratbox.macrobanks.cbr_sors_restoration.publication import (
+from stratbox.domains.cbr_sors_restoration.publication import (
     RoundingPolicy,
     SorsPublicationLedger,
     SorsPublicationFixedPointLimitError,
     build_publication_graph,
     run_publication_fixed_point,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import SorsIntervalClosureState
-from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import SorsQuantityGraph
+from stratbox.domains.cbr_sors_restoration.strict.interval_closure import SorsIntervalClosureState
+from stratbox.domains.cbr_sors_restoration.strict.quantities import SorsQuantityGraph
 
 
 def _row(

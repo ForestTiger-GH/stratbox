@@ -5,8 +5,8 @@ from threading import Event
 import pandas as pd
 import pytest
 
-from stratbox.data import ByteIdentity, table_identity
-from stratbox.execution import EffectReceipt, ExecutionContext, InMemorySink, OperationDefinition, run
+from stratbox.shared.data import ByteIdentity, table_identity
+from stratbox.system.execution import EffectReceipt, ExecutionContext, InMemorySink, OperationDefinition, run
 
 
 def test_table_identity_keeps_scalar_types_missing_states_order_and_index():

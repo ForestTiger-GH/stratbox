@@ -5,11 +5,11 @@ No HTTP calls or external source state are involved.
 """
 from datetime import datetime, timezone
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.data import ByteIdentity, SourcePayload, UsedInputReceipt
-from stratbox.execution import ExecutionContext, OperationDefinition, run
-from stratbox.execution.originals import OriginalDestination, SaveOriginalRequest, save_original
-from stratbox.observability import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.shared.data import ByteIdentity, SourcePayload, UsedInputReceipt
+from stratbox.system.execution import ExecutionContext, OperationDefinition, run
+from stratbox.system.execution.originals import OriginalDestination, SaveOriginalRequest, save_original
+from stratbox.system.observability import (
     CapturePolicy, RecordMemorySink, FileJournalWriter, FileJournalReader,
     capture_operation_result, build_operation_history, assess_coverage,
     SegmentDescriptor, build_manifest, project_effect_state, record_from_result,
@@ -22,7 +22,7 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
     source = SourcePayload(b"CBR sample source bytes", source_id="cbr_offices")
     request = SaveOriginalRequest(source, OriginalDestination("input/original.bin", mode="immutable"))
     plain = save_original(request, store=LocalFileStore(str(tmp_path / "plain")))
-    from stratbox.observability import OriginClaim
+    from stratbox.system.observability import OriginClaim
     collector = RecordMemorySink(CapturePolicy(progress=False), origin=OriginClaim("tester", "collector", "generation_one"))
     observed = save_original(request, store=LocalFileStore(str(tmp_path / "observed")),
                              context=ExecutionContext(sink=collector))

@@ -5,15 +5,15 @@ from importlib.resources import files
 import pandas as pd
 import pytest
 
-from stratbox.macrobanks import cbr_forms as forms
-from stratbox.macrobanks.cbr_forms.common.formula import build_formula_long
-from stratbox.macrobanks.cbr_forms.common.models import parse_form_model
-from stratbox.macrobanks.cbr_forms.forms.form101 import DEFAULT_SPEC
+from stratbox.domains import cbr_forms as forms
+from stratbox.domains.cbr_forms.common.formula import build_formula_long
+from stratbox.domains.cbr_forms.common.models import parse_form_model
+from stratbox.domains.cbr_forms.forms.form101 import DEFAULT_SPEC
 
 
 def _model():
     return parse_form_model(
-        files("stratbox.macrobanks.cbr_forms.models").joinpath("form101.csv").read_bytes(),
+        files("stratbox.domains.cbr_forms.models").joinpath("form101.csv").read_bytes(),
         "101",
     )
 

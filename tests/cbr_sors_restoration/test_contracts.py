@@ -1,6 +1,6 @@
 import pytest
 
-from stratbox.macrobanks.cbr_sors_restoration import (
+from stratbox.domains.cbr_sors_restoration import (
     SorsCrosswalkConfig,
     SorsDeterministicConfig,
     SorsOptimizationConfig,

@@ -5,15 +5,15 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.publication import (
+from stratbox.domains.cbr_sors_restoration.publication import (
     solver_lower_bound,
     solver_upper_bound,
 )
-from stratbox.macrobanks.cbr_sors_restoration.schema import COMPONENTS
-from stratbox.macrobanks.cbr_sors_restoration.strict.compiler import (
+from stratbox.domains.cbr_sors_restoration.schema import COMPONENTS
+from stratbox.domains.cbr_sors_restoration.strict.compiler import (
     compile_strict_problem,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
+from stratbox.domains.cbr_sors_restoration.strict.quantities import (
     SorsQuantityGraph,
     component_quantity_id,
 )
@@ -125,10 +125,10 @@ def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
 
 
 def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
-    from stratbox.macrobanks.cbr_sors_restoration.strict.compiler import (
+    from stratbox.domains.cbr_sors_restoration.strict.compiler import (
         refresh_strict_problem_bounds,
     )
-    from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
+    from stratbox.domains.cbr_sors_restoration.strict.quantities import (
         metric_quantity_id,
     )
 
@@ -244,10 +244,10 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
 
 
 def test_refresh_updates_official_aggregate_row_after_deterministic_tightening() -> None:
-    from stratbox.macrobanks.cbr_sors_restoration.strict.compiler import (
+    from stratbox.domains.cbr_sors_restoration.strict.compiler import (
         refresh_strict_problem_bounds,
     )
-    from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import (
+    from stratbox.domains.cbr_sors_restoration.strict.quantities import (
         metric_quantity_id,
     )
 

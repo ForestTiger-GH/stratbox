@@ -3,11 +3,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.linear.contracts import (
+from stratbox.domains.cbr_sors_restoration.linear.contracts import (
     CsrMatrixData,
     SorsLinearProblem,
 )
-from stratbox.macrobanks.cbr_sors_restoration.optimization.distortion import (
+from stratbox.domains.cbr_sors_restoration.optimization.distortion import (
     build_rounding_distortion_problem,
     distortion_linf_from_values,
 )
