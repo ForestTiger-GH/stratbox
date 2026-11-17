@@ -15,8 +15,8 @@ from __future__ import annotations
 from io import BytesIO
 from typing import Iterable
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.ioapi.bytes import read_bytes, write_bytes
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.storage.bytes import read_bytes, write_bytes
 
 
 def read_text(path: str, store: FileStore | None = None) -> str:

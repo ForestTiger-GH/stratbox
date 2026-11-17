@@ -14,9 +14,9 @@ pdf — чтение PDF поверх FileStore.
 
 from __future__ import annotations
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.runtime.dependencies import require_extra
 
 
 def read_text(

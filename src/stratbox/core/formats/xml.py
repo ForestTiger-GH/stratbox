@@ -7,10 +7,10 @@ from typing import BinaryIO, Callable
 from xml.etree import ElementTree as ET
 from xml.parsers import expat
 
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes, write_bytes
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.storage.bytes import read_bounded_bytes, write_bytes
+from stratbox.core.limits import BudgetMeter
 
 MAX_XML_BYTES = 64 * 1024 * 1024
 _MAX_NODES = 2_000_000

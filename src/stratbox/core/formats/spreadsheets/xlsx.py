@@ -16,12 +16,12 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import pandas as pd
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.ioapi.bytes import write_bytes
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.storage.bytes import write_bytes
+from stratbox.core.runtime.dependencies import require_extra
 
 if TYPE_CHECKING:
-    from stratbox.system.base.styles.excel.registry import ExcelStylesRegistry
+    from stratbox.core.rendering.excel.registry import ExcelStylesRegistry
 
 
 # -----------------------------
@@ -369,7 +369,7 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    from .workbook_input import read_workbook_df
+    from stratbox.core.formats.spreadsheets.workbook_input import read_workbook_df
 
     return read_workbook_df(path, store=store, expected="xlsx", **kwargs)
 
@@ -415,7 +415,7 @@ def write_df(
     require_extra("openpyxl", "excel")
 
     from openpyxl import load_workbook
-    from stratbox.system.base.styles.excel.main import apply_preset
+    from stratbox.core.rendering.excel.api import apply_preset
 
     bio = BytesIO()
 
@@ -497,6 +497,6 @@ def write_df(
         except Exception as e:
             print(f"[WARN] Auto column width failed: {e}")
 
-    from .workbook_bytes import openpyxl_bytes
+    from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 
     write_bytes(path, openpyxl_bytes(wb, literal_text=True), store=store)

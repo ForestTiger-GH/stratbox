@@ -4,9 +4,9 @@ from datetime import datetime
 from shutil import copyfileobj
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
-from stratbox.system.base.limits import BudgetMeter
-from stratbox.system.base.utils.optional_deps import require_extra
-from .bytes import OutputBuffer
+from stratbox.core.limits import BudgetMeter
+from stratbox.core.runtime.dependencies import require_extra
+from stratbox.core.storage.bytes import OutputBuffer
 
 _EPOCH = datetime(1980, 1, 1)
 

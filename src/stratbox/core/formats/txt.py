@@ -12,8 +12,8 @@ text — чтение/запись txt (и любых текстовых фай�
 
 from __future__ import annotations
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.ioapi.bytes import read_bytes, write_bytes
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.storage.bytes import read_bytes, write_bytes
 
 
 def read_text(path: str, encoding: str = "utf-8", store: FileStore | None = None) -> str:

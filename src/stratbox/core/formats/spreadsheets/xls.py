@@ -15,9 +15,9 @@ from typing import Any
 
 import pandas as pd
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.ioapi.bytes import write_bytes
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.storage.bytes import write_bytes
+from stratbox.core.runtime.dependencies import require_extra
 
 
 def read_df(
@@ -25,7 +25,7 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    from .workbook_input import read_workbook_df
+    from stratbox.core.formats.spreadsheets.workbook_input import read_workbook_df
 
     return read_workbook_df(path, store=store, expected="xls", **kwargs)
 

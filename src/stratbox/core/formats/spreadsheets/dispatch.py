@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlsplit
 
-from stratbox.system.base.filestore.base import FileStore
+from stratbox.core.storage.filestore.ports import FileStore
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -39,7 +39,7 @@ def read_df(
     store: FileStore | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    from .workbook_input import read_workbook_df
+    from stratbox.core.formats.spreadsheets.workbook_input import read_workbook_df
 
     return read_workbook_df(path, store=store, **kwargs)
 
@@ -53,26 +53,26 @@ def write_df(
     ext = _ext(path)
 
     if ext == ".xlsx":
-        from stratbox.system.base.ioapi import excel_xlsx
+        from stratbox.core.formats.spreadsheets import xlsx as excel_xlsx
 
         return excel_xlsx.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xlsm":
-        from stratbox.system.base.ioapi import excel_xlsm
+        from stratbox.core.formats.spreadsheets import xlsm as excel_xlsm
 
         return excel_xlsm.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xls":
-        from stratbox.system.base.ioapi import excel_xls
+        from stratbox.core.formats.spreadsheets import xls as excel_xls
 
         return excel_xls.write_df(path, df, store=store, **kwargs)
 
     if ext == ".xlsb":
-        from stratbox.system.base.ioapi import excel_xlsb
+        from stratbox.core.formats.spreadsheets import xlsb as excel_xlsb
 
         return excel_xlsb.write_df(path, df, store=store, **kwargs)
 
     # Фоллбек: пишем как xlsx
-    from stratbox.system.base.ioapi import excel_xlsx
+    from stratbox.core.formats.spreadsheets import xlsx as excel_xlsx
 
     return excel_xlsx.write_df(path, df, store=store, **kwargs)

@@ -12,14 +12,14 @@ import re
 from typing import Callable, Literal, Protocol
 from xml.etree import ElementTree as ET
 
-from stratbox.system.base.capabilities import BindingError, CapabilityRequirement, ProviderBinding, select_provider
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes
-from stratbox.system.base.ioapi.xml import XmlError, inspect_xml, parse_xml
-from stratbox.system.base.limits import BudgetMeter
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.runtime.capabilities import BindingError, CapabilityRequirement, ProviderBinding, select_provider
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, open_zip
+from stratbox.core.storage.bytes import read_bounded_bytes
+from stratbox.core.formats.xml import XmlError, inspect_xml, parse_xml
+from stratbox.core.limits import BudgetMeter
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import ByteIdentity
 
 WorkbookKind = Literal["xlsx", "xlsm", "xlsb", "xls"]
