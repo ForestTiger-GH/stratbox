@@ -7,8 +7,8 @@ from io import StringIO
 from stratbox.shared.data import Comparison, ComparisonCoverage, ComparisonLayers, UsedInputReceipt, compare_releases
 from stratbox.shared.data.releases import CompareReleaseRequest, ParsedRelease
 
-from .contracts import OperationFailure
-from .runner import Invocation
+from stratbox.core.execution.contracts import OperationFailure
+from stratbox.core.execution.runner import Invocation
 
 
 def compare_release_inputs(

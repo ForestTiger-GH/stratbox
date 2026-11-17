@@ -14,7 +14,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 
-from .models import StyleSpec, BlockStyle
+from stratbox.core.rendering.excel.models import StyleSpec, BlockStyle
 
 
 def _apply_gridlines(ws: Worksheet, hide: bool) -> None:

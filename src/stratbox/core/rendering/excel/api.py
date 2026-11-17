@@ -1,9 +1,9 @@
 """Apply the Excel style registry selected by the caller or the environment."""
 
-from stratbox.system.base.runtime import active_providers
+from stratbox.core.runtime.providers import active_providers
 
-from .apply import apply_style
-from .registry import BUILTIN_STYLES, ExcelStylesRegistry
+from stratbox.core.rendering.excel.apply import apply_style
+from stratbox.core.rendering.excel.registry import BUILTIN_STYLES, ExcelStylesRegistry
 
 
 def active_styles(registry: ExcelStylesRegistry | None = None) -> ExcelStylesRegistry:

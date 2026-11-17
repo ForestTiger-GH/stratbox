@@ -8,9 +8,9 @@ import re
 from types import MappingProxyType
 from typing import Literal
 
-from stratbox.system.execution.contracts import safe_token
+from stratbox.core.execution.contracts import safe_token
 
-from .contracts import JournalRecord
+from stratbox.core.observability.records.contracts import JournalRecord
 
 FieldClass = Literal["public", "operational", "restricted"]
 _DIGEST = re.compile(r"[0-9a-f]{64}", re.ASCII)

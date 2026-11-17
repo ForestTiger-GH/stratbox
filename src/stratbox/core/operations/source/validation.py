@@ -4,8 +4,8 @@ import re
 
 from stratbox.shared.data import SourcePayload, UsedInputReceipt
 
-from .contracts import OperationFailure
-from .runner import Invocation
+from stratbox.core.execution.contracts import OperationFailure
+from stratbox.core.execution.runner import Invocation
 
 
 def use_payload(

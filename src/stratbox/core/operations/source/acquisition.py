@@ -6,11 +6,11 @@ from dataclasses import dataclass, replace
 from email.message import Message
 from typing import BinaryIO, Callable
 
-from stratbox.system.base.net import HttpFailure, HttpRequest, HttpTransport, RetryPolicy, RoutedTransport, exchange, exchange_into
+from stratbox.core.network import HttpFailure, HttpRequest, HttpTransport, RetryPolicy, RoutedTransport, exchange, exchange_into
 from stratbox.shared.data import AcquiredSource, AcquisitionReceipt, ByteIdentity, SourcePayload, canonical_manifest_bytes
 
-from .contracts import OperationFailure
-from .runner import Invocation
+from stratbox.core.execution.contracts import OperationFailure
+from stratbox.core.execution.runner import Invocation
 
 
 @dataclass(frozen=True, slots=True)

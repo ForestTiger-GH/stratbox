@@ -5,21 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from hashlib import sha256
 
-from stratbox.system.base.filestore import MutationRejected, SourceStore, StagedWriter, WriteMode
-from stratbox.system.base.ioapi.bytes import file_identity, read_bounded_bytes
-from stratbox.system.base.ioapi.staging import (
+from stratbox.core.storage.filestore import MutationRejected, SourceStore, StagedWriter, WriteMode
+from stratbox.core.storage.bytes import file_identity, read_bounded_bytes
+from stratbox.core.storage.staging import (
     BoundedStage, WRITE_GUARANTEES, commit_staged, current_revision, storage_scope, store_identity, stream_identity,
 )
-from stratbox.system.base.limits import ExecutionBudget
-from stratbox.system.base.net import HttpRequest, HttpTransport, RetryPolicy, StreamingHttpTransport
+from stratbox.core.limits import ExecutionBudget
+from stratbox.core.network import HttpRequest, HttpTransport, RetryPolicy, StreamingHttpTransport
 from stratbox.shared.data import (
     AcquiredSource, AcquisitionReceipt, ByteIdentity, MaterialReference, SourcePayload, StoredBytesReceipt,
     UsedInputReceipt,
 )
 
-from .acquisition import StreamBaseline, receive_source, receive_stream
-from .contracts import EffectReceipt, ExecutionContext, OperationDefinition, OperationFailure
-from .runner import Completion, run
+from stratbox.core.operations.source.acquisition import StreamBaseline, receive_source, receive_stream
+from stratbox.core.execution.contracts import EffectReceipt, ExecutionContext, OperationDefinition, OperationFailure
+from stratbox.core.execution.runner import Completion, run
 
 _HTTP = frozenset({"http"})
 _OUTPUT = frozenset({"output_filestore"})

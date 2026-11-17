@@ -8,7 +8,7 @@ from stratbox.shared.data.evidence import ByteIdentity, UsedInputReceipt
 from stratbox.shared.data.identity import canonical_manifest_bytes
 from stratbox.shared.data.tables import TABLE_ENCODING, TABLE_MEDIA_TYPE, table_identity
 
-from .contracts import OperationFailure
+from stratbox.core.execution.contracts import OperationFailure
 
 
 def _identity(tables, invocation, metadata, allow_infinite, checkpoint=None):
