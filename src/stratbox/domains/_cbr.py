@@ -4,13 +4,13 @@ from urllib.parse import unquote
 
 from io import BytesIO
 
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, open_zip_stream
-from stratbox.system.base.ioapi.workbook_input import WorkbookError, workbook_profile
-from stratbox.system.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
-from stratbox.system.base.net.contracts import public_https_parts
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, open_zip_stream
+from stratbox.core.formats.spreadsheets.workbook_input import WorkbookError, workbook_profile
+from stratbox.core.network import HttpRequest, HttpsEndpoint, RetryPolicy
+from stratbox.core.network.contracts import public_https_parts
 from stratbox.shared.data.representation import XLSX
-from stratbox.system.execution import OperationFailure
-from stratbox.system.execution.acquisition import receive_source
+from stratbox.core.execution import OperationFailure
+from stratbox.core.operations.source.acquisition import receive_source
 
 HOSTS = ("www.cbr.ru", "cbr.ru")
 HTML_TYPES = frozenset({"text/html", "application/xhtml+xml"})

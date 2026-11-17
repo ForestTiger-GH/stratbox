@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from typing import Mapping
 
-from stratbox.system.base.net import RetryPolicy
+from stratbox.core.network import RetryPolicy
 from stratbox.shared.data import AcquiredSource
-from stratbox.system.execution.originals import OriginalDestination, StoredOriginal
+from stratbox.core.operations.source.originals import OriginalDestination, StoredOriginal
 
 
 @dataclass(frozen=True, slots=True)

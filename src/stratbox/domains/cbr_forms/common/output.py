@@ -9,8 +9,8 @@ from typing import Mapping
 
 import pandas as pd
 
-from stratbox.system.base.ioapi.workbook_bytes import openpyxl_bytes
-from stratbox.system.base.styles.excel.main import apply_preset
+from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
+from stratbox.core.rendering.excel.api import apply_preset
 from stratbox.domains.cbr_forms.common.excel_profiles import (
     HIERARCHICAL_STATEMENT_PROFILE,
     STANDARD_PROFILE,

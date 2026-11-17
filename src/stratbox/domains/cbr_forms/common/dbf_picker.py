@@ -5,8 +5,8 @@ from struct import error as StructError
 
 import pandas as pd
 
-from stratbox.system.base.ioapi.dbf_bytes import open_dbf_bytes
-from stratbox.system.base.utils.optional_deps import MissingExtra
+from stratbox.core.formats.dbf_bytes import open_dbf_bytes
+from stratbox.core.runtime.dependencies import MissingExtra
 
 from .dbf import CBRFieldParser
 

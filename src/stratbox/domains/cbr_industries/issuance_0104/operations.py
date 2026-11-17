@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import PurePosixPath
 
-from stratbox.system.base.net import HttpTransport
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.network import HttpTransport
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import AcquiredSource, ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion, ExecutionContext, OperationDefinition, OperationFailure,
     OperationResult, run,
 )
-from stratbox.system.execution.batch import attempt_batch, require_batch_values
-from stratbox.system.execution.source_validation import use_payload
-from stratbox.system.execution.tables import seal_stream, use_stream
+from stratbox.core.execution.batch import attempt_batch, require_batch_values
+from stratbox.core.operations.source.validation import use_payload
+from stratbox.core.operations.tables import seal_stream, use_stream
 from stratbox.domains._cbr import (
     HTML_TYPES, WORKBOOK_LIMIT, XLSX_TYPES, official_url, receive_cbr,
     admit_workbook,

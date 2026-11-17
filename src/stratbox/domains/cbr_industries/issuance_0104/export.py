@@ -5,7 +5,7 @@ from __future__ import annotations
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
-from stratbox.system.base.ioapi.workbook_bytes import openpyxl_bytes
+from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.shared.data import Representation
 from stratbox.shared.data.representation import XLSX
 from stratbox.domains.cbr_industries.export import (

@@ -4,15 +4,15 @@ from datetime import date
 from importlib.resources import files
 from types import MappingProxyType
 
-from stratbox.system.base.ioapi.archive_bytes import (
+from stratbox.core.formats.archives.members import (
     ArchiveError,
     ArchiveLimits,
     ArchiveReader,
     extract_members,
 )
-from stratbox.system.base.net import HttpTransport
-from stratbox.system.base.limits import ExecutionBudget
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.network import HttpTransport
+from stratbox.core.limits import ExecutionBudget
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import (
     AcquiredSource,
     Representation,
@@ -21,15 +21,15 @@ from stratbox.shared.data import (
     canonical_manifest_bytes,
 )
 from stratbox.shared.data.representation import CSV, XLSX
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     ExecutionContext,
     OperationDefinition,
     OperationFailure,
     OperationResult,
     run,
 )
-from stratbox.system.execution.source_validation import source_failure, use_payload
-from stratbox.system.execution.tables import record_tables, use_tables
+from stratbox.core.operations.source.validation import source_failure, use_payload
+from stratbox.core.operations.tables import record_tables, use_tables
 from stratbox.domains._cbr import ARCHIVE_TYPES, receive_cbr
 
 from .contracts import (
@@ -370,8 +370,8 @@ def render_workbook(
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
         from dataclasses import asdict
-        from stratbox.system.base.styles.excel.main import active_styles
-        from stratbox.system.base.styles.excel.registry import BUILTIN_STYLES
+        from stratbox.core.rendering.excel.api import active_styles
+        from stratbox.core.rendering.excel.registry import BUILTIN_STYLES
         from .common.output import render_form_workbook
 
         invocation.stage("render")
