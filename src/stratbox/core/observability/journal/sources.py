@@ -12,7 +12,7 @@ from stratbox.core.execution.contracts import safe_token
 from stratbox.core.observability.journal.codecs import JournalDecodeError, encode_record
 from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.assessment.coverage import CoverageStatus
-from stratbox.core.observability.journal.file_writer import FileJournalReader
+from stratbox.core.observability.journal.file_reader import FileJournalReader
 from stratbox.core.observability.journal.manifests import SegmentDescriptor
 from stratbox.core.observability.capture.sinks import ObserverGenerationSnapshot
 

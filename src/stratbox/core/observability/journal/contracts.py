@@ -43,3 +43,61 @@ class JournalBarrierError(Exception):
     def __init__(self, receipt: JournalWriteReceipt):
         self.receipt = receipt
         super().__init__(receipt.diagnostic_code or "journal.registration_unconfirmed")
+
+@dataclass(frozen=True, slots=True)
+class JournalNamespace:
+    root: str
+    writer_id: str
+    format: str = "jsonl"
+
+    def __post_init__(self):
+        safe_token(self.writer_id)
+        if not isinstance(self.root, str) or not self.root or "\\" in self.root or "\x00" in self.root:
+            raise ValueError("Invalid logical journal root")
+        if self.root.startswith("/") or ":" in self.root or any(part in {"", ".", ".."} for part in self.root.split("/")):
+            raise ValueError("Journal root must be a relative, scoped logical path")
+        if self.format not in {"json", "jsonl"}:
+            raise ValueError("Invalid journal format")
+
+    def segment_path(self, segment_id: str) -> str:
+        safe_token(segment_id)
+        return f"{self.root}/{self.writer_id}/{segment_id}.{self.format}"
+
+    def manifest_path(self, manifest_id: str) -> str:
+        safe_token(manifest_id)
+        return f"{self.root}/{self.writer_id}/{manifest_id}.manifest.json"
+
+    def admits(self, path: str) -> bool:
+        if not isinstance(path, str) or "\\" in path or "\x00" in path:
+            return False
+        prefix = f"{self.root}/{self.writer_id}/"
+        if not path.startswith(prefix):
+            return False
+        name = path[len(prefix):]
+        if "/" in name or not name.endswith("." + self.format):
+            return False
+        try:
+            safe_token(name[:-(len(self.format) + 1)])
+        except ValueError:
+            return False
+        return True
+
+
+@dataclass(frozen=True, slots=True)
+class JournalReadIssue:
+    locator: str = field(repr=False)
+    code: str = "journal.unknown"
+    line: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class JournalReadReport:
+    records: tuple[JournalRecord, ...]
+    issues: tuple[JournalReadIssue, ...]
+    storage_coverage: str
+    capture_coverage: str
+    manifest_id: str | None = None
+
+    @property
+    def complete(self) -> bool:
+        return self.storage_coverage == "complete" and self.capture_coverage == "complete"

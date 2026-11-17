@@ -27,9 +27,12 @@ from stratbox.core.observability.analysis.projections import (OperationState, So
 from stratbox.core.observability.journal.codecs import (JournalDecodeError, encode_record, decode_record, encode_records,
                      decode_records, iter_decode_jsonl)
 from stratbox.core.observability.analysis.exports import export_projection_csv
-from stratbox.core.observability.journal.file_writer import (JournalNamespace, FileJournalReader, FileJournalWriter,
-                           BufferedFileJournal, JournalReadIssue, JournalReadReport,
-                           RecordReader, RecordWriter, RequiredJournalGate, reconcile_write, require_confirmed)
+from stratbox.core.observability.journal.file_writer import FileJournalWriter, reconcile_write
+from stratbox.core.observability.journal.file_reader import FileJournalReader
+from stratbox.core.observability.journal.contracts import JournalNamespace, JournalReadIssue, JournalReadReport
+from stratbox.core.observability.journal.ports import RecordReader, RecordWriter
+from stratbox.core.observability.journal.buffered import BufferedFileJournal
+from stratbox.core.observability.journal.gate import RequiredJournalGate, require_confirmed
 from stratbox.core.observability.journal.manifests import (JournalManifest, SegmentDescriptor, build_manifest,
                         encode_manifest, decode_manifest)
 from stratbox.core.observability.capture.operations import (CaptureReport, RecordCapture, capture_operation_result,
