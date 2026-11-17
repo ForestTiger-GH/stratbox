@@ -8,7 +8,7 @@ from stratbox.shared.data import ByteIdentity
 from stratbox.core.storage.filestore import FileStore
 from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.journal.contracts import JournalNamespace, JournalWriteReceipt
-from stratbox.core.observability.journal.codecs import encode_records, DEFAULT_MAX_SEGMENT_BYTES, MAX_SEGMENT_BYTES
+from stratbox.core.observability.journal.codecs import JournalDecodeError, encode_records, DEFAULT_MAX_SEGMENT_BYTES, MAX_SEGMENT_BYTES
 from stratbox.core.observability.journal.file_reader import _read_bounded_segment, _check_segment
 from stratbox.core.observability.journal.manifests import JournalManifest, MAX_MANIFEST_BYTES, encode_manifest
 from stratbox.core.observability.journal.policies import PersistencePolicy

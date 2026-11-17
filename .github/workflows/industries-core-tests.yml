@@ -5,7 +5,7 @@ on:
     paths:
       - 'src/stratbox/domains/cbr_industries/**'
       - 'src/stratbox/domains/registry.py'
-      - 'src/stratbox/system/execution/**'
+      - 'src/stratbox/core/**'
       - 'src/stratbox/shared/**'
       - 'tests/unit/registry/**'
       - 'src/stratbox/__init__.py'
