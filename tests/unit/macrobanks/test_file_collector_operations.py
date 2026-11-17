@@ -4,7 +4,7 @@ from zipfile import ZipFile
 
 from openpyxl import Workbook
 
-from stratbox.system.base.net import HttpResponse
+from stratbox.core.network import HttpResponse
 from stratbox.domains import cbr_file_collector as collector
 
 

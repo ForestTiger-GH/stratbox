@@ -2,8 +2,8 @@
 from datetime import datetime, timezone
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.observability import (SequenceRange, find_gaps, merge_ranges,
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.observability import (SequenceRange, find_gaps, merge_ranges,
                                     JournalRecord, RecordFilter, select_records,
                                     FileJournalReader, JournalNamespace, inspect_causes)
 
@@ -44,7 +44,7 @@ def test_causal_cycle_iterative():
 
 
 def test_long_lived_collector_metadata_stops_at_configured_budget():
-    from stratbox.system.observability import RecordMemorySink, ObserverLimits, CapturePolicy
+    from stratbox.core.observability import RecordMemorySink, ObserverLimits, CapturePolicy
     observer = RecordMemorySink(CapturePolicy(max_records=1),
                                 limits=ObserverLimits(max_tracked_invocations=3,
                                                       max_total_sequence_ranges=9,

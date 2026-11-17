@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from stratbox.shared.data import ByteIdentity, table_identity
-from stratbox.system.execution import EffectReceipt, ExecutionContext, InMemorySink, OperationDefinition, run
+from stratbox.core.execution import EffectReceipt, ExecutionContext, InMemorySink, OperationDefinition, run
 
 
 def test_table_identity_keeps_scalar_types_missing_states_order_and_index():

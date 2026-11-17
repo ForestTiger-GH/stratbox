@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from stratbox.system.execution.machine.contracts import (
+from stratbox.core.execution.machine.contracts import (
     DirectoryMaterial, ReadOnlyWireCodec, WireRequestError,
 )
 from . import api

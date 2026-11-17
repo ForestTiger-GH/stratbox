@@ -6,8 +6,8 @@ from datetime import date
 
 import re
 
-from stratbox.system.base.ioapi.archive_bytes import ArchiveLimits, open_zip
-from stratbox.system.base.ioapi.xml import XmlError, parse_xml
+from stratbox.core.formats.archives.members import ArchiveLimits, open_zip
+from stratbox.core.formats.xml import XmlError, parse_xml
 from .representation import count_label, serialize
 
 

@@ -7,7 +7,7 @@ from datetime import date, datetime
 from posixpath import basename as posix_basename
 from urllib.parse import urljoin, urlsplit
 
-from stratbox.system.base.ioapi.html import link_targets
+from stratbox.core.formats.html import link_targets
 
 from stratbox.domains.cbr_industries.contracts import Cbr0105ADebtCorpSourceLink
 from stratbox.domains.cbr_industries.schema import CBR_0105A_DEBT_CORP_SERIES_CODE

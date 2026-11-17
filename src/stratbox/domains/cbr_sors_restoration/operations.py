@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from stratbox.system.base.limits import BudgetExceeded
-from stratbox.system.execution import OperationFailure
+from stratbox.core.limits import BudgetExceeded
+from stratbox.core.execution import OperationFailure
 
 from stratbox import __version__ as STRATBOX_VERSION
 from stratbox.domains.cbr_sors_restoration.contracts import (

@@ -1,6 +1,6 @@
 # Use qualified notification subscriptions
 
-The Python API is available in `stratbox.system.notifications`. It works with a closed in-process collector or with a registered resumable source, transactional state and durable consumer selected by the host. The offline example exercises a real acquisition, save, parse, journal snapshot and in-process handoff.
+The Python API is available in `stratbox.core.notifications`. It works with a closed in-process collector or with a registered resumable source, transactional state and durable consumer selected by the host. The offline example exercises a real acquisition, save, parse, journal snapshot and in-process handoff.
 
 ## Choose the source and the topic
 

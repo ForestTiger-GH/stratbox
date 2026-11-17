@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from stratbox.system.base.filestore import FileMutation, FileStore, MutationRejected, StagedWriter, WriteMode
-from stratbox.system.base.ioapi.archive_paths import ArchiveEntry, PathArchiveReceipt, zip_to_store
-from stratbox.system.execution.originals import storage_effect
-from stratbox.system.base.ioapi.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, zip_bytes
-from stratbox.system.base.limits import BudgetExceeded
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore import FileMutation, FileStore, MutationRejected, StagedWriter, WriteMode
+from stratbox.core.formats.archives.store import ArchiveEntry, PathArchiveReceipt, zip_to_store
+from stratbox.core.operations.source.originals import storage_effect
+from stratbox.core.storage.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, zip_bytes
+from stratbox.core.limits import BudgetExceeded
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import ByteIdentity, Representation, SourcePayload, UsedInputReceipt, canonical_manifest_bytes
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion,
     EffectReceipt,
     ExecutionContext,

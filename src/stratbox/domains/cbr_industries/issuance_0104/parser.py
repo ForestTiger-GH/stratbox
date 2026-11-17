@@ -11,7 +11,7 @@ from hashlib import sha256
 import pandas as pd
 from openpyxl.utils import get_column_letter
 
-from stratbox.system.base.ioapi.workbook_input import open_ooxml_workbook
+from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
 from stratbox.domains.cbr_industries.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
 from stratbox.domains.cbr_industries.selection import resolve_industry_codes
 from stratbox.domains.cbr_industries.shared_parsing import (

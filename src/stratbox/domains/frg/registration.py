@@ -1,9 +1,9 @@
 """Published operation references for frg."""
 
-from stratbox.system.execution.registry import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="frg",
+REGISTRATION = OperationRegistration(
+    owner_id="frg",
     operations=(
         OperationRef("frg.prepare_archive_to_store", 2, "stratbox.domains.frg.api:STREAM_ARCHIVE", "stratbox.domains.frg.api:prepare_archive_to_store"),
         OperationRef("frg.scan", 1, "stratbox.domains.frg.api:SCAN", "stratbox.domains.frg.api:scan"),

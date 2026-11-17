@@ -37,7 +37,13 @@ REQUIRED_FILES = [
     'docs/how/install-and-run-core.md',
     'src/stratbox/py.typed',
     'src/stratbox/domains/registry.py',
-    'src/stratbox/system/execution/registry.py',
+    'src/stratbox/core/execution/catalog.py',
+    'src/stratbox/core/__init__.py',
+    'src/stratbox/core/registry.py',
+    'src/stratbox/core/runtime/providers.py',
+    'src/stratbox/core/storage/filestore/ports.py',
+    'src/stratbox/core/observability/journal/file_reader.py',
+    'src/stratbox/core/notifications/state/transactions.py',
     'tests/fixtures/universal_core/README.md',
     'examples/parse_offices_from_bytes.py',
     'README.md',
@@ -61,6 +67,9 @@ REQUIRED_FILES = [
 ]
 
 FORBIDDEN_PATHS = [
+    'src/stratbox/system',
+    'src/stratbox/core/base',
+    'src/stratbox/core/ioapi',
     'src/app',
     'appdock',
     '.tmp',

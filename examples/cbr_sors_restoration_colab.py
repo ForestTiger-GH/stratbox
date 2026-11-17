@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 import json
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.domains import cbr_sors_restoration as sors
 
 

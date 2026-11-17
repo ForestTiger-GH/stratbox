@@ -5,7 +5,7 @@ from html.parser import HTMLParser
 import re
 from urllib.parse import urljoin, urlsplit, unquote
 
-from stratbox.system.base.net.contracts import public_https_parts
+from stratbox.core.network.contracts import public_https_parts
 
 from .parser import CaptureError, clean, require
 

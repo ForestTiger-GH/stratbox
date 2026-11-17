@@ -5,10 +5,10 @@ from zipfile import ZipFile
 
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.ioapi.archive_bytes import zip_bytes
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
-from stratbox.system.base.net import HttpResponse
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.formats.archives.members import zip_bytes
+from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
+from stratbox.core.network import HttpResponse
 from stratbox.shared.data import ByteIdentity, SourcePayload
 from stratbox.shared.data.releases import CompareReleaseRequest, ReadReleaseRequest
 from stratbox.domains import cbr_offices as daily, cbr_offices_reg as monthly
@@ -246,7 +246,7 @@ def test_1yur_unsafe_archive_part_ii_and_unavailable_rar_reader():
 def test_monthly_dynamic_roles_exact_block_and_ambiguity():
     import openpyxl
 
-    from stratbox.system.base.ioapi.workbook_input import preview_workbook
+    from stratbox.core.formats.spreadsheets.workbook_input import preview_workbook
 
     period = date(2026, 10, 1)
     baseline = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(sample_xlsx()), period))

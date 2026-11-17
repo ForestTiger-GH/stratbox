@@ -38,7 +38,7 @@ class XlsxSheetAdapter:
 
 class XlsxBookAdapter:
     def __init__(self, file_bytes):
-        from stratbox.system.base.utils.optional_deps import require_extra
+        from stratbox.core.runtime.dependencies import require_extra
 
         openpyxl = require_extra("openpyxl", "excel")
         try:
@@ -68,7 +68,7 @@ def open_source_workbook(file_bytes, *, budget=None, depth=1, checkpoint=None):
 
     profile = profile_workbook(file_bytes, budget=budget, depth=depth, checkpoint=checkpoint)
     if profile.kind == "xls":
-        from stratbox.system.base.utils.optional_deps import require_extra
+        from stratbox.core.runtime.dependencies import require_extra
 
         xlrd = require_extra("xlrd", "excel-legacy")
         try:

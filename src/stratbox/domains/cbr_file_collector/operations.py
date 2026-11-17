@@ -3,14 +3,14 @@
 from pathlib import PurePosixPath
 import re
 
-from stratbox.system.base.ioapi.archive_paths import ArchiveEntry, PathArchiveReceipt, zip_to_store
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
-from stratbox.system.base.ioapi.staging import current_revision, storage_scope, store_identity
-from stratbox.system.base.limits import BudgetExceeded, ExecutionBudget
-from stratbox.system.base.net import HttpTransport, StreamingHttpTransport
+from stratbox.core.formats.archives.store import ArchiveEntry, PathArchiveReceipt, zip_to_store
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
+from stratbox.core.storage.staging import current_revision, storage_scope, store_identity
+from stratbox.core.limits import BudgetExceeded, ExecutionBudget
+from stratbox.core.network import HttpTransport, StreamingHttpTransport
 from stratbox.shared.data import ByteIdentity, Representation, UsedInputReceipt, canonical_manifest_bytes
-from stratbox.system.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
-from stratbox.system.execution.originals import (
+from stratbox.core.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
+from stratbox.core.operations.source.originals import (
     ReceiveOriginalRequest, ReceiveToStoreRequest, receive_original_to_store, storage_effect,
 )
 from stratbox.domains._cbr import (

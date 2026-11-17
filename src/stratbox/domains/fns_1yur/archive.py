@@ -35,13 +35,13 @@ def member_name(names):
 from dataclasses import dataclass
 from datetime import date
 
-from stratbox.system.base.ioapi.archive_bytes import (
+from stratbox.core.formats.archives.members import (
     ArchiveLimits,
     ArchiveReader,
     extract_members,
     open_zip,
 )
-from stratbox.system.base.ioapi.workbook_input import workbook_profile
+from stratbox.core.formats.spreadsheets.workbook_input import workbook_profile
 from stratbox.shared.data import SourcePayload
 from stratbox.shared.data.representation import XLSX
 

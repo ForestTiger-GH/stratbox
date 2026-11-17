@@ -8,8 +8,8 @@ import re
 from urllib.parse import unquote, urlsplit
 from xml.etree.ElementTree import ParseError
 
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError
-from stratbox.system.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
+from stratbox.core.formats.archives.members import ArchiveError
+from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.shared.data import (
     AcquiredSource,
     ByteIdentity,
@@ -29,7 +29,7 @@ from stratbox.shared.data.releases import (
     csv_rows,
 )
 from stratbox.shared.data.representation import XLSX
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion,
     ExecutionContext,
     OperationDefinition,
@@ -37,9 +37,9 @@ from stratbox.system.execution import (
     OperationResult,
     run,
 )
-from stratbox.system.execution.acquisition import receive_source
-from stratbox.system.execution.comparison import compare_release_inputs, explain_comparison
-from stratbox.system.execution.source_validation import (
+from stratbox.core.operations.source.acquisition import receive_source
+from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
+from stratbox.core.operations.source.validation import (
     decode_html,
     source_failure,
     use_payload,

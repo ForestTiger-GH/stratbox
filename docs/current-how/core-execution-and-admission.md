@@ -3,7 +3,7 @@
 Stratbox exposes versioned Python operations and an optional read-only
 JSON interface. Domain modules own release selection, labels, interpretation
 and calculations. General-purpose HTTP, file, archive and format commands
-live in `stratbox.system.base`. Callers choose periods, repetition and destinations.
+live in `stratbox.core.storage`, `stratbox.core.network`, and `stratbox.core.formats`. Callers choose periods, repetition and destinations.
 
 ## Discover and bind
 
@@ -11,7 +11,7 @@ Use `stratbox.domains.registry.operation_catalog().describe()` to obtain operati
 request and result types, versions, capability roles, effect descriptions
 and limits. The domain registry discovers local declarations from built-in packages.
 Import `wire_schemas` and `invoke_read_only` from
-`stratbox.system.execution.machine` and pass `catalog=operation_catalog()`
+`stratbox.core.execution.machine` and pass `catalog=operation_catalog()`
 explicitly. The generic executor has no direct imports of concrete domains.
 
 | Read-only JSON operation | References resolved by the caller | Returned data |
@@ -80,7 +80,7 @@ gateway. Routed receipts carry the logical and physical target hashes and
 qualify TLS to the gateway host. They require a full response. Managed
 acquisition requires separately verified upstream identity.
 
-For a workbook, call `preview_workbook` in `stratbox.system.base.ioapi.workbook_input`.
+For a workbook, call `preview_workbook` in `stratbox.core.formats.spreadsheets.workbook_input`.
 It accepts a sheet name, one-based row and column and a bounded width and
 height. No table schema is required. The reader identifies XLSX, XLSM, XLSB
 and XLS by their contents. XML readers return cached values and disable
@@ -98,7 +98,7 @@ blank in the literal CSV and marks the affected indicator as unresolved. The lit
 CSV preserves additional columns. A result with `qualified_subset`
 identifies usable observations and lists excluded fields. A result with
 `literal_only` preserves the table for inspection. Use `spreadsheet_view` in
-`stratbox.system.base.ioapi.spreadsheet_view` for an interactive XLSX projection
+`stratbox.core.rendering.spreadsheet_view` for an interactive XLSX projection
 of literal CSV. This projection uses text cells. The literal CSV retains
 its exact bytes and distinct identity.
 

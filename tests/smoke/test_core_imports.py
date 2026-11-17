@@ -4,9 +4,9 @@ import importlib
 
 MODULES = [
     'stratbox',
-    'stratbox.system.base.runtime',
-    'stratbox.system.base.ioapi',
-    'stratbox.system.base.filestore',
+    'stratbox.core.runtime.providers',
+    'stratbox.core.formats',
+    'stratbox.core.storage.filestore',
     'stratbox.domains.cbr_file_collector',
     'stratbox.domains.cbr_industries',
     'stratbox.domains.cbr_forms',

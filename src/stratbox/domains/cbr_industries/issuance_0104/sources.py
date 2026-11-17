@@ -7,7 +7,7 @@ from datetime import date, datetime
 from posixpath import basename
 from urllib.parse import unquote, urljoin, urlsplit
 
-from stratbox.system.base.ioapi.html import link_targets
+from stratbox.core.formats.html import link_targets
 
 from .contracts import IssuanceSourceLink
 

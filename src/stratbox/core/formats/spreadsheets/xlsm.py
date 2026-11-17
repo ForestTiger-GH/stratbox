@@ -1,0 +1,40 @@
+"""
+excel_xlsm — чтение/запись XLSM поверх FileStore.
+
+Важно:
+- pandas/openpyxl НЕ сохраняют VBA-макросы при обычной записи DataFrame.
+- Для “бережной” работы с макросами нужен отдельный путь через openpyxl.load_workbook(keep_vba=True)
+  и ручная модификация, это другой уровень сложности.
+
+Зависимости:
+- pandas
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pandas as pd
+
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.formats.spreadsheets.xlsx import write_df as _write_xlsx_df
+
+
+def read_df(
+    path: str,
+    store: FileStore | None = None,
+    **kwargs: Any,
+) -> pd.DataFrame:
+    from stratbox.core.formats.spreadsheets.workbook_input import read_workbook_df
+
+    return read_workbook_df(path, store=store, expected="xlsm", **kwargs)
+
+
+def write_df(
+    path: str,
+    df: pd.DataFrame,
+    store: FileStore | None = None,
+    **kwargs: Any,
+) -> None:
+    # Запись DataFrame в xlsm возможна, но макросы не гарантируются.
+    _write_xlsx_df(path, df, store=store, **kwargs)

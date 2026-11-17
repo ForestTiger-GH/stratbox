@@ -7,7 +7,7 @@ from html.parser import HTMLParser
 import re
 from urllib.parse import urljoin, unquote
 
-from stratbox.system.base.net.contracts import public_https_parts
+from stratbox.core.network.contracts import public_https_parts
 
 
 PAGES = {
