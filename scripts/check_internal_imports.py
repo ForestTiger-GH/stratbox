@@ -59,6 +59,8 @@ def _imports(path: Path, tree: ast.AST):
 
 def _owner(path: Path) -> str:
     parts = path.relative_to(SRC / "stratbox").parts
+    if parts[:2] == ("domains", "registry.py"):
+        return "domains.registry"
     if parts[:1] == ("domains",) and len(parts) >= 2 and parts[1] in DOMAINS:
         return f"domain:{parts[1]}"
     if parts[:1] == ("system",) and len(parts) >= 2:

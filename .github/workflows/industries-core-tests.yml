@@ -38,3 +38,45 @@ jobs:
       - name: Shared computation and admission regressions
         run: |
           python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py tests/unit/registry/test_domain_registration.py
+
+  full-core:
+    name: Full suite and distribution packaging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install complete core test dependencies and package builders
+        run: python -m pip install -e '.[test]' build
+      - name: Full core regression suite
+        run: python -B -m pytest -q
+      - name: Build wheel and source distribution
+        run: python -m build --sdist --wheel --outdir dist
+      - name: Validate isolated installed wheel and packaged resources
+        shell: bash
+        run: |
+          python -m pip install --no-deps --target "$RUNNER_TEMP/stratbox-wheel" dist/stratbox-*.whl
+          python -I -B - "$RUNNER_TEMP/stratbox-wheel" <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0, sys.argv[1])
+          import stratbox
+          from stratbox.domains.registry import operation_catalog
+          from stratbox.domains.cbr_forms.common.models import load_models
+          from stratbox.domains.cbr_sors_restoration.crosswalk.mapping import read_crosswalk_manifest
+          root = Path(stratbox.__file__).resolve().parent
+          assert root.is_relative_to(Path(sys.argv[1]).resolve()), root
+          catalog = operation_catalog()
+          assert len(catalog.list_refs()) == len(catalog.describe()) == 77
+          assert len([r for r in catalog.list_refs() if r.wire_codec_ref]) == 3
+          registry_root = root / "shared/registries/_resources"
+          assert list(registry_root.glob("cbr_banks/*"))
+          assert list(registry_root.glob("rosstat_okved2/*"))
+          assert len(list((root / "domains/cbr_forms/models").glob("form*.csv"))) >= 6
+          assert not load_models().empty
+          manifest = read_crosswalk_manifest()
+          assert isinstance(manifest, dict) and manifest.get("mapping_version")
+          print("OK isolated wheel, 77 operation contracts and three resource families")
+          PY
