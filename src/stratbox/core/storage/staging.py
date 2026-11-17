@@ -5,11 +5,11 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import BinaryIO, Callable
 
-from stratbox.system.base.filestore import FileMutation, MutationRejected, StagedWrite, StagedWriter, WriteMode
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.storage.filestore import FileMutation, MutationRejected, StagedWrite, StagedWriter, WriteMode
+from stratbox.core.limits import BudgetMeter
 from stratbox.shared.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
 
-from .bytes import file_identity
+from stratbox.core.storage.bytes import file_identity
 
 WRITE_GUARANTEES = {
     "immutable": "atomic_create",

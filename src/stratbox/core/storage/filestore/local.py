@@ -14,14 +14,14 @@ from pathlib import Path
 from typing import BinaryIO, Callable, Iterator, Tuple
 from urllib.parse import unquote, urlsplit
 
-from stratbox.system.base.filestore.base import FileStore, WriteMode
-from stratbox.system.base.filestore.types import (
+from stratbox.core.storage.filestore.ports import FileStore, WriteMode
+from stratbox.core.storage.filestore.types import (
     DIRECTORY_GUARD_NAME,
     FileStat,
     FileVersion,
     MutationRejected,
 )
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.limits import BudgetMeter
 from stratbox.shared.data import ByteIdentity
 
 

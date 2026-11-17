@@ -41,7 +41,7 @@ def workdir(prefix: str = "stratbox_") -> Iterator[Path]:
     Контекстный менеджер временного рабочего каталога.
 
     Использование:
-        from stratbox.system.base.filestore.tmp import workdir
+        from stratbox.core.storage.temporary import workdir
 
         with workdir("cbr_101_") as wd:
             # работать с файлами внутри wd

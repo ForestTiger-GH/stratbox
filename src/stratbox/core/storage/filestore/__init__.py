@@ -1,7 +1,7 @@
-from stratbox.system.base.filestore.base import AtomicCreateStore, FileMutation, FileStore, GuardedDirectoryStore, RevisionStore, SourceStore, ScopedMutationStore, ScopedStagedWrite, StagedWrite, StagedWriter, WriteMode
-from stratbox.system.base.filestore.local import LocalFileStore
-from stratbox.system.base.filestore.types import FileStat, FileVersion, MutationRejected
-from stratbox.system.base.filestore.tmp import make_workdir, workdir
+from stratbox.core.storage.filestore.ports import AtomicCreateStore, FileMutation, FileStore, GuardedDirectoryStore, RevisionStore, SourceStore, ScopedMutationStore, ScopedStagedWrite, StagedWrite, StagedWriter, WriteMode
+from stratbox.core.storage.filestore.local import LocalFileStore
+from stratbox.core.storage.filestore.types import FileStat, FileVersion, MutationRejected
+from stratbox.core.storage.temporary import make_workdir, workdir
 
 __all__ = [
     "AtomicCreateStore", "FileMutation", "FileStat", "FileStore", "FileVersion", "GuardedDirectoryStore",

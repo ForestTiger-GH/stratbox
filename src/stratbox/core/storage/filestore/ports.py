@@ -19,8 +19,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import BinaryIO, ContextManager, Iterator, Literal, Protocol, Tuple
 
-from stratbox.system.base.filestore.paths import child_path
-from stratbox.system.base.filestore.types import FileStat, FileVersion
+from stratbox.core.storage.filestore.paths import child_path
+from stratbox.core.storage.filestore.types import FileStat, FileVersion
 from stratbox.shared.data.evidence import ByteIdentity
 
 
