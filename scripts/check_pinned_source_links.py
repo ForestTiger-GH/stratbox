@@ -16,7 +16,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 LINK = re.compile(
     r"https://github[.]com/ForestTiger-GH/stratbox/blob/"
-    r"([0-9a-fA-F]{40})/([^\\s)<>\\]\"']+)"
+    r"([0-9a-fA-F]{40})/([^\s)<>]+)"
 )
 
 
