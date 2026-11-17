@@ -16,10 +16,10 @@ from urllib.parse import unquote, urljoin, urlunsplit
 import zlib
 
 from stratbox import __version__
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.limits import BudgetMeter
 from stratbox.shared.data.evidence import ByteIdentity
 
-from .contracts import (
+from stratbox.core.network.contracts import (
     HttpFailure,
     HttpRequest,
     HttpResponse,
@@ -98,7 +98,7 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
     if not request.permits(request.url):
         return HttpFailure("destination_forbidden", "admission")
     if transport is None:
-        from stratbox.system.base.runtime import active_providers
+        from stratbox.core.runtime.providers import active_providers
 
         defaults = active_providers()
         if defaults is None:

@@ -9,20 +9,20 @@ from typing import Callable, Literal
 from uuid import uuid4
 
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import Completion, EffectReceipt, Invocation, OperationFailure
-from stratbox.system.execution.contracts import safe_token
-from stratbox.system.observability import JournalReadLimits, JournalRecord, RequiredJournalGate
+from stratbox.core.execution import Completion, EffectReceipt, Invocation, OperationFailure
+from stratbox.core.execution.contracts import safe_token
+from stratbox.core.observability import JournalReadLimits, JournalRecord, RequiredJournalGate
 
-from .audit import audit_record
-from .contracts import AdmittedHandoff, EventPointer, HandoffLookup, HandoffReceipt, NotificationIntent
-from .preparation import (
+from stratbox.core.notifications.state.audit import audit_record
+from stratbox.core.notifications.contracts import AdmittedHandoff, EventPointer, HandoffLookup, HandoffReceipt, NotificationIntent
+from stratbox.core.notifications.dispatch.preparation import (
     MAX_ENVELOPE_BYTES, _metadata, _projection, dispatch_key, read_page,
 )
-from .runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission, require_binding
-from .state import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt, commit_and_lookup
-from .subscriptions import _head
-from .topics import is_service_event, match_conditions
-from stratbox.system.observability.schema import ValueRule
+from stratbox.core.notifications.runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission, require_binding
+from stratbox.core.notifications.state.contracts import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt, commit_and_lookup
+from stratbox.core.notifications.subscriptions import _head
+from stratbox.core.notifications.topics import is_service_event, match_conditions
+from stratbox.core.observability.records.schema import ValueRule
 
 
 @dataclass(frozen=True, slots=True)

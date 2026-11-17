@@ -11,7 +11,7 @@ from types import MappingProxyType
 from typing import BinaryIO, Callable, Literal, Mapping, Protocol
 from urllib.parse import quote, unquote, urlsplit
 
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.limits import BudgetMeter
 from stratbox.shared.data.evidence import ByteIdentity
 
 _HEADER = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", re.ASCII)

@@ -8,23 +8,23 @@ from datetime import datetime
 from typing import Literal
 
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import ExecutionContext, Invocation, OperationFailure
-from stratbox.system.observability import (
+from stratbox.core.execution import ExecutionContext, Invocation, OperationFailure
+from stratbox.core.observability import (
     JournalCursor, JournalDecodeError, JournalEntry, JournalHead, JournalPage,
     JournalReadLimits, JournalRecord,
 )
-from stratbox.system.observability.contracts import require_utc
-from stratbox.system.observability.schema import ValueRule
+from stratbox.core.observability.records.contracts import require_utc
+from stratbox.core.observability.records.schema import ValueRule
 
-from .audit import audit_record
-from .contracts import AccessDecision, EventPointer, NotificationIntent, Subscription
-from .runtime import NotificationReadRuntime, SourceBinding, access, need_access, require_admission
-from .state import (
+from stratbox.core.notifications.state.audit import audit_record
+from stratbox.core.notifications.contracts import AccessDecision, EventPointer, NotificationIntent, Subscription
+from stratbox.core.notifications.runtime import NotificationReadRuntime, SourceBinding, access, need_access, require_admission
+from stratbox.core.notifications.state.contracts import (
     CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, RecordIdentity, StateMutation,
     StateReceipt, commit_and_lookup,
 )
-from .subscriptions import _head
-from .topics import NotificationTopic, Projection, is_service_event, match_conditions
+from stratbox.core.notifications.subscriptions import _head
+from stratbox.core.notifications.topics import NotificationTopic, Projection, is_service_event, match_conditions
 
 MAX_ENVELOPE_BYTES = 64 * 1024
 MAX_PREPARED_BYTES = 4 * 1024**2

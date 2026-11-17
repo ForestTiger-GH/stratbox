@@ -5,17 +5,17 @@ from collections import Counter
 from dataclasses import replace
 from random import uniform
 
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion, EffectReceipt, ExecutionContext, OperationDefinition, OperationFailure, run,
 )
-from stratbox.system.observability import JournalDecodeError, RequiredJournalGate
+from stratbox.core.observability import JournalDecodeError, RequiredJournalGate
 
-from .delivery import (
+from stratbox.core.notifications.dispatch.delivery import (
     DeliverRequest, DeliveryResult, QualifiedHandoff, QualifyDeliveryRequest, ReconcileDeliveryRequest,
     RetryPolicy, deliver_work, qualify_receipt, reconcile_work,
 )
-from .preparation import PrepareRequest, PreparationReport, _load_scope, prepare_page
-from .runtime import NotificationRuntime
+from stratbox.core.notifications.dispatch.preparation import PrepareRequest, PreparationReport, _load_scope, prepare_page
+from stratbox.core.notifications.runtime import NotificationRuntime
 
 PREPARE = OperationDefinition(
     "notifications.prepare", 3, "notification-preparation-3", PrepareRequest, PreparationReport,

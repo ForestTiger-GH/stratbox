@@ -8,16 +8,16 @@ from datetime import datetime
 from typing import Literal
 
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import ExecutionContext, OperationFailure
-from stratbox.system.execution.contracts import safe_token
-from stratbox.system.observability import JournalCursor, JournalHead, JournalRecord
-from stratbox.system.observability.contracts import require_utc
+from stratbox.core.execution import ExecutionContext, OperationFailure
+from stratbox.core.execution.contracts import safe_token
+from stratbox.core.observability import JournalCursor, JournalHead, JournalRecord
+from stratbox.core.observability.records.contracts import require_utc
 
-from .audit import audit_record
-from .contracts import SubscriptionSpec
-from .runtime import NotificationReadRuntime, access, need_access, require_admission
-from .state import CheckpointKey, DISPATCH_STATES, PENDING_STATES
-from .subscriptions import _head
+from stratbox.core.notifications.state.audit import audit_record
+from stratbox.core.notifications.contracts import SubscriptionSpec
+from stratbox.core.notifications.runtime import NotificationReadRuntime, access, need_access, require_admission
+from stratbox.core.notifications.state.contracts import CheckpointKey, DISPATCH_STATES, PENDING_STATES
+from stratbox.core.notifications.subscriptions import _head
 
 
 @dataclass(frozen=True, slots=True)

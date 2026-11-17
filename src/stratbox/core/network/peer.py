@@ -13,8 +13,8 @@ from typing import BinaryIO, Callable
 from urllib.parse import quote, urlencode
 import zlib
 
-from .contracts import HttpFailure, HttpRequest, HttpResponse, HttpStreamResponse, public_https_parts
-from .transport import _ReadFailure, _follow
+from stratbox.core.network.contracts import HttpFailure, HttpRequest, HttpResponse, HttpStreamResponse, public_https_parts
+from stratbox.core.network.transport import _ReadFailure, _follow
 
 Address = IPv4Address | IPv6Address
 Resolver = Callable[[str, int], list[tuple]]
