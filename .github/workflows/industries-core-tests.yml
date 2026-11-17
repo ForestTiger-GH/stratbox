@@ -140,12 +140,18 @@ jobs:
           for group in groups:
               expected = {
                   p.relative_to(original / group): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in (original / group).rglob("*") if p.is_file()
+                  for p in (original / group).rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
               }
               installed = {
                   p.relative_to(root / group): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in (root / group).rglob("*") if p.is_file()
+                  for p in (root / group).rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
               }
-              assert expected and installed == expected, group
+              assert expected and installed == expected, (
+                  group,
+                  sorted(set(expected) - set(installed)),
+                  sorted(set(installed) - set(expected)),
+                  sorted(path for path in expected.keys() & installed.keys()
+                         if expected[path] != installed[path]),
+              )
           print("OK isolated wheel, published contracts and byte-exact resource groups")
           PY
