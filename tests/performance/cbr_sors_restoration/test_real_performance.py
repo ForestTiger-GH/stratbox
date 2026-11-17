@@ -7,7 +7,7 @@ from time import perf_counter
 
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 
 from stratbox.domains.cbr_sors_restoration import (
     SorsCrosswalkConfig,

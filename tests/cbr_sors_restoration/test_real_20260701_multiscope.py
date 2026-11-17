@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
 from stratbox.domains.cbr_sors_restoration import SorsSourceFiles
 from stratbox.domains.cbr_sors_restoration.publication import (
