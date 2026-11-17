@@ -1,9 +1,9 @@
 """Published operation references for cbr_sors_restoration."""
 
-from stratbox.system.execution.registry import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="cbr_sors_restoration",
+REGISTRATION = OperationRegistration(
+    owner_id="cbr_sors_restoration",
     operations=(
         OperationRef("cbr.sors.read_source_files", 1, "stratbox.domains.cbr_sors_restoration.api:READ", "stratbox.domains.cbr_sors_restoration.api:read_source_files"),
         OperationRef("cbr.sors.load_sources", 3, "stratbox.domains.cbr_sors_restoration.api:LOAD", "stratbox.domains.cbr_sors_restoration.api:load_sources"),

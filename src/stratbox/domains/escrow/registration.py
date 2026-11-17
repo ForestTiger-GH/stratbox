@@ -1,9 +1,9 @@
 """Published operation references for escrow."""
 
-from stratbox.system.execution.registry import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="escrow",
+REGISTRATION = OperationRegistration(
+    owner_id="escrow",
     operations=(
         OperationRef("cbr.escrow.discover", 1, "stratbox.domains.escrow.operations:DISCOVER", "stratbox.domains.escrow.operations:discover"),
         OperationRef("cbr.escrow.acquire", 1, "stratbox.domains.escrow.operations:ACQUIRE", "stratbox.domains.escrow.operations:acquire"),

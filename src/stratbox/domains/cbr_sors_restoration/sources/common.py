@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 
-from stratbox.system.base.ioapi.workbook_input import open_ooxml_workbook
+from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
 from stratbox.shared.data import SourcePayload
 
 from stratbox.domains.cbr_sors_restoration.metrics import source_metric

@@ -7,10 +7,10 @@ from hashlib import sha1
 from posixpath import basename as posix_basename
 from urllib.parse import urljoin, urlsplit
 
-from stratbox.system.base.ioapi.html import link_targets
+from stratbox.core.formats.html import link_targets
 
 from stratbox.domains._cbr import official_url
-from stratbox.system.execution import OperationFailure
+from stratbox.core.execution import OperationFailure
 from stratbox.domains.escrow.contracts import EscrowSourceLink
 
 # Official CBR reports use both legacy VFS/document paths and the

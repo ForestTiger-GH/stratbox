@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import asdict
-from stratbox.system.base.ioapi.bytes import OutputBuffer
+from stratbox.core.storage.bytes import OutputBuffer
 from stratbox.shared.data import Representation
 from stratbox.shared.data.representation import XLSX
 from datetime import date, datetime

@@ -4,13 +4,13 @@ from dataclasses import asdict, dataclass, fields, replace
 from pathlib import PurePosixPath
 from decimal import Decimal
 
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.limits import ExecutionBudget
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.limits import ExecutionBudget
+from stratbox.core.storage.bytes import read_bounded_bytes
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import SourcePayload, UsedInputReceipt
 from stratbox.shared.data.representation import XLSX
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion,
     ExecutionContext,
     OperationDefinition,
@@ -18,7 +18,7 @@ from stratbox.system.execution import (
     OperationResult,
     run,
 )
-from stratbox.system.execution.tables import record_tables, use_tables
+from stratbox.core.operations.tables import record_tables, use_tables
 from stratbox.domains._cbr import WORKBOOK_LIMIT, admit_workbook
 
 from .contracts import (

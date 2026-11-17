@@ -5,9 +5,9 @@ from datetime import date
 from urllib.parse import unquote, urlsplit
 from xml.etree.ElementTree import ParseError
 
-from stratbox.system.base.ioapi.archive_bytes import ArchiveError, ArchiveReader
-from stratbox.system.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.system.base.utils.optional_deps import MissingExtra
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveReader
+from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
+from stratbox.core.runtime.dependencies import MissingExtra
 from stratbox.shared.data import (
     AcquiredSource,
     Comparison,
@@ -26,16 +26,16 @@ from stratbox.shared.data.releases import (
     build_release,
 )
 from stratbox.shared.data.representation import XLSX
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     ExecutionContext,
     OperationDefinition,
     OperationFailure,
     OperationResult,
     run,
 )
-from stratbox.system.execution.acquisition import receive_source
-from stratbox.system.execution.comparison import compare_release_inputs, explain_comparison
-from stratbox.system.execution.source_validation import source_failure, use_payload
+from stratbox.core.operations.source.acquisition import receive_source
+from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
+from stratbox.core.operations.source.validation import source_failure, use_payload
 
 from .archive import select_workbook
 from .history import extract_observations
