@@ -31,7 +31,8 @@ def export_projection_csv(rows: Iterable[Mapping[str, object]], *, columns: tupl
     if not columns or len(set(columns)) != len(columns) or any(type(x) is not str for x in columns):
         raise ValueError("A distinct CSV schema is required")
     output = StringIO(newline="")
-    writer = csv.DictWriter(output, fieldnames=columns, extrasaction="raise", lineterminator="\n")
+    # CRLF ensures Python 3.10 also quotes embedded CR characters in CSV fields.
+    writer = csv.DictWriter(output, fieldnames=columns, extrasaction="raise", lineterminator="\r\n")
     writer.writeheader()
     for count, row in enumerate(rows, 1):
         if count > max_rows:
