@@ -248,36 +248,3 @@ class JournalRecord:
         object.__setattr__(self, "payload", _payload(self.payload))
 
 
-@dataclass(frozen=True, slots=True)
-class JournalWriteReceipt:
-    state: WriteState
-    segment_id: str
-    content_identity: ByteIdentity
-    record_ids: tuple[str, ...]
-    guarantee: Literal["immutable_read_back"]
-    locator: str = field(repr=False)
-    diagnostic_code: str | None = None
-    already_present: bool = False
-
-    def __post_init__(self) -> None:
-        if self.state not in {"confirmed", "failed", "unknown"} or self.guarantee != "immutable_read_back":
-            raise ValueError("Invalid journal write receipt")
-        safe_token(self.segment_id)
-        for item in self.record_ids:
-            safe_token(item)
-        if self.diagnostic_code is not None:
-            safe_token(self.diagnostic_code)
-        if not isinstance(self.content_identity, ByteIdentity) or not isinstance(self.locator, str):
-            raise ValueError("Invalid journal write identity")
-
-    def confirms_batch(
-        self, identity: ByteIdentity, record_ids: tuple[str, ...], *, segment_id: str | None = None,
-    ) -> bool:
-        return (self.state == "confirmed" and self.content_identity == identity and self.record_ids == record_ids
-                and (segment_id is None or self.segment_id == segment_id))
-
-
-class JournalBarrierError(Exception):
-    def __init__(self, receipt: JournalWriteReceipt):
-        self.receipt = receipt
-        super().__init__(receipt.diagnostic_code or "journal.registration_unconfirmed")

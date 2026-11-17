@@ -31,32 +31,6 @@ class CapturePolicy:
 
 
 @dataclass(frozen=True, slots=True)
-class PersistencePolicy:
-    format: Literal["jsonl", "json"] = "jsonl"
-    max_buffer_records: int = 256
-    max_buffer_bytes: int = 1024 * 1024
-
-    def __post_init__(self):
-        if self.format not in {"jsonl", "json"} or not 1 <= self.max_buffer_records <= 100_000 or not 4096 <= self.max_buffer_bytes <= 128 * 1024**2:
-            raise ValueError("Invalid journal buffer policy")
-
-
-@dataclass(frozen=True, slots=True)
-class PresentationPolicy:
-    include_progress: bool = False
-    include_diagnostics: bool = True
-    audience: Literal["summary", "technical"] = "summary"
-    csv_mode: Literal["spreadsheet_safe", "machine"] = "spreadsheet_safe"
-    permitted_columns: tuple[str, ...] = ()
-
-    def __post_init__(self):
-        if self.audience not in {"summary", "technical"} or self.csv_mode not in {"spreadsheet_safe", "machine"}:
-            raise ValueError("Invalid presentation mode")
-        if len(set(self.permitted_columns)) != len(self.permitted_columns):
-            raise ValueError("Duplicate export columns")
-
-
-@dataclass(frozen=True, slots=True)
 class ObserverLimits:
     """Hard caps on collection metadata independent from captured byte limits."""
     max_tracked_invocations: int = 10_000

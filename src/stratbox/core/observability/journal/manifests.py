@@ -14,7 +14,7 @@ from typing import Literal
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution.contracts import safe_token
 
-from stratbox.core.observability.records.contracts import JournalWriteReceipt, require_utc
+from stratbox.core.observability.journal.contracts import JournalWriteReceipt, require_utc
 from stratbox.core.observability.assessment.coverage import CaptureCoverage, GenerationCaptureAssessment, SequenceRange, MAX_RANGES
 from stratbox.core.observability.assessment.lifecycle import assess_generation_coverage
 from stratbox.core.observability.records.contracts import JournalRecord

@@ -17,12 +17,13 @@ from stratbox.core.execution.contracts import safe_token
 
 from stratbox.core.observability.journal.codecs import (JournalDecodeError, decode_records, encode_record, encode_records,
                      DEFAULT_MAX_SEGMENT_BYTES, MAX_SEGMENT_BYTES)
-from stratbox.core.observability.records.contracts import JournalBarrierError, JournalRecord, JournalWriteReceipt
+from stratbox.core.observability.records.contracts import JournalRecord
+from stratbox.core.observability.journal.contracts import JournalBarrierError, JournalWriteReceipt
 from stratbox.core.observability.assessment.coverage import CaptureCoverage, GenerationCaptureAssessment
 from stratbox.core.observability.assessment.lifecycle import assess_generation_coverage, assess_invocation_lifecycle
 from stratbox.core.observability.journal.manifests import (JournalManifest, MAX_MANIFEST_BYTES, SegmentDescriptor,
                         _ids_digest, decode_manifest, encode_manifest)
-from stratbox.core.observability.capture.policies import PersistencePolicy
+from stratbox.core.observability.journal.policies import PersistencePolicy
 
 
 class RecordWriter(Protocol):

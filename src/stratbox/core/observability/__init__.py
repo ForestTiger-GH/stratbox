@@ -1,13 +1,16 @@
 """Portable, optional observability. Import never creates storage or runtime state."""
-from stratbox.core.observability.records.contracts import (DomainFact, JournalBarrierError, JournalRecord, JournalWriteReceipt,
+from stratbox.core.observability.records.contracts import (DomainFact, JournalRecord,
                         ObjectRef, OriginClaim, OriginAttestation, PayloadLimits, make_fact_id)
+from stratbox.core.observability.journal.contracts import JournalBarrierError, JournalWriteReceipt
 from stratbox.core.observability.assessment.coverage import (SequenceRange, CaptureCoverage, CoverageEvidence, CoverageAssessment,
                        merge_ranges, subtract_ranges, intersect_ranges, count_ranges,
                        find_gaps, assess_coverage, GenerationCaptureAssessment)
 from stratbox.core.observability.capture.adapters import (fact_from_acquisition, fact_from_comparison, fact_from_publication,
                        fact_from_stored_bytes, effect_state_from_storage_status,
                        record_from_execution_event, record_from_fact, record_from_result)
-from stratbox.core.observability.capture.policies import CapturePolicy, PersistencePolicy, PresentationPolicy, ObserverLimits
+from stratbox.core.observability.capture.policies import CapturePolicy, ObserverLimits
+from stratbox.core.observability.journal.policies import PersistencePolicy
+from stratbox.core.observability.analysis.policies import PresentationPolicy
 from stratbox.core.observability.records.field_policy import (AllowedField, RecordFieldSchema, FieldSchemaRegistry, SCHEMAS, validate_builtin_fields)
 from stratbox.core.observability.records.schema import FieldRule, RecordDataSchema, ValueRule
 from stratbox.core.observability.capture.health import ObserverHealthSnapshot
@@ -22,7 +25,8 @@ from stratbox.core.observability.analysis.projections import (OperationState, So
                           dataset_state_from_comparison, artifact_state_from_storage,
                           effect_state_from_result)
 from stratbox.core.observability.journal.codecs import (JournalDecodeError, encode_record, decode_record, encode_records,
-                     decode_records, iter_decode_jsonl, export_projection_csv)
+                     decode_records, iter_decode_jsonl)
+from stratbox.core.observability.analysis.exports import export_projection_csv
 from stratbox.core.observability.journal.file_writer import (JournalNamespace, FileJournalReader, FileJournalWriter,
                            BufferedFileJournal, JournalReadIssue, JournalReadReport,
                            RecordReader, RecordWriter, RequiredJournalGate, reconcile_write, require_confirmed)
