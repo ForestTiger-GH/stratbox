@@ -40,14 +40,18 @@ jobs:
           python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py tests/unit/registry/test_domain_registration.py
 
   full-core:
-    name: Full suite and distribution packaging
+    name: Full suite and distribution packaging (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
       - name: Install complete core test dependencies and package builders
         run: python -m pip install -e '.[test]' build
       - name: Full core regression suite
