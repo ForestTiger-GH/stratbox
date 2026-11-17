@@ -37,7 +37,7 @@ REQUIRED_FILES = [
     'docs/how/install-and-run-core.md',
     'src/stratbox/py.typed',
     'src/stratbox/domains/registry.py',
-    'src/stratbox/system/execution/registry.py',
+    'src/stratbox/core/execution/catalog.py',
     'tests/fixtures/universal_core/README.md',
     'examples/parse_offices_from_bytes.py',
     'README.md',

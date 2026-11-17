@@ -1,1 +1,1 @@
-"""Canonical operations source components."""
+"""Source acquisition and original-material operations, independent of domains."""

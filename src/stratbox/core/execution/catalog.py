@@ -30,12 +30,12 @@ class OperationRef:
 
 
 @dataclass(frozen=True, slots=True)
-class DomainRegistration:
-    domain_id: str
+class OperationRegistration:
+    owner_id: str
     operations: tuple[OperationRef, ...]
 
     def __post_init__(self) -> None:
-        if not self.domain_id or not isinstance(self.operations, tuple):
+        if not isinstance(self.owner_id, str) or not self.owner_id.strip() or not isinstance(self.operations, tuple):
             raise RegistryError("registry.invalid_registration")
         keys = [(op.operation_id, op.contract_version) for op in self.operations]
         if len(keys) != len(set(keys)):

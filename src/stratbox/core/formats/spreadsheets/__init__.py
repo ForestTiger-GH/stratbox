@@ -1,1 +1,1 @@
-"""Canonical formats spreadsheets components."""
+"""Excel format-specific workbook codecs and admission functions."""

@@ -9,15 +9,15 @@ import pytest
 from stratbox.domains import registry as domain_registry
 from stratbox.domains.registry import domain_catalog, operation_catalog
 from stratbox.core.execution.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
-from stratbox.core.registry import system_catalog
+from stratbox.core.registry import core_catalog
 
 
 def test_baseline_registry_size_and_machine_admission():
     domains = domain_catalog()
-    system = system_catalog()
+    core = core_catalog()
     all_ops = operation_catalog()
     assert len(domains.references) == 68
-    assert len(system.references) == 9
+    assert len(core.references) == 9
     assert len(all_ops.references) == 77
     assert len({(r.operation_id, r.contract_version) for r in all_ops.references}) == 77
     assert {(r.operation_id, r.contract_version) for r in all_ops.references if r.wire_codec_ref} == {

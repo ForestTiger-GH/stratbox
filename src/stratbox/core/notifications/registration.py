@@ -1,9 +1,9 @@
-"""Published operation references for system.notifications."""
+"""Published operation references for core notification operations."""
 
-from stratbox.core.execution.catalog import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="system.notifications",
+REGISTRATION = OperationRegistration(
+    owner_id="core.notifications",
     operations=(
         OperationRef("notifications.prepare", 3, "stratbox.core.notifications.operations:PREPARE", "stratbox.core.notifications.operations:prepare"),
         OperationRef("notifications.deliver", 3, "stratbox.core.notifications.operations:DELIVER", "stratbox.core.notifications.operations:deliver"),

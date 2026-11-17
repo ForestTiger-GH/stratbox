@@ -4,7 +4,7 @@ Stratbox provides reusable Python operations for acquiring, interpreting and
 presenting banking and economic data. Applications pass dates and
 destinations and can choose their own infrastructure providers.
 
-The core organizes neutral execution and infrastructure under `stratbox.system`,
+The package organizes neutral execution and infrastructure under `stratbox.core`,
 shared data contracts and reference resources under `stratbox.shared`, and
 independent business packages under `stratbox.domains`.
 

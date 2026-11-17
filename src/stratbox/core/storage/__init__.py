@@ -1,1 +1,1 @@
-"""Canonical storage components."""
+"""Bounded byte storage, verified mutations and filesystem ports."""

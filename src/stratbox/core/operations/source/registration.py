@@ -1,9 +1,9 @@
-"""Published operation references for system.execution."""
+"""Published operation references for neutral source operations."""
 
-from stratbox.core.execution.catalog import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="system.execution",
+REGISTRATION = OperationRegistration(
+    owner_id="core.sources",
     operations=(
         OperationRef("source.receive_original", 1, "stratbox.core.operations.source.originals:RECEIVE", "stratbox.core.operations.source.originals:receive_original"),
         OperationRef("source.save_original", 1, "stratbox.core.operations.source.originals:SAVE", "stratbox.core.operations.source.originals:save_original"),

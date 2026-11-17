@@ -35,5 +35,5 @@ def domain_catalog() -> OperationCatalog:
 
 
 def operation_catalog() -> OperationCatalog:
-    from stratbox.core.registry import system_catalog
-    return merge_catalogs(domain_catalog(), system_catalog())
+    from stratbox.core.registry import core_catalog
+    return merge_catalogs(domain_catalog(), core_catalog())
