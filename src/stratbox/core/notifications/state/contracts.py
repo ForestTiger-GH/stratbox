@@ -8,15 +8,15 @@ from threading import RLock
 from typing import Literal, Protocol
 
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution.contracts import safe_token
-from stratbox.system.observability import (
+from stratbox.core.execution.contracts import safe_token
+from stratbox.core.observability import (
     JournalCursor, JournalHead, JournalRecord, JournalWriteReceipt, RecordWriter, StreamKey,
     encode_record, encode_records,
 )
-from stratbox.system.observability.codecs import MAX_SEGMENT_BYTES
-from stratbox.system.observability.contracts import require_utc
+from stratbox.core.observability.journal.codecs import MAX_SEGMENT_BYTES
+from stratbox.core.observability.records.contracts import require_utc
 
-from .contracts import HandoffLookup, HandoffReceipt, NotificationIntent, Subscription
+from stratbox.core.notifications.contracts import HandoffLookup, HandoffReceipt, NotificationIntent, Subscription
 
 DispatchState = Literal[
     "ready", "in_flight", "retry_due", "consumer_accepted", "rejected",

@@ -5,19 +5,19 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-from stratbox.system.base.capabilities import CapabilityRequirement, select_provider
-from stratbox.system.execution import ExecutionContext, OperationFailure
-from stratbox.system.execution.contracts import safe_token
-from stratbox.system.observability import (
+from stratbox.core.runtime.capabilities import CapabilityRequirement, select_provider
+from stratbox.core.execution import ExecutionContext, OperationFailure
+from stratbox.core.execution.contracts import safe_token
+from stratbox.core.observability import (
     JournalHead, JournalRecord, JournalSource, RequiredJournalGate, SourceProfile, StreamKey,
 )
 
-from .contracts import (
+from stratbox.core.notifications.contracts import (
     AccessDecision, AccessRequest, NotificationAuthority, NotificationConsumer,
     NotificationIntent, NotificationRoute, SubscriptionSpec,
 )
-from .state import NotificationStateReader, NotificationStateStore
-from .topics import TopicCatalog
+from stratbox.core.notifications.state.contracts import NotificationStateReader, NotificationStateStore
+from stratbox.core.notifications.topics import TopicCatalog
 
 
 @dataclass(frozen=True, slots=True)

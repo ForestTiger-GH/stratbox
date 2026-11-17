@@ -2,8 +2,8 @@
 from datetime import datetime
 
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import Correlation
-from stratbox.system.observability import DomainFact, JournalRecord, ObjectRef, make_fact_id, record_from_fact
+from stratbox.core.execution import Correlation
+from stratbox.core.observability import DomainFact, JournalRecord, ObjectRef, make_fact_id, record_from_fact
 
 
 def audit_record(

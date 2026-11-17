@@ -4,12 +4,12 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
-from stratbox.system.execution import OperationResult
+from stratbox.core.execution import OperationResult
 from stratbox.shared.data import Comparison, PublicationReceipt, StoredBytesReceipt
-from .contracts import JournalRecord
-from .coverage import CaptureCoverage
-from .history import build_operation_history
-from .adapters import effect_state_from_storage_status
+from stratbox.core.observability.records.contracts import JournalRecord
+from stratbox.core.observability.assessment.coverage import CaptureCoverage
+from stratbox.core.observability.analysis.history import build_operation_history
+from stratbox.core.observability.capture.adapters import effect_state_from_storage_status
 
 
 @dataclass(frozen=True, slots=True)

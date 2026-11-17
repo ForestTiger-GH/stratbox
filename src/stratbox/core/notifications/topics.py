@@ -7,14 +7,14 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Literal
 
-from stratbox.system.execution.contracts import safe_token
-from stratbox.system.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
-from stratbox.system.observability.event_schemas import (
+from stratbox.core.execution.contracts import safe_token
+from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
+from stratbox.core.observability.records.event_schemas import (
     MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED,
 )
-from stratbox.system.observability.schema import ValueRule
+from stratbox.core.observability.records.schema import ValueRule
 
-from .contracts import FilterCondition, SubscriptionSpec
+from stratbox.core.notifications.contracts import FilterCondition, SubscriptionSpec
 
 SchemaKey = tuple[str, str, int]
 Data = Mapping[str, object]

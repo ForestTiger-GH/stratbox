@@ -4,9 +4,9 @@ from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
-from .contracts import JournalRecord
-from .coverage import (CaptureCoverage, CoverageStatus, SequenceRange, count_ranges, find_gaps)
-from .lifecycle import assess_invocation_lifecycle
+from stratbox.core.observability.records.contracts import JournalRecord
+from stratbox.core.observability.assessment.coverage import (CaptureCoverage, CoverageStatus, SequenceRange, count_ranges, find_gaps)
+from stratbox.core.observability.assessment.lifecycle import assess_invocation_lifecycle
 
 
 @dataclass(frozen=True, slots=True)

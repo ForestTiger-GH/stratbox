@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections.abc import Iterable, Mapping
 
-from .contracts import JournalRecord
+from stratbox.core.observability.records.contracts import JournalRecord
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,7 +97,7 @@ def inspect_execution_lifecycle(
 
 def assess_invocation_lifecycle(records: Iterable[JournalRecord], invocation_id: str, coverage=None):
     """Combine structural and numerical proof, without granting completeness on a mere claim."""
-    from .coverage import assess_coverage
+    from stratbox.core.observability.assessment.coverage import assess_coverage
     lifecycle = inspect_execution_lifecycle(records, invocation_id)
     numeric = assess_coverage(lifecycle.accepted_sequences, coverage,
                               start_seen=lifecycle.start_seen, terminal_seen=lifecycle.terminal_seen)
@@ -125,7 +125,7 @@ def assess_generation_coverage(records: Iterable[JournalRecord], evidence, *, sc
     from collections import defaultdict
     from hashlib import sha256
     import json
-    from .coverage import GenerationCaptureAssessment
+    from stratbox.core.observability.assessment.coverage import GenerationCaptureAssessment
 
     index = defaultdict(list)
     for n, rec in enumerate(records, 1):

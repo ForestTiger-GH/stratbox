@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable
 
-from .contracts import JournalRecord, require_utc
+from stratbox.core.observability.records.contracts import JournalRecord, require_utc
 
 
 @dataclass(frozen=True, slots=True)
