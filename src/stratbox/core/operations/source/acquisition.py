@@ -6,7 +6,8 @@ from dataclasses import dataclass, replace
 from email.message import Message
 from typing import BinaryIO, Callable
 
-from stratbox.core.network import HttpFailure, HttpRequest, HttpTransport, RetryPolicy, RoutedTransport, exchange, exchange_into
+from stratbox.core.network import (HttpFailure, HttpRequest, HttpTransport, PeerBoundTransport,
+                                   RequestsTransport, RetryPolicy, RoutedTransport, exchange, exchange_into)
 from stratbox.shared.data import AcquiredSource, AcquisitionReceipt, ByteIdentity, SourcePayload, canonical_manifest_bytes
 
 from stratbox.core.execution.contracts import OperationFailure
@@ -20,6 +21,23 @@ class StreamBaseline:
     copy_to: Callable[[BinaryIO], None]
 
 
+# Stable IDs identify built-in implementation families, not Python class paths.
+# A caller-supplied provider with persistent evidence should instead bind a
+# provider_id and scope_id through the execution capability contract.
+_BUILTIN_TRANSPORT_IDENTITIES = {
+    RequestsTransport: "http.requests.v1",
+    RoutedTransport: "http.routed.v1",
+    PeerBoundTransport: "http.peer_bound.v1",
+}
+
+
+def _transport_identity(transport: HttpTransport) -> str:
+    kind = type(transport)
+    return _BUILTIN_TRANSPORT_IDENTITIES.get(
+        kind, f"{kind.__module__}.{kind.__qualname__}",
+    )
+
+
 def _request_identity(request: HttpRequest, invocation: Invocation, transport: HttpTransport) -> str:
     binding = next(
         (item for item in invocation.context.bindings
@@ -31,7 +49,7 @@ def _request_identity(request: HttpRequest, invocation: Invocation, transport: H
         "headers": dict(request.headers),
         "form": dict(request.form_fields) if request.form_fields is not None else None,
         "body": ByteIdentity.of(request.body).sha256 if request.body is not None else None,
-        "provider": binding.provider_id if binding else f"{type(transport).__module__}.{type(transport).__qualname__}",
+        "provider": binding.provider_id if binding else _transport_identity(transport),
         "profile": invocation.context.profile,
         "scope": binding.scope_id if binding else None,
     })).sha256
