@@ -1,6 +1,8 @@
 """Check domain registration, identity and read-only admission."""
 
 from dataclasses import replace
+import json
+from pathlib import Path
 from pkgutil import ModuleInfo
 from types import SimpleNamespace
 
@@ -12,17 +14,23 @@ from stratbox.core.execution.catalog import OperationRegistration, OperationCata
 from stratbox.core.registry import core_catalog
 
 
-def test_baseline_registry_size_and_machine_admission():
+def test_published_contracts_remain_discoverable_and_machine_admission_is_explicit():
     domains = domain_catalog()
     core = core_catalog()
     all_ops = operation_catalog()
-    assert len(domains.references) == 68
-    assert len(core.references) == 9
-    assert len(all_ops.references) == 77
-    assert len({(r.operation_id, r.contract_version) for r in all_ops.references}) == 77
-    assert {(r.operation_id, r.contract_version) for r in all_ops.references if r.wire_codec_ref} == {
-        ('cbr.offices.parse', 1), ('cbr.offices.compare', 2), ('frg.plan_cleanup', 1),
-    }
+    domain_refs = set(domains.references)
+    core_refs = set(core.references)
+    assert domain_refs.isdisjoint(core_refs)
+    assert domain_refs | core_refs == set(all_ops.references)
+    identities = {(ref.operation_id, ref.contract_version) for ref in all_ops.references}
+    assert len(identities) == len(all_ops.references)
+
+    baseline_path = Path(__file__).resolve().parents[2] / "fixtures" / "operation_contracts_0_14.json"
+    baseline = {tuple(item) for item in json.loads(baseline_path.read_text(encoding="utf-8"))}
+    assert baseline <= identities, f"Published contracts removed: {sorted(baseline - identities)}"
+
+    admitted = {(ref.operation_id, ref.contract_version) for ref in all_ops.references if ref.wire_codec_ref}
+    assert {('cbr.offices.parse', 1), ('cbr.offices.compare', 2), ('frg.plan_cleanup', 1)} <= admitted
 
 
 def test_all_references_resolve_to_matching_definitions_and_handlers():

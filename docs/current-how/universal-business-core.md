@@ -7,7 +7,7 @@ format primitives are reusable across domains.
 
 | Domain | Public operations | Subject and result |
 | --- | --- | --- |
-| `system.execution.originals` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
+| `core.operations.source` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
 | `domains.cbr_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
 | `domains.cbr_offices_reg` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
 | `domains.fns_sme` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
@@ -18,11 +18,11 @@ format primitives are reusable across domains.
 | `domains.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
 | `domains.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
 | `domains.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
-| `system.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
+| `core.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
 Every domain publishes its operations in `registration.py`. The central
 `stratbox.domains.registry.operation_catalog()` collects these declarations
-and system-owned operations. See the [registry interface](domain-operation-registry.md).
+and core-owned operations. See the [registry interface](domain-operation-registry.md).
 
 ## Execution and observations
 
