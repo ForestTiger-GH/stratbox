@@ -8,8 +8,8 @@ import pytest
 
 from stratbox.domains import registry as domain_registry
 from stratbox.domains.registry import domain_catalog, operation_catalog
-from stratbox.system.execution.registry import DomainRegistration, OperationCatalog, OperationRef, RegistryError
-from stratbox.system.registry import system_catalog
+from stratbox.core.execution.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
+from stratbox.core.registry import system_catalog
 
 
 def test_baseline_registry_size_and_machine_admission():
@@ -41,7 +41,7 @@ def test_invalid_registrations_fail_explicitly():
     with pytest.raises(RegistryError, match='Duplicate operation contract'):
         OperationCatalog((ref, ref))
     with pytest.raises(RegistryError, match='registry.duplicate_contract'):
-        DomainRegistration('test', (ref, ref))
+        OperationRegistration('test', (ref, ref))
     wrong = replace(ref, operation_id='wrong.contract')
     with pytest.raises(RegistryError, match='registry.contract_mismatch'):
         OperationCatalog((wrong,)).get(wrong.operation_id, wrong.contract_version)
@@ -57,7 +57,7 @@ def test_new_domain_is_discovered_without_a_central_list(monkeypatch):
     added = OperationRef('test.new_domain', 1,
         'stratbox.domains.new_business_domain.operations:TEST',
         'stratbox.domains.new_business_domain.operations:handle')
-    registration = DomainRegistration(name, (added,))
+    registration = OperationRegistration(name, (added,))
 
     def modules(path):
         yield from original_modules(path)

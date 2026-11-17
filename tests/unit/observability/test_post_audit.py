@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 import json
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.data import ByteIdentity, PublicationReceipt
-from stratbox.system.observability import (
+from stratbox.core.observability import (
     JournalRecord, CaptureCoverage, SequenceRange, FileJournalWriter,
     FileJournalReader, SegmentDescriptor, build_manifest, decode_manifest,
     build_operation_history, inspect_execution_lifecycle,
@@ -141,7 +141,7 @@ def test_generation_without_binding_remains_unsealed(tmp_path):
 def test_manifest_v1_not_silently_promoted(tmp_path):
     records = complete_run("A")
     manifest, _ = stored_manifest(tmp_path, records, (evidence("A"),))
-    from stratbox.system.observability import encode_manifest
+    from stratbox.core.observability import encode_manifest
     encoded = json.loads(encode_manifest(manifest))
     encoded["schema_version"] = 1
     with pytest.raises(ValueError, match="journal.unsupported_manifest_schema"):
@@ -275,7 +275,7 @@ def test_manifest_aggregate_revalidated_against_actual_records(tmp_path):
     altered = replace(manifest.capture_assessment, total_unknown_losses=5)
     # A self-consistent manifest digest alone cannot make an incorrect
     # declared generation aggregate true. Reader must recompute it.
-    from stratbox.system.observability.manifests import JournalManifest, _data
+    from stratbox.core.observability.journal.manifests import JournalManifest, _data
     from stratbox.shared.data import canonical_manifest_bytes
     from hashlib import sha256
     provisional = object.__new__(JournalManifest)

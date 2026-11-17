@@ -2,9 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from stratbox.system.base import runtime
-from stratbox.system.base.ioapi import bytes as files
-from stratbox.system.base.runtime import local_providers
+from stratbox.core.runtime import providers as runtime
+from stratbox.core.storage import bytes as files
+from stratbox.core.runtime.providers import local_providers
 
 
 @pytest.fixture
@@ -63,6 +63,6 @@ def test_conflicting_defaults_fail_before_any_write(monkeypatch, provider_enviro
     "smb://files.example/Reports/example.XLSM",
 ])
 def test_excel_selects_the_format_for_copied_file_paths(path):
-    from stratbox.system.base.ioapi.excel import _ext
+    from stratbox.core.formats.spreadsheets.dispatch import _ext
 
     assert _ext(path) == ".xlsm"

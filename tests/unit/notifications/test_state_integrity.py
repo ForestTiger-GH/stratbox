@@ -3,13 +3,13 @@ from decimal import Decimal
 
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.data import ByteIdentity
-from stratbox.system.notifications import (
+from stratbox.core.notifications import (
     AuditBatch, CheckpointUpdate, DispatchUpdate, MemoryNotificationState, PrepareRequest,
     RecordIdentity, StateMutation, flush_audit, prepare,
 )
-from stratbox.system.observability import FileJournalWriter, JournalRecord, JournalWriteReceipt
+from stratbox.core.observability import FileJournalWriter, JournalRecord, JournalWriteReceipt
 
 from conftest import TIME, byte_event
 
