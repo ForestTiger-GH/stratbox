@@ -125,6 +125,7 @@ class RecordMemorySink:
         self.policy = policy or CapturePolicy()
         self.origin = origin
         self._records: list[JournalRecord] = []
+        self._finished: dict[str, ExecutionEvent | None] = {}
         self._bytes_used = 0
         self._counter = _Counter(limits or ObserverLimits())
         self._closed = False
@@ -163,13 +164,24 @@ class RecordMemorySink:
         return self.capture_disposition(record).accepted
 
     def emit(self, event: ExecutionEvent) -> None:
-        self.capture(record_from_execution_event(event))
+        with self._lock:
+            accepted = self.capture(record_from_execution_event(event))
+            if accepted and event.kind == "operation.finished":
+                previous = self._finished.setdefault(event.invocation_id, event)
+                if previous != event:
+                    self._finished[event.invocation_id] = None
+
+    def finished_event(self, invocation_id: str) -> ExecutionEvent | None:
+        with self._lock:
+            return self._finished.get(invocation_id)
 
     def capture_fact(self, fact: DomainFact, *, operation_id: str | None = None,
                      invocation_id: str | None = None) -> bool:
         return self.capture(record_from_fact(fact, operation_id=operation_id, invocation_id=invocation_id))
 
     def capture_result(self, result: OperationResult, **kwargs) -> bool:
+        if "finished_event" not in kwargs and not {"occurred_at_utc", "observation_id"} & kwargs.keys():
+            kwargs["finished_event"] = self.finished_event(result.invocation_id)
         return self.capture(record_from_result(result, **kwargs))
 
     def coverage_for(self, invocation_id: str, *, producer: ObservabilitySummary | None = None) -> CaptureCoverage:

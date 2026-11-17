@@ -21,6 +21,7 @@ class OperationHistory:
     problems: tuple[str, ...]
     missing_causes: tuple[str, ...]
     causal_coverage: str = "indeterminate"
+    summary_record_id: str | None = None
 
     def sample_missing_sequences(self, limit: int = 20) -> tuple[int, ...]:
         if not 0 <= limit <= 1000:
@@ -84,12 +85,41 @@ def build_operation_history(records: Iterable[JournalRecord], invocation_id: str
     if "journal.history_truncated" in problems or "journal.record_identity_conflict" in problems:
         state = "incomplete"
     finished = finishes[0] if len(finishes) == 1 else None
+    summaries = [record for record in ordered if record.record_type == "result_summary" and
+                 record.kind == "operation.result"]
+    if finished is not None:
+        finished_summaries = [
+            record for record in summaries if record.payload.get("time_basis") == "producer_finished_event"
+            and record.outcome == finished.outcome and record.operation_id == finished.operation_id
+            and record.occurred_at_utc == finished.occurred_at_utc
+            and record.payload.get("contract_version") == finished.payload.get("contract_version")
+            and record.payload.get("method_version") == finished.payload.get("method_version")
+            and (record.payload.get("data_version", 1) == 1 or finished.record_id in record.cause_record_ids)
+        ]
+        if finished_summaries:
+            summaries = finished_summaries
+        else:
+            summaries = [record for record in summaries if record.payload.get("time_basis") == "observation"
+                         and record.outcome == finished.outcome and record.operation_id == finished.operation_id]
+    by_preference = sorted(summaries, key=lambda record:
+                           (-record.payload.get("data_version", 1), record.record_id)
+                           if type(record.payload.get("data_version", 1)) is int else (0, record.record_id))
+    summary_id = None
+    if by_preference:
+        chosen = by_preference[0]
+        assertion = {key: value for key, value in chosen.payload.items() if key not in {"data_version", "time_basis"}}
+        if all((record.operation_id, record.outcome) == (chosen.operation_id, chosen.outcome)
+               and assertion == {key: value for key, value in record.payload.items()
+                                 if key not in {"data_version", "time_basis"}} for record in summaries):
+            summary_id = chosen.record_id
+        else:
+            problems.add("journal.result_summary_conflict")
     order = tuple(execution + [r for r in ordered if r.record_type != "execution"])
     duration = finished.payload.get("duration_ms") if finished else None
     return OperationHistory(invocation_id, order, finished.outcome if finished else None,
                             duration if type(duration) is int else None,
                             state, missing, count_ranges(missing), tuple(sorted(problems)),
-                            tuple(sorted(causes)), "incomplete" if causes else "indeterminate")
+                            tuple(sorted(causes)), "incomplete" if causes else "indeterminate", summary_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,10 +138,14 @@ def summarize_operations(histories: Iterable[OperationHistory], *, max_histories
     diagnostics: Counter[str] = Counter()
     durations: list[int] = []
     total = incomplete = indeterminate = 0
-    for history in histories:
-        total += 1
-        if total > max_histories:
+    seen = set()
+    for read, history in enumerate(histories, 1):
+        if read > max_histories:
             raise ValueError("journal.summary_limit")
+        if history.invocation_id in seen:
+            continue
+        seen.add(history.invocation_id)
+        total += 1
         if history.outcome is not None:
             outcomes[history.outcome] += 1
         if history.duration_ms is not None:
@@ -121,7 +155,7 @@ def summarize_operations(histories: Iterable[OperationHistory], *, max_histories
         elif history.coverage == "indeterminate":
             indeterminate += 1
         for rec in history.records:
-            if rec.record_type == "result_summary":
+            if rec.record_id == history.summary_record_id:
                 entries = rec.payload.get("diagnostics", ())
                 if isinstance(entries, (tuple, list)):
                     diagnostics.update(item["code"] for item in entries if isinstance(item, Mapping)

@@ -267,6 +267,19 @@ class FileJournalReader:
                 raise JournalDecodeError("journal.report_budget_exceeded")
             yield from batch
 
+    def read_verified_segment(self, descriptor: SegmentDescriptor) -> tuple[JournalRecord, ...]:
+        """Check the published descriptor and return records from the same bounded read."""
+        if descriptor.logical_locator != self.namespace.segment_path(descriptor.segment_id):
+            raise JournalDecodeError("journal.namespace_mismatch")
+        if descriptor.write_state != "confirmed":
+            raise JournalDecodeError("journal.segment_unconfirmed")
+        if (descriptor.record_count > self.max_records
+                or descriptor.identity.size > min(self.max_segment_bytes, self.max_total_bytes)):
+            raise JournalDecodeError("journal.report_budget_exceeded")
+        records, _ = self._validated(descriptor.logical_locator, expected=descriptor.identity,
+                                     descriptor=descriptor)
+        return records
+
     def load_manifest(self, receipt: JournalWriteReceipt) -> JournalManifest:
         if not receipt.locator.startswith(f"{self.namespace.root}/{self.namespace.writer_id}/") or receipt.locator != self.namespace.manifest_path(receipt.segment_id):
             raise JournalDecodeError("journal.namespace_mismatch")

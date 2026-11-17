@@ -91,6 +91,23 @@ from stratbox.observability import RequiredJournalGate
 
 `select_records` is lazy, including diagnostic lookup inside frozen `MappingProxyType`; `group_records` explicitly materializes within budgets; `inspect_causes` uses bounded iterative traversal and reports cycles, truncated graphs, conflicting IDs and missing aliases. Missing foreign parents are qualified separately from an invocation's own lifecycle.
 
+A closed `SnapshotJournalSource` and `FileJournalSource` supply
+`JournalPage` values through the same positioned read contract. The host
+registers the source authority and pins a head for the read. A cursor
+contains a scope, stream, partition, epoch and last accounted position.
+Pages report their own storage, capture and domain coverage. A dormant
+source requires outside scheduling evidence to qualify missed checks.
+
+`RecordDataSchema` validates closed, recursively typed event data by
+version. The enclosing `JournalRecord` remains schema v1. A canonical
+result summary is linked to the actual matching terminal execution event.
+Its data schema v2 and record identity are distinct from archived v1
+summaries. History uses a single consistent result assertion per invocation
+for aggregation and flags conflicting assertions.
+
+Notifications consumes the positioned journal through an explicit source
+binding. [Notification architecture and consumer evidence](notifications.md)
+
 ## 5. Versioned domain projections and qualified external effects
 
 - Source checks and publications are chronologically observable. Multiple distinct confirmed releases are a **history**, not an automatic conflict. The current release is `None` without a domain-supplied resolver that selects among the confirmed candidates. Distinct byte identities sharing one release ID are **ambiguous** by default (`revision_relation='indeterminate'`, `observed_byte_versions` counts them); a separate competent `revision_resolver` may explicitly classify the relation as `same`, `supersedes`, or `competing`. A byte difference alone does not prove a semantic conflict.

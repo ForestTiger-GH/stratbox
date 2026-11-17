@@ -117,7 +117,7 @@ uses `excel-binary`.
 | Byte storage | `write_verified_bytes`, with `immutable`, `replace_expected_revision` or `best_effort_verified` | Destination owner supplies conditional commit and actual evidence |
 | FRG mutation | `plan_cleanup` then `apply_cleanup`, with exact directory, plan digest and source revisions | `ScopedMutationStore.commit_mutation` checks the actual intent and current grant |
 | FRG ZIP | `prepare_archive_to_store` uses private staging, verifies selected bytes and reads back the destination | `ScopedStagedWrite.commit_admitted` checks the plan, scope, payload, mode and expected revision |
-| Notification | `prepare` and `deliver`, with `qualify` for external receipts in trusted local calls | `ManagedNotificationChannel.send_admitted` and `lookup` verify current route, revision, payload and prior effect |
+| Notification | `prepare` on a registered journal and `deliver` on a persisted dispatch ID | `NotificationConsumer.accept` and `lookup` verify the grant, route revision, attempt, fence and structured payload |
 
 The streaming FRG request defaults to `immutable`. Matching existing bytes
 return `already_present`. An explicit `replace_expected_revision` requires the
@@ -135,11 +135,13 @@ For cleanup, inspect the current directory and the affected source and
 destination before re-planning. Per-action receipts identify completed,
 failed, uncertain and unattempted work.
 
-Managed notifications use a route revision and the receiving owner's
-lookup. An unknown delivery stays pending for reconciliation. The channel
-qualifies acceptance and enforces its current grant, key and payload
-binding, and any idempotency window. The consumer owns durable delivery
-state, publication proof and recovery after restart. Use `computation_identity`
+Managed notifications atomically record the checkpoint and additions to the
+queue. An unknown handoff stays pending for reconciliation. The receiving
+owner qualifies acceptance and enforces the current grant, route and
+payload binding. The consumer also owns evidence for its downstream
+effects. [Notification API and usage](notifications.md)
+
+Use `computation_identity`
 for immutable computation reuse. At each access the cache owner checks
 current scope, audience, revision and revocation.
 
