@@ -14,7 +14,7 @@ from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.assessment.coverage import CoverageStatus
 from stratbox.core.observability.journal.file_reader import FileJournalReader
 from stratbox.core.observability.journal.manifests import SegmentDescriptor
-from stratbox.core.observability.capture.sinks import ObserverGenerationSnapshot
+from stratbox.core.observability.assessment.generation import ObserverGenerationSnapshot
 
 MAX_POSITION = 2**53 - 1
 SourceProfile = Literal["local_snapshot", "resumable"]
