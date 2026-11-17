@@ -1,1 +1,1 @@
-"""Neutral infrastructure and execution facilities."""
+"""Universal execution, infrastructure, observability and notification components."""

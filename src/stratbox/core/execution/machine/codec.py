@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 
-from .contracts import WireRequestError
+from stratbox.core.execution.machine.contracts import WireRequestError
 
 MAX_JSON = 16_384
 JSON_STRUCTURE = re.compile(r'"(?:[^"\\]|\\.)*"|[{}\[\]]', re.DOTALL)

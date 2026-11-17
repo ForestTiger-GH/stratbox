@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from stratbox.system.base.limits import BudgetExceeded
+from stratbox.core.limits import BudgetExceeded
 
-from .contracts import Diagnostic, OperationFailure
+from stratbox.core.execution.contracts import Diagnostic, OperationFailure
 
 T = TypeVar("T")
 R = TypeVar("R")

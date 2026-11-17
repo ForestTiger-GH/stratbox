@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from importlib import import_module
 
-from .contracts import OperationDefinition
+from stratbox.core.execution.contracts import OperationDefinition
 
 
 class RegistryError(ValueError):
@@ -89,7 +89,7 @@ class OperationCatalog:
         for ref in self.references:
             if (ref.operation_id, ref.contract_version) == (operation_id, contract_version):
                 return ref
-        from .machine.contracts import WireRequestError
+        from stratbox.core.execution.machine.contracts import WireRequestError
         raise WireRequestError("operation.contract_unavailable")
 
     def resolve(self, operation_id: str, contract_version: int):

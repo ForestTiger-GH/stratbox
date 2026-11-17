@@ -6,13 +6,13 @@ import re
 from time import monotonic
 from typing import Generic, Literal, Protocol, TypeVar, TYPE_CHECKING
 
-from stratbox.system.base.capabilities import CapabilityRequirement, ProviderBinding
-from stratbox.system.base.limits import ExecutionBudget, Resource
+from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding
+from stratbox.core.limits import ExecutionBudget, Resource
 from stratbox.shared.data import ComputationReceipt, UsedInputReceipt
 from stratbox.shared.data.evidence import ByteIdentity
 
 if TYPE_CHECKING:
-    from .events import EventSink, IncidentSink
+    from stratbox.core.execution.events import EventSink, IncidentSink
 
 T = TypeVar("T")
 Outcome = Literal["succeeded", "partial", "failed", "cancelled", "unknown"]

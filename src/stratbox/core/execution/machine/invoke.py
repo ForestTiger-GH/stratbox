@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 
-from stratbox.system.execution import ExecutionContext, OperationResult
-from .codec import decode_request
-from .contracts import MaterialResolver, WireRequestError
+from stratbox.core.execution import ExecutionContext, OperationResult
+from stratbox.core.execution.machine.codec import decode_request
+from stratbox.core.execution.machine.contracts import MaterialResolver, WireRequestError
 
 
 def invoke_read_only(

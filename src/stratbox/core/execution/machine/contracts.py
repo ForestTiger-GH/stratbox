@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Mapping, Protocol
 
-from stratbox.system.base.filestore import FileStore
+from stratbox.core.storage.filestore import FileStore
 from stratbox.shared.data import SourcePayload
 from stratbox.shared.data.releases import ParsedRelease
-from stratbox.system.execution import ExecutionContext, OperationResult
+from stratbox.core.execution import ExecutionContext, OperationResult
 
 
 class WireRequestError(ValueError):
