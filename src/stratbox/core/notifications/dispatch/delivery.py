@@ -19,7 +19,8 @@ from stratbox.core.notifications.dispatch.preparation import (
     MAX_ENVELOPE_BYTES, _metadata, _projection, dispatch_key, read_page,
 )
 from stratbox.core.notifications.runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission, require_binding
-from stratbox.core.notifications.state.contracts import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt, commit_and_lookup
+from stratbox.core.notifications.state.transactions import commit_and_lookup
+from stratbox.core.notifications.state.contracts import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt
 from stratbox.core.notifications.subscriptions import _head
 from stratbox.core.notifications.topics import is_service_event, match_conditions
 from stratbox.core.observability.records.schema import ValueRule

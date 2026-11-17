@@ -19,9 +19,10 @@ from stratbox.core.observability.records.schema import ValueRule
 from stratbox.core.notifications.state.audit import audit_record
 from stratbox.core.notifications.contracts import AccessDecision, EventPointer, NotificationIntent, Subscription
 from stratbox.core.notifications.runtime import NotificationReadRuntime, SourceBinding, access, need_access, require_admission
+from stratbox.core.notifications.state.transactions import commit_and_lookup
 from stratbox.core.notifications.state.contracts import (
     CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, RecordIdentity, StateMutation,
-    StateReceipt, commit_and_lookup,
+    StateReceipt,
 )
 from stratbox.core.notifications.subscriptions import _head
 from stratbox.core.notifications.topics import NotificationTopic, Projection, is_service_event, match_conditions

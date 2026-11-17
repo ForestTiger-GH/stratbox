@@ -23,3 +23,26 @@ def audit_record(
         observed_at_utc=now, correlation=correlation or Correlation(),
     ))
     return replace(record, cause_record_ids=(cause,)) if cause is not None else record
+
+from dataclasses import replace
+from stratbox.core.observability.journal.ports import RecordWriter
+from stratbox.core.observability.journal.contracts import JournalWriteReceipt
+from stratbox.core.notifications.state.contracts import AuditBatch, NotificationStateStore
+
+def flush_audit(
+    state: NotificationStateStore, scope_id: str, writer: RecordWriter, *, limit: int = 200,
+) -> JournalWriteReceipt | None:
+    records = state.pending_audit(scope_id, limit=limit)
+    if not records:
+        return None
+    batch = AuditBatch(scope_id, records, writer.format)
+    receipt = writer.write_batch(batch.records, segment_id=batch.segment_id)
+    if not isinstance(receipt, JournalWriteReceipt):
+        raise ValueError("journal.write_receipt_invalid")
+    if receipt.state == "confirmed":
+        if not batch.is_confirmed_by(receipt):
+            return replace(receipt, state="failed", diagnostic_code="notification.audit_receipt_mismatch",
+                           already_present=False)
+        state.acknowledge_audit(batch, receipt)
+    return receipt
+

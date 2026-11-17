@@ -13,7 +13,8 @@ from stratbox.core.observability.records.contracts import require_utc
 from stratbox.core.notifications.state.audit import audit_record
 from stratbox.core.notifications.contracts import Subscription, SubscriptionSpec
 from stratbox.core.notifications.runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission
-from stratbox.core.notifications.state.contracts import CheckpointKey, CheckpointUpdate, Replay, StateMutation, commit_and_lookup
+from stratbox.core.notifications.state.transactions import commit_and_lookup
+from stratbox.core.notifications.state.contracts import CheckpointKey, CheckpointUpdate, Replay, StateMutation
 
 _ACTIONS = {
     "create": ("disabled", "subscription.created"),

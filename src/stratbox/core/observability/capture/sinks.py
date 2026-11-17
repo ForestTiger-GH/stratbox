@@ -25,14 +25,6 @@ class CaptureDisposition:
         return self.state == "accepted"
 
 
-@dataclass(frozen=True, slots=True)
-class CaptureDisposition:
-    state: str
-    reason_code: str
-    @property
-    def accepted(self) -> bool:
-        return self.state == "accepted"
-
 
 
 

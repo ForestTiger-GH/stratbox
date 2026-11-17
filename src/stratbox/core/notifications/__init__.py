@@ -16,10 +16,12 @@ from stratbox.core.notifications.projections import (
     accessible_topics, inspect_dispatch, notification_health, project_downstream, record_external_delivery,
 )
 from stratbox.core.notifications.state.contracts import (
-    Attempt, AuditBatch, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, MemoryNotificationState,
+    Attempt, AuditBatch, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate,
     NotificationStateReader, NotificationStateStore, RecordIdentity, Replay, StateMutation,
-    StateReceipt, flush_audit,
+    StateReceipt,
 )
+from stratbox.core.notifications.state.memory import MemoryNotificationState
+from stratbox.core.notifications.state.audit import flush_audit
 from stratbox.core.notifications.subscriptions import SubscriptionChange, amend_checkpoint, configure_subscription, register_replay
 from stratbox.core.notifications.state.codec import decode_state_mutation, encode_state_mutation
 from stratbox.core.notifications.topics import NotificationTopic, Projection, TopicCatalog, build_catalog
