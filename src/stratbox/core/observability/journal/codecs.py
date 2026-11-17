@@ -9,8 +9,8 @@ import json
 from collections.abc import Iterable, Iterator, Mapping
 
 from stratbox.shared.data import ByteIdentity
-from stratbox.system.execution.contracts import Correlation
-from .contracts import JournalRecord, ObjectRef
+from stratbox.core.execution.contracts import Correlation
+from stratbox.core.observability.records.contracts import JournalRecord, ObjectRef
 
 MAX_LINE_BYTES = 2 * 1024 * 1024
 DEFAULT_MAX_SEGMENT_BYTES = 8 * 1024 * 1024

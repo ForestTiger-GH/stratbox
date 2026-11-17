@@ -5,9 +5,9 @@ Schemas validate *content*, never authenticate a user or authorize filesystem ac
 from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from .contracts import JournalRecord
-from .event_schemas import BUILTIN_DATA_SCHEMAS
-from .schema import FieldClass, RecordDataSchema
+from stratbox.core.observability.records.contracts import JournalRecord
+from stratbox.core.observability.records.event_schemas import BUILTIN_DATA_SCHEMAS
+from stratbox.core.observability.records.schema import FieldClass, RecordDataSchema
 from typing import Literal
 
 

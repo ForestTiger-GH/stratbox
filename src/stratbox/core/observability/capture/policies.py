@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
-from .contracts import JournalRecord
+from stratbox.core.observability.records.contracts import JournalRecord
 
 
 @dataclass(frozen=True, slots=True)

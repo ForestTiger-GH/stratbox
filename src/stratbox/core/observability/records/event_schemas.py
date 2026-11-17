@@ -1,5 +1,5 @@
 """Data schemas for the core events currently eligible for structured output."""
-from .schema import FieldRule, RecordDataSchema, ValueRule
+from stratbox.core.observability.records.schema import FieldRule, RecordDataSchema, ValueRule
 
 TOKEN = ValueRule("token", max_length=128)
 HASH = ValueRule("hash", max_length=64)

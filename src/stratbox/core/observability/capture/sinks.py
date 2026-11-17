@@ -4,14 +4,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from threading import RLock
 
-from stratbox.system.execution import ExecutionEvent, EventSink, OperationResult
-from stratbox.system.execution.contracts import ObservabilitySummary
-from .adapters import record_from_execution_event, record_from_fact, record_from_result
-from .contracts import DomainFact, JournalRecord, OriginClaim
-from .coverage import CaptureCoverage, SequenceRange, merge_ranges
-from .health import ObserverHealthSnapshot
-from .policies import CapturePolicy, ObserverLimits
-from .codecs import encode_record
+from stratbox.core.execution import ExecutionEvent, EventSink, OperationResult
+from stratbox.core.execution.contracts import ObservabilitySummary
+from stratbox.core.observability.capture.adapters import record_from_execution_event, record_from_fact, record_from_result
+from stratbox.core.observability.records.contracts import DomainFact, JournalRecord, OriginClaim
+from stratbox.core.observability.assessment.coverage import CaptureCoverage, SequenceRange, merge_ranges
+from stratbox.core.observability.capture.health import ObserverHealthSnapshot
+from stratbox.core.observability.capture.policies import CapturePolicy, ObserverLimits
+from stratbox.core.observability.journal.codecs import encode_record
 
 
 @dataclass(frozen=True, slots=True)

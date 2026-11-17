@@ -11,18 +11,18 @@ from collections.abc import Callable, Iterable, Iterator, Mapping
 from threading import RLock
 from typing import Protocol
 
-from stratbox.system.base.filestore import FileStore
+from stratbox.core.storage.filestore import FileStore
 from stratbox.shared.data import ByteIdentity
-from stratbox.system.execution.contracts import safe_token
+from stratbox.core.execution.contracts import safe_token
 
-from .codecs import (JournalDecodeError, decode_records, encode_record, encode_records,
+from stratbox.core.observability.journal.codecs import (JournalDecodeError, decode_records, encode_record, encode_records,
                      DEFAULT_MAX_SEGMENT_BYTES, MAX_SEGMENT_BYTES)
-from .contracts import JournalBarrierError, JournalRecord, JournalWriteReceipt
-from .coverage import CaptureCoverage, GenerationCaptureAssessment
-from .lifecycle import assess_generation_coverage, assess_invocation_lifecycle
-from .manifests import (JournalManifest, MAX_MANIFEST_BYTES, SegmentDescriptor,
+from stratbox.core.observability.records.contracts import JournalBarrierError, JournalRecord, JournalWriteReceipt
+from stratbox.core.observability.assessment.coverage import CaptureCoverage, GenerationCaptureAssessment
+from stratbox.core.observability.assessment.lifecycle import assess_generation_coverage, assess_invocation_lifecycle
+from stratbox.core.observability.journal.manifests import (JournalManifest, MAX_MANIFEST_BYTES, SegmentDescriptor,
                         _ids_digest, decode_manifest, encode_manifest)
-from .policies import PersistencePolicy
+from stratbox.core.observability.capture.policies import PersistencePolicy
 
 
 class RecordWriter(Protocol):

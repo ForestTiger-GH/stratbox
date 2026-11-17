@@ -7,14 +7,14 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from stratbox.shared.data import ByteIdentity
-from stratbox.system.execution.contracts import safe_token
+from stratbox.core.execution.contracts import safe_token
 
-from .codecs import JournalDecodeError, encode_record
-from .contracts import JournalRecord
-from .coverage import CoverageStatus
-from .file_journal import FileJournalReader
-from .manifests import SegmentDescriptor
-from .sinks import ObserverGenerationSnapshot
+from stratbox.core.observability.journal.codecs import JournalDecodeError, encode_record
+from stratbox.core.observability.records.contracts import JournalRecord
+from stratbox.core.observability.assessment.coverage import CoverageStatus
+from stratbox.core.observability.journal.file_writer import FileJournalReader
+from stratbox.core.observability.journal.manifests import SegmentDescriptor
+from stratbox.core.observability.capture.sinks import ObserverGenerationSnapshot
 
 MAX_POSITION = 2**53 - 1
 SourceProfile = Literal["local_snapshot", "resumable"]

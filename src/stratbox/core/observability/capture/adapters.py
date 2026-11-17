@@ -9,10 +9,10 @@ from uuid import uuid4
 
 from stratbox.shared.data import (AcquisitionReceipt, ByteIdentity, Comparison, PublicationReceipt,
                            StoredBytesReceipt)
-from stratbox.system.execution import ExecutionEvent, OperationResult
-from stratbox.system.execution.contracts import Correlation
-from .contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
-from .field_policy import validate_builtin_fields
+from stratbox.core.execution import ExecutionEvent, OperationResult
+from stratbox.core.execution.contracts import Correlation
+from stratbox.core.observability.records.contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
+from stratbox.core.observability.records.field_policy import validate_builtin_fields
 
 
 def _id(kind: str, identity: str) -> str:
@@ -84,7 +84,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
     else:
         instant = require_utc(occurred_at_utc or datetime.now(timezone.utc))
         stamp = observation_id or uuid4().hex
-        from stratbox.system.execution.contracts import safe_token
+        from stratbox.core.execution.contracts import safe_token
         safe_token(stamp)
         record_id = _id("result_observation", f"{result.invocation_id}:{stamp}")
         time_basis = "observation"

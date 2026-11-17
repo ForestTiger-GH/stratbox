@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 from typing import Protocol
 
 from stratbox.shared.data import AcquiredSource, ByteIdentity, Comparison
-from stratbox.system.execution import Correlation, ExecutionEvent, OperationResult
-from .adapters import (fact_from_acquisition, fact_from_comparison, fact_from_stored_bytes,
+from stratbox.core.execution import Correlation, ExecutionEvent, OperationResult
+from stratbox.core.observability.capture.adapters import (fact_from_acquisition, fact_from_comparison, fact_from_stored_bytes,
                        record_from_fact, record_from_result)
-from .contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
-from .sinks import CaptureDisposition
+from stratbox.core.observability.records.contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
+from stratbox.core.observability.capture.sinks import CaptureDisposition
 
 
 class RecordCapture(Protocol):
@@ -87,7 +87,7 @@ def capture_operation_result(result: OperationResult, recorder: RecordCapture, *
                                                              occurred_at_utc=instant),
                                         invocation_id=result.invocation_id, operation_id=result.operation_id))
     if value is not None and hasattr(value, "storage") and hasattr(value, "material"):
-        from stratbox.system.execution.originals import StoredOriginal
+        from stratbox.core.operations.source.originals import StoredOriginal
         if isinstance(value, StoredOriginal):
             if value.acquisition is not None:
                 records.append(record_from_fact(fact_from_acquisition(value.acquisition),
