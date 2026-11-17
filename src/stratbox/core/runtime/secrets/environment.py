@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 
-from stratbox.system.base.secrets.base import SecretProvider
+from stratbox.core.runtime.secrets.contracts import SecretProvider
 
 
 class EnvSecretProvider(SecretProvider):

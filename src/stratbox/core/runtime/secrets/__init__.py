@@ -1,5 +1,5 @@
-from stratbox.system.base.secrets.base import SecretProvider
-from stratbox.system.base.secrets.env import EnvSecretProvider
-from stratbox.system.base.secrets.prompt import PromptSecretProvider
+from stratbox.core.runtime.secrets.contracts import SecretProvider
+from stratbox.core.runtime.secrets.environment import EnvSecretProvider
+from stratbox.core.runtime.secrets.prompt import PromptSecretProvider
 
 __all__ = ["SecretProvider", "EnvSecretProvider", "PromptSecretProvider"]

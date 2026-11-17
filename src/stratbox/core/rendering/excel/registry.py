@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-from .builtin import DEFAULT_PRESET_NAME, PRESETS
-from .models import StyleSpec
+from stratbox.core.rendering.excel.builtin import DEFAULT_PRESET_NAME, PRESETS
+from stratbox.core.rendering.excel.models import StyleSpec
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,11 +6,11 @@ from hashlib import sha256
 from io import BytesIO
 from typing import BinaryIO, Callable
 
-from stratbox.system.base.filestore import FileStore, FileVersion, MutationRejected, SourceStore, WriteMode
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.filestore.base import FileVersionReader
+from stratbox.core.storage.filestore import FileStore, FileVersion, MutationRejected, SourceStore, WriteMode
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.storage.filestore.ports import FileVersionReader
 from stratbox.shared.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.limits import BudgetMeter
 
 
 class OutputBuffer(BytesIO):

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import getpass
 
-from stratbox.system.base.secrets.base import SecretProvider
+from stratbox.core.runtime.secrets.contracts import SecretProvider
 
 
 class PromptSecretProvider(SecretProvider):

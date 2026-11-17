@@ -12,19 +12,19 @@ import re
 from threading import RLock
 from typing import TYPE_CHECKING, Callable
 
-from stratbox.system.base.capabilities import (
+from stratbox.core.runtime.capabilities import (
     BindingError as BindingError,
     CapabilityRequirement as CapabilityRequirement,
     ProviderBinding as ProviderBinding,
     probe_provider as probe_provider,
     select_provider as select_provider,
 )
-from stratbox.system.base.filestore import FileStore, LocalFileStore
-from stratbox.system.base.net import HttpTransport, RequestsTransport
-from stratbox.system.base.secrets import EnvSecretProvider, SecretProvider
+from stratbox.core.storage.filestore import FileStore, LocalFileStore
+from stratbox.core.network import HttpTransport, RequestsTransport
+from stratbox.core.runtime.secrets import EnvSecretProvider, SecretProvider
 
 if TYPE_CHECKING:
-    from stratbox.system.base.styles.excel.registry import ExcelStylesRegistry
+    from stratbox.core.rendering.excel.registry import ExcelStylesRegistry
 
 _FACTORY = re.compile(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*", re.ASCII)
 _LOCK = RLock()

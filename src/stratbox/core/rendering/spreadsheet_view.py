@@ -3,9 +3,9 @@
 from csv import reader
 from io import StringIO
 
-from stratbox.system.base.ioapi.workbook_bytes import openpyxl_bytes
-from stratbox.system.base.limits import BudgetMeter, ExecutionBudget
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
+from stratbox.core.limits import BudgetMeter, ExecutionBudget
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import Representation
 from stratbox.shared.data.representation import CSV, XLSX
 
