@@ -12,11 +12,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-DOMAINS = {
-    "cbr_file_collector", "cbr_forms", "cbr_industries", "cbr_offices",
-    "cbr_offices_reg", "cbr_sors_restoration", "escrow", "frg",
-    "fns_1yur", "fns_sme",
-}
+DOMAINS = frozenset(
+    path.name
+    for path in (SRC / "stratbox" / "domains").iterdir()
+    if path.is_dir() and not path.name.startswith("_")
+    and (path / "__init__.py").is_file()
+)
 CRITICAL_MODULES = [
     "stratbox", "stratbox.shared.data", "stratbox.shared.registries",
     "stratbox.shared.time", "stratbox.shared.text.banks",
@@ -88,8 +89,11 @@ def check_dependency_direction() -> list[str]:
             domain = _target_domain(target)
             if target.startswith("stratbox_"):
                 failures.append(f"{prefix}: external integration import {target}")
+            if owner.startswith(("system:", "shared:")) and target.startswith("stratbox.domains"):
+                failures.append(f"{prefix}: {owner} imports domain namespace {target}")
             if domain:
                 if owner.startswith(("system:", "shared:")):
+                    continue
                     failures.append(f"{prefix}: {owner} imports concrete domain {target}")
                 elif owner.startswith("domain:"):
                     source = owner.split(":", 1)[1]
