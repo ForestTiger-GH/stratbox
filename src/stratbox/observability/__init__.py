@@ -9,6 +9,7 @@ from .adapters import (fact_from_acquisition, fact_from_comparison, fact_from_pu
                        record_from_execution_event, record_from_fact, record_from_result)
 from .policies import CapturePolicy, PersistencePolicy, PresentationPolicy, ObserverLimits
 from .field_policy import (AllowedField, RecordFieldSchema, FieldSchemaRegistry, SCHEMAS, validate_builtin_fields)
+from .schema import FieldRule, RecordDataSchema, ValueRule
 from .health import ObserverHealthSnapshot
 from .sinks import (CaptureDisposition, CompositeEventSink, RecordMemorySink, FileEventSink, ObserverGenerationSnapshot)
 from .selection import CausalInspection, RecordFilter, group_records, inspect_causes, select_records
@@ -29,3 +30,6 @@ from .manifests import (JournalManifest, SegmentDescriptor, build_manifest,
                         encode_manifest, decode_manifest)
 from .capture import (CaptureReport, RecordCapture, capture_operation_result,
                       fact_for_artifact, fact_for_source_check)
+from .source import (EpochJournalSource, FileJournalSource, IndexedSegment, JournalCursor, JournalEntry,
+                     JournalHead, JournalPage, JournalReadLimits, JournalReadProblem,
+                     JournalSource, SnapshotJournalSource, SourceProfile, StreamKey)

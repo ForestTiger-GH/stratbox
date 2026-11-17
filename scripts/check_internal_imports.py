@@ -22,6 +22,7 @@ CRITICAL_MODULES = [
     "stratbox.base.secrets",
     "stratbox.data",
     "stratbox.execution",
+    "stratbox.observability",
     "stratbox.notifications",
     "stratbox.macrobanks.cbr_file_collector",
     "stratbox.macrobanks.cbr_industries",
@@ -58,6 +59,10 @@ def check_dependency_direction() -> list[str]:
                     ("stratbox.macrobanks", "stratbox.organizations", "stratbox.notifications")
                 ):
                     failures.append(f"{rel}:{node.lineno} reverses the domain dependency")
+                if rel.parts[0] == "observability" and name.startswith(
+                    ("stratbox.notifications", "stratbox.macrobanks", "stratbox.organizations")
+                ):
+                    failures.append(f"{rel}:{node.lineno} reverses the observability dependency")
                 if (name.split(".")[0] in {"requests", "urllib3", "httpx", "aiohttp"} or name.startswith("urllib.request")) and (
                     rel.as_posix() != "base/net/transport.py"
                 ):

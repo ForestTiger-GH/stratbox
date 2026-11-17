@@ -270,6 +270,12 @@ class JournalWriteReceipt:
         if not isinstance(self.content_identity, ByteIdentity) or not isinstance(self.locator, str):
             raise ValueError("Invalid journal write identity")
 
+    def confirms_batch(
+        self, identity: ByteIdentity, record_ids: tuple[str, ...], *, segment_id: str | None = None,
+    ) -> bool:
+        return (self.state == "confirmed" and self.content_identity == identity and self.record_ids == record_ids
+                and (segment_id is None or self.segment_id == segment_id))
+
 
 class JournalBarrierError(Exception):
     def __init__(self, receipt: JournalWriteReceipt):

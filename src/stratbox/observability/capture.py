@@ -1,12 +1,12 @@
 """Explicit post-processing of qualified core results; no business work is rerun."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Protocol
 
 from stratbox.data import AcquiredSource, ByteIdentity, Comparison
-from stratbox.execution import OperationResult
+from stratbox.execution import Correlation, ExecutionEvent, OperationResult
 from .adapters import (fact_from_acquisition, fact_from_comparison, fact_from_stored_bytes,
                        record_from_fact, record_from_result)
 from .contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
@@ -63,11 +63,20 @@ def fact_for_artifact(*, artifact_id: str, identity: ByteIdentity,
 
 def capture_operation_result(result: OperationResult, recorder: RecordCapture, *,
                              occurred_at_utc: datetime | None = None,
+                             finished_event: ExecutionEvent | None = None,
+                             correlation: Correlation | None = None,
                              dataset_id: str | None = None,
                              baseline_id: str | None = None,
                              candidate_id: str | None = None) -> CaptureReport:
+    if finished_event is None and occurred_at_utc is None:
+        find_finished = getattr(recorder, "finished_event", None)
+        if callable(find_finished):
+            finished_event = find_finished(result.invocation_id)
+    if finished_event is not None and occurred_at_utc is None:
+        occurred_at_utc = finished_event.occurred_at_utc
     instant = require_utc(occurred_at_utc or datetime.now(timezone.utc))
-    records = [record_from_result(result, occurred_at_utc=instant)]
+    records = [record_from_result(result, occurred_at_utc=instant, finished_event=finished_event,
+                                  correlation=correlation)]
     value = result.value
     if isinstance(value, AcquiredSource):
         records.append(record_from_fact(fact_from_acquisition(value.receipt),
@@ -89,6 +98,11 @@ def capture_operation_result(result: OperationResult, recorder: RecordCapture, *
                 records.append(record_from_fact(fact_from_stored_bytes(value.storage, subject_id=source_id,
                                                                         observed_at_utc=instant),
                                                 invocation_id=result.invocation_id, operation_id=result.operation_id))
+    summary = records[0]
+    records[1:] = [
+        replace(record, correlation=summary.correlation, cause_record_ids=(summary.record_id,))
+        for record in records[1:]
+    ]
     accepted = filtered = capacity = failed = unknown = 0
     for rec in records:
         classifier = getattr(recorder, "capture_disposition", None)

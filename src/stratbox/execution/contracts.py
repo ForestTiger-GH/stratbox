@@ -38,8 +38,10 @@ class EffectDescriptor:
 def _effect_description(kind: str) -> EffectDescriptor:
     if kind == "network.receive":
         return EffectDescriptor(kind, "official_source", "transport", "acquisition_receipt", "qualified_read")
-    if kind == "notification.send":
-        return EffectDescriptor(kind, "recipient", "channel", "acceptance_receipt", "reconcile")
+    if kind == "notification.handoff":
+        return EffectDescriptor(kind, "recipient", "consumer", "acceptance_receipt", "reconcile")
+    if kind == "notification.state_commit":
+        return EffectDescriptor(kind, "notification_state", "store", "state_receipt", "reconcile")
     return EffectDescriptor(kind, "file", "store", "effect_receipt", "reconcile")
 
 

@@ -1,23 +1,21 @@
-"""Offline demonstration of acquisition, storage, parsing and qualified notification."""
+"""Run the notification path with recorded source bytes and an in-process inbox."""
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.bytes import write_verified_bytes
 from stratbox.base.net import HttpResponse
+from stratbox.execution import ExecutionContext
+from stratbox.execution.originals import OriginalDestination, SaveOriginalRequest, save_original
 from stratbox.macrobanks import cbr_offices
 from stratbox.notifications import (
-    DeliverRequest,
-    NotificationPolicy,
-    NotificationRoute,
-    OriginalStoredConfirmed,
-    PrepareRequest,
-    SendReceipt,
-    deliver,
-    prepare,
+    AccessDecision, CheckpointKey, ConsumerBinding, DeliverRequest, HandoffReceipt,
+    MemoryNotificationState, NotificationRoute, NotificationRuntime, PrepareRequest, SourceBinding,
+    SubscriptionChange, SubscriptionSpec, build_catalog, configure_subscription, deliver, prepare,
+    register_replay,
 )
+from stratbox.observability import RecordMemorySink, SnapshotJournalSource, StreamKey, capture_operation_result
 
 
 class RecordedSource:
@@ -26,17 +24,38 @@ class RecordedSource:
 
     def exchange(self, request, *, cancelled=None):
         return HttpResponse(
-            200,
-            self.original,
-            {"content-type": "text/html"},
-            datetime(2026, 11, 11, tzinfo=timezone.utc),
-            "https://www.cbr.ru",
+            200, self.original, {"content-type": "text/html"},
+            datetime(2026, 11, 11, tzinfo=timezone.utc), "https://www.cbr.ru",
         )
 
 
-class InMemoryChannel:
-    def send(self, intent):
-        return SendReceipt(intent.effect_key, "accepted", "offline-ack")
+class DemoAuthority:
+    def authorize(self, request):
+        if request.actor_id == request.spec.owner_id and request.spec.scope_id == "demo":
+            return AccessDecision("allow", frozenset({"identity", "status"}),
+                                  frozenset({"event_ref", "occurred_at_utc", "subject"}),
+                                  "demo-grant", "demo-route-1")
+        return AccessDecision("denied")
+
+
+class InProcessInbox:
+    def __init__(self, clock):
+        self.clock = clock
+        self.receipts = {}
+
+    def accept(self, handoff):
+        key = handoff.lookup
+        existing = self.lookup(key)
+        if existing is not None:
+            return existing
+        self.receipts[key] = HandoffReceipt(
+            key.dispatch_id, key.attempt_id, key.route, key.route_revision,
+            key.payload_identity, "accepted", self.clock.now(), "offline-inbox",
+        )
+        return self.receipts[key]
+
+    def lookup(self, query):
+        return self.receipts.get(query)
 
 
 def require_value(result):
@@ -48,42 +67,47 @@ def require_value(result):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("html", type=Path)
-    parser.add_argument("archive")
+    parser.add_argument("archive", type=Path)
     args = parser.parse_args()
     transport = RecordedSource(args.html.read_bytes())
-    acquired = require_value(
-        cbr_offices.acquire(
-            cbr_offices.AcquireOfficesRequest(timezone.utc), transport=transport
-        )
+    sink = RecordMemorySink()
+    context = ExecutionContext(sink=sink)
+    acquired = require_value(cbr_offices.acquire(
+        cbr_offices.AcquireOfficesRequest(timezone.utc), transport=transport, context=context,
+    ))
+    stored_result = save_original(
+        SaveOriginalRequest(acquired.payload, OriginalDestination(args.archive.name)),
+        store=LocalFileStore(args.archive.parent), context=context,
     )
-    original = acquired.payload
-    stored = write_verified_bytes(
-        args.archive,
-        original.data,
-        store=LocalFileStore(),
-        expected_sha256=original.identity.sha256,
+    stored = require_value(stored_result)
+    capture_operation_result(stored_result, sink)
+    parsed = require_value(cbr_offices.parse(
+        cbr_offices.ParseOfficesRequest(acquired.payload, acquired.capture_date), context=context,
+    ))
+
+    stream = StreamKey("demo", "journal", "local")
+    source = SnapshotJournalSource(sink.finalize_generation(), stream, source_authority_id="demo", epoch_id="run")
+    route = NotificationRoute("local_inbox", "archive-update", "demo")
+    state = MemoryNotificationState()
+    runtime = NotificationRuntime(
+        "demo", build_catalog(), DemoAuthority(), state,
+        (SourceBinding(stream, "demo", "local_snapshot", source),),
+        (ConsumerBinding("demo", route, "in_process", InProcessInbox(context.clock)),),
     )
-    if stored.status not in {"stored", "already_present"}:
-        raise SystemExit(stored.diagnostic_code)
-    parsed = require_value(
-        cbr_offices.parse(
-            cbr_offices.ParseOfficesRequest(original, acquired.capture_date)
-        )
-    )
-    route = NotificationRoute("archive-update", "demo")
-    decision = require_value(
-        prepare(
-            PrepareRequest(
-                OriginalStoredConfirmed(stored, "demo-archive-event"),
-                NotificationPolicy(original_storage=True),
-                route,
-            )
-        )
-    )
-    delivery = require_value(
-        deliver(DeliverRequest(decision.intent, route), transport=InMemoryChannel())
-    )
-    print(parsed.dataset_version.identity.sha256, delivery.state)
+    spec = SubscriptionSpec("demo", "archive_update", "demo", (stream,), route,
+                            "material.stored", 1, "stored_material", 1)
+    configure_subscription(SubscriptionChange("create", spec), runtime=runtime)
+    configure_subscription(SubscriptionChange("enable", spec, 1), runtime=runtime)
+    replay = CheckpointKey("demo", "archive_update", stream, replay_id="review-snapshot")
+    register_replay(replay, 1, source.head(stream).tail_offset,
+                    context.clock.now() + timedelta(minutes=15), runtime=runtime)
+    processed = require_value(prepare(PrepareRequest(replay, mode="replay"), runtime=runtime))
+    if processed.prepared:
+        row, = state.scan_dispatches("demo", "archive_update", limit=2)
+        result = require_value(deliver(DeliverRequest("demo", row.intent.dispatch_id), runtime=runtime))
+        print(parsed.dataset_version.identity.sha256, result.state, row.intent.dispatch_id)
+    else:
+        print(parsed.dataset_version.identity.sha256, stored.storage.status, "no_matching_effect")
 
 
 if __name__ == "__main__":

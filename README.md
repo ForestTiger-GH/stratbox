@@ -9,6 +9,7 @@ destinations and can choose their own infrastructure providers.
 - [Installation and offline quickstart](docs/how/install-and-run-core.md)
 - [Execution and storage boundaries](docs/architecture/core-operation-boundaries.md)
 - [Observability: qualified events, journals and recovery](docs/architecture/observability.md)
+- [Notification subscriptions and recovery](docs/current-how/notifications.md)
 - [Strategy Box Knowledge Product](docs/README.md)
 
 ```sh

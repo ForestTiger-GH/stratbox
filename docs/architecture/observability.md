@@ -75,7 +75,9 @@ from stratbox.observability import RequiredJournalGate
 # Owner's *separate* EffectReceipt confirms or qualifies the resulting effect.
 ```
 
-`RequiredJournalGate` executes the action only when its intent record is confirmed. `failed` and `unknown` block it with `JournalBarrierError` and the original receipt. The gate cannot prevent an effect performed elsewhere, provide exactly-once execution, or create an effect receipt. A crash between accepted intent and actual effect leaves the effect unresolved until its owner reconciles it. There is **no** `PersistencePolicy(reliability='required')` switch and no global automatic audit gate.
+`RecordWriter` declares the canonical `json` or `jsonl` format it uses for receipt identities. A confirmed receipt attests the read-back hash and byte length of the ordered `encode_records` output and its ordered record IDs. If the caller supplies a segment ID, the writer confirms that segment. A provider can use its own storage layout while attesting the same canonical representation.
+
+`RequiredJournalGate` compares the receipt with the exact intent record before running the action. A `failed` or `unknown` receipt raises `JournalBarrierError`. A confirmed receipt with different content or record IDs is treated as `journal.write_receipt_mismatch`. The owner supplies separate evidence of the action's result and reconciles any uncertainty after registration of the intent. Hosts opt in to the gate for the actions that require it.
 
 ## 4. Producer/collector coverage and bounded history
 
@@ -90,6 +92,23 @@ from stratbox.observability import RequiredJournalGate
 **Forbidden shortcuts:** `progress_filtered=True` suppressing arbitrary gaps; `capture_complete=True` asserted by an arbitrary caller; `set(range(1,max_sequence+1))`; treating `OperationResult.observability.degraded=False` as proof of a complete event history. `operation_state_from_result(result)` reports the result known with `event_coverage='not_collected'` regardless of event sink status.
 
 `select_records` is lazy, including diagnostic lookup inside frozen `MappingProxyType`; `group_records` explicitly materializes within budgets; `inspect_causes` uses bounded iterative traversal and reports cycles, truncated graphs, conflicting IDs and missing aliases. Missing foreign parents are qualified separately from an invocation's own lifecycle.
+
+A closed `SnapshotJournalSource` and `FileJournalSource` supply
+`JournalPage` values through the same positioned read contract. The host
+registers the source authority and pins a head for the read. A cursor
+contains a scope, stream, partition, epoch and last accounted position.
+Pages report their own storage, capture and domain coverage. A dormant
+source requires outside scheduling evidence to qualify missed checks.
+
+`RecordDataSchema` validates closed, recursively typed event data by
+version. The enclosing `JournalRecord` remains schema v1. A canonical
+result summary is linked to the actual matching terminal execution event.
+Its data schema v2 and record identity are distinct from archived v1
+summaries. History uses a single consistent result assertion per invocation
+for aggregation and flags conflicting assertions.
+
+Notifications consumes the positioned journal through an explicit source
+binding. [Notification architecture and consumer evidence](notifications.md)
 
 ## 5. Versioned domain projections and qualified external effects
 

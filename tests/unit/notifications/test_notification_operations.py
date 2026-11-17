@@ -1,222 +1,325 @@
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from datetime import timedelta
+import json
 from threading import Event
 
-from stratbox.data import ByteIdentity, PublicationReceipt
+import pytest
+
+from stratbox.base.filestore import LocalFileStore
+from stratbox.data import ByteIdentity
 from stratbox.execution import ExecutionContext
 from stratbox.notifications import (
-    DeliverRequest,
-    NotificationPolicy,
-    NotificationRoute,
-    PrepareRequest,
-    QualifyDeliveryRequest,
-    PublicationConfirmed,
-    SendReceipt,
-    deliver,
-    prepare,
-    qualify,
+    DeliverRequest, PrepareRequest, QualifyDeliveryRequest, ReconcileDeliveryRequest, SubscriptionChange,
+    build_catalog, configure_subscription, deliver, inspect_dispatch, notification_health, prepare, qualify,
+    reconcile, register_replay,
 )
+from stratbox.observability import FileJournalWriter, JournalWriteReceipt, RequiredJournalGate
+
+from conftest import Source, byte_event
 
 
-ROUTE = NotificationRoute("updates", "subscriber")
+def _ready(session):
+    runtime, key, context, source, _, _ = session
+    source.records.append(byte_event())
+    outcome = prepare(PrepareRequest(key), runtime=runtime, context=context)
+    assert outcome.outcome == "succeeded", outcome.diagnostics
+    assert outcome.value.prepared == 1
+    row, = runtime.state.scan_dispatches(key.scope_id, key.subscription_id, limit=2)
+    return DeliverRequest(key.scope_id, row.intent.dispatch_id)
 
 
-class Transport:
-    def __init__(self, state="accepted", acknowledgement="ack"):
-        self.attempts = 0
-        self.state = state
-        self.acknowledgement = acknowledgement
+def test_structured_handoff_and_owner_receipt(session):
+    runtime, key, context, _, inbox, _ = session
+    request = _ready(session)
+    result = deliver(request, runtime=runtime, context=context)
+    assert result.outcome == "succeeded", result.diagnostics
+    assert result.value.state == "consumer_accepted"
+    envelope = json.loads(inbox.calls[0].intent.envelope_bytes)
+    assert envelope["data"]["source_id"] == "official"
+    assert envelope["dispatch_id"] == request.dispatch_id
+    assert envelope["event_ref"]["kind"] == "source.bytes_changed"
+    assert set(result.effects[0].__dataclass_fields__) >= {"effect_id", "state"}
+    result_again = deliver(request, runtime=runtime, context=context)
+    assert result_again.value.state == "consumer_accepted"
+    assert len(inbox.calls) == 1
+    health = notification_health(key, reader=runtime, context=context)
+    assert dict(health.counts_by_state) == {"consumer_accepted": 1}
+    assert health.due == ()
+    assert inspect_dispatch(key.scope_id, request.dispatch_id, reader=runtime, context=context).state == "consumer_accepted"
 
-    def send(self, intent):
-        self.attempts += 1
-        if self.state == "lost":
-            raise TimeoutError("request reached channel")
-        return SendReceipt(intent.effect_key, self.state, self.acknowledgement)
+
+def test_lost_response_is_reconciled_without_second_handoff(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    inbox.fail_mode = "lost_response"
+    first = deliver(request, runtime=runtime, context=context)
+    assert (first.outcome, first.value.state) == ("unknown", "unknown")
+    assert deliver(request, runtime=runtime, context=context).value.next_action == "reconcile"
+    result = reconcile(ReconcileDeliveryRequest(request.scope_id, request.dispatch_id, first.value.attempt_id),
+                       runtime=runtime, context=context)
+    assert (result.outcome, result.value.state) == ("succeeded", "consumer_accepted")
+    assert len(inbox.calls) == 1
 
 
-def prepare_request(transition, *, confirmation="confirmed", digest=b"release"):
-    receipt = PublicationReceipt(
-        "publisher",
-        "destination",
-        "2026-11-10",
-        transition,
-        ByteIdentity.of(digest),
-        confirmation,
+def test_unknown_lookup_never_schedules_retry(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    inbox.fail_mode = "unavailable"
+    first = deliver(request, runtime=runtime, context=context)
+    recovery = ReconcileDeliveryRequest(request.scope_id, request.dispatch_id, first.value.attempt_id)
+    context.clock.advance(9 * 86400)
+    result = reconcile(recovery, runtime=runtime, context=context)
+    assert (result.outcome, result.value.state) == ("unknown", "unknown")
+    assert deliver(request, runtime=runtime, context=context).value.next_action == "reconcile"
+    assert len(inbox.calls) == 1
+
+
+def test_provisional_refusal_waits_for_the_original_attempt(session):
+    runtime, key, context, _, inbox, _ = session
+    request = _ready(session)
+    inbox.fail_mode = "pending_refusal"
+    first = deliver(request, runtime=runtime, context=context)
+    assert (first.outcome, first.value.state) == ("unknown", "unknown")
+    assert first.value.reason_code == "notification.rejection_unconfirmed"
+    original, = inbox.calls
+    recovery = ReconcileDeliveryRequest(request.scope_id, request.dispatch_id, original.lookup.attempt_id)
+    context.clock.advance(3600)
+    assert reconcile(recovery, runtime=runtime, context=context).value.next_action == "reconcile"
+    assert deliver(request, runtime=runtime, context=context).value.next_action == "reconcile"
+    health = notification_health(key, reader=runtime, context=context)
+    assert not health.due and health.oldest_pending_source_positions == (original.intent.event.cursor,)
+
+    inbox.receipts[(request.dispatch_id, original.lookup.attempt_id)] = replace(
+        inbox.lookup(original.lookup), state="accepted", retryable=False,
     )
-    return PrepareRequest(
-        PublicationConfirmed(receipt, "revised"), NotificationPolicy(), ROUTE
-    )
+    result = reconcile(recovery, runtime=runtime, context=context)
+    assert result.value.state == "consumer_accepted"
+    assert result.value.attempt_id == original.lookup.attempt_id
+    assert len(inbox.calls) == 1
 
 
-def test_confirmed_transitions_and_dry_run():
-    one = prepare(prepare_request("first")).value.intent
-    same_data = prepare(prepare_request("second")).value.intent
-    assert one.effect_key != same_data.effect_key
-    assert (
-        prepare(prepare_request("first", confirmation="unknown")).value.intent is None
-    )
-    assert (
-        prepare(replace(prepare_request("first"), dry_run=True)).value.reason
-        == "policy.dry_run"
-    )
-    assert prepare(prepare_request("first")).value.intent == one
+def test_retry_uses_original_bytes_and_current_route_revision(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    inbox.fail_mode = "refuse"
+    inbox.retry_after = context.clock.now() + timedelta(seconds=900)
+    first = deliver(request, runtime=runtime, context=context, jitter=lambda a, b: a)
+    assert (first.outcome, first.value.state) == ("failed", "retry_due")
+    assert first.value.next_due_at_utc == inbox.retry_after
+    assert deliver(request, runtime=runtime, context=context).value.next_action == "wait"
+    runtime.authority.route_revision = "r2"
+    context.clock.advance(900)
+    inbox.fail_mode = None
+    inbox.retry_after = None
+    second = deliver(request, runtime=runtime, context=context)
+    assert second.value.state == "consumer_accepted"
+    assert first.value.attempt_id != second.value.attempt_id
+    assert inbox.calls[0].intent == inbox.calls[1].intent
+    assert inbox.calls[1].lookup.route_revision == "r2"
 
 
-def test_lost_ack_is_reconciled_and_never_silently_retried():
-    intent = prepare(prepare_request("first")).value.intent
-    lost = Transport(state="lost")
-    unknown = deliver(DeliverRequest(intent, ROUTE), transport=lost)
-    assert unknown.outcome == "unknown"
-    assert unknown.effects[0].state == "unknown"
-    fresh = Transport()
-    blocked = deliver(DeliverRequest(intent, ROUTE, unknown.value), transport=fresh)
-    assert blocked.outcome == "unknown" and fresh.attempts == 0
-    conflict = prepare(prepare_request("first", digest=b"other")).value.intent
-    assert (
-        deliver(DeliverRequest(conflict, ROUTE, unknown.value), transport=fresh)
-        .diagnostics[0]
-        .code
-        == "notification.payload_conflict"
-    )
-    assert fresh.attempts == 0
-    reconciled = qualify(
-        QualifyDeliveryRequest(intent, SendReceipt(intent.effect_key, "not_accepted"))
-    )
-    accepted = deliver(DeliverRequest(intent, ROUTE, reconciled.value), transport=fresh)
-    assert accepted.outcome == "succeeded"
-    assert fresh.attempts == 1
-    assert (
-        deliver(DeliverRequest(intent, ROUTE, accepted.value), transport=fresh).outcome
-        == "succeeded"
-    )
-    assert fresh.attempts == 1
+def test_receipt_mismatch_cannot_promote_pending_or_accepted_state(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    deliver(request, runtime=runtime, context=context)
+    call, = inbox.calls
+    receipt = inbox.lookup(call.lookup)
+    candidate = qualify(QualifyDeliveryRequest(call.lookup, replace(receipt, route_revision="foreign")),
+                        context=context)
+    assert candidate.value.state == "unknown"
+    assert candidate.value.reason_code == "notification.receipt_mismatch"
+    assert runtime.state.get_dispatch(request.scope_id, request.dispatch_id).state == "consumer_accepted"
 
 
-def test_refused_and_cancelled_delivery():
-    intent = prepare(prepare_request("first")).value.intent
-    transport = Transport(state="not_accepted")
-    refusal = deliver(DeliverRequest(intent, ROUTE), transport=transport)
-    assert refusal.outcome == "failed"
-    assert refusal.value.next_action == "retry"
-    cancel = Event()
-    cancel.set()
-    result = deliver(
-        DeliverRequest(intent, ROUTE),
-        transport=transport,
-        context=ExecutionContext(cancellation=cancel),
-    )
-    assert result.outcome == "cancelled"
-    assert transport.attempts == 1
+def test_disable_or_revoke_cancels_an_unsent_obligation(session):
+    runtime, _, context, _, inbox, spec = session
+    request = _ready(session)
+    configure_subscription(SubscriptionChange("disable", spec, 2), runtime=runtime, context=context)
+    result = deliver(request, runtime=runtime, context=context)
+    assert result.value.state == "cancelled"
+    assert not inbox.calls
 
 
-def test_separate_receipt_qualification_can_unlock_a_retry():
-    intent = prepare(prepare_request("first")).value.intent
-    stale = qualify(
-        QualifyDeliveryRequest(intent, SendReceipt("different", "accepted", "ack"))
-    )
-    assert stale.outcome == "unknown" and not stale.effects
-    resolved = qualify(
-        QualifyDeliveryRequest(intent, SendReceipt(intent.effect_key, "not_accepted"))
-    )
-    assert resolved.outcome == "succeeded" and resolved.value.next_action == "retry"
-    transport = Transport()
-    assert (
-        deliver(
-            DeliverRequest(intent, ROUTE, resolved.value), transport=transport
-        ).outcome
-        == "succeeded"
-    )
-    assert transport.attempts == 1
+def test_reactivation_does_not_send_unsent_work_from_old_revision(session):
+    runtime, _, context, _, inbox, spec = session
+    request = _ready(session)
+    configure_subscription(SubscriptionChange("disable", spec, 2), runtime=runtime, context=context)
+    configure_subscription(SubscriptionChange("enable", spec, 3), runtime=runtime, context=context)
+    result = deliver(request, runtime=runtime, context=context)
+    assert result.value.state == "cancelled"
+    assert result.value.reason_code == "subscription.activation_changed"
+    assert not inbox.calls
 
 
-def test_managed_acceptance_checks_publication_recipient_and_reconciles_restart(tmp_path):
-    from concurrent.futures import ThreadPoolExecutor
-    import sqlite3
+def test_revocation_after_prepare_uses_current_record_permission(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    runtime.authority.denied_actions.add("accept")
+    result = deliver(request, runtime=runtime, context=context)
+    assert result.value.state == "cancelled"
+    assert not inbox.calls
 
-    from stratbox.base.capabilities import ProviderBinding
-    from stratbox.notifications import ReconcileDeliveryRequest, reconcile
-    from stratbox.notifications.operations import DELIVER
 
-    ledger = tmp_path / "receipts.sqlite3"
-    with sqlite3.connect(ledger) as db:
-        db.execute("create table sent (key text primary key, digest text, recipient text)")
-    request = replace(prepare_request("first"), route_revision="v1")
-    intent = prepare(request).value.intent
-    authentic_event = intent.event_identity
-    authentic_payload = intent.payload_identity
-    old_route = intent.route
+def test_runtime_gate_rejects_wrong_bytes_even_with_a_good_per_call_gate(session, tmp_path):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
 
-    class Channel:
-        route = old_route
-        revision = "v1"
-        generation = 1
-        active_generation = 1
-        audit = True
-        lost_ack = False
+    class WrongContentWriter:
+        format = "jsonl"
 
-        def acknowledgement(self, item, state):
-            return SendReceipt(
-                item.effect_key, state, "sink-ack" if state == "accepted" else None,
-                item.route, item.payload_identity, item.route_revision,
-            )
+        def write_batch(self, records, *, segment_id=None):
+            record, = records
+            return JournalWriteReceipt("confirmed", "barrier", ByteIdentity.of(b"different"),
+                                       (record.record_id,), "immutable_read_back", "audit")
 
-        def lookup(self, item):
-            with sqlite3.connect(ledger) as db:
-                row = db.execute("select digest, recipient from sent where key = ?", (item.effect_key,)).fetchone()
-            if row == (item.payload_identity.sha256, item.route.destination_id):
-                return self.acknowledgement(item, "accepted")
-            return self.acknowledgement(item, "unknown")
+    good_writer = FileJournalWriter(LocalFileStore(tmp_path), "audit", writer_id="gate")
+    good_gate = RequiredJournalGate(good_writer)
+    strict = replace(runtime, audit_gate=RequiredJournalGate(WrongContentWriter()))
+    result = deliver(request, runtime=strict, context=context, gate=good_gate, jitter=lambda a, b: a)
+    assert (result.value.state, result.value.reason_code) == ("retry_due", "notification.audit_unconfirmed")
+    assert not inbox.calls
+    assert not list(tmp_path.rglob("*.jsonl"))
 
-        def send_admitted(self, item):
-            if (not self.audit or self.generation != self.active_generation
-                    or item.event_identity != authentic_event or item.payload_identity != authentic_payload
-                    or item.route != self.route or item.route_revision != self.revision):
-                return self.acknowledgement(item, "not_accepted")
-            with sqlite3.connect(ledger) as db:
-                db.execute("insert or ignore into sent values (?,?,?)",
-                           (item.effect_key, item.payload_identity.sha256, item.route.destination_id))
-            if self.lost_ack:
-                raise TimeoutError("ack lost after channel committed")
-            return self.lookup(item)
+    context.clock.advance(30)
+    strict = replace(runtime, audit_gate=good_gate)
 
-    def context(channel):
-        capability = DELIVER.capability("notification", managed=True)
-        return ExecutionContext(profile="managed", bindings=(
-            ProviderBinding("receiving-channel", capability, "ready", channel, "recipient-scope"),
-        ))
+    def check_audit_before_accept(handoff):
+        during = runtime.state.get_dispatch(request.scope_id, request.dispatch_id)
+        assert during.state == "in_flight"
+        assert during.attempts[-1].lookup == handoff.lookup
+        path, = tmp_path.rglob("*.jsonl")
+        assert handoff.lookup.attempt_id in path.read_text(encoding="utf-8")
 
-    def send(channel, item=intent, previous=None):
-        return deliver(DeliverRequest(item, item.route, previous), transport=channel, context=context(channel))
+    inbox.on_accept = check_audit_before_accept
+    confirmed = deliver(request, runtime=strict, context=context)
+    assert confirmed.value.state == "consumer_accepted"
+    assert len(inbox.calls) == 1
 
-    channel = Channel()
-    forged = prepare(replace(prepare_request("fake"), route_revision="v1")).value.intent
-    assert send(channel, forged).value.state == "not_accepted"
-    other_payload = prepare(replace(prepare_request("first", digest=b"fake"), route_revision="v1")).value.intent
-    assert other_payload.effect_key == intent.effect_key
-    assert send(channel, other_payload).value.state == "not_accepted"
-    channel.route = NotificationRoute("updates", "moved")
-    assert send(channel).value.state == "not_accepted"
-    channel.route = old_route
-    channel.audit = False
-    assert send(channel).value.state == "not_accepted"
-    channel.audit = True
-    channel.active_generation = 2
-    assert send(channel).value.state == "not_accepted"
-    channel.generation = 2
-    with sqlite3.connect(ledger) as db:
-        assert db.execute("select count(*) from sent").fetchone() == (0,)
 
-    channel.lost_ack = True
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        attempts = list(pool.map(lambda _: send(channel), range(2)))
-    assert {result.outcome for result in attempts} == {"unknown"}
-    assert attempts[0].diagnostics[0].retry_disposition == "reconcile"
-    with sqlite3.connect(ledger) as db:
-        assert db.execute("select count(*) from sent").fetchone() == (1,)
-    channel = Channel()
-    proof = reconcile(ReconcileDeliveryRequest(intent), transport=channel, context=context(channel))
-    assert proof.outcome == "succeeded" and proof.value.state == "accepted"
-    assert send(channel, previous=attempts[0].value).value == proof.value
-    assert not send(channel, previous=attempts[0].value).effects
-    unverified = qualify(QualifyDeliveryRequest(intent, channel.acknowledgement(intent, "accepted")),
-                         context=context(channel))
-    assert unverified.diagnostics[0].code == "notification.owner_lookup_required"
+@pytest.mark.parametrize("loss,code", (("retention", "journal.cursor_expired"), ("epoch", "journal.epoch_mismatch")))
+def test_source_evidence_loss_is_visible_and_recoverable(session, loss, code):
+    runtime, key, context, source, inbox, _ = session
+    request = _ready(session)
+    original = runtime.state.get_dispatch(key.scope_id, request.dispatch_id)
+    if loss == "retention":
+        source.first_retained = 2
+    else:
+        source.epoch = "b"
+
+    blocked = deliver(request, runtime=runtime, context=context)
+    assert (blocked.outcome, blocked.value.state, blocked.value.next_action) == ("failed", "ready", "restore_evidence")
+    assert blocked.diagnostics[0].code == code
+    assert blocked.value.attempt_id is None
+    assert not inbox.calls
+    status = inspect_dispatch(key.scope_id, request.dispatch_id, reader=runtime, context=context)
+    assert (status.reason_code, status.evidence_problem) == ("notification.evidence_unavailable", code)
+    health = notification_health(key, reader=runtime, context=context)
+    assert health.oldest_pending_source_positions == (original.intent.event.cursor,)
+    assert health.due == (status,)
+    assert deliver(request, runtime=runtime, context=context).value.next_action == "restore_evidence"
+    stored = runtime.state.get_dispatch(key.scope_id, request.dispatch_id)
+    assert stored.version == original.version + 1 and stored.attempts == ()
+    audit = runtime.state.pending_audit(key.scope_id, limit=20)
+    deferred, = (record for record in audit if record.kind == "notification.evidence_unavailable")
+    assert deferred.payload["source_code"] == code
+
+    source.first_retained, source.epoch = 1, "a"
+    resumed = deliver(request, runtime=runtime, context=context)
+    assert resumed.value.state == "consumer_accepted"
+    assert len(inbox.calls) == 1 and inbox.calls[0].intent == original.intent
+    assert notification_health(key, reader=runtime, context=context).oldest_pending_source_positions == ()
+
+
+def test_retained_archive_supports_handoff_after_the_live_epoch_changes(session):
+    runtime, key, context, archived, inbox, _ = session
+    request = _ready(session)
+    live = Source()
+    live.epoch = "b"
+
+    class ArchivalSource:
+        def head(self, stream):
+            return live.head(stream)
+
+        def head_for_epoch(self, stream, epoch_id):
+            return archived.head(stream) if epoch_id == archived.epoch else live.head(stream)
+
+        def read_page(self, after, *, head, limits):
+            source = archived if head.epoch_id == archived.epoch else live
+            return source.read_page(after, head=head, limits=limits)
+
+    runtime = replace(runtime, sources=(replace(runtime.source_for(key.stream), source=ArchivalSource()),))
+    assert notification_health(key, reader=runtime, context=context).head.epoch_id == "b"
+    assert deliver(request, runtime=runtime, context=context).value.state == "consumer_accepted"
+    assert inbox.calls[0].intent.event.cursor.epoch_id == "a"
+
+
+def test_changed_source_bytes_are_quarantined(session):
+    runtime, key, context, source, inbox, _ = session
+    request = _ready(session)
+    source.records[0] = replace(source.records[0], payload={**source.records[0].payload, "size_bytes": 221})
+    result = deliver(request, runtime=runtime, context=context)
+    assert (result.value.state, result.value.reason_code) == ("quarantined", "journal.record_identity_mismatch")
+    assert not inbox.calls
+    assert notification_health(key, reader=runtime, context=context).oldest_pending_source_positions == ()
+
+
+def test_new_projection_requires_a_new_dispatch_identity_for_historical_delivery(session):
+    runtime, key, context, _, inbox, spec = session
+    old = _ready(session)
+    topic, projection = runtime.catalog.resolve(spec)
+    v2 = replace(topic, version=2, projections=(replace(projection, version=2),))
+    runtime = replace(runtime, catalog=build_catalog(topics=(v2,)))
+    updated = replace(spec, topic_version=2, projection_version=2)
+    configure_subscription(SubscriptionChange("update", updated, 2), runtime=runtime, context=context)
+    stopped = deliver(old, runtime=runtime, context=context)
+    assert (stopped.value.state, stopped.value.reason_code) == ("cancelled", "notification.subscription_changed")
+    assert not inbox.calls
+
+    current = replace(key, replay_id="same-subscription")
+    until = context.clock.now() + timedelta(days=1)
+    register_replay(current, 1, 1, until, runtime=runtime, context=context)
+    replay = prepare(PrepareRequest(current, mode="replay"), runtime=runtime, context=context)
+    assert (replay.value.prepared, replay.value.duplicate) == (0, 1)
+
+    replacement = replace(updated, subscription_id="new-subscription")
+    configure_subscription(SubscriptionChange("create", replacement), runtime=runtime, context=context)
+    configure_subscription(SubscriptionChange("enable", replacement, 1), runtime=runtime, context=context)
+    fresh = replace(current, subscription_id=replacement.subscription_id, replay_id="new-projection")
+    register_replay(fresh, 1, 1, until, runtime=runtime, context=context)
+    assert prepare(PrepareRequest(fresh, mode="replay"), runtime=runtime, context=context).value.prepared == 1
+    row, = runtime.state.scan_dispatches(fresh.scope_id, fresh.subscription_id, limit=2)
+    assert row.intent.dispatch_id != old.dispatch_id
+    assert deliver(DeliverRequest(fresh.scope_id, row.intent.dispatch_id), runtime=runtime, context=context).value.state == "consumer_accepted"
+
+
+def test_claim_excludes_competing_workers(session):
+    runtime, _, context, _, inbox, _ = session
+    request = _ready(session)
+    entered, release = Event(), Event()
+
+    def hold(_):
+        entered.set()
+        assert release.wait(timeout=5)
+
+    inbox.on_accept = hold
+    with ThreadPoolExecutor(2) as executor:
+        first = executor.submit(deliver, request, runtime=runtime, context=context)
+        assert entered.wait(timeout=5)
+        try:
+            contender = deliver(request, runtime=runtime, context=context)
+            assert contender.value.state == "in_flight"
+        finally:
+            release.set()
+        assert first.result(timeout=5).value.state == "consumer_accepted"
+    assert len(inbox.calls) == 1
+
+
+def test_managed_execution_requires_scoped_real_bindings(session):
+    runtime, key, _, _, inbox, _ = session
+    request = _ready(session)
+    result = deliver(request, runtime=runtime, context=ExecutionContext(profile="managed"))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "provider.capability_missing"
+    assert runtime.state.get_dispatch(key.scope_id, request.dispatch_id).state == "ready"
+    assert not inbox.calls

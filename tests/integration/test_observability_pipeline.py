@@ -80,4 +80,10 @@ def test_real_computation_receipt_is_logged_without_raw_output():
     summary = record_from_result(observed, occurred_at_utc=TIME, observation_id="sample")
     assert summary.payload["computation"]["output"]["sha256"] == ByteIdentity.of(b"6").sha256
     assert summary.payload["inputs"][0]["identity"]["sha256"] == ByteIdentity.of(source).sha256
-    assert "123" not in str(summary.payload)
+    assert set(summary.payload) == {
+        "contract_version", "method_version", "time_basis", "diagnostics", "inputs",
+        "effects", "computation", "observability", "resources_used",
+    }
+    assert summary.payload["computation"]["output"] == {"sha256": ByteIdentity.of(b"6").sha256, "size": 1}
+    assert set(summary.payload["computation"]) == {"id", "output", "dataset_id", "release_id", "method_version"}
+    assert set(summary.payload["inputs"][0]) == {"role", "source_id", "identity", "version", "container"}

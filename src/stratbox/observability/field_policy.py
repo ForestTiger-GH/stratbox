@@ -4,11 +4,11 @@ Schemas validate *content*, never authenticate a user or authorize filesystem ac
 """
 from __future__ import annotations
 from collections.abc import Mapping
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, replace
 from .contracts import JournalRecord
-
-FieldClass = Literal["public", "operational", "restricted"]
+from .event_schemas import BUILTIN_DATA_SCHEMAS
+from .schema import FieldClass, RecordDataSchema
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,29 +128,84 @@ class FieldSchemaRegistry:
     """Caller-owned explicit schema extensions; never a process-global registration."""
     def __init__(self, schemas=()):
         self._schemas: dict[tuple[str, str], RecordFieldSchema] = dict(SCHEMAS)
+        self._data = {schema.key: schema for schema in BUILTIN_DATA_SCHEMAS}
+        self._frozen = False
         for schema in schemas:
             self.add(schema)
 
-    def add(self, schema: RecordFieldSchema) -> None:
+    def add(self, schema: RecordFieldSchema | RecordDataSchema) -> None:
+        if self._frozen:
+            raise ValueError("journal.registry_frozen")
+        if isinstance(schema, RecordDataSchema):
+            if schema.key in self._data:
+                raise ValueError("Duplicate registered data schema")
+            self._data[schema.key] = schema
+            return
         key = (schema.record_type, schema.kind)
         if key in self._schemas:
             raise ValueError("Duplicate registered field schema")
         self._schemas[key] = schema
 
+    def freeze(self) -> FieldSchemaRegistry:
+        registry = FieldSchemaRegistry()
+        registry._schemas = self._schemas.copy()
+        registry._data = self._data.copy()
+        registry._frozen = True
+        return registry
+
+    def data_schema(self, key: tuple[str, str, int]) -> RecordDataSchema:
+        if key not in self._data:
+            raise ValueError("journal.unsupported_data_schema")
+        return self._data[key]
+
     def validate(self, record: JournalRecord) -> None:
-        schema = self._schemas.get((record.record_type, record.kind))
+        key = (record.record_type, record.kind)
+        version = record.payload.get("data_version")
+        if "data_version" in record.payload:
+            if type(version) is not int:
+                raise ValueError("journal.unsupported_data_schema")
+            if key == _SUMMARY_KEY and version == 2:
+                _SUMMARY_V2.validate(record.payload)
+            else:
+                self.data_schema((*key, version)).validate(record)
+            return
+        schema = self._schemas.get(key)
         if schema is None:
             raise ValueError("journal.field_schema_missing")
         schema.validate(record.payload)
 
     def present(self, record: JournalRecord, *, allow: frozenset[FieldClass] = frozenset({"public"})) -> dict[str, object]:
-        schema = self._schemas.get((record.record_type, record.kind))
+        key = (record.record_type, record.kind)
+        if "data_version" in record.payload:
+            self.validate(record)
+            if key == _SUMMARY_KEY and record.payload["data_version"] == 2:
+                return _SUMMARY_V2.present(record, allow=allow)
+            schema_v = self._data[(*key, record.payload["data_version"])]
+            return {field.name: record.payload[field.name] for field in schema_v.fields
+                    if field.classification in allow and field.name in record.payload}
+        schema = self._schemas.get(key)
         if schema is None:
             raise ValueError("journal.field_schema_missing")
         return schema.present(record, allow=allow)
 
+_SUMMARY_KEY = ("result_summary", "operation.result")
+_SUMMARY_V2 = replace(SCHEMAS[_SUMMARY_KEY], fields=SCHEMAS[_SUMMARY_KEY].fields + (
+    AllowedField("data_version", "integer"),
+))
+_EXPLICIT_BUILTINS = {
+    (schema.record_type, schema.kind): schema for schema in BUILTIN_DATA_SCHEMAS
+    if not schema.implicit_version_one
+}
+
 
 def validate_builtin_fields(record: JournalRecord) -> None:
-    schema = SCHEMAS.get((record.record_type, record.kind))
+    key = (record.record_type, record.kind)
+    if key in _EXPLICIT_BUILTINS:
+        _EXPLICIT_BUILTINS[key].validate(record)
+        return
+    if key == _SUMMARY_KEY and type(record.payload.get("data_version")) is int and record.payload["data_version"] == 2:
+        _SUMMARY_V2.validate(record.payload)
+        return
+    schema = SCHEMAS.get(key)
     if schema:
         schema.validate(record.payload)

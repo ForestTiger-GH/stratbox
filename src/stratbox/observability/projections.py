@@ -51,6 +51,8 @@ class SourceCheckState:
     indeterminate: bool = True
     observed_byte_versions: int = 0
     revision_relation: str = "indeterminate"
+    last_success_at_utc: str | None = None
+    failed_checks: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,11 +116,18 @@ def _identity_sha(obj: object) -> str | None:
 
 def project_source_state(records: Iterable[JournalRecord], source_id: str, *,
                          resolver: Callable[[tuple[str, ...]], str | None] | None = None,
-                         revision_resolver: Callable[[tuple[PublicationObservation, ...]], RevisionResolution] | None = None) -> SourceCheckState:
-    items = [rec for rec in records if rec.record_type == "domain_fact"
-             and rec.kind in {"source.checked", "publication.discovered"}
-             and ((rec.subject is not None and rec.subject.namespace == "source" and rec.subject.object_id == source_id)
-                  or any(ref.namespace == "source" and ref.object_id == source_id for ref in rec.references))]
+                         revision_resolver: Callable[[tuple[PublicationObservation, ...]], RevisionResolution] | None = None,
+                         max_records: int = 100_000) -> SourceCheckState:
+    if type(max_records) is not int or not 1 <= max_records <= 1_000_000:
+        raise ValueError("journal.projection_limit")
+    items = []
+    for number, rec in enumerate(records, 1):
+        if number > max_records:
+            raise ValueError("journal.projection_limit")
+        if (rec.record_type == "domain_fact" and rec.kind in {"source.checked", "publication.discovered"}
+                and ((rec.subject is not None and rec.subject.namespace == "source" and rec.subject.object_id == source_id)
+                     or any(ref.namespace == "source" and ref.object_id == source_id for ref in rec.references))):
+            items.append(rec)
     checks = sorted((rec for rec in items if rec.kind == "source.checked"),
                     key=lambda rec: (rec.observed_at_utc or rec.occurred_at_utc, rec.record_id))
     releases: dict[tuple[str, str], set[str]] = {}
@@ -149,10 +158,14 @@ def project_source_state(records: Iterable[JournalRecord], source_id: str, *,
     if current is not None and current not in confirmed:
         raise ValueError("Source resolver selected an unconfirmed release")
     last = checks[-1] if checks else None
+    success = next((rec for rec in reversed(checks)
+                    if rec.payload.get("status") in ("succeeded", "unchanged", "changed")), None)
+    failed = sum(rec.payload.get("status") in ("failed", "unknown", "unavailable") for rec in checks)
     return SourceCheckState(source_id, (last.observed_at_utc or last.occurred_at_utc).isoformat() if last else None,
                             str(last.payload.get("status")) if last else None, confirmed, conflict, current,
                             "domain_resolver" if current else "indeterminate", current is None or conflict or relation == "indeterminate",
-                            sum(len(values) for values in releases.values()), relation)
+                            sum(len(values) for values in releases.values()), relation,
+                            (success.observed_at_utc or success.occurred_at_utc).isoformat() if success else None, failed)
 
 
 def project_dataset_state(records: Iterable[JournalRecord], dataset_id: str, *,

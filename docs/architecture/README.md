@@ -2,6 +2,9 @@
 
 [Core operation boundaries](core-operation-boundaries.md)
 
+- [Observability and qualified journal sources](observability.md)
+- [Notification subscriptions and consumer handoff](notifications.md)
+
 **Status:** host capability and Web/Windows-host deployment roles are **product-admitted/planned** by [PD-SB-HOST-2026-10-12-01](../what/strategy-box/host-deployment-commitment.md); concrete allocation and topology remain `PA-SB-2026-10-09-CANDIDATE-1`, bounded cross-repository responsibility-allocation candidate. The independent architecture role is warranted by distinct implementation owners; a physical service, repository split and distributed guarantees require their own Product Decisions.
 
 - [System context and boundaries](system-context.md).

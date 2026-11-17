@@ -64,14 +64,20 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
     inferred execution-finish timestamp. A canonical summary requires the actual
     final event. Neither representation embeds computation values or locators.
     """
+    cause_ids: tuple[str, ...] = ()
     if finished_event is not None:
         if (finished_event.kind != "operation.finished" or finished_event.invocation_id != result.invocation_id
-                or finished_event.operation_id != result.operation_id or finished_event.outcome != result.outcome):
+                or finished_event.operation_id != result.operation_id or finished_event.outcome != result.outcome
+                or finished_event.contract_version != result.definition.contract_version
+                or finished_event.method_version != result.definition.method_version
+                or (correlation is not None and correlation != finished_event.correlation)):
             raise ValueError("Finish event does not match result")
         if occurred_at_utc is not None and occurred_at_utc != finished_event.occurred_at_utc:
             raise ValueError("Finish event timestamp mismatch")
         instant = require_utc(finished_event.occurred_at_utc)
-        record_id = _id("result_final", result.invocation_id)
+        finished_id = record_from_execution_event(finished_event).record_id
+        record_id = _id("result_final_linked", finished_id)
+        correlation, cause_ids = finished_event.correlation, (finished_id,)
         time_basis = "producer_finished_event"
         if observation_id is not None:
             raise ValueError("Canonical summary cannot have observation ID")
@@ -109,12 +115,15 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
         "resources_used": [{"resource": str(resource), "count": count}
                            for resource, count in result.resources_used],
     }
+    if finished_event is not None:
+        data["data_version"] = 2
     refs = tuple(ObjectRef("effect", item.effect_id, "receipt", identity=item.identity)
                  for item in result.effects if item.effect_id is not None)
     rec = JournalRecord(record_id, "result_summary", "operation.result", instant, data,
                         observed_at_utc=instant if time_basis == "observation" else None,
                         correlation=correlation or Correlation(), invocation_id=result.invocation_id,
-                        operation_id=result.operation_id, references=refs, outcome=result.outcome)
+                        operation_id=result.operation_id, references=refs, outcome=result.outcome,
+                        cause_record_ids=cause_ids)
     validate_builtin_fields(rec)
     return rec
 
