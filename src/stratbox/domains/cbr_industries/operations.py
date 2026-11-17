@@ -3,11 +3,11 @@
 from dataclasses import asdict, replace
 from pathlib import PurePosixPath
 
-from stratbox.system.base.limits import ExecutionBudget
-from stratbox.system.base.net import HttpTransport
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.limits import ExecutionBudget
+from stratbox.core.network import HttpTransport
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.data import AcquiredSource, ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     Completion,
     ExecutionContext,
     OperationDefinition,
@@ -15,9 +15,9 @@ from stratbox.system.execution import (
     OperationResult,
     run,
 )
-from stratbox.system.execution.batch import attempt_batch, require_batch_values
-from stratbox.system.execution.source_validation import use_payload
-from stratbox.system.execution.tables import record_tables, seal_stream, use_stream, use_tables
+from stratbox.core.execution.batch import attempt_batch, require_batch_values
+from stratbox.core.operations.source.validation import use_payload
+from stratbox.core.operations.tables import record_tables, seal_stream, use_stream, use_tables
 from stratbox.domains._cbr import (
     HTML_TYPES,
     WORKBOOK_LIMIT,

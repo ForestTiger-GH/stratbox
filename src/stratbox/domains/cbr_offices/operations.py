@@ -3,7 +3,7 @@
 from datetime import date, tzinfo
 import re
 
-from stratbox.system.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
+from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.shared.data import Comparison, MetricRef, Observation, PeriodRef, SubjectRef, UsedInputReceipt
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
@@ -12,16 +12,16 @@ from stratbox.shared.data.releases import (
     build_release,
     csv_rows,
 )
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     ExecutionContext,
     OperationDefinition,
     OperationFailure,
     OperationResult,
     run,
 )
-from stratbox.system.execution.acquisition import receive_source
-from stratbox.system.execution.comparison import compare_release_inputs, explain_comparison
-from stratbox.system.execution.source_validation import (
+from stratbox.core.operations.source.acquisition import receive_source
+from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
+from stratbox.core.operations.source.validation import (
     decode_html,
     source_failure,
     use_payload,

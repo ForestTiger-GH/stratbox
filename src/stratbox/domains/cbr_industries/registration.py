@@ -1,9 +1,9 @@
 """Published operation references for cbr_industries."""
 
-from stratbox.system.execution.registry import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="cbr_industries",
+REGISTRATION = OperationRegistration(
+    owner_id="cbr_industries",
     operations=(
         OperationRef("cbr.industries.0105a.discover", 1, "stratbox.domains.cbr_industries.operations:DISCOVER", "stratbox.domains.cbr_industries.operations:discover"),
         OperationRef("cbr.industries.0105a.acquire", 1, "stratbox.domains.cbr_industries.operations:ACQUIRE", "stratbox.domains.cbr_industries.operations:acquire"),

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import date
 
-from stratbox.system.execution.machine.contracts import ReadOnlyWireCodec, WireRequestError
+from stratbox.core.execution.machine.contracts import ReadOnlyWireCodec, WireRequestError
 from stratbox.shared.data import SourcePayload
 from stratbox.shared.data.releases import CompareReleaseRequest
 from . import operations
