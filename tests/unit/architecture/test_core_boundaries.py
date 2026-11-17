@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import ast
 import runpy
 from pathlib import Path
 
@@ -105,3 +106,37 @@ def test_core_catalog_preserves_logical_operations():
 ])
 def test_new_semantic_module_imports(module):
     assert importlib.import_module(module) is not None
+
+
+def test_all_live_python_imports_use_canonical_core_paths():
+    root = Path(__file__).resolve().parents[3]
+    obsolete = ("stratbox.system", "stratbox.core.base", "stratbox.core.ioapi")
+    bad = []
+    for section in ("src", "tests", "examples", "scripts", "benchmarks"):
+        folder = root / section
+        if not folder.exists():
+            continue
+        for source in folder.rglob("*.py"):
+            syntax = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+            for node in ast.walk(syntax):
+                if isinstance(node, ast.Import):
+                    imported = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    imported = [node.module] if node.module and node.level == 0 else []
+                else:
+                    continue
+                bad.extend(
+                    f"{source.relative_to(root)}:{node.lineno} {name}"
+                    for name in imported
+                    if any(name == old or name.startswith(old + ".") for old in obsolete)
+                )
+    assert not bad, "\\n".join(bad)
+
+
+def test_builtin_transport_evidence_identifiers_are_stable():
+    from stratbox.core.network import RequestsTransport, RoutedTransport, PeerBoundTransport
+    from stratbox.core.operations.source.acquisition import _transport_identity
+
+    assert _transport_identity(RequestsTransport()) == "http.requests.v1"
+    assert _transport_identity(object.__new__(RoutedTransport)) == "http.routed.v1"
+    assert _transport_identity(object.__new__(PeerBoundTransport)) == "http.peer_bound.v1"

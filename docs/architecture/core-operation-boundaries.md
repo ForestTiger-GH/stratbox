@@ -35,7 +35,7 @@ imports a concrete domain. The public library has no historical
 
 ## Operation identity and effects
 
-A Python module path identifies a program implementation. It is not a logical
+Built-in HTTP transport evidence identifies the adapter family with stable\nsemantic tokens (`http.requests.v1`, `http.routed.v1` and\n`http.peer_bound.v1`). A caller-supplied custom transport should use an\nexplicit capability provider ID when requests participate in persistent\nevidence; an unbound custom class name is only a local fallback. This\nidentity contract replaces class-location-dependent built-in fingerprints.\nArchival receipts retain their original meaning and are never rewritten.\n\nA Python module path identifies a program implementation. It is not a logical
 operation ID. The ID, contract version, request and result types and effect
 rules are validated by `OperationRegistration` and `OperationCatalog`.
 Physical refactoring does not change source material identities or downgrade
