@@ -2,9 +2,9 @@
 
 import argparse
 
-from stratbox.base.ioapi.bytes import write_verified_bytes
-from stratbox.base.runtime import local_providers
-from stratbox.macrobanks import cbr_file_collector as collector
+from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.system.base.runtime import local_providers
+from stratbox.domains import cbr_file_collector as collector
 
 
 def main():

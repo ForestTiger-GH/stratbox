@@ -6,7 +6,7 @@ import pytest
 import requests
 from requests.structures import CaseInsensitiveDict
 
-from stratbox.base.net import (
+from stratbox.system.base.net import (
     HttpFailure,
     HttpRequest,
     HttpResponse,
@@ -190,7 +190,7 @@ def test_status_and_retry_after_preserve_http_response(monkeypatch):
 
 
 def test_budget_covers_retries_and_redirects_before_next_connection(monkeypatch):
-    from stratbox.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+    from stratbox.system.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
 
     retry = RetryPolicy(attempts=2, initial_delay_seconds=0, max_delay_seconds=0)
     for first in (Response(503, {}), Response(302, {"Location": "/public/next"})):
@@ -228,7 +228,7 @@ def test_peer_admission_and_tls_use_actual_connection(tmp_path, monkeypatch):
     import subprocess
     from threading import Thread
 
-    from stratbox.base.net import PeerBoundTransport, exchange_into
+    from stratbox.system.base.net import PeerBoundTransport, exchange_into
 
     openssl = which("openssl")
     if openssl is None:

@@ -2,8 +2,8 @@
 
 import argparse
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.macrobanks import frg
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.domains import frg
 
 
 def main():

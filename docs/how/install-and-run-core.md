@@ -25,8 +25,8 @@ wheel path, for example `python -m pip install
 from datetime import date
 from pathlib import Path
 
-from stratbox.data import SourcePayload
-from stratbox.macrobanks.cbr_offices import ParseOfficesRequest, parse
+from stratbox.shared.data import SourcePayload
+from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
 
 original = SourcePayload(Path("offices.html").read_bytes(), "text/html")
 parsed = parse(ParseOfficesRequest(original, date(2026, 11, 11)))
@@ -62,9 +62,9 @@ notification acknowledgement.
 ```python
 from datetime import date
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.net import HttpRequest, HttpsEndpoint, RequestsTransport
-from stratbox.execution.originals import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.net import HttpRequest, HttpsEndpoint, RequestsTransport
+from stratbox.system.execution.originals import (
     OriginalDestination,
     ReadOriginalRequest,
     ReceiveOriginalRequest,
@@ -72,7 +72,7 @@ from stratbox.execution.originals import (
     read_original,
     receive_to_store,
 )
-from stratbox.macrobanks.cbr_offices import ParseOfficesRequest, parse
+from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
 
 host = "www.cbr.ru"
 path = "/banking_sector/credit/cstat/"

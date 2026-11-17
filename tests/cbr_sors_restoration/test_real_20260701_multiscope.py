@@ -5,19 +5,19 @@ from pathlib import Path
 
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.macrobanks.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
-from stratbox.macrobanks.cbr_sors_restoration import SorsSourceFiles
-from stratbox.macrobanks.cbr_sors_restoration.publication import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.domains.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
+from stratbox.domains.cbr_sors_restoration import SorsSourceFiles
+from stratbox.domains.cbr_sors_restoration.publication import (
     RoundingPolicy,
     SorsPublicationLedger,
     build_publication_graph,
     run_publication_fixed_point,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.interval_closure import (
+from stratbox.domains.cbr_sors_restoration.strict.interval_closure import (
     SorsIntervalClosureState,
 )
-from stratbox.macrobanks.cbr_sors_restoration.strict.quantities import build_quantity_graph
+from stratbox.domains.cbr_sors_restoration.strict.quantities import build_quantity_graph
 
 
 def _real_dir() -> Path | None:

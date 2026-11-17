@@ -3,8 +3,8 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from stratbox.base.net import HttpResponse
-from stratbox.macrobanks import cbr_forms
+from stratbox.system.base.net import HttpResponse
+from stratbox.domains import cbr_forms
 
 
 @pytest.mark.parametrize("code", ["101", "102", "123", "135", "802", "805"])

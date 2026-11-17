@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.contracts import (
+from stratbox.domains.cbr_sors_restoration.contracts import (
     SorsOptimizationConfig,
     SorsSelectionPolicy,
 )
-from stratbox.macrobanks.cbr_sors_restoration.optimization import selection as selection_module
-from stratbox.macrobanks.cbr_sors_restoration.optimization.selection import (
+from stratbox.domains.cbr_sors_restoration.optimization import selection as selection_module
+from stratbox.domains.cbr_sors_restoration.optimization.selection import (
     _connected_candidate_clusters,
     validate_selection_clusters,
 )
-from stratbox.macrobanks.cbr_sors_restoration.publication import RoundingPolicy
+from stratbox.domains.cbr_sors_restoration.publication import RoundingPolicy
 
 
 def _candidate(target_id: str, components: tuple[str, ...]) -> dict[str, object]:
@@ -172,7 +172,7 @@ def _one_target_bounds(lower: float, upper: float):
 def test_weak_rounding_never_selects_when_zero_bucket_remains_possible() -> None:
     from types import SimpleNamespace
     import numpy as np
-    from stratbox.macrobanks.cbr_sors_restoration.optimization.selection import (
+    from stratbox.domains.cbr_sors_restoration.optimization.selection import (
         build_selection_candidates,
     )
 
@@ -195,7 +195,7 @@ def test_weak_rounding_never_selects_when_zero_bucket_remains_possible() -> None
 def test_bucket_competition_prefers_lower_global_rounding_cost(monkeypatch) -> None:
     from types import SimpleNamespace
     import numpy as np
-    from stratbox.macrobanks.cbr_sors_restoration.optimization.selection import (
+    from stratbox.domains.cbr_sors_restoration.optimization.selection import (
         build_selection_candidates,
         score_bucket_competition,
     )

@@ -9,17 +9,17 @@ from zipfile import ZipFile
 
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
-from stratbox.base.net.transport import _follow
-from stratbox.data import ByteIdentity, SourcePayload
-from stratbox.execution import ExecutionBudget, ExecutionContext
-from stratbox.execution.originals import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
+from stratbox.system.base.net.transport import _follow
+from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.system.execution import ExecutionBudget, ExecutionContext
+from stratbox.system.execution.originals import (
     OriginalDestination, ReadOriginalRequest, ReceiveOriginalRequest, ReceiveToStoreRequest,
     ReconcileOriginalRequest, SaveOriginalRequest, read_original, receive_original, receive_to_store,
     reconcile_original, save_original,
 )
-from stratbox.macrobanks import cbr_file_collector as collector, cbr_offices
+from stratbox.domains import cbr_file_collector as collector, cbr_offices
 
 class BodyTransport:
     accounts_http_budget = True
@@ -161,7 +161,7 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
     class SetBetweenItems:
         def exchange(self, req, *, cancelled=None):
             from datetime import datetime, timezone
-            from stratbox.base.net import HttpResponse
+            from stratbox.system.base.net import HttpResponse
 
             seen.append(req)
             event.set()
@@ -190,7 +190,7 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
 
 def test_404_followed_by_cancellation_remains_cancellation():
     from datetime import datetime, timezone
-    from stratbox.base.net import HttpResponse
+    from stratbox.system.base.net import HttpResponse
 
     event = Event()
     ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
@@ -208,7 +208,7 @@ def test_404_followed_by_cancellation_remains_cancellation():
 
 
 def test_stream_decompresses_with_bounded_output_chunks():
-    from stratbox.base.net import exchange_into
+    from stratbox.system.base.net import exchange_into
 
     raw = b"x" * 500_000
     compressed = compress(raw)

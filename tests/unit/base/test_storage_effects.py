@@ -2,9 +2,9 @@ from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from threading import Barrier
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.bytes import write_verified_bytes
-from stratbox.data import ByteIdentity
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.shared.data import ByteIdentity
 
 
 def test_immutable_write_serializes_competing_contents(tmp_path):

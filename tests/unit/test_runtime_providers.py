@@ -2,14 +2,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from stratbox.base import runtime
-from stratbox.base.ioapi import bytes as files
-from stratbox.base.runtime import local_providers
+from stratbox.system.base import runtime
+from stratbox.system.base.ioapi import bytes as files
+from stratbox.system.base.runtime import local_providers
 
 
 @pytest.fixture
 def provider_environment(monkeypatch, tmp_path):
-    package = tmp_path / "src/stratbox/base/runtime.py"
+    package = tmp_path / "src/stratbox/system/base/runtime.py"
     package.parent.mkdir(parents=True)
     monkeypatch.setattr(runtime, "__file__", str(package))
     runtime._discover_providers.cache_clear()
@@ -63,6 +63,6 @@ def test_conflicting_defaults_fail_before_any_write(monkeypatch, provider_enviro
     "smb://files.example/Reports/example.XLSM",
 ])
 def test_excel_selects_the_format_for_copied_file_paths(path):
-    from stratbox.base.ioapi.excel import _ext
+    from stratbox.system.base.ioapi.excel import _ext
 
     assert _ext(path) == ".xlsm"

@@ -1,6 +1,6 @@
-from stratbox.macrobanks.cbr_sors_restoration.metrics import source_metric
-from stratbox.macrobanks.cbr_sors_restoration.registries.okved2 import read_okved2_classes
-from stratbox.macrobanks.cbr_sors_restoration.registries.publication_categories import (
+from stratbox.domains.cbr_sors_restoration.metrics import source_metric
+from stratbox.domains.cbr_sors_restoration.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr_sors_restoration.registries.publication_categories import (
     PUBLISHED_OTHER_CLASSES,
     enrich_okved2_classes,
     build_publication_categories,

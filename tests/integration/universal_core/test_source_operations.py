@@ -5,14 +5,14 @@ from zipfile import ZipFile
 
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.archive_bytes import zip_bytes
-from stratbox.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
-from stratbox.base.net import HttpResponse
-from stratbox.data import ByteIdentity, SourcePayload
-from stratbox.data.releases import CompareReleaseRequest, ReadReleaseRequest
-from stratbox.macrobanks import cbr_offices as daily, cbr_offices_reg as monthly
-from stratbox.organizations import fns_1yur, fns_sme
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.ioapi.archive_bytes import zip_bytes
+from stratbox.system.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
+from stratbox.system.base.net import HttpResponse
+from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.shared.data.releases import CompareReleaseRequest, ReadReleaseRequest
+from stratbox.domains import cbr_offices as daily, cbr_offices_reg as monthly
+from stratbox.domains import fns_1yur, fns_sme
 
 from source_fixtures import (
     FORM_EPOCHS,
@@ -246,7 +246,7 @@ def test_1yur_unsafe_archive_part_ii_and_unavailable_rar_reader():
 def test_monthly_dynamic_roles_exact_block_and_ambiguity():
     import openpyxl
 
-    from stratbox.base.ioapi.workbook_input import preview_workbook
+    from stratbox.system.base.ioapi.workbook_input import preview_workbook
 
     period = date(2026, 10, 1)
     baseline = monthly.parse(monthly.ParseOfficesRegRequest(SourcePayload(sample_xlsx()), period))

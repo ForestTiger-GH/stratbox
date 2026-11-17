@@ -4,8 +4,8 @@ from zipfile import ZipFile
 
 from openpyxl import Workbook
 
-from stratbox.base.net import HttpResponse
-from stratbox.macrobanks import cbr_file_collector as collector
+from stratbox.system.base.net import HttpResponse
+from stratbox.domains import cbr_file_collector as collector
 
 
 class ArchiveTransport:

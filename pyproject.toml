@@ -36,9 +36,9 @@ version = {attr = "stratbox.__version__"}
 
 [tool.setuptools.package-data]
 "stratbox" = ["py.typed"]
-"stratbox.registries" = ["_resources/**/*"]
-"stratbox.macrobanks.cbr_forms.models" = ["*.csv"]
-"stratbox.macrobanks.cbr_sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
+"stratbox.shared.registries" = ["_resources/**/*"]
+"stratbox.domains.cbr_forms.models" = ["*.csv"]
+"stratbox.domains.cbr_sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

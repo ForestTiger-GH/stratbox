@@ -3,13 +3,13 @@ from datetime import timedelta
 
 import pytest
 
-from stratbox.execution import OperationFailure
-from stratbox.notifications import (
+from stratbox.system.execution import OperationFailure
+from stratbox.system.notifications import (
     FilterCondition, InspectRequest, PrepareRequest, SubscriptionChange, accessible_topics, amend_checkpoint,
     configure_subscription, flush_audit, inspect, prepare, register_replay,
 )
-from stratbox.base.filestore import LocalFileStore
-from stratbox.observability import (
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.observability import (
     DomainFact, FileJournalReader, FileJournalWriter, JournalReadLimits, ObjectRef,
     PersistencePolicy, SegmentDescriptor, record_from_fact,
 )

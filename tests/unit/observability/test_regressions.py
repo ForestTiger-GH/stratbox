@@ -10,12 +10,12 @@ import io
 import json
 import pytest
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.data import (ByteIdentity, Comparison, PublicationReceipt, StoredBytesReceipt)
-from stratbox.execution import (Correlation, Diagnostic, EffectReceipt,
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.shared.data import (ByteIdentity, Comparison, PublicationReceipt, StoredBytesReceipt)
+from stratbox.system.execution import (Correlation, Diagnostic, EffectReceipt,
                                 ObservabilitySummary, OperationDefinition, OperationResult,
                                 ExecutionEvent, ExecutionContext, run)
-from stratbox.observability import (
+from stratbox.system.observability import (
     CapturePolicy, PersistencePolicy, PresentationPolicy, RecordMemorySink, FileEventSink,
     JournalRecord, JournalNamespace, DomainFact, ObjectRef, PayloadLimits, OriginClaim,
     OriginAttestation, JournalBarrierError, RecordFilter, select_records,
@@ -408,7 +408,7 @@ def test_grouping_budget_and_codec_limit():
 
 
 def test_composite_optional_observers_isolate_failures():
-    from stratbox.observability import CompositeEventSink
+    from stratbox.system.observability import CompositeEventSink
     class Broken:
         def emit(self, event):
             raise RuntimeError("failure must not escape to sibling")
@@ -553,8 +553,8 @@ def test_finished_event_result_mismatch_rejected():
 
 
 def test_file_event_sink_policy_filter_counts_as_seen_but_not_lost(tmp_path):
-    from stratbox.observability import FileEventSink
-    from stratbox.execution import ExecutionContext, OperationDefinition, run
+    from stratbox.system.observability import FileEventSink
+    from stratbox.system.execution import ExecutionContext, OperationDefinition, run
     store = LocalFileStore(str(tmp_path))
     writer = FileJournalWriter(store, "sink", writer_id="collector")
     collector = FileEventSink(BufferedFileJournal(writer), CapturePolicy(progress=False))

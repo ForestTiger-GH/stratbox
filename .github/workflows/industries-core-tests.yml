@@ -3,8 +3,11 @@ name: Stratbox industry core regression
 on:
   pull_request:
     paths:
-      - 'src/stratbox/macrobanks/cbr_industries/**'
-      - 'src/stratbox/catalog.py'
+      - 'src/stratbox/domains/cbr_industries/**'
+      - 'src/stratbox/domains/registry.py'
+      - 'src/stratbox/system/execution/**'
+      - 'src/stratbox/shared/**'
+      - 'tests/unit/registry/**'
       - 'src/stratbox/__init__.py'
       - 'tests/unit/macrobanks/test_cbr_industries*'
       - 'benchmarks/cbr_industries_history.py'
@@ -34,4 +37,4 @@ jobs:
           python -B -m pytest -q tests/unit/macrobanks/test_cbr_industries_0105a_debt_corp.py tests/unit/macrobanks/test_cbr_industries_0104a_issuance.py
       - name: Shared computation and admission regressions
         run: |
-          python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py
+          python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py tests/unit/registry/test_domain_registration.py

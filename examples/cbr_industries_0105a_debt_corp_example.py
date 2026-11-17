@@ -3,8 +3,8 @@
 import argparse
 from pathlib import Path
 
-from stratbox.data import SourcePayload
-from stratbox.macrobanks import cbr_industries as industries
+from stratbox.shared.data import SourcePayload
+from stratbox.domains import cbr_industries as industries
 
 
 def load(paths, selection=industries.IndustrySelection()):

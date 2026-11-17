@@ -4,9 +4,9 @@ import argparse
 from pathlib import Path
 
 from cbr_industries_0105a_debt_corp_example import load
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.bytes import write_verified_bytes
-from stratbox.macrobanks import cbr_industries as industries
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.domains import cbr_industries as industries
 
 
 def main():

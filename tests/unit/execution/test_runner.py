@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from threading import Event
 
-from stratbox.execution import (
+from stratbox.system.execution import (
     Completion,
     Correlation,
     ExecutionContext,

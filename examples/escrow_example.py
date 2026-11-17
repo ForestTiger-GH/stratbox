@@ -3,10 +3,10 @@
 import argparse
 from pathlib import Path
 
-from stratbox.base.filestore import LocalFileStore
-from stratbox.base.ioapi.bytes import write_verified_bytes
-from stratbox.data import SourcePayload
-from stratbox.macrobanks import escrow
+from stratbox.system.base.filestore import LocalFileStore
+from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.shared.data import SourcePayload
+from stratbox.domains import escrow
 
 
 def require_value(result):

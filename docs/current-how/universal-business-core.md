@@ -1,4 +1,4 @@
-# Stratbox 0.12 core operations
+# Stratbox core operations
 
 The Python package exposes independent acquisition, parsing, comparison,
 calculation and representation operations. Each domain owns its source
@@ -7,18 +7,22 @@ format primitives are reusable across domains.
 
 | Domain | Public operations | Subject and result |
 | --- | --- | --- |
-| `execution.originals` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
-| `macrobanks.cbr_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
-| `macrobanks.cbr_offices_reg` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
-| `organizations.fns_sme` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
-| `organizations.fns_1yur` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Part I from BIFF, OOXML, ZIP or a supplied RAR reader. The dated field map retains identity-equivalent columns, records omissions and keeps original geographic perimeters. |
-| `macrobanks.cbr_file_collector` | `discover`, `collect_raw`, `collect_to_store`, `prepare_archive`, `archive_to_store` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
-| `macrobanks.cbr_industries` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry`, `render_industries` | Monthly 01_05_A_Debt_corp **stock** and 01_04_A_New_loans_corp **flow** via `issuance_0104`. `IndustrySelection` validates all source cells while materializing only needed published industry codes; `apk` expands to its five source ingredients. Batch rendering verifies one mutable input snapshot and generates multiple individually identified XLSX representations. |
-| `macrobanks.cbr_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
-| `macrobanks.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
-| `macrobanks.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
-| `macrobanks.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
-| `notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
+| `system.execution.originals` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
+| `domains.cbr_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
+| `domains.cbr_offices_reg` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
+| `domains.fns_sme` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
+| `domains.fns_1yur` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Part I from BIFF, OOXML, ZIP or a supplied RAR reader. The dated field map retains identity-equivalent columns, records omissions and keeps original geographic perimeters. |
+| `domains.cbr_file_collector` | `discover`, `collect_raw`, `collect_to_store`, `prepare_archive`, `archive_to_store` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
+| `domains.cbr_industries` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry`, `render_industries` | Monthly 01_05_A_Debt_corp **stock** and 01_04_A_New_loans_corp **flow** via `issuance_0104`. `IndustrySelection` validates all source cells while materializing only needed published industry codes; `apk` expands to its five source ingredients. Batch rendering verifies one mutable input snapshot and generates multiple individually identified XLSX representations. |
+| `domains.cbr_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
+| `domains.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
+| `domains.cbr_sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
+| `domains.frg` | `scan`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Read-only catalog and plan, scoped conditional copy/move/removal, per-action receipts; in-memory ZIP for small selections or disk-streamed, SHA-verified ZIP for large selections and mounted directories. |
+| `system.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
+
+Every domain publishes its operations in `registration.py`. The central
+`stratbox.domains.registry.operation_catalog()` collects these declarations
+and system-owned operations. See the [registry interface](domain-operation-registry.md).
 
 ## Execution and observations
 

@@ -2,6 +2,8 @@
 
 [Stratbox 0.9 core operations](universal-business-core.md)
 
+[Automatic domain registration and operation discovery](domain-operation-registry.md)
+
 [Core operation construction](core-operation-construction.md)
 
 **Status:** nine bounded static implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.

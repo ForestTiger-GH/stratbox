@@ -3,28 +3,28 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.macrobanks.cbr_sors_restoration.contracts import (
+from stratbox.domains.cbr_sors_restoration.contracts import (
     SorsCrosswalkConfig,
     SorsSourceBundle,
 )
-from stratbox.macrobanks.cbr_sors_restoration.crosswalk import operations
-from stratbox.macrobanks.cbr_sors_restoration.linear.highs import SolveResult
-from stratbox.macrobanks.cbr_sors_restoration.metrics import (
+from stratbox.domains.cbr_sors_restoration.crosswalk import operations
+from stratbox.domains.cbr_sors_restoration.linear.highs import SolveResult
+from stratbox.domains.cbr_sors_restoration.metrics import (
     METRIC_NAMES_RU,
     METRIC_ORDER,
 )
-from stratbox.macrobanks.cbr_sors_restoration.registries.okved2 import (
+from stratbox.domains.cbr_sors_restoration.registries.okved2 import (
     read_okved2_classes,
 )
-from stratbox.macrobanks.cbr_sors_restoration.registries.publication_categories import (
+from stratbox.domains.cbr_sors_restoration.registries.publication_categories import (
     build_publication_categories,
     enrich_okved2_classes,
 )
-from stratbox.macrobanks.cbr_sors_restoration.results import (
+from stratbox.domains.cbr_sors_restoration.results import (
     SorsRestorationResult,
     SorsRunSummary,
 )
-from stratbox.macrobanks.cbr_sors_restoration.schema import TARGET_METRICS
+from stratbox.domains.cbr_sors_restoration.schema import TARGET_METRICS
 
 
 def _published_row(
@@ -224,7 +224,7 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
-    from stratbox.macrobanks.cbr_sors_restoration import CrosswalkSorsRequest, run_crosswalk
+    from stratbox.domains.cbr_sors_restoration import CrosswalkSorsRequest, run_crosswalk
 
     execution = run_crosswalk(CrosswalkSorsRequest(
         _strict_with_bundle(),
@@ -275,11 +275,11 @@ def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
     from io import BytesIO
     from openpyxl import Workbook
 
-    from stratbox.data import SourcePayload
-    from stratbox.macrobanks.cbr_sors_restoration import (
+    from stratbox.shared.data import SourcePayload
+    from stratbox.domains.cbr_sors_restoration import (
         LoadSorsRequest, RestoreSorsRequest, SorsRunConfig, SorsSourceInputs, load_sources, restore,
     )
-    from stratbox.macrobanks.cbr_sors_restoration.sources import loader
+    from stratbox.domains.cbr_sors_restoration.sources import loader
 
     config = SorsRunConfig(as_of_date="2026-06-01")
     fixture = replace(_strict_with_bundle()._source_bundle,

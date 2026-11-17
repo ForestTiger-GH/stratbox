@@ -2,9 +2,9 @@ from io import BytesIO
 
 from openpyxl import Workbook, load_workbook
 
-from stratbox.data import SourcePayload
-from stratbox.macrobanks import escrow
-from stratbox.macrobanks.escrow.columns import ESCROW_INDICATOR_SPECS
+from stratbox.shared.data import SourcePayload
+from stratbox.domains import escrow
+from stratbox.domains.escrow.columns import ESCROW_INDICATOR_SPECS
 
 
 def workbook_bytes():
@@ -70,7 +70,7 @@ def test_escrow_discovery_recognizes_actual_cbr_collection_paths():
 def test_escrow_acquire_accepts_official_collection_workbook():
     """Use an offline transport to verify actual URL admission and source bytes."""
     from datetime import datetime, timezone
-    from stratbox.base.net import HttpResponse
+    from stratbox.system.base.net import HttpResponse
 
     source = escrow.discover(escrow.DiscoverEscrowRequest(
         SourcePayload(
