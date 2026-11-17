@@ -56,7 +56,7 @@ def validate_pinned_links(documents: list[Path], *, repository: Path = ROOT) -> 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--directory", type=Path, default=ROOT / "docs/current-how")
+    parser.add_argument("--directory", type=Path, default=ROOT / "docs")
     args = parser.parse_args()
     if not (ROOT / ".git").exists():
         parser.error("full Git history is required for revision-pinned verification")
