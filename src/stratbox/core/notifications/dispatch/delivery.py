@@ -15,9 +15,8 @@ from stratbox.core.observability import JournalReadLimits, JournalRecord, Requir
 
 from stratbox.core.notifications.state.audit import audit_record
 from stratbox.core.notifications.contracts import AdmittedHandoff, EventPointer, HandoffLookup, HandoffReceipt, NotificationIntent
-from stratbox.core.notifications.dispatch.preparation import (
-    MAX_ENVELOPE_BYTES, _metadata, _projection, dispatch_key, read_page,
-)
+from stratbox.core.notifications.dispatch.intents import MAX_ENVELOPE_BYTES, _metadata, _projection, dispatch_key
+from stratbox.core.notifications.dispatch.preparation import read_page
 from stratbox.core.notifications.runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission, require_binding
 from stratbox.core.notifications.state.transactions import commit_and_lookup
 from stratbox.core.notifications.state.contracts import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt
@@ -26,99 +25,9 @@ from stratbox.core.notifications.topics import is_service_event, match_condition
 from stratbox.core.observability.records.schema import ValueRule
 
 
-@dataclass(frozen=True, slots=True)
-class RetryPolicy:
-    max_attempts: int = 5
-    base_delay_seconds: int = 60
-    max_delay_seconds: int = 3600
-    lifetime_seconds: int = 7 * 24 * 3600
-    claim_seconds: int = 120
-
-    def __post_init__(self) -> None:
-        values = (self.max_attempts, self.base_delay_seconds, self.max_delay_seconds,
-                  self.lifetime_seconds, self.claim_seconds)
-        if (any(type(value) is not int or not 1 <= value <= 366 * 24 * 3600 for value in values)
-                or self.max_attempts > 64 or self.base_delay_seconds > self.max_delay_seconds):
-            raise ValueError("notification.retry_policy_invalid")
-
-    def expires(self, intent: NotificationIntent) -> datetime:
-        return intent.prepared_at_utc + timedelta(seconds=self.lifetime_seconds)
-
-    def next_due(
-        self, number: int, now: datetime, receipt: HandoffReceipt,
-        jitter: Callable[[float, float], float],
-    ) -> datetime:
-        delay = min(self.max_delay_seconds, self.base_delay_seconds * 2**(number - 1))
-        observed = jitter(delay / 2, delay)
-        if not delay / 2 <= observed <= delay:
-            raise ValueError("notification.retry_jitter_invalid")
-        planned = now + timedelta(seconds=observed)
-        return max(planned, receipt.retry_after_utc) if receipt.retry_after_utc is not None else planned
-
-
-@dataclass(frozen=True, slots=True)
-class DeliverRequest:
-    scope_id: str
-    dispatch_id: str
-    expected_version: int | None = None
-
-    def __post_init__(self) -> None:
-        safe_token(self.scope_id)
-        safe_token(self.dispatch_id)
-        if self.expected_version is not None and (type(self.expected_version) is not int or self.expected_version < 1):
-            raise ValueError("notification.dispatch_version_invalid")
-
-
-@dataclass(frozen=True, slots=True)
-class ReconcileDeliveryRequest:
-    scope_id: str
-    dispatch_id: str
-    attempt_id: str
-
-    def __post_init__(self) -> None:
-        for value in (self.scope_id, self.dispatch_id, self.attempt_id):
-            safe_token(value)
-
-
-@dataclass(frozen=True, slots=True)
-class QualifyDeliveryRequest:
-    lookup: HandoffLookup
-    receipt: HandoffReceipt | None
-
-
-@dataclass(frozen=True, slots=True)
-class QualifiedHandoff:
-    state: Literal["accepted", "not_accepted", "unknown"]
-    reason_code: str
-    receipt: HandoffReceipt | None = field(default=None, repr=False)
-
-
-@dataclass(frozen=True, slots=True)
-class DeliveryResult:
-    dispatch_id: str
-    state: str
-    reason_code: str | None
-    next_action: Literal["done", "deliver", "wait", "reconcile", "reload_state", "restore_evidence"]
-    attempt_id: str | None = None
-    next_due_at_utc: datetime | None = None
-    state_command_id: str | None = None
-
-
-def qualify_receipt(lookup: HandoffLookup, receipt: HandoffReceipt | None) -> QualifiedHandoff:
-    if receipt is None:
-        return QualifiedHandoff("unknown", "notification.acknowledgement_unconfirmed")
-    if not isinstance(receipt, HandoffReceipt) or (
-        receipt.dispatch_id, receipt.attempt_id, receipt.route, receipt.route_revision, receipt.payload_identity
-    ) != (lookup.dispatch_id, lookup.attempt_id, lookup.route, lookup.route_revision, lookup.payload_identity):
-        return QualifiedHandoff("unknown", "notification.receipt_mismatch")
-    if receipt.state == "unknown" or receipt.evidence_ref is None:
-        return QualifiedHandoff("unknown", receipt.reason_code or "notification.acknowledgement_unconfirmed")
-    if receipt.state == "accepted":
-        return QualifiedHandoff("accepted", "notification.consumer_accepted", receipt)
-    if not receipt.final_rejection:
-        return QualifiedHandoff("unknown", "notification.rejection_unconfirmed")
-    return QualifiedHandoff("not_accepted", receipt.reason_code or "notification.not_accepted", receipt)
-
+from stratbox.core.notifications.dispatch.contracts import (RetryPolicy, DeliverRequest, ReconcileDeliveryRequest,
+    QualifyDeliveryRequest, QualifiedHandoff, DeliveryResult)
+from stratbox.core.notifications.dispatch.qualification import qualify_receipt
 
 def _summary(row: Dispatch, *, command_id: str | None = None) -> DeliveryResult:
     next_action = {
@@ -477,33 +386,3 @@ def deliver_work(
     return _finish(runtime, claimed, attempt, qualified, policy, invocation, jitter=jitter)
 
 
-def reconcile_work(request: ReconcileDeliveryRequest, runtime: NotificationRuntime, invocation: Invocation, *, policy, jitter):
-    invocation.stage("load_attempt")
-    row, sub = _load(request, runtime, invocation)
-    if not row.attempts or row.attempts[-1].lookup.attempt_id != request.attempt_id:
-        raise OperationFailure("notification.attempt_mismatch")
-    if row.state not in {"in_flight", "unknown"}:
-        return _summary(row)
-    now = invocation.context.clock.now()
-    if row.state == "in_flight" and now < row.attempts[-1].claim_until_utc:
-        return _summary(row)
-    need_access(access(runtime, "reconcile", sub.spec, now, intent=row.intent))
-    consumer = runtime.consumer_for(sub.spec)
-    binding = runtime.source_for(row.intent.event.cursor.stream)
-    if binding.profile == "resumable" and (runtime.state.durable is not True or consumer.kind != "durable_inbox"):
-        raise OperationFailure("notification.durable_inbox_required")
-    guarantees = ("recipient_bound", "durable_acceptance", "idempotent_acceptance") if (
-        binding.profile == "resumable"
-    ) else ("recipient_bound",)
-    if binding.profile == "local_snapshot" and consumer.kind != "in_process":
-        raise OperationFailure("notification.local_consumer_required")
-    require_binding(invocation.context, request.scope_id, "notification", consumer.consumer, *guarantees)
-    invocation.stage("owner_lookup")
-    attempt = row.attempts[-1]
-    observed = None
-    try:
-        observed = consumer.consumer.lookup(attempt.lookup)
-    except Exception:
-        pass
-    qualified = qualify_receipt(attempt.lookup, observed)
-    return _finish(runtime, row, attempt, qualified, policy, invocation, reconciled=True, jitter=jitter)

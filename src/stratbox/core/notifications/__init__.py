@@ -4,7 +4,7 @@ from stratbox.core.notifications.contracts import (
     HandoffReceipt, NotificationAuthority, NotificationConsumer, NotificationIntent, NotificationRoute,
     Subscription, SubscriptionSpec,
 )
-from stratbox.core.notifications.dispatch.delivery import (
+from stratbox.core.notifications.dispatch.contracts import (
     DeliverRequest, DeliveryResult, QualifiedHandoff, QualifyDeliveryRequest, ReconcileDeliveryRequest,
     RetryPolicy,
 )
