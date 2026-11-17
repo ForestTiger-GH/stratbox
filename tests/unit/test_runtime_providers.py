@@ -9,7 +9,7 @@ from stratbox.core.runtime.providers import local_providers
 
 @pytest.fixture
 def provider_environment(monkeypatch, tmp_path):
-    package = tmp_path / "src/stratbox/system/base/runtime.py"
+    package = tmp_path / "src/stratbox/core/runtime/providers.py"
     package.parent.mkdir(parents=True)
     monkeypatch.setattr(runtime, "__file__", str(package))
     runtime._discover_providers.cache_clear()

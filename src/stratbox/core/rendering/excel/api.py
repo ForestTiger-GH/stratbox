@@ -2,17 +2,21 @@
 
 from stratbox.core.runtime.providers import active_providers
 
-from stratbox.core.rendering.excel.apply import apply_style
+from stratbox.core.runtime.dependencies import require_extra
 from stratbox.core.rendering.excel.registry import BUILTIN_STYLES, ExcelStylesRegistry
 
 
 def active_styles(registry: ExcelStylesRegistry | None = None) -> ExcelStylesRegistry:
-    if registry is not None:
-        return registry
-    providers = active_providers()
-    if providers is not None and providers.excel_styles is not None:
-        return providers.excel_styles()
-    return BUILTIN_STYLES
+    if registry is None:
+        providers = active_providers()
+        registry = (
+            providers.excel_styles()
+            if providers is not None and providers.excel_styles is not None
+            else BUILTIN_STYLES
+        )
+    if not isinstance(registry, ExcelStylesRegistry):
+        raise TypeError("Expected ExcelStylesRegistry from the selected provider")
+    return registry
 
 
 def list_available_presets(*, registry: ExcelStylesRegistry | None = None) -> list[str]:
@@ -38,4 +42,8 @@ def apply_preset(worksheet, name: str | None, *, freeze_panes: str | None = None
     resolved = resolve_preset_name(name, registry=registry)
     if resolved not in registry.presets:
         raise ValueError(f"Unknown Excel style preset: {resolved!r}")
+    # Style metadata remains available without the optional Excel engine.
+    require_extra("openpyxl", "excel")
+    from stratbox.core.rendering.excel.apply import apply_style
+
     apply_style(worksheet, registry.presets[resolved], freeze_panes=freeze_panes)
