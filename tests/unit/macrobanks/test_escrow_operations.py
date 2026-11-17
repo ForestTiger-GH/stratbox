@@ -70,7 +70,7 @@ def test_escrow_discovery_recognizes_actual_cbr_collection_paths():
 def test_escrow_acquire_accepts_official_collection_workbook():
     """Use an offline transport to verify actual URL admission and source bytes."""
     from datetime import datetime, timezone
-    from stratbox.system.base.net import HttpResponse
+    from stratbox.core.network import HttpResponse
 
     source = escrow.discover(escrow.DiscoverEscrowRequest(
         SourcePayload(
