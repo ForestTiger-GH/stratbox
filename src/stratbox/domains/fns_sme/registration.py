@@ -1,9 +1,9 @@
 """Published operation references for fns_sme."""
 
-from stratbox.system.execution.registry import DomainRegistration, OperationRef
+from stratbox.core.execution.catalog import OperationRegistration, OperationRef
 
-REGISTRATION = DomainRegistration(
-    domain_id="fns_sme",
+REGISTRATION = OperationRegistration(
+    owner_id="fns_sme",
     operations=(
         OperationRef("fns.sme.discover", 1, "stratbox.domains.fns_sme.operations:DISCOVER", "stratbox.domains.fns_sme.operations:discover"),
         OperationRef("fns.sme.acquire", 1, "stratbox.domains.fns_sme.operations:ACQUIRE", "stratbox.domains.fns_sme.operations:acquire"),

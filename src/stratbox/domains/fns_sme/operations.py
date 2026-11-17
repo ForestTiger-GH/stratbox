@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from stratbox.system.base.net import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
+from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.shared.data import (
     AcquiredSource,
     Comparison,
@@ -19,16 +19,16 @@ from stratbox.shared.data.releases import (
     ReadReleaseRequest,
     build_release,
 )
-from stratbox.system.execution import (
+from stratbox.core.execution import (
     ExecutionContext,
     OperationDefinition,
     OperationFailure,
     OperationResult,
     run,
 )
-from stratbox.system.execution.acquisition import receive_source
-from stratbox.system.execution.comparison import compare_release_inputs, explain_comparison
-from stratbox.system.execution.source_validation import source_failure, use_payload
+from stratbox.core.operations.source.acquisition import receive_source
+from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
+from stratbox.core.operations.source.validation import source_failure, use_payload
 
 from .parser import (
     COLUMNS,

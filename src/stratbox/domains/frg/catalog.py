@@ -15,10 +15,10 @@ from typing import Callable
 
 import pandas as pd
 
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.filestore.paths import child_path
-from stratbox.system.base.filestore.types import DIRECTORY_GUARD_NAME
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.storage.filestore.paths import child_path
+from stratbox.core.storage.filestore.types import DIRECTORY_GUARD_NAME
+from stratbox.core.limits import BudgetMeter
 from stratbox.domains.frg.models import FrgCatalogRecord
 from stratbox.domains.frg.naming import parse_file_name
 

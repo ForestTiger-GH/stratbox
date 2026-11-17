@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.observability import (JournalRecord, FileJournalWriter, FileJournalReader,
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.observability import (JournalRecord, FileJournalWriter, FileJournalReader,
                                     BufferedFileJournal, PersistencePolicy, RequiredJournalGate,
                                     JournalBarrierError)
 

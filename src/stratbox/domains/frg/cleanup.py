@@ -3,11 +3,11 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from stratbox.system.base.filestore import FileVersion
-from stratbox.system.base.filestore.paths import child_path
-from stratbox.system.base.ioapi.bytes import inspect_file_version
+from stratbox.core.storage.filestore import FileVersion
+from stratbox.core.storage.filestore.paths import child_path
+from stratbox.core.storage.bytes import inspect_file_version
 from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
-from stratbox.system.execution import OperationFailure
+from stratbox.core.execution import OperationFailure
 
 from .filename_scheme import build_internal_file_name
 

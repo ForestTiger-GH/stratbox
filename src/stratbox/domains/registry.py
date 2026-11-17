@@ -5,8 +5,8 @@ from __future__ import annotations
 from importlib import import_module
 from pkgutil import iter_modules
 
-from stratbox.system.execution.registry import (
-    DomainRegistration, OperationCatalog, RegistryError, merge_catalogs,
+from stratbox.core.execution.catalog import (
+    OperationRegistration, OperationCatalog, RegistryError, merge_catalogs,
 )
 
 
@@ -22,7 +22,7 @@ def domain_catalog() -> OperationCatalog:
             registration = import_module(f"{name}.registration").REGISTRATION
         except (ImportError, AttributeError) as exc:
             raise RegistryError(f"registry.missing_registration:{found.name}") from exc
-        if not isinstance(registration, DomainRegistration) or registration.domain_id != found.name:
+        if not isinstance(registration, OperationRegistration) or registration.owner_id != found.name:
             raise RegistryError(f"registry.invalid_domain:{found.name}")
         for ref in registration.operations:
             prefix = name + "."
@@ -35,5 +35,5 @@ def domain_catalog() -> OperationCatalog:
 
 
 def operation_catalog() -> OperationCatalog:
-    from stratbox.system.registry import system_catalog
+    from stratbox.core.registry import system_catalog
     return merge_catalogs(domain_catalog(), system_catalog())
