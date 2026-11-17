@@ -76,7 +76,10 @@ from stratbox.core.network import (
 )
 
 transport: HttpTransport = RequestsTransport()
-request = HttpRequest("https://example.org/observations.csv")
+request = HttpRequest(
+    "GET", "https://example.org/observations.csv",
+    endpoints=(HttpsEndpoint("example.org", "/observations.csv"),),
+)
 result = exchange(request, transport=transport)
 ```
 
