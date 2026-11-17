@@ -2,8 +2,8 @@ from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from threading import Barrier
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.shared.data import ByteIdentity
 
 

@@ -10,7 +10,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import pytest
 from openpyxl import Workbook, load_workbook
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr_industries.contracts import (
     Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpPivotRequest,
@@ -20,7 +20,7 @@ from stratbox.domains.cbr_industries.contracts import (
     Cbr0105ADebtCorpStreamResult,
     Cbr0105ADebtCorpValidationIssue,
 )
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes, write_verified_bytes
+from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
 from stratbox.shared.data import ByteIdentity, SourcePayload
 from stratbox.domains.cbr_industries import (
     ParseIndustryRequest, RenderIndustryRequest, RenderPivotRequest, parse, render_industry, render_pivots,
@@ -738,7 +738,7 @@ def test_industry_workbook_rejects_unknown_industry() -> None:
 
 
 def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
-    from stratbox.system.execution import ExecutionBudget, ExecutionContext
+    from stratbox.core.execution import ExecutionBudget, ExecutionContext
     from stratbox.domains import cbr_industries as domain
 
     original = SourcePayload(_workbook_bytes(

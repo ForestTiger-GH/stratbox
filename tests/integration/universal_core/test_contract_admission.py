@@ -7,17 +7,17 @@ import sys
 
 import pytest
 
-from stratbox.system.base.capabilities import (
+from stratbox.core.runtime.capabilities import (
     BindingError, CapabilityRequirement, ProviderBinding, probe_provider, select_provider,
 )
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.limits import ExecutionBudget
-from stratbox.system.base.net import HttpResponse
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.limits import ExecutionBudget
+from stratbox.core.network import HttpResponse
 from stratbox.domains.registry import operation_catalog
-from stratbox.system.execution.registry import OperationCatalog
-from stratbox.system.execution.machine import DirectoryMaterial, WireRequestError
-from stratbox.system.execution.machine import invoke_read_only as _invoke_read_only
-from stratbox.system.execution.machine import wire_schemas as _wire_schemas
+from stratbox.core.execution.catalog import OperationCatalog
+from stratbox.core.execution.machine import DirectoryMaterial, WireRequestError
+from stratbox.core.execution.machine import invoke_read_only as _invoke_read_only
+from stratbox.core.execution.machine import wire_schemas as _wire_schemas
 
 
 def invoke_read_only(raw, *, materials):
@@ -27,7 +27,7 @@ def invoke_read_only(raw, *, materials):
 def wire_schemas(operation_id, contract_version):
     return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
 from stratbox.shared.data import SourcePayload
-from stratbox.system.execution import Correlation, ExecutionContext, OperationDefinition, run
+from stratbox.core.execution import Correlation, ExecutionContext, OperationDefinition, run
 from stratbox.domains import cbr_offices
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures/universal_core/offices-basic.html"
@@ -39,7 +39,7 @@ def test_catalog_imports_without_extras_and_covers_declared_operations():
 import importlib
 import sys
 from stratbox.domains.registry import operation_catalog
-from stratbox.system.execution import OperationDefinition
+from stratbox.core.execution import OperationDefinition
 catalog = operation_catalog()
 descriptions = catalog.describe()
 registered = {(d['operation_id'], d['contract_version']) for d in descriptions}

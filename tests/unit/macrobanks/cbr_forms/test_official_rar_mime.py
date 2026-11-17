@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from stratbox.system.base.net import HttpResponse
+from stratbox.core.network import HttpResponse
 from stratbox.domains import cbr_forms
 
 

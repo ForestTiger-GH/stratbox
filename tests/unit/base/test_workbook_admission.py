@@ -7,11 +7,11 @@ import openpyxl
 import pytest
 import xlwt
 
-from stratbox.system.base.capabilities import CapabilityRequirement, ProviderBinding
-from stratbox.system.base.ioapi.archive_bytes import zip_bytes
-from stratbox.system.base.ioapi.spreadsheet_view import spreadsheet_view
-from stratbox.system.base.ioapi.workbook_input import WorkbookError, preview_workbook, workbook_profile
-from stratbox.system.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding
+from stratbox.core.formats.archives.members import zip_bytes
+from stratbox.core.rendering.spreadsheet_view import spreadsheet_view
+from stratbox.core.formats.spreadsheets.workbook_input import WorkbookError, preview_workbook, workbook_profile
+from stratbox.core.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.shared.data import ByteIdentity, Representation
 
 
@@ -217,7 +217,7 @@ def test_legacy_record_and_xlsx_text_limits_reject_before_decoder():
 
 
 def test_dbf_header_geometry_and_temporary_quota():
-    from stratbox.system.base.ioapi.dbf_bytes import open_dbf_bytes
+    from stratbox.core.formats.dbf_bytes import open_dbf_bytes
 
     header = bytearray(33)
     header[0] = 3

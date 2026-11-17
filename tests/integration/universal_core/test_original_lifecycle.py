@@ -9,12 +9,12 @@ from zipfile import ZipFile
 
 import pytest
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.net import HttpRequest, HttpsEndpoint, RetryPolicy
-from stratbox.system.base.net.transport import _follow
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.network import HttpRequest, HttpsEndpoint, RetryPolicy
+from stratbox.core.network.transport import _follow
 from stratbox.shared.data import ByteIdentity, SourcePayload
-from stratbox.system.execution import ExecutionBudget, ExecutionContext
-from stratbox.system.execution.originals import (
+from stratbox.core.execution import ExecutionBudget, ExecutionContext
+from stratbox.core.operations.source.originals import (
     OriginalDestination, ReadOriginalRequest, ReceiveOriginalRequest, ReceiveToStoreRequest,
     ReconcileOriginalRequest, SaveOriginalRequest, read_original, receive_original, receive_to_store,
     reconcile_original, save_original,
@@ -161,7 +161,7 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
     class SetBetweenItems:
         def exchange(self, req, *, cancelled=None):
             from datetime import datetime, timezone
-            from stratbox.system.base.net import HttpResponse
+            from stratbox.core.network import HttpResponse
 
             seen.append(req)
             event.set()
@@ -190,7 +190,7 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
 
 def test_404_followed_by_cancellation_remains_cancellation():
     from datetime import datetime, timezone
-    from stratbox.system.base.net import HttpResponse
+    from stratbox.core.network import HttpResponse
 
     event = Event()
     ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
@@ -208,7 +208,7 @@ def test_404_followed_by_cancellation_remains_cancellation():
 
 
 def test_stream_decompresses_with_bounded_output_chunks():
-    from stratbox.system.base.net import exchange_into
+    from stratbox.core.network import exchange_into
 
     raw = b"x" * 500_000
     compressed = compress(raw)

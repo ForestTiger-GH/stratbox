@@ -3,7 +3,7 @@ from hashlib import sha256
 from pathlib import Path
 from zipfile import ZipFile
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains import frg
 
 LATEST = "2026-05-01_Экспресс выдачи.xlsx"
@@ -83,8 +83,8 @@ def test_commit_ack_loss_cas_conflict_and_quota_leave_verifiable_state(tmp_path)
     from contextlib import contextmanager
     from dataclasses import replace
 
-    from stratbox.system.base.limits import ExecutionBudget
-    from stratbox.system.execution import ExecutionContext
+    from stratbox.core.limits import ExecutionBudget
+    from stratbox.core.execution import ExecutionContext
 
     inp, _, plan, _, outputs = _setup(tmp_path)
 
@@ -131,9 +131,9 @@ def test_commit_ack_loss_cas_conflict_and_quota_leave_verifiable_state(tmp_path)
 def test_managed_archive_and_cleanup_recheck_scope_at_store(tmp_path):
     from contextlib import contextmanager
 
-    from stratbox.system.base.capabilities import ProviderBinding
-    from stratbox.system.base.filestore import MutationRejected
-    from stratbox.system.execution import ExecutionContext
+    from stratbox.core.runtime.capabilities import ProviderBinding
+    from stratbox.core.storage.filestore import MutationRejected
+    from stratbox.core.execution import ExecutionContext
     from stratbox.domains.frg.api import APPLY, STREAM_ARCHIVE
 
     inp, _, plan, _, outputs = _setup(tmp_path)
@@ -198,8 +198,8 @@ def test_managed_archive_and_cleanup_recheck_scope_at_store(tmp_path):
 
 
 def test_directory_and_planning_budget_stop_before_archive_stage(tmp_path):
-    from stratbox.system.base.limits import ExecutionBudget
-    from stratbox.system.execution import ExecutionContext
+    from stratbox.core.limits import ExecutionBudget
+    from stratbox.core.execution import ExecutionContext
 
     inp, out, plan, _, outputs = _setup(tmp_path)
     request = frg.StreamArchiveRequest(plan, "result.zip")
