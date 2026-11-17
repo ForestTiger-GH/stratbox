@@ -2,7 +2,7 @@
 
 import argparse
 
-from stratbox.system.base.filestore import LocalFileStore
+from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains import frg
 
 

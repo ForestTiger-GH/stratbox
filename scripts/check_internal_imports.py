@@ -21,11 +21,11 @@ DOMAINS = frozenset(
 CRITICAL_MODULES = [
     "stratbox", "stratbox.shared.data", "stratbox.shared.registries",
     "stratbox.shared.time", "stratbox.shared.text.banks",
-    "stratbox.system.base.runtime", "stratbox.system.base.ioapi",
-    "stratbox.system.base.filestore", "stratbox.system.base.net",
-    "stratbox.system.base.secrets", "stratbox.system.execution",
-    "stratbox.system.execution.registry", "stratbox.system.execution.machine",
-    "stratbox.system.observability", "stratbox.system.notifications",
+    "stratbox.core.runtime.providers", "stratbox.core.formats",
+    "stratbox.core.storage.filestore", "stratbox.core.network",
+    "stratbox.core.runtime.secrets", "stratbox.core.execution",
+    "stratbox.core.execution.catalog", "stratbox.core.execution.machine",
+    "stratbox.core.observability", "stratbox.core.notifications",
     "stratbox.domains.registry",
     "stratbox.domains.cbr_file_collector",
     "stratbox.domains.cbr_industries",
@@ -53,7 +53,7 @@ def _imports(path: Path, tree: ast.AST):
             else:
                 prefix = node.module or ""
             yield node.lineno, prefix
-            if prefix in {"stratbox.domains", "stratbox.system", "stratbox.shared"}:
+            if prefix in {"stratbox.domains", "stratbox.core", "stratbox.shared"}:
                 for alias in node.names:
                     yield node.lineno, f"{prefix}.{alias.name}"
 
@@ -103,7 +103,7 @@ def check_dependency_direction() -> list[str]:
                         failures.append(f"{prefix}: prohibited cross-domain import {target}")
                 elif owner == "domains.registry":
                     failures.append(f"{prefix}: registry imports concrete domain {target}")
-            if owner == "system:observability" and target.startswith("stratbox.system.notifications"):
+            if owner == "system:observability" and target.startswith("stratbox.core.notifications"):
                 failures.append(f"{prefix}: observability imports notifications")
             if (target.split(".")[0] in {"requests", "urllib3", "httpx", "aiohttp"}
                     or target.startswith("urllib.request")) and (

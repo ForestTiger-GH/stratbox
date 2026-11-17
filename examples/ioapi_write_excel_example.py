@@ -1,5 +1,5 @@
 """
-Пример: запись Excel через stratbox.system.base.ioapi.
+Пример: запись Excel через stratbox.core.formats.
 
 Плюс:
 - один код для local и corp (если установлен плагин)
@@ -14,8 +14,8 @@ import argparse
 
 import pandas as pd
 
-from stratbox.system.base import runtime
-from stratbox.system.base import ioapi as ia
+from stratbox.core.runtime import providers as runtime
+from stratbox.core import formats as ia
 
 
 def main() -> int:

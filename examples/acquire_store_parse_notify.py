@@ -4,18 +4,18 @@ import argparse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.net import HttpResponse
-from stratbox.system.execution import ExecutionContext
-from stratbox.system.execution.originals import OriginalDestination, SaveOriginalRequest, save_original
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.network import HttpResponse
+from stratbox.core.execution import ExecutionContext
+from stratbox.core.operations.source.originals import OriginalDestination, SaveOriginalRequest, save_original
 from stratbox.domains import cbr_offices
-from stratbox.system.notifications import (
+from stratbox.core.notifications import (
     AccessDecision, CheckpointKey, ConsumerBinding, DeliverRequest, HandoffReceipt,
     MemoryNotificationState, NotificationRoute, NotificationRuntime, PrepareRequest, SourceBinding,
     SubscriptionChange, SubscriptionSpec, build_catalog, configure_subscription, deliver, prepare,
     register_replay,
 )
-from stratbox.system.observability import RecordMemorySink, SnapshotJournalSource, StreamKey, capture_operation_result
+from stratbox.core.observability import RecordMemorySink, SnapshotJournalSource, StreamKey, capture_operation_result
 
 
 class RecordedSource:

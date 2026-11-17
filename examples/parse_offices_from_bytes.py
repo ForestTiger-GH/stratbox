@@ -4,8 +4,8 @@ import argparse
 from datetime import date
 from pathlib import Path
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.ioapi.bytes import write_verified_bytes
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.shared.data import SourcePayload
 from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
 
