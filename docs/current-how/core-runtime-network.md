@@ -1,58 +1,141 @@
-> **Current implementation (0.14.x core reorganization):** The maintained runtime
-> lives in `stratbox.core.runtime.providers`, HTTP transport in
-> `stratbox.core.network`, secret ports in
-> `stratbox.core.runtime.secrets`, file-store ports in
-> `stratbox.core.storage.filestore`, and byte IO in
-> `stratbox.core.storage.bytes`. Callers can explicitly supply providers;
-> provider discovery uses a validated entry-point or sibling factory and
-> rejects ambiguous configurations. No provider discovery occurs just from
-> importing `stratbox.core`.
->
-> The historical paragraphs and version-pinned source hyperlinks below
-> document a **frozen earlier implementation**, rather than the current
-> API. For current operation and capability behavior see
-> [execution and admission](core-execution-and-admission.md) and
-> [operation boundaries](../architecture/core-operation-boundaries.md).
+# Runtime providers and network transport
 
-# Current HOW — аналитическое ядро: runtime и сетевой транспорт
+This guide describes the current public-neutral infrastructure in
+`stratbox.core`. For the functional ownership rules see
+[core operation boundaries](../architecture/core-operation-boundaries.md).
 
-> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+## Responsibility map
 
-**Статус:** ограниченная реконструкция по исходным файлам; **не** полная модель core.  
-**Implementation owner:** `ForestTiger-GH/stratbox`. **Source Baseline:** `8459dc58922b7e8df853cf1d9e8131fa9e132580`; diff до исполнения `5cff9157460c2035aa42758b505cce65b7c53f47` не затронул `src/`, `tests/` и `scripts/`.  
-**Метод доказательства:** чтение конкретных исходных файлов целиком, без запуска, network calls, проверки установленного пакета или среды.
+| Package | Responsibility |
+| --- | --- |
+| `stratbox.core.runtime.providers` | Composition and lookup of a provider bundle. |
+| `stratbox.core.runtime.capabilities` | Versioned capability requirements and explicit provider bindings. |
+| `stratbox.core.runtime.secrets` | Secret provider contract and local environment/prompt adapters. |
+| `stratbox.core.storage.filestore` | Logical file-store ports and the local implementation. |
+| `stratbox.core.storage.bytes` | Bounded reads and verified writes over a file-store port. |
+| `stratbox.core.storage.staging` | Staged byte material and conditional writes. |
+| `stratbox.core.network` | HTTPS request and response contracts, transport, routes and retries. |
 
-## Назначение и граница
+The library does not own an application scheduler, presentation process or
+host-specific authorization database. Those are supplied by the caller.
 
-Ядро предоставляет предметным обработчикам инфраструктурные абстракции `FileStore`, `SecretProvider` и сетевую операцию скачивания байтов. Выбор внешнего runtime provider изолирован в `base.runtime`; предметным модулям доступны `get_filestore()` и `get_secrets()`. Точные среды установки и фактические backend-поставщики **не установлены** данным статическим срезом.
+## Compose an explicit local provider bundle
 
-## Загрузка runtime providers
+```python
+from stratbox.core.runtime.providers import Providers, local_providers
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.network import RequestsTransport
+from stratbox.core.runtime.secrets import EnvSecretProvider
 
-В `base.runtime` определена неизменяемая запись `Providers(filestore, secrets, source)` и процессный кэш `_PROVIDERS`. При первом запросе выбирается обнаруженный совместимый provider bundle либо встроенная локальная композиция; в последующих вызовах используется кэш. `force_reload` инициирует пересборку. В локальной композиции `LocalFileStore` получает опциональный корень из окружения, а чтение секретов выстроено через цепочку окружения и интерактивного ввода. В полном неинтерактивном запуске поведение интерактивного fallback требует отдельной проверки. [Прямая реализация](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/runtime.py).
+providers = local_providers(root="./data")
+assert isinstance(providers.filestore, LocalFileStore)
 
-**Предел достоверности:** статическая ветвящаяся реализация не доказывает наличие, корректность, доступность или выбранное состояние какого-либо стороннего provider в реальной установке. Не следует интерпретировать его как гарантированную возможность.
+# Individual operations also accept explicitly supplied adapters.
+bundle = Providers(
+    filestore=LocalFileStore("./data"),
+    http=RequestsTransport(),
+    secrets=EnvSecretProvider(prefix="STRATBOX_"),
+)
+```
 
-## HTTP download
+`Providers` consists of `filestore`, `http`, `secrets` and an optional
+callable `excel_styles` registry factory. No concrete host extension is
+required by the public package.
 
-`download_bytes` сначала передаёт исходную строку в общий URL-normalizer, при ошибке предварительной нормализации сохраняет исходную строку. Затем выполняет до `retries + 1` HTTP-запросов через `requests.get`, применяя `timeout` и линейный backoff `backoff*(attempt+1)`. Успех требует код 200 и содержимое не меньше `min_bytes_ok` байтов. Возвращает структурированный `DownloadResult(ok, status_code, content, error, final_url, headers)` с `content=None` при окончательном отказе. [Прямая реализация](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/net/http.py).
+`default_filestore(explicit_store)` and `default_secrets(explicit_provider)`
+return their supplied argument first. With no argument, each obtains a
+validated active provider bundle when one exists, or builds the designated
+local adapter otherwise.
 
-**Наблюдаемая граница ошибки:** функция перехватывает исключение URL-нормализации и продолжает с исходным URL. Это часть действительного control flow, но не универсально правильная политика для управляемой среды. Статический анализ не подтверждает сетевой тест и не доказывает конкретные схемы внешних источников. Переписывание URL как общий extension seam остаётся *неизвестным в части выбранного deployment*; текущая реальная реализация принадлежит указанному коду, а не описанию будущего сетевого слоя.
+## Runtime discovery and ambiguity
 
-## Репрезентативные пути и ограничения
+`active_providers()` checks for one installed `default` entry point in the
+`stratbox.runtime` group, or one matching sibling package factory under
+the neutral `stratbox_*/_stratbox_runtime.py` convention. A sibling factory
+is named `create_providers()` and returns a `Providers` instance.
+Discovery validates the candidate count, module location, required methods
+and optional style factory. Ambiguous or invalid composition fails with a
+`RuntimeProviderError`; discovery results are cached for the process.
 
-1. Локальный caller запрашивает `get_filestore()`: создаётся либо возвращается закэшированный локальный runtime context.
-2. Предметный downloader вызывает `download_bytes()`: URL normalization → HTTP attempt(s) → `DownloadResult`.
-3. При неприемлемом ответе может быть несколько сетевых попыток; caller получает `ok=False` и последний error/status, но не полный trace каждой попытки.
-4. В этом срезе **нет** доказанного сквозного run identity, общего operation admission, authoritative source snapshot registry или durable failure journal поверх данного downloader. Это граница исследованного файла, а не доказательство отсутствия таких механизмов во всём продукте.
+Importing `stratbox.core` by itself does not probe the environment,
+create files or start network access. Provider discovery occurs through
+explicit runtime access or an operation that requests a default adapter.
 
-**Что подлежит пересмотру:** изменение `base/runtime.py`, `base/net/http.py`, соответствующих tests, packaging, deployment configuration или внешних API. Исторические проектные мотивы здесь не реконструируются.
+A managed operation uses `ExecutionContext` bindings. Each required
+`ProviderBinding` is selected against a `CapabilityRequirement` with
+its declared version, scope and guarantees. The bound accepting provider
+must enforce its own authority, destination restrictions and effect
+conditions. The core cannot infer those from Python object type.
 
-## Pinned neutral runtime, secret and byte IO scope — 2026-10-12
+## HTTP requests and transport
 
-**Source-first, static-only:** Seven frozen core files were read end-to-end and checked against the census Git blob identities. [Runtime provider composition](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/runtime.py) (`SB-SRC-0129`); generic [SecretProvider protocol](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/secrets/base.py), [environment lookup](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/secrets/env.py), [interactive prompt](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/secrets/prompt.py) (`0131–0133`); [byte-oriented FileStore IO](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/system/base/ioapi/bytes.py) (`0110`); [provider test](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/unit/test_runtime_providers.py) (`0338`) and [import smoke](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/smoke/test_core_imports.py) (`0331`). This note covers **public-neutral extension contracts only** and no non-public implementation.
+```python
+from stratbox.core.network import (
+    HttpRequest, HttpTransport, RequestsTransport, PeerBoundTransport,
+    RoutedTransport, HttpsEndpoint, RetryPolicy, exchange,
+)
 
-The runtime uses a process-level cached provider bundle. In its **local fallback profile**, environment secret lookup is followed by interactive `PromptSecretProvider.get_secret` on missing values. This calls **`getpass.getpass`** and may cache a nonempty reply in memory. The generic `SecretProvider` protocol offers `str | None` but no unattended policy or timeout. A future headless host accidentally taking that interactive path may block or fail where a terminal is absent; this is a *static risk*, not a demonstrated deployed incident. Interactive notebook use is a separate acceptable context. A global provider cache is not proof of per-principal hosted authorization or secret rotation.
+transport: HttpTransport = RequestsTransport()
+request = HttpRequest("https://example.org/observations.csv")
+result = exchange(request, transport=transport)
+```
 
-The byte IO wrapper delegates `read_bytes/write_bytes` to a supplied FileStore or the resolved default and does not issue any verified published-Artifact receipt. Both inspected smoke tests are narrow: they establish importability or a non-null provider bundle, not noninteractive secret failure handling, credential isolation, authoritative Job outcome or deployment security.
+`HttpRequest` validates method, endpoint, headers, payload limits,
+redirection settings and response budgets. `exchange()` returns a
+qualified response or a structured `HttpFailure`; `exchange_into()`
+writes admitted response bytes to an explicit streaming sink. Retry
+limits and request budgets are evaluated by the generic implementation,
+rather than being hidden in domain-specific fetchers.
 
-**Verification limit:** no actual secret, installed provider, terminal, network, GUI or host ran; read statuses alone do not close 566 source material-unit dispositions. See [target host HOW](../how/hosting/host-and-client-deployment.md) for the conditional remedy.
+`PeerBoundTransport` adds numeric peer-address admission and checks the
+established TLS hostname. `RoutedTransport` can separate a logical HTTPS
+target from an explicitly configured HTTPS gateway; the resulting
+receipt distinguishes logical and physical target qualifications. A
+route must not imply upstream authenticity solely from TLS to the gateway.
+A managed acquisition requires explicit transport accounting and
+appropriate destination guarantees.
+
+Built-in transport evidence uses stable semantic adapter family tokens:
+`http.requests.v1`, `http.routed.v1` or `http.peer_bound.v1`.
+Explicit capability provider IDs take precedence in request identity.
+Custom unbound transport class names provide only a local fallback
+identity; persistent proofs require an appropriate provider contract.
+
+## File-store and byte-oriented operations
+
+File operations consume `FileStore`, `SourceStore`, `StagedWriter`
+and related abstract ports. The local implementation provides a
+filesystem-backed option; other callers can bind alternative stores
+without changing economic methods. Use the exact logical destination,
+bounded byte read and expected revision or immutable creation mode
+supported by the accepting store.
+
+A successful write receipt is distinct from evidence that downstream
+parsing or publication occurred. A write that may have taken effect but
+lacks verified confirmation remains `unknown` and is reconciled using
+the exact intended content identity. An immutable verified append is
+never interpreted as an atomic multi-segment transaction.
+
+Document and archive encoders live in `core.formats`; presentation
+styles and spreadsheet views belong to `core.rendering`. Specialized
+readers load optional dependencies only when their respective
+operation is requested.
+
+## Import boundaries and checks
+
+The core accepts external adapters through neutral contracts. Its storage,
+network and execution foundations do not import business domains,
+notification consumers or specific application implementations.
+The `shared` package owns canonical data semantics independently from
+the executable core.
+
+```sh
+python -B scripts/check_internal_imports.py
+python -B scripts/check_release_integrity.py
+python -B -m pytest -q
+```
+
+This guide replaces a historically pinned description of an earlier
+runtime implementation. Immutable source revisions remain available in
+repository history; current Python paths and behavior are defined by the
+code and maintained documentation on the active branch.
