@@ -9,6 +9,12 @@ on:
       - 'src/stratbox/shared/**'
       - 'tests/unit/registry/**'
       - 'src/stratbox/__init__.py'
+      - 'pyproject.toml'
+      - 'scripts/check_internal_imports.py'
+      - 'scripts/check_release_integrity.py'
+      - 'tests/unit/architecture/**'
+      - 'tests/unit/rendering/**'
+      - 'tests/fixtures/operation_contracts_0_14.json'
       - 'tests/unit/macrobanks/test_cbr_industries*'
       - 'benchmarks/cbr_industries_history.py'
       - '.github/workflows/industries-core-tests.yml'
@@ -58,12 +64,49 @@ jobs:
         run: python -B -m pytest -q
       - name: Build wheel and source distribution
         run: python -m build --sdist --wheel --outdir dist
+      - name: Validate installed base wheel without optional dependencies
+        shell: bash
+        run: |
+          python -m pip install --no-deps --target "$RUNNER_TEMP/stratbox-base" dist/stratbox-*.whl
+          python -I -S - "$RUNNER_TEMP/stratbox-base" <<'PY'
+          import importlib
+          from importlib.metadata import version
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1]).resolve()
+          sys.path.insert(0, str(root))
+          for name in (
+              "stratbox", "stratbox.core", "stratbox.core.runtime",
+              "stratbox.core.storage", "stratbox.core.network",
+              "stratbox.core.formats", "stratbox.core.execution",
+              "stratbox.core.observability", "stratbox.core.notifications",
+              "stratbox.core.rendering.excel", "stratbox.shared", "stratbox.domains",
+          ):
+              module = importlib.import_module(name)
+              assert Path(module.__file__).resolve().is_relative_to(root), name
+          from stratbox.core.rendering.excel import BUILTIN_STYLES, list_available_presets
+          assert list_available_presets(registry=BUILTIN_STYLES)
+          from stratbox.core.runtime.dependencies import MissingExtra
+          from stratbox.core.rendering.excel import apply_preset
+          try:
+              apply_preset(object(), "DEFAULT", registry=BUILTIN_STYLES)
+          except MissingExtra as exc:
+              assert exc.extra == "excel"
+          else:
+              raise AssertionError("Excel rendering requires the optional engine")
+          import stratbox
+          assert stratbox.__version__ == version("stratbox") == "0.15.0"
+          print("OK minimal wheel imports, lazy Excel metadata and version")
+          PY
       - name: Validate isolated installed wheel and packaged resources
         shell: bash
         run: |
           python -m pip install --no-deps --target "$RUNNER_TEMP/stratbox-wheel" dist/stratbox-*.whl
           python -I -B - "$RUNNER_TEMP/stratbox-wheel" <<'PY'
           from pathlib import Path
+          import hashlib
+          import json
           import sys
           sys.path.insert(0, sys.argv[1])
           import stratbox
@@ -73,8 +116,14 @@ jobs:
           root = Path(stratbox.__file__).resolve().parent
           assert root.is_relative_to(Path(sys.argv[1]).resolve()), root
           catalog = operation_catalog()
-          assert len(catalog.list_refs()) == len(catalog.describe()) == 77
-          assert len([r for r in catalog.list_refs() if r.wire_codec_ref]) == 3
+          assert len(catalog.list_refs()) == len(catalog.describe())
+          baseline = json.loads((Path.cwd() / "tests/fixtures/operation_contracts_0_14.json").read_text())
+          assert {tuple(x) for x in baseline} <= {
+              (r.operation_id, r.contract_version) for r in catalog.list_refs()
+          }
+          assert {("cbr.offices.parse", 1), ("cbr.offices.compare", 2), ("frg.plan_cleanup", 1)} <= {
+              (r.operation_id, r.contract_version) for r in catalog.list_refs() if r.wire_codec_ref
+          }
           registry_root = root / "shared/registries/_resources"
           assert list(registry_root.glob("cbr_banks/*"))
           assert list(registry_root.glob("rosstat_okved2/*"))
@@ -82,5 +131,21 @@ jobs:
           assert not load_models().empty
           manifest = read_crosswalk_manifest()
           assert isinstance(manifest, dict) and manifest.get("mapping_version")
-          print("OK isolated wheel, 77 operation contracts and three resource families")
+          original = Path.cwd() / "src/stratbox"
+          groups = (
+              "shared/registries/_resources",
+              "domains/cbr_forms/models",
+              "domains/cbr_sors_restoration/crosswalk/_resources",
+          )
+          for group in groups:
+              expected = {
+                  p.relative_to(original / group): hashlib.sha256(p.read_bytes()).hexdigest()
+                  for p in (original / group).rglob("*") if p.is_file()
+              }
+              installed = {
+                  p.relative_to(root / group): hashlib.sha256(p.read_bytes()).hexdigest()
+                  for p in (root / group).rglob("*") if p.is_file()
+              }
+              assert expected and installed == expected, group
+          print("OK isolated wheel, published contracts and byte-exact resource groups")
           PY
