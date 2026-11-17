@@ -1,3 +1,19 @@
+> **Current implementation (0.14.x core reorganization):** The maintained runtime
+> lives in `stratbox.core.runtime.providers`, HTTP transport in
+> `stratbox.core.network`, secret ports in
+> `stratbox.core.runtime.secrets`, file-store ports in
+> `stratbox.core.storage.filestore`, and byte IO in
+> `stratbox.core.storage.bytes`. Callers can explicitly supply providers;
+> provider discovery uses a validated entry-point or sibling factory and
+> rejects ambiguous configurations. No provider discovery occurs just from
+> importing `stratbox.core`.
+>
+> The historical paragraphs and version-pinned source hyperlinks below
+> document a **frozen earlier implementation**, rather than the current
+> API. For current operation and capability behavior see
+> [execution and admission](core-execution-and-admission.md) and
+> [operation boundaries](../architecture/core-operation-boundaries.md).
+
 # Current HOW — аналитическое ядро: runtime и сетевой транспорт
 
 > This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.

@@ -1,6 +1,6 @@
 # Stratbox observability: qualified events, evidence, storage, and recovery
 
-`stratbox.system.observability` is an **optional, storage-independent Python facility** for capturing, inspecting, serializing, and recovering events and qualified facts. `stratbox.system.execution.run` remains the single operation runner. Importing this module does not inspect host identity, create files, open network connections, or start threads. Normal business operations retain their full result and receipt semantics with no observer.
+`stratbox.core.observability` is an **optional, storage-independent Python facility** for capturing, inspecting, serializing, and recovering events and qualified facts. `stratbox.core.execution.run` remains the single operation runner. Importing this module does not inspect host identity, create files, open network connections, or start threads. Normal business operations retain their full result and receipt semantics with no observer.
 
 ## 1. Six independently qualified propositions
 
@@ -31,8 +31,8 @@ Built-in schemas live in `field_policy.py`. Consumers may instantiate their own 
 ### 3.1 Optional best-effort event collection
 
 ```python
-from stratbox.system.execution import ExecutionContext
-from stratbox.system.observability import CapturePolicy, RecordMemorySink, build_operation_history
+from stratbox.core.execution import ExecutionContext
+from stratbox.core.observability import CapturePolicy, RecordMemorySink, build_operation_history
 
 collector = RecordMemorySink(CapturePolicy(progress=False, max_records=10_000))
 # result = existing_domain_operation(request, context=ExecutionContext(sink=collector))
@@ -49,8 +49,8 @@ A producer may call a best-effort sink and proceed even when the sink fails. `Ca
 ### 3.2 Explicit verified publication of a batch
 
 ```python
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.observability import FileJournalWriter
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.observability import FileJournalWriter
 
 store = LocalFileStore("/path/chosen/by/caller")
 writer = FileJournalWriter(store, "journal", writer_id="writer1")
@@ -66,7 +66,7 @@ writer = FileJournalWriter(store, "journal", writer_id="writer1")
 ### 3.3 Required pre-action journal barrier
 
 ```python
-from stratbox.system.observability import RequiredJournalGate
+from stratbox.core.observability import RequiredJournalGate
 
 # intent_record = construct_explicit_effect_intent(effect_id, approved_metadata)
 # result, intent_receipt = RequiredJournalGate(writer).execute_after_record(
@@ -136,7 +136,7 @@ To claim complete storage *within the locally declared scope*:
 
 ```python
 from datetime import datetime, timezone
-from stratbox.system.observability import (
+from stratbox.core.observability import (
     OriginClaim, RecordMemorySink, CapturePolicy, FileJournalWriter,
     SegmentDescriptor, build_manifest, FileJournalReader,
 )

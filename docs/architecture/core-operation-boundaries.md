@@ -1,40 +1,58 @@
 # Core operation boundaries
 
-Stratbox combines reusable technical commands with independently callable
-domain operations. A consumer binds providers and composes operations for
-its own publication, analysis or archive workflow.
+Stratbox separates reusable technical operations from domain-specific methods.
+The installed package has three independent semantic owners: `stratbox.core`,
+`stratbox.shared`, and `stratbox.domains`. Applications compose capabilities,
+operation calls and scheduling outside the library.
 
-| Owner | Responsibilities |
+| Owner | Responsibility |
 | --- | --- |
-| `system.base.net` | Typed HTTP request, response, failures, admission, streaming limits and bounded retries. |
-| `system.base.filestore`, `system.base.ioapi` | File and directory commands, bounded reads, verified writes, archive and format primitives. |
-| `shared.data` | Payloads, byte identities, used-input and effect evidence, representations, table snapshots and canonical computation manifests. |
-| `system.execution` | Operation definition, context, validation, stage events, original acquisition and replay, cancellation and outcomes. |
-| `domains.registry` | Discovers independent domain registrations and composes them with system-owned references. |
-| `system.execution.registry` | Validates operation contracts and resolves handlers. |
-| `system.execution.machine` | Explicitly admitted, bounded read-only machine execution. |
-| `domains.<name>` | Official source parameters, interpretation, period semantics, calculations, comparisons and presentation profiles. |
-| Consumer | Selection and repetition of dates, scheduling, paths, permissions, publication, durable history and delivery state. |
+| `core.runtime` | Provider selection, capability requirements, secrets and optional dependencies. |
+| `core.storage` | File-store ports, local implementation, byte identities and bounded staged writes. |
+| `core.network` | Typed requests, response/peer qualification and transport. |
+| `core.formats` | Independent file format parsers, workbook codecs and archive handlers. |
+| `core.rendering` | Presentation-oriented projections and Excel styling. |
+| `core.execution` | Invocation context, runner, cancellation, outcomes, event stream and immutable operation catalog. |
+| `core.operations` | Domain-neutral acquisition, original-byte storage, comparison, validation and table operations. |
+| `core.observability` | Event records, evidence assessment, capture, immutable journals and analysis. |
+| `core.notifications` | Topic/subscription definitions, authorized intents, transaction state and qualified handoff. |
+| `core.registry` | Catalog of built-in neutral operations. |
+| `shared.data` | Byte/material identities, observation contracts, representations, evidence and computation manifests. |
+| `domains.registry` | Discovers independent domain declarations and joins them with neutral operations. |
+| `domains.<name>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
+| Consumer | User interface, schedules, destinations, host authorization, publication and downstream effects. |
 
-Providers are parameters to the operations that use them. `local_providers()`
-constructs independent local adapters. An offline operation can run with
-just its typed inputs. The package roots import with the standard library.
-Analytical and format dependencies are selected by the operations that use
-them.
+## Dependency contract
 
-A composition such as `capture` has one invocation. The operation uses the
-same parsing method as `parse`, and its result identifies the source bytes.
-Consumers can instead archive the original immediately, parse later, or
-request only a representation.
+Shared semantic contracts depend on neither the executable core nor concrete
+domains. Infrastructure ports and neutral formats are independent of subject
+matter. The generic executor does not depend on concrete operations. Neutral
+operations compose the executor and infrastructure; observability consumes
+execution records and storage contracts; notifications consume evidence and
+use explicit state and handoff provider ports. No foundational component
+imports a concrete domain. The public library has no historical
+`stratbox.system` compatibility package.
 
-| Identifier | Owned by |
+## Operation identity and effects
+
+A Python module path identifies a program implementation. It is not a logical
+operation ID. The ID, contract version, request and result types and effect
+rules are validated by `OperationRegistration` and `OperationCatalog`.
+Physical refactoring does not change source material identities or downgrade
+`confirmed`, `failed`, and `unknown` qualifications.
+
+| Identifier | Owner |
 | --- | --- |
 | Package version | Installed distribution |
-| Contract version | Public request, value and result contract |
-| Method version | Domain rule, calculation or representation |
-| Invocation ID | One library operation |
-| Run, step and attempt | Calling application |
-| Release version | Input bytes, source method and output manifest |
-| Effect key | One authorized destination transition |
+| Contract version | Public request and result schema |
+| Method version | Domain calculation or representation method |
+| Invocation ID | One executor call |
+| Run, step, attempt | Caller orchestration |
+| Release version | Input bytes, method and result manifest |
+| Effect key | One authorized destination state transition |
 
-[Implemented API and evidence limits](../current-how/universal-business-core.md)
+A neutral source operation can archive an original independently of parsing,
+parse later, or request only a literal representation. Other domains share
+the same infrastructure and choose their own source-specific interpretations.
+
+[Core API and evidence limits](../current-how/universal-business-core.md)

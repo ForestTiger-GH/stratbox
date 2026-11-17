@@ -27,7 +27,7 @@ Domain-specific Python APIs keep their own typed requests and provider parameter
 
 Create a direct package `stratbox/domains/<domain_name>/` containing an
 `__init__.py`, the domain methods and `registration.py` with exactly one
-`REGISTRATION = DomainRegistration(domain_id='<domain_name>', operations=(...))`.
+`REGISTRATION = OperationRegistration(owner_id='<domain_name>', operations=(...))`.
 Each `OperationRef` names an existing definition and the corresponding callable.
 The central registry discovers the package without changes to a global method list.
 Domain subseries remain inside their owner until a separate semantic refactor.
@@ -35,13 +35,13 @@ Domain subseries remain inside their owner until a separate semantic refactor.
 Only built-in packages are discovered. Arbitrary external Python packages and
 untrusted paths are outside this discovery mechanism. Registration never schedules
 work, reads files, contacts network endpoints or grants execution authority.
-System operations have their own declarations under `stratbox.system`.
+Neutral source and notification operations are declared under `stratbox.core.operations` and `stratbox.core.notifications`.
 
 ## Restricted read-only machine calls
 
 ```python
 from stratbox.domains.registry import operation_catalog
-from stratbox.system.execution.machine import invoke_read_only, wire_schemas
+from stratbox.core.execution.machine import invoke_read_only, wire_schemas
 
 catalog = operation_catalog()
 request_schema, result_schema = wire_schemas('cbr.offices.parse', 1, catalog=catalog)
@@ -50,7 +50,7 @@ request_schema, result_schema = wire_schemas('cbr.offices.parse', 1, catalog=cat
 
 Three operations initially admit machine calls: `cbr.offices.parse` v1,
 `cbr.offices.compare` v2, and `frg.plan_cleanup` v1. Their narrow codecs
-belong to their domains; `stratbox.system.execution.machine` owns the
+belong to their domains; `stratbox.core.execution.machine` owns the
 bounded JSON parser, schema construction and generic invocation protocol.
 All other operations remain direct Python APIs until explicitly admitted.
 

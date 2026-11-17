@@ -62,9 +62,9 @@ notification acknowledgement.
 ```python
 from datetime import date
 
-from stratbox.system.base.filestore import LocalFileStore
-from stratbox.system.base.net import HttpRequest, HttpsEndpoint, RequestsTransport
-from stratbox.system.execution.originals import (
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.core.network import HttpRequest, HttpsEndpoint, RequestsTransport
+from stratbox.core.operations.source.originals import (
     OriginalDestination,
     ReadOriginalRequest,
     ReceiveOriginalRequest,
