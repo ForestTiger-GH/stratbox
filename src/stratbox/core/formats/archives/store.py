@@ -8,12 +8,12 @@ from typing import Callable, Mapping
 from unicodedata import normalize
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
-from stratbox.system.base.filestore import SourceStore, StagedWriter, WriteMode
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.storage.filestore import SourceStore, StagedWriter, WriteMode
+from stratbox.core.limits import BudgetMeter
 from stratbox.shared.data import ByteIdentity, StoredBytesReceipt
 
-from .archive_bytes import ArchiveError, safe_member_name
-from .staging import BoundedStage, WRITE_GUARANTEES, commit_staged, stream_identity
+from stratbox.core.formats.archives.members import ArchiveError, safe_member_name
+from stratbox.core.storage.staging import BoundedStage, WRITE_GUARANTEES, commit_staged, stream_identity
 
 _CHUNK = 1024 * 1024
 _MAX_FILES = 500

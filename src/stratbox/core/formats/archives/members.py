@@ -12,8 +12,8 @@ from unicodedata import normalize
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
-from stratbox.system.base.limits import BudgetExceeded, BudgetMeter
-from .bytes import OutputBuffer
+from stratbox.core.limits import BudgetExceeded, BudgetMeter
+from stratbox.core.storage.bytes import OutputBuffer
 
 
 class ArchiveError(ValueError):
@@ -157,7 +157,7 @@ class RarArchiveReader:
 
     @contextmanager
     def open(self, data: bytes):
-        from stratbox.system.base.utils.optional_deps import require_extra
+        from stratbox.core.runtime.dependencies import require_extra
 
         rarfile = require_extra("rarfile", "rar")
         try:

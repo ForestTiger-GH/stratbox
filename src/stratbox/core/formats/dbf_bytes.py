@@ -3,8 +3,8 @@
 from contextlib import contextmanager
 from struct import unpack_from
 
-from stratbox.system.base.filestore import workdir
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore import workdir
+from stratbox.core.runtime.dependencies import require_extra
 
 
 @contextmanager

@@ -21,12 +21,12 @@ from typing import Any
 
 import pandas as pd
 
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.ioapi.bytes import read_bounded_bytes, write_bytes
-from stratbox.system.base.limits import BudgetMeter
-from .dbf_bytes import open_dbf_bytes
-from stratbox.system.base.utils.optional_deps import require_extra
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.storage.bytes import read_bounded_bytes, write_bytes
+from stratbox.core.limits import BudgetMeter
+from stratbox.core.formats.dbf_bytes import open_dbf_bytes
+from stratbox.core.runtime.dependencies import require_extra
 
 
 def read_df(path: str, encoding: str = "cp866", store: FileStore | None = None, *,

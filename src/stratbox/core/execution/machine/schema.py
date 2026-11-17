@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from .contracts import WireRequestError
+from stratbox.core.execution.machine.contracts import WireRequestError
 
 SCHEMA = "https://json-schema.org/draft/2020-12/schema"
 

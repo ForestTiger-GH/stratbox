@@ -1,11 +1,11 @@
 """ZIP format commands over FileStore and in-memory data."""
 
-from stratbox.system.base.filestore import FileStore
-from stratbox.system.base.runtime import default_filestore
-from stratbox.system.base.limits import BudgetMeter
+from stratbox.core.storage.filestore import FileStore
+from stratbox.core.runtime.providers import default_filestore
+from stratbox.core.limits import BudgetMeter
 
-from .archive_bytes import ArchiveError, ArchiveLimits, extract_members, open_zip, zip_bytes
-from .bytes import read_bounded_bytes, write_bytes
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, extract_members, open_zip, zip_bytes
+from stratbox.core.storage.bytes import read_bounded_bytes, write_bytes
 
 
 def list_files(path: str, store: FileStore | None = None, *, limits: ArchiveLimits = ArchiveLimits(),

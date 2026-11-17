@@ -1,12 +1,8 @@
-"""Format primitives loaded when their format is requested."""
+"""Format-specific readers, writers and document codecs."""
 
 from importlib import import_module
 
-__all__ = [
-    "archive_bytes", "archives", "bytes", "csv", "dbf", "dbf_bytes", "docx", "excel", "excel_xls",
-    "excel_xlsb", "excel_xlsm", "excel_xlsx", "html", "images", "pdf", "pptx", "rar", "txt",
-    "spreadsheet_view", "workbook_bytes", "workbook_input", "xml", "zip",
-]
+__all__ = ("archives", "spreadsheets", "csv", "dbf", "dbf_bytes", "docx", "html", "images", "pdf", "pptx", "txt", "xml")
 
 
 def __getattr__(name: str):

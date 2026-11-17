@@ -8,8 +8,8 @@ from io import StringIO
 
 import pandas as pd
 
-from stratbox.system.base.filestore.base import FileStore
-from stratbox.system.base.ioapi.bytes import read_bytes, write_bytes
+from stratbox.core.storage.filestore.ports import FileStore
+from stratbox.core.storage.bytes import read_bytes, write_bytes
 
 
 def read_df(path: str, store: FileStore | None = None, encoding: str = "utf-8", **kwargs) -> pd.DataFrame:

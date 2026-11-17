@@ -7,12 +7,12 @@ from typing import Callable, Generic, Mapping, TypeVar
 from uuid import uuid4
 
 from stratbox.shared.data import ComputationReceipt, Representation, UsedInputReceipt, build_dataset_version, computation_identity
-from stratbox.system.base.capabilities import BindingError, select_provider
-from stratbox.system.base.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
-from stratbox.system.base.runtime import RuntimeProviderError, active_providers
-from stratbox.system.base.utils.optional_deps import MissingExtra
+from stratbox.core.runtime.capabilities import BindingError, select_provider
+from stratbox.core.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
+from stratbox.core.runtime.dependencies import MissingExtra
 
-from .contracts import (
+from stratbox.core.execution.contracts import (
     Diagnostic,
     EffectReceipt,
     ExecutionContext,
@@ -23,7 +23,7 @@ from .contracts import (
     Outcome,
     safe_token,
 )
-from .events import ExecutionEvent, TechnicalIncident
+from stratbox.core.execution.events import ExecutionEvent, TechnicalIncident
 
 T = TypeVar("T")
 R = TypeVar("R")
