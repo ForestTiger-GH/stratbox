@@ -352,6 +352,8 @@ def test_gate_precedes_effect_and_does_not_confirm_callback(tmp_path):
     answer, receipt=good.execute_after_record(diagnostic(),lambda:called.append(1))
     assert called==[1] and receipt.state=="confirmed"
     class Broken:
+        format = "jsonl"
+
         def write_batch(self,*a,**kw):return replace(receipt,state="unknown")
     with pytest.raises(JournalBarrierError):
         RequiredJournalGate(Broken()).execute_after_record(diagnostic(),lambda:called.append(2))

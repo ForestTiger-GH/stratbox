@@ -36,11 +36,12 @@ class Source:
     def __init__(self):
         self.records = []
         self.epoch = "a"
+        self.first_retained = 1
 
     def head(self, stream):
         assert stream == STREAM
         n = len(self.records)
-        return JournalHead(STREAM, self.epoch, f"head-{n}", "publisher", "local_snapshot", 1, n)
+        return JournalHead(STREAM, self.epoch, f"head-{n}", "publisher", "local_snapshot", self.first_retained, n)
 
     def read_page(self, after, *, head, limits):
         head.check(after)
@@ -102,11 +103,12 @@ class Inbox:
             self.on_accept(handoff)
         if self.fail_mode == "unavailable":
             raise OSError("lost")
-        refused = self.fail_mode == "refuse"
+        refused = self.fail_mode in {"refuse", "pending_refusal"}
         receipt = HandoffReceipt(
             request.dispatch_id, request.attempt_id, request.route, request.route_revision,
             request.payload_identity, "not_accepted" if refused else "accepted", self.clock.now(),
             evidence_ref="proof-" + request.attempt_id, retryable=refused, retry_after_utc=self.retry_after,
+            final_rejection=self.fail_mode == "refuse",
         )
         self.receipts[(request.dispatch_id, request.attempt_id)] = receipt
         if self.fail_mode == "lost_response":

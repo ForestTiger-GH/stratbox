@@ -11,7 +11,7 @@ from stratbox.notifications import (
 from stratbox.base.filestore import LocalFileStore
 from stratbox.observability import (
     DomainFact, FileJournalReader, FileJournalWriter, JournalReadLimits, ObjectRef,
-    SegmentDescriptor, record_from_fact,
+    PersistencePolicy, SegmentDescriptor, record_from_fact,
 )
 
 from conftest import TIME, byte_event
@@ -120,12 +120,13 @@ def test_temporary_authority_failure_keeps_position(session):
     assert runtime.state.get_checkpoint(key).last_offset == 0
 
 
-def test_audit_is_exported_once_after_segment_confirmation(session, tmp_path):
+@pytest.mark.parametrize("format", ("json", "jsonl"))
+def test_audit_is_exported_once_after_segment_confirmation(session, tmp_path, format):
     runtime, key, context, source, _, _ = session
     source.records.append(byte_event())
     prepare(PrepareRequest(key), runtime=runtime, context=context)
     store = LocalFileStore(tmp_path)
-    writer = FileJournalWriter(store, "audit", writer_id="notifications")
+    writer = FileJournalWriter(store, "audit", writer_id="notifications", policy=PersistencePolicy(format=format))
     receipt = flush_audit(runtime.state, key.scope_id, writer)
     assert receipt.state == "confirmed"
     stored = FileJournalReader(store, namespace=writer.namespace).read_verified_segment(

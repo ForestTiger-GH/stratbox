@@ -186,6 +186,14 @@ class JournalSource(Protocol):
     ) -> JournalPage: ...
 
 
+class EpochJournalSource(JournalSource, Protocol):
+    """An optional source capability for reading a retained journal epoch."""
+
+    def head_for_epoch(self, stream: StreamKey, epoch_id: str) -> JournalHead:
+        """Return a head accepted by read_page or raise a qualified read error."""
+        ...
+
+
 def _page(
     after: JournalCursor, head: JournalHead, limits: JournalReadLimits,
     records: Iterable[JournalEntry | JournalReadProblem], *,

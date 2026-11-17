@@ -46,9 +46,9 @@ def _current(runtime: NotificationRuntime, key: CheckpointKey) -> Subscription:
     return subscription
 
 
-def _head(binding: SourceBinding) -> JournalHead:
+def _head(binding: SourceBinding, *, epoch_id: str | None = None) -> JournalHead:
     try:
-        return binding.head()
+        return binding.head(epoch_id=epoch_id)
     except OperationFailure:
         raise
     except JournalDecodeError as error:

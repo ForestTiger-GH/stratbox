@@ -10,7 +10,7 @@ from typing import Literal
 from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import ExecutionContext, OperationFailure
 from stratbox.execution.contracts import safe_token
-from stratbox.observability import JournalHead, JournalRecord
+from stratbox.observability import JournalCursor, JournalHead, JournalRecord
 from stratbox.observability.contracts import require_utc
 
 from .audit import audit_record
@@ -70,6 +70,7 @@ class DispatchStatus:
     due_at_utc: datetime | None
     reason_code: str | None
     source_record_id: str | None
+    evidence_problem: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +87,7 @@ class NotificationHealth:
     due: tuple[DispatchStatus, ...]
     unresolved: tuple[DispatchStatus, ...]
     next_scan_after: int | None
+    oldest_pending_source_positions: tuple[JournalCursor, ...]
 
 
 def notification_health(
@@ -121,6 +123,7 @@ def notification_health(
     oldest_pending = oldest_unknown = None
     due: list[DispatchStatus] = []
     unresolved: list[DispatchStatus] = []
+    oldest_positions: dict[str, JournalCursor] = {}
     for row in rows[:limit]:
         intent = row.intent
         if intent.event.cursor.stream != key.stream or row.state not in DISPATCH_STATES:
@@ -133,11 +136,17 @@ def notification_health(
         age = max(0, int((now - intent.prepared_at_utc).total_seconds()))
         if row.state in PENDING_STATES:
             oldest_pending = age if oldest_pending is None else max(oldest_pending, age)
+            position = intent.event.cursor
+            if "event_ref" in visible.metadata:
+                oldest = oldest_positions.get(position.epoch_id)
+                if oldest is None or position.last_offset < oldest.last_offset:
+                    oldest_positions[position.epoch_id] = position
         last = row.attempts[-1] if row.attempts else None
         status = DispatchStatus(
             intent.dispatch_id, row.state, last.lookup.attempt_id if last else None, len(row.attempts),
             row.next_due_at_utc, row.reason_code,
             intent.event.record_id if "event_ref" in visible.metadata else None,
+            row.evidence_problem,
         )
         if row.state == "unknown" or (row.state == "in_flight" and last and now >= last.claim_until_utc):
             elapsed = max(0, int((now - last.started_at_utc).total_seconds())) if last else age
@@ -153,6 +162,7 @@ def notification_health(
         oldest_pending, oldest_unknown, sum(counts.values()), len(rows) > limit,
         tuple(due[:max_due]), tuple(unresolved[:max_due]),
         after_position + limit if len(rows) > limit else None,
+        tuple(oldest_positions[epoch] for epoch in sorted(oldest_positions)),
     )
 
 
@@ -178,6 +188,7 @@ def inspect_dispatch(
         dispatch_id, row.state, row.attempts[-1].lookup.attempt_id if row.attempts else None,
         len(row.attempts), row.next_due_at_utc, row.reason_code,
         row.intent.event.record_id if "event_ref" in grant.metadata else None,
+        row.evidence_problem,
     )
 
 

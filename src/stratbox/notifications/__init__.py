@@ -16,7 +16,7 @@ from .projections import (
     accessible_topics, inspect_dispatch, notification_health, project_downstream, record_external_delivery,
 )
 from .state import (
-    Attempt, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, MemoryNotificationState,
+    Attempt, AuditBatch, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, MemoryNotificationState,
     NotificationStateReader, NotificationStateStore, RecordIdentity, Replay, StateMutation,
     StateReceipt, flush_audit,
 )

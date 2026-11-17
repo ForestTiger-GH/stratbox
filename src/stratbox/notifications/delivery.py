@@ -11,14 +11,14 @@ from uuid import uuid4
 from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution import Completion, EffectReceipt, Invocation, OperationFailure
 from stratbox.execution.contracts import safe_token
-from stratbox.observability import JournalReadLimits, RequiredJournalGate
+from stratbox.observability import JournalReadLimits, JournalRecord, RequiredJournalGate
 
 from .audit import audit_record
-from .contracts import AdmittedHandoff, HandoffLookup, HandoffReceipt, NotificationIntent
+from .contracts import AdmittedHandoff, EventPointer, HandoffLookup, HandoffReceipt, NotificationIntent
 from .preparation import (
     MAX_ENVELOPE_BYTES, _metadata, _projection, dispatch_key, read_page,
 )
-from .runtime import NotificationRuntime, access, need_access, require_admission, require_binding
+from .runtime import NotificationRuntime, SourceBinding, access, need_access, require_admission, require_binding
 from .state import Attempt, Dispatch, DispatchUpdate, PENDING_STATES, StateMutation, StateReceipt, commit_and_lookup
 from .subscriptions import _head
 from .topics import is_service_event, match_conditions
@@ -97,7 +97,7 @@ class DeliveryResult:
     dispatch_id: str
     state: str
     reason_code: str | None
-    next_action: Literal["done", "deliver", "wait", "reconcile", "reload_state"]
+    next_action: Literal["done", "deliver", "wait", "reconcile", "reload_state", "restore_evidence"]
     attempt_id: str | None = None
     next_due_at_utc: datetime | None = None
     state_command_id: str | None = None
@@ -114,6 +114,8 @@ def qualify_receipt(lookup: HandoffLookup, receipt: HandoffReceipt | None) -> Qu
         return QualifiedHandoff("unknown", receipt.reason_code or "notification.acknowledgement_unconfirmed")
     if receipt.state == "accepted":
         return QualifiedHandoff("accepted", "notification.consumer_accepted", receipt)
+    if not receipt.final_rejection:
+        return QualifiedHandoff("unknown", "notification.rejection_unconfirmed")
     return QualifiedHandoff("not_accepted", receipt.reason_code or "notification.not_accepted", receipt)
 
 
@@ -121,6 +123,8 @@ def _summary(row: Dispatch, *, command_id: str | None = None) -> DeliveryResult:
     next_action = {
         "ready": "deliver", "retry_due": "wait", "in_flight": "reconcile", "unknown": "reconcile",
     }.get(row.state, "done")
+    if row.evidence_problem is not None:
+        next_action = "restore_evidence"
     return DeliveryResult(row.intent.dispatch_id, row.state, row.reason_code, next_action,
                           row.attempts[-1].lookup.attempt_id if row.attempts else None,
                           row.next_due_at_utc, command_id)
@@ -208,9 +212,43 @@ def _state_failure(row: Dispatch, receipt: StateReceipt):
 
 
 def _stop(runtime, row, sub, state: str, reason: str, invocation):
-    after = replace(row, version=row.version + 1, state=state, reason_code=reason, next_due_at_utc=None)
+    after = replace(row, version=row.version + 1, state=state, reason_code=reason,
+                    next_due_at_utc=None, evidence_problem=None)
     receipt = _persist(runtime, row, after, sub, f"notification.{state}", invocation, reason_code=reason)
     return _summary(after) if receipt.state == "confirmed" else _state_failure(row, receipt)
+
+
+class _EvidenceUnavailable(OperationFailure):
+    """The original journal record could not be read for re-admission."""
+
+
+def _read_evidence(binding: SourceBinding, event: EventPointer) -> JournalRecord:
+    before = replace(event.cursor, last_offset=event.cursor.last_offset - 1)
+    try:
+        head = _head(binding, epoch_id=before.epoch_id)
+        page = read_page(binding, before, head, JournalReadLimits(max_positions=1))
+        if not page.entries:
+            raise OperationFailure(page.problem.code if page.problem else "journal.record_unavailable")
+    except OperationFailure as error:
+        if error.diagnostic.code in {"journal.record_identity_mismatch", "journal.record_identity_conflict"}:
+            raise ValueError(error.diagnostic.code) from None
+        raise _EvidenceUnavailable(error.diagnostic, outcome=error.outcome) from None
+    entry = page.entries[0]
+    if entry.record is None or (entry.record.record_id, entry.identity) != (event.record_id, event.record_identity):
+        raise ValueError("journal.record_identity_mismatch")
+    return entry.record
+
+
+def _defer_for_evidence(runtime, row, sub, error: _EvidenceUnavailable, invocation):
+    reason = "notification.evidence_unavailable"
+    source_code = error.diagnostic.code
+    if row.evidence_problem != source_code:
+        after = replace(row, version=row.version + 1, reason_code=reason, evidence_problem=source_code)
+        receipt = _persist(runtime, row, after, sub, reason, invocation, source_code=source_code)
+        if receipt.state != "confirmed":
+            return _state_failure(row, receipt)
+        row = after
+    return Completion(_summary(row), error.outcome, source_code)
 
 
 def _admit(row, sub, runtime: NotificationRuntime, invocation: Invocation):
@@ -238,15 +276,7 @@ def _admit(row, sub, runtime: NotificationRuntime, invocation: Invocation):
             raise OperationFailure("notification.local_consumer_required")
         guarantees = ("recipient_bound",)
     require_binding(invocation.context, intent.scope_id, "notification", consumer.consumer, *guarantees)
-    head = _head(binding)
-    before = replace(intent.event.cursor, last_offset=intent.event.cursor.last_offset - 1)
-    page = read_page(binding, before, head, JournalReadLimits(max_positions=1))
-    if not page.entries:
-        raise OperationFailure(page.problem.code if page.problem else "journal.record_unavailable")
-    entry = page.entries[0]
-    record = entry.record
-    if record is None or (record.record_id, entry.identity) != (intent.event.record_id, intent.event.record_identity):
-        raise ValueError("journal.record_identity_mismatch")
+    record = _read_evidence(binding, intent.event)
     now = invocation.context.clock.now()
     grant = access(runtime, "accept", spec, now, stream=stream, record=record,
                    authority_id=binding.source_authority_id, intent=intent)
@@ -275,7 +305,8 @@ def _begin(runtime, row, sub, grant, policy, invocation):
         claim_until = min(claim_until, grant.expires_at_utc)
     attempt = Attempt(lookup, len(row.attempts) + 1, runtime.actor_id, now, claim_until, sub.revision)
     claimed = replace(row, version=row.version + 1, state="in_flight",
-                      attempts=(*row.attempts, attempt), next_due_at_utc=None, reason_code=None)
+                      attempts=(*row.attempts, attempt), next_due_at_utc=None, reason_code=None,
+                      evidence_problem=None)
     receipt = _persist(runtime, row, claimed, sub, "notification.attempt_started", invocation,
                        attempt_id=lookup.attempt_id, attempt_no=attempt.number,
                        fence=lookup.fence, route_revision=lookup.route_revision, grant_ref=grant.grant_ref)
@@ -366,6 +397,8 @@ def deliver_work(
     invocation.stage("admit_handoff")
     try:
         consumer, grant, record = _admit(row, sub, runtime, invocation)
+    except _EvidenceUnavailable as error:
+        return _defer_for_evidence(runtime, row, sub, error, invocation)
     except PermissionError as error:
         return _stop(runtime, row, sub, "cancelled", str(error), invocation)
     except ValueError as error:
@@ -420,7 +453,7 @@ def deliver_work(
     if reason is not None:
         absent = HandoffReceipt(intent.dispatch_id, lookup.attempt_id, lookup.route, lookup.route_revision,
                                 lookup.payload_identity, "not_accepted", now, evidence_ref=lookup.attempt_id,
-                                reason_code=reason, retryable=retryable)
+                                reason_code=reason, retryable=retryable, final_rejection=True)
         return _finish(runtime, claimed, attempt, qualify_receipt(lookup, absent), policy, invocation, jitter=jitter)
 
     effect = EffectReceipt("notification.handoff", "unknown", effect_id=intent.dispatch_id,

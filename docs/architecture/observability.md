@@ -75,7 +75,9 @@ from stratbox.observability import RequiredJournalGate
 # Owner's *separate* EffectReceipt confirms or qualifies the resulting effect.
 ```
 
-`RequiredJournalGate` executes the action only when its intent record is confirmed. `failed` and `unknown` block it with `JournalBarrierError` and the original receipt. The gate cannot prevent an effect performed elsewhere, provide exactly-once execution, or create an effect receipt. A crash between accepted intent and actual effect leaves the effect unresolved until its owner reconciles it. There is **no** `PersistencePolicy(reliability='required')` switch and no global automatic audit gate.
+`RecordWriter` declares the canonical `json` or `jsonl` format it uses for receipt identities. A confirmed receipt attests the read-back hash and byte length of the ordered `encode_records` output and its ordered record IDs. If the caller supplies a segment ID, the writer confirms that segment. A provider can use its own storage layout while attesting the same canonical representation.
+
+`RequiredJournalGate` compares the receipt with the exact intent record before running the action. A `failed` or `unknown` receipt raises `JournalBarrierError`. A confirmed receipt with different content or record IDs is treated as `journal.write_receipt_mismatch`. The owner supplies separate evidence of the action's result and reconciles any uncertainty after registration of the intent. Hosts opt in to the gate for the actions that require it.
 
 ## 4. Producer/collector coverage and bounded history
 

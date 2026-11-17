@@ -30,6 +30,6 @@ from .manifests import (JournalManifest, SegmentDescriptor, build_manifest,
                         encode_manifest, decode_manifest)
 from .capture import (CaptureReport, RecordCapture, capture_operation_result,
                       fact_for_artifact, fact_for_source_check)
-from .source import (FileJournalSource, IndexedSegment, JournalCursor, JournalEntry,
+from .source import (EpochJournalSource, FileJournalSource, IndexedSegment, JournalCursor, JournalEntry,
                      JournalHead, JournalPage, JournalReadLimits, JournalReadProblem,
                      JournalSource, SnapshotJournalSource, SourceProfile, StreamKey)

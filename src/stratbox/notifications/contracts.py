@@ -197,6 +197,8 @@ class AdmittedHandoff:
 
 @dataclass(frozen=True, slots=True)
 class HandoffReceipt:
+    """An attempt-bound observation from the receiving authority."""
+
     dispatch_id: str
     attempt_id: str
     route: NotificationRoute
@@ -209,6 +211,7 @@ class HandoffReceipt:
     retryable: bool = False
     retry_after_utc: datetime | None = None
     receipt_version: int = 1
+    final_rejection: bool = False
 
     def __post_init__(self) -> None:
         for value in (self.dispatch_id, self.attempt_id, self.route_revision,
@@ -217,18 +220,24 @@ class HandoffReceipt:
                 safe_token(value)
         require_utc(self.observed_at_utc)
         if (type(self.receipt_version) is not int or self.receipt_version != 1
-                or self.state not in {"accepted", "not_accepted", "unknown"}):
+                or self.state not in {"accepted", "not_accepted", "unknown"}
+                or type(self.retryable) is not bool or type(self.final_rejection) is not bool):
             raise ValueError("notification.receipt_invalid")
         if not isinstance(self.payload_identity, ByteIdentity) or type(self.payload_identity.size) is not int:
             raise ValueError("notification.receipt_invalid")
-        if self.state != "not_accepted" and (self.retryable or self.retry_after_utc is not None):
+        if self.state != "not_accepted" and (self.final_rejection or self.retryable or self.retry_after_utc is not None):
             raise ValueError("notification.receipt_invalid")
         if self.retry_after_utc is not None:
             require_utc(self.retry_after_utc)
 
 
 class NotificationConsumer(Protocol):
-    """A bound recipient. A durable inbox also fences and deduplicates acceptance."""
+    """A bound recipient. A durable inbox also fences and deduplicates acceptance.
+
+    In either method, final_rejection attests the exact attempt was never
+    accepted and can no longer be accepted. A lookup of a missing row alone
+    cannot attest this. Retryability describes permission for a new attempt.
+    """
 
     def accept(self, handoff: AdmittedHandoff) -> HandoffReceipt: ...
 

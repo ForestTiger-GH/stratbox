@@ -8,7 +8,9 @@ from typing import Literal
 from stratbox.base.capabilities import CapabilityRequirement, select_provider
 from stratbox.execution import ExecutionContext, OperationFailure
 from stratbox.execution.contracts import safe_token
-from stratbox.observability import JournalHead, JournalRecord, JournalSource, SourceProfile, StreamKey
+from stratbox.observability import (
+    JournalHead, JournalRecord, JournalSource, RequiredJournalGate, SourceProfile, StreamKey,
+)
 
 from .contracts import (
     AccessDecision, AccessRequest, NotificationAuthority, NotificationConsumer,
@@ -30,12 +32,18 @@ class SourceBinding:
         if self.profile not in {"local_snapshot", "resumable"}:
             raise ValueError("journal.source_profile_invalid")
 
-    def head(self) -> JournalHead:
-        result = self.source.head(self.stream)
+    def head(self, *, epoch_id: str | None = None) -> JournalHead:
+        head_for_epoch = getattr(self.source, "head_for_epoch", None) if epoch_id is not None else None
+        if epoch_id is not None and callable(head_for_epoch):
+            result = head_for_epoch(self.stream, epoch_id)
+        else:
+            result = self.source.head(self.stream)
         if (not isinstance(result, JournalHead) or result.stream != self.stream
                 or result.source_authority_id != self.source_authority_id
                 or result.profile != self.profile):
             raise OperationFailure("journal.source_binding_mismatch")
+        if epoch_id is not None and result.epoch_id != epoch_id:
+            raise OperationFailure("journal.epoch_mismatch")
         return result
 
 
@@ -78,6 +86,7 @@ class NotificationRuntime(NotificationReadRuntime):
     state: NotificationStateStore = field(repr=False)
     consumers: tuple[ConsumerBinding, ...] = ()
     paused: bool = False
+    audit_gate: RequiredJournalGate | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         super(NotificationRuntime, self).__post_init__()

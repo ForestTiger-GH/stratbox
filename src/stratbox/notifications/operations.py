@@ -111,8 +111,9 @@ def deliver(
     request: DeliverRequest, *, runtime: NotificationRuntime, context: ExecutionContext | None = None,
     policy: RetryPolicy = RetryPolicy(), gate: RequiredJournalGate | None = None, jitter=uniform,
 ):
+    audit_gate = runtime.audit_gate if runtime.audit_gate is not None else gate
     return run(DELIVER, request, lambda req, invocation: deliver_work(
-        req, runtime, invocation, policy=policy, gate=gate, jitter=jitter,
+        req, runtime, invocation, policy=policy, gate=audit_gate, jitter=jitter,
     ), context=context)
 
 

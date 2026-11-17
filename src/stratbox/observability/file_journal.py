@@ -5,7 +5,7 @@ producer authenticity, fsync/power-loss promise or cross-segment transaction.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from hashlib import sha256
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from threading import RLock
@@ -16,7 +16,7 @@ from stratbox.data import ByteIdentity
 from stratbox.execution.contracts import safe_token
 
 from .codecs import (JournalDecodeError, decode_records, encode_record, encode_records,
-                     DEFAULT_MAX_SEGMENT_BYTES)
+                     DEFAULT_MAX_SEGMENT_BYTES, MAX_SEGMENT_BYTES)
 from .contracts import JournalBarrierError, JournalRecord, JournalWriteReceipt
 from .coverage import CaptureCoverage, GenerationCaptureAssessment
 from .lifecycle import assess_generation_coverage, assess_invocation_lifecycle
@@ -26,6 +26,13 @@ from .policies import PersistencePolicy
 
 
 class RecordWriter(Protocol):
+    """Publish an ordered batch and attest its canonical encoded byte identity."""
+
+    @property
+    def format(self) -> str:
+        """The canonical format used by encode_records, either json or jsonl."""
+        ...
+
     def write_batch(self, records: Iterable[JournalRecord], *, segment_id: str | None = None) -> JournalWriteReceipt: ...
 
 
@@ -122,12 +129,16 @@ class FileJournalWriter:
     def __init__(self, store: FileStore, root: str, *, writer_id: str,
                  policy: PersistencePolicy | None = None,
                  max_segment_bytes: int = DEFAULT_MAX_SEGMENT_BYTES):
-        if not 4096 <= max_segment_bytes <= 128 * 1024 * 1024:
+        if not 4096 <= max_segment_bytes <= MAX_SEGMENT_BYTES:
             raise ValueError("Invalid maximum journal segment size")
         self.policy = policy or PersistencePolicy()
         self.namespace = JournalNamespace(root, writer_id, self.policy.format)
         self.store, self.max_segment_bytes = store, max_segment_bytes
         self.root, self.writer_id = self.namespace.root, self.namespace.writer_id
+
+    @property
+    def format(self) -> str:
+        return self.namespace.format
 
     def segment_path(self, segment_id: str) -> str:
         return self.namespace.segment_path(segment_id)
@@ -156,8 +167,8 @@ class FileJournalWriter:
         return created, None
 
     def write_batch(self, records: Iterable[JournalRecord], *, segment_id: str | None = None) -> JournalWriteReceipt:
-        data = encode_records(records, format=self.policy.format, max_bytes=self.max_segment_bytes)
-        batch = _check_segment(data, None, self.policy.format, expected=None, max_bytes=self.max_segment_bytes)
+        data = encode_records(records, format=self.format, max_bytes=self.max_segment_bytes)
+        batch = _check_segment(data, None, self.format, expected=None, max_bytes=self.max_segment_bytes)
         if not batch:
             raise ValueError("Cannot persist an empty journal segment")
         ids = tuple(rec.record_id for rec in batch)
@@ -232,7 +243,7 @@ class FileJournalReader:
                  max_segment_bytes: int = DEFAULT_MAX_SEGMENT_BYTES,
                  max_segments: int = 10_000, max_records: int = 100_000,
                  max_total_bytes: int = 128 * 1024 * 1024):
-        if not 4096 <= max_segment_bytes <= 128 * 1024 * 1024 or not 1 <= max_segments <= 100_000:
+        if not 4096 <= max_segment_bytes <= MAX_SEGMENT_BYTES or not 1 <= max_segments <= 100_000:
             raise ValueError("Invalid journal read limits")
         if not 1 <= max_records <= 1_000_000 or not 1 <= max_total_bytes <= 1024**3:
             raise ValueError("Invalid journal read budgets")
@@ -396,7 +407,7 @@ class BufferedFileJournal:
         self._confirmed = self._failed = self._unknown = 0
 
     def _size_with(self, size: int) -> int:
-        if self.writer.policy.format == "jsonl":
+        if self.writer.format == "jsonl":
             return self._bytes + size + 1
         return (self._bytes if self._buffer else 2) + size + (1 if self._buffer else 0)
 
@@ -514,6 +525,8 @@ class BufferedFileJournal:
 
 
 def require_confirmed(receipt: JournalWriteReceipt) -> JournalWriteReceipt:
+    if not isinstance(receipt, JournalWriteReceipt):
+        raise ValueError("journal.write_receipt_invalid")
     if receipt.state != "confirmed":
         raise JournalBarrierError(receipt)
     return receipt
@@ -525,7 +538,14 @@ class RequiredJournalGate:
         self.writer = writer
 
     def require_confirmed(self, record: JournalRecord) -> JournalWriteReceipt:
-        return require_confirmed(self.writer.write_batch((record,)))
+        batch = (record,)
+        identity = ByteIdentity.of(encode_records(batch, format=self.writer.format))
+        receipt = require_confirmed(self.writer.write_batch(batch))
+        if not receipt.confirms_batch(identity, (record.record_id,)):
+            raise JournalBarrierError(replace(
+                receipt, state="failed", diagnostic_code="journal.write_receipt_mismatch", already_present=False,
+            ))
+        return receipt
 
     def execute_after_record(self, record: JournalRecord, action: Callable[[], object]) -> tuple[object, JournalWriteReceipt]:
         receipt = self.require_confirmed(record)

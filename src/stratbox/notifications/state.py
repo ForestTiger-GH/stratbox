@@ -1,8 +1,8 @@
 """Transactional state required by resumable notifications."""
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field, fields, is_dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field, fields, is_dataclass, replace
 from datetime import datetime
 from threading import RLock
 from typing import Literal, Protocol
@@ -11,7 +11,9 @@ from stratbox.data import ByteIdentity, canonical_manifest_bytes
 from stratbox.execution.contracts import safe_token
 from stratbox.observability import (
     JournalCursor, JournalHead, JournalRecord, JournalWriteReceipt, RecordWriter, StreamKey,
+    encode_record, encode_records,
 )
+from stratbox.observability.codecs import MAX_SEGMENT_BYTES
 from stratbox.observability.contracts import require_utc
 
 from .contracts import HandoffLookup, HandoffReceipt, NotificationIntent, Subscription
@@ -80,6 +82,7 @@ class Dispatch:
     attempts: tuple[Attempt, ...] = ()
     next_due_at_utc: datetime | None = None
     reason_code: str | None = None
+    evidence_problem: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +106,8 @@ class DispatchUpdate:
 
 
 def _canonical(value):
+    if isinstance(value, JournalRecord):
+        value = encode_record(value)
     if isinstance(value, bytes):
         return {"sha256": ByteIdentity.of(value).sha256, "size": len(value)}
     if is_dataclass(value):
@@ -115,6 +120,13 @@ def _canonical(value):
     if isinstance(value, (tuple, list)):
         return [_canonical(item) for item in value]
     return value
+
+
+def _require_unique(items: tuple, key: Callable, code: str) -> None:
+    if type(items) is not tuple:
+        raise ValueError("notification.mutation_items_invalid")
+    if len({key(item) for item in items}) != len(items):
+        raise ValueError(code)
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +145,12 @@ class StateMutation:
     def __post_init__(self) -> None:
         safe_token(self.scope_id)
         safe_token(self.subscription_id)
+        _require_unique(self.checkpoint_updates, lambda item: item.key, "notification.checkpoint_duplicate")
+        _require_unique(self.dispatch_updates, lambda item: item.value.intent.dispatch_id,
+                        "notification.dispatch_duplicate")
+        _require_unique(self.record_identities, lambda item: (item.source_authority_id, item.record_id),
+                        "journal.record_identity_duplicate")
+        _require_unique(self.audit, lambda item: item.record_id, "notification.audit_duplicate")
         object.__setattr__(self, "command_id", ByteIdentity.of(canonical_manifest_bytes({
             "mutation_version": 1, "mutation": _canonical(self),
         })).sha256)
@@ -150,6 +168,35 @@ class StateReceipt:
             safe_token(self.reason_code)
         if self.state not in {"confirmed", "conflict", "rejected", "unknown"}:
             raise ValueError("notification.state_receipt_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class AuditBatch:
+    """The exact ordered obligations sent to a journal writer for one scope."""
+
+    scope_id: str
+    records: tuple[JournalRecord, ...] = field(repr=False)
+    format: str
+    record_ids: tuple[str, ...] = field(init=False)
+    content_identity: ByteIdentity = field(init=False)
+    segment_id: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        safe_token(self.scope_id)
+        if type(self.records) is not tuple or not 1 <= len(self.records) <= 10_000:
+            raise ValueError("notification.audit_batch_invalid")
+        _require_unique(self.records, lambda record: record.record_id, "notification.audit_duplicate")
+        identity = ByteIdentity.of(encode_records(self.records, format=self.format, max_bytes=MAX_SEGMENT_BYTES))
+        object.__setattr__(self, "record_ids", tuple(record.record_id for record in self.records))
+        object.__setattr__(self, "content_identity", identity)
+        object.__setattr__(self, "segment_id", ByteIdentity.of(canonical_manifest_bytes({
+            "scope_id": self.scope_id, "content_sha256": identity.sha256,
+        })).sha256)
+
+    def is_confirmed_by(self, receipt: JournalWriteReceipt) -> bool:
+        return isinstance(receipt, JournalWriteReceipt) and receipt.confirms_batch(
+            self.content_identity, self.record_ids, segment_id=self.segment_id,
+        )
 
 
 class NotificationStateReader(Protocol):
@@ -174,14 +221,26 @@ class NotificationStateReader(Protocol):
 
 class NotificationStateStore(NotificationStateReader, Protocol):
     def commit(self, mutation: StateMutation) -> StateReceipt:
-        """Atomically compare expected rows and commit the mutation with its audit."""
+        """Compare each unique key and commit all changes with exact audit obligations.
+
+        A durable provider's confirmation covers both state and pending audit
+        across restarts. Lookups confirm the same command identity.
+        """
         ...
 
     def lookup_command(self, scope_id: str, command_id: str) -> StateReceipt | None: ...
 
-    def pending_audit(self, scope_id: str, *, limit: int) -> tuple[JournalRecord, ...]: ...
+    def pending_audit(self, scope_id: str, *, limit: int) -> tuple[JournalRecord, ...]:
+        """Return exact unacknowledged records in a stable order for this scope."""
+        ...
 
-    def acknowledge_audit(self, scope_id: str, receipt: JournalWriteReceipt) -> None: ...
+    def acknowledge_audit(self, batch: AuditBatch, receipt: JournalWriteReceipt) -> None:
+        """Require exact batch confirmation and compare pending bytes before atomic removal.
+
+        An already-cleared entry is idempotent. A conflicting current entry
+        prevents removal of any part of the batch.
+        """
+        ...
 
 
 def commit_and_lookup(store: NotificationStateStore, mutation: StateMutation) -> StateReceipt:
@@ -274,12 +333,16 @@ class MemoryNotificationState:
                         break
         return tuple(entries)
 
-    def acknowledge_audit(self, scope_id: str, receipt: JournalWriteReceipt) -> None:
-        if receipt.state != "confirmed":
+    def acknowledge_audit(self, batch: AuditBatch, receipt: JournalWriteReceipt) -> None:
+        if not batch.is_confirmed_by(receipt):
             raise ValueError("notification.audit_unconfirmed")
         with self._lock:
-            for record_id in receipt.record_ids:
-                self._audit.pop((scope_id, record_id), None)
+            for record in batch.records:
+                pending = self._audit.get((batch.scope_id, record.record_id))
+                if pending is not None and encode_record(pending) != encode_record(record):
+                    raise ValueError("notification.audit_conflict")
+            for record_id in batch.record_ids:
+                self._audit.pop((batch.scope_id, record_id), None)
 
     def _check(self, command: StateMutation) -> tuple[str, str] | None:
         key = command.scope_id, command.subscription_id
@@ -322,7 +385,7 @@ class MemoryNotificationState:
                 return "conflict", "journal.record_identity_conflict"
         for record in command.audit:
             previous = self._audit.get((command.scope_id, record.record_id))
-            if previous is not None and previous != record:
+            if previous is not None and encode_record(previous) != encode_record(record):
                 return "conflict", "notification.audit_conflict"
         if len(self._audit) + len(command.audit) > self._max_entries:
             return "rejected", "notification.audit_capacity"
@@ -378,12 +441,13 @@ def flush_audit(
     records = state.pending_audit(scope_id, limit=limit)
     if not records:
         return None
-    from stratbox.observability import encode_record
-
-    segment_id = ByteIdentity.of(canonical_manifest_bytes({
-        "scope": scope_id, "identities": [ByteIdentity.of(encode_record(record)).sha256 for record in records],
-    })).sha256
-    receipt = writer.write_batch(records, segment_id=segment_id)
-    if receipt.state == "confirmed" and receipt.record_ids == tuple(record.record_id for record in records):
-        state.acknowledge_audit(scope_id, receipt)
+    batch = AuditBatch(scope_id, records, writer.format)
+    receipt = writer.write_batch(batch.records, segment_id=batch.segment_id)
+    if not isinstance(receipt, JournalWriteReceipt):
+        raise ValueError("journal.write_receipt_invalid")
+    if receipt.state == "confirmed":
+        if not batch.is_confirmed_by(receipt):
+            return replace(receipt, state="failed", diagnostic_code="notification.audit_receipt_mismatch",
+                           already_present=False)
+        state.acknowledge_audit(batch, receipt)
     return receipt
