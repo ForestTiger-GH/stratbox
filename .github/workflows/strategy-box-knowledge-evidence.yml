@@ -29,6 +29,8 @@ jobs:
           python3 -B scripts/check_internal_imports.py
       - name: Prepare the Stratbox 0.8 evidence revision
         run: git worktree add --detach "$RUNNER_TEMP/stratbox-core-0.8-evidence" e88fe91ce6354c3b9340e94d32c732bb3c1a2066
+      - name: Verify revision-pinned current HOW source paths
+        run: python3 -B scripts/check_pinned_source_links.py
       - name: "Enforce standalone Knowledge: no links to removable Research or Work"
         run: python3 _mw/epochs-001-strategy-box-development/consolidation/tools/migrate_knowledge_research_links.py --check
       - name: "Verify three independent core and example legacy notes"
