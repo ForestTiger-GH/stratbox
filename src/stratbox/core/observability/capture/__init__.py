@@ -1,0 +1,1 @@
+"""Canonical observability capture components."""

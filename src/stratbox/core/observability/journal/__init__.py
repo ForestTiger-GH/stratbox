@@ -1,0 +1,1 @@
+"""Canonical observability journal components."""
