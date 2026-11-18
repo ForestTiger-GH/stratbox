@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 
-def normalize_cbr_0105a_text(value: object) -> str:
+def normalize_industry_text(value: object) -> str:
     """Нормализует текст источника, сохраняя его экономический смысл."""
     if value is None:
         return ""
@@ -14,3 +14,7 @@ def normalize_cbr_0105a_text(value: object) -> str:
     text = re.sub(r"\bиз\s+них\b\s*:?,?", " ", text, flags=re.I)
     text = re.sub(r"[^0-9A-Za-zА-Яа-я]+", " ", text)
     return re.sub(r"\s+", " ", text).strip().lower()
+
+
+# Series-specific imports share the same normalization semantics.
+normalize_cbr_0105a_text = normalize_industry_text

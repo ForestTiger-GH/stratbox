@@ -159,7 +159,7 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from stratbox.domains.cbr.corporate_lending.industries.common.streams import concat_cbr_0105a_debt_corp_streams
+        from stratbox.domains.cbr.corporate_lending.industries.common.streams import concat_industry_streams
         from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import normalize_cbr_0105a_debt_corp_regions_to_latest
 
         invocation.stage("parse")
@@ -189,7 +189,7 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
         invocation.budget.check("cells", sum(item.df_stream.size for item in batch.values),
                                 completed=checkpoint is not None)
         files = normalize_cbr_0105a_debt_corp_regions_to_latest(batch.values)
-        stream = concat_cbr_0105a_debt_corp_streams(x.df_stream for x in files)
+        stream = concat_industry_streams(x.df_stream for x in files)
         stream = stream.sort_values(["report_date", "sheet_order", "region_order", "industry_order"],
                                     kind="stable").reset_index(drop=True)
         latest = max(files, key=lambda x: x.report_date)

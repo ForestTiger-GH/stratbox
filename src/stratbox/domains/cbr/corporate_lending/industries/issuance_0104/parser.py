@@ -19,12 +19,13 @@ from stratbox.domains.cbr.corporate_lending.industries.common.parsing import (
     _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,
 )
 from stratbox.domains.cbr.corporate_lending.industries.common.streams import (
-    STREAM_COLUMNS, optimize_cbr_0105a_debt_corp_stream_dtypes,
+    STREAM_COLUMNS, optimize_industry_stream_dtypes,
 )
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import build_cbr_0105a_debt_corp_region_specs
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
-    normalize_cbr_0105a_text, select_industry_headers,
+    select_industry_headers,
 )
+from ..common.normalization import normalize_industry_text
 
 from .contracts import IssuanceSheetSpec, ParsedIssuanceFile
 from .sources import SERIES_CODE, reference_period, report_date_from_filename
@@ -44,7 +45,7 @@ _MONTHS = (
 
 
 def _recognize_sheet(title: object) -> IssuanceSheetSpec | None:
-    text = normalize_cbr_0105a_text(title)
+    text = normalize_industry_text(title)
     words = set(text.split())
     if not {"объем", "кредитов", "юридическим", "лицам", "индивидуальным", "предпринимателям"} <= words:
         return None
@@ -58,7 +59,7 @@ def _recognize_sheet(title: object) -> IssuanceSheetSpec | None:
 
 
 def _verify_reference_month(raw: object, report_date: str) -> str:
-    text = normalize_cbr_0105a_text(raw)
+    text = normalize_industry_text(raw)
     years = re.findall(r"(?<!\d)\d{4}(?!\d)", text)
     matches = [index for index, month_names in enumerate(_MONTHS, 1)
                if any(re.search(rf"\b{month}\b", text) for month in month_names)]
@@ -206,7 +207,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
             validation_rows, columns=["region_code", "industry_code", "currency_scope", "value"]
         ))
         issues = _validate_stream(checked, report_date)
-        stream = optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
+        stream = optimize_industry_stream_dtypes(stream)
         return ParsedIssuanceFile(source_id, source_name, source_url, digest, report_date,
                                   period, _SHEETS, industries, regions, issues, stream, len(stream),
                                   unmapped_headers=tuple(unmapped_headers),

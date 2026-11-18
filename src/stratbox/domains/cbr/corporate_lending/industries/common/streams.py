@@ -68,7 +68,7 @@ STREAM_COLUMNS = (
 )
 
 
-def optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream: pd.DataFrame) -> pd.DataFrame:
+def optimize_industry_stream_dtypes(df_stream: pd.DataFrame) -> pd.DataFrame:
     """Уплотняет измерения потока для полной месячной истории."""
     stream = df_stream.copy()
     for column in _CATEGORY_COLUMNS:
@@ -109,7 +109,7 @@ def _ordered_categories(frames: tuple[pd.DataFrame, ...], column: str) -> list[o
     return categories
 
 
-def concat_cbr_0105a_debt_corp_streams(
+def concat_industry_streams(
     frames: Iterable[pd.DataFrame],
 ) -> pd.DataFrame:
     """Объединяет месячные потоки без распаковки категорий в тяжелый ``object``.
@@ -139,6 +139,11 @@ def concat_cbr_0105a_debt_corp_streams(
         aligned.append(current)
 
     stream = pd.concat(aligned, ignore_index=True)
-    return optimize_cbr_0105a_debt_corp_stream_dtypes(stream)
+    return optimize_industry_stream_dtypes(stream)
 
 
+
+
+# Existing stock-series imports refer to the same family algorithms.
+optimize_cbr_0105a_debt_corp_stream_dtypes = optimize_industry_stream_dtypes
+concat_cbr_0105a_debt_corp_streams = concat_industry_streams

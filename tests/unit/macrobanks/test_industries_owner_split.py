@@ -150,3 +150,11 @@ def test_issuance_uses_common_contracts_not_stock_owner_contracts():
         assert "industries.debt_0105a.contracts" not in (
             owner / module
         ).read_text(encoding="utf-8")
+
+
+def test_series_independent_family_helpers_share_exact_implementations():
+    assert streams.optimize_cbr_0105a_debt_corp_stream_dtypes is (
+        streams.optimize_industry_stream_dtypes
+    )
+    assert streams.concat_cbr_0105a_debt_corp_streams is streams.concat_industry_streams
+    assert normalization.normalize_cbr_0105a_text is normalization.normalize_industry_text
