@@ -35,6 +35,8 @@ def test_bank_resolution_reports_explicit_alias():
 def test_default_bundled_bank_names_use_verified_aliases():
     assert registry.normalize_registered_bank("СБЕРБАНК") == "СБЕР"
     assert registry.normalize_registered_bank("ТИНЬКОФФ БАНК") == "ТБАНК"
+    assert registry.normalize_registered_bank("БАНК 131") == "БАНК 131"
+    assert registry.normalize_registered_bank("САНКТ-ПЕТЕРБУРГ") == "БАНК САНКТ-ПЕТЕРБУРГ"
 
 
 def test_bank_registry_preserves_expected_columns_and_four_inputs():

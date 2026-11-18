@@ -31,7 +31,7 @@ def _aliases(bundle: LoadedReference, inputs: list[UsedInputReceipt] | None = No
     direct: dict[str, str] = {}
     by_canon: dict[str, list[str]] = {}
     for number, row in enumerate(reader, 2):
-        canonical = normalize_bank_spelling(row.get("canon"), placement="omit", case_mode="upper", drop_bank="left")
+        canonical = " ".join(str(row.get("canon") or "").replace("\u00a0", " ").upper().split())
         alias = normalize_bank_spelling(row.get("alias"), placement="omit", case_mode="upper", drop_bank="left")
         if not canonical or not alias:
             raise ReferenceError(f"Empty bank alias entry at row {number}")
