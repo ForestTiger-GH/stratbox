@@ -152,3 +152,32 @@ def test_wheel_duplicate_zip_members_rejected(tmp_path):
         archive.writestr("stratbox/shared/identity.py", "b")
     with pytest.raises(ValueError, match="duplicate"):
         check(str(wheel))
+
+
+def test_sdist_validator_checks_all_declared_resource_materials(tmp_path):
+    import io
+    import tarfile
+    check = _tool("inspect_reference_wheel.py")["verify_sdist"]
+    sdist = tmp_path / "stratbox-0.16.0.tar.gz"
+    root = "stratbox-0.16.0/src/"
+    with tarfile.open(sdist, "w:gz") as archive:
+        def add(name, raw):
+            entry = tarfile.TarInfo(root + name)
+            entry.size = len(raw)
+            archive.addfile(entry, io.BytesIO(raw))
+        for name in (
+            "stratbox/shared/identity.py", "stratbox/shared/evidence.py",
+            "stratbox/shared/data/datasets.py", "stratbox/shared/reference/assets.py",
+        ):
+            add(name, b"# source distribution fixture\n")
+        for family in ("banks", "okved2", "geography"):
+            package = "stratbox.shared.reference." + family
+            source = resources.files(package).joinpath("_resources")
+            add(f"stratbox/shared/reference/{family}/_resources/manifest.json",
+                source.joinpath("manifest.json").read_bytes())
+            for asset in load_reference(package).edition.assets:
+                add(f"stratbox/shared/reference/{family}/_resources/{asset.path}",
+                    load_reference(package).read(asset.role))
+    result = check(str(sdist))
+    assert result["result"] == "verified"
+    assert result["asset_occurrences"] == {"banks": 4, "okved2": 3, "geography": 1}
