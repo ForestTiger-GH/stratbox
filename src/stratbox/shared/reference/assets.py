@@ -74,6 +74,70 @@ class LoadedReference:
                 self.read(asset.role)
 
 
+@dataclass(frozen=True, slots=True)
+class ReferenceUse:
+    """A verified semantic projection of an existing generic input receipt.
+
+    The package manifest and exact resource bytes are checked on reconstruction.
+    Neither a generic role such as "data" nor a caller-written source_id alone
+    is sufficient to identify the consumed reference.
+    """
+
+    reference_id: str
+    edition_id: str
+    role: str
+    identity: ByteIdentity
+    snapshot_identity: ByteIdentity
+
+    def manifest_entry(self) -> dict[str, object]:
+        return {
+            "reference_id": self.reference_id,
+            "edition_id": self.edition_id,
+            "role": self.role,
+            "byte_identity": {"sha256": self.identity.sha256, "size": self.identity.size},
+            "snapshot_identity": {
+                "sha256": self.snapshot_identity.sha256, "size": self.snapshot_identity.size,
+            },
+        }
+
+
+def qualified_reference_use(
+    inputs: tuple[UsedInputReceipt, ...] | list[UsedInputReceipt],
+    *,
+    package: str,
+    role: str,
+) -> ReferenceUse:
+    """Require exactly one versioned, byte-verified use of a declared reference role."""
+    reference_id = package.removeprefix("stratbox.shared.reference.")
+    if not package.startswith("stratbox.shared.reference.") or not reference_id:
+        raise ReferenceError("Invalid reference package")
+    # Resolve the semantic reference ID from the package's trusted manifest,
+    # rather than guessing it from the local role or asset filename.
+    candidate = load_reference(package)
+    reference_id = candidate.edition.reference_id
+    relevant = []
+    for item in inputs:
+        if item.source_id is None or not item.source_id.startswith(reference_id + ":"):
+            continue
+        parts = item.source_id.split(":")
+        if len(parts) != 3 or not all(parts):
+            raise ReferenceError("Malformed reference input source identity")
+        if parts[2] == role:
+            relevant.append((item, parts[1]))
+    if len(relevant) != 1:
+        raise ReferenceError(f"Expected exactly one qualified reference use: {reference_id}:{role}")
+    receipt, edition_id = relevant[0]
+    selected = load_reference(package, edition_id=edition_id)
+    asset = selected.asset(role)
+    if (receipt.role != role or receipt.identity != asset.identity
+            or receipt.version != selected.snapshot_identity
+            or receipt.media_type != asset.media_type
+            or receipt.availability != "inline"):
+        raise ReferenceError(f"Unqualified reference receipt: {reference_id}:{role}")
+    selected.read(role)
+    return ReferenceUse(reference_id, edition_id, role, asset.identity, selected.snapshot_identity)
+
+
 def _safe_path(path: str) -> str:
     if not isinstance(path, str) or not path or "\\" in path or path.startswith("/"):
         raise ReferenceError("Invalid reference asset path")

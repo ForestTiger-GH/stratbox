@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import json
+import math
+from dataclasses import asdict, is_dataclass
+from decimal import Decimal
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -10,6 +12,8 @@ from stratbox.core.limits import BudgetExceeded
 from stratbox.core.execution import OperationFailure
 
 from stratbox import __version__ as STRATBOX_VERSION
+from stratbox.shared.identity import canonical_manifest_bytes
+from stratbox.shared.reference.assets import qualified_reference_use
 from stratbox.domains.cbr_sors_restoration.contracts import (
     SorsRunConfig,
     SorsSourceBundle,
@@ -50,48 +54,78 @@ def _package_version() -> str:
     return STRATBOX_VERSION
 
 
-def _hash_payload(payload: object, length: int = 24) -> str:
-    return hashlib.sha256(
-        json.dumps(payload, sort_keys=True, default=str).encode('utf-8')
-    ).hexdigest()[:length]
+def _manifestable(value):
+    """Deterministic and strict representation for an identity-bearing parameter."""
+    if is_dataclass(value) and not isinstance(value, type):
+        return _manifestable(asdict(value))
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("Non-finite SORS identity parameter")
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        if not all(isinstance(k, str) for k in value):
+            raise ValueError("SORS identity parameter keys must be strings")
+        return {key: _manifestable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_manifestable(item) for item in value]
+    if value is None or type(value) in (str, int, bool, Decimal):
+        return value
+    raise TypeError(f"Unsupported SORS identity parameter type: {type(value).__name__}")
+
+
+def _hash_payload(payload: dict[str, object], length: int = 24) -> str:
+    return hashlib.sha256(canonical_manifest_bytes(_manifestable(payload))).hexdigest()[:length]
+
+
+_STRICT_SOURCE_SERIES = frozenset({
+    "01_05_A", "01_02_A", "01_02_C", "01_03_C",
+    "01_11", "01_11_F", "01_11_I", "01_12_A", "01_13_F", "01_13_I",
+})
 
 
 def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, str, str]:
-    manifest = bundle.source_manifest_grid.sort_values('source_series')
-    dataset_id = _hash_payload(
-        {
-            'as_of_date': config.as_of_date,
-            'sources': manifest[['source_series', 'sha256']].to_dict('records'),
-        }
+    """Separate input dataset, strict mathematical model and execution settings.
+
+    v2 includes the exact packaged classifier evidence and all parameter
+    surfaces which influence strict or algorithmic computations.
+    """
+    manifest = bundle.source_manifest_grid.sort_values("source_series")
+    source_rows = manifest[["source_series", "sha256"]].to_dict("records")
+    if len(set(manifest["source_series"])) != len(manifest):
+        raise ValueError("SORS source manifest has duplicate series")
+    dataset_id = _hash_payload({
+        "identity_schema": "sors.dataset.v2",
+        "as_of_date": config.as_of_date,
+        "sources": source_rows,
+    })
+    strict_rows = manifest[manifest["source_series"].isin(_STRICT_SOURCE_SERIES)]
+    missing = _STRICT_SOURCE_SERIES - set(strict_rows["source_series"])
+    if missing:
+        raise ValueError(f"SORS strict source manifest is incomplete: {sorted(missing)}")
+    classifier = qualified_reference_use(
+        bundle.lineage, package="stratbox.shared.reference.okved2", role="data"
     )
-    strict_manifest = manifest[
-        manifest['source_series'].isin(
-            [
-                '01_05_A', '01_02_A', '01_02_C', '01_03_C',
-                '01_11', '01_11_F', '01_11_I', '01_12_A', '01_13_F', '01_13_I',
-            ]
-        )
-    ]
-    strict_model_id = _hash_payload(
-        {
-            'dataset_sources': strict_manifest[['source_series', 'sha256']].to_dict('records'),
-            'publication_step': config.publication_step,
-            'rules_version': config.rules_version,
-            'primary_portfolio_scope': config.primary_portfolio_scope,
-            'portfolio_scopes': PORTFOLIO_SCOPES,
-            'regions': tuple(bundle.atomic_regions_grid['region_code'].astype(str)),
-            'classes': tuple(bundle.okved2_classes_grid['class_code'].astype(str)),
-            'classifiers': [item.identity.sha256 for item in bundle.lineage if item.role == 'okved2_registry'],
-        }
-    )
-    execution_run_id = _hash_payload(
-        {
-            'strict_model_id': strict_model_id,
-            'deterministic': config.deterministic,
-            'optimization': config.optimization,
-            'package_version': _package_version(),
-        }
-    )
+    strict_model_id = _hash_payload({
+        "identity_schema": "sors.strict_model.v2",
+        "dataset_sources": strict_rows[["source_series", "sha256"]].to_dict("records"),
+        "publication_step": config.publication_step,
+        "point_tolerance": config.point_tolerance,
+        "rules_version": config.rules_version,
+        "primary_portfolio_scope": config.primary_portfolio_scope,
+        "portfolio_scopes": PORTFOLIO_SCOPES,
+        "regions": tuple(bundle.atomic_regions_grid["region_code"].astype(str)),
+        "classes": tuple(bundle.okved2_classes_grid["class_code"].astype(str)),
+        "classification_reference": classifier.manifest_entry(),
+        "inheritance_enabled": config.deterministic.inheritance_enabled,
+    })
+    execution_run_id = _hash_payload({
+        "identity_schema": "sors.execution.v2",
+        "strict_model_id": strict_model_id,
+        "deterministic": config.deterministic,
+        "optimization": config.optimization,
+        "point_tolerance": config.point_tolerance,
+        "package_version": _package_version(),
+    })
     return dataset_id, strict_model_id, execution_run_id
 
 
