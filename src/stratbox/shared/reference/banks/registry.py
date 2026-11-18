@@ -61,7 +61,11 @@ def _enabled_selection(bundle: LoadedReference, aliases: dict[str, str], inputs)
     df = _csv(bundle, "default_selection", inputs=inputs)
     if not {"enabled", "bank"}.issubset(df.columns):
         raise ReferenceError("Bank selection requires enabled/bank columns")
-    enabled = df["enabled"].astype(str).str.strip().str.lower().isin({"true", "1", "yes", "y"})
+    flag = df["enabled"].astype(str).str.strip().str.lower()
+    accepted = {"true", "false", "1", "0", "yes", "no", "y", "n"}
+    if not flag.isin(accepted).all():
+        raise ReferenceError("Bank selection has an invalid enabled value")
+    enabled = flag.isin({"true", "1", "yes", "y"})
     return {name for name in (
         normalize_bank_name(value, aliases=aliases) for value in df.loc[enabled, "bank"]
     ) if name}
@@ -79,8 +83,8 @@ def _legacy_sort(bundle: LoadedReference, inputs):
             continue
         try:
             number = int(rank) if rank.isdigit() else int(float(rank))
-        except (TypeError, ValueError):
-            continue
+        except (TypeError, ValueError) as exc:
+            raise ReferenceError(f"Invalid legacy bank sort value for {key!r}") from exc
         if key not in result or number < result[key]:
             result[key] = number
     return result

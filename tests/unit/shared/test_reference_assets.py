@@ -61,3 +61,15 @@ def test_invalid_explicit_edition_is_rejected():
 def test_reference_root_does_not_resolve_external_package():
     with pytest.raises(ReferenceError, match="owned reference"):
         load_reference("os.path")
+
+
+def test_reference_snapshot_includes_semantically_relevant_edition_metadata():
+    from stratbox.shared.identity import canonical_manifest_bytes
+    bundle = load_reference("stratbox.shared.reference.banks")
+    manifest = bundle.edition
+    assert manifest.source_url is None
+    assert manifest.effective_from is None
+    assert bundle.snapshot_identity == load_reference("stratbox.shared.reference.banks").snapshot_identity
+    assert ByteIdentity.of(canonical_manifest_bytes({"published_at": None})) != (
+        ByteIdentity.of(canonical_manifest_bytes({"published_at": "2026-11-18"}))
+    )

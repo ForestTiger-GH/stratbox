@@ -124,8 +124,13 @@ def load_reference(package: str, *, edition_id: str | None = None) -> LoadedRefe
             date.fromisoformat(entry["published_at"]) if entry.get("published_at") else None,
             date.fromisoformat(entry["effective_from"]) if entry.get("effective_from") else None,
             date.fromisoformat(entry["effective_to"]) if entry.get("effective_to") else None)
+        if edition.effective_from and edition.effective_to and edition.effective_from > edition.effective_to:
+            raise ReferenceError("Reference edition has an inverted validity interval")
         snapshot_manifest = {
             "reference_id": reference_id, "edition_id": selected, "schema_version": 1,
+            "publisher": edition.publisher, "source_url": edition.source_url,
+            "published_at": edition.published_at,
+            "effective_from": edition.effective_from, "effective_to": edition.effective_to,
             "assets": [{"role": asset.role, "path": asset.path,
                         "sha256": asset.identity.sha256, "size": asset.identity.size,
                         "media_type": asset.media_type, "required": asset.required}
