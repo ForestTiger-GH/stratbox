@@ -5,7 +5,8 @@ from threading import Event
 import pandas as pd
 import pytest
 
-from stratbox.shared.data import ByteIdentity, table_identity
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.tables import table_identity
 from stratbox.core.execution import EffectReceipt, ExecutionContext, InMemorySink, OperationDefinition, run
 
 

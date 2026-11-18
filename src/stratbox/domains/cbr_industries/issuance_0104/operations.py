@@ -7,7 +7,8 @@ from pathlib import PurePosixPath
 
 from stratbox.core.network import HttpTransport
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import AcquiredSource, ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.evidence import AcquiredSource
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import (
     Completion, ExecutionContext, OperationDefinition, OperationFailure,
     OperationResult, run,

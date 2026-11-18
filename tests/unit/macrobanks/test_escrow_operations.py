@@ -2,7 +2,7 @@ from io import BytesIO
 
 from openpyxl import Workbook, load_workbook
 
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains import escrow
 from stratbox.domains.escrow.columns import ESCROW_INDICATOR_SPECS
 

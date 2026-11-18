@@ -26,7 +26,7 @@ def invoke_read_only(raw, *, materials):
 
 def wire_schemas(operation_id, contract_version):
     return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.core.execution import Correlation, ExecutionContext, OperationDefinition, run
 from stratbox.domains import cbr_offices
 

@@ -6,7 +6,8 @@ No HTTP calls or external source state are involved.
 from datetime import datetime, timezone
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data import ByteIdentity, SourcePayload, UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.core.execution import ExecutionContext, OperationDefinition, run
 from stratbox.core.operations.source.originals import OriginalDestination, SaveOriginalRequest, save_original
 from stratbox.core.observability import (

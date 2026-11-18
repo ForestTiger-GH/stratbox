@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.notifications import (
     AuditBatch, CheckpointUpdate, DispatchUpdate, MemoryNotificationState, PrepareRequest,
     RecordIdentity, StateMutation, flush_audit, prepare,

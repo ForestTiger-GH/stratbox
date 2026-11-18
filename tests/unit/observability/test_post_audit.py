@@ -5,7 +5,8 @@ import json
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data import ByteIdentity, PublicationReceipt
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import PublicationReceipt
 from stratbox.core.observability import (
     JournalRecord, CaptureCoverage, SequenceRange, FileJournalWriter,
     FileJournalReader, SegmentDescriptor, build_manifest, decode_manifest,

@@ -20,7 +20,7 @@ from stratbox.core.storage.bytes import read_bounded_bytes
 from stratbox.core.formats.xml import XmlError, inspect_xml, parse_xml
 from stratbox.core.limits import BudgetMeter
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 WorkbookKind = Literal["xlsx", "xlsm", "xlsb", "xls"]
 _OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"

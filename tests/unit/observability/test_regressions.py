@@ -11,7 +11,9 @@ import json
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data import (ByteIdentity, Comparison, PublicationReceipt, StoredBytesReceipt)
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.comparison import Comparison
+from stratbox.shared.evidence import PublicationReceipt, StoredBytesReceipt
 from stratbox.core.execution import (Correlation, Diagnostic, EffectReceipt,
                                 ObservabilitySummary, OperationDefinition, OperationResult,
                                 ExecutionEvent, ExecutionContext, run)

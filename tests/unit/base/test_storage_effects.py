@@ -4,7 +4,7 @@ from threading import Barrier
 
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 
 def test_immutable_write_serializes_competing_contents(tmp_path):

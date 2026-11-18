@@ -6,7 +6,8 @@ from struct import pack
 import pandas as pd
 
 from stratbox.core.formats.archives.members import zip_bytes
-from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains import cbr_forms as forms
 
 

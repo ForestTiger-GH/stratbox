@@ -9,7 +9,8 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
 from stratbox.core.network import HttpResponse
-from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.releases import CompareReleaseRequest, ReadReleaseRequest
 from stratbox.domains import cbr_offices as daily, cbr_offices_reg as monthly
 from stratbox.domains import fns_1yur, fns_sme

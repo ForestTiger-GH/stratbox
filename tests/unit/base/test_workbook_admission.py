@@ -12,7 +12,8 @@ from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.core.rendering.spreadsheet_view import spreadsheet_view
 from stratbox.core.formats.spreadsheets.workbook_input import WorkbookError, preview_workbook, workbook_profile
 from stratbox.core.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
-from stratbox.shared.data import ByteIdentity, Representation
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.representation import Representation
 
 
 def _book():
