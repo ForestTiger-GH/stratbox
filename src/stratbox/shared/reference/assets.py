@@ -160,8 +160,8 @@ REFERENCE_REQUIRED_ROLES: dict[str, frozenset[str]] = {
     "okved2": frozenset({"data", "meta", "structure"}),
     "geography": frozenset({"aliases"}),
 }
-_EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\\Z")
-_ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\\Z")
+_EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
+_ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\Z")
 _ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})
 
 
