@@ -46,6 +46,8 @@ REQUIRED_FILES = [
     'tests/unit/shared/test_bank_names.py',
     'tests/unit/shared/test_geography.py',
     'tests/unit/shared/test_periods.py',
+    'scripts/reference_editions.py',
+    'scripts/inspect_reference_wheel.py',
     'src/stratbox/shared/identity.py',
     'src/stratbox/shared/evidence.py',
     'src/stratbox/shared/data/datasets.py',

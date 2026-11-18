@@ -80,9 +80,14 @@ python -B scripts/check_internal_imports.py
 python -B -m pytest -q tests/unit/shared
 python -B -m pytest -q
 python -m pip wheel . -w dist --no-deps
+# Substitute the actual produced wheel filename:
+python -B scripts/inspect_reference_wheel.py dist/stratbox-VERSION-py3-none-any.whl
 ```
 
-Run the same resource verification after installing the built wheel outside the checkout. An installed package may be missing assets even if imports succeed in editable mode; compare the manifest, package file paths and byte digests directly. Tests are local/offline and should not trigger remote workflows.
+The wheel inspection reads the ZIP members directly, verifies every manifest
+asset in every edition, and rejects obsolete paths. For wheels named with a
+different Python/ABI tag, substitute the actual filename. Run the same resource
+verification after installing the built wheel outside the checkout. An installed package may be missing assets even if imports succeed in editable mode; compare the manifest, package file paths and byte digests directly. Tests are local/offline and should not trigger remote workflows.
 
 ## 6. Limits and errors
 
