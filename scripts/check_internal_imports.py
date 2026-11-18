@@ -19,16 +19,52 @@ PACKAGE = SRC / "stratbox"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from stratbox.domains._structure import DomainLayoutError, discover_operation_owners  # noqa: E402
+
 def _registered_domains() -> frozenset[str]:
     """Resolve manifest owners by full relative package path, regardless of depth."""
     root = PACKAGE / "domains"
     if not root.is_dir():
         return frozenset()
-    return frozenset(
-        ".".join(manifest.parent.relative_to(root).parts)
-        for manifest in root.rglob("_registration.py")
-        if (manifest.parent / "__init__.py").is_file()
-    )
+    return frozenset(discover_operation_owners(root))
+
+
+# These names are invalid even when a stale import would not be resolved at runtime.
+LEGACY_DOMAIN_PACKAGES = frozenset({
+    "cbr_file_collector", "cbr_forms", "cbr_industries", "cbr_offices",
+    "cbr_offices_reg", "cbr_sors_restoration", "escrow",
+    "fns_1yur", "fns_sme", "frg", "_cbr",
+})
+
+
+def _is_legacy_domain_path(module: str) -> bool:
+    prefix = "stratbox.domains."
+    if not module.startswith(prefix):
+        return False
+    part = module[len(prefix):].split(".", 1)[0]
+    return part in LEGACY_DOMAIN_PACKAGES
+
+
+def _literal_module_refs(tree: ast.AST):
+    """Find importlib imports and explicit declaration links without guessing strings."""
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        operation = node.func.id if isinstance(node.func, ast.Name) else (
+            node.func.attr if isinstance(node.func, ast.Attribute) else ""
+        )
+        if operation in {"import_module", "__import__"} and node.args:
+            literal = node.args[0]
+            if isinstance(literal, ast.Constant) and isinstance(literal.value, str):
+                yield node.lineno, literal.value
+        if operation == "OperationRef":
+            values = (*node.args[2:5], *(
+                keyword.value for keyword in node.keywords
+                if keyword.arg in {"definition_ref", "handler_ref", "wire_codec_ref"}
+            ))
+            for value in values:
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    yield node.lineno, value.value.split(":", 1)[0]
 
 
 CRITICAL_MODULES = [
@@ -71,17 +107,6 @@ CRITICAL_MODULES = [
     "stratbox.shared.reference.geography",
     "stratbox.shared.time",
     "stratbox.domains.registry",
-    "stratbox.domains.cbr.file_collection",
-    "stratbox.domains.cbr.corporate_lending.industries",
-    "stratbox.domains.cbr.corporate_lending.industries.issuance_0104",
-    "stratbox.domains.cbr.reporting_forms",
-    "stratbox.domains.cbr.service_network.bank_offices",
-    "stratbox.domains.cbr.service_network.territorial_offices",
-    "stratbox.domains.cbr.corporate_lending.sors_restoration",
-    "stratbox.domains.cbr.escrow",
-    "stratbox.domains.frank_rg.retail_banking",
-    "stratbox.domains.fns.sme_register",
-    "stratbox.domains.fns.legal_entities_1yur",
 ]
 
 
@@ -134,21 +159,50 @@ def _domain(target: str, owners: frozenset[str]) -> str | None:
 
 
 def _publisher(target: str, owners: frozenset[str]) -> str | None:
+    """Publisher follows the physical Python package even without a manifest."""
     parts = target.split(".")
     if len(parts) < 3 or parts[:2] != ["stratbox", "domains"]:
         return None
-    publishers = {owner.split(".", 1)[0] for owner in owners}
-    return parts[2] if parts[2] in publishers else None
+    publisher = parts[2]
+    package = PACKAGE / "domains" / publisher
+    return publisher if (package / "__init__.py").is_file() else None
+
+
+def _source_publisher(path: Path) -> str | None:
+    parts = path.relative_to(PACKAGE).parts
+    if len(parts) < 3 or parts[0] != "domains":
+        return None
+    parent = PACKAGE / "domains" / parts[1]
+    return parts[1] if (parent / "__init__.py").is_file() else None
+
+
+def _approved_inter_owner_reference(source: str, target: str, module: str) -> bool:
+    """Only a specifically justified statistical parser/schema reuse."""
+    return (
+        source == "cbr.corporate_lending.sors_restoration"
+        and target == "cbr.corporate_lending.industries"
+        and module in {
+            "stratbox.domains.cbr.corporate_lending.industries.parser",
+            "stratbox.domains.cbr.corporate_lending.industries.parser.parse_cbr_0105a_debt_corp_excel_bytes",
+            "stratbox.domains.cbr.corporate_lending.industries.schema",
+            "stratbox.domains.cbr.corporate_lending.industries.schema.CBR_0105A_DEBT_CORP_INDUSTRY_SPECS",
+        }
+    )
+
 
 
 def check_dependency_direction() -> list[str]:
     failures: list[str] = []
-    owners = _registered_domains()
+    try:
+        owners = _registered_domains()
+    except (DomainLayoutError, OSError) as error:
+        return [f"invalid domain hierarchy: {error}"]
     for path in sorted(PACKAGE.rglob("*.py")):
         relative = path.relative_to(PACKAGE).as_posix()
         owner = _owner(path, owners)
+        source_publisher = _source_publisher(path)
         source = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        for line, target in _imports(path, source):
+        for line, target in (*_imports(path, source), *_literal_module_refs(source)):
             prefix = f"{relative}:{line}"
             if target == "INVALID_RELATIVE_IMPORT":
                 failures.append(f"{prefix}: invalid relative import")
@@ -177,22 +231,24 @@ def check_dependency_direction() -> list[str]:
             if owner == "domains.registry" and _domain(target, owners):
                 failures.append(f"{prefix}: domain catalog depends on concrete domain {target}")
             target_domain = _domain(target, owners)
-            if owner.startswith("domain:"):
-                source_domain = owner.split(":", 1)[1]
-                source_publisher = source_domain.split(".", 1)[0]
-                target_publisher = _publisher(target, owners)
-                if target_publisher is not None and source_publisher != target_publisher:
+            if _is_legacy_domain_path(target):
+                failures.append(f"{prefix}: obsolete domain import {target}")
+            target_publisher = _publisher(target, owners)
+            if source_publisher is not None and target_publisher is not None:
+                if source_publisher != target_publisher:
                     failures.append(f"{prefix}: cross-source import {target}")
-                elif target_domain is not None and source_domain != target_domain:
-                    # A child series uses the owning parent's shared parsing/model rules.
-                    parent_dependency = source_domain.startswith(target_domain + ".")
-                    # SORS reuses the exact official 01_05_A parser and geography schema.
-                    sors_dependency = (
-                        source_domain == "cbr.corporate_lending.sors_restoration"
-                        and target_domain == "cbr.corporate_lending.industries"
-                    )
-                    if not (parent_dependency or sors_dependency):
-                        failures.append(f"{prefix}: cross-domain import {target}")
+                elif target_domain is not None:
+                    source_domain = owner.split(":", 1)[1] if owner.startswith("domain:") else None
+                    if source_domain is None:
+                        # Grouping packages are not allowed to depend on child
+                        # implementations. They may expose names lazily.
+                        failures.append(f"{prefix}: grouping imports domain implementation {target}")
+                    elif source_domain != target_domain:
+                        parent_dependency = source_domain.startswith(target_domain + ".")
+                        if not (parent_dependency or _approved_inter_owner_reference(
+                            source_domain, target_domain, target
+                        )):
+                            failures.append(f"{prefix}: cross-domain import {target}")
             if owner == "core:execution" and target.startswith((
                 "stratbox.core.operations", "stratbox.core.observability", "stratbox.core.notifications"
             )):
@@ -211,7 +267,7 @@ def check_dependency_direction() -> list[str]:
 
 
 def check_supporting_source_imports() -> list[str]:
-    """Check examples, tests, benchmarks and scripts for stale public imports."""
+    """Scan active non-library code for obsolete static and dynamic imports."""
     failures: list[str] = []
     forbidden = (
         "stratbox.shared.registries", "stratbox.shared.text",
@@ -231,25 +287,40 @@ def check_supporting_source_imports() -> list[str]:
             file_label = path.relative_to(ROOT).as_posix()
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=file_label)
             for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom) and node.module == "stratbox.shared.data":
+                    if any(alias.name in migrated_symbols for alias in node.names):
+                        failures.append(f"{file_label}:{node.lineno}: moved symbol from shared.data")
+            # The helper above requires a source path; supporting files use
+            # the same import syntax without relative name resolution.
+            for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
-                    imported = tuple(alias.name for alias in node.names)
+                    values = [alias.name for alias in node.names]
                 elif isinstance(node, ast.ImportFrom) and node.level == 0:
-                    imported = (node.module or "",)
-                    if node.module == "stratbox.shared.data" and any(
-                        alias.name in migrated_symbols for alias in node.names
-                    ):
-                        failures.append(f"{file_label}:{node.lineno}: moved symbol imported from shared.data")
+                    values = [node.module or ""] + [
+                        f"{node.module}.{alias.name}" for alias in node.names
+                    ]
                 else:
                     continue
-                if any(value.startswith(forbidden) for value in imported):
-                    failures.append(f"{file_label}:{node.lineno}: obsolete package import {imported}")
+                for value in values:
+                    if _is_legacy_domain_path(value) or value.startswith(forbidden):
+                        failures.append(f"{file_label}:{node.lineno}: obsolete import {value}")
+            for lineno, value in _literal_module_refs(tree):
+                if _is_legacy_domain_path(value) or value.startswith(forbidden):
+                    failures.append(f"{file_label}:{lineno}: obsolete dynamic import {value}")
     return failures
 
 
 def main() -> int:
     failures = check_dependency_direction()
     failures.extend(check_supporting_source_imports())
-    for name in CRITICAL_MODULES:
+    try:
+        domain_names = tuple(
+            "stratbox.domains." + owner for owner in sorted(_registered_domains())
+        )
+    except (DomainLayoutError, OSError) as error:
+        failures.append(f"invalid domain hierarchy: {error}")
+        domain_names = ()
+    for name in (*CRITICAL_MODULES, *domain_names):
         try:
             importlib.import_module(name)
             print(f"OK   {name}")
