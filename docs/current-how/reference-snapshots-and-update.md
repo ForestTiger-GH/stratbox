@@ -49,7 +49,30 @@ For domain usage, pass `inputs=...` to `banks.registry.read()` or `okved2.regist
 
 A change to user-chosen bank selection or aliases is a new policy edition even if the official workbook stays unchanged. A territory-name change that asserts a new identity must have its own rule ID and review basis. An OKVED2 resource update does not automatically justify different industry aggregation methods.
 
-## 4. Validation commands
+## 4. Maintenance helper
+
+The offline `scripts/reference_editions.py` tool verifies every declared
+asset in every edition (including optional assets):
+
+```bash
+python -B scripts/reference_editions.py verify --reference all
+```
+
+For a newly reviewed edition, first place files under new names in the owner
+package. Then stage the explicit role changes; every old edition is checked
+before stage and a historical asset path cannot be overwritten:
+
+```bash
+python -B scripts/reference_editions.py stage --reference banks \\
+  --edition-id reviewed-example-2 --asset aliases=aliases/new-aliases.csv --activate
+```
+
+The helper never fetches external source data, invents publication dates,
+transcodes CSV bytes, or assigns new statistical meanings. Review its proposed
+manifest and run the tests before committing; the command is an example, not a
+request to stage a specific edition.
+
+## 5. Validation commands
 
 ```bash
 python -B scripts/check_release_integrity.py
@@ -61,6 +84,6 @@ python -m pip wheel . -w dist --no-deps
 
 Run the same resource verification after installing the built wheel outside the checkout. An installed package may be missing assets even if imports succeed in editable mode; compare the manifest, package file paths and byte digests directly. Tests are local/offline and should not trigger remote workflows.
 
-## 5. Limits and errors
+## 6. Limits and errors
 
 A digest proves byte equality to a pinned manifest claim, not the origin or normative currentness of the underlying file. A statistical reference cannot infer the published perimeter of a concrete dataset. Absence of a required asset and hash mismatch fail explicitly; a structurally invalid CSV cannot be converted silently to an empty authoritative reference. Name ambiguities and out-of-scope historical labels remain unresolved until a reviewed rule and source context are provided.
