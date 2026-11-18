@@ -16,11 +16,11 @@ def normalize_bank_spelling(
 
     Alias policy is a separately supplied mapping and never loaded implicitly.
     """
-    # pandas is optional during vectorized operations. опционально (если установлен)
+    # Pandas is an optional dependency for vectorized inputs.
     try:
         import pandas as pd
         HAS_PD = True
-    except Exception:
+    except ImportError:
         HAS_PD = False
         pd = None
 
@@ -157,12 +157,10 @@ def normalize_bank_spelling(
         res = re.sub(r"\s*-\s*", "-", res or "")
         res = re.sub(r"\s+", " ", res).strip()
 
-        # 7) Финальная канонизация по replacements
-
-        # 8) Возврат с учётом case_mode
+        # Policy aliases are applied by normalize_bank_name, not by this lexical pass.
         return (res.upper() if case_mode == "upper" else res) or None
 
-    # Collections/pandas
+    # Preserve the input's collection shape where practical.
     if HAS_PD and isinstance(name, pd.Series):
         return name.map(_one)
     if HAS_PD and isinstance(name, pd.Index):
