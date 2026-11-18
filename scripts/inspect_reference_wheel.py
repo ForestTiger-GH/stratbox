@@ -10,7 +10,7 @@ import argparse
 from hashlib import sha256
 import json
 from pathlib import PurePosixPath
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 
 PACKAGES = {
     "banks": frozenset({"official_xlsx", "aliases", "default_selection", "legacy_selection"}),
@@ -84,8 +84,8 @@ def main() -> int:
     try:
         print(json.dumps(verify_wheel(args.wheel), indent=2, ensure_ascii=False))
         return 0
-    except (OSError, KeyError, ValueError) as error:
-        parser.exit(1, f"Wheel reference verification failed: {error}\\n")
+    except (OSError, KeyError, ValueError, BadZipFile) as error:
+        parser.exit(1, f"Wheel reference verification failed: {error}\n")
     return 1
 
 

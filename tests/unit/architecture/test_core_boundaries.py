@@ -139,3 +139,36 @@ def test_builtin_transport_evidence_identifiers_are_stable():
     assert _transport_identity(RequestsTransport()) == "http.requests.v1"
     assert _transport_identity(object.__new__(RoutedTransport)) == "http.routed.v1"
     assert _transport_identity(object.__new__(PeerBoundTransport)) == "http.peer_bound.v1"
+
+
+def test_shared_owner_boundaries_reject_wrong_direction_and_old_paths(tmp_path):
+    root = Path(__file__).resolve().parents[3]
+    checker = runpy.run_path(str(root / "scripts" / "check_internal_imports.py"))
+    src = tmp_path / "src"
+    shared = src / "stratbox" / "shared"
+    data = shared / "data"
+    shared.mkdir(parents=True)
+    data.mkdir()
+    (shared / "identity.py").write_text(
+        "from stratbox.shared.reference import assets\\n", encoding="utf-8"
+    )
+    (data / "bad.py").write_text(
+        "from stratbox.shared.reference.banks import registry\\n", encoding="utf-8"
+    )
+    check = checker["check_dependency_direction"]
+    check.__globals__["SRC"] = src
+    check.__globals__["PACKAGE"] = src / "stratbox"
+    failures = check()
+    assert any("identity imports higher-level" in failure for failure in failures)
+    assert any("shared data imports" in failure for failure in failures)
+
+
+def test_external_source_scanner_rejects_moved_imports(tmp_path):
+    root = Path(__file__).resolve().parents[3]
+    checker = runpy.run_path(str(root / "scripts" / "check_internal_imports.py"))
+    test_file = tmp_path / "tests" / "test_old.py"
+    test_file.parent.mkdir(parents=True)
+    test_file.write_text("from stratbox.shared.data import ByteIdentity\\n", encoding="utf-8")
+    check = checker["check_supporting_source_imports"]
+    check.__globals__["ROOT"] = tmp_path
+    assert any("moved symbol" in failure for failure in check())

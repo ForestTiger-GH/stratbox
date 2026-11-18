@@ -275,7 +275,7 @@ def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
     from io import BytesIO
     from openpyxl import Workbook
 
-    from stratbox.shared.data import SourcePayload
+    from stratbox.shared.evidence import SourcePayload
     from stratbox.domains.cbr_sors_restoration import (
         LoadSorsRequest, RestoreSorsRequest, SorsRunConfig, SorsSourceInputs, load_sources, restore,
     )

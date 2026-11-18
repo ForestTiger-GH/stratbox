@@ -36,9 +36,9 @@ version = {attr = "stratbox.__version__"}
 
 [tool.setuptools.package-data]
 "stratbox" = ["py.typed"]
-"stratbox.shared.reference.banks" = ["_resources/*.json", "_resources/official/*.xlsx", "_resources/aliases/*.csv", "_resources/selections/*.csv"]
-"stratbox.shared.reference.okved2" = ["_resources/*.json", "_resources/data/*.csv"]
-"stratbox.shared.reference.geography" = ["_resources/*.json", "_resources/*.csv"]
+"stratbox.shared.reference.banks" = ["_resources/**/*", "_resources/*.json", "_resources/official/*.xlsx", "_resources/aliases/*.csv", "_resources/selections/*.csv"]
+"stratbox.shared.reference.okved2" = ["_resources/**/*", "_resources/*.json", "_resources/data/*.csv"]
+"stratbox.shared.reference.geography" = ["_resources/**/*", "_resources/*.json", "_resources/*.csv"]
 "stratbox.domains.cbr_forms.models" = ["*.csv"]
 "stratbox.domains.cbr_sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
 
