@@ -7,6 +7,8 @@ from datetime import date
 from importlib import resources
 import json
 from pathlib import PurePosixPath
+from collections.abc import Mapping
+import re
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
@@ -24,6 +26,10 @@ class ReferenceAsset:
     media_type: str
     identity: ByteIdentity
     required: bool = True
+    publisher: str | None = None
+    curator: str | None = None
+    source_url: str | None = None
+    origin_kind: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +40,7 @@ class ReferenceEdition:
     assets: tuple[ReferenceAsset, ...]
     publisher: str | None = None
     source_url: str | None = None
+    curator: str | None = None
     published_at: date | None = None
     effective_from: date | None = None
     effective_to: date | None = None
@@ -147,61 +154,153 @@ def _safe_path(path: str) -> str:
     return path
 
 
-def load_reference(package: str, *, edition_id: str | None = None) -> LoadedReference:
-    """Use the active manifest edition or an explicitly named packaged edition."""
-    if not package.startswith("stratbox.shared.reference."):
+# One independently declared family contract; all readers and build tools use it.
+REFERENCE_REQUIRED_ROLES: dict[str, frozenset[str]] = {
+    "banks": frozenset({"official_xlsx", "aliases", "default_selection", "legacy_selection"}),
+    "okved2": frozenset({"data", "meta", "structure"}),
+    "geography": frozenset({"aliases"}),
+}
+_EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\\Z")
+_ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\\Z")
+_ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})
+
+
+def _nullable_text(value: object, label: str) -> str | None:
+    if value is not None and (not isinstance(value, str) or not value.strip()):
+        raise ReferenceError(f"Invalid reference {label}")
+    return value
+
+
+def _edition_date(value: object, field: str) -> date | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ReferenceError(f"Invalid reference date {field}")
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ReferenceError(f"Invalid reference date {field}") from exc
+
+
+def parse_reference_manifest(package: str, document: bytes | Mapping[str, object]) -> tuple[str, tuple[ReferenceEdition, ...]]:
+    """Pure, all-edition manifest admission, shared by runtime, stage and wheel.
+
+    Returns the selected active edition ID and every independently validated
+    edition. Does no IO and makes no claims about publisher authenticity.
+    """
+    prefix = "stratbox.shared.reference."
+    if not isinstance(package, str) or not package.startswith(prefix):
         raise ReferenceError("Reference package must be an owned reference package")
+    family = package[len(prefix):]
+    if family not in REFERENCE_REQUIRED_ROLES:
+        raise ReferenceError(f"Reference family has no declared role contract: {family}")
     try:
-        raw = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
-    except FileNotFoundError as exc:
-        raise ReferenceError(f"Missing reference manifest: {package}") from exc
-    try:
-        index = json.loads(raw)
-        if index["manifest_schema_version"] != 1:
+        document = json.loads(document) if isinstance(document, bytes) else document
+        if not isinstance(document, Mapping) or type(document.get("manifest_schema_version")) is not int:
+            raise ReferenceError("Invalid reference manifest envelope")
+        if document["manifest_schema_version"] != 1:
             raise ReferenceError("Unsupported reference manifest schema")
-        selected = edition_id or index["active_edition"]
-        matches = [entry for entry in index["editions"] if entry["edition_id"] == selected]
-        if len(matches) != 1:
-            raise ReferenceError("Missing or duplicated reference edition")
-        entry = matches[0]
-        roles, paths, assets = set(), set(), []
-        for item in entry["assets"]:
-            role, path = item["role"], _safe_path(item["path"])
-            if not isinstance(role, str) or not role or role in roles or path in paths:
-                raise ReferenceError("Duplicate/invalid asset role or path")
-            roles.add(role)
-            paths.add(path)
-            mandatory = item.get("required", True)
-            if type(mandatory) is not bool:
-                raise ReferenceError("Reference asset required flag must be a boolean")
-            assets.append(ReferenceAsset(role, package, path, item["media_type"],
-                ByteIdentity(item["sha256"], item["size"]), mandatory))
-        if not assets:
-            raise ReferenceError("Empty reference edition")
-        reference_id = index["reference_id"]
+        reference_id = document["reference_id"]
         if not isinstance(reference_id, str) or not reference_id.startswith("reference."):
             raise ReferenceError("Invalid reference identity")
-        if not isinstance(selected, str) or not selected:
-            raise ReferenceError("Invalid edition identity")
-        edition = ReferenceEdition(reference_id, selected, 1, tuple(assets),
-            entry.get("publisher"), entry.get("source_url"),
-            date.fromisoformat(entry["published_at"]) if entry.get("published_at") else None,
-            date.fromisoformat(entry["effective_from"]) if entry.get("effective_from") else None,
-            date.fromisoformat(entry["effective_to"]) if entry.get("effective_to") else None)
-        if edition.effective_from and edition.effective_to and edition.effective_from > edition.effective_to:
-            raise ReferenceError("Reference edition has an inverted validity interval")
-        snapshot_manifest = {
-            "reference_id": reference_id, "edition_id": selected, "schema_version": 1,
-            "publisher": edition.publisher, "source_url": edition.source_url,
-            "published_at": edition.published_at,
-            "effective_from": edition.effective_from, "effective_to": edition.effective_to,
-            "assets": [{"role": asset.role, "path": asset.path,
-                        "sha256": asset.identity.sha256, "size": asset.identity.size,
-                        "media_type": asset.media_type, "required": asset.required}
-                       for asset in sorted(assets, key=lambda asset: (asset.role, asset.path))],
-        }
-        return LoadedReference(edition, ByteIdentity.of(canonical_manifest_bytes(snapshot_manifest)))
-    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        active = document["active_edition"]
+        records = document["editions"]
+        if not isinstance(active, str) or not _EDITION_ID.fullmatch(active):
+            raise ReferenceError("Invalid reference active edition")
+        if not isinstance(records, list) or not records:
+            raise ReferenceError("Reference manifest requires editions")
+        editions, edition_names = [], set()
+        for entry in records:
+            if not isinstance(entry, Mapping):
+                raise ReferenceError("Invalid reference edition record")
+            eid = entry["edition_id"]
+            if not isinstance(eid, str) or not _EDITION_ID.fullmatch(eid) or eid in edition_names:
+                raise ReferenceError("Missing, malformed or duplicate reference edition ID")
+            edition_names.add(eid)
+            declared = entry["assets"]
+            if not isinstance(declared, list) or not declared:
+                raise ReferenceError("Reference edition must declare assets")
+            roles, paths, assets = set(), set(), []
+            for item in declared:
+                if not isinstance(item, Mapping):
+                    raise ReferenceError("Invalid reference asset")
+                role, path = item["role"], _safe_path(item["path"])
+                if (not isinstance(role, str) or not _ROLE_ID.fullmatch(role)
+                        or role in roles or path in paths):
+                    raise ReferenceError("Duplicate or invalid reference asset role/path")
+                roles.add(role)
+                paths.add(path)
+                required = item.get("required", True)
+                if type(required) is not bool:
+                    raise ReferenceError("Reference asset required flag must be boolean")
+                size = item["size"]
+                if type(size) is not int or size < 0:
+                    raise ReferenceError("Reference asset size must be a nonnegative integer")
+                media_type = item["media_type"]
+                if not isinstance(media_type, str) or "/" not in media_type:
+                    raise ReferenceError("Invalid reference asset media type")
+                origin_kind = _nullable_text(item.get("origin_kind"), "origin_kind")
+                if origin_kind is not None and origin_kind not in _ORIGINS:
+                    raise ReferenceError("Unknown reference asset origin kind")
+                assets.append(ReferenceAsset(
+                    role, package, path, media_type,
+                    ByteIdentity(item["sha256"], size), required,
+                    _nullable_text(item.get("publisher"), "publisher"),
+                    _nullable_text(item.get("curator"), "curator"),
+                    _nullable_text(item.get("source_url"), "source_url"),
+                    origin_kind,
+                ))
+            if not REFERENCE_REQUIRED_ROLES[family].issubset(roles):
+                raise ReferenceError(f"Incomplete {family} reference roles: "
+                                     f"{sorted(REFERENCE_REQUIRED_ROLES[family] - roles)}")
+            start = _edition_date(entry.get("effective_from"), "effective_from")
+            end = _edition_date(entry.get("effective_to"), "effective_to")
+            if start and end and start > end:
+                raise ReferenceError("Inverted reference edition validity interval")
+            editions.append(ReferenceEdition(
+                reference_id, eid, 1, tuple(assets),
+                _nullable_text(entry.get("publisher"), "publisher"),
+                _nullable_text(entry.get("source_url"), "source_url"),
+                _nullable_text(entry.get("curator"), "curator"),
+                _edition_date(entry.get("published_at"), "published_at"), start, end,
+            ))
+        if active not in edition_names:
+            raise ReferenceError("Active reference edition is not declared")
+        return active, tuple(editions)
+    except (ValueError, TypeError, KeyError, AttributeError, UnicodeError) as exc:
         if isinstance(exc, ReferenceError):
             raise
         raise ReferenceError(f"Malformed reference manifest: {package}") from exc
+
+
+def load_reference(package: str, *, edition_id: str | None = None) -> LoadedReference:
+    """Resolve a fully validated reference edition and reproducible snapshot."""
+    try:
+        raw = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
+    except (FileNotFoundError, ModuleNotFoundError) as exc:
+        raise ReferenceError(f"Missing reference manifest: {package}") from exc
+    active, editions = parse_reference_manifest(package, raw)
+    selected = edition_id if edition_id is not None else active
+    matching = [entry for entry in editions if entry.edition_id == selected]
+    if len(matching) != 1:
+        raise ReferenceError(f"Unknown reference edition: {selected}")
+    edition = matching[0]
+    snapshot_manifest = {
+        "snapshot_schema": 2,
+        "reference_id": edition.reference_id,
+        "edition_id": edition.edition_id,
+        "publisher": edition.publisher,
+        "curator": edition.curator,
+        "source_url": edition.source_url,
+        "published_at": edition.published_at,
+        "effective_from": edition.effective_from,
+        "effective_to": edition.effective_to,
+        "assets": [{
+            "role": asset.role, "path": asset.path, "media_type": asset.media_type,
+            "sha256": asset.identity.sha256, "size": asset.identity.size,
+            "required": asset.required, "publisher": asset.publisher,
+            "curator": asset.curator, "source_url": asset.source_url,
+            "origin_kind": asset.origin_kind,
+        } for asset in sorted(edition.assets, key=lambda value: (value.role, value.path))],
+    }
+    return LoadedReference(edition, ByteIdentity.of(canonical_manifest_bytes(snapshot_manifest)))
