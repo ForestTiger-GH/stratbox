@@ -9,7 +9,8 @@ from typing import BinaryIO, Callable
 from stratbox.core.storage.filestore import FileStore, FileVersion, MutationRejected, SourceStore, WriteMode
 from stratbox.core.runtime.providers import default_filestore
 from stratbox.core.storage.filestore.ports import FileVersionReader
-from stratbox.shared.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.evidence import StoredBytesReceipt
 from stratbox.core.limits import BudgetMeter
 
 

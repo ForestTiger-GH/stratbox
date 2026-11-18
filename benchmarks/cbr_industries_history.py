@@ -18,7 +18,7 @@ from statistics import median
 import sys
 from time import perf_counter
 
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains import cbr_industries as debt
 from stratbox.domains.cbr_industries import issuance_0104 as issuance
 

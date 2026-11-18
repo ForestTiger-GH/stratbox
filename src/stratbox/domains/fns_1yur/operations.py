@@ -8,16 +8,9 @@ from xml.etree.ElementTree import ParseError
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveReader
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.core.runtime.dependencies import MissingExtra
-from stratbox.shared.data import (
-    AcquiredSource,
-    Comparison,
-    MetricRef,
-    Observation,
-    PeriodRef,
-    SourcePayload,
-    SubjectRef,
-    UsedInputReceipt,
-)
+from stratbox.shared.evidence import AcquiredSource, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.comparison import Comparison
+from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,

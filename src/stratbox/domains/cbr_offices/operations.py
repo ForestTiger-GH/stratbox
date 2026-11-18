@@ -4,7 +4,9 @@ from datetime import date, tzinfo
 import re
 
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.shared.data import Comparison, MetricRef, Observation, PeriodRef, SubjectRef, UsedInputReceipt
+from stratbox.shared.data.comparison import Comparison
+from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
+from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,

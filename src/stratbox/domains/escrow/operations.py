@@ -8,7 +8,8 @@ from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.core.network import HttpTransport
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import AcquiredSource, Representation
+from stratbox.shared.evidence import AcquiredSource
+from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
     Completion,

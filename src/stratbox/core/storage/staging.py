@@ -7,7 +7,8 @@ from typing import BinaryIO, Callable
 
 from stratbox.core.storage.filestore import FileMutation, MutationRejected, StagedWrite, StagedWriter, WriteMode
 from stratbox.core.limits import BudgetMeter
-from stratbox.shared.data import ByteIdentity, StoredBytesReceipt, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.evidence import StoredBytesReceipt
 
 from stratbox.core.storage.bytes import file_identity
 

@@ -12,7 +12,9 @@ from stratbox.core.storage.bytes import inspect_file_version, read_bounded_bytes
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, zip_bytes
 from stratbox.core.limits import BudgetExceeded
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import ByteIdentity, Representation, SourcePayload, UsedInputReceipt, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.core.execution import (
     Completion,
     EffectReceipt,

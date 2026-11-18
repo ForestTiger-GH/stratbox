@@ -10,7 +10,8 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 from stratbox.core.storage.filestore import SourceStore, StagedWriter, WriteMode
 from stratbox.core.limits import BudgetMeter
-from stratbox.shared.data import ByteIdentity, StoredBytesReceipt
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import StoredBytesReceipt
 
 from stratbox.core.formats.archives.members import ArchiveError, safe_member_name
 from stratbox.core.storage.staging import BoundedStage, WRITE_GUARANTEES, commit_staged, stream_identity

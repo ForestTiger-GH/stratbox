@@ -8,8 +8,9 @@ from typing import Generic, Literal, Protocol, TypeVar, TYPE_CHECKING
 
 from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding
 from stratbox.core.limits import ExecutionBudget, Resource
-from stratbox.shared.data import ComputationReceipt, UsedInputReceipt
-from stratbox.shared.data.evidence import ByteIdentity
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity
 
 if TYPE_CHECKING:
     from stratbox.core.execution.events import EventSink, IncidentSink

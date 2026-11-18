@@ -5,7 +5,7 @@ from dataclasses import fields, is_dataclass
 from datetime import datetime
 import json
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.observability import JournalCursor, JournalHead, JournalRecord, StreamKey, decode_record, encode_record
 from stratbox.core.observability.records.contracts import require_utc
 
