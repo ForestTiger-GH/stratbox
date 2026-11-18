@@ -21,13 +21,39 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.shared.reference.assets import load_reference, ReferenceError  # noqa: E402
+from stratbox.shared.reference.assets import (  # noqa: E402
+    load_reference, ReferenceError, parse_reference_manifest, REFERENCE_REQUIRED_ROLES,
+)
 
 PACKAGES = {
-    "banks": "stratbox.shared.reference.banks",
-    "okved2": "stratbox.shared.reference.okved2",
-    "geography": "stratbox.shared.reference.geography",
+    name: f"stratbox.shared.reference.{name}"
+    for name in REFERENCE_REQUIRED_ROLES
 }
+
+
+def _check_known_families() -> None:
+    root = SRC / "stratbox/shared/reference"
+    present = {
+        item.name for item in root.iterdir()
+        if item.is_dir() and (item / "_resources/manifest.json").is_file()
+    }
+    if present != set(PACKAGES):
+        raise ReferenceError(f"Reference discovery/spec mismatch: "
+                             f"undeclared={sorted(present - set(PACKAGES))}, "
+                             f"missing={sorted(set(PACKAGES) - present)}")
+
+
+def _validate_local_material(package: str, manifest: dict, base: Path) -> None:
+    """Check every historical edition against the bytes to be committed."""
+    _, editions = parse_reference_manifest(package, manifest)
+    for edition in editions:
+        for asset in edition.assets:
+            data = base.joinpath(*asset.path.split("/")).read_bytes()
+            if len(data) != asset.identity.size or sha256(data).hexdigest() != asset.identity.sha256:
+                raise ReferenceError(f"Reference edition is incomplete/corrupted: "
+                                     f"{edition.edition_id}:{asset.role}")
+
+
 _EDITIONS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 
 
@@ -45,6 +71,7 @@ def _validated_path(value: str) -> str:
 
 
 def verify(reference: str) -> None:
+    _check_known_families()
     selections = tuple(PACKAGES) if reference == "all" else (reference,)
     for family in selections:
         package = PACKAGES[family]
@@ -75,12 +102,11 @@ def stage(reference: str, edition_id: str, replacements: list[str], *, activate:
     entries = manifest["editions"]
     if any(item["edition_id"] == edition_id for item in entries):
         raise ValueError("Edition ID already exists; never mutate a historical edition")
+    _check_known_families()
+    base = root.parent
+    parse_reference_manifest(PACKAGES[reference], manifest)
+    _validate_local_material(PACKAGES[reference], manifest, base)
     old = next(item for item in entries if item["edition_id"] == manifest["active_edition"])
-    bundle = load_reference(PACKAGES[reference], edition_id=old["edition_id"])
-    # Old data is frozen: verify every historical role before creating an edition.
-    for asset in bundle.edition.assets:
-        bundle.read(asset.role)
-
     target = deepcopy(old)
     target["edition_id"] = edition_id
     target["publisher"] = publisher
@@ -98,7 +124,8 @@ def stage(reference: str, edition_id: str, replacements: list[str], *, activate:
     if not updated.keys() <= known:
         raise ValueError("Unknown reference role(s): " + str(sorted(updated.keys() - known)))
     used = {item["path"] for ed in entries for item in ed["assets"]}
-    base = root.parent
+    if len(set(updated.values())) != len(updated):
+        raise ValueError("New reference assets cannot share one path across roles")
     for asset in target["assets"]:
         if asset["role"] not in updated:
             continue
@@ -115,6 +142,9 @@ def stage(reference: str, edition_id: str, replacements: list[str], *, activate:
     entries.append(target)
     if activate:
         manifest["active_edition"] = edition_id
+    # The same all-edition schema/role validator governs runtime and staging.
+    parse_reference_manifest(PACKAGES[reference], manifest)
+    _validate_local_material(PACKAGES[reference], manifest, base)
     data = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     with tempfile.NamedTemporaryFile(dir=root.parent, prefix=".manifest-", delete=False) as file:
         tmp_path = Path(file.name)
