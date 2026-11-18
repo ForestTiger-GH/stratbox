@@ -7,15 +7,25 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Literal, Mapping
+from dataclasses import dataclass
+from typing import Literal
 
 from typing import TYPE_CHECKING
 
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload
-from ..common.contracts import IndustrySelection
+from ..common.contracts import (
+    IndustrySelection,
+    IndustrySpec as Cbr0105ADebtCorpIndustrySpec,
+    IndustryRegionSpec as Cbr0105ADebtCorpRegionSpec,
+    IndustryValidationIssue as Cbr0105ADebtCorpValidationIssue,
+    IndustryApkCalculationResult as Cbr0105ADebtCorpApkCalculationResult,
+    IndustryPivotDimension as Cbr0105ADebtCorpPivotDimension,
+    IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest,
+    IndustryPivotTable as Cbr0105ADebtCorpPivotTable,
+    IndustryPivotSetResult as Cbr0105ADebtCorpPivotSetResult,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -27,13 +37,6 @@ Cbr0105ADebtCorpCurrencyScope = Literal[
     "rubles",
     "foreign_currency_and_precious_metals",
     "total",
-]
-Cbr0105ADebtCorpPivotDimension = Literal[
-    "report_date",
-    "region_code",
-    "industry_code",
-    "measure",
-    "currency_scope",
 ]
 
 
@@ -50,27 +53,10 @@ class Cbr0105ADebtCorpSheetSpec:
     order: int
 
 
-@dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpIndustrySpec:
-    """Один отраслевой столбец таблицы Банка России."""
-
-    code: str
-    canonical_name_ru: str
-    parent_code: str | None
-    hierarchy_level: int
-    order: int
 
 
-@dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpRegionSpec:
-    """Одна географическая строка серии ``01_05_A_Debt_corp``."""
 
-    code: str
-    source_name: str
-    canonical_name: str
-    region_kind: str
-    federal_district_name: str | None
-    order: int
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,15 +85,7 @@ class Cbr0105ADebtCorpSourceFailure:
     final_url: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpValidationIssue:
-    """Отклонение, найденное в структуре или значениях публикации."""
 
-    code: str
-    severity: Literal["warning", "error"]
-    message: str
-    count: int = 1
-    details: Mapping[str, object] = field(default_factory=dict)
 
 
 
@@ -192,75 +170,16 @@ class Cbr0105ADebtCorpStreamResult:
         return bool(self.failures or self.stop_reason) and bool(self.parsed_files)
 
 
-@dataclass(frozen=True)
-class Cbr0105ADebtCorpApkCalculationResult:
-    """Результат добавления расчетной отрасли ``АПК`` в поток."""
-
-    industry: Cbr0105ADebtCorpIndustrySpec
-    source_industry_codes: tuple[str, ...]
-    lpk_formula_ru: str
-    apk_formula_ru: str
-    df_apk: pd.DataFrame
-    df_stream: pd.DataFrame
-    source_rows_used: int
-    groups_calculated: int
-    rows_added: int
-    evidence: ComputationReceipt | None = None
-
-    @property
-    def ok(self) -> bool:
-        return self.rows_added > 0 and self.rows_added == len(self.df_apk)
 
 
-@dataclass(frozen=True, slots=True)
-class Cbr0105ADebtCorpPivotRequest:
-    """Запрос на построение набора двумерных таблиц из отфильтрованного потока.
-
-    Все смысловые измерения, которые не назначены строками, столбцами или листами,
-    обязаны быть заранее отфильтрованы до одного значения.
-    """
-
-    row_dimension: Cbr0105ADebtCorpPivotDimension
-    column_dimension: Cbr0105ADebtCorpPivotDimension
-    value_columns: tuple[str, ...] = ("value",)
-    sheet_dimensions: tuple[Cbr0105ADebtCorpPivotDimension, ...] = ()
-    require_complete_stream: bool = True
-    max_sheet_count: int = 100
 
 
-@dataclass(frozen=True)
-class Cbr0105ADebtCorpPivotTable:
-    """Одна двумерная таблица будущего листа workbook."""
-
-    sheet_key: tuple[tuple[str, object], ...]
-    suggested_sheet_name: str
-    row_dimension: Cbr0105ADebtCorpPivotDimension
-    column_dimension: Cbr0105ADebtCorpPivotDimension
-    value_columns: tuple[str, ...]
-    df_table: pd.DataFrame
-    rows: int
-    data_columns: int
-    missing_values: int
 
 
-@dataclass(frozen=True)
-class Cbr0105ADebtCorpPivotSetResult:
-    """Набор таблиц, построенный одной универсальной pivot-операцией."""
 
-    tables: tuple[Cbr0105ADebtCorpPivotTable, ...]
-    row_dimension: Cbr0105ADebtCorpPivotDimension
-    column_dimension: Cbr0105ADebtCorpPivotDimension
-    value_columns: tuple[str, ...]
-    sheet_dimensions: tuple[Cbr0105ADebtCorpPivotDimension, ...]
-    fixed_dimensions: tuple[tuple[str, object], ...]
-    source_rows: int
-    table_count: int
-    is_partial: bool
-    evidence: ComputationReceipt | None = None
 
-    @property
-    def ok(self) -> bool:
-        return bool(self.tables)
+
+
 
 
 @dataclass(frozen=True, slots=True)

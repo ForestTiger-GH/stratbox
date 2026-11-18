@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
-    Cbr0105ADebtCorpApkCalculationResult,
-    Cbr0105ADebtCorpIndustrySpec as IndustrySpec,
-    Cbr0105ADebtCorpPivotRequest,
-    Cbr0105ADebtCorpRegionSpec as RegionSpec,
-    Cbr0105ADebtCorpValidationIssue as ValidationIssue,
+from ..common.contracts import (
+    IndustryApkCalculationResult,
+    IndustrySpec,
+    IndustryPivotRequest,
+    IndustryRegionSpec as RegionSpec,
+    IndustryValidationIssue as ValidationIssue,
     IndustrySelection,
 )
 
@@ -131,8 +131,8 @@ class CalculateIssuanceApkRequest:
 
 @dataclass(frozen=True, slots=True)
 class PivotIssuanceRequest:
-    stream: pd.DataFrame | IssuanceStreamResult | Cbr0105ADebtCorpApkCalculationResult
-    pivot: Cbr0105ADebtCorpPivotRequest
+    stream: pd.DataFrame | IssuanceStreamResult | IndustryApkCalculationResult
+    pivot: IndustryPivotRequest
     source: IssuanceStreamResult | None = None
     industry_code: str | None = None
 

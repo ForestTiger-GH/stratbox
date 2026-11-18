@@ -12,7 +12,7 @@ import pandas as pd
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
+from ..common.contracts import IndustryValidationIssue, IndustrySelection
 from .selection import resolve_industry_codes
 from stratbox.domains.cbr.corporate_lending.industries.common.parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
@@ -71,15 +71,15 @@ def _verify_reference_month(raw: object, report_date: str) -> str:
     return actual
 
 
-def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[Cbr0105ADebtCorpValidationIssue, ...]:
-    issues: list[Cbr0105ADebtCorpValidationIssue] = []
+def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[IndustryValidationIssue, ...]:
+    issues: list[IndustryValidationIssue] = []
     missing = int(stream["value"].isna().sum())
     if missing:
-        issues.append(Cbr0105ADebtCorpValidationIssue(
+        issues.append(IndustryValidationIssue(
             "missing_values", "warning", "В исходной таблице есть пустые значения.", missing))
     negatives = stream["value"].dropna().lt(0)
     if negatives.any():
-        issues.append(Cbr0105ADebtCorpValidationIssue(
+        issues.append(IndustryValidationIssue(
             "negative_values", "error", "В выдачах есть отрицательные значения.", int(negatives.sum())))
     values = stream.pivot(index=["region_code", "industry_code"],
                           columns="currency_scope", values="value")
@@ -89,7 +89,7 @@ def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[Cbr0105ADe
         diff = (values[keys[0]] - values[keys[1]] - values[keys[2]]).abs()
         divergent = available & diff.gt(1.0)
         if divergent.any():
-            issues.append(Cbr0105ADebtCorpValidationIssue(
+            issues.append(IndustryValidationIssue(
                 "currency_components_do_not_match_total", "warning",
                 "Итого отличается от рублевой и валютной частей более чем на 1 млн руб.",
                 int(divergent.sum()),
@@ -105,7 +105,7 @@ def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[Cbr0105ADe
     child = groups["agriculture_hunting_services"]
     violations = parent.notna() & child.notna() & child.gt(parent)
     if violations.any():
-        issues.append(Cbr0105ADebtCorpValidationIssue(
+        issues.append(IndustryValidationIssue(
             "industry_subcomponent_exceeds_parent", "error",
             "Сельское хозяйство и услуги превышают сельское хозяйство и лесное хозяйство.",
             int(violations.sum()), {"report_date": report_date},
