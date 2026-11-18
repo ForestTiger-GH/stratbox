@@ -200,3 +200,19 @@ def decode_snapshot(blob, d):
         "SOURCE_NATIONAL_TOTAL_INVALID",
     )
     return rows
+
+
+def inspect_region_names(rows, *, resolver=None):
+    """Read-only label diagnostics, preserving original FNS subject codes and values.
+
+    The FNS ssrf code namespace has no declared ISO crosswalk in this reference
+    edition. Matching labels must never silently replace that source key.
+    """
+    from stratbox.shared.reference.geography import RegionNameContext, RegionNameResolver
+
+    matcher = resolver or RegionNameResolver()
+    context = RegionNameContext(source_family="fns_sme", observed_kind="subject")
+    return tuple(
+        (code, matcher.resolve(row[1], context=context))
+        for code, row in sorted(rows.items())
+    )

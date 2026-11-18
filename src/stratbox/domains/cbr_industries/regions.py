@@ -124,12 +124,10 @@ _CBR_0105A_DEBT_CORP_SOURCE_ALIASES_BY_ORDER: dict[int, tuple[str, ...]] = {
 
 
 def normalize_cbr_0105a_region_name(value: object) -> str:
-    """Нормализует подпись только для строгого сопоставления source aliases."""
-    text = str(value or "").replace("\xa0", " ").replace("ё", "е").replace("Ё", "Е")
-    text = text.replace("–", "-").replace("—", "-")
-    text = re.sub(r"\s*-\s*", " - ", text)
-    return re.sub(r"\s+", " ", text).strip().lower()
+    """Strict CBR-series label key, retaining its published 96-row semantics."""
+    from stratbox.shared.reference.geography.names import normalize_region_label
 
+    return normalize_region_label(str(value or ""), fold_yo=True) or ""
 
 def _region_kind(name: str) -> str:
     normalized = normalize_cbr_0105a_region_name(name)

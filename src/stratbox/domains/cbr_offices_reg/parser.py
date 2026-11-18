@@ -433,3 +433,11 @@ def convert_xlsx(
         records.append([str(rid), section, *(cells.get(k, "") for k in cols)])
     result = serialize(records)
     return (result, formula_lineage) if return_formula_lineage else result
+
+
+def inspect_offices_reg_region_names(names, *, resolver=None):
+    """Read-only source-name diagnostics; original district boundaries are retained."""
+    from stratbox.shared.reference.geography import RegionNameResolver
+
+    matcher = resolver or RegionNameResolver()
+    return matcher.resolve_many(names)

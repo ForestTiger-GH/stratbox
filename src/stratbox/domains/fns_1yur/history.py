@@ -502,3 +502,11 @@ def extract_observations(xls, reference_date, *, checkpoint=None, budget=None, d
         }
     finally:
         book.release_resources()
+
+
+def inspect_fns_1yur_region_names(names, *, resolver=None):
+    """Read-only interpretation of source labels with no effect on printed rows."""
+    from stratbox.shared.reference.geography import RegionNameResolver
+
+    matcher = resolver or RegionNameResolver()
+    return matcher.resolve_many(names)

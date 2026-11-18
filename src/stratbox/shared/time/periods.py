@@ -1,173 +1,114 @@
-"""
-Модуль содержит универсальные функции генерации временных периодов.
-
-Идея:
-- Генерируются "опорные даты" периодов (start/end).
-- Поддерживаются частоты: год, квартал, месяц, неделя, день.
-- Используется в разных задачах (не только macrobanks).
-"""
+"""Pure calendar anchor generation for Y/Q/M/W/D periods."""
 
 from __future__ import annotations
 
+import calendar
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Iterable, Literal, Optional
-
-import pandas as pd
-
+import re
+from typing import Literal
 
 Freq = Literal["Y", "Q", "M", "W", "D"]
 Anchor = Literal["start", "end"]
+_VALID_FREQ = frozenset({"Y", "Q", "M", "W", "D"})
+_VALID_ANCHOR = frozenset({"start", "end"})
 
 
 @dataclass(frozen=True)
 class PeriodSpec:
-    """
-    Описание сетки периодов.
-
-    freq:
-      - Y: годы
-      - Q: кварталы
-      - M: месяцы
-      - W: недели (ISO, от понедельника)
-      - D: дни
-    anchor:
-      - start: первая дата периода
-      - end: последняя дата периода
-    step:
-      - шаг периодов (1 = каждый период, 2 = через один и т.д.)
-    """
     freq: Freq
     anchor: Anchor = "start"
     step: int = 1
 
-
-def _to_date(x: str | date | datetime) -> date:
-    """
-    Приведение входной даты к datetime.date.
-    """
-    if isinstance(x, date) and not isinstance(x, datetime):
-        return x
-    return pd.Timestamp(x).date()
+    def __post_init__(self) -> None:
+        _validate(self.freq, self.anchor, self.step)
 
 
-def _month_start(d: date) -> date:
-    return d.replace(day=1)
-
-
-def _month_end(d: date) -> date:
-    # последний день месяца: первый день следующего месяца - 1 день
-    nd = (pd.Timestamp(d) + pd.offsets.MonthBegin(1)).date()
-    return nd - timedelta(days=1)
-
-
-def _quarter_start(d: date) -> date:
-    q = (d.month - 1) // 3 + 1
-    m = 1 + (q - 1) * 3
-    return date(d.year, m, 1)
-
-
-def _quarter_end(d: date) -> date:
-    qs = _quarter_start(d)
-    # + 3 месяца -> начало следующего квартала - 1 день
-    nd = (pd.Timestamp(qs) + pd.offsets.MonthBegin(3)).date()
-    return nd - timedelta(days=1)
-
-
-def _year_start(d: date) -> date:
-    return date(d.year, 1, 1)
-
-
-def _year_end(d: date) -> date:
-    return date(d.year, 12, 31)
-
-
-def _week_start(d: date) -> date:
-    # ISO-неделя: понедельник = 0
-    return d - timedelta(days=d.weekday())
-
-
-def _week_end(d: date) -> date:
-    return _week_start(d) + timedelta(days=6)
-
-
-def period_points(
-    freq: Freq,
-    date_from: str | date | datetime,
-    date_to: str | date | datetime | None = None,
-    anchor: Anchor = "start",
-    step: int = 1,
-) -> list[date]:
-    """
-    Генерирует список опорных дат по периодам.
-
-    Примеры:
-      - period_points("M", "2024-01-01", "2024-03-31", anchor="start")
-        -> [2024-01-01, 2024-02-01, 2024-03-01]
-      - period_points("M", "2024-01-01", "2024-03-31", anchor="end")
-        -> [2024-01-31, 2024-02-29, 2024-03-31]
-      - period_points("Q", "2024-01-01", "2024-12-31", anchor="end")
-        -> [2024-03-31, 2024-06-30, 2024-09-30, 2024-12-31]
-
-    Важно: date_to=None означает "текущая дата" (today).
-    """
-    if step < 1:
-        raise ValueError("step must be >= 1")
-
-    df = _to_date(date_from)
-    dt = _to_date(date_to) if date_to is not None else pd.Timestamp.today().date()
-
-    # Нормализуем нижнюю границу на начало периода, чтобы сетка была стабильной
-    if freq == "D":
-        cur = df
-    elif freq == "W":
-        cur = _week_start(df)
-    elif freq == "M":
-        cur = _month_start(df)
-    elif freq == "Q":
-        cur = _quarter_start(df)
-    elif freq == "Y":
-        cur = _year_start(df)
-    else:
+def _validate(freq: str, anchor: str, step: int) -> None:
+    if freq not in _VALID_FREQ:
         raise ValueError(f"Unknown freq: {freq}")
-
-    out: list[date] = []
-    k = 0
-
-    while cur <= dt:
-        if k % step == 0:
-            if freq == "D":
-                p = cur
-            elif freq == "W":
-                p = _week_start(cur) if anchor == "start" else _week_end(cur)
-            elif freq == "M":
-                p = _month_start(cur) if anchor == "start" else _month_end(cur)
-            elif freq == "Q":
-                p = _quarter_start(cur) if anchor == "start" else _quarter_end(cur)
-            else:  # "Y"
-                p = _year_start(cur) if anchor == "start" else _year_end(cur)
-            if p >= df and p <= dt:
-                out.append(p)
-
-        # шаг вперёд на 1 период
-        if freq == "D":
-            cur = cur + timedelta(days=1)
-        elif freq == "W":
-            cur = cur + timedelta(days=7)
-        elif freq == "M":
-            cur = (pd.Timestamp(cur) + pd.offsets.MonthBegin(1)).date()
-        elif freq == "Q":
-            cur = (pd.Timestamp(cur) + pd.offsets.MonthBegin(3)).date()
-        else:  # "Y"
-            cur = date(cur.year + 1, 1, 1)
-
-        k += 1
-
-    return out
+    if anchor not in _VALID_ANCHOR:
+        raise ValueError(f"Unknown anchor: {anchor}")
+    if type(step) is not int or step < 1:
+        raise ValueError("step must be a positive integer")
 
 
-def period_spec_points(spec: PeriodSpec, date_from: str | date | datetime, date_to: str | date | datetime | None = None) -> list[date]:
+def _to_date(value: str | date | datetime) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+        return date.fromisoformat(value)
+    raise TypeError("Period boundary must be date, datetime or ISO YYYY-MM-DD string")
+
+
+def _start(freq: Freq, value: date) -> date:
+    if freq == "Y":
+        return date(value.year, 1, 1)
+    if freq == "Q":
+        return date(value.year, ((value.month - 1) // 3) * 3 + 1, 1)
+    if freq == "M":
+        return value.replace(day=1)
+    if freq == "W":
+        return value - timedelta(days=value.weekday())
+    return value
+
+
+def _end(freq: Freq, value: date) -> date:
+    if freq == "Y":
+        return date(value.year, 12, 31)
+    if freq == "Q":
+        month = ((value.month - 1) // 3) * 3 + 3
+        return date(value.year, month, calendar.monthrange(value.year, month)[1])
+    if freq == "M":
+        return date(value.year, value.month, calendar.monthrange(value.year, value.month)[1])
+    if freq == "W":
+        return value + timedelta(days=6 - value.weekday())
+    return value
+
+
+def _next(freq: Freq, value: date) -> date | None:
+    if freq in {"D", "W"}:
+        try:
+            return value + timedelta(days=1 if freq == "D" else 7)
+        except OverflowError:
+            return None
+    month_step = {"M": 1, "Q": 3, "Y": 12}[freq]
+    month_index = value.year * 12 + value.month - 1 + month_step
+    year, month0 = divmod(month_index, 12)
+    return date(year, month0 + 1, 1) if year <= 9999 else None
+
+
+def period_points(freq: Freq, date_from: str | date | datetime,
+                  date_to: str | date | datetime | None = None,
+                  anchor: Anchor = "start", step: int = 1) -> list[date]:
+    """Include only period anchor dates inside [date_from, date_to].
+
+    The default upper boundary is today's local calendar date. Pass date_to for
+    reproducible calculations; this operation never checks period overlap.
     """
-    Удобная обёртка для PeriodSpec.
-    """
-    return period_points(freq=spec.freq, date_from=date_from, date_to=date_to, anchor=spec.anchor, step=spec.step)
+    _validate(freq, anchor, step)
+    lower = _to_date(date_from)
+    upper = _to_date(date_to) if date_to is not None else date.today()
+    if lower > upper:
+        raise ValueError("date_from must not exceed date_to")
+    current = _start(freq, lower)
+    values: list[date] = []
+    index = 0
+    while current <= upper:
+        if index % step == 0:
+            point = current if anchor == "start" else _end(freq, current)
+            if lower <= point <= upper:
+                values.append(point)
+        following = _next(freq, current)
+        if following is None:
+            break
+        current = following
+        index += 1
+    return values
+
+
+def period_spec_points(spec: PeriodSpec, date_from: str | date | datetime,
+                       date_to: str | date | datetime | None = None) -> list[date]:
+    return period_points(spec.freq, date_from, date_to, spec.anchor, spec.step)
