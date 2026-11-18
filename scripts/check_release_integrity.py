@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from stratbox.domains._structure import DomainLayoutError, discover_operation_owners  # noqa: E402
 
 REQUIRED_FILES = [
     # Knowledge consolidation bootstrap and content-preserved legacy sources.
@@ -139,6 +145,18 @@ CHECK_IGNORE_PATHS = [
 
 def main() -> int:
     failures: list[str] = []
+
+    domains_root = SRC / "stratbox" / "domains"
+    try:
+        owners = discover_operation_owners(domains_root)
+        if not owners:
+            failures.append("no source-domain operation registrations discovered")
+        for owner in owners:
+            package = domains_root.joinpath(*owner.split("."))
+            if not (package / "_registration.py").is_file():
+                failures.append(f"discovered owner lacks a manifest: {owner}")
+    except (DomainLayoutError, OSError) as error:
+        failures.append(f"invalid source-domain hierarchy: {error}")
 
     for rel in REQUIRED_FILES:
         if not (ROOT / rel).exists():

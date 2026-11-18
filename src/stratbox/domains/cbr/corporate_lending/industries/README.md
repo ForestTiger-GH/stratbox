@@ -9,6 +9,6 @@ while unrelated observations are not materialized into the analytical stream.
 snapshot. The independent `render_industry` remains available for individual
 operation composition.
 
-[Public operation contracts](../../../../docs/current-how/universal-business-core.md)
+[Public operation contracts](../../../../../../docs/current-how/universal-business-core.md)
 
-[Issuance-series semantics](../../../../docs/current-how/cbr-industries-issuance.md)
+[Issuance-series semantics](../../../../../../docs/current-how/cbr-industries-issuance.md)

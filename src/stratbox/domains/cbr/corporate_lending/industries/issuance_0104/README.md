@@ -3,6 +3,6 @@
 This adapter owns the monthly corporate loan **issuance** source identity,
 reference-month validation, three-sheet parsing and typed operations.
 Industry/geography dimensions, derived APK and region-by-date pivoting are
-shared with the portfolio series in the parent `cbr_industries` domain.
+shared with the portfolio series in the shared `industries` family.
 
-See `docs/current-how/cbr-industries-issuance.md` for the operation flow.
+See [issuance-series semantics](../../../../../../../docs/current-how/cbr-industries-issuance.md) for the operation flow.

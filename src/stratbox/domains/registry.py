@@ -86,3 +86,22 @@ def operation_catalog() -> OperationCatalog:
     from stratbox.core.registry import core_catalog
 
     return merge_catalogs(domain_catalog(), core_catalog())
+
+def domain_registration_inventory() -> tuple[tuple[str, str, int], ...]:
+    """Describe complete owner/contract identities without loading handlers.
+
+    Used to compare the source tree with an installed wheel. All manifests
+    first pass the same ownership and duplicate-contract validation as runtime.
+    """
+    domain_catalog()
+    owners = discover_operation_owners(resources.files("stratbox.domains"))
+    inventory: list[tuple[str, str, int]] = []
+    for owner in owners:
+        registration = import_module(
+            f"stratbox.domains.{owner}._registration"
+        ).REGISTRATION
+        inventory.extend(
+            (owner, ref.operation_id, ref.contract_version)
+            for ref in registration.operations
+        )
+    return tuple(sorted(inventory))

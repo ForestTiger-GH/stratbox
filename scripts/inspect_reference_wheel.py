@@ -19,55 +19,90 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from stratbox.domains._structure import discover_operation_owners  # noqa: E402
+
 from stratbox.shared.reference.assets import (  # noqa: E402
     REFERENCE_REQUIRED_ROLES, ReferenceError, parse_reference_manifest,
 )
 
-DOMAIN_OWNERS = (
-    "cbr/file_collection", "cbr/reporting_forms",
-    "cbr/corporate_lending/industries",
-    "cbr/corporate_lending/industries/issuance_0104",
-    "cbr/corporate_lending/sors_restoration",
-    "cbr/service_network/bank_offices",
-    "cbr/service_network/territorial_offices",
-    "cbr/escrow", "fns/legal_entities_1yur",
-    "fns/sme_register", "frank_rg/retail_banking",
-)
-DOMAIN_REQUIRED_ASSETS = (
-    "cbr/reporting_forms/models/form101.csv",
-    "cbr/reporting_forms/models/form102.csv",
-    "cbr/reporting_forms/models/form123.csv",
-    "cbr/reporting_forms/models/form135.csv",
-    "cbr/reporting_forms/models/form802.csv",
-    "cbr/reporting_forms/models/form805.csv",
-    "cbr/corporate_lending/sors_restoration/crosswalk/_resources/crosswalk_manifest.json",
-)
+DOMAIN_SOURCE = SRC / "stratbox" / "domains"
 DOMAIN_OBSOLETE_DIRS = (
     "cbr_file_collector", "cbr_forms", "cbr_industries",
     "cbr_offices", "cbr_offices_reg", "cbr_sors_restoration",
     "escrow", "fns_1yur", "fns_sme", "frg",
 )
+DOMAIN_DATA_EXTENSIONS = frozenset({".csv", ".json"})
 
 
-def _verify_domain_members(names: set[str], prefix: str) -> None:
+def _source_domain_inventory() -> tuple[set[str], dict[str, tuple[int, str]]]:
+    """Build expectations from actual validated source packages, not a hand list."""
+    owners = {
+        name.replace(".", "/") + "/_registration.py"
+        for name in discover_operation_owners(DOMAIN_SOURCE)
+    }
+    data = {}
+    for file in sorted(DOMAIN_SOURCE.rglob("*")):
+        if not file.is_file() or file.suffix.lower() not in DOMAIN_DATA_EXTENSIONS:
+            continue
+        payload = file.read_bytes()
+        data[file.relative_to(DOMAIN_SOURCE).as_posix()] = (
+            len(payload), sha256(payload).hexdigest()
+        )
+    return owners, data
+
+
+def _verify_domain_members(
+    names: set[str], prefix: str, read_bytes
+) -> dict[str, int]:
+    """Require all and only current domain owners/data, with exact payload digests."""
     base = prefix + "stratbox/domains/"
-    missing = [
-        base + package + "/_registration.py"
-        for package in DOMAIN_OWNERS
-        if base + package + "/_registration.py" not in names
-    ]
-    missing.extend(base + asset for asset in DOMAIN_REQUIRED_ASSETS
-                   if base + asset not in names)
-    crosswalk_prefix = base + "cbr/corporate_lending/sors_restoration/crosswalk/_resources/"
-    if not any(name.startswith(crosswalk_prefix) and name.endswith(".csv") for name in names):
-        missing.append(crosswalk_prefix + "*.csv")
-    forbidden = [
-        name for name in names if name.startswith(tuple(base + part + "/" for part in DOMAIN_OBSOLETE_DIRS))
-    ]
+    source_owners, source_data = _source_domain_inventory()
+    actual_owners = {
+        name[len(base):]
+        for name in names
+        if name.startswith(base) and name.endswith("/_registration.py")
+    }
+    missing = sorted(source_owners - actual_owners)
+    extra = sorted(actual_owners - source_owners)
+    package_missing = []
+    for owner_file in actual_owners:
+        parts = owner_file.split("/")[:-1]
+        for depth in range(1, len(parts) + 1):
+            package_init = base + "/".join(parts[:depth]) + "/__init__.py"
+            if package_init not in names:
+                package_missing.append(package_init)
+    if base + "__init__.py" not in names:
+        package_missing.append(base + "__init__.py")
+
+    actual_data = {
+        name[len(base):]
+        for name in names if name.startswith(base)
+        and Path(name).suffix.lower() in DOMAIN_DATA_EXTENSIONS
+    }
+    missing_data = sorted(set(source_data) - actual_data)
+    extra_data = sorted(actual_data - set(source_data))
+    data_changed = []
+    for name in sorted(set(source_data) & actual_data):
+        payload = read_bytes(base + name)
+        actual_identity = (len(payload), sha256(payload).hexdigest())
+        if actual_identity != source_data[name]:
+            data_changed.append(name)
+
+    forbidden = sorted(
+        name for name in names
+        if name.startswith(tuple(base + part + "/" for part in DOMAIN_OBSOLETE_DIRS))
+    )
     if base + "_cbr.py" in names:
         forbidden.append(base + "_cbr.py")
-    if missing or forbidden:
-        raise ValueError(f"Domain distribution mismatch: missing={missing}, obsolete={forbidden[:15]}")
+    if missing or extra or package_missing or missing_data or extra_data or data_changed or forbidden:
+        raise ValueError(
+            "Domain distribution mismatch: "
+            f"missing_owners={missing}, extra_owners={extra}, "
+            f"missing_init={sorted(set(package_missing))}, "
+            f"missing_data={missing_data}, extra_data={extra_data}, "
+            f"changed_data={data_changed}, obsolete={forbidden[:15]}"
+        )
+    return {"owners": len(actual_owners), "data_files": len(actual_data)}
 
 
 OBSOLETE = (
@@ -91,7 +126,7 @@ def verify_wheel(path: str) -> dict[str, object]:
         if len(names) != len(set(names)):
             raise ValueError("Wheel contains duplicate ZIP member names")
         members = set(names)
-        _verify_domain_members(members, "")
+        domain_counts = _verify_domain_members(members, "", archive.read)
         old = sorted(name for name in names if any(name.startswith(prefix) for prefix in OBSOLETE))
         if old:
             raise ValueError("Wheel includes obsolete shared paths: " + str(old))
@@ -135,7 +170,8 @@ def verify_wheel(path: str) -> dict[str, object]:
             )
             if unknown:
                 raise ValueError("Undeclared reference resources in wheel: " + str(unknown))
-    return {"wheel": path, "asset_occurrences": counts, "result": "verified"}
+    return {"wheel": path, "asset_occurrences": counts,
+            "domain_inventory": domain_counts, "result": "verified"}
 
 
 
@@ -154,7 +190,16 @@ def verify_sdist(path: str) -> dict[str, object]:
             raise ValueError("Source distribution requires one top-level package root")
         root = next(iter(roots)) + "/src/"
         directory = set(names)
-        _verify_domain_members(directory, root)
+        def read_domain_member(filename: str) -> bytes:
+            item = archive.getmember(filename)
+            if not item.isfile():
+                raise ValueError("Domain data is not a regular file: " + filename)
+            handle = archive.extractfile(item)
+            if handle is None:
+                raise ValueError("Domain data unreadable: " + filename)
+            with handle:
+                return handle.read()
+        domain_counts = _verify_domain_members(directory, root, read_domain_member)
         for name in _REQUIRED_CODE:
             if root + name not in directory:
                 raise ValueError("Required semantic owner missing from sdist: " + name)
@@ -194,7 +239,8 @@ def verify_sdist(path: str) -> dict[str, object]:
             orphans = sorted(name for name in names if name.startswith(prefix) and name not in referenced)
             if orphans:
                 raise ValueError("Undeclared resources in source distribution: " + str(orphans))
-    return {"sdist": path, "asset_occurrences": counts, "result": "verified"}
+    return {"sdist": path, "asset_occurrences": counts,
+            "domain_inventory": domain_counts, "result": "verified"}
 
 
 def main() -> int:

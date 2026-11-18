@@ -8,7 +8,8 @@ from types import SimpleNamespace
 import pytest
 
 from stratbox.domains import registry as domain_registry
-from stratbox.domains.registry import domain_catalog, operation_catalog
+from stratbox.domains.registry import domain_catalog, operation_catalog, domain_registration_inventory
+from stratbox.domains._structure import DomainLayoutError, discover_operation_owners
 from stratbox.core.execution.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
 from stratbox.core.registry import core_catalog
 
@@ -75,6 +76,7 @@ def _synthetic_ref(owner: str, name: str) -> OperationRef:
 def _synthetic_catalog(monkeypatch, tmp_path, declarations):
     root = tmp_path / "domains"
     root.mkdir()
+    (root / "__init__.py").write_text("", encoding="utf-8")
     for owner in declarations:
         _synthetic_package(root, owner)
     original_import = domain_registry.import_module
@@ -192,19 +194,47 @@ def test_broken_existing_manifest_fails_instead_of_being_skipped(monkeypatch, tm
         catalog()
 
 
-def test_all_current_owner_manifests_and_ids_are_preserved():
-    owners = tuple(domain_registry._registration_packages(
-        domain_registry.resources.files("stratbox.domains")
-    ))
-    assert len(owners) == 11
-    assert "cbr.corporate_lending.industries" in owners
-    assert "cbr.corporate_lending.industries.issuance_0104" in owners
-    refs = domain_catalog().list_refs()
-    assert len(refs) == 68
-    assert len({(ref.operation_id, ref.contract_version) for ref in refs}) == 68
-    assert sum(ref.operation_id.startswith("cbr.industries.0105a.") for ref in refs) == 9
-    assert sum(ref.operation_id.startswith("cbr.industries.0104a.") for ref in refs) == 8
-    assert all(
-        ".registration:" not in ref.definition_ref and ".registration:" not in ref.handler_ref
-        for ref in refs
+def test_discovered_owner_contracts_are_complete_and_extensible():
+    owners = discover_operation_owners(domain_registry.resources.files("stratbox.domains"))
+    catalog = domain_catalog()
+    rows = domain_registration_inventory()
+    assert owners == tuple(sorted(owners))
+    assert set(owners) == {owner for owner, _, _ in rows}
+    assert len(rows) == len(catalog.references)
+    assert len(rows) == len(set(rows))
+    assert {(operation_id, version) for _, operation_id, version in rows} == {
+        (ref.operation_id, ref.contract_version) for ref in catalog.references
+    }
+    assert ("cbr.corporate_lending.industries", "cbr.industries.0105a.parse", 3) in rows
+    assert ("cbr.corporate_lending.industries.issuance_0104",
+            "cbr.industries.0104a.parse", 3) in rows
+    assert all(".registration:" not in ref.definition_ref for ref in catalog.references)
+
+
+def test_invalid_intermediate_package_rejects_manifest(monkeypatch, tmp_path):
+    root = tmp_path / "domains"
+    root.mkdir()
+    (root / "__init__.py").write_text("", encoding="utf-8")
+    broken = root / "publisher" / "family" / "series"
+    broken.mkdir(parents=True)
+    (root / "publisher" / "__init__.py").write_text("", encoding="utf-8")
+    # The intervening family is not importable as a regular package.
+    (broken / "__init__.py").write_text("", encoding="utf-8")
+    (broken / "_registration.py").write_text("", encoding="utf-8")
+    with pytest.raises(DomainLayoutError, match="domain.unreachable_manifest"):
+        discover_operation_owners(root)
+    monkeypatch.setattr(domain_registry.resources, "files", lambda _: root)
+    with pytest.raises(RegistryError, match="domain.unreachable_manifest"):
+        domain_registry.domain_catalog()
+
+
+def test_dynamic_new_owner_and_extra_operation_have_no_count_ceiling(monkeypatch, tmp_path):
+    owner = "future_publisher.family.series"
+    first = _synthetic_ref(owner, "future.series.first")
+    second = _synthetic_ref(owner, "future.series.second")
+    catalog = _synthetic_catalog(
+        monkeypatch, tmp_path, {owner: OperationRegistration(owner, (first, second))}
     )
+    assert {ref.operation_id for ref in catalog().references} == {
+        "future.series.first", "future.series.second"
+    }

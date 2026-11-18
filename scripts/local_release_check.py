@@ -40,6 +40,16 @@ def _git_sha() -> str | None:
         return None
 
 
+def _source_operation_inventory() -> list[list[object]]:
+    """Return validated source manifest identities without a fixed owner count."""
+    source = str(ROOT / "src")
+    if source not in sys.path:
+        sys.path.insert(0, source)
+    from stratbox.domains.registry import domain_registration_inventory
+
+    return [list(item) for item in domain_registration_inventory()]
+
+
 def check(*, report_path: Path, full_pytest: bool = True) -> dict:
     interpreter = sys.executable
     report: dict = {
@@ -53,6 +63,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
     }
     try:
         _run("release_paths", [interpreter, "-B", "scripts/check_release_integrity.py"], report)
+        _run("readme_links", [interpreter, "-B", "scripts/check_readme_links.py"], report)
         _run("owner_imports", [interpreter, "-B", "scripts/check_internal_imports.py"], report)
         _run("reference_editions", [
             interpreter, "-B", "scripts/reference_editions.py", "verify",
@@ -84,12 +95,26 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 interpreter, "-B", "-m", "pip", "install", "--no-deps",
                 "--disable-pip-version-check", "--target", str(installed), str(wheels[0]),
             ], report)
-            check_code = (
-                "import importlib.metadata, sys; "
+            source_snapshot = root / "source-domain-inventory.json"
+            source_inventory = _source_operation_inventory()
+            source_snapshot.write_text(
+                json.dumps(source_inventory, ensure_ascii=False), encoding="utf-8"
+            )
+            report["steps"].append({
+                "name": "source_domain_inventory",
+                "command": ["domain_registration_inventory"],
+                "exit_code": 0, "result": "passed",
+                "operation_count": len(source_inventory),
+                "owner_count": len({item[0] for item in source_inventory}),
+            })
+            base_check = (
+                "import importlib.metadata, json, sys; "
                 "sys.path.insert(0, sys.argv[1]); "
                 "import stratbox; "
-                "from stratbox.domains.registry import domain_catalog; "
-                "assert len(domain_catalog().list_refs()) == 68; "
+                "from stratbox.domains.registry import domain_registration_inventory; "
+                "actual = [list(item) for item in domain_registration_inventory()]; "
+                "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
+                "assert actual == expected, (actual, expected); "
                 "from stratbox.shared.identity import ByteIdentity; "
                 "from stratbox.shared.evidence import SourcePayload; "
                 "from stratbox.shared.reference.assets import load_reference; "
@@ -100,8 +125,34 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "for family in ('banks', 'okved2', 'geography')]"
             )
             _run("isolated_base_imports", [
-                interpreter, "-I", "-S", "-B", "-c", check_code, str(installed),
-            ], report)
+                interpreter, "-I", "-S", "-B", "-c", base_check,
+                str(installed), str(source_snapshot),
+            ], report, cwd=root)
+            full_check = (
+                "import json, sys; "
+                "sys.path.insert(0, sys.argv[1]); "
+                "from stratbox.domains.registry import operation_catalog, domain_registration_inventory; "
+                "actual = [list(item) for item in domain_registration_inventory()]; "
+                "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
+                "assert actual == expected, (actual, expected); "
+                "catalog = operation_catalog(); "
+                "[catalog.resolve(ref.operation_id, ref.contract_version) "
+                "for ref in catalog.list_refs()]; "
+                "from stratbox.domains.cbr.reporting_forms.common.models import load_models; "
+                "from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping "
+                "import read_crosswalk_manifest, read_legacy_atoms, read_legacy_membership; "
+                "assert not load_models().empty; "
+                "assert read_crosswalk_manifest(); "
+                "assert not read_legacy_atoms().empty; "
+                "assert not read_legacy_membership().empty; "
+                "from importlib.resources import files; "
+                "assert files(\'stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk\')"
+                ".joinpath(\'_resources\', \'atom_class_edges.csv\').read_bytes()"
+            )
+            _run("isolated_full_resolution", [
+                interpreter, "-I", "-B", "-c", full_check,
+                str(installed), str(source_snapshot),
+            ], report, cwd=root)
         report["result"] = "passed" if full_pytest else "partial"
     except (RuntimeError, OSError) as error:
         report["result"] = "failed"
