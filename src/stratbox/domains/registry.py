@@ -1,8 +1,8 @@
-"""Deterministically discover bundled operation owners at arbitrary package depth.
+"""Discover, validate and list bundled source-domain operation owners.
 
-A local _registration.py marks exactly one operation owner. Grouping packages and
-internal implementation packages do not need manifests. No external paths,
-network sources, or execution handlers are scanned during catalog discovery.
+The source layout has one authoritative discovery rule, shared by runtime,
+static architecture checks and distribution checks. Catalog declarations are
+loaded without resolving executable handlers or optional engines.
 """
 
 from __future__ import annotations
@@ -10,43 +10,44 @@ from __future__ import annotations
 from importlib import import_module, resources
 
 from stratbox.core.execution.catalog import (
-    OperationCatalog, OperationRef, OperationRegistration, RegistryError,
+    OperationCatalog,
+    OperationRef,
+    OperationRegistration,
+    RegistryError,
     merge_catalogs,
 )
 
-
-def _registration_packages(directory, parents: tuple[str, ...] = ()):
-    """Yield dotted owner paths for Python packages with an exact manifest."""
-    for child in sorted(directory.iterdir(), key=lambda item: item.name):
-        if not child.is_dir() or child.name.startswith((".", "_")):
-            continue
-        if not child.joinpath("__init__.py").is_file():
-            continue
-        parts = (*parents, child.name)
-        if child.joinpath("_registration.py").is_file():
-            yield ".".join(parts)
-        yield from _registration_packages(child, parts)
+from ._structure import DomainLayoutError, discover_operation_owners
 
 
 def _within(module: str, owner_package: str) -> bool:
-    """Compare Python module prefixes on complete segment boundaries."""
+    """Compare module prefixes at Python package segment boundaries."""
     return module == owner_package or module.startswith(owner_package + ".")
 
 
-def domain_catalog() -> OperationCatalog:
-    """Read local declarations only; resolve executable handlers on demand."""
-    owners = tuple(_registration_packages(resources.files("stratbox.domains")))
+def _validated_domain_snapshot() -> tuple[
+    tuple[tuple[str, OperationRegistration], ...], OperationCatalog
+]:
+    """Load and validate exact owners once for both catalog and inventory."""
+    try:
+        owners = discover_operation_owners(resources.files("stratbox.domains"))
+    except (DomainLayoutError, OSError) as exc:
+        raise RegistryError(str(exc)) from exc
+
     registrations: list[tuple[str, OperationRegistration]] = []
     for owner in owners:
-        path = f"stratbox.domains.{owner}._registration"
         try:
-            declaration = import_module(path).REGISTRATION
-        except (ImportError, AttributeError) as exc:
+            declaration = import_module(
+                f"stratbox.domains.{owner}._registration"
+            ).REGISTRATION
+        except (ImportError, AttributeError, SyntaxError) as exc:
             raise RegistryError(f"registry.invalid_manifest:{owner}") from exc
         if not isinstance(declaration, OperationRegistration):
             raise RegistryError(f"registry.invalid_registration:{owner}")
         if declaration.owner_id != owner:
-            raise RegistryError(f"registry.invalid_owner:{owner}:{declaration.owner_id}")
+            raise RegistryError(
+                f"registry.invalid_owner:{owner}:{declaration.owner_id}"
+            )
         if not declaration.operations:
             raise RegistryError(f"registry.empty_owner:{owner}")
         registrations.append((owner, declaration))
@@ -55,6 +56,7 @@ def domain_catalog() -> OperationCatalog:
         owner: f"stratbox.domains.{owner}" for owner, _ in registrations
     }
     refs: list[OperationRef] = []
+    logical_owners: dict[str, str] = {}
     for owner, declaration in registrations:
         for ref in declaration.operations:
             if not isinstance(ref, OperationRef):
@@ -67,43 +69,53 @@ def domain_catalog() -> OperationCatalog:
                 if link is None:
                     continue
                 module = link.split(":", 1)[0]
-                parents = [
-                    candidate for candidate, prefix in owner_packages.items()
-                    if _within(module, prefix)
-                ]
-                if not parents:
+                candidates = (
+                    candidate for candidate, package in owner_packages.items()
+                    if _within(module, package)
+                )
+                nearest = max(
+                    candidates, key=lambda value: len(value.split(".")),
+                    default=None,
+                )
+                if nearest is None:
                     raise RegistryError(
                         f"registry.domain_ownership:{owner}:{role}:{module}"
                     )
-                nearest = max(parents, key=lambda value: len(value.split(".")))
                 if nearest != owner:
                     raise RegistryError(
                         f"registry.nearest_owner:{owner}:{nearest}:{role}:{module}"
                     )
+            original_owner = logical_owners.setdefault(ref.operation_id, owner)
+            if original_owner != owner:
+                raise RegistryError(
+                    f"registry.logical_owner:{ref.operation_id}:"
+                    f"{original_owner}:{owner}"
+                )
             refs.append(ref)
-    return OperationCatalog(tuple(refs))
+    return tuple(registrations), OperationCatalog(tuple(refs))
+
+
+def domain_catalog() -> OperationCatalog:
+    """Read-only domain catalog with deterministic, fail-closed owner discovery."""
+    return _validated_domain_snapshot()[1]
 
 
 def operation_catalog() -> OperationCatalog:
+    """Merge the independently registered domain and neutral-core operations."""
     from stratbox.core.registry import core_catalog
 
     return merge_catalogs(domain_catalog(), core_catalog())
 
-def domain_registration_inventory() -> tuple[tuple[str, str, int], ...]:
-    """Describe complete owner/contract identities without loading handlers.
 
-    Used to compare the source tree with an installed wheel. All manifests
-    first pass the same ownership and duplicate-contract validation as runtime.
+def domain_registration_inventory() -> tuple[tuple[str, str, int], ...]:
+    """Return full owner/operation/version identities without loading handlers.
+
+    This view uses the same validated declarations as runtime discovery.
+    It is suitable for source-to-wheel/sdist inventory comparisons.
     """
-    domain_catalog()
-    owners = discover_operation_owners(resources.files("stratbox.domains"))
-    inventory: list[tuple[str, str, int]] = []
-    for owner in owners:
-        registration = import_module(
-            f"stratbox.domains.{owner}._registration"
-        ).REGISTRATION
-        inventory.extend(
-            (owner, ref.operation_id, ref.contract_version)
-            for ref in registration.operations
-        )
-    return tuple(sorted(inventory))
+    registrations, _ = _validated_domain_snapshot()
+    return tuple(sorted(
+        (owner, ref.operation_id, ref.contract_version)
+        for owner, declaration in registrations
+        for ref in declaration.operations
+    ))

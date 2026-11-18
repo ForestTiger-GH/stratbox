@@ -37,6 +37,8 @@ class OperationRegistration:
     def __post_init__(self) -> None:
         if not isinstance(self.owner_id, str) or not self.owner_id.strip() or not isinstance(self.operations, tuple):
             raise RegistryError("registry.invalid_registration")
+        if any(not isinstance(op, OperationRef) for op in self.operations):
+            raise RegistryError("registry.invalid_reference")
         keys = [(op.operation_id, op.contract_version) for op in self.operations]
         if len(keys) != len(set(keys)):
             raise RegistryError("registry.duplicate_contract")
@@ -78,6 +80,10 @@ class OperationCatalog:
     references: tuple[OperationRef, ...]
 
     def __post_init__(self) -> None:
+        if not isinstance(self.references, tuple) or any(
+            not isinstance(ref, OperationRef) for ref in self.references
+        ):
+            raise RegistryError("registry.invalid_reference")
         keys = [(ref.operation_id, ref.contract_version) for ref in self.references]
         if len(keys) != len(set(keys)):
             raise RegistryError("Duplicate operation contract")

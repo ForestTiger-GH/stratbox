@@ -248,3 +248,43 @@ def test_empty_manifest_owner_is_rejected_in_favor_of_grouping_packages(monkeypa
     )
     with pytest.raises(RegistryError, match="registry.empty_owner"):
         catalog()
+
+
+def test_logical_operation_identity_has_one_owner_across_versions(monkeypatch, tmp_path):
+    first, second = "publisher.series_a", "publisher.series_b"
+    catalog = _synthetic_catalog(
+        monkeypatch, tmp_path,
+        {
+            first: OperationRegistration(
+                first, (_synthetic_ref(first, "example.same_operation"),)
+            ),
+            second: OperationRegistration(
+                second, (replace(
+                    _synthetic_ref(second, "example.same_operation"),
+                    contract_version=2,
+                ),)
+            ),
+        },
+    )
+    with pytest.raises(RegistryError, match="registry.logical_owner"):
+        catalog()
+
+
+def test_invalid_reference_member_is_a_registry_error():
+    with pytest.raises(RegistryError, match="registry.invalid_reference"):
+        OperationRegistration("publisher.series", (object(),))
+    with pytest.raises(RegistryError, match="registry.invalid_reference"):
+        OperationCatalog((object(),))
+
+
+def test_inventory_and_catalog_are_views_of_one_validated_snapshot(monkeypatch, tmp_path):
+    owner = "another_publisher.family.series"
+    reference = _synthetic_ref(owner, "example.new_series")
+    catalog = _synthetic_catalog(
+        monkeypatch, tmp_path,
+        {owner: OperationRegistration(owner, (reference,))},
+    )
+    assert catalog().list_refs() == (reference,)
+    assert domain_registry.domain_registration_inventory() == (
+        (owner, "example.new_series", 1),
+    )

@@ -18,7 +18,10 @@ definition, handler, codec = catalog.resolve("frg.plan_cleanup", 1)
 ```
 
 The domain catalog rejects missing intermediate `__init__.py` files for
-manifest-bearing directories. Its discovery algorithm is shared with the
+manifest-bearing directories. The catalog and registration inventory are views
+of the same validated owner snapshot, so a malformed hierarchy never silently
+drops a manifest. A logical operation ID belongs to exactly one owner across
+all of its declared contract versions. Its discovery algorithm is shared with the
 static layout check and the distribution verifier. The source, wheel and
 sdist manifest/data inventories are compared without a fixed owner count.
 All manifest bytes and packaged non-code data assets are checked by size and SHA-256,
