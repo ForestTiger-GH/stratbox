@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, TYPE_CHECKING
 
-from stratbox.shared.data import ComputationReceipt, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 if TYPE_CHECKING:
     from pandas import DataFrame

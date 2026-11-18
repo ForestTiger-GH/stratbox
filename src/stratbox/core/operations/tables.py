@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from stratbox.shared.data.evidence import ByteIdentity, UsedInputReceipt
-from stratbox.shared.data.identity import canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.identity import canonical_manifest_bytes
 from stratbox.shared.data.tables import TABLE_ENCODING, TABLE_MEDIA_TYPE, table_identity
 
 from stratbox.core.execution.contracts import OperationFailure

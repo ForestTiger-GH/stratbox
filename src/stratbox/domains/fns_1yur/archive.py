@@ -42,7 +42,7 @@ from stratbox.core.formats.archives.members import (
     open_zip,
 )
 from stratbox.core.formats.spreadsheets.workbook_input import workbook_profile
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.representation import XLSX
 
 from .parser import OLE, MAX_XLS

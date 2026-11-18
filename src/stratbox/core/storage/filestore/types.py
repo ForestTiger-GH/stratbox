@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 
 @dataclass(frozen=True, slots=True)

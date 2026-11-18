@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, tzinfo
 
-from stratbox.shared.data import AcquiredSource, SourcePayload
+from stratbox.shared.evidence import AcquiredSource, SourcePayload
 
 
 @dataclass(frozen=True, slots=True)
