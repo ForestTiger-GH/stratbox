@@ -7,7 +7,7 @@ from datetime import date
 from io import StringIO
 
 from stratbox.shared.reference.assets import ReferenceError, load_reference
-from .models import RegionNameRule
+from .models import RegionNameRule, GEOGRAPHY_KINDS
 from .names import normalize_region_label
 
 _PACKAGE = "stratbox.shared.reference.geography"
@@ -15,7 +15,6 @@ _FIELDS = {"rule_id", "alias", "canonical_name", "subject_namespace", "subject_i
            "perimeter_id", "source_family", "effective_from", "effective_to", "review_basis"}
 
 
-_KINDS = frozenset({"country", "federal_district", "subject", "statistical_aggregate", "other"})
 
 
 def validate_region_rules(rules: tuple[RegionNameRule, ...] | list[RegionNameRule]) -> tuple[RegionNameRule, ...]:
@@ -37,7 +36,7 @@ def validate_region_rules(rules: tuple[RegionNameRule, ...] | list[RegionNameRul
         if rule.rule_id in identities:
             raise ReferenceError(f"Duplicate geography rule identifier: {rule.rule_id}")
         identities.add(rule.rule_id)
-        if rule.kind not in _KINDS or normalize_region_label(rule.alias) is None:
+        if rule.kind not in GEOGRAPHY_KINDS or normalize_region_label(rule.alias) is None:
             raise ReferenceError(f"Invalid geography kind/alias: {rule.rule_id}")
         for field in (rule.source_family, rule.perimeter_id):
             if field is not None and (not isinstance(field, str) or not field.strip()):

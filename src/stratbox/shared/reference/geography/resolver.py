@@ -74,6 +74,9 @@ class RegionNameResolver:
             assert key is not None  # Guaranteed by validate_region_rules.
             index.setdefault(key, []).append(rule)
         self._index = {key: tuple(values) for key, values in index.items()}
+        self._subject_keys = frozenset(
+            (rule.subject_namespace, rule.subject_id) for rule in self.rules
+        )
 
     def _result(self, raw: str, normalized: str, status: str,
                 subject: SubjectRef | None = None, canonical_name: str | None = None,
@@ -97,11 +100,8 @@ class RegionNameResolver:
         matches = [rule for rule in all_matching if _admitted(rule, context)]
         if not matches:
             status = "out_of_scope" if all_matching or (
-                context.source_code is not None and any(
-                    r.subject_id == context.source_code and
-                    r.subject_namespace == context.code_namespace
-                    for r in self.rules
-                )
+                context.source_code is not None and
+                (context.code_namespace, context.source_code) in self._subject_keys
             ) else "unmatched"
             return self._result(name, key, status)
         identities = {

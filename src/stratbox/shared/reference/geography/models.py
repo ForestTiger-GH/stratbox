@@ -10,6 +10,11 @@ from stratbox.shared.data.observations import SubjectRef
 from stratbox.shared.identity import ByteIdentity
 
 
+GEOGRAPHY_KINDS = frozenset({
+    "country", "federal_district", "subject", "statistical_aggregate", "other",
+})
+
+
 @dataclass(frozen=True, slots=True)
 class RegionNameContext:
     source_family: str | None = None
@@ -20,6 +25,14 @@ class RegionNameContext:
     perimeter_hint: str | None = None
 
     def __post_init__(self) -> None:
+        if self.as_of is not None and type(self.as_of) is not date:
+            raise ValueError("Region matching date must be a date")
+        if self.observed_kind is not None and self.observed_kind not in GEOGRAPHY_KINDS:
+            raise ValueError("Unknown region context kind")
+        for value in (self.source_family, self.source_code, self.code_namespace,
+                      self.perimeter_hint):
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError("Region context fields must be nonempty strings")
         if bool(self.source_code) != bool(self.code_namespace):
             raise ValueError("Verified region code requires an explicit namespace")
 

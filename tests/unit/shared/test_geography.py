@@ -125,3 +125,14 @@ def test_invalid_supplied_rule_cannot_bypass_packaged_validation():
     unknown = RegionNameRule("r", "A", "A", "x", "1", "invented", review_basis="fixture")
     with pytest.raises(ReferenceError, match="kind"):
         RegionNameResolver(rules=(unknown,))
+
+
+def test_region_context_rejects_invalid_scopes_before_matching():
+    with pytest.raises(ValueError, match="date"):
+        RegionNameContext(as_of="2020-01-01")
+    with pytest.raises(ValueError, match="kind"):
+        RegionNameContext(observed_kind="invented")
+    with pytest.raises(ValueError, match="nonempty"):
+        RegionNameContext(source_family=" ")
+    with pytest.raises(ValueError, match="nonempty"):
+        RegionNameContext(source_code="")
