@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal
 
-from .evidence import UsedInputReceipt
+from stratbox.shared.evidence import UsedInputReceipt
 
 ValueStatus = Literal[
     "reported",

@@ -1,43 +1,12 @@
-"""Canonical identities for manifests made from stable, typed inputs."""
+"""Dataset versions, computation receipts and manifest identities."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
-from decimal import Decimal
-import json
 from typing import Mapping
 
-from .evidence import ByteIdentity, UsedInputReceipt
-
-
-def _canonical(value: object) -> object:
-    if value is None or isinstance(value, (bool, str, int)):
-        return value
-    if isinstance(value, datetime):
-        if value.utcoffset() is None:
-            raise ValueError("Manifest timestamps require a timezone")
-        return value.astimezone(timezone.utc).isoformat(timespec="microseconds")
-    if isinstance(value, date):
-        return value.isoformat()
-    if isinstance(value, Decimal) and value.is_finite():
-        return format(value, "f")
-    if isinstance(value, (list, tuple)):
-        return [_canonical(item) for item in value]
-    if isinstance(value, Mapping) and all(isinstance(key, str) for key in value):
-        return {key: _canonical(item) for key, item in value.items()}
-    raise TypeError("Unsupported manifest value")
-
-
-def canonical_manifest_bytes(value: Mapping[str, object]) -> bytes:
-    return json.dumps(
-        _canonical(value),
-        ensure_ascii=False,
-        sort_keys=True,
-        allow_nan=False,
-        separators=(",", ":"),
-    ).encode("utf-8")
-
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.evidence import UsedInputReceipt
 
 @dataclass(frozen=True, slots=True)
 class DatasetVersion:
@@ -117,3 +86,13 @@ def computation_identity(
         "representation_profile": representation_profile,
         "representation_options": representation_options or {},
     }))
+
+@dataclass(frozen=True, slots=True)
+class ComputationReceipt:
+    version: DatasetVersion
+    output: ByteIdentity
+    inputs: tuple[UsedInputReceipt, ...]
+    computation_id: ByteIdentity
+    parents: tuple[tuple[str, ComputationReceipt], ...] = ()
+
+

@@ -10,9 +10,9 @@ from io import StringIO
 from typing import Literal, Mapping
 
 from .comparison import BaselineState
-from .evidence import AcquisitionReceipt, ByteIdentity, SourcePayload, UsedInputReceipt
-from .identity import canonical_manifest_bytes
-from .identity import DatasetVersion, build_dataset_version
+from stratbox.shared.evidence import AcquisitionReceipt, SourcePayload, UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from .datasets import DatasetVersion, build_dataset_version
 from .observations import Observation, ObservationBatch
 from .representation import CSV, Representation
 

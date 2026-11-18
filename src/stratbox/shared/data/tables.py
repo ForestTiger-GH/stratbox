@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from hashlib import sha256
@@ -10,8 +9,7 @@ import json
 import math
 from typing import Callable, TYPE_CHECKING
 
-from .evidence import ByteIdentity, UsedInputReceipt
-from .identity import DatasetVersion
+from stratbox.shared.identity import ByteIdentity
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -19,15 +17,6 @@ if TYPE_CHECKING:
 
 TABLE_ENCODING = "stratbox.tables.v1"
 TABLE_MEDIA_TYPE = "application/vnd.stratbox.tables"
-
-
-@dataclass(frozen=True, slots=True)
-class ComputationReceipt:
-    version: DatasetVersion
-    output: ByteIdentity
-    inputs: tuple[UsedInputReceipt, ...]
-    computation_id: ByteIdentity
-    parents: tuple[tuple[str, ComputationReceipt], ...] = ()
 
 
 def _scalar(value, pandas, numpy, allow_infinite):

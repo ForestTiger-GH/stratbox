@@ -1,31 +1,16 @@
-"""Identity and evidence for the exact bytes crossing an operation boundary."""
+"""Source materials, acquisition evidence and effect receipts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from hashlib import sha256
 import re
 from typing import Literal
 
-_DIGEST = re.compile(r"[0-9a-f]{64}", re.ASCII)
+from .identity import ByteIdentity
+
 _MEDIA = re.compile(r"[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+", re.ASCII)
 InputAvailability = Literal["inline", "reference_only"]
-
-
-@dataclass(frozen=True, slots=True)
-class ByteIdentity:
-    sha256: str
-    size: int
-
-    def __post_init__(self) -> None:
-        if not _DIGEST.fullmatch(self.sha256) or self.size < 0:
-            raise ValueError("Invalid byte identity")
-
-    @classmethod
-    def of(cls, data: bytes) -> ByteIdentity:
-        return cls(sha256(data).hexdigest(), len(data))
-
 
 @dataclass(frozen=True, slots=True)
 class SourcePayload:

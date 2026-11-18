@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .evidence import ByteIdentity, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload
 
 CSV = "text/csv"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
