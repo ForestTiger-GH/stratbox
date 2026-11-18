@@ -12,7 +12,8 @@ import pytest
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.network import HttpRequest, HttpsEndpoint, RetryPolicy
 from stratbox.core.network.transport import _follow
-from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload
 from stratbox.core.execution import ExecutionBudget, ExecutionContext
 from stratbox.core.operations.source.originals import (
     OriginalDestination, ReadOriginalRequest, ReceiveOriginalRequest, ReceiveToStoreRequest,

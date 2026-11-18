@@ -4,7 +4,7 @@ import re
 
 import pandas as pd
 
-from stratbox.shared.registries import rosstat_okved2
+from stratbox.shared.reference.okved2 import registry as rosstat_okved2
 
 _SECTION_NAMES = {
     'A': 'Сельское, лесное хозяйство, охота, рыболовство и рыбоводство',

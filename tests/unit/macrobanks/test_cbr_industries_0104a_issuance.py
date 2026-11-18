@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from openpyxl import Workbook, load_workbook
 
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr_industries import issuance_0104 as issuance
 from stratbox.domains.cbr_industries.regions import CBR_0105A_DEBT_CORP_REGION_LAYOUT
 from stratbox.domains.cbr_industries.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS

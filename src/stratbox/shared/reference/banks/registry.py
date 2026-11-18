@@ -54,7 +54,7 @@ def _registration_number(value: object) -> str:
     text = str(value).strip()
     if text.lower() in {"nan", "none"}:
         return ""
-    return re.sub(r"^(\\d+)\\.0$", r"\\1", text)
+    return re.sub(r"^(\d+)\.0$", r"\1", text)
 
 
 def _enabled_selection(bundle: LoadedReference, aliases: dict[str, str], inputs):

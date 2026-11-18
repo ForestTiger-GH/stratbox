@@ -35,6 +35,13 @@ REQUIRED_FILES = [
     'docs/current-how/core-execution-and-admission.md',
     'docs/architecture/core-operation-boundaries.md',
     'docs/how/install-and-run-core.md',
+    'src/stratbox/shared/identity.py',
+    'src/stratbox/shared/evidence.py',
+    'src/stratbox/shared/data/datasets.py',
+    'src/stratbox/shared/reference/assets.py',
+    'src/stratbox/shared/reference/banks/_resources/manifest.json',
+    'src/stratbox/shared/reference/okved2/_resources/manifest.json',
+    'src/stratbox/shared/reference/geography/_resources/manifest.json',
     'src/stratbox/py.typed',
     'src/stratbox/domains/registry.py',
     'src/stratbox/core/execution/catalog.py',
@@ -67,6 +74,10 @@ REQUIRED_FILES = [
 ]
 
 FORBIDDEN_PATHS = [
+    'src/stratbox/shared/registries',
+    'src/stratbox/shared/text',
+    'src/stratbox/shared/data/evidence.py',
+    'src/stratbox/shared/data/identity.py',
     'src/stratbox/system',
     'src/stratbox/core/base',
     'src/stratbox/core/ioapi',

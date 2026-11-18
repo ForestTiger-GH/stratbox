@@ -53,9 +53,16 @@ CRITICAL_MODULES = [
     "stratbox.core.notifications.dispatch.reconciliation",
     "stratbox.core.registry",
     "stratbox.shared.data",
-    "stratbox.shared.registries",
+    "stratbox.shared.identity",
+    "stratbox.shared.evidence",
+    "stratbox.shared.data.datasets",
+    "stratbox.shared.reference",
+    "stratbox.shared.reference.assets",
+    "stratbox.shared.reference.banks.names",
+    "stratbox.shared.reference.banks.registry",
+    "stratbox.shared.reference.okved2.registry",
+    "stratbox.shared.reference.geography",
     "stratbox.shared.time",
-    "stratbox.shared.text.banks",
     "stratbox.domains.registry",
     "stratbox.domains.cbr_file_collector",
     "stratbox.domains.cbr_industries",
@@ -129,6 +136,17 @@ def check_dependency_direction() -> list[str]:
                 continue
             if target.startswith(("stratbox.system", "stratbox.core.base", "stratbox.core.ioapi")):
                 failures.append(f"{prefix}: obsolete package import {target}")
+            if target.startswith((
+                "stratbox.shared.registries", "stratbox.shared.text",
+                "stratbox.shared.data.evidence", "stratbox.shared.data.identity",
+            )):
+                failures.append(f"{prefix}: obsolete shared import {target}")
+            if owner == "shared:identity" and target.startswith(("stratbox.shared.evidence", "stratbox.shared.data", "stratbox.shared.reference")):
+                failures.append(f"{prefix}: identity imports higher-level shared semantic owner {target}")
+            if owner == "shared:evidence" and target.startswith(("stratbox.shared.data", "stratbox.shared.reference")):
+                failures.append(f"{prefix}: evidence imports higher-level shared semantic owner {target}")
+            if owner == "shared:data" and target.startswith("stratbox.shared.reference"):
+                failures.append(f"{prefix}: shared data imports a concrete reference owner {target}")
             if target.startswith("stratbox_"):
                 failures.append(f"{prefix}: concrete integration import {target}")
             if owner.startswith(("core:", "shared:")) and target.startswith("stratbox.domains"):
@@ -169,6 +187,9 @@ def main() -> int:
             print(f"OK   {name}")
         except Exception as error:
             failures.append(f"{name}: {type(error).__name__}: {error}")
+    for obsolete in ("registries", "text"):
+        if (PACKAGE / "shared" / obsolete).exists():
+            failures.append(f"obsolete shared package remains: {obsolete}")
     if (PACKAGE / "system").exists():
         failures.append("obsolete stratbox.system package remains")
     if failures:

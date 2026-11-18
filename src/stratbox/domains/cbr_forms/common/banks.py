@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.shared.registries import cbr_banks
+from stratbox.shared.reference.banks import registry as cbr_banks
 
 
 def _pick_display_name(df: pd.DataFrame) -> pd.Series:

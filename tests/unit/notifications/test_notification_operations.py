@@ -7,7 +7,7 @@ from threading import Event
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.execution import ExecutionContext
 from stratbox.core.notifications import (
     DeliverRequest, PrepareRequest, QualifyDeliveryRequest, ReconcileDeliveryRequest, SubscriptionChange,

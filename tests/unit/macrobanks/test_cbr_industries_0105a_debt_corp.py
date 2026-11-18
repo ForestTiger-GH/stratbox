@@ -21,7 +21,8 @@ from stratbox.domains.cbr_industries.contracts import (
     Cbr0105ADebtCorpValidationIssue,
 )
 from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
-from stratbox.shared.data import ByteIdentity, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr_industries import (
     ParseIndustryRequest, RenderIndustryRequest, RenderPivotRequest, parse, render_industry, render_pivots,
 )
