@@ -73,3 +73,28 @@ def test_obsolete_owner_paths_are_removed():
     assert importlib.util.find_spec("stratbox.shared.data.evidence") is None
     assert ByteIdentity.__module__ == "stratbox.shared.identity"
     assert UsedInputReceipt.__module__ == "stratbox.shared.evidence"
+
+
+def test_observation_statuses_reject_unrecognized_values_and_bool():
+    from stratbox.shared.data.observations import (
+        SubjectRef, MetricRef, PeriodRef, Observation,
+    )
+    subject = SubjectRef("fixture", "x")
+    metric = MetricRef("metric", "count")
+    period = PeriodRef("as_of", as_of=date(2026, 11, 18))
+    def fact(value, status):
+        return Observation(subject, metric, period, (), "scope", value, status, "source")
+    for status in ("missing", "blank", "dash", "not_applicable", "withheld"):
+        assert fact(None, status).value is None
+    for status in ("reported", "derived", "reconstructed"):
+        assert fact(0, status).value == 0
+    with pytest.raises(ValueError, match="Unknown"):
+        fact(None, "silent_error")
+    with pytest.raises(TypeError, match="value"):
+        fact(True, "reported")
+    with pytest.raises(TypeError, match="value"):
+        fact(1.5, "reported")
+    with pytest.raises(ValueError):
+        fact(None, "reported")
+    with pytest.raises(ValueError):
+        fact(0, "missing")
