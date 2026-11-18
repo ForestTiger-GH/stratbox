@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload
+from ..common.contracts import IndustrySelection
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -108,11 +109,6 @@ class Cbr0105ADebtCorpValidationIssue:
     count: int = 1
     details: Mapping[str, object] = field(default_factory=dict)
 
-
-@dataclass(frozen=True, slots=True)
-class IndustrySelection:
-    """Published industry codes to materialize; None requests all published codes."""
-    industry_codes: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)

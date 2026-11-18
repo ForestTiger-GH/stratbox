@@ -13,7 +13,7 @@ from openpyxl.utils import get_column_letter
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.representation import XLSX
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpIndustryWorkbookRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
     Cbr0105ADebtCorpPivotSetResult,
@@ -21,8 +21,8 @@ from stratbox.domains.cbr.corporate_lending.industries.contracts import (
     Cbr0105ADebtCorpPivotWorkbookRequest,
     Cbr0105ADebtCorpPivotWorkbookResult,
 )
-from stratbox.domains.cbr.corporate_lending.industries.pivots import sanitize_excel_sheet_name
-from stratbox.domains.cbr.corporate_lending.industries.schema import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import sanitize_excel_sheet_name
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
     CBR_0105A_DEBT_CORP_SHEET_SPECS,
     CBR_0105A_DEBT_CORP_UNIT_NAME_RU,
 )

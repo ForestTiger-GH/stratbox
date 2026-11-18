@@ -4,7 +4,7 @@ from stratbox.shared.evidence import SourcePayload
 
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.industries.schema import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
     CBR_0105A_DEBT_CORP_INDUSTRY_SPECS,
 )
 from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import RoundingPolicy

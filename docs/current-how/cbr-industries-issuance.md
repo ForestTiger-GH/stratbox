@@ -1,9 +1,13 @@
 # CBR industries — monthly corporate loan issuance (01_04_A)
 
 The `stratbox.domains.cbr.corporate_lending.industries.issuance_0104` package is the second
-series adapter in the industry-statistics domain. It reads the Bank of Russia
+operation owner under the industry-statistics family. It reads the Bank of Russia
 `01_04_A_New_loans_corp_YYYYMMDD.xlsx` monthly workbooks as corporate loan
-**flows**, independently of the `01_05_A_Debt_corp` **stock** series.
+**flows**, independently of the `01_05_A_Debt_corp` **stock** series. Both
+series have local `_registration.py` declarations. Shared cell validation
+and operation evidence helpers reside in `industries.common`; the issuance
+adapter also uses the explicitly identified reference industry, geography
+and APK profiles of `industries.debt_0105a`.
 
 ## Public operations
 
@@ -62,7 +66,7 @@ from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as l
 
 path = Path("01_04_A_New_loans_corp_20260801.xlsx")
 request = loans.ParseIssuanceRequest(SourcePayload(path.read_bytes()), path.name)
-from stratbox.domains.cbr.corporate_lending.industries import IndustrySelection
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
 
 stream_run = loans.build_stream(loans.BuildIssuanceStreamRequest(
     (request,), selection=IndustrySelection(("apk", "total")),

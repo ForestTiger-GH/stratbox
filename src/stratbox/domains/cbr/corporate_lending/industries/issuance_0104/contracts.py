@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpIndustrySpec as IndustrySpec,
     Cbr0105ADebtCorpPivotRequest,

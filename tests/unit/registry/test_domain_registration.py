@@ -205,7 +205,7 @@ def test_discovered_owner_contracts_are_complete_and_extensible():
     assert {(operation_id, version) for _, operation_id, version in rows} == {
         (ref.operation_id, ref.contract_version) for ref in catalog.references
     }
-    assert ("cbr.corporate_lending.industries", "cbr.industries.0105a.parse", 3) in rows
+    assert ("cbr.corporate_lending.industries.debt_0105a", "cbr.industries.0105a.parse", 3) in rows
     assert ("cbr.corporate_lending.industries.issuance_0104",
             "cbr.industries.0104a.parse", 3) in rows
     assert all(".registration:" not in ref.definition_ref for ref in catalog.references)

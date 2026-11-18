@@ -8,7 +8,7 @@ MODULES = [
     'stratbox.core.formats',
     'stratbox.core.storage.filestore',
     'stratbox.domains.cbr.file_collection',
-    'stratbox.domains.cbr.corporate_lending.industries',
+    'stratbox.domains.cbr.corporate_lending.industries.debt_0105a',
     'stratbox.domains.cbr.reporting_forms',
     'stratbox.domains.cbr.escrow',
     'stratbox.domains.frank_rg.retail_banking',

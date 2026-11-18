@@ -197,7 +197,7 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
     owner("cbr/reporting_forms")
     owner("fns/sme_register")
     sors = owner("cbr/corporate_lending/sors_restoration")
-    owner("cbr/corporate_lending/industries")
+    owner("cbr/corporate_lending/industries/debt_0105a")
 
     (escrow / "bad.py").write_text(
         "from stratbox.domains.cbr.reporting_forms import contracts\n"
@@ -205,7 +205,7 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
         encoding="utf-8",
     )
     (sors / "allowed.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries import schema\n",
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import schema\n",
         encoding="utf-8",
     )
     check.__globals__["SRC"] = source

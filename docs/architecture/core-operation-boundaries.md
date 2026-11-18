@@ -29,8 +29,9 @@ operation calls and scheduling outside the library.
 Local `_registration.py` manifests identify exact operation owners. The registry discovers
 them recursively; the nearest registered ancestor owns a module, rather than an
 entire publisher namespace. Child publication series may reuse their parent
-family's semantic helpers, while direct cross-owner dependencies require a
-documented directional justification. Publisher-neutral execution remains in core.
+family's dedicated `common` modules, while direct cross-owner dependencies
+are allowed only for specifically identified source-schema reuse. A grouping
+package never owns an operation without a local `_registration.py`. Publisher-neutral execution remains in core.
 
 ## Dependency contract
 

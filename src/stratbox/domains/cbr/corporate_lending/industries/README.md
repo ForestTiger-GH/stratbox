@@ -1,14 +1,15 @@
-# CBR industry series
+# CBR industry lending statistics
 
-The same typed industry selection is shared by corporate debt (01_05_A) and
-monthly issuance (01_04_A). Use `IndustrySelection(("apk", "total"))` when
-only APK and published TOTAL are required. All source values remain validated,
-while unrelated observations are not materialized into the analytical stream.
+This source family contains two independent operation owners: `debt_0105a`
+for corporate credit outstanding (stock) and `issuance_0104` for monthly
+corporate loan issuance (flow). Their operation IDs and publication periods
+remain distinct. The `common` package owns shared physical source parsing
+and evidence helpers; it declares no operations.
 
-`render_industries` generates several workbooks from one verified caller
-snapshot. The independent `render_industry` remains available for individual
-operation composition.
+Both series use a published industry dimension, geographic layout and APK
+calculation formula. The issuance adapter explicitly references the official
+01_05_A source profile where the physical semantics are identical.
 
-[Public operation contracts](../../../../../../docs/current-how/universal-business-core.md)
+[Domain operation contracts](../../../../../../docs/current-how/universal-business-core.md)
 
 [Issuance-series semantics](../../../../../../docs/current-how/cbr-industries-issuance.md)

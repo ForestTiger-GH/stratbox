@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from stratbox.domains.fns.sme_register.parser import inspect_region_names
-from stratbox.domains.cbr.corporate_lending.industries.regions import normalize_cbr_0105a_region_name
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import normalize_cbr_0105a_region_name
 
 
 def test_fns_names_annotate_without_rekeying_source_data():

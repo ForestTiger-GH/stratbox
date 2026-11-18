@@ -29,12 +29,12 @@ from .contracts import (
     IssuanceWorkbooksResult, ParseIssuanceRequest, ParsedIssuanceFile,
     PivotIssuanceRequest,
 )
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpPivotSetResult,
 )
-from stratbox.domains.cbr.corporate_lending.industries.selection import resolve_industry_codes, selection_parameters
-from stratbox.domains.cbr.corporate_lending.industries.contracts import IndustrySelection
-from stratbox.domains.cbr.corporate_lending.industries.operations import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.selection import resolve_industry_codes, selection_parameters
+from stratbox.domains.cbr.corporate_lending.industries.common.contracts import IndustrySelection
+from stratbox.domains.cbr.corporate_lending.industries.common.operation_helpers import (
     _TABLE_LIMITS, _seal_pivots, _select_industry, _stream_metadata,
 )
 from .sources import CBR_SORS_INDEX_URL, SERIES_CODE, discover_links, reference_period, report_date_from_filename
@@ -159,8 +159,8 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from stratbox.domains.cbr.corporate_lending.industries.streams import concat_cbr_0105a_debt_corp_streams
-        from stratbox.domains.cbr.corporate_lending.industries.regions import normalize_cbr_0105a_debt_corp_regions_to_latest
+        from stratbox.domains.cbr.corporate_lending.industries.common.streams import concat_cbr_0105a_debt_corp_streams
+        from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import normalize_cbr_0105a_debt_corp_regions_to_latest
 
         invocation.stage("parse")
         if not req.sources:
@@ -222,7 +222,7 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
 
 
 def _apk(stream, *, budget):
-    from stratbox.domains.cbr.corporate_lending.industries.derived import (
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
         Cbr0105ADebtCorpDerivedIndustryError, calculate_cbr_0105a_debt_corp_apk_industry,
     )
     try:
@@ -266,7 +266,7 @@ def calculate_apk(request: CalculateIssuanceApkRequest, *, context: ExecutionCon
 def build_pivots(request: PivotIssuanceRequest, *, context: ExecutionContext | None = None):
     def work(req, invocation):
         require_extra("pandas", "dataframe")
-        from stratbox.domains.cbr.corporate_lending.industries.pivots import (
+        from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import (
             Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
         )
         invocation.stage("build_views")
@@ -284,8 +284,8 @@ def build_pivots(request: PivotIssuanceRequest, *, context: ExecutionContext | N
 
 def _render_one_issuance(source, private_stream, industry_code, include_metadata_sheet, invocation, periods):
     """Build from an admitted private snapshot; one implementation for one or many books."""
-    from stratbox.domains.cbr.corporate_lending.industries.contracts import Cbr0105ADebtCorpPivotRequest
-    from stratbox.domains.cbr.corporate_lending.industries.pivots import (
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpPivotRequest
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import (
         Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
     )
     from .export import render_issuance_workbook

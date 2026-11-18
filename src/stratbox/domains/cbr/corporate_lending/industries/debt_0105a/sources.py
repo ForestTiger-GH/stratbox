@@ -9,8 +9,8 @@ from urllib.parse import urljoin, urlsplit
 
 from stratbox.core.formats.html import link_targets
 
-from stratbox.domains.cbr.corporate_lending.industries.contracts import Cbr0105ADebtCorpSourceLink
-from stratbox.domains.cbr.corporate_lending.industries.schema import CBR_0105A_DEBT_CORP_SERIES_CODE
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpSourceLink
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import CBR_0105A_DEBT_CORP_SERIES_CODE
 
 
 CBR_SORS_INDEX_URL = "https://www.cbr.ru/statistics/bank_sector/sors/"

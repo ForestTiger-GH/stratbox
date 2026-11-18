@@ -4,7 +4,7 @@ from stratbox.shared.evidence import SourcePayload
 
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.industries.parser import parse_cbr_0105a_debt_corp_excel_bytes
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.parser import parse_cbr_0105a_debt_corp_excel_bytes
 from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import RoundingPolicy
 from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.geography import (
     build_geography_registry,

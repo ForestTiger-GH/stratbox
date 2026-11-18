@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpIndustrySpec,
 )
-from stratbox.domains.cbr.corporate_lending.industries.streams import (
+from stratbox.domains.cbr.corporate_lending.industries.common.streams import (
     STREAM_COLUMNS,
     concat_cbr_0105a_debt_corp_streams,
     optimize_cbr_0105a_debt_corp_stream_dtypes,

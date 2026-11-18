@@ -9,7 +9,7 @@ an exact `_registration.py` file establishes an operation owner at any depth.
 ```python
 from stratbox.domains.registry import domain_catalog, operation_catalog
 
-business = domain_catalog()                  # 68 source-domain operations
+business = domain_catalog()                  # all installed source-domain operations
 catalog = operation_catalog()                # domain operations and neutral core
 references = catalog.list_refs()
 descriptions = catalog.describe()             # resolves executable contracts
@@ -17,6 +17,10 @@ definition = catalog.get("frg.plan_cleanup", 1)
 definition, handler, codec = catalog.resolve("frg.plan_cleanup", 1)
 ```
 
+The domain catalog rejects missing intermediate `__init__.py` files for
+manifest-bearing directories. Its discovery algorithm is shared with the
+static layout check and the distribution verifier. The source, wheel and
+sdist manifest/data inventories are compared without a fixed owner count.
 The domain catalog traverses installed Python packages under `stratbox.domains`
 in deterministic order using `importlib.resources.files`. It discovers only
 exact files named `_registration.py` and never searches arbitrary underscore
@@ -64,9 +68,11 @@ Public owner package exports are lazily loaded so metadata listing does not
 require optional spreadsheet or solver engines.
 
 The current owners include `cbr`, `fns` and `frank_rg` publisher branches.
-The industry parent owns nine `01_05_A` operations; the nested
-`industries.issuance_0104` owns eight `01_04_A` operations. All 68 original
-logical operation IDs and contract versions remain unchanged by this relocation.
+The `industries` package groups two independent publication owners:
+`industries.debt_0105a` for stock, and `industries.issuance_0104` for
+monthly issuance. Common source parsing and execution/evidence helpers are
+implemented in `industries.common`. The existing logical operation IDs and
+contract versions are stable across this structural relocation.
 
 ## 3. Restricted read-only machine calls
 

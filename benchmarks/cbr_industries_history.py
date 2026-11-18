@@ -19,7 +19,7 @@ import sys
 from time import perf_counter
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending import industries as debt
+from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as debt
 from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as issuance
 
 

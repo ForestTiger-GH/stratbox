@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import re
 
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from ..common.normalization import normalize_cbr_0105a_text
+
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpIndustrySpec,
     Cbr0105ADebtCorpSheetSpec,
 )
@@ -222,16 +224,6 @@ CBR_0105A_DEBT_CORP_INDUSTRY_SPECS: tuple[Cbr0105ADebtCorpIndustrySpec, ...] = (
     ),
 )
 
-
-def normalize_cbr_0105a_text(value: object) -> str:
-    """Нормализует текст источника, сохраняя его экономический смысл."""
-    if value is None:
-        return ""
-    text = str(value).replace("\xa0", " ").replace("ё", "е").replace("Ё", "Е")
-    text = re.sub(r"_+", " ", text)
-    text = re.sub(r"\bиз\s+них\b\s*:?,?", " ", text, flags=re.I)
-    text = re.sub(r"[^0-9A-Za-zА-Яа-я]+", " ", text)
-    return re.sub(r"\s+", " ", text).strip().lower()
 
 
 def clean_cbr_0105a_source_label(value: object) -> str:

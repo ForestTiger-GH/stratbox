@@ -12,17 +12,17 @@ import pandas as pd
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
-from stratbox.domains.cbr.corporate_lending.industries.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
-from stratbox.domains.cbr.corporate_lending.industries.selection import resolve_industry_codes
-from stratbox.domains.cbr.corporate_lending.industries.shared_parsing import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.selection import resolve_industry_codes
+from stratbox.domains.cbr.corporate_lending.industries.common.parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
     _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,
 )
-from stratbox.domains.cbr.corporate_lending.industries.streams import (
+from stratbox.domains.cbr.corporate_lending.industries.common.streams import (
     STREAM_COLUMNS, optimize_cbr_0105a_debt_corp_stream_dtypes,
 )
-from stratbox.domains.cbr.corporate_lending.industries.regions import build_cbr_0105a_debt_corp_region_specs
-from stratbox.domains.cbr.corporate_lending.industries.schema import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import build_cbr_0105a_debt_corp_region_specs
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
     normalize_cbr_0105a_text, select_industry_headers,
 )
 

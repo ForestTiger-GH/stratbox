@@ -11,8 +11,8 @@ from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as issuance
-from stratbox.domains.cbr.corporate_lending.industries.regions import CBR_0105A_DEBT_CORP_REGION_LAYOUT
-from stratbox.domains.cbr.corporate_lending.industries.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import CBR_0105A_DEBT_CORP_REGION_LAYOUT
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
 from stratbox.domains.cbr.corporate_lending.industries.issuance_0104.parser import parse_workbook
 from stratbox.domains.cbr.corporate_lending.industries.issuance_0104.sources import (
     discover_links, reference_period, report_date_from_filename,
@@ -198,7 +198,7 @@ def test_render_optional_metadata_and_unknown_industry() -> None:
 
 
 def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
-    from stratbox.domains.cbr.corporate_lending.industries import Cbr0105ADebtCorpPivotRequest, RenderPivotRequest, render_pivots
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import Cbr0105ADebtCorpPivotRequest, RenderPivotRequest, render_pivots
 
     original = _request()
     base = issuance.parse(original)
@@ -237,7 +237,7 @@ def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
 
 
 def test_issuance_selected_observations_and_batch_export_match_individual() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries import IndustrySelection
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
 
     original = _request()
     full = issuance.build_stream(issuance.BuildIssuanceStreamRequest((original,)))
@@ -277,7 +277,7 @@ def test_issuance_selected_observations_and_batch_export_match_individual() -> N
 
 
 def test_issuance_source_validation_checks_outside_selected_industries() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries import IndustrySelection
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
 
     run = issuance.parse(issuance.ParseIssuanceRequest(
         SourcePayload(_book(negative=True)), "01_04_A_New_loans_corp_20190201.xlsx",

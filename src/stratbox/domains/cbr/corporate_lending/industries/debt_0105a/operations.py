@@ -19,6 +19,10 @@ from stratbox.core.execution import (
 from stratbox.core.execution.batch import attempt_batch, require_batch_values
 from stratbox.core.operations.source.validation import use_payload
 from stratbox.core.operations.tables import record_tables, seal_stream, use_stream, use_tables
+from ..common.operation_helpers import (
+    _TABLE_LIMITS, _stream_metadata, _select_industry, _pivot_tables,
+    _pivot_metadata, _seal_pivots,
+)
 from stratbox.domains.cbr._source import (
     HTML_TYPES,
     WORKBOOK_LIMIT,
@@ -57,7 +61,6 @@ _DATASET = "cbr.industries.0105a"
 _ROOTS = ("/vfs/statistics/", "/content/document/file/")
 _METHOD = "cbr-0105a-workbook-2"
 _HTTP = frozenset({"http"})
-_TABLE_LIMITS = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
 DISCOVER = OperationDefinition(
     f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple,
     optional_capabilities=frozenset({"http"}),
@@ -387,42 +390,9 @@ def build_pivots(
     return run(PIVOT, request, work, context=context)
 
 
-def _stream_metadata(request):
-    if request.source is not None:
-        return request.source
-    return request.stream if hasattr(request.stream, "validation_issues") else None
 
 
-def _select_industry(stream, code):
-    if code is None:
-        return stream
-    if "industry_code" not in stream:
-        raise OperationFailure("request.industry_unresolved")
-    selected = stream.loc[stream["industry_code"].eq(code)]
-    if selected.empty:
-        raise OperationFailure("request.industry_unresolved")
-    return selected
 
-
-def _pivot_tables(result):
-    return tuple((table.suggested_sheet_name, table.df_table) for table in result.tables)
-
-
-def _pivot_metadata(result):
-    return {
-        "row_dimension": result.row_dimension, "column_dimension": result.column_dimension,
-        "value_columns": result.value_columns, "sheet_dimensions": result.sheet_dimensions,
-        "fixed_dimensions": result.fixed_dimensions, "source_rows": result.source_rows,
-        "partial": result.is_partial, "sheets": [
-            (table.sheet_key, table.rows, table.data_columns) for table in result.tables
-        ],
-    }
-
-
-def _seal_pivots(invocation, result, request, *, industry_code=None):
-    return replace(result, evidence=record_tables(invocation, _pivot_tables(result),
-                                                   parameters={**asdict(request), "industry": industry_code},
-                                                   metadata=_pivot_metadata(result)))
 
 
 def render_pivots(

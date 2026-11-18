@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import replace
 
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpRegionSpec,
     ParsedCbr0105ADebtCorpFile,
 )

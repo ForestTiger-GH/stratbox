@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .contracts import IndustrySelection
+from ..common.contracts import IndustrySelection
 from .schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
 
 SELECTION_METHOD = "cbr-industries-selection-1"

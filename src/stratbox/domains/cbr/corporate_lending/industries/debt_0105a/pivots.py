@@ -8,7 +8,7 @@ from typing import Iterable
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from stratbox.domains.cbr.corporate_lending.industries.contracts import (
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpPivotDimension,
     Cbr0105ADebtCorpPivotRequest,
     Cbr0105ADebtCorpPivotSetResult,

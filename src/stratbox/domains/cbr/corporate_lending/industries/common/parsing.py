@@ -6,7 +6,7 @@ import math
 import re
 from decimal import Decimal, InvalidOperation
 
-from stratbox.domains.cbr.corporate_lending.industries.schema import normalize_cbr_0105a_text
+from .normalization import normalize_cbr_0105a_text
 
 def _coerce_numeric_value(value: object, *, coordinate: str, sheet_name: str) -> int | float | None:
     if value is None:

@@ -5,7 +5,7 @@
 from importlib import import_module as _import_module
 
 _SYMBOL_MODULES = {
-    "IndustrySelection": "stratbox.domains.cbr.corporate_lending.industries.contracts",
+    "IndustrySelection": "stratbox.domains.cbr.corporate_lending.industries.common.contracts",
     "BuildIssuanceStreamRequest": ".contracts",
     "CalculateIssuanceApkRequest": ".contracts",
     "DiscoverIssuanceRequest": ".contracts",

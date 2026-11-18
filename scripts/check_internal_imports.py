@@ -177,17 +177,36 @@ def _source_publisher(path: Path) -> str | None:
 
 
 def _approved_inter_owner_reference(source: str, target: str, module: str) -> bool:
-    """Only a specifically justified statistical parser/schema reuse."""
-    return (
-        source == "cbr.corporate_lending.sors_restoration"
-        and target == "cbr.corporate_lending.industries"
-        and module in {
-            "stratbox.domains.cbr.corporate_lending.industries.parser",
-            "stratbox.domains.cbr.corporate_lending.industries.parser.parse_cbr_0105a_debt_corp_excel_bytes",
-            "stratbox.domains.cbr.corporate_lending.industries.schema",
-            "stratbox.domains.cbr.corporate_lending.industries.schema.CBR_0105A_DEBT_CORP_INDUSTRY_SPECS",
+    """Directional published-source reuse, constrained to named semantic modules."""
+    prefix = "stratbox.domains.cbr.corporate_lending.industries.debt_0105a."
+    if source == "cbr.corporate_lending.sors_restoration" and (
+        target == "cbr.corporate_lending.industries.debt_0105a"
+    ):
+        allowed = {
+            "parser": {"", "parse_cbr_0105a_debt_corp_excel_bytes"},
+            "schema": {"", "CBR_0105A_DEBT_CORP_INDUSTRY_SPECS"},
         }
-    )
+        return any(
+            module == prefix + name or module in {
+                prefix + name + "." + symbol for symbol in symbols if symbol
+            }
+            for name, symbols in allowed.items()
+        )
+    if source == "cbr.corporate_lending.industries.issuance_0104" and (
+        target == "cbr.corporate_lending.industries.debt_0105a"
+    ):
+        # Publication 01_04_A uses the same official industry, region,
+        # stream, APK and workbook rules as published in the 01_05_A profile.
+        # Direct use of the debt operation implementation is prohibited.
+        modules = {
+            "contracts", "schema", "regions", "streams", "selection",
+            "derived", "pivots", "export",
+        }
+        return any(
+            module == prefix + name or module.startswith(prefix + name + ".")
+            for name in modules
+        )
+    return False
 
 
 

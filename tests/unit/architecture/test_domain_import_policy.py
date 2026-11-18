@@ -100,3 +100,39 @@ def test_invalid_intermediate_folder_fails_import_checker(tmp_path):
     (series / "__init__.py").write_text("", encoding="utf-8")
     (series / "_registration.py").write_text("", encoding="utf-8")
     assert any("unreachable_manifest" in x for x in checker["check_dependency_direction"]())
+
+
+def test_sors_only_imports_published_debt_parser_schema(tmp_path):
+    checker, domains = _checker(tmp_path)
+    sors = _package(domains, "cbr/corporate_lending/sors_restoration", manifest=True)
+    _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
+    (sors / "allowed.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.parser "
+        "import parse_cbr_0105a_debt_corp_excel_bytes\n",
+        encoding="utf-8",
+    )
+    assert checker["check_dependency_direction"]() == []
+    (sors / "forbidden.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "import operations\n",
+        encoding="utf-8",
+    )
+    assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
+
+
+def test_issuance_cannot_import_debt_operation_implementation(tmp_path):
+    checker, domains = _checker(tmp_path)
+    debt = _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
+    flow = _package(domains, "cbr/corporate_lending/industries/issuance_0104", manifest=True)
+    (flow / "allowed.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "import schema\n",
+        encoding="utf-8",
+    )
+    assert checker["check_dependency_direction"]() == []
+    (flow / "forbidden.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "import operations\n",
+        encoding="utf-8",
+    )
+    assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
