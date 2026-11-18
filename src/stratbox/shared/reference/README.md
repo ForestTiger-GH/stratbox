@@ -9,3 +9,11 @@ Each reference family owns an edition manifest under its `_resources/` directory
 Reading a resource verifies its bytes before parsing and may append an input receipt carrying the edition snapshot identity. Reference material does not independently establish source authority, territorial boundaries or statistical comparability.
 
 [Reference update procedure](../../../../docs/current-how/reference-snapshots-and-update.md)
+
+
+Manifest admission, maintenance staging and wheel inspection now share one
+`parse_reference_manifest()` and a per-family required-role contract.
+Every edition is validated before the active one is selected. Reference
+snapshots use schema 2 and include declared per-asset provenance metadata.
+`qualified_reference_use()` checks the edition, role, media type, exact
+bytes and snapshot of a generic used-input receipt.

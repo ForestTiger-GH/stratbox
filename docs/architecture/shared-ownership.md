@@ -47,3 +47,20 @@ The bank registry contains an official workbook and separately maintained name a
 ## 5. Domain boundary
 
 Parser-local source structures, period restrictions, geographic ordering, numeric parsing, source officialness, crosswalks and metric definitions remain owned by domains. Pilot consumers may request read-only name diagnostics. They do not mutate published literal columns, source codes, observation fact hashes or the CBR 96-row source layout. An unresolved or ambiguous name never yields a fabricated SubjectRef.
+
+
+## 6. Explicit reference-use and SORS boundaries
+
+The package's pure `parse_reference_manifest()` verifies every declared
+edition using the per-family required roles. `ReferenceUse` is a typed
+projection of verified `UsedInputReceipt`, not a second unversioned source
+model. A qualified use includes reference ID, edition, role, exact bytes and
+reference snapshot. Per-asset provenance metadata affects the version-2
+snapshot digest but does not certify publisher origin.
+
+The SORS strict-model identity uses a verified OKVED2 classifier use,
+publication rules, regions/classes, numerical tolerance and meaningful
+constraint settings. Execution identity adds algorithmic options and
+library version. An absent/contradictory classifier receipt is a model
+error. Supplied source bundles require sealed computation evidence before
+cross-invocation replay.

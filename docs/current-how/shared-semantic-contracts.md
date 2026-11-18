@@ -56,3 +56,35 @@ month_end = period_points("M", "2024-01-01", "2024-03-31", anchor="end")
 ## 5. Failure and reproducibility limits
 
 Importing these fundamental contracts does not acquire network data or read the bank workbook. The existence of an identity is distinct from a content qualification; a dataset calculation result is distinct from the representation bytes; and a source-specific code is distinct from a shared territorial ID. Rewriting Python imports alone should not change `operation_id`, numerical results or effect states. The public library does not retain old shared import aliases.
+
+
+## 6. Versioned identity surfaces and runtime observation invariants
+
+Stratbox 0.16.0 explicitly separates the following claims:
+
+- `ByteIdentity`: SHA256 and length of exact bytes; it proves neither source
+  authority nor the meaning of a statistical value.
+- `DatasetVersion`: a content/method projection containing the dataset and
+  release, input roles, exact bytes, resource snapshot versions, method and
+  output. By design its current version-1 manifest excludes the external
+  `source_id` and media type when bytes and roles are otherwise identical.
+- `computation_identity`: a distinct operation identity that additionally
+  includes the source ID, media type, contract/method and relevant parameters.
+- `UsedInputReceipt`: an asserted use of exact bytes, including the optional
+  reference snapshot identity. A receipt alone does not prove publisher
+  authenticity or independent external validation.
+
+Do not change the meaning of an existing `manifest_version` by silently
+altering its hash fields. Introduce an explicit new schema version when a
+dataset's identity surface changes.
+
+`Observation` now rejects unknown value statuses and unintended Python
+booleans or floating-point values. Reported/derived/reconstructed observations
+must carry a permitted value (including integer zero); missing, withheld,
+blank, dash and not-applicable observations carry `None`. A raw token may
+accompany a parsed value without replacing its status.
+
+For reference-sensitive computations, qualify the declared resource through
+`qualified_reference_use(...)`: the returned `ReferenceUse` binds the
+logical reference, edition, role, bytes and selected snapshot. A local role
+such as `data` is never a globally unique classifier identity.

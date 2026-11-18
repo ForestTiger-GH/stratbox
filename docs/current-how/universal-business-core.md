@@ -32,7 +32,7 @@ Stable import owners are `stratbox.shared.identity`, `stratbox.shared.evidence`,
 explicit edition manifest, with four separately pinned assets. Rosstat OKVED2
 is read from its own three-asset edition. The territory name resolver is a
 read-only, conservative association of published labels and reviewed identities;
-it is not a crosswalk for a domain's statistical aggregates.
+it is not a crosswalk for a domain's statistical aggregates. Supplied matching rules are validated and content-fingerprinted; source- and perimeter-restricted aliases require explicit matching context.
 
 See [shared contracts](shared-semantic-contracts.md),
 [reference editions](reference-snapshots-and-update.md), and
@@ -131,3 +131,13 @@ fail with typed diagnostics; no implicit partial workbook is returned.
 For reproducible local timings without network I/O, run
 `python benchmarks/cbr_industries_history.py --debt-dir PATH --issuance-dir PATH`.
 The report includes source hashes, operation versions, timings, RSS and result hashes.
+
+
+## SORS reproducibility
+
+The source loading operation records the exact OKVED2 classifier material
+and the edition snapshot as input evidence. SORS strict-model identity
+includes the fully qualified classifier use and numerical/model parameters.
+The execution identity separately includes solver/optimization settings.
+Manually supplied `SorsSourceBundle` instances must carry sealed computation
+evidence, and invalid or absent reference evidence fails explicitly.

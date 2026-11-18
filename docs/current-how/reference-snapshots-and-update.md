@@ -34,7 +34,7 @@ assert inputs[0].version == bundle.snapshot_identity
 bundle.validate_all()
 ```
 
-For domain usage, pass `inputs=...` to `banks.registry.read()` or `okved2.registry.read()`; the role of each actually consumed file is retained. An unchanged asset file can appear in two editions, but the editions have different snapshot identities when their role mapping or edition IDs differ.
+For domain usage, pass `inputs=...` to `banks.registry.read()` or `okved2.registry.read()`; the role of each actually consumed file is retained. An unchanged asset file can appear in two editions. The version-2 reference snapshot hashes edition identity, role/path/bytes and declared provenance metadata, so distinct editions or material attribution changes produce distinct snapshots.
 
 ## 3. Updating a reference edition
 
@@ -44,7 +44,7 @@ For domain usage, pass `inputs=...` to `banks.registry.read()` or `okved2.regist
 4. Compute `sha256` on **the original bytes** and record the exact byte `size`; for CSV never hash a silently transcoded UTF-8 string. Preserve format encoding as the owner expects.
 5. Record `publisher`, `source_url`, `published_at`, `effective_from` and `effective_to` only where verified. Use JSON `null` when those facts are unknown. The date encoded in a filename is merely a hint.
 6. Change `active_edition` to the new exact edition identifier, without deleting an earlier valid edition needed for reproducibility.
-7. Validate all roles and the parsed table/aliases against offline tests. Reject duplicate aliases with conflicting subjects or duplicate roles.
+7. Validate every historical edition, every role/path, every new candidate and all local resource bytes before writing. The same pure `parse_reference_manifest()` contract is used by runtime, staging and wheel validation. Reject duplicate paths as well as roles, unknown families, incomplete role sets and invalid metadata.
 8. Build a distribution wheel, install it into a clean environment, and verify every declared file's SHA256 and size using `load_reference(...).validate_all()` before shipping.
 
 A change to user-chosen bank selection or aliases is a new policy edition even if the official workbook stays unchanged. A territory-name change that asserts a new identity must have its own rule ID and review basis. An OKVED2 resource update does not automatically justify different industry aggregation methods.
@@ -92,3 +92,25 @@ verification after installing the built wheel outside the checkout. An installed
 ## 6. Limits and errors
 
 A digest proves byte equality to a pinned manifest claim, not the origin or normative currentness of the underlying file. A statistical reference cannot infer the published perimeter of a concrete dataset. Absence of a required asset and hash mismatch fail explicitly; a structurally invalid CSV cannot be converted silently to an empty authoritative reference. Name ambiguities and out-of-scope historical labels remain unresolved until a reviewed rule and source context are provided.
+
+
+## 7. Resource provenance and assurance
+
+A composite bank edition has a curator separate from asset publishers. The
+current bank edition identifies its official XLSX as a Bank of Russia
+publication, while aliases and selection lists are curated policies. Asset
+metadata can include `publisher`, `curator`, `source_url` and
+`origin_kind`. These are declared attributes included in the reference
+snapshot, not cryptographic proof that a third-party publisher authored a file.
+
+A reference-update stage validates the entire existing history, detects two
+new roles mapped to the same path, checks new bytes and checks the complete
+candidate manifest **before** atomic replacement. Do not edit previously
+published asset bytes in place. Existing historical edition assets may be
+shared across newer editions as exact immutable files.
+
+`inspect_reference_wheel.py` validates all edition manifests with the
+canonical parser, checks all referenced bytes and rejects duplicate ZIP
+member names and undeclared resources. It is intended for an actual built
+wheel as well as controlled negative ZIP fixtures. The former must be
+verified in a local release check before distribution.

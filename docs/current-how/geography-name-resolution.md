@@ -47,3 +47,28 @@ The name `Москва` is not interchangeable with `Московская обл
 ## 5. Domain pilots
 
 The FNS SME parser offers `inspect_region_names(rows)`; it preserves FNS `ssrf` identifiers and produces read-only `RegionNameMatch` diagnostics. Escrow provides `inspect_escrow_region_names(rows)`, retaining row objects and their hierarchy. CBR 01_05_A source names reuse the shared Unicode normalization key, while preserving 96 independent row IDs and its own accepted aliases. The FNS 1-YUR and CBR regional offices parsers expose read-only `inspect_fns_1yur_region_names(names)` and `inspect_offices_reg_region_names(names)`. All source-specific sorting, aggregates, literal CSV representations, period rules and economic facts remain unchanged.
+
+
+## 6. Qualified rulesets and fail-closed context
+
+A source-specific alias requires a matching `RegionNameContext.source_family`.
+A perimeter-specific rule requires the matching `perimeter_hint`. A
+date-bound rule requires an `as_of` date within its declared validity; a
+verified code requires an explicitly declared code namespace. Missing context
+does not broaden a restricted rule into a universal one.
+
+Both packaged and explicitly supplied `RegionNameRule` sequences pass the
+same validator, including `review_basis`, stable rule IDs, supported kinds
+and valid dates. Supplied rules cannot claim a packaged edition name. They
+receive a deterministic content-derived ID independent of input sequence
+ordering.
+
+A `RegionNameMatch` exposes `ruleset_identity`, `provenance`
+(`packaged` or `supplied`), and—only when bundled—a logical reference ID
+and the edition snapshot identity. This is an identity claim for the used
+rule set, not proof that its assertions are substantively correct.
+
+Name lookup is indexed by the lexical key; contextual admission still
+happens against every candidate. The deliberately small starter corpus
+contains 15 reviewed rows. Domain-local statistical perimeters and
+territorial inclusion/exclusion remain separate from this general resolver.
