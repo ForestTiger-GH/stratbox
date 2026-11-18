@@ -113,6 +113,9 @@ class RegionNameResolver:
                 f"{r.subject_namespace}:{r.subject_id}:{r.perimeter_id or ''}" for r in matches
             )))
         winner = min(matches, key=lambda rule: (
+            -(rule.source_family is not None),
+            -(rule.perimeter_id is not None),
+            -(rule.effective_from is not None or rule.effective_to is not None),
             normalize_region_label(rule.alias) != normalize_region_label(rule.canonical_name),
             rule.rule_id,
         ))

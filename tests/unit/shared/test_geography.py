@@ -136,3 +136,18 @@ def test_region_context_rejects_invalid_scopes_before_matching():
         RegionNameContext(source_family=" ")
     with pytest.raises(ValueError, match="nonempty"):
         RegionNameContext(source_code="")
+
+
+def test_specific_verified_rule_takes_precedence_without_rewriting_subject():
+    rules = (
+        RegionNameRule("general", "Theta", "Theta", "example", "1", "subject",
+                       review_basis="fixture"),
+        RegionNameRule("cbr", "Theta", "Theta", "example", "1", "subject",
+                       source_family="cbr", review_basis="fixture"),
+    )
+    resolver = RegionNameResolver(rules=rules)
+    general = resolver.resolve("Theta")
+    specific = resolver.resolve("Theta", context=RegionNameContext(source_family="cbr"))
+    assert general.matched_rule_id == "general"
+    assert specific.matched_rule_id == "cbr"
+    assert general.subject == specific.subject
