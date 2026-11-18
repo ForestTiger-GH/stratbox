@@ -32,7 +32,7 @@ from .contracts import (
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpPivotSetResult,
 )
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.selection import resolve_industry_codes, selection_parameters
+from .selection import resolve_industry_codes, selection_parameters
 from stratbox.domains.cbr.corporate_lending.industries.common.contracts import IndustrySelection
 from stratbox.domains.cbr.corporate_lending.industries.common.operation_helpers import (
     _TABLE_LIMITS, _seal_pivots, _select_industry, _stream_metadata,

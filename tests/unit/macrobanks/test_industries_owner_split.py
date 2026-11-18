@@ -7,7 +7,7 @@ from stratbox.domains.cbr.corporate_lending.industries import (
     debt_0105a, issuance_0104,
 )
 from stratbox.domains.cbr.corporate_lending.industries.common import (
-    operation_helpers, parsing, normalization, contracts, streams,
+    operation_helpers, parsing, normalization, contracts, streams, rendering,
 )
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
     operations as debt_operations,
@@ -62,3 +62,61 @@ def test_shared_selection_and_stream_schema_are_family_owned():
     )
     assert derived.STREAM_COLUMNS is streams.STREAM_COLUMNS
     assert "source_sha256" in streams.STREAM_COLUMNS
+
+def test_excel_grid_renderer_is_shared_without_stock_private_imports():
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
+        export as debt_export,
+    )
+    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
+        export as issuance_export,
+    )
+    assert debt_export._write_cbr_industry_sheet is rendering._write_cbr_industry_sheet
+    assert issuance_export._write_cbr_industry_sheet is rendering._write_cbr_industry_sheet
+    assert debt_export._industry_table_dates is rendering._industry_table_dates
+    assert issuance_export._industry_table_dates is rendering._industry_table_dates
+
+
+def test_shared_grid_date_columns_reject_ambiguous_multi_value_columns():
+    from types import SimpleNamespace
+
+    import pandas as pd
+    from pytest import raises
+
+    sheet = SimpleNamespace(
+        data_columns=2,
+        df_table=pd.DataFrame({
+            "region_name": ["Россия"],
+            "2026-06-01": [1.0],
+            "2026-07-01": [2.0],
+        }),
+    )
+    assert rendering._industry_table_dates(sheet) == ("2026-06-01", "2026-07-01")
+    sheet.data_columns = 0
+    with raises(ValueError, match="no date columns"):
+        rendering._industry_table_dates(sheet)
+
+def test_both_series_share_exact_industry_selection_semantics():
+    from stratbox.domains.cbr.corporate_lending.industries.common import (
+        selection as shared_selection,
+    )
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
+        selection as stock_selection,
+    )
+    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
+        selection as flow_selection,
+    )
+
+    chosen = contracts.IndustrySelection(("apk", "total"))
+    assert stock_selection.resolve_industry_codes(chosen) == (
+        flow_selection.resolve_industry_codes(chosen)
+    )
+    assert stock_selection.selection_parameters(chosen) == (
+        flow_selection.selection_parameters(chosen)
+    )
+    assert stock_selection.SELECTION_METHOD == shared_selection.SELECTION_METHOD
+    for invalid in (("total", "total"), ("unknown",)):
+        from pytest import raises
+        with raises(ValueError, match="Invalid industry selection"):
+            stock_selection.resolve_industry_codes(contracts.IndustrySelection(invalid))
+        with raises(ValueError, match="Invalid industry selection"):
+            flow_selection.resolve_industry_codes(contracts.IndustrySelection(invalid))

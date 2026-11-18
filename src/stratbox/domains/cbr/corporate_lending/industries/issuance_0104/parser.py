@@ -13,7 +13,7 @@ from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpValidationIssue, IndustrySelection
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.selection import resolve_industry_codes
+from .selection import resolve_industry_codes
 from stratbox.domains.cbr.corporate_lending.industries.common.parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
     _region_names, _match_sheet_regions, _sheet_rows, _check_published_unit,

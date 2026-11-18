@@ -136,3 +136,16 @@ def test_issuance_cannot_import_debt_operation_implementation(tmp_path):
         encoding="utf-8",
     )
     assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
+
+def test_issuance_cannot_import_stock_private_export_or_selection(tmp_path):
+    checker, domains = _checker(tmp_path)
+    flow = _package(domains, "cbr/corporate_lending/industries/issuance_0104", manifest=True)
+    _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
+    (flow / "bad.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "import export, selection\n",
+        encoding="utf-8",
+    )
+    problems = checker["check_dependency_direction"]()
+    assert any("cross-domain import" in message and "export" in message for message in problems)
+    assert any("cross-domain import" in message and "selection" in message for message in problems)

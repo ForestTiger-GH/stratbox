@@ -199,8 +199,7 @@ def _approved_inter_owner_reference(source: str, target: str, module: str) -> bo
         # stream, APK and workbook rules as published in the 01_05_A profile.
         # Direct use of the debt operation implementation is prohibited.
         modules = {
-            "contracts", "schema", "regions", "streams", "selection",
-            "derived", "pivots", "export",
+            "contracts", "schema", "regions", "derived", "pivots",
         }
         return any(
             module == prefix + name or module.startswith(prefix + name + ".")
