@@ -39,6 +39,8 @@ class RegionNameResolver:
                  rule.source_family == context.source_family)
             and (context.observed_kind is None or rule.kind == context.observed_kind)
             and (context.perimeter_hint is None or rule.perimeter_id == context.perimeter_hint)
+            and (context.as_of is not None or (
+                rule.effective_from is None and rule.effective_to is None))
             and (context.as_of is None or (
                 (rule.effective_from is None or context.as_of >= rule.effective_from) and
                 (rule.effective_to is None or context.as_of <= rule.effective_to)))
@@ -51,7 +53,7 @@ class RegionNameResolver:
                      r.subject_namespace == context.code_namespace for r in self.rules)
             ) else "unmatched"
             return RegionNameMatch(name, key, status, None, None, None, self.edition_id)
-        identities = {(r.subject_namespace, r.subject_id, r.perimeter_id) for r in matches}
+        identities = {(r.subject_namespace, r.subject_id, r.perimeter_id, r.canonical_name) for r in matches}
         if len(identities) != 1:
             return RegionNameMatch(name, key, "ambiguous", None, None, None,
                 self.edition_id, candidates=tuple(sorted(

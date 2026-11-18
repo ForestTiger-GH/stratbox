@@ -28,6 +28,8 @@ def test_bank_resolution_reports_explicit_alias():
     assert decision.display_name == "СБЕР"
     assert decision.raw_name == "СБЕРБАНК"
     assert decision.policy_edition_id == "fixture"
+    assert resolve_bank_name("UNKNOWN", aliases={"СБЕРБАНК": "СБЕР"}).match_kind == "unmatched"
+    assert resolve_bank_name("СБЕР", aliases={"СБЕРБАНК": "СБЕР"}).match_kind == "exact"
 
 
 def test_default_bundled_bank_names_use_verified_aliases():

@@ -71,6 +71,7 @@ def test_ambiguous_alias_and_time_scope_are_explicit():
     only_2020 = RegionNameRule("historical", "Earlier", "Earlier", "example", "7",
                                "subject", effective_from=date(2020, 1, 1), effective_to=date(2020, 12, 31))
     history = RegionNameResolver(rules=(only_2020,))
+    assert history.resolve("Earlier").status == "out_of_scope"  # Date is required for dated rules.
     assert history.resolve("Earlier", context=RegionNameContext(as_of=date(2020, 6, 1))).status == "exact"
     assert history.resolve("Earlier", context=RegionNameContext(as_of=date(2026, 6, 1))).status == "out_of_scope"
 

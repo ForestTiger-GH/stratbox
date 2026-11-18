@@ -211,5 +211,6 @@ def resolve_bank_name(value: str, *, aliases: Mapping[str, str],
         raise TypeError("Bank name must be a string")
     key = normalize_bank_spelling(value, placement, case_mode, drop_bank)
     displayed = normalize_bank_name(value, placement, case_mode, drop_bank, aliases=aliases)
-    kind = "unmatched" if key is None else "alias" if displayed != key else "exact"
+    admitted = aliases is not None and (key in aliases or key in aliases.values())
+    kind = "unmatched" if not admitted else "alias" if displayed != key else "exact"
     return BankNameResolution(value, key, displayed, kind, policy_edition_id)
