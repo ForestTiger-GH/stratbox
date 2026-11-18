@@ -120,3 +120,33 @@ def test_both_series_share_exact_industry_selection_semantics():
             stock_selection.resolve_industry_codes(contracts.IndustrySelection(invalid))
         with raises(ValueError, match="Invalid industry selection"):
             flow_selection.resolve_industry_codes(contracts.IndustrySelection(invalid))
+
+
+def test_common_structural_types_are_owned_by_family_not_by_stock_series():
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
+        contracts as stock,
+    )
+    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
+        contracts as flow,
+    )
+
+    assert stock.Cbr0105ADebtCorpIndustrySpec is contracts.IndustrySpec
+    assert stock.Cbr0105ADebtCorpRegionSpec is contracts.IndustryRegionSpec
+    assert stock.Cbr0105ADebtCorpValidationIssue is contracts.IndustryValidationIssue
+    assert stock.Cbr0105ADebtCorpApkCalculationResult is contracts.IndustryApkCalculationResult
+    assert stock.Cbr0105ADebtCorpPivotRequest is contracts.IndustryPivotRequest
+    assert stock.Cbr0105ADebtCorpPivotSetResult is contracts.IndustryPivotSetResult
+    assert flow.IndustrySpec is contracts.IndustrySpec
+    assert flow.RegionSpec is contracts.IndustryRegionSpec
+    assert flow.ValidationIssue is contracts.IndustryValidationIssue
+    assert flow.IndustryPivotRequest is contracts.IndustryPivotRequest
+
+
+def test_issuance_uses_common_contracts_not_stock_owner_contracts():
+    owner = Path(__file__).resolve().parents[3] / (
+        "src/stratbox/domains/cbr/corporate_lending/industries/issuance_0104"
+    )
+    for module in ("contracts.py", "parser.py", "operations.py"):
+        assert "industries.debt_0105a.contracts" not in (
+            owner / module
+        ).read_text(encoding="utf-8")

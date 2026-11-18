@@ -8,6 +8,9 @@ series have local `_registration.py` declarations. Shared industry selection, ce
 and operation evidence helpers reside in `industries.common`; the issuance
 adapter also uses the explicitly identified reference industry, geography
 and APK profiles of `industries.debt_0105a`.
+Structural industry, region, validation, APK result and pivot result contracts
+are owned by `industries.common.contracts`; shared structural shapes do not
+make stock and flow equivalent or imply an unreviewed publication profile.
 
 ## Public operations
 

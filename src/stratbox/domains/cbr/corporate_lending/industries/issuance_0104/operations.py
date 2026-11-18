@@ -29,8 +29,8 @@ from .contracts import (
     IssuanceWorkbooksResult, ParseIssuanceRequest, ParsedIssuanceFile,
     PivotIssuanceRequest,
 )
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
-    Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpPivotSetResult,
+from ..common.contracts import (
+    IndustryApkCalculationResult, IndustryPivotSetResult, IndustryPivotRequest,
 )
 from .selection import resolve_industry_codes, selection_parameters
 from stratbox.domains.cbr.corporate_lending.industries.common.contracts import IndustrySelection
@@ -50,10 +50,10 @@ BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 3, "cbr-0104a-str
                                    BuildIssuanceStreamRequest, IssuanceStreamResult,
                                    partial_allowed=True, limits=_TABLE_LIMITS)
 CALCULATE_APK = OperationDefinition(f"{_DATASET}.calculate_apk", 2, "cbr-industry-apk-1",
-                                    CalculateIssuanceApkRequest, Cbr0105ADebtCorpApkCalculationResult,
+                                    CalculateIssuanceApkRequest, IndustryApkCalculationResult,
                                     limits=_TABLE_LIMITS)
 PIVOT = OperationDefinition(f"{_DATASET}.build_pivots", 2, "cbr-industry-pivot-1",
-                            PivotIssuanceRequest, Cbr0105ADebtCorpPivotSetResult, limits=_TABLE_LIMITS)
+                            PivotIssuanceRequest, IndustryPivotSetResult, limits=_TABLE_LIMITS)
 RENDER_INDUSTRY = OperationDefinition(f"{_DATASET}.render_industry", 2, "cbr-0104a-xlsx-1",
                                       IssuanceWorkbookRequest, IssuanceWorkbookResult, limits=_TABLE_LIMITS)
 
@@ -284,7 +284,6 @@ def build_pivots(request: PivotIssuanceRequest, *, context: ExecutionContext | N
 
 def _render_one_issuance(source, private_stream, industry_code, include_metadata_sheet, invocation, periods):
     """Build from an admitted private snapshot; one implementation for one or many books."""
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import Cbr0105ADebtCorpPivotRequest
     from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import (
         Cbr0105ADebtCorpPivotError, build_cbr_0105a_debt_corp_pivot_set,
     )
@@ -301,7 +300,7 @@ def _render_one_issuance(source, private_stream, industry_code, include_metadata
     try:
         tables = build_cbr_0105a_debt_corp_pivot_set(
             selected,
-            Cbr0105ADebtCorpPivotRequest(
+            IndustryPivotRequest(
                 "region_code", "report_date",
                 sheet_dimensions=("measure", "currency_scope"), max_sheet_count=3,
             ),
