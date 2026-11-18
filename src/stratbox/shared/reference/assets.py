@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from importlib import resources
 import json
@@ -33,6 +33,7 @@ class ReferenceEdition:
     schema_version: int
     assets: tuple[ReferenceAsset, ...]
     publisher: str | None = None
+    source_url: str | None = None
     published_at: date | None = None
     effective_from: date | None = None
     effective_to: date | None = None
@@ -61,7 +62,10 @@ class LoadedReference:
             raise ReferenceError(f"Reference asset integrity mismatch: {self.edition.reference_id}:{role}")
         if inputs is not None:
             source_id = f"{self.edition.reference_id}:{self.edition.edition_id}:{role}"
-            inputs.append(UsedInputReceipt.for_payload(SourcePayload(data, asset.media_type, source_id), role))
+            inputs.append(replace(
+                UsedInputReceipt.for_payload(SourcePayload(data, asset.media_type, source_id), role),
+                version=self.snapshot_identity,
+            ))
         return data
 
     def validate_all(self) -> None:
@@ -103,13 +107,21 @@ def load_reference(package: str, *, edition_id: str | None = None) -> LoadedRefe
                 raise ReferenceError("Duplicate/invalid asset role or path")
             roles.add(role)
             paths.add(path)
+            mandatory = item.get("required", True)
+            if type(mandatory) is not bool:
+                raise ReferenceError("Reference asset required flag must be a boolean")
             assets.append(ReferenceAsset(role, package, path, item["media_type"],
-                ByteIdentity(item["sha256"], item["size"]), bool(item.get("required", True))))
+                ByteIdentity(item["sha256"], item["size"]), mandatory))
         if not assets:
             raise ReferenceError("Empty reference edition")
         reference_id = index["reference_id"]
+        if not isinstance(reference_id, str) or not reference_id.startswith("reference."):
+            raise ReferenceError("Invalid reference identity")
+        if not isinstance(selected, str) or not selected:
+            raise ReferenceError("Invalid edition identity")
         edition = ReferenceEdition(reference_id, selected, 1, tuple(assets),
-            entry.get("publisher"), date.fromisoformat(entry["published_at"]) if entry.get("published_at") else None,
+            entry.get("publisher"), entry.get("source_url"),
+            date.fromisoformat(entry["published_at"]) if entry.get("published_at") else None,
             date.fromisoformat(entry["effective_from"]) if entry.get("effective_from") else None,
             date.fromisoformat(entry["effective_to"]) if entry.get("effective_to") else None)
         snapshot_manifest = {

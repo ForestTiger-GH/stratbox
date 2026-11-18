@@ -64,7 +64,10 @@ def _end(freq: Freq, value: date) -> date:
     if freq == "M":
         return date(value.year, value.month, calendar.monthrange(value.year, value.month)[1])
     if freq == "W":
-        return value + timedelta(days=6 - value.weekday())
+        try:
+            return value + timedelta(days=6 - value.weekday())
+        except OverflowError:
+            return date.max
     return value
 
 

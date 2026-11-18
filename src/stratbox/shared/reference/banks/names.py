@@ -12,23 +12,11 @@ def normalize_bank_spelling(
     case_mode: str = "upper",    # 'upper' | 'preserve'
     drop_bank: str = "left"      # 'keep' | 'left' | 'right' | 'both'
 ):
-    """
-    Нормализует наименование банка.
+    """Normalize whitespace, legal-form tags and display placement only.
 
-    Стратегия:
-    1) техническая чистка строки (пробелы/тире/кавычки/мусор)
-    2) приведение полных юр.форм к тегам (ПАО/АО/ООО/НКО/...)
-    3) спец-кейсы (НРД/НРЦ/ПРЦ)
-    4) сборка результата по placement
-    5) (опционально) удаление слова "БАНК" по краям
-    6) финальная канонизация через replacements (alias -> canon)
-
-    Реестр replacements должен содержать "как нам надо видеть" итоговые имена:
-    - например: canon=СБЕР, alias=СБЕРБАНК
-    - canon=ТБАНК, alias=Т-БАНК
-    и т.п.
+    Alias policy is a separately supplied mapping and never loaded implicitly.
     """
-    # pandas поддерживается опционально (если установлен)
+    # pandas is optional during vectorized operations. опционально (если установлен)
     try:
         import pandas as pd
         HAS_PD = True
