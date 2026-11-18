@@ -145,3 +145,13 @@ def test_strict_identity_fingerprints_classifier_byte_and_edition_changes(monkey
     assert changed_policy[0] == baseline[0]
     assert changed_policy[1] != baseline[1]
     assert changed_policy[1] != changed_bytes[1]
+
+
+def test_sors_rejects_invalid_published_source_manifest():
+    source = _bundle((_classifier(),))
+    config = SorsRunConfig(as_of_date="2026-06-01")
+    malformed = replace(source, source_manifest_grid=pd.DataFrame([
+        {"source_series": "01_05_A", "sha256": None}
+    ]))
+    with pytest.raises(ValueError, match="unqualified source"):
+        _identities(malformed, config)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 from dataclasses import asdict, is_dataclass
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -89,8 +90,16 @@ def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, s
     v2 includes the exact packaged classifier evidence and all parameter
     surfaces which influence strict or algorithmic computations.
     """
-    manifest = bundle.source_manifest_grid.sort_values("source_series")
+    manifest = bundle.source_manifest_grid
+    if not {"source_series", "sha256"}.issubset(manifest.columns):
+        raise ValueError("SORS source manifest requires series and SHA256")
+    manifest = manifest.sort_values("source_series")
     source_rows = manifest[["source_series", "sha256"]].to_dict("records")
+    for row in source_rows:
+        if (not isinstance(row["source_series"], str) or not row["source_series"]
+                or not isinstance(row["sha256"], str)
+                or re.fullmatch(r"[0-9a-f]{64}", row["sha256"]) is None):
+            raise ValueError("SORS source manifest has an unqualified source identity")
     if len(set(manifest["source_series"])) != len(manifest):
         raise ValueError("SORS source manifest has duplicate series")
     dataset_id = _hash_payload({
