@@ -6,7 +6,7 @@ from typing import Literal
 from stratbox.core.storage.filestore import FileVersion
 from stratbox.core.storage.filestore.paths import child_path
 from stratbox.core.storage.bytes import inspect_file_version
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import OperationFailure
 
 from .filename_scheme import build_internal_file_name

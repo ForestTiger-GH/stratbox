@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from stratbox.core.network import RetryPolicy
-from stratbox.shared.data import AcquiredSource
+from stratbox.shared.evidence import AcquiredSource
 from stratbox.core.operations.source.originals import OriginalDestination, StoredOriginal
 
 

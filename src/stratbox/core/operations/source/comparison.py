@@ -4,7 +4,8 @@ import csv
 import json
 from io import StringIO
 
-from stratbox.shared.data import Comparison, ComparisonCoverage, ComparisonLayers, UsedInputReceipt, compare_releases
+from stratbox.shared.data.comparison import Comparison, ComparisonCoverage, ComparisonLayers, compare_releases
+from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.data.releases import CompareReleaseRequest, ParsedRelease
 
 from stratbox.core.execution.contracts import OperationFailure

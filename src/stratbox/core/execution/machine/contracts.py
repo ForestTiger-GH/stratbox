@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Callable, Mapping, Protocol
 
 from stratbox.core.storage.filestore import FileStore
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.releases import ParsedRelease
 from stratbox.core.execution import ExecutionContext, OperationResult
 

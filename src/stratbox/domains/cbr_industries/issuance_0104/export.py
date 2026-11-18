@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
-from stratbox.shared.data import Representation
+from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.representation import XLSX
 from stratbox.domains.cbr_industries.export import (
     _industry_table_dates, _write_cbr_industry_sheet,

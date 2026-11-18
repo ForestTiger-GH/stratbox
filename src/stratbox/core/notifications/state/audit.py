@@ -1,7 +1,7 @@
 """Immutable lifecycle observations coupled to state transitions."""
 from datetime import datetime
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import Correlation
 from stratbox.core.observability import DomainFact, JournalRecord, ObjectRef, make_fact_id, record_from_fact
 

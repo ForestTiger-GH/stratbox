@@ -6,7 +6,7 @@ from io import StringIO
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.core.limits import BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import Representation
+from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.representation import CSV, XLSX
 
 

@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains import cbr_industries as industries
 
 

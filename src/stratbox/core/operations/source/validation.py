@@ -2,7 +2,7 @@
 
 import re
 
-from stratbox.shared.data import SourcePayload, UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 from stratbox.core.execution.contracts import OperationFailure
 from stratbox.core.execution.runner import Invocation
