@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from stratbox.shared.identity import ByteIdentity
 from typing import Mapping, Literal
 import re
 
@@ -178,6 +179,8 @@ class BankNameResolution:
     display_name: str | None
     match_kind: Literal["exact", "alias", "unmatched"]
     policy_edition_id: str | None = None
+    reference_id: str | None = None
+    policy_snapshot_identity: ByteIdentity | None = None
 
 
 def normalize_bank_name(name, placement: str = "omit", case_mode: str = "upper",

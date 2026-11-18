@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from io import BytesIO, StringIO
+from dataclasses import dataclass
+from typing import Literal
+from stratbox.shared.data.observations import SubjectRef
+from stratbox.shared.identity import ByteIdentity
 import csv
 import json
 import re
@@ -10,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.reference.assets import LoadedReference, ReferenceError, load_reference
-from .names import normalize_bank_spelling, normalize_bank_name
+from .names import normalize_bank_spelling, normalize_bank_name, resolve_bank_name, BankNameResolution
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -90,31 +94,90 @@ def _legacy_sort(bundle: LoadedReference, inputs):
     return result
 
 
-def read(*, inputs: list[UsedInputReceipt] | None = None, edition_id: str | None = None):
-    """Build the bank profile from a complete, byte-verified bundled edition."""
+def read_official_registry(*, inputs: list[UsedInputReceipt] | None = None,
+                           edition_id: str | None = None):
+    """Official publisher table, independent of bank alias/selection policies."""
     import pandas as pd
     bundle = load_reference(_PACKAGE, edition_id=edition_id)
-    # Every declared resource participates in the returned profile.
     raw = bundle.read("official_xlsx", inputs=inputs)
-    df = pd.read_excel(BytesIO(raw))
-    cols = {str(c).lower(): c for c in df.columns}
+    frame = pd.read_excel(BytesIO(raw))
+    cols = {str(c).lower(): c for c in frame.columns}
     if not {"cregnum", "bnk_name"}.issubset(cols):
         raise ReferenceError("Official bank workbook requires cregnum/bnk_name columns")
-    aliases, by_canon = _aliases(bundle, inputs)
-    selected = _enabled_selection(bundle, aliases, inputs)
-    legacy = _legacy_sort(bundle, inputs)
-    out = df.copy()
+    out = frame.copy()
     out["regn"] = out[cols["cregnum"]].map(_registration_number)
     out["bank_name"] = out[cols["bnk_name"]].astype(str).str.strip()
-    out["bank_name_norm"] = out["bank_name"].map(lambda value: normalize_bank_name(value, aliases=aliases))
-    out["is_canonical"] = out["bank_name_norm"].isin(selected)
-    out["replacements_list"] = out["bank_name_norm"].map(lambda value: by_canon.get(value, []))
-    out["replacements_json"] = out["replacements_list"].map(lambda values: json.dumps(values, ensure_ascii=False))
-    sort = out["regn"].map(legacy)
-    out["is_legacy"] = sort.astype(object).where(pd.notna(sort), False)
     if "lic_status" in cols:
         out["lic_status"] = out[cols["lic_status"]]
     return out
+
+
+def build_bank_profile(official, *, aliases: dict[str, str],
+                       by_canon: dict[str, list[str]], selected: set[str],
+                       legacy: dict[str, int]):
+    """Derived profile without hidden resource access."""
+    import pandas as pd
+    out = official.copy()
+    out["bank_name_norm"] = out["bank_name"].map(
+        lambda value: normalize_bank_name(value, aliases=aliases)
+    )
+    out["is_canonical"] = out["bank_name_norm"].isin(selected)
+    out["replacements_list"] = out["bank_name_norm"].map(
+        lambda value: by_canon.get(value, [])
+    )
+    out["replacements_json"] = out["replacements_list"].map(
+        lambda values: json.dumps(values, ensure_ascii=False)
+    )
+    sort = out["regn"].map(legacy)
+    out["is_legacy"] = sort.astype(object).where(pd.notna(sort), False)
+    return out
+
+
+def read(*, inputs: list[UsedInputReceipt] | None = None, edition_id: str | None = None):
+    """Compose official registry plus explicit policy resources."""
+    bundle = load_reference(_PACKAGE, edition_id=edition_id)
+    official = read_official_registry(inputs=inputs, edition_id=bundle.edition.edition_id)
+    aliases, by_canon = _aliases(bundle, inputs)
+    selected = _enabled_selection(bundle, aliases, inputs)
+    legacy = _legacy_sort(bundle, inputs)
+    return build_bank_profile(
+        official, aliases=aliases, by_canon=by_canon, selected=selected, legacy=legacy
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class BankEntityResolution:
+    raw_registration: str
+    status: Literal["matched", "unmatched", "ambiguous"]
+    subject: SubjectRef | None
+    bank_name: str | None
+    reference_id: str
+    reference_edition_id: str
+    reference_snapshot_identity: ByteIdentity
+
+
+def resolve_bank_entity(regn: str, *, inputs: list[UsedInputReceipt] | None = None,
+                        edition_id: str | None = None) -> BankEntityResolution:
+    """Resolve only a CBR registration number; bank display names are not identities."""
+    if not isinstance(regn, str) or not regn.strip():
+        raise ValueError("Bank registration identifier must be a nonempty string")
+    bundle = load_reference(_PACKAGE, edition_id=edition_id)
+    official = read_official_registry(inputs=inputs, edition_id=bundle.edition.edition_id)
+    key = _registration_number(regn)
+    rows = official[official["regn"] == key]
+    if rows.empty:
+        return BankEntityResolution(regn, "unmatched", None, None,
+                                    bundle.edition.reference_id, bundle.edition.edition_id,
+                                    bundle.snapshot_identity)
+    if len(rows) != 1:
+        return BankEntityResolution(regn, "ambiguous", None, None,
+                                    bundle.edition.reference_id, bundle.edition.edition_id,
+                                    bundle.snapshot_identity)
+    return BankEntityResolution(
+        regn, "matched", SubjectRef("cbr.bank.registration", key),
+        str(rows.iloc[0]["bank_name"]), bundle.edition.reference_id,
+        bundle.edition.edition_id, bundle.snapshot_identity,
+    )
 
 
 def lookup(regn: str, *, edition_id: str | None = None) -> dict | None:
@@ -125,8 +188,20 @@ def lookup(regn: str, *, edition_id: str | None = None) -> dict | None:
     return None if hit.empty else hit.iloc[0].to_dict()
 
 
-def normalize_registered_bank(name, *, edition_id: str | None = None):
-    """Convenience operation explicitly declaring reference asset access."""
+def normalize_registered_bank(name, *, edition_id: str | None = None,
+                              inputs: list[UsedInputReceipt] | None = None):
+    """Display-oriented composition; caller may collect the exact policy receipt."""
     bundle = load_reference(_PACKAGE, edition_id=edition_id)
-    aliases, _ = _aliases(bundle)
+    aliases, _ = _aliases(bundle, inputs)
     return normalize_bank_name(name, aliases=aliases)
+
+
+def resolve_registered_bank(name: str, *, edition_id: str | None = None,
+                            inputs: list[UsedInputReceipt] | None = None) -> BankNameResolution:
+    """Policy-qualified bank name decision with reference snapshot and evidence."""
+    bundle = load_reference(_PACKAGE, edition_id=edition_id)
+    aliases, _ = _aliases(bundle, inputs)
+    result = resolve_bank_name(name, aliases=aliases, policy_edition_id=bundle.edition.edition_id)
+    from dataclasses import replace
+    return replace(result, reference_id=bundle.edition.reference_id,
+                   policy_snapshot_identity=bundle.snapshot_identity)
