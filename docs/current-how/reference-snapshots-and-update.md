@@ -127,7 +127,7 @@ exact resource inspection in both archives and an isolated installed-wheel
 base import with all three packaged references.
 
 The command writes a structured JSON report under
-`.tmp/shared-release-check.json`; a failing step is recorded and returns a
+the operating system temporary directory as `stratbox-shared-release-check.json`; a failing step is recorded and returns a
 non-zero code. Execute it under Python 3.10, 3.11, and 3.12 for the supported
 matrix, keeping individual `--report` paths for each interpreter. It does not
 start, depend on or monitor a remote workflow.

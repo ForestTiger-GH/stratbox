@@ -117,7 +117,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path,
-                        default=ROOT / ".tmp" / "shared-release-check.json")
+                        default=Path(tempfile.gettempdir()) / "stratbox-shared-release-check.json")
     parser.add_argument("--skip-full-pytest", action="store_true",
                         help="Diagnostic only: full acceptance requires complete pytest")
     args = parser.parse_args()
