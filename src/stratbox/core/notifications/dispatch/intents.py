@@ -2,7 +2,7 @@
 from __future__ import annotations
 from collections.abc import Mapping
 from datetime import datetime
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.observability import JournalRecord, JournalHead, JournalEntry
 from stratbox.core.observability.records.contracts import require_utc
 from stratbox.core.observability.records.schema import ValueRule

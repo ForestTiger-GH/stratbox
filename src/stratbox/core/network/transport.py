@@ -17,7 +17,7 @@ import zlib
 
 from stratbox import __version__
 from stratbox.core.limits import BudgetMeter
-from stratbox.shared.data.evidence import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 from stratbox.core.network.contracts import (
     HttpFailure,

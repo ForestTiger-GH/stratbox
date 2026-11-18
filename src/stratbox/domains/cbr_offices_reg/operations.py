@@ -10,16 +10,10 @@ from xml.etree.ElementTree import ParseError
 
 from stratbox.core.formats.archives.members import ArchiveError
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.shared.data import (
-    AcquiredSource,
-    ByteIdentity,
-    Comparison,
-    MetricRef,
-    Observation,
-    PeriodRef,
-    SourcePayload,
-    SubjectRef,
-)
+from stratbox.shared.evidence import AcquiredSource, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.comparison import Comparison
+from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,

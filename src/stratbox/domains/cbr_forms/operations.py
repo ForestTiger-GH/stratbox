@@ -13,13 +13,9 @@ from stratbox.core.formats.archives.members import (
 from stratbox.core.network import HttpTransport
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import (
-    AcquiredSource,
-    Representation,
-    SourcePayload,
-    UsedInputReceipt,
-    canonical_manifest_bytes,
-)
+from stratbox.shared.evidence import AcquiredSource, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.identity import canonical_manifest_bytes
 from stratbox.shared.data.representation import CSV, XLSX
 from stratbox.core.execution import (
     ExecutionContext,

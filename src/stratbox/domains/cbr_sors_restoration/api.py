@@ -8,7 +8,7 @@ from stratbox.core.storage.filestore import FileStore
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.storage.bytes import read_bounded_bytes
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data import SourcePayload, UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
     Completion,

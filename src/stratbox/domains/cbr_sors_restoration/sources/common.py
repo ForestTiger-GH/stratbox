@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 
 from stratbox.domains.cbr_sors_restoration.metrics import source_metric
 from stratbox.domains.cbr_sors_restoration.publication import RoundingPolicy

@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from stratbox.shared.data import ComputationReceipt, Representation
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.representation import Representation
 
 if TYPE_CHECKING:
     import pandas as pd

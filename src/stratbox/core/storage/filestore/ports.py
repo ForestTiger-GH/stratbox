@@ -21,7 +21,7 @@ from typing import BinaryIO, ContextManager, Iterator, Literal, Protocol, Tuple
 
 from stratbox.core.storage.filestore.paths import child_path
 from stratbox.core.storage.filestore.types import FileStat, FileVersion
-from stratbox.shared.data.evidence import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 
 class FileStore(Protocol):

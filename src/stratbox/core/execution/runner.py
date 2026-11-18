@@ -6,7 +6,9 @@ from collections import deque
 from typing import Callable, Generic, Mapping, TypeVar
 from uuid import uuid4
 
-from stratbox.shared.data import ComputationReceipt, Representation, UsedInputReceipt, build_dataset_version, computation_identity
+from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.core.runtime.capabilities import BindingError, select_provider
 from stratbox.core.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
