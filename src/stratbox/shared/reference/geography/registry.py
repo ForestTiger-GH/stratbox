@@ -8,10 +8,50 @@ from io import StringIO
 
 from stratbox.shared.reference.assets import ReferenceError, load_reference
 from .models import RegionNameRule
+from .names import normalize_region_label
 
 _PACKAGE = "stratbox.shared.reference.geography"
 _FIELDS = {"rule_id", "alias", "canonical_name", "subject_namespace", "subject_id", "kind",
            "perimeter_id", "source_family", "effective_from", "effective_to", "review_basis"}
+
+
+_KINDS = frozenset({"country", "federal_district", "subject", "statistical_aggregate", "other"})
+
+
+def validate_region_rules(rules: tuple[RegionNameRule, ...] | list[RegionNameRule]) -> tuple[RegionNameRule, ...]:
+    """One admission contract for packaged and supplied assertions.
+
+    Duplicate aliases may deliberately identify different subjects; such
+    conflicts are *ambiguities*, not arbitrary first-match assignments.
+    """
+    accepted, identities = [], set()
+    for number, rule in enumerate(rules, 1):
+        if not isinstance(rule, RegionNameRule):
+            raise ReferenceError(f"Region rule {number} is not a RegionNameRule")
+        if not all(isinstance(value, str) and value.strip() for value in (
+            rule.rule_id, rule.alias, rule.canonical_name,
+            rule.subject_namespace, rule.subject_id, rule.kind,
+            rule.review_basis,
+        )):
+            raise ReferenceError(f"Region rule {number} lacks identity or review basis")
+        if rule.rule_id in identities:
+            raise ReferenceError(f"Duplicate geography rule identifier: {rule.rule_id}")
+        identities.add(rule.rule_id)
+        if rule.kind not in _KINDS or normalize_region_label(rule.alias) is None:
+            raise ReferenceError(f"Invalid geography kind/alias: {rule.rule_id}")
+        for field in (rule.source_family, rule.perimeter_id):
+            if field is not None and (not isinstance(field, str) or not field.strip()):
+                raise ReferenceError(f"Invalid geography contextual restriction: {rule.rule_id}")
+        if (rule.effective_from is not None and type(rule.effective_from) is not date) or (
+            rule.effective_to is not None and type(rule.effective_to) is not date
+        ):
+            raise ReferenceError(f"Invalid geography validity date: {rule.rule_id}")
+        if rule.effective_from and rule.effective_to and rule.effective_from > rule.effective_to:
+            raise ReferenceError(f"Invalid geography validity interval: {rule.rule_id}")
+        accepted.append(rule)
+    if not accepted:
+        raise ReferenceError("Geography ruleset must not be empty")
+    return tuple(accepted)
 
 
 def read_rules(*, edition_id: str | None = None) -> tuple[tuple[RegionNameRule, ...], str]:
@@ -41,4 +81,4 @@ def read_rules(*, edition_id: str | None = None) -> tuple[tuple[RegionNameRule, 
         rules.append(RegionNameRule(ident, alias, canonical, namespace, code, kind,
             item.get("perimeter_id") or None, item.get("source_family") or None,
             start, end, basis))
-    return tuple(rules), bundle.edition.edition_id
+    return validate_region_rules(rules), bundle.edition.edition_id

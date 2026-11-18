@@ -7,6 +7,7 @@ from datetime import date
 from typing import Literal
 
 from stratbox.shared.data.observations import SubjectRef
+from stratbox.shared.identity import ByteIdentity
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,3 +50,7 @@ class RegionNameMatch:
     reference_edition_id: str
     matched_rule_id: str | None = None
     candidates: tuple[str, ...] = ()
+    ruleset_identity: ByteIdentity | None = None
+    reference_id: str | None = None
+    reference_snapshot_identity: ByteIdentity | None = None
+    provenance: Literal["packaged", "supplied"] = "packaged"

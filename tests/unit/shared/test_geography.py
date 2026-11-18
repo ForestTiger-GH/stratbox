@@ -61,15 +61,15 @@ def test_namespace_qualified_code_and_name_must_agree():
 
 def test_ambiguous_alias_and_time_scope_are_explicit():
     rules = (
-        RegionNameRule("a", "Alpha", "Alpha", "example", "1", "subject"),
-        RegionNameRule("b", "Alpha", "Alpha", "example", "2", "subject"),
+        RegionNameRule("a", "Alpha", "Alpha", "example", "1", "subject", review_basis="fixture"),
+        RegionNameRule("b", "Alpha", "Alpha", "example", "2", "subject", review_basis="fixture"),
     )
     decision = RegionNameResolver(rules=rules).resolve("Alpha")
     assert decision.status == "ambiguous"
     assert decision.subject is None
     assert len(decision.candidates) == 2
     only_2020 = RegionNameRule("historical", "Earlier", "Earlier", "example", "7",
-                               "subject", effective_from=date(2020, 1, 1), effective_to=date(2020, 12, 31))
+                               "subject", effective_from=date(2020, 1, 1), effective_to=date(2020, 12, 31), review_basis="fixture")
     history = RegionNameResolver(rules=(only_2020,))
     assert history.resolve("Earlier").status == "out_of_scope"  # Date is required for dated rules.
     assert history.resolve("Earlier", context=RegionNameContext(as_of=date(2020, 6, 1))).status == "exact"
@@ -83,3 +83,45 @@ def test_batch_matches_are_deterministic_and_preserve_raw_names():
     assert [decision.status for decision in decisions] == ["alias", "alias", "exact"]
     assert decisions == resolver.resolve_many(["Россия", "Москва", "Московская область"])
     assert len({decision.reference_edition_id for decision in decisions}) == 1
+
+
+def test_supplied_rules_have_distinct_digest_and_no_packaged_provenance():
+    from stratbox.shared.reference.assets import ReferenceError
+    a = RegionNameRule("alpha", "Alpha", "Alpha", "example", "a", "subject",
+                       review_basis="fixture")
+    b = RegionNameRule("alpha", "Alpha", "Alpha", "example", "b", "subject",
+                       review_basis="fixture")
+    left, right = RegionNameResolver(rules=(a,)), RegionNameResolver(rules=(b,))
+    assert left.ruleset_identity != right.ruleset_identity
+    assert left.resolve("Alpha").provenance == "supplied"
+    assert left.resolve("Alpha").reference_id is None
+    assert left.resolve("Alpha").reference_snapshot_identity is None
+    assert left.resolve("Alpha").reference_edition_id != right.resolve("Alpha").reference_edition_id
+    with pytest.raises(ReferenceError):
+        RegionNameResolver(edition_id="reviewed-2026-11", rules=(a,))
+    with pytest.raises(ReferenceError):
+        RegionNameResolver(rules=(a, a))
+
+
+def test_source_and_perimeter_rules_need_explicit_matching_context():
+    source = RegionNameRule("source", "Delta", "Delta", "x", "d", "subject",
+                            source_family="cbr", review_basis="fixture")
+    perimeter = RegionNameRule("perimeter", "Echo", "Echo", "x", "e", "subject",
+                               perimeter_id="p1", review_basis="fixture")
+    resolver = RegionNameResolver(rules=(source, perimeter))
+    assert resolver.resolve("Delta").status == "out_of_scope"
+    assert resolver.resolve("Echo").status == "out_of_scope"
+    assert resolver.resolve("Delta", context=RegionNameContext(source_family="fns")).status == "out_of_scope"
+    assert resolver.resolve("Delta", context=RegionNameContext(source_family="cbr")).status == "exact"
+    assert resolver.resolve("Echo", context=RegionNameContext(perimeter_hint="p1")).status == "exact"
+    assert resolver.resolve("Echo", context=RegionNameContext(perimeter_hint="p2")).status == "out_of_scope"
+
+
+def test_invalid_supplied_rule_cannot_bypass_packaged_validation():
+    from stratbox.shared.reference.assets import ReferenceError
+    invalid = RegionNameRule("r", "A", "A", "x", "1", "subject")
+    with pytest.raises(ReferenceError, match="review basis"):
+        RegionNameResolver(rules=(invalid,))
+    unknown = RegionNameRule("r", "A", "A", "x", "1", "invented", review_basis="fixture")
+    with pytest.raises(ReferenceError, match="kind"):
+        RegionNameResolver(rules=(unknown,))
