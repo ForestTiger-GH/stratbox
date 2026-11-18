@@ -24,6 +24,20 @@ Every domain publishes its operations in `registration.py`. The central
 `stratbox.domains.registry.operation_catalog()` collects these declarations
 and core-owned operations. See the [registry interface](domain-operation-registry.md).
 
+## Shared semantic contracts and packaged references
+
+Stable import owners are `stratbox.shared.identity`, `stratbox.shared.evidence`,
+`stratbox.shared.data.*`, `stratbox.shared.reference.*`, and
+`stratbox.shared.time.periods`. The bank registry requires a complete
+explicit edition manifest, with four separately pinned assets. Rosstat OKVED2
+is read from its own three-asset edition. The territory name resolver is a
+read-only, conservative association of published labels and reviewed identities;
+it is not a crosswalk for a domain's statistical aggregates.
+
+See [shared contracts](shared-semantic-contracts.md),
+[reference editions](reference-snapshots-and-update.md), and
+[geography name resolution](geography-name-resolution.md).
+
 ## Execution and observations
 
 Operations return `OperationResult` with the definition and versions,

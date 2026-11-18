@@ -2,7 +2,7 @@
 Модуль содержит функции работы со списком банков для задач CBR forms.
 
 Требование пользователя:
-- legacy-список банков формируется из registries.cbr_banks.read()
+- legacy-список банков формируется из stratbox.shared.reference.banks.registry.read()
 - используется колонка is_legacy:
     * число (порядковый номер для сортировки legacy)
     * False, если банк не в legacy

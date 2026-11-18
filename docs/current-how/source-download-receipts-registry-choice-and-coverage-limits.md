@@ -1,6 +1,6 @@
 # Current HOW — source downloads, registry selection and evidence limits
 
-> This article records the 0.8 implementation baseline. The [Stratbox 0.9 API](universal-business-core.md) describes the revised runtime.
+> **Pinned historical evidence only (0.8):** the paths and behavior below belong to the explicitly cited old commit; they must not be treated as current reference selection or current package ownership. For the implemented model, see [shared contracts](shared-semantic-contracts.md) and [manifest-pinned reference editions](reference-snapshots-and-update.md).
 
 **Observed implementation:** direct static code reading at `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; no HTTP request, published archive, live registration comparison, installed wheel or fault-injection suite was run in this investigation. This is a **current implementation evidence sheet**, not a future API requirement, scientific claim of true source contents or certification of every URL/release.
 

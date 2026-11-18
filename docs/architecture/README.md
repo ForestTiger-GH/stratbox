@@ -2,6 +2,8 @@
 
 [Core operation boundaries](core-operation-boundaries.md)
 
+[Canonical shared semantic ownership](shared-ownership.md)
+
 - [Observability and qualified journal sources](observability.md)
 - [Notification subscriptions and consumer handoff](notifications.md)
 

@@ -2,11 +2,17 @@
 
 [Stratbox core operations](universal-business-core.md)
 
+[Current shared semantic contracts](shared-semantic-contracts.md)
+
+[Versioned reference snapshots and update procedure](reference-snapshots-and-update.md)
+
+[Territory names and reviewed identity resolution](geography-name-resolution.md)
+
 [Automatic domain registration and operation discovery](domain-operation-registry.md)
 
 [Core operation construction](core-operation-construction.md)
 
-**Status:** nine bounded static implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
+**Status:** maintained current shared contracts plus nine bounded historical implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
 
 - [Public AppDock Recorder and exact ProblemQuery](appdock-public-problem-contracts.md) — existing neutral contracts for recorded occurrences, unconfirmed references and five lookup outcomes; installed app-client integration unverified.
 - [Public AppDock activation versus host attachment](appdock-activation-host-attachment-boundary.md) — actual process launch, explicit delegated-backend unavailability and remaining remote host evidence gap.

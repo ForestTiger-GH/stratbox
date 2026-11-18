@@ -17,7 +17,11 @@ operation calls and scheduling outside the library.
 | `core.observability` | Event records, evidence assessment, capture, immutable journals and analysis. |
 | `core.notifications` | Topic/subscription definitions, authorized intents, transaction state and qualified handoff. |
 | `core.registry` | Catalog of built-in neutral operations. |
-| `shared.data` | Byte/material identities, observation contracts, representations, evidence and computation manifests. |
+| `shared.identity` | Immutable digest/byte size and canonical manifest encoding. |
+| `shared.evidence` | Source materials and acquisition, used-input, storage and publication receipts. |
+| `shared.data` | Observation, dataset version, computation, representation, release comparison and table contracts. |
+| `shared.reference` | Explicitly versioned packaged assets, bank and OKVED2 references and territorial name resolution. |
+| `shared.time` | Date-only calendar period and anchor generation. |
 | `domains.registry` | Discovers independent domain declarations and joins them with neutral operations. |
 | `domains.<name>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
 | Consumer | User interface, schedules, destinations, host authorization, publication and downstream effects. |
@@ -25,7 +29,9 @@ operation calls and scheduling outside the library.
 ## Dependency contract
 
 Shared semantic contracts depend on neither the executable core nor concrete
-domains. Infrastructure ports and neutral formats are independent of subject
+domains. `identity` is the minimal root; `evidence` depends on `identity`; `data`
+does not import concrete `reference` modules. Reference assets verify exact bytes and
+carry an explicit snapshot version. Infrastructure ports and neutral formats are independent of subject
 matter. The generic executor does not depend on concrete operations. Neutral
 operations compose the executor and infrastructure; observability consumes
 execution records and storage contracts; notifications consume evidence and
@@ -54,5 +60,7 @@ Physical refactoring does not change source material identities or downgrade
 A neutral source operation can archive an original independently of parsing,
 parse later, or request only a literal representation. Other domains share
 the same infrastructure and choose their own source-specific interpretations.
+
+[Shared owner boundaries](shared-ownership.md)
 
 [Core API and evidence limits](../current-how/universal-business-core.md)

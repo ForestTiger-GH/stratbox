@@ -4,7 +4,8 @@ The `stratbox.core` package owns reusable execution, capability-based runtime co
 storage, network transport, format-specific encoding and decoding, presentation,
 generic source and table operations, observability, and notification handoff.
 
-`stratbox.shared` owns data contracts and reference data. `stratbox.domains` owns
+`stratbox.shared` owns immutable byte identities, used-input and effect receipts,
+statistical data contracts, reference edition assets and calendar semantics. `stratbox.domains` owns
 individual banking and economic methods. A domain can call core services; core services
 never import a concrete domain.
 
@@ -24,4 +25,5 @@ Operation identities are logical contract IDs, not Python module paths. Journal
 write outcomes, effect receipts and source identities must retain their existing
 semantics across the package relocation.
 
-See `docs/architecture/core-operation-boundaries.md` for maintained boundaries.
+See [core boundaries](../../../docs/architecture/core-operation-boundaries.md) and
+[shared owners](../../../docs/architecture/shared-ownership.md).

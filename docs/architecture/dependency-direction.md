@@ -39,3 +39,21 @@
 Реализация может выбрать язык/СУБД/IPC/UI toolkit и способ публикации при условии прохождения принимающих контрактов. Изменение семантического authority ownership, общих идентификаторов, допустимой неоднозначности эффектов или privacy boundary требует пересмотра соответствующих Product/Architecture Decisions, а не локального refactor.
 
 **Reopen:** изменение прямых product-owner paths, опубликованного интерфейса external platform, принятие shared-node и offline профилей либо тестовый контрпример на границе ошибок.
+
+
+## Canonical shared dependency layers
+
+The current Python implementation owns byte identity and canonical manifests in
+`shared.identity`, source/use receipts in `shared.evidence`, statistical
+observations/releases in `shared.data`, versioned reference resources in
+`shared.reference`, and calendar grids in `shared.time`.
+
+`shared` has no imports from `core` or concrete `domains`. Within `shared`,
+`identity` is foundational, `evidence` may depend on `identity`, and `data`
+may depend on both. `data` does not import concrete reference families.
+Domain-specific source codes and local statistical perimeters cannot be
+reassigned by lexical territorial normalization.
+
+The canonical graph and its examples are maintained in
+[shared semantic ownership](shared-ownership.md). These implemented Python
+boundaries are separate from the application deployment candidate above.

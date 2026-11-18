@@ -112,7 +112,7 @@ def _owner(path: Path) -> str:
     if len(parts) >= 2 and parts[0] == "core":
         return f"core:{parts[1]}"
     if len(parts) >= 2 and parts[0] == "shared":
-        return f"shared:{parts[1]}"
+        return f"shared:{Path(parts[1]).stem if parts[1].endswith('.py') else parts[1]}"
     return "package"
 
 
@@ -149,6 +149,8 @@ def check_dependency_direction() -> list[str]:
                 failures.append(f"{prefix}: shared data imports a concrete reference owner {target}")
             if target.startswith("stratbox_"):
                 failures.append(f"{prefix}: concrete integration import {target}")
+            if target in {"stratbox.shared.data.ByteIdentity", "stratbox.shared.data.canonical_manifest_bytes", "stratbox.shared.data.SourcePayload", "stratbox.shared.data.AcquisitionReceipt", "stratbox.shared.data.AcquiredSource", "stratbox.shared.data.UsedInputReceipt", "stratbox.shared.data.StoredBytesReceipt", "stratbox.shared.data.MaterialReference", "stratbox.shared.data.PublicationReceipt"}:
+                failures.append(f"{prefix}: shared data re-exports a moved foundational type {target}")
             if owner.startswith(("core:", "shared:")) and target.startswith("stratbox.domains"):
                 failures.append(f"{prefix}: foundational package imports domain {target}")
             if owner.startswith("shared:") and target.startswith("stratbox.core"):
@@ -179,8 +181,45 @@ def check_dependency_direction() -> list[str]:
     return failures
 
 
+def check_supporting_source_imports() -> list[str]:
+    """Check examples, tests, benchmarks and scripts for stale public imports."""
+    failures: list[str] = []
+    forbidden = (
+        "stratbox.shared.registries", "stratbox.shared.text",
+        "stratbox.shared.data.evidence", "stratbox.shared.data.identity",
+        "stratbox.system", "stratbox.core.base", "stratbox.core.ioapi",
+    )
+    migrated_symbols = frozenset({
+        "ByteIdentity", "canonical_manifest_bytes", "SourcePayload",
+        "AcquisitionReceipt", "AcquiredSource", "UsedInputReceipt",
+        "StoredBytesReceipt", "MaterialReference", "PublicationReceipt",
+    })
+    for folder in ("tests", "examples", "scripts", "benchmarks"):
+        directory = ROOT / folder
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*.py")):
+            file_label = path.relative_to(ROOT).as_posix()
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=file_label)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imported = tuple(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.level == 0:
+                    imported = (node.module or "",)
+                    if node.module == "stratbox.shared.data" and any(
+                        alias.name in migrated_symbols for alias in node.names
+                    ):
+                        failures.append(f"{file_label}:{node.lineno}: moved symbol imported from shared.data")
+                else:
+                    continue
+                if any(value.startswith(forbidden) for value in imported):
+                    failures.append(f"{file_label}:{node.lineno}: obsolete package import {imported}")
+    return failures
+
+
 def main() -> int:
     failures = check_dependency_direction()
+    failures.extend(check_supporting_source_imports())
     for name in CRITICAL_MODULES:
         try:
             importlib.import_module(name)

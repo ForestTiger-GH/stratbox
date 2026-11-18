@@ -8,6 +8,8 @@ The package organizes neutral execution and infrastructure under `stratbox.core`
 shared data contracts and reference resources under `stratbox.shared`, and
 independent business packages under `stratbox.domains`.
 
+- [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
+- [Geography name matching](docs/current-how/geography-name-resolution.md)
 - [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
