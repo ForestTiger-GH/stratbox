@@ -1,0 +1,14 @@
+# Territorial labels and reviewed identity rules
+
+`normalize_region_label()` creates a stable Unicode comparison key while preserving qualifiers and distinctions. `RegionNameResolver` then checks exact reviewed name rules with optional source family, date, subject kind, explicitly namespaced source code and statistical perimeter context.
+
+```python
+from stratbox.shared.reference.geography import RegionNameResolver
+
+match = RegionNameResolver().resolve("город Москва")
+assert match.subject.id == "RU-MOW"
+```
+
+Status may be `exact`, `alias`, `unmatched`, `ambiguous` or `out_of_scope`. The starter reference is deliberately incomplete; it contains no inferred equivalence between a region and an inclusive/exclusive statistical aggregate. Source-specific geographic row numbers remain the property of their respective domain parsers.
+
+[Full interpretation contract](../../../../../docs/current-how/geography-name-resolution.md)
