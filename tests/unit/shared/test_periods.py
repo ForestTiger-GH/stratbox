@@ -44,3 +44,12 @@ def test_calendar_limit_does_not_overflow():
 def test_invalid_periods_raise(args):
     with pytest.raises(ValueError):
         period_points(*args)
+
+
+def test_week_intervals_across_calendar_year_and_date_minimum():
+    assert period_points("W", "2024-12-30", "2025-01-12", "start") == [
+        date(2024, 12, 30), date(2025, 1, 6),
+    ]
+    assert period_points("D", date.min, date.min, "start") == [date.min]
+    assert period_points("M", "2024-02-01", "2024-02-29", "end") == [date(2024, 2, 29)]
+    assert period_points("M", "2023-02-01", "2023-02-28", "end") == [date(2023, 2, 28)]

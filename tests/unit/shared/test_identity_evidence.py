@@ -98,3 +98,50 @@ def test_observation_statuses_reject_unrecognized_values_and_bool():
         fact(None, "reported")
     with pytest.raises(ValueError):
         fact(0, "missing")
+
+
+def test_manifest_canonical_bytes_match_independent_golden_vector():
+    from hashlib import sha256
+    payload = {"b": Decimal("1.20"), "a": date(2024, 2, 29)}
+    encoded = canonical_manifest_bytes(payload)
+    assert encoded == b'{"a":"2024-02-29","b":"1.20"}'
+    assert sha256(encoded).hexdigest() == (
+        "d0dbabdc74a9c9f617dbdebbd160c4719d5ebaf8bb1856e5616e7428ca710332"
+    )
+
+
+def test_dataset_content_projection_and_computation_origin_are_distinct():
+    left = UsedInputReceipt.for_payload(
+        SourcePayload(b"same", "text/csv", "publisher:A"), "source"
+    )
+    right = UsedInputReceipt.for_payload(
+        SourcePayload(b"same", "text/csv", "publisher:B"), "source"
+    )
+    result = ByteIdentity.of(b"result")
+    a = build_dataset_version("fixture", "2026-11-18", "method-1", (left,), result)
+    b = build_dataset_version("fixture", "2026-11-18", "method-1", (right,), result)
+    assert a.identity == b.identity  # Dataset projection is byte/method-oriented.
+    assert computation_identity("fixture.parse", 1, "method-1", (left,)) != (
+        computation_identity("fixture.parse", 1, "method-1", (right,))
+    )  # Execution identity includes source_id.
+
+
+def test_release_facts_are_order_invariant_but_preserve_status_difference():
+    from stratbox.shared.data.releases import build_release
+    from stratbox.shared.data.observations import (
+        Observation, SubjectRef, MetricRef, PeriodRef,
+    )
+    subject = SubjectRef("fixture", "A")
+    metric = MetricRef("balance", "RUB")
+    period = PeriodRef("as_of", as_of=date(2026, 11, 18))
+    def obs(name, value, status):
+        return Observation(subject, metric, period, (("type", name),),
+                           "fixture", value, status, "fixture:1")
+    a = obs("one", 0, "reported")
+    b = obs("two", None, "missing")
+    def build(values):
+        return build_release("fixture", "profile", "method",
+                             date(2026, 11, 18), b"test", len(values),
+                             (), observations=values)
+    assert build((a, b)).facts_identity == build((b, a)).facts_identity
+    assert build((a, b)).facts_identity != build((a, obs("two", None, "withheld"))).facts_identity
