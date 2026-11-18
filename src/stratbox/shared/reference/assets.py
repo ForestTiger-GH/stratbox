@@ -160,6 +160,11 @@ REFERENCE_REQUIRED_ROLES: dict[str, frozenset[str]] = {
     "okved2": frozenset({"data", "meta", "structure"}),
     "geography": frozenset({"aliases"}),
 }
+_REFERENCE_IDENTITIES = {
+    "banks": "reference.banks",
+    "okved2": "reference.okved2",
+    "geography": "reference.geography.names",
+}
 _EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 _ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\Z")
 _ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})
@@ -201,7 +206,7 @@ def parse_reference_manifest(package: str, document: bytes | Mapping[str, object
         if document["manifest_schema_version"] != 1:
             raise ReferenceError("Unsupported reference manifest schema")
         reference_id = document["reference_id"]
-        if not isinstance(reference_id, str) or not reference_id.startswith("reference."):
+        if not isinstance(reference_id, str) or reference_id != _REFERENCE_IDENTITIES[family]:
             raise ReferenceError("Invalid reference identity")
         active = document["active_edition"]
         records = document["editions"]
