@@ -114,3 +114,10 @@ def test_sors_dataset_identity_ignores_classifier_policy_but_model_does_not():
     duplicate = replace(bundle, lineage=(receipt, receipt))
     with pytest.raises(ReferenceError):
         _identities(duplicate, config)
+
+
+def test_unsealed_prebuilt_sors_bundle_is_rejected_before_solver():
+    from stratbox.core.execution import OperationFailure
+    from stratbox.domains.cbr_sors_restoration.api import _use_grids
+    with pytest.raises(OperationFailure, match="input.snapshot_required"):
+        _use_grids(None, _bundle((_classifier(),)), "sors_source_bundle")

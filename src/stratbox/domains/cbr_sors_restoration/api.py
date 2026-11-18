@@ -209,6 +209,10 @@ def _seal_grids(invocation, value, *, parameters=None):
 
 
 def _use_grids(invocation, value, role):
+    # A separately supplied source bundle needs a sealed computation receipt.
+    # Raw tables and a caller-written lineage do not prove a loaded source snapshot.
+    if isinstance(value, SorsSourceBundle) and value.evidence is None:
+        raise OperationFailure("input.snapshot_required")
     tables = _grid_tables(value)
     frames = use_tables(invocation, tables, receipt=value.evidence, role=role,
                         metadata=_grid_metadata(value), allow_infinite=True)
