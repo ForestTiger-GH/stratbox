@@ -168,7 +168,7 @@ _REFERENCE_IDENTITIES = {
 _EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 _ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\Z")
 _ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})
-_MEDIA_TYPE = re.compile(r"[a-z0-9!#_ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})^_.+-]+/[a-z0-9!#_ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})^_.+-]+\Z", re.ASCII)
+_MEDIA_TYPE = re.compile(r"[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+\Z", re.ASCII)
 
 
 def _nullable_text(value: object, label: str) -> str | None:
