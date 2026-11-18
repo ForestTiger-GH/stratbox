@@ -183,7 +183,16 @@ def _grid_metadata(value):
     if isinstance(value, SorsSourceBundle):
         return {
             "as_of_date": value.as_of_date, "publication_step": _parameters(value.publication_step),
-            "lineage": [(item.role, item.identity.sha256, item.identity.size) for item in value.lineage],
+            "lineage": [{
+                "role": item.role,
+                "sha256": item.identity.sha256,
+                "size": item.identity.size,
+                "source_id": item.source_id,
+                "media_type": item.media_type,
+                "availability": item.availability,
+                "reference_snapshot_sha256": item.version.sha256 if item.version else None,
+                "reference_snapshot_size": item.version.size if item.version else None,
+            } for item in value.lineage],
         }
     if isinstance(value, SorsRestorationResult):
         return _parameters(asdict(value.summary))
