@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from ..common.normalization import normalize_cbr_0105a_text
+from ..common.normalization import normalize_industry_text
 
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
     Cbr0105ADebtCorpIndustrySpec,
@@ -241,7 +241,7 @@ def resolve_cbr_0105a_debt_corp_sheet_spec(
     title: object, *, allow_unrelated: bool = False,
 ) -> Cbr0105ADebtCorpSheetSpec | None:
     """Распознает смысл листа по полному заголовку в A1, а не по имени вкладки."""
-    normalized = normalize_cbr_0105a_text(title)
+    normalized = normalize_industry_text(title)
     required = (
         "задолженность",
         "кредитам",
@@ -278,19 +278,19 @@ def resolve_cbr_0105a_debt_corp_industries(
     headers: list[object] | tuple[object, ...],
 ) -> tuple[Cbr0105ADebtCorpIndustrySpec, ...]:
     """Resolve the complete method input in the published column order."""
-    known = {normalize_cbr_0105a_text(spec.canonical_name_ru): spec
+    known = {normalize_industry_text(spec.canonical_name_ru): spec
              for spec in CBR_0105A_DEBT_CORP_INDUSTRY_SPECS}
-    resolved = tuple(known.get(normalize_cbr_0105a_text(value)) for value in headers)
+    resolved = tuple(known.get(normalize_industry_text(value)) for value in headers)
     if None in resolved or len(set(resolved)) != len(resolved) or len(resolved) != len(known):
         raise ValueError("CBR industry headers are incomplete or ambiguous")
     return resolved
 
 
 def select_industry_headers(headers):
-    known = {normalize_cbr_0105a_text(spec.canonical_name_ru) for spec in CBR_0105A_DEBT_CORP_INDUSTRY_SPECS}
+    known = {normalize_industry_text(spec.canonical_name_ru) for spec in CBR_0105A_DEBT_CORP_INDUSTRY_SPECS}
     included, unmapped = [], []
     for index, label in headers:
-        (included if normalize_cbr_0105a_text(label) in known else unmapped).append((index, label))
+        (included if normalize_industry_text(label) in known else unmapped).append((index, label))
     specs = resolve_cbr_0105a_debt_corp_industries([label for _, label in included])
     return included, specs, tuple(clean_cbr_0105a_source_label(label) for _, label in unmapped)
 
@@ -302,7 +302,7 @@ __all__ = [
     "CBR_0105A_DEBT_CORP_UNIT",
     "CBR_0105A_DEBT_CORP_UNIT_NAME_RU",
     "clean_cbr_0105a_source_label",
-    "normalize_cbr_0105a_text",
+    "normalize_industry_text",
     "resolve_cbr_0105a_debt_corp_industries",
     "resolve_cbr_0105a_debt_corp_sheet_spec",
 ]

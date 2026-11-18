@@ -6,7 +6,7 @@ import math
 import re
 from decimal import Decimal, InvalidOperation
 
-from .normalization import normalize_cbr_0105a_text
+from .normalization import normalize_industry_text
 
 def _coerce_numeric_value(value: object, *, coordinate: str, sheet_name: str) -> int | float | None:
     if value is None:
@@ -53,7 +53,7 @@ def _non_empty_industry_headers(
         raise ValueError(f"CBR industry sheet has fewer than 3 rows: {sheet_name!r}")
     headers: list[tuple[int, object]] = []
     for column, value in enumerate(sheet_rows[2][1:], start=2):
-        if normalize_cbr_0105a_text(value):
+        if normalize_industry_text(value):
             headers.append((column, value))
     return headers
 
@@ -78,8 +78,8 @@ def _region_names(
 
 def _match_sheet_regions(expected, actual):
     """Align physical rows to the series geography after the first validated sheet."""
-    lookup = {normalize_cbr_0105a_text(item.source_name): item for item in expected}
-    names = tuple(normalize_cbr_0105a_text(name) for name in actual)
+    lookup = {normalize_industry_text(item.source_name): item for item in expected}
+    names = tuple(normalize_industry_text(name) for name in actual)
     if len(lookup) != len(expected) or len(set(names)) != len(names) or set(names) != lookup.keys():
         raise ValueError("Geographic rows differ between CBR industry sheets")
     return tuple(lookup[name] for name in names)
@@ -95,7 +95,7 @@ def _sheet_rows(rows, first, *, checkpoint):
 
 
 def _check_published_unit(title):
-    unit_words = normalize_cbr_0105a_text(title)
+    unit_words = normalize_industry_text(title)
     if re.search(r"\b(?:тыс|млрд)\s+(?:российских\s+)?руб\w*\b", unit_words) or "%" in str(title):
         raise ValueError("Published unit conflicts with the series definition")
 

@@ -256,7 +256,7 @@ def build_stream(
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from .parser import concat_cbr_0105a_debt_corp_streams
+        from .parser import concat_industry_streams
         from .regions import normalize_cbr_0105a_debt_corp_regions_to_latest
         from .sources import report_date_from_cbr_0105a_filename
 
@@ -293,7 +293,7 @@ def build_stream(
         invocation.budget.check("cells", sum(item.df_stream.size for item in batch.values),
                                 completed=checkpoint is not None)
         files = normalize_cbr_0105a_debt_corp_regions_to_latest(batch.values)
-        stream = concat_cbr_0105a_debt_corp_streams(item.df_stream for item in files)
+        stream = concat_industry_streams(item.df_stream for item in files)
         stream = stream.sort_values(
             ["report_date", "sheet_order", "region_order", "industry_order"],
             kind="stable",

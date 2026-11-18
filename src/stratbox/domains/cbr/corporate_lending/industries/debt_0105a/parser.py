@@ -23,15 +23,15 @@ from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import 
     CBR_0105A_DEBT_CORP_UNIT,
     CBR_0105A_DEBT_CORP_UNIT_NAME_RU,
     clean_cbr_0105a_source_label,
-    normalize_cbr_0105a_text,
+    normalize_industry_text,
     select_industry_headers,
     resolve_cbr_0105a_debt_corp_sheet_spec,
 )
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.sources import report_date_from_cbr_0105a_filename
 from .selection import resolve_industry_codes
 from ..common.streams import (
-    STREAM_COLUMNS, concat_cbr_0105a_debt_corp_streams,
-    optimize_cbr_0105a_debt_corp_stream_dtypes,
+    STREAM_COLUMNS, concat_industry_streams,
+    optimize_industry_stream_dtypes,
 )
 from ..common.parsing import (
     _coerce_numeric_value, _non_empty_industry_headers,
@@ -305,7 +305,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         assert industries is not None and common_regions is not None
 
         df_stream = pd.DataFrame.from_records(records, columns=STREAM_COLUMNS)
-        df_stream = optimize_cbr_0105a_debt_corp_stream_dtypes(df_stream)
+        df_stream = optimize_industry_stream_dtypes(df_stream)
         key_columns = [
             "report_date",
             "measure",

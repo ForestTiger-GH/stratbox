@@ -10,8 +10,8 @@ from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts impo
 )
 from stratbox.domains.cbr.corporate_lending.industries.common.streams import (
     STREAM_COLUMNS,
-    concat_cbr_0105a_debt_corp_streams,
-    optimize_cbr_0105a_debt_corp_stream_dtypes,
+    concat_industry_streams,
+    optimize_industry_stream_dtypes,
 )
 
 
@@ -245,8 +245,8 @@ def calculate_cbr_0105a_debt_corp_apk_industry(
     derived["source_column"] = None
 
     df_apk = derived.loc[:, list(STREAM_COLUMNS)]
-    df_apk = optimize_cbr_0105a_debt_corp_stream_dtypes(df_apk)
-    augmented = concat_cbr_0105a_debt_corp_streams((df_stream, df_apk))
+    df_apk = optimize_industry_stream_dtypes(df_apk)
+    augmented = concat_industry_streams((df_stream, df_apk))
     augmented = augmented.sort_values(
         ["report_date", "sheet_order", "region_order", "industry_order"],
         kind="stable",
