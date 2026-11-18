@@ -8,6 +8,10 @@ on:
       - 'src/stratbox/core/**'
       - 'src/stratbox/shared/**'
       - 'tests/unit/registry/**'
+      - 'tests/unit/shared/**'
+      - 'tests/cbr_sors_restoration/**'
+      - 'scripts/reference_editions.py'
+      - 'scripts/inspect_reference_wheel.py'
       - 'src/stratbox/__init__.py'
       - 'pyproject.toml'
       - 'scripts/check_internal_imports.py'
@@ -64,6 +68,13 @@ jobs:
         run: python -B -m pytest -q
       - name: Build wheel and source distribution
         run: python -m build --sdist --wheel --outdir dist
+      - name: Verify all reference editions and actual wheel resources
+        shell: bash
+        run: |
+          python -B scripts/reference_editions.py verify --reference all
+          for wheel in dist/stratbox-*.whl; do
+            python -B scripts/inspect_reference_wheel.py "$wheel"
+          done
       - name: Validate installed base wheel without optional dependencies
         shell: bash
         run: |
@@ -96,7 +107,7 @@ jobs:
           else:
               raise AssertionError("Excel rendering requires the optional engine")
           import stratbox
-          assert stratbox.__version__ == version("stratbox") == "0.15.0"
+          assert stratbox.__version__ == version("stratbox")
           print("OK minimal wheel imports, lazy Excel metadata and version")
           PY
       - name: Validate isolated installed wheel and packaged resources
@@ -110,6 +121,7 @@ jobs:
           import sys
           sys.path.insert(0, sys.argv[1])
           import stratbox
+          from stratbox.shared.reference.assets import load_reference
           from stratbox.domains.registry import operation_catalog
           from stratbox.domains.cbr_forms.common.models import load_models
           from stratbox.domains.cbr_sors_restoration.crosswalk.mapping import read_crosswalk_manifest
@@ -124,16 +136,14 @@ jobs:
           assert {("cbr.offices.parse", 1), ("cbr.offices.compare", 2), ("frg.plan_cleanup", 1)} <= {
               (r.operation_id, r.contract_version) for r in catalog.list_refs() if r.wire_codec_ref
           }
-          registry_root = root / "shared/registries/_resources"
-          assert list(registry_root.glob("cbr_banks/*"))
-          assert list(registry_root.glob("rosstat_okved2/*"))
+          for reference in ("banks", "okved2", "geography"):
+              load_reference("stratbox.shared.reference." + reference).validate_all()
           assert len(list((root / "domains/cbr_forms/models").glob("form*.csv"))) >= 6
           assert not load_models().empty
           manifest = read_crosswalk_manifest()
           assert isinstance(manifest, dict) and manifest.get("mapping_version")
           original = Path.cwd() / "src/stratbox"
           groups = (
-              "shared/registries/_resources",
               "domains/cbr_forms/models",
               "domains/cbr_sors_restoration/crosswalk/_resources",
           )
