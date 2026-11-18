@@ -12,7 +12,9 @@ from typing import Literal, Mapping
 
 from typing import TYPE_CHECKING
 
-from stratbox.shared.data import ComputationReceipt, Representation, SourcePayload
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.evidence import SourcePayload
 
 if TYPE_CHECKING:
     import pandas as pd

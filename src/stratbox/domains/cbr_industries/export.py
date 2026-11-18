@@ -11,7 +11,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
-from stratbox.shared.data import Representation
+from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.representation import XLSX
 from stratbox.domains.cbr_industries.contracts import (
     Cbr0105ADebtCorpIndustryWorkbookRequest,

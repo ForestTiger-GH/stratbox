@@ -8,7 +8,7 @@ from io import StringIO
 import json
 from collections.abc import Iterable, Iterator, Mapping
 
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability.records.contracts import JournalRecord, ObjectRef
 

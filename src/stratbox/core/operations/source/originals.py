@@ -12,10 +12,8 @@ from stratbox.core.storage.staging import (
 )
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.network import HttpRequest, HttpTransport, RetryPolicy, StreamingHttpTransport
-from stratbox.shared.data import (
-    AcquiredSource, AcquisitionReceipt, ByteIdentity, MaterialReference, SourcePayload, StoredBytesReceipt,
-    UsedInputReceipt,
-)
+from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, MaterialReference, SourcePayload, StoredBytesReceipt, UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity
 
 from stratbox.core.operations.source.acquisition import StreamBaseline, receive_source, receive_stream
 from stratbox.core.execution.contracts import EffectReceipt, ExecutionContext, OperationDefinition, OperationFailure

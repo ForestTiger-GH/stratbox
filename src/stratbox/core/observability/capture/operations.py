@@ -5,7 +5,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Protocol
 
-from stratbox.shared.data import AcquiredSource, ByteIdentity, Comparison
+from stratbox.shared.evidence import AcquiredSource
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.comparison import Comparison
 from stratbox.core.execution import Correlation, ExecutionEvent, OperationResult
 from stratbox.core.observability.capture.adapters import (fact_from_acquisition, fact_from_comparison, fact_from_stored_bytes,
                        record_from_fact, record_from_result)

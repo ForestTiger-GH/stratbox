@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import replace
 from hashlib import sha256
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.storage.filestore import FileStore
 from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.journal.contracts import JournalNamespace, JournalWriteReceipt

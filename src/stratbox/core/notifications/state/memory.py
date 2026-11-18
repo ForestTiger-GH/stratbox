@@ -1,7 +1,7 @@
 """Atomic in-memory notification state implementation for local sessions."""
 from __future__ import annotations
 from threading import RLock
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.observability import JournalCursor, JournalRecord, JournalWriteReceipt, encode_record
 from stratbox.core.notifications.contracts import Subscription
 from stratbox.core.notifications.state.contracts import (AuditBatch, CheckpointKey, Dispatch, Replay, StateMutation,

@@ -8,7 +8,8 @@ from typing import BinaryIO, Callable
 
 from stratbox.core.network import (HttpFailure, HttpRequest, HttpTransport, PeerBoundTransport,
                                    RequestsTransport, RetryPolicy, RoutedTransport, exchange, exchange_into)
-from stratbox.shared.data import AcquiredSource, AcquisitionReceipt, ByteIdentity, SourcePayload, canonical_manifest_bytes
+from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, SourcePayload
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 from stratbox.core.execution.contracts import OperationFailure
 from stratbox.core.execution.runner import Invocation

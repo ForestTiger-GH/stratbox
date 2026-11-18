@@ -22,7 +22,7 @@ from stratbox.core.storage.filestore.types import (
     MutationRejected,
 )
 from stratbox.core.limits import BudgetMeter
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 
 
 class _LocalStage:

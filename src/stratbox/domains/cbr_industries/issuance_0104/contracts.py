@@ -6,7 +6,9 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
 
-from stratbox.shared.data import ComputationReceipt, Representation, SourcePayload
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr_industries.contracts import (
     Cbr0105ADebtCorpApkCalculationResult,
     Cbr0105ADebtCorpIndustrySpec as IndustrySpec,

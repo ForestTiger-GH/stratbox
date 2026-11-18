@@ -7,7 +7,7 @@ from datetime import datetime
 from threading import RLock
 from typing import Literal, Protocol
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution.contracts import safe_token
 from stratbox.core.observability import (
     JournalCursor, JournalHead, JournalRecord, JournalWriteReceipt, RecordWriter, StreamKey,

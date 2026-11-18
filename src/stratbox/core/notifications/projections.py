@@ -7,7 +7,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Literal
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import ExecutionContext, OperationFailure
 from stratbox.core.execution.contracts import safe_token
 from stratbox.core.observability import JournalCursor, JournalHead, JournalRecord

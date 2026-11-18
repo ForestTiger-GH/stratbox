@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 
 import pandas as pd
 
