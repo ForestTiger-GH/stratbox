@@ -232,7 +232,8 @@ def test_only_matching_baseline_proves_conditional_http_reuse():
 
 
 def test_computation_identity_keeps_source_method_and_projection_distinct():
-    from stratbox.shared.data import UsedInputReceipt, computation_identity
+    from stratbox.shared.evidence import UsedInputReceipt
+    from stratbox.shared.data.datasets import computation_identity
 
     original = UsedInputReceipt.for_payload(SourcePayload(b"same", "text/csv", "scope-a"), "table")
 

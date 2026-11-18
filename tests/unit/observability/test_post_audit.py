@@ -277,7 +277,7 @@ def test_manifest_aggregate_revalidated_against_actual_records(tmp_path):
     # A self-consistent manifest digest alone cannot make an incorrect
     # declared generation aggregate true. Reader must recompute it.
     from stratbox.core.observability.journal.manifests import JournalManifest, _data
-    from stratbox.shared.data import canonical_manifest_bytes
+    from stratbox.shared.identity import canonical_manifest_bytes
     from hashlib import sha256
     provisional = object.__new__(JournalManifest)
     for name in manifest.__dataclass_fields__:
