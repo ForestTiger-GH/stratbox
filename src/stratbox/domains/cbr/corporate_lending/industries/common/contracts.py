@@ -32,7 +32,7 @@ IndustryPivotDimension = Literal[
 
 @dataclass(frozen=True, slots=True)
 class IndustrySpec:
-    """Один отраслевой столбец таблицы Банка России."""
+    """Один опубликованный отраслевой показатель семейства таблиц Банка России."""
 
     code: str
     canonical_name_ru: str
@@ -43,7 +43,7 @@ class IndustrySpec:
 
 @dataclass(frozen=True, slots=True)
 class IndustryRegionSpec:
-    """Одна географическая строка серии ``01_05_A_Debt_corp``."""
+    """Географическая строка отраслевой публикации Банка России."""
 
     code: str
     source_name: str

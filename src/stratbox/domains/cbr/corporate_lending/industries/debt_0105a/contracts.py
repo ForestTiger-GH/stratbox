@@ -53,12 +53,6 @@ class Cbr0105ADebtCorpSheetSpec:
     order: int
 
 
-
-
-
-
-
-
 @dataclass(frozen=True, slots=True)
 class Cbr0105ADebtCorpSourceLink:
     """Одна опубликованная книга серии ``01_05_A_Debt_corp``."""
@@ -83,10 +77,6 @@ class Cbr0105ADebtCorpSourceFailure:
     attempts_used: int = 0
     used_url: str | None = None
     final_url: str | None = None
-
-
-
-
 
 
 @dataclass(frozen=True)
@@ -168,18 +158,6 @@ class Cbr0105ADebtCorpStreamResult:
     @property
     def is_partial(self) -> bool:
         return bool(self.failures or self.stop_reason) and bool(self.parsed_files)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @dataclass(frozen=True, slots=True)

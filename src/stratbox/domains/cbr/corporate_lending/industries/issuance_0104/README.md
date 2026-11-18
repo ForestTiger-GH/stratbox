@@ -7,3 +7,8 @@ implemented through shared family helpers and explicitly reused official
 01_05_A reference profiles in the sibling `debt_0105a` owner.
 
 See [issuance-series semantics](../../../../../../../docs/current-how/cbr-industries-issuance.md) for the operation flow.
+
+Structural result types come from `../common/contracts.py`. Source-specific
+release dates, reference months, three-sheet flow profile and input requests
+remain owned here. A future divergence of the physical industry/geography
+profile must be reviewed and modeled explicitly rather than inherited silently.

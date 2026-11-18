@@ -11,3 +11,8 @@ under the sibling `common` package. The independent flow publication is
 `../issuance_0104/`.
 
 [Public operation contracts](../../../../../../../docs/current-how/universal-business-core.md)
+
+The industry, region, validation, APK and pivot structural contracts used by
+this publication are defined once in the sibling `../common/contracts.py`.
+The debt owner retains its six-sheet source profile, stock time semantics and
+separate request and output operations.
