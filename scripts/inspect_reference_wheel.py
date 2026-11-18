@@ -157,7 +157,7 @@ def main() -> int:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     except (OSError, KeyError, TypeError, ValueError, ReferenceError, BadZipFile, tarfile.TarError) as error:
-        parser.exit(1, f"Wheel reference verification failed: {error}\n")
+        parser.exit(1, f"Reference distribution verification failed: {error}\n")
     return 1
 
 

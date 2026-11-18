@@ -168,6 +168,7 @@ _REFERENCE_IDENTITIES = {
 _EDITION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 _ROLE_ID = re.compile(r"[a-z][a-z0-9_]*\Z")
 _ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})
+_MEDIA_TYPE = re.compile(r"[a-z0-9!#_ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})^_.+-]+/[a-z0-9!#_ORIGINS = frozenset({"published_source", "curated_policy", "unknown"})^_.+-]+\Z", re.ASCII)
 
 
 def _nullable_text(value: object, label: str) -> str | None:
@@ -242,7 +243,7 @@ def parse_reference_manifest(package: str, document: bytes | Mapping[str, object
                 if type(size) is not int or size < 0:
                     raise ReferenceError("Reference asset size must be a nonnegative integer")
                 media_type = item["media_type"]
-                if not isinstance(media_type, str) or "/" not in media_type:
+                if not isinstance(media_type, str) or not _MEDIA_TYPE.fullmatch(media_type):
                     raise ReferenceError("Invalid reference asset media type")
                 origin_kind = _nullable_text(item.get("origin_kind"), "origin_kind")
                 if origin_kind is not None and origin_kind not in _ORIGINS:

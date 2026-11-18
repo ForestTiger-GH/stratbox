@@ -100,7 +100,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             _run("isolated_base_imports", [
                 interpreter, "-I", "-S", "-B", "-c", check_code, str(installed),
             ], report)
-        report["result"] = "passed"
+        report["result"] = "passed" if full_pytest else "partial"
     except (RuntimeError, OSError) as error:
         report["result"] = "failed"
         report["error"] = str(error)
