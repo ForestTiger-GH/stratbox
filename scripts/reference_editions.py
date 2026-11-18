@@ -28,7 +28,7 @@ PACKAGES = {
     "okved2": "stratbox.shared.reference.okved2",
     "geography": "stratbox.shared.reference.geography",
 }
-_EDITIONS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\\Z")
+_EDITIONS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}\Z")
 
 
 def _manifest_path(reference: str) -> Path:
@@ -36,7 +36,7 @@ def _manifest_path(reference: str) -> Path:
 
 
 def _validated_path(value: str) -> str:
-    if not value or value.startswith("/") or "\\\\" in value or "\\" in value:
+    if not value or value.startswith("/") or "\\" in value:
         raise ValueError("A reference asset requires a relative POSIX path")
     path = PurePosixPath(value)
     if any(part in {".", "..", ""} for part in path.parts) or str(path) != value:
@@ -115,7 +115,7 @@ def stage(reference: str, edition_id: str, replacements: list[str], *, activate:
     entries.append(target)
     if activate:
         manifest["active_edition"] = edition_id
-    data = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n").encode("utf-8")
+    data = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     with tempfile.NamedTemporaryFile(dir=root.parent, prefix=".manifest-", delete=False) as file:
         tmp_path = Path(file.name)
         try:
