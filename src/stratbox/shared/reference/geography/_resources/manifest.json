@@ -1,0 +1,23 @@
+{
+  "manifest_schema_version": 1,
+  "reference_id": "reference.geography.names",
+  "active_edition": "reviewed-2026-11",
+  "editions": [
+    {
+      "edition_id": "reviewed-2026-11",
+      "publisher": null,
+      "published_at": null,
+      "effective_from": null,
+      "assets": [
+        {
+          "role": "aliases",
+          "path": "aliases.csv",
+          "sha256": "924eb7a8004c04641c5aa48230c8c992d3332aeb5c60c542dae7c98e34251e00",
+          "size": 2208,
+          "media_type": "text/csv",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

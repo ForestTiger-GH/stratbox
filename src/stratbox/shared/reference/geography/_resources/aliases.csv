@@ -1,0 +1,16 @@
+rule_id,alias,canonical_name,subject_namespace,subject_id,kind,perimeter_id,source_family,effective_from,effective_to,review_basis
+country.ru.exact,Российская Федерация,Российская Федерация,iso3166-1-alpha2,RU,country,,,,,ISO 3166-1 RU
+country.ru.alias,Россия,Российская Федерация,iso3166-1-alpha2,RU,country,,,,,ISO 3166-1 RU
+moscow.city.exact,г. Москва,г. Москва,iso3166-2,RU-MOW,subject,,,,,GOST 7.67-2024 RU-MOW
+moscow.city.alias,город Москва,г. Москва,iso3166-2,RU-MOW,subject,,,,,GOST 7.67-2024 RU-MOW
+moscow.city.short,Москва,г. Москва,iso3166-2,RU-MOW,subject,,,,,GOST 7.67-2024 RU-MOW
+moscow.oblast.exact,Московская область,Московская область,iso3166-2,RU-MOS,subject,,,,,GOST 7.67-2024 RU-MOS
+altai.republic.exact,Республика Алтай,Республика Алтай,iso3166-2,RU-AL,subject,,,,,ISO 3166-2 RU-AL
+altai.krai.exact,Алтайский край,Алтайский край,iso3166-2,RU-ALT,subject,,,,,ISO 3166-2 RU-ALT
+sakha.exact,Республика Саха (Якутия),Республика Саха (Якутия),iso3166-2,RU-SA,subject,,,,,ISO 3166-2 RU-SA
+arkhangelsk.exact,Архангельская область,Архангельская область,iso3166-2,RU-ARK,subject,,,,,ISO 3166-2 RU-ARK
+tyumen.exact,Тюменская область,Тюменская область,iso3166-2,RU-TYU,subject,,,,,ISO 3166-2 RU-TYU
+nenets.exact,Ненецкий автономный округ,Ненецкий автономный округ,iso3166-2,RU-NEN,subject,,,,,ISO 3166-2 RU-NEN
+khanty.exact,Ханты-Мансийский автономный округ — Югра,Ханты-Мансийский автономный округ — Югра,iso3166-2,RU-KHM,subject,,,,,ISO 3166-2 RU-KHM
+yamal.exact,Ямало-Ненецкий автономный округ,Ямало-Ненецкий автономный округ,iso3166-2,RU-YAN,subject,,,,,ISO 3166-2 RU-YAN
+kemerovo.exact,Кемеровская область,Кемеровская область,iso3166-2,RU-KEM,subject,,,,,ISO 3166-2 RU-KEM
