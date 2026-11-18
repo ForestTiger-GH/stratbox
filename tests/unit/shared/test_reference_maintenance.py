@@ -91,3 +91,64 @@ def test_zip_validator_checks_bytes_and_rejects_missing_assets(tmp_path):
         archive.writestr("stratbox/shared/data/identity.py", b"# should be absent")
     with pytest.raises(ValueError, match="obsolete shared paths"):
         check(str(wheel))
+
+
+def _stage_fixture(tmp_path):
+    from stratbox.shared.reference.assets import load_reference
+    package = "stratbox.shared.reference.banks"
+    bundle = load_reference(package)
+    base = tmp_path / "src/stratbox/shared/reference/banks/_resources"
+    base.mkdir(parents=True)
+    for asset in bundle.edition.assets:
+        target = base.joinpath(*asset.path.split("/"))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(bundle.read(asset.role))
+    manifest = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
+    (base / "manifest.json").write_bytes(manifest)
+    return base, bundle
+
+
+def test_stage_rejects_duplicate_new_paths_without_writing_manifest(tmp_path):
+    stage = _tool("reference_editions.py")["stage"]
+    base, bundle = _stage_fixture(tmp_path)
+    new = base / "aliases" / "same.csv"
+    new.write_bytes(bundle.read("aliases"))
+    stage.__globals__["_manifest_path"] = lambda family: base / "manifest.json"
+    original = (base / "manifest.json").read_bytes()
+    with pytest.raises(ValueError, match="share one path"):
+        stage("banks", "new-2026", [
+            "aliases=aliases/same.csv", "legacy_selection=aliases/same.csv"
+        ], activate=True, publisher=None, source_url=None,
+          published_at=None, effective_from=None, effective_to=None)
+    assert (base / "manifest.json").read_bytes() == original
+
+
+def test_stage_rejects_corrupted_inactive_historical_edition(tmp_path):
+    from copy import deepcopy
+    from stratbox.shared.reference.assets import ReferenceError
+    stage = _tool("reference_editions.py")["stage"]
+    base, bundle = _stage_fixture(tmp_path)
+    path = base / "manifest.json"
+    manifest = json.loads(path.read_bytes())
+    historical = deepcopy(manifest["editions"][0])
+    historical["edition_id"] = "historical-2026"
+    historical["assets"][0]["sha256"] = "0" * 64
+    manifest["editions"].insert(0, historical)
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    stage.__globals__["_manifest_path"] = lambda family: path
+    original = path.read_bytes()
+    with pytest.raises(ReferenceError, match="corrupted"):
+        stage("banks", "next-2026", [], activate=True, publisher=None,
+              source_url=None, published_at=None, effective_from=None,
+              effective_to=None)
+    assert path.read_bytes() == original
+
+
+def test_wheel_duplicate_zip_members_rejected(tmp_path):
+    check = _tool("inspect_reference_wheel.py")["verify_wheel"]
+    wheel = tmp_path / "example.whl"
+    with ZipFile(wheel, "w") as archive:
+        archive.writestr("stratbox/shared/identity.py", "a")
+        archive.writestr("stratbox/shared/identity.py", "b")
+    with pytest.raises(ValueError, match="duplicate"):
+        check(str(wheel))

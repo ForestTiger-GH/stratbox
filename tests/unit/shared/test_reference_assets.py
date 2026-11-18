@@ -73,3 +73,51 @@ def test_reference_snapshot_includes_semantically_relevant_edition_metadata():
     assert ByteIdentity.of(canonical_manifest_bytes({"published_at": None})) != (
         ByteIdentity.of(canonical_manifest_bytes({"published_at": "2026-11-18"}))
     )
+
+
+def test_independently_pinned_historical_reference_bytes():
+    # Golden vectors recorded from the original Git blobs before the shared refactor.
+    # These must NOT be rewritten to follow manifest changes.
+    golden = {
+        "banks": {
+            "official_xlsx": ("8af8c25cd4c809a28c415bd9a531cc0ef0b90e534124a17bbef0c8463ac657f6", 142625),
+            "aliases": ("25e0e6114e56d5f8b485442d930f07e281e5002309d928e33f9dcf789026a13f", 622),
+            "default_selection": ("dbd4ed1be2ff03f8e2eaa44a06a4e31473941861b93e38860259cbf1ee41bb50", 1382),
+            "legacy_selection": ("3e4fb049f49370367872840a113750a2cc97c64149d46d6d3320a0cc37f94309", 330),
+        },
+        "okved2": {
+            "data": ("b9b05bb8d7edc6315d899978fe22ae46f4103ad7300625645d3ef8c9b8d4a280", 259822),
+            "meta": ("f62a642ed56d40e99a57d5c355326e911c091232e4d7d5948b5999500129fa40", 6804),
+            "structure": ("62d9de91ece8ef0b5901a5024726da9c661dfdca708e7e3229802a6581691dfa", 726),
+        },
+    }
+    for family, roles in golden.items():
+        bundle = load_reference("stratbox.shared.reference." + family,
+                                edition_id="bundled-original-2026-11")
+        for role, (digest, size) in roles.items():
+            data = bundle.read(role)
+            assert sha256(data).hexdigest() == digest
+            assert len(data) == size
+
+
+def test_pure_manifest_validation_rejects_duplicate_and_missing_roles():
+    from copy import deepcopy
+    import json
+    from stratbox.shared.reference.assets import parse_reference_manifest
+    package = "stratbox.shared.reference.banks"
+    original = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
+    data = json.loads(original)
+    active, editions = parse_reference_manifest(package, original)
+    assert active == editions[0].edition_id
+    duplicate = deepcopy(data)
+    duplicate["editions"].append(deepcopy(duplicate["editions"][0]))
+    with pytest.raises(ReferenceError, match="duplicate"):
+        parse_reference_manifest(package, duplicate)
+    incomplete = deepcopy(data)
+    incomplete["editions"][0]["assets"] = incomplete["editions"][0]["assets"][:1]
+    with pytest.raises(ReferenceError, match="Incomplete"):
+        parse_reference_manifest(package, incomplete)
+    collision = deepcopy(data)
+    collision["editions"][0]["assets"][1]["path"] = collision["editions"][0]["assets"][0]["path"]
+    with pytest.raises(ReferenceError, match="Duplicate"):
+        parse_reference_manifest(package, collision)

@@ -60,3 +60,40 @@ def test_conflicting_bank_alias_is_rejected():
             return b"canon,alias\nFIRST,ALIAS\nSECOND,ALIAS\n"
     with pytest.raises(ReferenceError, match="Conflicting"):
         registry._aliases(ConflictingBundle())
+
+
+def test_bank_reference_asset_provenance_and_traceable_name_policy():
+    from stratbox.shared.reference.assets import load_reference
+    bundle = load_reference("stratbox.shared.reference.banks")
+    assert bundle.edition.publisher is None
+    assert bundle.edition.curator == "Strategy Box"
+    assert bundle.asset("official_xlsx").publisher == "Bank of Russia"
+    assert bundle.asset("official_xlsx").origin_kind == "published_source"
+    assert bundle.asset("aliases").origin_kind == "curated_policy"
+    assert bundle.asset("default_selection").publisher is None
+    receipts = []
+    assert registry.normalize_registered_bank("СБЕРБАНК", inputs=receipts) == "СБЕР"
+    assert [r.role for r in receipts] == ["aliases"]
+    assert receipts[0].version == bundle.snapshot_identity
+    decision = registry.resolve_registered_bank("СБЕРБАНК", inputs=[])
+    assert decision.reference_id == "reference.banks"
+    assert decision.policy_snapshot_identity == bundle.snapshot_identity
+    assert decision.match_kind == "alias"
+
+
+def test_registered_bank_entity_is_distinct_from_display_name_policy():
+    pytest.importorskip("pandas")
+    pytest.importorskip("openpyxl")
+    receipts = []
+    official = registry.read_official_registry(inputs=receipts)
+    assert {x.role for x in receipts} == {"official_xlsx"}
+    unique = official.loc[~official["regn"].duplicated(keep=False)]
+    assert not unique.empty
+    chosen = str(unique.iloc[0]["regn"])
+    lookup_inputs = []
+    result = registry.resolve_bank_entity(chosen, inputs=lookup_inputs)
+    assert result.status == "matched"
+    assert result.subject.namespace == "cbr.bank.registration"
+    assert result.subject.id == chosen
+    assert [r.role for r in lookup_inputs] == ["official_xlsx"]
+    assert registry.resolve_bank_entity("unknown-registration").status == "unmatched"
