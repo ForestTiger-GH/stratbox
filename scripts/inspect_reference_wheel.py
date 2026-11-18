@@ -31,23 +31,40 @@ DOMAIN_OBSOLETE_DIRS = (
     "cbr_offices", "cbr_offices_reg", "cbr_sors_restoration",
     "escrow", "fns_1yur", "fns_sme", "frg",
 )
-DOMAIN_DATA_EXTENSIONS = frozenset({".csv", ".json"})
+# All non-code packaged files are treated as domain data, independent of the
+# present or future format. This makes a newly added YAML, parquet or binary
+# resource part of release completeness checks without editing this script.
+NONDATA_SUFFIXES = frozenset({".py", ".pyi", ".md", ".pyc"})
 
 
-def _source_domain_inventory() -> tuple[set[str], dict[str, tuple[int, str]]]:
-    """Build expectations from actual validated source packages, not a hand list."""
-    owners = {
-        name.replace(".", "/") + "/_registration.py"
-        for name in discover_operation_owners(DOMAIN_SOURCE)
-    }
+def _domain_asset(path: str) -> bool:
+    member = Path(path)
+    return (
+        not path.endswith("/")
+        and not any(
+            part.startswith(".") or part == "__pycache__" for part in member.parts
+        )
+        and member.suffix.lower() not in NONDATA_SUFFIXES
+    )
+
+
+def _identity(payload: bytes) -> tuple[int, str]:
+    return len(payload), sha256(payload).hexdigest()
+
+
+def _source_domain_inventory() -> tuple[
+    dict[str, tuple[int, str]], dict[str, tuple[int, str]]
+]:
+    """Inventory actual manifests and arbitrary packaged data without hand lists."""
+    owners = {}
+    for name in discover_operation_owners(DOMAIN_SOURCE):
+        filename = name.replace(".", "/") + "/_registration.py"
+        owners[filename] = _identity((DOMAIN_SOURCE / filename).read_bytes())
     data = {}
     for file in sorted(DOMAIN_SOURCE.rglob("*")):
-        if not file.is_file() or file.suffix.lower() not in DOMAIN_DATA_EXTENSIONS:
+        if not file.is_file() or not _domain_asset(file.relative_to(DOMAIN_SOURCE).as_posix()):
             continue
-        payload = file.read_bytes()
-        data[file.relative_to(DOMAIN_SOURCE).as_posix()] = (
-            len(payload), sha256(payload).hexdigest()
-        )
+        data[file.relative_to(DOMAIN_SOURCE).as_posix()] = _identity(file.read_bytes())
     return owners, data
 
 
@@ -62,8 +79,12 @@ def _verify_domain_members(
         for name in names
         if name.startswith(base) and name.endswith("/_registration.py")
     }
-    missing = sorted(source_owners - actual_owners)
-    extra = sorted(actual_owners - source_owners)
+    missing = sorted(source_owners.keys() - actual_owners)
+    extra = sorted(actual_owners - source_owners.keys())
+    changed_owners = [
+        name for name in sorted(actual_owners & source_owners.keys())
+        if _identity(read_bytes(base + name)) != source_owners[name]
+    ]
     package_missing = []
     for owner_file in actual_owners:
         parts = owner_file.split("/")[:-1]
@@ -77,14 +98,14 @@ def _verify_domain_members(
     actual_data = {
         name[len(base):]
         for name in names if name.startswith(base)
-        and Path(name).suffix.lower() in DOMAIN_DATA_EXTENSIONS
+        and _domain_asset(name[len(base):])
     }
     missing_data = sorted(set(source_data) - actual_data)
     extra_data = sorted(actual_data - set(source_data))
     data_changed = []
     for name in sorted(set(source_data) & actual_data):
         payload = read_bytes(base + name)
-        actual_identity = (len(payload), sha256(payload).hexdigest())
+        actual_identity = _identity(payload)
         if actual_identity != source_data[name]:
             data_changed.append(name)
 
@@ -94,10 +115,10 @@ def _verify_domain_members(
     )
     if base + "_cbr.py" in names:
         forbidden.append(base + "_cbr.py")
-    if missing or extra or package_missing or missing_data or extra_data or data_changed or forbidden:
+    if missing or extra or changed_owners or package_missing or missing_data or extra_data or data_changed or forbidden:
         raise ValueError(
             "Domain distribution mismatch: "
-            f"missing_owners={missing}, extra_owners={extra}, "
+            f"missing_owners={missing}, extra_owners={extra}, changed_owners={changed_owners}, "
             f"missing_init={sorted(set(package_missing))}, "
             f"missing_data={missing_data}, extra_data={extra_data}, "
             f"changed_data={data_changed}, obsolete={forbidden[:15]}"

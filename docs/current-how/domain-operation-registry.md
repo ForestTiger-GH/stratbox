@@ -21,6 +21,8 @@ The domain catalog rejects missing intermediate `__init__.py` files for
 manifest-bearing directories. Its discovery algorithm is shared with the
 static layout check and the distribution verifier. The source, wheel and
 sdist manifest/data inventories are compared without a fixed owner count.
+All manifest bytes and packaged non-code data assets are checked by size and SHA-256,
+including future asset formats without per-file allowlists.
 The domain catalog traverses installed Python packages under `stratbox.domains`
 in deterministic order using `importlib.resources.files`. It discovers only
 exact files named `_registration.py` and never searches arbitrary underscore

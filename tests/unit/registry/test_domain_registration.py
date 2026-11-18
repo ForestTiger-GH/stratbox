@@ -159,7 +159,7 @@ def test_same_named_prefix_does_not_match_other_owner(monkeypatch, tmp_path):
         monkeypatch, tmp_path,
         {
             left: OperationRegistration(left, (confused,)),
-            right: OperationRegistration(right, ()),
+            right: OperationRegistration(right, (_synthetic_ref(right, "test.right"),)),
         },
     )
     with pytest.raises(RegistryError, match="registry.nearest_owner"):
@@ -238,3 +238,13 @@ def test_dynamic_new_owner_and_extra_operation_have_no_count_ceiling(monkeypatch
     assert {ref.operation_id for ref in catalog().references} == {
         "future.series.first", "future.series.second"
     }
+
+
+def test_empty_manifest_owner_is_rejected_in_favor_of_grouping_packages(monkeypatch, tmp_path):
+    owner = "publisher.empty_family"
+    catalog = _synthetic_catalog(
+        monkeypatch, tmp_path,
+        {owner: OperationRegistration(owner, ())},
+    )
+    with pytest.raises(RegistryError, match="registry.empty_owner"):
+        catalog()

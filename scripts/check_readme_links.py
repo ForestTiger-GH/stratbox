@@ -1,7 +1,8 @@
 """Check local links in maintained Stratbox package README files.
 
 Checks paths only; external URLs and fragment-only links are intentionally
-out of scope. Markdown under archives and research workspaces is not scanned.
+out of scope. Validate maintained package READMEs and current documentation
+while excluding archived evidence and research snapshots.
 """
 
 from __future__ import annotations
@@ -39,18 +40,41 @@ def local_link_paths(markdown: str) -> tuple[str, ...]:
     return tuple(result)
 
 
-def check_links(root: Path = README_ROOT, *, repository: Path = ROOT) -> list[str]:
-    """Return diagnostics for escaped or missing local destinations."""
+CURRENT_DOC_DIRS = (
+    "docs/current-how",
+    "docs/architecture",
+    "docs/how",
+    "docs/what",
+)
+
+
+def check_links(
+    root: Path = README_ROOT,
+    *,
+    repository: Path = ROOT,
+    documentation_roots: tuple[Path, ...] | None = None,
+) -> list[str]:
+    """Return missing/escaped local links from maintained package and docs trees."""
     failures = []
     repo_root = repository.resolve()
-    for readme in sorted(root.rglob("README.md")):
-        for href in local_link_paths(readme.read_text(encoding="utf-8")):
+    if documentation_roots is None:
+        documentation_roots = (
+            tuple(repo_root / name for name in CURRENT_DOC_DIRS)
+            if root.resolve() == README_ROOT.resolve() and repo_root == ROOT.resolve()
+            else ()
+        )
+    pages = set(root.rglob("README.md"))
+    for directory in documentation_roots:
+        if directory.is_dir():
+            pages.update(directory.rglob("*.md"))
+    for page in sorted(pages):
+        for href in local_link_paths(page.read_text(encoding="utf-8")):
             # Repository-relative links are expressed via normal relative paths.
-            resolved = (readme.parent / href).resolve()
+            resolved = (page.parent / href).resolve()
             if not resolved.is_relative_to(repo_root):
-                failures.append(f"{readme.relative_to(repo_root)}: link escapes repository: {href}")
+                failures.append(f"{page.relative_to(repo_root)}: link escapes repository: {href}")
             elif not resolved.exists():
-                failures.append(f"{readme.relative_to(repo_root)}: missing link: {href}")
+                failures.append(f"{page.relative_to(repo_root)}: missing link: {href}")
     return failures
 
 

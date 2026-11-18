@@ -45,3 +45,26 @@ def test_relative_parent_link_and_url_encoding(tmp_path):
     (tmp_path / "docs"/"A B.md").write_text("test", encoding="utf-8")
     (package / "README.md").write_text("[file](../../docs/A%20B.md)", encoding="utf-8")
     assert checker["check_links"](package, repository=tmp_path) == []
+
+
+def test_broken_maintained_document_link_is_detected(tmp_path):
+    checker = _checker()
+    readmes = tmp_path / "src" / "stratbox"
+    readmes.mkdir(parents=True)
+    docs = tmp_path / "docs" / "current-how"
+    docs.mkdir(parents=True)
+    (docs / "README.md").write_text("[broken](missing.md)", encoding="utf-8")
+    failures = checker["check_links"](
+        readmes, repository=tmp_path, documentation_roots=(docs,)
+    )
+    assert len(failures) == 1 and "missing link" in failures[0]
+
+
+def test_archived_documents_are_outside_current_navigation(tmp_path):
+    checker = _checker()
+    readmes = tmp_path / "src" / "stratbox"
+    readmes.mkdir(parents=True)
+    archive = tmp_path / "docs_old"
+    archive.mkdir()
+    (archive / "README.md").write_text("[archive](old-link.md)", encoding="utf-8")
+    assert checker["check_links"](readmes, repository=tmp_path) == []

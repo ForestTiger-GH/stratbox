@@ -4,7 +4,7 @@ The `stratbox.domains.cbr.corporate_lending.industries.issuance_0104` package is
 operation owner under the industry-statistics family. It reads the Bank of Russia
 `01_04_A_New_loans_corp_YYYYMMDD.xlsx` monthly workbooks as corporate loan
 **flows**, independently of the `01_05_A_Debt_corp` **stock** series. Both
-series have local `_registration.py` declarations. Shared cell validation
+series have local `_registration.py` declarations. Shared industry selection, cell validation, worksheet rendering,
 and operation evidence helpers reside in `industries.common`; the issuance
 adapter also uses the explicitly identified reference industry, geography
 and APK profiles of `industries.debt_0105a`.
@@ -61,7 +61,7 @@ month; the returned `IssuanceWorkbookResult` exposes both time scales.
 
 ```python
 from pathlib import Path
-from stratbox.shared.data import SourcePayload
+from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as loans
 
 path = Path("01_04_A_New_loans_corp_20260801.xlsx")

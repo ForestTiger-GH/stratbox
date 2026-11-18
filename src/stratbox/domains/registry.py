@@ -47,6 +47,8 @@ def domain_catalog() -> OperationCatalog:
             raise RegistryError(f"registry.invalid_registration:{owner}")
         if declaration.owner_id != owner:
             raise RegistryError(f"registry.invalid_owner:{owner}:{declaration.owner_id}")
+        if not declaration.operations:
+            raise RegistryError(f"registry.empty_owner:{owner}")
         registrations.append((owner, declaration))
 
     owner_packages = {

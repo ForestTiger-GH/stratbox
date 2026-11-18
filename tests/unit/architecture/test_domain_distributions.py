@@ -87,3 +87,52 @@ def test_new_owner_is_automatically_required_from_source(tmp_path):
         check["_verify_domain_members"](
             {"stratbox/domains/__init__.py"}, "", _read_from_source(source)
         )
+
+
+def test_new_non_csv_domain_asset_is_included_automatically(tmp_path):
+    check = _inspector()
+    source = tmp_path / "domains"
+    source.mkdir()
+    (source / "__init__.py").write_text("", encoding="utf-8")
+    owner = source / "publisher" / "survey"
+    owner.mkdir(parents=True)
+    (source / "publisher" / "__init__.py").write_text("", encoding="utf-8")
+    (owner / "__init__.py").write_text("", encoding="utf-8")
+    (owner / "_registration.py").write_text("", encoding="utf-8")
+    data = owner / "raw-series.parquet"
+    data.write_bytes(b"future domain binary asset")
+    check["_verify_domain_members"].__globals__["DOMAIN_SOURCE"] = source
+    files = _real_members(source)
+    member = "stratbox/domains/publisher/survey/raw-series.parquet"
+    with pytest.raises(ValueError, match="missing_data"):
+        check["_verify_domain_members"](
+            files - {member}, "", _read_from_source(source)
+        )
+    actual = check["_verify_domain_members"](
+        files, "", _read_from_source(source)
+    )
+    assert actual["data_files"] == 1
+
+
+def test_changed_owner_manifest_content_is_rejected():
+    check = _inspector()
+    source = check["DOMAIN_SOURCE"]
+    files = _real_members(source)
+    victim = next(name for name in files if name.endswith("/_registration.py"))
+
+    def corrupted(member: str) -> bytes:
+        if member == victim:
+            return b"REGISTRATION = None\n"
+        return _read_from_source(source)(member)
+
+    with pytest.raises(ValueError, match="changed_owners"):
+        check["_verify_domain_members"](files, "", corrupted)
+
+
+def test_generated_hidden_cache_files_are_excluded_from_domain_inventory():
+    check = _inspector()
+    assert not check["_domain_asset"](".pytest_cache/v/cache/nodeids")
+    assert not check["_domain_asset"]("publisher/.hidden/CACHEDIR.TAG")
+    assert not check["_domain_asset"]("publisher/__pycache__/module.pyc")
+    assert check["_domain_asset"]("publisher/data/model.yml")
+    assert check["_domain_asset"]("publisher/data/raw-source.parquet")
