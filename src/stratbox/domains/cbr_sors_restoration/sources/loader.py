@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pandas as pd
 
-from stratbox.shared.data import UsedInputReceipt
+from stratbox.shared.evidence import UsedInputReceipt
 
 from stratbox.domains.cbr_sors_restoration.contracts import (
     SorsSourceBundle,

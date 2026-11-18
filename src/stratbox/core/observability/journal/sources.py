@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
-from stratbox.shared.data import ByteIdentity
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.execution.contracts import safe_token
 
 from stratbox.core.observability.journal.codecs import JournalDecodeError, encode_record

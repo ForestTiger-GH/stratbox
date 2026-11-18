@@ -8,7 +8,9 @@ from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, 
 from stratbox.core.storage.staging import current_revision, storage_scope, store_identity
 from stratbox.core.limits import BudgetExceeded, ExecutionBudget
 from stratbox.core.network import HttpTransport, StreamingHttpTransport
-from stratbox.shared.data import ByteIdentity, Representation, UsedInputReceipt, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.core.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
 from stratbox.core.operations.source.originals import (
     ReceiveOriginalRequest, ReceiveToStoreRequest, receive_original_to_store, storage_effect,

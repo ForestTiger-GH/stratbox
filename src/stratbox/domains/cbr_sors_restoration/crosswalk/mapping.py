@@ -8,7 +8,7 @@ import json
 import re
 
 import pandas as pd
-from stratbox.shared.data import SourcePayload, UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 _RESOURCE_PACKAGE = 'stratbox.domains.cbr_sors_restoration.crosswalk'
 _RESOURCE_DIR = '_resources'

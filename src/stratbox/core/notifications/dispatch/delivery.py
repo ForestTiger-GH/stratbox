@@ -8,7 +8,7 @@ from random import uniform
 from typing import Callable, Literal
 from uuid import uuid4
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import Completion, EffectReceipt, Invocation, OperationFailure
 from stratbox.core.execution.contracts import safe_token
 from stratbox.core.observability import JournalReadLimits, JournalRecord, RequiredJournalGate

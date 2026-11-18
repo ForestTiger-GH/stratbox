@@ -7,8 +7,9 @@ from hashlib import sha256
 import json
 from uuid import uuid4
 
-from stratbox.shared.data import (AcquisitionReceipt, ByteIdentity, Comparison, PublicationReceipt,
-                           StoredBytesReceipt)
+from stratbox.shared.evidence import AcquisitionReceipt, PublicationReceipt, StoredBytesReceipt
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.comparison import Comparison
 from stratbox.core.execution import ExecutionEvent, OperationResult
 from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability.records.contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc

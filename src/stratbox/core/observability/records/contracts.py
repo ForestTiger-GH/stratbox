@@ -10,7 +10,7 @@ from types import MappingProxyType
 from typing import Literal
 from uuid import uuid4
 
-from stratbox.shared.data import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution.contracts import Correlation, safe_token
 
 RecordType = Literal["execution", "domain_fact", "effect", "diagnostic", "result_summary"]

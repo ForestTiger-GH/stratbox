@@ -5,7 +5,8 @@ from pathlib import Path
 
 from typing import TYPE_CHECKING
 
-from stratbox.shared.data import ComputationReceipt, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 if TYPE_CHECKING:
     import pandas as pd
