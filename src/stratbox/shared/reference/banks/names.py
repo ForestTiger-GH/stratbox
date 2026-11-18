@@ -1,60 +1,12 @@
-"""
-banks.py — утилиты для работы с названиями банков.
-
-Цель normalize_bank_name:
-- привести входные "кривые" названия к предсказуемому виду (чистка + OPF + спецкейсы)
-- затем выполнить финальную канонизацию через реестр replacements:
-  _resources/cbr_replacements/cbr_replacements.csv (canon, alias)
-
-Важно:
-- по умолчанию внутри компании используется CAPS LOCK (case_mode='upper')
-- "брендовые" и любые "как нам надо" замены НЕ хранятся в коде; они хранятся в CSV
-"""
+"""Pure lexical bank names and explicit, validated alias resolution."""
 
 from __future__ import annotations
 
-from functools import lru_cache
-from io import StringIO
-import csv
+from dataclasses import dataclass
+from typing import Mapping, Literal
 import re
 
-
-@lru_cache(maxsize=1)
-def _load_cbr_replacements_alias_to_canon() -> dict[str, str]:
-    """
-    Загружает реестр замен из ресурсов пакета и возвращает словарь:
-      ALIAS (upper) -> CANON (upper)
-
-    Файл:
-      stratbox.shared.registries/_resources/cbr_replacements/cbr_replacements.csv
-
-    Если файла нет или он некорректный — возвращается пустой словарь.
-    """
-    try:
-        from stratbox.shared.registries._loader import pick_latest_by_prefix, read_resource_bytes
-
-        package = "stratbox.shared.registries"
-        rel_dir = "_resources/cbr_replacements"
-
-        rf = pick_latest_by_prefix(package, rel_dir, prefix="cbr_replacements", suffix=".csv")
-        raw = read_resource_bytes(package, rf.path)
-        text = raw.decode("utf-8-sig")
-
-        rdr = csv.DictReader(StringIO(text))
-        out: dict[str, str] = {}
-
-        for row in rdr:
-            canon = (row.get("canon") or "").strip().upper()
-            alias = (row.get("alias") or "").strip().upper()
-            if canon and alias:
-                out[alias] = canon
-
-        return out
-    except Exception:
-        return {}
-
-
-def normalize_bank_name(
+def normalize_bank_spelling(
     name,
     placement: str = "omit",     # 'left' | 'right' | 'omit'
     case_mode: str = "upper",    # 'upper' | 'preserve'
@@ -172,17 +124,6 @@ def normalize_bank_name(
         out = re.sub(r"^\s*-\s*", "", out)
         return re.sub(r"\s+", " ", out).strip()
 
-    def _final_replace(res: str) -> str:
-        # Финальная канонизация через replacements применяется только в upper-режиме
-        if not res:
-            return res
-        if case_mode != "upper":
-            return res
-
-        rep = _load_cbr_replacements_alias_to_canon()
-        key = res.strip().upper()
-        return rep.get(key, key)
-
     def _one(x):
         if x is None or str(x).strip() == "":
             return None
@@ -229,12 +170,11 @@ def normalize_bank_name(
         res = re.sub(r"\s+", " ", res).strip()
 
         # 7) Финальная канонизация по replacements
-        res = _final_replace(res)
 
         # 8) Возврат с учётом case_mode
         return (res.upper() if case_mode == "upper" else res) or None
 
-    # Коллекции/pandas
+    # Collections/pandas
     if HAS_PD and isinstance(name, pd.Series):
         return name.map(_one)
     if HAS_PD and isinstance(name, pd.Index):
@@ -242,3 +182,46 @@ def normalize_bank_name(
     if isinstance(name, (list, tuple)):
         return [_one(v) for v in name]
     return _one(name)
+
+
+
+@dataclass(frozen=True, slots=True)
+class BankNameResolution:
+    raw_name: str
+    normalized_name: str | None
+    display_name: str | None
+    match_kind: Literal["exact", "alias", "unmatched"]
+    policy_edition_id: str | None = None
+
+
+def normalize_bank_name(name, placement: str = "omit", case_mode: str = "upper",
+                        drop_bank: str = "left", *, aliases: Mapping[str, str] | None = None):
+    """Explicit composition; no filesystem or registry lookup occurs here."""
+    value = normalize_bank_spelling(name, placement, case_mode, drop_bank)
+    if not aliases or case_mode != "upper":
+        return value
+    def replace_one(v):
+        return aliases.get(v.upper(), v) if isinstance(v, str) else v
+    try:
+        import pandas as pd
+    except ImportError:
+        pd = None
+    if pd is not None and isinstance(value, pd.Series):
+        return value.map(replace_one)
+    if pd is not None and isinstance(value, pd.Index):
+        return pd.Index([replace_one(v) for v in value], name=value.name)
+    if isinstance(value, list):
+        return [replace_one(v) for v in value]
+    return replace_one(value)
+
+
+def resolve_bank_name(value: str, *, aliases: Mapping[str, str],
+                      policy_edition_id: str | None = None,
+                      placement: str = "omit", case_mode: str = "upper",
+                      drop_bank: str = "left") -> BankNameResolution:
+    if not isinstance(value, str):
+        raise TypeError("Bank name must be a string")
+    key = normalize_bank_spelling(value, placement, case_mode, drop_bank)
+    displayed = normalize_bank_name(value, placement, case_mode, drop_bank, aliases=aliases)
+    kind = "unmatched" if key is None else "alias" if displayed != key else "exact"
+    return BankNameResolution(value, key, displayed, kind, policy_edition_id)
