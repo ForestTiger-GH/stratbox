@@ -82,6 +82,7 @@ python -B -m pytest -q
 python -m pip wheel . -w dist --no-deps
 # Substitute the actual produced wheel filename:
 python -B scripts/inspect_reference_wheel.py dist/stratbox-VERSION-py3-none-any.whl
+python -B scripts/inspect_reference_wheel.py dist/stratbox-VERSION.tar.gz
 ```
 
 The wheel inspection reads the ZIP members directly, verifies every manifest
@@ -114,3 +115,19 @@ canonical parser, checks all referenced bytes and rejects duplicate ZIP
 member names and undeclared resources. It is intended for an actual built
 wheel as well as controlled negative ZIP fixtures. The former must be
 verified in a local release check before distribution.
+
+
+## 8. Local acceptance without workflow execution
+
+Run `python -B scripts/local_release_check.py` with installed development
+dependencies, including `pytest`, `build`, and `wheel`. This runs static
+release/ownership checks, shared and SORS identity regression tests, the
+complete pytest suite, an offline wheel/sdist build (without build isolation),
+exact resource inspection in both archives and an isolated installed-wheel
+base import with all three packaged references.
+
+The command writes a structured JSON report under
+`.tmp/shared-release-check.json`; a failing step is recorded and returns a
+non-zero code. Execute it under Python 3.10, 3.11, and 3.12 for the supported
+matrix, keeping individual `--report` paths for each interpreter. It does not
+start, depend on or monitor a remote workflow.

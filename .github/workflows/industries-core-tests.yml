@@ -72,8 +72,8 @@ jobs:
         shell: bash
         run: |
           python -B scripts/reference_editions.py verify --reference all
-          for wheel in dist/stratbox-*.whl; do
-            python -B scripts/inspect_reference_wheel.py "$wheel"
+          for artifact in dist/stratbox-*.whl dist/stratbox-*.tar.gz; do
+            python -B scripts/inspect_reference_wheel.py "$artifact"
           done
       - name: Validate installed base wheel without optional dependencies
         shell: bash

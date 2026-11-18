@@ -26,6 +26,8 @@ python -B scripts/check_release_integrity.py
 python -B scripts/check_internal_imports.py
 python -B scripts/reference_editions.py verify --reference all
 python -B -m pytest -q
+# Offline regression and distribution admission (requires build, pytest, wheel):
+# python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
 # python -B scripts/inspect_reference_wheel.py dist/stratbox-0.16.0-py3-none-any.whl
 ```

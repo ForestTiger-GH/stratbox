@@ -48,6 +48,8 @@ REQUIRED_FILES = [
     'tests/unit/shared/test_periods.py',
     'scripts/reference_editions.py',
     'scripts/inspect_reference_wheel.py',
+    'scripts/local_release_check.py',
+    'tests/cbr_sors_restoration/test_identity_provenance.py',
     'src/stratbox/shared/identity.py',
     'src/stratbox/shared/evidence.py',
     'src/stratbox/shared/data/datasets.py',
