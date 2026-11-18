@@ -281,6 +281,8 @@ def parse_reference_manifest(package: str, document: bytes | Mapping[str, object
 
 def load_reference(package: str, *, edition_id: str | None = None) -> LoadedReference:
     """Resolve a fully validated reference edition and reproducible snapshot."""
+    if not isinstance(package, str) or not package.startswith("stratbox.shared.reference."):
+        raise ReferenceError("Reference package must be an owned reference package")
     try:
         raw = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
     except (FileNotFoundError, ModuleNotFoundError) as exc:
