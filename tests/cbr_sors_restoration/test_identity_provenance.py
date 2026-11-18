@@ -121,3 +121,27 @@ def test_unsealed_prebuilt_sors_bundle_is_rejected_before_solver():
     from stratbox.domains.cbr_sors_restoration.api import _use_grids
     with pytest.raises(OperationFailure, match="input.snapshot_required"):
         _use_grids(None, _bundle((_classifier(),)), "sors_source_bundle")
+
+
+def test_strict_identity_fingerprints_classifier_byte_and_edition_changes(monkeypatch):
+    import stratbox.domains.cbr_sors_restoration.operations as operations
+    from stratbox.shared.reference.assets import qualified_reference_use
+    receipt = _classifier()
+    used = qualified_reference_use(
+        (receipt,), package="stratbox.shared.reference.okved2", role="data"
+    )
+    source = _bundle((receipt,))
+    config = SorsRunConfig(as_of_date="2026-06-01")
+    baseline = operations._identities(source, config)
+    monkeypatch.setattr(operations, "qualified_reference_use", lambda *args, **kwargs:
+                        replace(used, identity=ByteIdentity.of(b"alternate classifier material")))
+    changed_bytes = operations._identities(source, config)
+    assert changed_bytes[0] == baseline[0]
+    assert changed_bytes[1] != baseline[1]
+    assert changed_bytes[2] != baseline[2]
+    monkeypatch.setattr(operations, "qualified_reference_use", lambda *args, **kwargs:
+                        replace(used, snapshot_identity=ByteIdentity.of(b"alternate curated edition")))
+    changed_policy = operations._identities(source, config)
+    assert changed_policy[0] == baseline[0]
+    assert changed_policy[1] != baseline[1]
+    assert changed_policy[1] != changed_bytes[1]
