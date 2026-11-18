@@ -71,3 +71,5 @@ the same infrastructure and choose their own source-specific interpretations.
 [Shared owner boundaries](shared-ownership.md)
 
 [Core API and evidence limits](../current-how/universal-business-core.md)
+
+[Domain functional ownership and economic invariants](domain-functional-semantics.md)

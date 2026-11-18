@@ -18,3 +18,5 @@ publications, normalized datasets and views may use different classifications.
 Source-specific geography, observation periods and publication layouts remain
 in the owning domain. Shared statistical contracts and neutral execution/storage
 logic belong to `shared` and `core` respectively.
+
+[Functional ownership and semantic invariants](../../../docs/architecture/domain-functional-semantics.md)
