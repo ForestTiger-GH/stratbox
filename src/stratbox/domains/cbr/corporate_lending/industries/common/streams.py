@@ -143,7 +143,3 @@ def concat_industry_streams(
 
 
 
-
-# Existing stock-series imports refer to the same family algorithms.
-optimize_cbr_0105a_debt_corp_stream_dtypes = optimize_industry_stream_dtypes
-concat_cbr_0105a_debt_corp_streams = concat_industry_streams

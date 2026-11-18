@@ -28,7 +28,7 @@ from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
 )
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import build_cbr_0105a_debt_corp_pivot_set
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.parser import (
-    concat_cbr_0105a_debt_corp_streams,
+    concat_industry_streams,
     parse_cbr_0105a_debt_corp_excel_bytes,
 )
 from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import Cbr0105ADebtCorpPivotError
@@ -311,7 +311,7 @@ def test_parse_uses_exact_bytes_read_from_explicit_store(tmp_path: Path) -> None
 
 def test_concat_preserves_categorical_dtypes() -> None:
     parsed = _parsed_pair()
-    stream = concat_cbr_0105a_debt_corp_streams(item.df_stream for item in parsed)
+    stream = concat_industry_streams(item.df_stream for item in parsed)
     assert str(stream["report_date"].dtype) == "category"
     assert str(stream["source_name"].dtype) == "category"
     assert stream["report_date"].astype("object").nunique() == 2

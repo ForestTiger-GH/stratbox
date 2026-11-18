@@ -15,6 +15,3 @@ def normalize_industry_text(value: object) -> str:
     text = re.sub(r"[^0-9A-Za-zА-Яа-я]+", " ", text)
     return re.sub(r"\s+", " ", text).strip().lower()
 
-
-# Series-specific imports share the same normalization semantics.
-normalize_cbr_0105a_text = normalize_industry_text

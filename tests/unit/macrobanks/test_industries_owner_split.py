@@ -43,12 +43,8 @@ def test_shared_operations_are_owned_by_common_not_other_series():
     assert debt_operations._select_industry is issuance_operations._select_industry
 
 
-def test_common_cell_normalization_preserves_debt_schema_semantics():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
-        normalize_cbr_0105a_text,
-    )
-    assert normalize_cbr_0105a_text is normalization.normalize_cbr_0105a_text
-    assert normalization.normalize_cbr_0105a_text("СЕЛЬСКОЕ ХОЗЯЙСТВО, из них:") == (
+def test_common_cell_normalization_is_owned_by_industry_family():
+    assert normalization.normalize_industry_text("СЕЛЬСКОЕ ХОЗЯЙСТВО, из них:") == (
         "сельское хозяйство"
     )
     assert callable(parsing._coerce_numeric_value)
@@ -152,9 +148,15 @@ def test_issuance_uses_common_contracts_not_stock_owner_contracts():
         ).read_text(encoding="utf-8")
 
 
-def test_series_independent_family_helpers_share_exact_implementations():
-    assert streams.optimize_cbr_0105a_debt_corp_stream_dtypes is (
-        streams.optimize_industry_stream_dtypes
+def test_series_implementations_use_direct_family_helpers():
+    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
+        parser as stock_parser, derived as stock_derived,
     )
-    assert streams.concat_cbr_0105a_debt_corp_streams is streams.concat_industry_streams
-    assert normalization.normalize_cbr_0105a_text is normalization.normalize_industry_text
+    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
+        parser as flow_parser,
+    )
+
+    assert stock_parser.optimize_industry_stream_dtypes is streams.optimize_industry_stream_dtypes
+    assert stock_derived.concat_industry_streams is streams.concat_industry_streams
+    assert flow_parser.optimize_industry_stream_dtypes is streams.optimize_industry_stream_dtypes
+    assert stock_parser.normalize_industry_text is normalization.normalize_industry_text
