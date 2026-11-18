@@ -6,7 +6,7 @@ from pathlib import Path
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains import escrow
+from stratbox.domains.cbr import escrow
 
 
 def require_value(result):

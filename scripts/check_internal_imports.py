@@ -19,11 +19,18 @@ PACKAGE = SRC / "stratbox"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-DOMAINS = frozenset(
-    path.name for path in (PACKAGE / "domains").iterdir()
-    if path.is_dir() and not path.name.startswith("_")
-    and (path / "__init__.py").is_file()
-)
+def _registered_domains() -> frozenset[str]:
+    """Resolve manifest owners by full relative package path, regardless of depth."""
+    root = PACKAGE / "domains"
+    if not root.is_dir():
+        return frozenset()
+    return frozenset(
+        ".".join(manifest.parent.relative_to(root).parts)
+        for manifest in root.rglob("_registration.py")
+        if (manifest.parent / "__init__.py").is_file()
+    )
+
+
 CRITICAL_MODULES = [
     "stratbox",
     "stratbox.core",
@@ -64,17 +71,17 @@ CRITICAL_MODULES = [
     "stratbox.shared.reference.geography",
     "stratbox.shared.time",
     "stratbox.domains.registry",
-    "stratbox.domains.cbr_file_collector",
-    "stratbox.domains.cbr_industries",
-    "stratbox.domains.cbr_industries.issuance_0104",
-    "stratbox.domains.cbr_forms",
-    "stratbox.domains.cbr_offices",
-    "stratbox.domains.cbr_offices_reg",
-    "stratbox.domains.cbr_sors_restoration",
-    "stratbox.domains.escrow",
-    "stratbox.domains.frg",
-    "stratbox.domains.fns_sme",
-    "stratbox.domains.fns_1yur",
+    "stratbox.domains.cbr.file_collection",
+    "stratbox.domains.cbr.corporate_lending.industries",
+    "stratbox.domains.cbr.corporate_lending.industries.issuance_0104",
+    "stratbox.domains.cbr.reporting_forms",
+    "stratbox.domains.cbr.service_network.bank_offices",
+    "stratbox.domains.cbr.service_network.territorial_offices",
+    "stratbox.domains.cbr.corporate_lending.sors_restoration",
+    "stratbox.domains.cbr.escrow",
+    "stratbox.domains.frank_rg.retail_banking",
+    "stratbox.domains.fns.sme_register",
+    "stratbox.domains.fns.legal_entities_1yur",
 ]
 
 
@@ -101,14 +108,15 @@ def _imports(path: Path, tree: ast.AST):
                     yield node.lineno, f"{target}.{alias.name}"
 
 
-def _owner(path: Path) -> str:
+def _owner(path: Path, owners: frozenset[str]) -> str:
     parts = path.relative_to(PACKAGE).parts
     if len(parts) >= 2 and parts[0] == "domains":
         if parts[1] == "registry.py":
             return "domains.registry"
-        if parts[1] in DOMAINS:
-            return f"domain:{parts[1]}"
-        return "domains.utility"
+        package = ".".join(parts[1:-1])
+        candidates = (name for name in owners if package == name or package.startswith(name + "."))
+        nearest = max(candidates, key=lambda item: len(item.split(".")), default=None)
+        return f"domain:{nearest}" if nearest else "domains.utility"
     if len(parts) >= 2 and parts[0] == "core":
         return f"core:{parts[1]}"
     if len(parts) >= 2 and parts[0] == "shared":
@@ -116,18 +124,29 @@ def _owner(path: Path) -> str:
     return "package"
 
 
-def _domain(target: str) -> str | None:
+def _domain(target: str, owners: frozenset[str]) -> str | None:
+    prefix = "stratbox.domains."
+    if not target.startswith(prefix):
+        return None
+    subpath = target[len(prefix):]
+    candidates = (item for item in owners if subpath == item or subpath.startswith(item + "."))
+    return max(candidates, key=lambda item: len(item.split(".")), default=None)
+
+
+def _publisher(target: str, owners: frozenset[str]) -> str | None:
     parts = target.split(".")
-    if len(parts) >= 3 and parts[:2] == ["stratbox", "domains"] and parts[2] in DOMAINS:
-        return parts[2]
-    return None
+    if len(parts) < 3 or parts[:2] != ["stratbox", "domains"]:
+        return None
+    publishers = {owner.split(".", 1)[0] for owner in owners}
+    return parts[2] if parts[2] in publishers else None
 
 
 def check_dependency_direction() -> list[str]:
     failures: list[str] = []
+    owners = _registered_domains()
     for path in sorted(PACKAGE.rglob("*.py")):
         relative = path.relative_to(PACKAGE).as_posix()
-        owner = _owner(path)
+        owner = _owner(path, owners)
         source = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         for line, target in _imports(path, source):
             prefix = f"{relative}:{line}"
@@ -155,15 +174,25 @@ def check_dependency_direction() -> list[str]:
                 failures.append(f"{prefix}: foundational package imports domain {target}")
             if owner.startswith("shared:") and target.startswith("stratbox.core"):
                 failures.append(f"{prefix}: shared contracts depend on executable core {target}")
-            if owner == "domains.registry" and _domain(target):
+            if owner == "domains.registry" and _domain(target, owners):
                 failures.append(f"{prefix}: domain catalog depends on concrete domain {target}")
-            target_domain = _domain(target)
-            if owner.startswith("domain:") and target_domain is not None:
+            target_domain = _domain(target, owners)
+            if owner.startswith("domain:"):
                 source_domain = owner.split(":", 1)[1]
-                if source_domain != target_domain and not (
-                    source_domain == "cbr_sors_restoration" and target_domain == "cbr_industries"
-                ):
-                    failures.append(f"{prefix}: cross-domain import {target}")
+                source_publisher = source_domain.split(".", 1)[0]
+                target_publisher = _publisher(target, owners)
+                if target_publisher is not None and source_publisher != target_publisher:
+                    failures.append(f"{prefix}: cross-source import {target}")
+                elif target_domain is not None and source_domain != target_domain:
+                    # A child series uses the owning parent's shared parsing/model rules.
+                    parent_dependency = source_domain.startswith(target_domain + ".")
+                    # SORS reuses the exact official 01_05_A parser and geography schema.
+                    sors_dependency = (
+                        source_domain == "cbr.corporate_lending.sors_restoration"
+                        and target_domain == "cbr.corporate_lending.industries"
+                    )
+                    if not (parent_dependency or sors_dependency):
+                        failures.append(f"{prefix}: cross-domain import {target}")
             if owner == "core:execution" and target.startswith((
                 "stratbox.core.operations", "stratbox.core.observability", "stratbox.core.notifications"
             )):

@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from stratbox.core.network import HttpResponse
-from stratbox.domains import cbr_forms
+from stratbox.domains.cbr import reporting_forms as cbr_forms
 
 
 @pytest.mark.parametrize("code", ["101", "102", "123", "135", "802", "805"])

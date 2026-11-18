@@ -6,7 +6,7 @@ from pathlib import Path
 from cbr_industries_0105a_debt_corp_example import load
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
-from stratbox.domains import cbr_industries as industries
+from stratbox.domains.cbr.corporate_lending import industries as industries
 
 
 def main():

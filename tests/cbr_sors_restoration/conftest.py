@@ -5,7 +5,7 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr_sors_restoration.results import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.results import (
     SorsRestorationResult,
     SorsRunSummary,
 )

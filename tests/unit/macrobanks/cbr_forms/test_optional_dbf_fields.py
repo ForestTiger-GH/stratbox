@@ -8,7 +8,7 @@ import pandas as pd
 from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains import cbr_forms as forms
+from stratbox.domains.cbr import reporting_forms as forms
 
 
 def dbf_bytes(fields, records):

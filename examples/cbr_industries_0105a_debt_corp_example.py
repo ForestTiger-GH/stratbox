@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains import cbr_industries as industries
+from stratbox.domains.cbr.corporate_lending import industries as industries
 
 
 def load(paths, selection=industries.IndustrySelection()):

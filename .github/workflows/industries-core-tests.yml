@@ -3,7 +3,7 @@ name: Stratbox industry core regression
 on:
   pull_request:
     paths:
-      - 'src/stratbox/domains/cbr_industries/**'
+      - 'src/stratbox/domains/cbr/corporate_lending/industries/**'
       - 'src/stratbox/domains/registry.py'
       - 'src/stratbox/core/**'
       - 'src/stratbox/shared/**'
@@ -123,8 +123,8 @@ jobs:
           import stratbox
           from stratbox.shared.reference.assets import load_reference
           from stratbox.domains.registry import operation_catalog
-          from stratbox.domains.cbr_forms.common.models import load_models
-          from stratbox.domains.cbr_sors_restoration.crosswalk.mapping import read_crosswalk_manifest
+          from stratbox.domains.cbr.reporting_forms.common.models import load_models
+          from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import read_crosswalk_manifest
           root = Path(stratbox.__file__).resolve().parent
           assert root.is_relative_to(Path(sys.argv[1]).resolve()), root
           catalog = operation_catalog()
@@ -138,14 +138,14 @@ jobs:
           }
           for reference in ("banks", "okved2", "geography"):
               load_reference("stratbox.shared.reference." + reference).validate_all()
-          assert len(list((root / "domains/cbr_forms/models").glob("form*.csv"))) >= 6
+          assert len(list((root / "domains/cbr/reporting_forms/models").glob("form*.csv"))) >= 6
           assert not load_models().empty
           manifest = read_crosswalk_manifest()
           assert isinstance(manifest, dict) and manifest.get("mapping_version")
           original = Path.cwd() / "src/stratbox"
           groups = (
-              "domains/cbr_forms/models",
-              "domains/cbr_sors_restoration/crosswalk/_resources",
+              "domains/cbr/reporting_forms/models",
+              "domains/cbr/corporate_lending/sors_restoration/crosswalk/_resources",
           )
           for group in groups:
               expected = {

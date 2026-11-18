@@ -1,13 +1,13 @@
 import pytest
 
-from stratbox.domains.cbr_sors_restoration.crosswalk.mapping import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import (
     read_atom_class_edges,
     read_crosswalk_manifest,
     read_crosswalk_scenarios,
     read_legacy_atoms,
     validate_mapping_version,
 )
-from stratbox.domains.cbr_sors_restoration.registries.okved2 import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.okved2 import (
     read_okved2_classes,
 )
 
@@ -81,7 +81,7 @@ def test_technical_category_is_explicitly_visible_as_uncertainty() -> None:
 
 
 def test_relation_ids_are_scenario_scoped() -> None:
-    from stratbox.domains.cbr_sors_restoration.crosswalk.mapping import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import (
         build_crosswalk_relations_grid,
     )
 

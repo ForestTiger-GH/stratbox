@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from stratbox.domains.fns_sme.parser import inspect_region_names
-from stratbox.domains.cbr_industries.regions import normalize_cbr_0105a_region_name
+from stratbox.domains.fns.sme_register.parser import inspect_region_names
+from stratbox.domains.cbr.corporate_lending.industries.regions import normalize_cbr_0105a_region_name
 
 
 def test_fns_names_annotate_without_rekeying_source_data():
@@ -26,7 +26,7 @@ def test_cbr_series_name_key_uses_common_lexical_normalizer():
 
 def test_escrow_diagnostics_preserve_original_parsed_row_objects():
     pytest.importorskip("pandas")
-    from stratbox.domains.escrow.rows import inspect_escrow_region_names
+    from stratbox.domains.cbr.escrow.rows import inspect_escrow_region_names
     from types import SimpleNamespace
     rows = [SimpleNamespace(entity_name="г. Москва", row_kind="region"),
             SimpleNamespace(entity_name="Итого по РФ", row_kind="country_total")]

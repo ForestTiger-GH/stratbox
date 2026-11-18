@@ -9,7 +9,7 @@ import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
 
-from stratbox.domains.cbr_sors_restoration import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration import (
     SorsCrosswalkConfig,
     SorsOptimizationConfig,
     SorsRunConfig,

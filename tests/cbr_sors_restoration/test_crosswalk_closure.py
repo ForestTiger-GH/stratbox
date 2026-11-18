@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr_sors_restoration.crosswalk.closure import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.closure import (
     close_crosswalk_bounds,
 )
-from stratbox.domains.cbr_sors_restoration.linear.contracts import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.contracts import (
     CsrMatrixData,
     SorsLinearProblem,
 )

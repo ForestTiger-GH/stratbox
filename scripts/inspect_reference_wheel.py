@@ -23,6 +23,53 @@ from stratbox.shared.reference.assets import (  # noqa: E402
     REFERENCE_REQUIRED_ROLES, ReferenceError, parse_reference_manifest,
 )
 
+DOMAIN_OWNERS = (
+    "cbr/file_collection", "cbr/reporting_forms",
+    "cbr/corporate_lending/industries",
+    "cbr/corporate_lending/industries/issuance_0104",
+    "cbr/corporate_lending/sors_restoration",
+    "cbr/service_network/bank_offices",
+    "cbr/service_network/territorial_offices",
+    "cbr/escrow", "fns/legal_entities_1yur",
+    "fns/sme_register", "frank_rg/retail_banking",
+)
+DOMAIN_REQUIRED_ASSETS = (
+    "cbr/reporting_forms/models/form101.csv",
+    "cbr/reporting_forms/models/form102.csv",
+    "cbr/reporting_forms/models/form123.csv",
+    "cbr/reporting_forms/models/form135.csv",
+    "cbr/reporting_forms/models/form802.csv",
+    "cbr/reporting_forms/models/form805.csv",
+    "cbr/corporate_lending/sors_restoration/crosswalk/_resources/crosswalk_manifest.json",
+)
+DOMAIN_OBSOLETE_DIRS = (
+    "cbr_file_collector", "cbr_forms", "cbr_industries",
+    "cbr_offices", "cbr_offices_reg", "cbr_sors_restoration",
+    "escrow", "fns_1yur", "fns_sme", "frg",
+)
+
+
+def _verify_domain_members(names: set[str], prefix: str) -> None:
+    base = prefix + "stratbox/domains/"
+    missing = [
+        base + package + "/_registration.py"
+        for package in DOMAIN_OWNERS
+        if base + package + "/_registration.py" not in names
+    ]
+    missing.extend(base + asset for asset in DOMAIN_REQUIRED_ASSETS
+                   if base + asset not in names)
+    crosswalk_prefix = base + "cbr/corporate_lending/sors_restoration/crosswalk/_resources/"
+    if not any(name.startswith(crosswalk_prefix) and name.endswith(".csv") for name in names):
+        missing.append(crosswalk_prefix + "*.csv")
+    forbidden = [
+        name for name in names if name.startswith(tuple(base + part + "/" for part in DOMAIN_OBSOLETE_DIRS))
+    ]
+    if base + "_cbr.py" in names:
+        forbidden.append(base + "_cbr.py")
+    if missing or forbidden:
+        raise ValueError(f"Domain distribution mismatch: missing={missing}, obsolete={forbidden[:15]}")
+
+
 OBSOLETE = (
     "stratbox/shared/registries/",
     "stratbox/shared/text/",
@@ -44,6 +91,7 @@ def verify_wheel(path: str) -> dict[str, object]:
         if len(names) != len(set(names)):
             raise ValueError("Wheel contains duplicate ZIP member names")
         members = set(names)
+        _verify_domain_members(members, "")
         old = sorted(name for name in names if any(name.startswith(prefix) for prefix in OBSOLETE))
         if old:
             raise ValueError("Wheel includes obsolete shared paths: " + str(old))
@@ -106,6 +154,7 @@ def verify_sdist(path: str) -> dict[str, object]:
             raise ValueError("Source distribution requires one top-level package root")
         root = next(iter(roots)) + "/src/"
         directory = set(names)
+        _verify_domain_members(directory, root)
         for name in _REQUIRED_CODE:
             if root + name not in directory:
                 raise ValueError("Required semantic owner missing from sdist: " + name)

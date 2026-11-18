@@ -88,6 +88,8 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "import importlib.metadata, sys; "
                 "sys.path.insert(0, sys.argv[1]); "
                 "import stratbox; "
+                "from stratbox.domains.registry import domain_catalog; "
+                "assert len(domain_catalog().list_refs()) == 68; "
                 "from stratbox.shared.identity import ByteIdentity; "
                 "from stratbox.shared.evidence import SourcePayload; "
                 "from stratbox.shared.reference.assets import load_reference; "

@@ -3,23 +3,23 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr_sors_restoration.contracts import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.contracts import (
     SorsCrosswalkConfig,
     SorsSourceBundle,
 )
-from stratbox.domains.cbr_sors_restoration.crosswalk.problem import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.problem import (
     CrosswalkCompilation,
     compile_crosswalk_problem,
 )
-from stratbox.domains.cbr_sors_restoration.linear.contracts import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.contracts import (
     CsrMatrixData,
     SorsLinearProblem,
 )
-from stratbox.domains.cbr_sors_restoration.publication import RoundingPolicy
-from stratbox.domains.cbr_sors_restoration.registries.okved2 import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import RoundingPolicy
+from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.okved2 import (
     read_okved2_classes,
 )
-from stratbox.domains.cbr_sors_restoration.crosswalk.operations import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.operations import (
     _base_scenario_grid,
     _target_outer_bounds,
 )
@@ -235,7 +235,7 @@ def test_agriculture_crosswalk_equations_identify_01_and_02_by_residual() -> Non
         SorsCrosswalkConfig(mode='feasibility'),
         'core',
     )
-    from stratbox.domains.cbr_sors_restoration.crosswalk.closure import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.closure import (
         close_crosswalk_bounds,
     )
 
@@ -260,7 +260,7 @@ def test_agriculture_crosswalk_equations_identify_01_and_02_by_residual() -> Non
 def test_scenario_envelope_is_not_accepted_when_coverage_is_incomplete(
     small_result,
 ) -> None:
-    from stratbox.domains.cbr_sors_restoration.crosswalk.operations import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.operations import (
         _ScenarioExecution,
         _robust_envelope,
     )
@@ -319,10 +319,10 @@ def test_scenario_envelope_is_not_accepted_when_coverage_is_incomplete(
 
 
 def test_one_sided_lp_tightening_can_safely_identify_bucket(small_result) -> None:
-    from stratbox.domains.cbr_sors_restoration.crosswalk.operations import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.operations import (
         _apply_target_results,
     )
-    from stratbox.domains.cbr_sors_restoration.linear.highs import SolveResult
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.highs import SolveResult
 
     compilation = _acceptance_compilation(small_result)
     grid = _base_scenario_grid(
@@ -430,7 +430,7 @@ def test_broad_agriculture_scenario_preserves_mapping_uncertainty() -> None:
         SorsCrosswalkConfig(mode='feasibility'),
         'broad',
     )
-    from stratbox.domains.cbr_sors_restoration.crosswalk.closure import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.closure import (
         close_crosswalk_bounds,
     )
 

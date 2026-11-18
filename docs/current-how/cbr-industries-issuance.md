@@ -1,6 +1,6 @@
 # CBR industries — monthly corporate loan issuance (01_04_A)
 
-The `stratbox.domains.cbr_industries.issuance_0104` package is the second
+The `stratbox.domains.cbr.corporate_lending.industries.issuance_0104` package is the second
 series adapter in the industry-statistics domain. It reads the Bank of Russia
 `01_04_A_New_loans_corp_YYYYMMDD.xlsx` monthly workbooks as corporate loan
 **flows**, independently of the `01_05_A_Debt_corp` **stock** series.
@@ -58,11 +58,11 @@ month; the returned `IssuanceWorkbookResult` exposes both time scales.
 ```python
 from pathlib import Path
 from stratbox.shared.data import SourcePayload
-from stratbox.domains.cbr_industries import issuance_0104 as loans
+from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as loans
 
 path = Path("01_04_A_New_loans_corp_20260801.xlsx")
 request = loans.ParseIssuanceRequest(SourcePayload(path.read_bytes()), path.name)
-from stratbox.domains.cbr_industries import IndustrySelection
+from stratbox.domains.cbr.corporate_lending.industries import IndustrySelection
 
 stream_run = loans.build_stream(loans.BuildIssuanceStreamRequest(
     (request,), selection=IndustrySelection(("apk", "total")),

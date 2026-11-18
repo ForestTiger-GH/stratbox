@@ -5,7 +5,7 @@ from zipfile import ZipFile
 from openpyxl import Workbook
 
 from stratbox.core.network import HttpResponse
-from stratbox.domains import cbr_file_collector as collector
+from stratbox.domains.cbr import file_collection as collector
 
 
 class ArchiveTransport:

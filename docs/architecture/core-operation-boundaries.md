@@ -23,8 +23,14 @@ operation calls and scheduling outside the library.
 | `shared.reference` | Explicitly versioned packaged assets, bank and OKVED2 references and territorial name resolution. |
 | `shared.time` | Date-only calendar period and anchor generation. |
 | `domains.registry` | Discovers independent domain declarations and joins them with neutral operations. |
-| `domains.<name>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
+| `domains.<source>.<family>.<owner>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
 | Consumer | User interface, schedules, destinations, host authorization, publication and downstream effects. |
+
+Local `_registration.py` manifests identify exact operation owners. The registry discovers
+them recursively; the nearest registered ancestor owns a module, rather than an
+entire publisher namespace. Child publication series may reuse their parent
+family's semantic helpers, while direct cross-owner dependencies require a
+documented directional justification. Publisher-neutral execution remains in core.
 
 ## Dependency contract
 

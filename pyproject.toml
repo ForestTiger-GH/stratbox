@@ -39,8 +39,8 @@ version = {attr = "stratbox.__version__"}
 "stratbox.shared.reference.banks" = ["_resources/**/*", "_resources/*.json", "_resources/official/*.xlsx", "_resources/aliases/*.csv", "_resources/selections/*.csv"]
 "stratbox.shared.reference.okved2" = ["_resources/**/*", "_resources/*.json", "_resources/data/*.csv"]
 "stratbox.shared.reference.geography" = ["_resources/**/*", "_resources/*.json", "_resources/*.csv"]
-"stratbox.domains.cbr_forms.models" = ["*.csv"]
-"stratbox.domains.cbr_sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
+"stratbox.domains.cbr.reporting_forms.models" = ["*.csv"]
+"stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

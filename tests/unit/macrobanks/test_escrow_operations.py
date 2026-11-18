@@ -3,8 +3,8 @@ from io import BytesIO
 from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains import escrow
-from stratbox.domains.escrow.columns import ESCROW_INDICATOR_SPECS
+from stratbox.domains.cbr import escrow
+from stratbox.domains.cbr.escrow.columns import ESCROW_INDICATOR_SPECS
 
 
 def workbook_bytes():

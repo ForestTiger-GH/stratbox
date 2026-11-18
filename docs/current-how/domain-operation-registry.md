@@ -1,64 +1,88 @@
 # Domain operation registration and machine dispatch
 
-Stratbox exposes independent domain packages as `stratbox.domains.<name>`.
-Each package owns its operations, type definitions and a small immutable
-`registration.py` declaration. The central registry discovers these declarations
-automatically, rather than maintaining a list of domain implementations.
+Stratbox separates source-specific business implementations from the neutral
+operation execution catalog. Source packages group publication families, while
+an exact `_registration.py` file establishes an operation owner at any depth.
 
-## Discover and resolve operations
+## 1. Discover and resolve operations
 
 ```python
 from stratbox.domains.registry import domain_catalog, operation_catalog
 
-business = domain_catalog()
-catalog = operation_catalog()
-references = catalog.list_refs()  # Lightweight operation references
-descriptions = catalog.describe()  # Validated contracts and capabilities
-definition = catalog.get('frg.plan_cleanup', 1)
-definition, handler, machine_codec = catalog.resolve('frg.plan_cleanup', 1)
+business = domain_catalog()                  # 68 source-domain operations
+catalog = operation_catalog()                # domain operations and neutral core
+references = catalog.list_refs()
+descriptions = catalog.describe()             # resolves executable contracts
+definition = catalog.get("frg.plan_cleanup", 1)
+definition, handler, codec = catalog.resolve("frg.plan_cleanup", 1)
 ```
 
-An `OperationRef` identifies the authoritative `OperationDefinition` and its
-callable handler. Resolution checks the operation ID and contract version;
-duplicates, missing handlers and invalid codec declarations fail explicitly.
-Domain-specific Python APIs keep their own typed requests and provider parameters.
+The domain catalog traverses installed Python packages under `stratbox.domains`
+in deterministic order using `importlib.resources.files`. It discovers only
+exact files named `_registration.py` and never searches arbitrary underscore
+modules or external directories. Grouping and implementation-only packages
+need no manifest. A broken existing manifest raises `RegistryError`.
 
-## Add a built-in domain
+Each declaration is an `OperationRegistration` with a dotted `owner_id`
+relative to `stratbox.domains`. Its `OperationRef` entries reference an
+`OperationDefinition`, its callable handler and an optional machine codec by
+fully qualified Python module and symbol name.
 
-Create a direct package `stratbox/domains/<domain_name>/` containing an
-`__init__.py`, the domain methods and `registration.py` with exactly one
-`REGISTRATION = OperationRegistration(owner_id='<domain_name>', operations=(...))`.
-Each `OperationRef` names an existing definition and the corresponding callable.
-The central registry discovers the package without changes to a global method list.
-Domain subseries remain inside their owner until a separate semantic refactor.
+The registry validates all module references against the **nearest registered
+owner**, including parent/child publication series. It rejects ambiguous
+ownership, mismatched owner IDs and duplicate (operation ID, contract version)
+pairs. Executable definitions, handlers and codecs are still resolved lazily by
+`OperationCatalog`. Creating a catalog performs no source HTTP requests,
+file capture, scheduling or destination effects.
 
-Only built-in packages are discovered. Arbitrary external Python packages and
-untrusted paths are outside this discovery mechanism. Registration never schedules
-work, reads files, contacts network endpoints or grants execution authority.
-Neutral source and notification operations are declared under `stratbox.core.operations` and `stratbox.core.notifications`.
+## 2. Add a source or publication family
 
-## Restricted read-only machine calls
+Create normal Python packages with `__init__.py` under a publisher namespace,
+for example `stratbox.domains.cbr.new_family.series_a`. Add
+`_registration.py` **only** to the exact package owning operations:
+
+```python
+from stratbox.core.execution.catalog import OperationRef, OperationRegistration
+
+REGISTRATION = OperationRegistration(
+    owner_id="cbr.new_family.series_a",
+    operations=(
+        OperationRef(
+            "cbr.series_a.parse", 1,
+            "stratbox.domains.cbr.new_family.series_a.operations:PARSE",
+            "stratbox.domains.cbr.new_family.series_a.operations:parse",
+        ),
+    ),
+)
+```
+
+Executable methods stay in `operations.py` or `api.py`. A business source
+registry may separately use `registry.py` for publication definitions; that
+file is **not** the operation manifest. No global list of publishers, families,
+or operations is maintained. Parent grouping packages should remain lightweight.
+Public owner package exports are lazily loaded so metadata listing does not
+require optional spreadsheet or solver engines.
+
+The current owners include `cbr`, `fns` and `frank_rg` publisher branches.
+The industry parent owns nine `01_05_A` operations; the nested
+`industries.issuance_0104` owns eight `01_04_A` operations. All 68 original
+logical operation IDs and contract versions remain unchanged by this relocation.
+
+## 3. Restricted read-only machine calls
 
 ```python
 from stratbox.domains.registry import operation_catalog
 from stratbox.core.execution.machine import invoke_read_only, wire_schemas
 
 catalog = operation_catalog()
-request_schema, result_schema = wire_schemas('cbr.offices.parse', 1, catalog=catalog)
-# response = invoke_read_only(raw_bytes, catalog=catalog, materials=authorized_resolver)
+schema, response_schema = wire_schemas("cbr.offices.parse", 1, catalog=catalog)
 ```
 
-Three operations initially admit machine calls: `cbr.offices.parse` v1,
-`cbr.offices.compare` v2, and `frg.plan_cleanup` v1. Their narrow codecs
-belong to their domains; `stratbox.core.execution.machine` owns the
-bounded JSON parser, schema construction and generic invocation protocol.
-All other operations remain direct Python APIs until explicitly admitted.
+Machine read-only admission remains limited to `cbr.offices.parse` v1,
+`cbr.offices.compare` v2 and `frg.plan_cleanup` v1. Their codecs live with
+their respective owner. Machine admission never grants authorization for
+network, storage, deletion or publication side effects.
 
-The caller supplies a trusted `MaterialResolver`, the invocation context
-and provider bindings. A declared codec confers no permission to access
-network, storage, secrets, or destination effects. Encoded responses contain
-only the codec's declared fields and bounded structured diagnostics.
-
-Logical operation IDs and versions are independent of Python package paths.
-Reorganizing an individual domain later does not change the top-level
-registration system.
+Logical operation IDs and versions are independent of Python module paths.
+The new module topology is canonical; no historical import aliases are
+provided.

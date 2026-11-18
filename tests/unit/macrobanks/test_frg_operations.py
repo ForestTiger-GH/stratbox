@@ -1,7 +1,7 @@
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore, MutationRejected
-from stratbox.domains import frg
+from stratbox.domains.frank_rg import retail_banking as frg
 
 LATEST = "2026-05-01_Экспресс выдачи.xlsx"
 OLDER = "2026-04-01_Экспресс выдачи.xlsx"

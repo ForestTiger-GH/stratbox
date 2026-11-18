@@ -7,7 +7,7 @@ from pathlib import Path
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
+from stratbox.domains.cbr.service_network.bank_offices import ParseOfficesRequest, parse
 
 
 def main():

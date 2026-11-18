@@ -62,7 +62,7 @@ def test_static_checker_rejects_forbidden_core_imports(tmp_path):
         "from stratbox.core.notifications.state import StateMutation\n", encoding="utf-8"
     )
     (operation / "bad.py").write_text(
-        "from stratbox.domains.escrow import operations\n", encoding="utf-8"
+        "from stratbox.domains.cbr.escrow import operations\n", encoding="utf-8"
     )
     check.__globals__["SRC"] = src
     check.__globals__["PACKAGE"] = src / "stratbox"
@@ -172,3 +172,44 @@ def test_external_source_scanner_rejects_moved_imports(tmp_path):
     check = checker["check_supporting_source_imports"]
     check.__globals__["ROOT"] = tmp_path
     assert any("moved symbol" in failure for failure in check())
+
+
+def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path):
+    """Nested business owners are not collapsed into a single CBR namespace."""
+    root = Path(__file__).resolve().parents[3]
+    checker = runpy.run_path(str(root / "scripts" / "check_internal_imports.py"))
+    check = checker["check_dependency_direction"]
+    source = tmp_path / "src"
+    package = source / "stratbox"
+
+    def owner(path: str):
+        directory = package / "domains" / path
+        directory.mkdir(parents=True)
+        current = directory
+        while current != package / "domains":
+            (current / "__init__.py").write_text("", encoding="utf-8")
+            current = current.parent
+        (directory / "_registration.py").write_text("", encoding="utf-8")
+        return directory
+
+    escrow = owner("cbr/escrow")
+    owner("cbr/reporting_forms")
+    owner("fns/sme_register")
+    sors = owner("cbr/corporate_lending/sors_restoration")
+    owner("cbr/corporate_lending/industries")
+
+    (escrow / "bad.py").write_text(
+        "from stratbox.domains.cbr.reporting_forms import contracts\n"
+        "from stratbox.domains.fns.sme_register import operations\n",
+        encoding="utf-8",
+    )
+    (sors / "allowed.py").write_text(
+        "from stratbox.domains.cbr.corporate_lending.industries import schema\n",
+        encoding="utf-8",
+    )
+    check.__globals__["SRC"] = source
+    check.__globals__["PACKAGE"] = package
+    failures = check()
+    assert sum("cross-domain import" in message for message in failures) >= 1
+    assert sum("cross-source import" in message for message in failures) >= 1
+    assert not any("allowed.py" in message for message in failures)

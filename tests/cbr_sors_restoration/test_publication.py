@@ -1,10 +1,10 @@
-from stratbox.domains.cbr_sors_restoration.publication import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import (
     PublicationInterval,
     RoundingPolicy,
     solver_lower_bound,
     solver_upper_bound,
 )
-from stratbox.domains.cbr_sors_restoration.strict.certification import certify_interval
+from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.certification import certify_interval
 
 
 def test_half_open_zero_is_one_publication_bucket() -> None:
@@ -39,7 +39,7 @@ def test_open_endpoints_use_adjacent_floating_point_solver_bounds() -> None:
 def test_unbounded_interval_has_no_publication_bucket() -> None:
     from math import inf
 
-    from stratbox.domains.cbr_sors_restoration.publication import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import (
         PublicationInterval,
         RoundingPolicy,
     )
@@ -59,7 +59,7 @@ def test_candidate_buckets_cover_accumulated_rounding_interval() -> None:
 def test_publication_ledger_accepts_rounding_preferred_evidence() -> None:
     from types import SimpleNamespace
 
-    from stratbox.domains.cbr_sors_restoration.publication.ledger import (
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.publication.ledger import (
         SorsPublicationLedger,
     )
 

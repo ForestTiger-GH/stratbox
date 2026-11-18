@@ -6,7 +6,7 @@ import json
 
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
-from stratbox.domains import cbr_sors_restoration as sors
+from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
 
 
 def require_value(result):

@@ -28,7 +28,7 @@ def wire_schemas(operation_id, contract_version):
     return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
 from stratbox.shared.evidence import SourcePayload
 from stratbox.core.execution import Correlation, ExecutionContext, OperationDefinition, run
-from stratbox.domains import cbr_offices
+from stratbox.domains.cbr.service_network import bank_offices as cbr_offices
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures/universal_core/offices-basic.html"
 _DAY = date(2026, 11, 12)
@@ -81,7 +81,7 @@ def test_invalid_wire_input_stops_before_material_provider(raw, code):
 
 
 def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_path):
-    from stratbox.domains import frg
+    from stratbox.domains.frank_rg import retail_banking as frg
 
     source = SourcePayload(_FIXTURE.read_bytes(), "text/html")
     parsed = cbr_offices.parse(cbr_offices.ParseOfficesRequest(source, _DAY))

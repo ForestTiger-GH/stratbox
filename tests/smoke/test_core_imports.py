@@ -7,11 +7,11 @@ MODULES = [
     'stratbox.core.runtime.providers',
     'stratbox.core.formats',
     'stratbox.core.storage.filestore',
-    'stratbox.domains.cbr_file_collector',
-    'stratbox.domains.cbr_industries',
-    'stratbox.domains.cbr_forms',
-    'stratbox.domains.escrow',
-    'stratbox.domains.frg',
+    'stratbox.domains.cbr.file_collection',
+    'stratbox.domains.cbr.corporate_lending.industries',
+    'stratbox.domains.cbr.reporting_forms',
+    'stratbox.domains.cbr.escrow',
+    'stratbox.domains.frank_rg.retail_banking',
 ]
 
 def test_core_imports() -> None:

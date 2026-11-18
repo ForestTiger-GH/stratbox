@@ -7,7 +7,7 @@ This operation keeps only a fixed-size transfer chunk in memory.
 
 ```python
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains import frg
+from stratbox.domains.frank_rg import retail_banking as frg
 
 inputs = LocalFileStore(root='/content')
 outputs = LocalFileStore(root='/content/stratbox_outputs/frg')

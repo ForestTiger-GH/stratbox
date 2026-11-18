@@ -26,7 +26,7 @@ from datetime import date
 from pathlib import Path
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
+from stratbox.domains.cbr.service_network.bank_offices import ParseOfficesRequest, parse
 
 original = SourcePayload(Path("offices.html").read_bytes(), "text/html")
 parsed = parse(ParseOfficesRequest(original, date(2026, 11, 11)))
@@ -72,7 +72,7 @@ from stratbox.core.operations.source.originals import (
     read_original,
     receive_to_store,
 )
-from stratbox.domains.cbr_offices import ParseOfficesRequest, parse
+from stratbox.domains.cbr.service_network.bank_offices import ParseOfficesRequest, parse
 
 host = "www.cbr.ru"
 path = "/banking_sector/credit/cstat/"

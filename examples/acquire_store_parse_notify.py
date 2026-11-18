@@ -8,7 +8,7 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.network import HttpResponse
 from stratbox.core.execution import ExecutionContext
 from stratbox.core.operations.source.originals import OriginalDestination, SaveOriginalRequest, save_original
-from stratbox.domains import cbr_offices
+from stratbox.domains.cbr.service_network import bank_offices as cbr_offices
 from stratbox.core.notifications import (
     AccessDecision, CheckpointKey, ConsumerBinding, DeliverRequest, HandoffReceipt,
     MemoryNotificationState, NotificationRoute, NotificationRuntime, PrepareRequest, SourceBinding,

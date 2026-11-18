@@ -4,7 +4,7 @@ import argparse
 
 from stratbox.core.storage.bytes import write_verified_bytes
 from stratbox.core.runtime.providers import local_providers
-from stratbox.domains import cbr_file_collector as collector
+from stratbox.domains.cbr import file_collection as collector
 
 
 def main():

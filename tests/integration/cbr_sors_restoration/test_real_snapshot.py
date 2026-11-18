@@ -6,17 +6,17 @@ from pathlib import Path
 import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr_sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
-from stratbox.domains.cbr_sors_restoration import SorsSourceFiles
-from stratbox.domains.cbr_sors_restoration.publication import (
+from stratbox.domains.cbr.corporate_lending.sors_restoration import LoadSorsRequest, SorsRunConfig, load_sources, read_source_files
+from stratbox.domains.cbr.corporate_lending.sors_restoration import SorsSourceFiles
+from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import (
     RoundingPolicy,
     SorsPublicationLedger,
     build_publication_graph,
     run_publication_fixed_point,
 )
-from stratbox.domains.cbr_sors_restoration.strict.interval_closure import SorsIntervalClosureState
-from stratbox.domains.cbr_sors_restoration.strict.compiler import compile_strict_problem
-from stratbox.domains.cbr_sors_restoration.strict.quantities import build_quantity_graph
+from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.interval_closure import SorsIntervalClosureState
+from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.compiler import compile_strict_problem
+from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.quantities import build_quantity_graph
 
 
 def _files(root: Path, yyyymmdd: str) -> SorsSourceFiles:

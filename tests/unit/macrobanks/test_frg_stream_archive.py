@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains import frg
+from stratbox.domains.frank_rg import retail_banking as frg
 
 LATEST = "2026-05-01_Экспресс выдачи.xlsx"
 OLDER = "2026-04-01_Экспресс выдачи.xlsx"
@@ -134,7 +134,7 @@ def test_managed_archive_and_cleanup_recheck_scope_at_store(tmp_path):
     from stratbox.core.runtime.capabilities import ProviderBinding
     from stratbox.core.storage.filestore import MutationRejected
     from stratbox.core.execution import ExecutionContext
-    from stratbox.domains.frg.api import APPLY, STREAM_ARCHIVE
+    from stratbox.domains.frank_rg.retail_banking.api import APPLY, STREAM_ARCHIVE
 
     inp, _, plan, _, outputs = _setup(tmp_path)
 

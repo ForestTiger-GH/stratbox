@@ -3,11 +3,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr_forms.common.direct_form import build_direct_long, normalize_code_plain, normalize_regn
-from stratbox.domains.cbr_forms.common.models import get_model_for, load_models
-from stratbox.domains.cbr_forms.common.wide import build_wide_table
-from stratbox.domains.cbr_forms.forms import form802
-from stratbox.domains.cbr_forms.forms.registry import FORM_REGISTRY
+from stratbox.domains.cbr.reporting_forms.common.direct_form import build_direct_long, normalize_code_plain, normalize_regn
+from stratbox.domains.cbr.reporting_forms.common.models import get_model_for, load_models
+from stratbox.domains.cbr.reporting_forms.common.wide import build_wide_table
+from stratbox.domains.cbr.reporting_forms.forms import form802
+from stratbox.domains.cbr.reporting_forms.forms.registry import FORM_REGISTRY
 
 
 def _banks() -> pd.DataFrame:
