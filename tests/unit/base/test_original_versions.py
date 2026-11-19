@@ -162,3 +162,25 @@ def test_public_source_receive_to_store_handler_and_comparator_registered():
     assert handler.__name__ == "receive_to_store"
     definition, handler, _ = catalog.resolve("source.compare_original_versions", 1)
     assert handler.__name__ == "compare_original_versions"
+
+
+
+def test_portable_confirmed_version_retains_parent_and_exact_published_bytes():
+    from stratbox.shared.source_publications import (
+        PublishedArtifactRef, ConfirmedSourceVersion,
+    )
+    asset = SourceAssetIdentity("rosstat.test", "2026-08", "report")
+    b = ByteIdentity.of(b"publisher-source")
+    artifact = PublishedArtifactRef(
+        "originals", asset.source_id, b.sha256, b, "owner-git-revision",
+    )
+    checkpoint = ConfirmedSourceVersion(
+        asset, artifact, "e"*64, datetime.now(timezone.utc),
+        previous_transition_id="f"*64,
+    )
+    baseline = OriginalVersion(checkpoint.source_id, checkpoint.identity, checkpoint.transition_id)
+    assert baseline.identity == b
+    candidate = _candidate(asset, b"A")
+    result = _version(CompareOriginalVersionsRequest(candidate, "available", baseline))
+    assert result.previous_transition_id == "e"*64
+    assert result.state == "revised"

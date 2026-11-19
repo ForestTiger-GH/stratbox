@@ -221,3 +221,44 @@ class ConfirmedOriginalPublication:
             or self.receipt.destination_id != self.artifact.scope_id
         ):
             raise ValueError("source.publication_unconfirmed")
+
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmedSourceVersion:
+    """Portable durable cursor for one accepted logical original.
+
+    Consumers persist this together with their own outbox/owner publication
+    transaction. The core comparator reads its transition_id as the parent
+    chain, independent of whether the physical version lives in Git or a
+    content-addressed store.
+    """
+    asset: SourceAssetIdentity
+    artifact: PublishedArtifactRef
+    transition_id: str
+    published_at_utc: datetime
+    previous_transition_id: str | None = None
+    index_identity: ByteIdentity | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.asset, SourceAssetIdentity) or not isinstance(self.artifact, PublishedArtifactRef):
+            raise ValueError("source.version_checkpoint_invalid")
+        if not isinstance(self.transition_id, str) or not re.fullmatch(r"[0-9a-f]{64}", self.transition_id):
+            raise ValueError("source.version_checkpoint_invalid")
+        if self.previous_transition_id is not None and (
+            not isinstance(self.previous_transition_id, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", self.previous_transition_id)
+            or self.previous_transition_id == self.transition_id
+        ):
+            raise ValueError("source.version_checkpoint_invalid")
+        if self.index_identity is not None and not isinstance(self.index_identity, ByteIdentity):
+            raise ValueError("source.version_checkpoint_invalid")
+        _utc(self.published_at_utc)
+
+    @property
+    def identity(self) -> ByteIdentity:
+        return self.artifact.identity
+
+    @property
+    def source_id(self) -> str:
+        return self.asset.source_id
