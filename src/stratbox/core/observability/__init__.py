@@ -1,4 +1,5 @@
 """Portable, optional observability. Import never creates storage or runtime state."""
+from stratbox.core.observability.records.effect_refs import effect_ref_id, effect_reference
 from stratbox.core.observability.records.contracts import (DomainFact, JournalRecord,
                         ObjectRef, OriginClaim, OriginAttestation, PayloadLimits, make_fact_id)
 from stratbox.core.observability.journal.contracts import JournalBarrierError, JournalWriteReceipt

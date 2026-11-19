@@ -11,10 +11,11 @@ from uuid import uuid4
 from stratbox.shared.evidence import AcquisitionReceipt, PublicationReceipt, StoredBytesReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.comparison import Comparison
-from stratbox.core.execution import ExecutionEvent, OperationResult
+from stratbox.core.execution import EffectKey, ExecutionEvent, OperationResult
 from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability.records.contracts import DomainFact, JournalRecord, ObjectRef, make_fact_id, require_utc
 from stratbox.core.observability.records.field_policy import validate_builtin_fields
+from stratbox.core.observability.records.effect_refs import effect_reference
 
 
 def _id(kind: str, identity: str) -> str:
@@ -194,8 +195,8 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
             "details_coverage": "complete" if complete else "summarized",
         }
         refs = tuple(
-            ObjectRef("effect", item.effect_id, "receipt", identity=item.identity)
-            for item in result.effects[:limit] if item.effect_id is not None
+            effect_reference(item.key, identity=item.identity)
+            for item in result.effects[:limit] if item.key is not None
         )
         try:
             rec = JournalRecord(
@@ -230,13 +231,17 @@ def fact_from_stored_bytes(receipt: StoredBytesReceipt, *, subject_id: str,
     state = effect_state_from_storage_status(receipt.status)
     kind = "material.stored" if state == "confirmed" else "effect.unknown" if state == "unknown" else "effect.failed"
     subject = ObjectRef("material", subject_id, identity=receipt.identity)
+    effect_kind = "storage.write"
     payload = {"status": receipt.status, "effect_state": state,
+               "effect_kind": effect_kind,
                "guarantee": receipt.guarantee, "identity": _byte(receipt.identity)}
     if receipt.effect_id is not None:
         payload["effect_id"] = receipt.effect_id
-    refs = (ObjectRef("effect", receipt.effect_id, "receipt", identity=receipt.identity),) if receipt.effect_id else ()
+    refs = (
+        effect_reference(EffectKey(effect_kind, receipt.effect_id), identity=receipt.identity),
+    ) if receipt.effect_id is not None else ()
     return DomainFact(kind, subject,
-                      make_fact_id(kind, subject, {"effect_id": receipt.effect_id,
+                      make_fact_id(kind, subject, {"effect_kind": effect_kind, "effect_id": receipt.effect_id,
                                                    "status": receipt.status, "guarantee": receipt.guarantee}),
                       require_utc(observed_at_utc), payload,
                       references=refs, correlation=correlation or Correlation())

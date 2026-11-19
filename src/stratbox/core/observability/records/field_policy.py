@@ -91,7 +91,7 @@ def _schema(kind: str, fields: tuple[tuple[str, str], ...], *, record_type: str 
 for _kind in ("material.stored", "effect.unknown", "effect.failed"):
     SCHEMAS[("domain_fact", _kind)] = _schema(_kind, (
         ("status", "string"), ("effect_state", "string"), ("guarantee", "string"),
-        ("identity", "mapping"), ("effect_id", "string"),
+        ("identity", "mapping"), ("effect_kind", "string"), ("effect_id", "string"),
     ))
 for _kind in ("artifact.produced", "artifact.stored"):
     SCHEMAS[("domain_fact", _kind)] = _schema(_kind, (("status", "string"), ("identity", "mapping")))
