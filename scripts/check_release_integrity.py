@@ -89,6 +89,8 @@ REQUIRED_FILES = [
     'src/stratbox/core/execution/contracts.py',
     'src/stratbox/core/execution/effects.py',
     'src/stratbox/core/execution/resolution.py',
+    'src/stratbox/core/observability/records/effect_refs.py',
+    'tests/unit/observability/test_effect_identity.py',
     'tests/unit/execution/test_output_accounting.py',
     'tests/unit/execution/test_capability_declarations.py',
     'tests/unit/execution/test_terminal_resilience.py',

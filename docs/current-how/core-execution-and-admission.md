@@ -66,7 +66,15 @@ A strict deadline uses `BudgetError` for qualified budget faults, with
 `BudgetClockError` specifically identifying invalid, backward or unavailable
 monotonic clocks. Optional stage/progress sampling is skipped when no event
 sink is attached. A returned representation is accounted after computation
-evidence is recorded, even when output admission then fails. Long in-process
+evidence is recorded, even when output admission then fails. This applies to
+`failed` and `unknown` typed completion values as well as successful
+returns; failed output admission suppresses the bytes but retains diagnostics
+and physical receipts. Use `EffectKey(kind, effect_id)` to select an
+external effect, and inspect `EffectState.evidence_coverage` rather than
+treating a missing receipt in a summarized journal as a negative fact.
+Without a strict deadline, execution is independent of a missing monotonic
+clock unless optional telemetry was requested; strict clock admission
+produces a qualified `budget.clock_unavailable` result before the handler. Long in-process
 decoder calls, provider calls and OS lookups may complete at their next
 checkpoint. A consumer with a hard deadline or resource requirement uses
 an independently constrained adapter.

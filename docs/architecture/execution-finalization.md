@@ -162,6 +162,14 @@ remains exclusively an `EffectReceipt`. Independent low-level
 `BudgetMeter.charge("output_bytes")` is still appropriate for a separately
 materialized preview; it does not automatically cover the returned output.
 
+Output admission is separate from the business handler and applies to every
+typed returned `Representation` or supported `.representation` wrapper,
+including `Completion(value, "failed"|"unknown")`. Exceeding the byte limit
+suppresses the candidate value, preserves the handler's original diagnostics
+and physical effect receipts, and appends `budget.output_bytes`. Original
+`unknown` remains unknown; useful `partial` without a deliverable value
+becomes failed. Cancelled operations have no deliverable value.
+
 A successfully recorded `ComputationReceipt` is retained even when the
 subsequent publication fails or becomes unknown and the final value is absent.
 For an already-built returned `Representation`, the runner records its
@@ -201,6 +209,15 @@ emission. Required budget checkpoints remain independent. If trusted UTC cannot 
 obtained, the event is dropped with coverage degradation rather than a fake
 timestamp. These failures never authorize re-emission.
 
+Clock admission depends on the requested policy. Without a deadline and
+without an event sink, `run` does not sample monotonic time. With only an
+optional sink, an initial monotonic failure sets `timing_degraded` but does
+not prevent business execution. With a strict deadline, an unusable initial
+monotonic tick produces an ordinary `OperationResult(failed)` with
+`budget.clock_unavailable`, no handler call, no effects, and no fictitious
+started/finished timestamps. Configuration/type failures are separate from
+clock faults.
+
 The runner does not claim hard preemption of native calls, crash recovery
 during a commit or transaction-wide atomicity across resources.
 
@@ -220,6 +237,35 @@ Notification runtime declarations cover state, authority, journal source and
 conditional consumer. Real scope-bound grants still belong to
 `core.notifications.runtime.require_binding`, not to catalog metadata.
 
+## Qualified effect identity across execution and observability
+
+`EffectKey(kind, effect_id)` is the identity of an addressable external
+effect **within a single invocation**. `EffectReceipt.key` is `None` for an
+anonymous observation; those entries remain independent. A public final
+`OperationResult` contains at most one receipt per identified key.
+The core accumulator merges successive qualified observations of the same
+key and retains sticky conflicts.
+
+Portable journal references use
+`core.observability.records.effect_refs.effect_ref_id(EffectKey)`, a
+SHA-256 of canonical kind/ID with a versioned domain separator.
+`record_from_result` and `fact_from_stored_bytes` use identical
+`ObjectRef(namespace="effect", object_id=...)`. A journal record also
+retains `invocation_id` (and, when available, attempt correlation):
+identical raw effect IDs in unrelated attempts are **not** presumed to
+identify the same physical action or authority.
+
+Use `effect_state_from_result(result, key=EffectKey(...))` for full local
+truth and `project_effect_state(records, key, invocation_id=...)` for
+portable evidence. The projected `EffectState` carries the selected key,
+observed states, `needs_reconciliation: bool|None`,
+`evidence_coverage: complete|partial|not_observed|indeterminate`, and
+observed attempts. An observed `unknown` always requires reconciliation,
+even if a different attempt reports confirmed; absent evidence in a
+truncated prefix results in `None` (indeterminate), not a false success.
+`confirmed` across multiple unrelated invocations never closes another
+attempt without resource-owner evidence.
+
 ## Bounded result-summary projection
 
 `record_from_result` retains the full `OperationResult` under the caller's
@@ -230,14 +276,29 @@ byte limits require). `details_coverage` is `complete` only when all three
 safe projection lists fit; otherwise it is `summarized`.
 `details_counts` reports totals and effect states, with a bounded breakdown
 of effect kinds; `details_included` reports displayed prefix lengths.
-`details_digest` is an order-sensitive SHA-256 of all complete **safe
-projections**, not a digest of raw private paths, material bytes, or the
-provider-owned receipt itself. This digest cannot authenticate a provider
+`details_digest` uses the versioned
+`details_digest_profile="stratbox.result-details.v3"` and is an order-sensitive
+SHA-256 of all complete **safe projections**. Its inclusion policy covers
+`Diagnostic.reconciliation_owner`, `UsedInputReceipt.media_type` and
+`availability`, and all previously exposed effect qualifiers. Raw input
+source locators are reduced to `source_id_digest`; archive member paths
+and physical effect references are omitted.
+`privacy_qualification="safe_fields_only_private_locators_omitted"`
+explicitly limits its meaning. This digest is not a digest of raw private
+paths, material bytes, or the provider-owned receipt itself. This digest cannot authenticate a provider
 or prove a missing chunk exists. The journal never infers effect absence
 from truncated detail; no durable effect ledger is created.
 
 The standalone observation and actual-finish-linked result summary retain
-their existing qualified identities and schema-version conventions. Full
+their qualified identities; the finish-linked result summary uses
+`data_version=3` (independent of `ExecutionEvent.version=3` and
+`JournalRecord.schema_version=1`). A query must check per-stream
+`details_included.effects` against `details_counts.effects` before
+inferring absence from a missing effect. For diagnostic code queries,
+`select_records_qualified` reports omitted-code candidates, while
+`summarize_operations` has separate `diagnostic_coverage`,
+`diagnostics_total`, and `diagnostics_observed` counters. A visible
+prefix is an observed lower bound, never a complete code histogram. Full
 receipts remain accessible to the caller through the returned result.
 Independent bounded detail persistence, if required by a host, belongs to
 its authorized storage/retention policy.

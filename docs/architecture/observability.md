@@ -15,6 +15,18 @@ detail arrays and references are limited per record; `details_coverage`,
 `details_counts`, `details_included` and an order-sensitive
 `details_digest` make intentional omissions explicit. The digest covers the
 full privacy-minimized projection, not physical content or provider authority.
+The portable `EffectKey(kind,effect_id)` and its SHA-256 ObjectRef
+label keep kinds distinct. References are invocation-scoped; another
+attempt's `confirmed` does not reconcile this attempt's `unknown`.
+Per-stream `details_counts`/`details_included` establish only the
+producer-claimed completeness of that list. `project_effect_state`
+returns explicit `evidence_coverage` and nullable
+`needs_reconciliation` rather than assuming missing receipts are absent.
+`select_records_qualified` and `OperationStatistics.diagnostic_coverage`
+separately qualify diagnostic queries against summarized prefixes.
+Portable `details_digest_profile=stratbox.result-details.v3` covers
+approved fields, including reconciliation owners and input media/availability,
+while raw locators are omitted or hashed.
 The caller's full `OperationResult` is unaffected. See
 [Execution finalization](execution-finalization.md).
 
