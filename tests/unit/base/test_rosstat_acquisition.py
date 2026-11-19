@@ -145,3 +145,20 @@ def test_complete_offline_example(capsys):
     main = run_path(str(code))["main"]
     main()
     assert "consumer_accepted" in capsys.readouterr().out
+
+
+def test_domain_wrappers_project_core_material_evidence(tmp_path):
+    from stratbox.core.observability import RecordMemorySink, capture_operation_result
+    transport = Publisher(workbook())
+    acquired = acquire(AcquireRosstatRequest(asset()), transport=transport)
+    memory = RecordMemorySink()
+    capture_operation_result(acquired, memory)
+    assert "material.acquired" in {entry.kind for entry in memory.records}
+
+    saved = acquire_to_store(
+        AcquireRosstatToStoreRequest(asset(), OriginalDestination("original.xlsx")),
+        transport=Publisher(workbook()), store=LocalFileStore(str(tmp_path)),
+    )
+    capture_operation_result(saved, memory)
+    kinds = {entry.kind for entry in memory.records}
+    assert "material.stored" in kinds

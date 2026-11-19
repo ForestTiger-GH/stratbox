@@ -80,26 +80,30 @@ def capture_operation_result(result: OperationResult, recorder: RecordCapture, *
     records = [record_from_result(result, occurred_at_utc=instant, finished_event=finished_event,
                                   correlation=correlation)]
     value = result.value
-    if isinstance(value, AcquiredSource):
-        records.append(record_from_fact(fact_from_acquisition(value.receipt),
+    # Publisher-domain operations may wrap the neutral source receipt with
+    # release/asset context. Project the same underlying evidence only once.
+    nested = getattr(value, "source", None) if value is not None else None
+    acquired = value if isinstance(value, AcquiredSource) else nested
+    if isinstance(acquired, AcquiredSource):
+        records.append(record_from_fact(fact_from_acquisition(acquired.receipt),
                                         invocation_id=result.invocation_id, operation_id=result.operation_id))
     if isinstance(value, Comparison) and dataset_id and candidate_id:
         records.append(record_from_fact(fact_from_comparison(value, dataset_id=dataset_id,
                                                              baseline_id=baseline_id, candidate_id=candidate_id,
                                                              occurred_at_utc=instant),
                                         invocation_id=result.invocation_id, operation_id=result.operation_id))
-    if value is not None and hasattr(value, "storage") and hasattr(value, "material"):
-        from stratbox.core.operations.source.originals import StoredOriginal
-        if isinstance(value, StoredOriginal):
-            if value.acquisition is not None:
-                records.append(record_from_fact(fact_from_acquisition(value.acquisition),
-                                                invocation_id=result.invocation_id, operation_id=result.operation_id))
-            source_id = (value.material.source_id if value.material else None) or (
-                value.acquisition.source_id if value.acquisition else None)
-            if source_id is not None:
-                records.append(record_from_fact(fact_from_stored_bytes(value.storage, subject_id=source_id,
-                                                                        observed_at_utc=instant),
-                                                invocation_id=result.invocation_id, operation_id=result.operation_id))
+    from stratbox.core.operations.source.originals import StoredOriginal
+    stored = value if isinstance(value, StoredOriginal) else nested
+    if isinstance(stored, StoredOriginal):
+        if stored.acquisition is not None:
+            records.append(record_from_fact(fact_from_acquisition(stored.acquisition),
+                                            invocation_id=result.invocation_id, operation_id=result.operation_id))
+        source_id = (stored.material.source_id if stored.material else None) or (
+            stored.acquisition.source_id if stored.acquisition else None)
+        if source_id is not None:
+            records.append(record_from_fact(fact_from_stored_bytes(stored.storage, subject_id=source_id,
+                                                                    observed_at_utc=instant),
+                                            invocation_id=result.invocation_id, operation_id=result.operation_id))
     summary = records[0]
     records[1:] = [
         replace(record, correlation=summary.correlation, cause_record_ids=(summary.record_id,))
