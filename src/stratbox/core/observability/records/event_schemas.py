@@ -84,6 +84,6 @@ SOURCE_ORIGINAL_COMMITTED = RecordDataSchema("domain_fact", "source.original_ver
     FieldRule("mode", ValueRule("token", choices=("live", "backfill")), classification="public"),
     FieldRule("owner_id", TOKEN, classification="public"),
     FieldRule("destination_id", TOKEN, classification="public"),
-)
+))
 
 BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED, SOURCE_ORIGINAL_COMMITTED)
