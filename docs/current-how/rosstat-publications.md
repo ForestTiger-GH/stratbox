@@ -9,21 +9,21 @@ extraction, flakes, calculations and presentation are separate operations.
 
 | Series ID | Publisher page | Currently expected original |
 | --- | --- | --- |
-| \`rosstat.socioeconomic_russia\` | https://rosstat.gov.ru/compendium/document/50801 | PDF |
-| \`rosstat.socioeconomic_regions\` | https://rosstat.gov.ru/folder/11109/document/13259 | ZIP/RAR |
-| \`rosstat.short_term_indicators\` | https://rosstat.gov.ru/compendium/document/50802 | XLSX |
-| \`rosstat.population_municipalities\` | https://rosstat.gov.ru/compendium/document/13282 | XLSX |
+| `rosstat.socioeconomic_russia` | https://rosstat.gov.ru/compendium/document/50801 | PDF |
+| `rosstat.socioeconomic_regions` | https://rosstat.gov.ru/folder/11109/document/13259 | ZIP/RAR |
+| `rosstat.short_term_indicators` | https://rosstat.gov.ru/compendium/document/50802 | XLSX |
+| `rosstat.population_municipalities` | https://rosstat.gov.ru/compendium/document/13282 | XLSX |
 
 These are *landing pages*, not immutable file URLs. Current official HTML,
 redirects and attachment names remain unverified; direct official-page access
 was unavailable during implementation. The four family-specific rules
-under \`discovery/families/\` are deliberately **provisional**. They recognize
+under `discovery/families/` are deliberately **provisional**. They recognize
 some conventional filename/label patterns but cannot claim that all files
 are enumerated. The source has not passed a live deployment gate.
 
 ## Operable functions
 
-\`\`\`python
+```python
 from stratbox.domains.rosstat.publications.catalog import list_rosstat_sources
 from stratbox.domains.rosstat.publications.contracts import (
     DiscoverRosstatRequest, AcquireRosstatRequest, AcquireRosstatToStoreRequest,
@@ -54,16 +54,16 @@ store_result = acquire_to_store(
 )
 assert store_result.outcome == "succeeded", store_result.diagnostics
 saved = store_result.value.source  # StoredOriginal, storage + material + acquisition
-\`\`\`
+```
 
-\`acquire\` returns the exact \`AcquiredSource\` in a domain wrapper without a
-physical store. \`acquire_to_store\` streams to a caller-owned \`StagedWriter\`,
+`acquire` returns the exact `AcquiredSource` in a domain wrapper without a
+physical store. `acquire_to_store` streams to a caller-owned `StagedWriter`,
 checks the outer file envelope (not complete XLSX/PDF/archive semantics),
-commits and independently reads back exact bytes. Use \`source.read_original\`
-and \`source.reconcile_original\` for future verified reads and uncertain
+commits and independently reads back exact bytes. Use `source.read_original`
+and `source.reconcile_original` for future verified reads and uncertain
 storage effects. Do not treat an HTTP 404 as an empty publication index.
 
-The \`DiscoveredAsset\` carries the raw publisher href, displayed label,
+The `DiscoveredAsset` carries the raw publisher href, displayed label,
 filename, immutable index byte identity, profile and issue evidence. The
 qualification guard replays family-specific interpretation before fetching
 the file. An offline caller can construct candidates, but this is a typed
@@ -77,26 +77,26 @@ claim, not proof of a publisher-signed release.
 2. **Index verified within declared scope:** a complete set of publisher
    attachments has been inspected for one explicit set of sections. The
    index must be publisher-acquired, unambiguous and tied to reviewed bytes.
-   \`ReviewedIndexScope\` plus \`approve_index\` provides an **explicit owner
+   `ReviewedIndexScope` plus `approve_index` provides an **explicit owner
    review gate** for that particular HTML version, not an automated
    certification of all future HTML. Full automation requires future live
    calibration of the family profile.
 3. **Original version published:** after the caller has verified the stored
    original and any remote publication requirement, an owner confirmation
    points to a concrete artifact version. Only this level can create a
-   \`source.original_version_committed\` fact.
+   `source.original_version_committed` fact.
 
 No status of a page alone proves that an original's bytes changed. No
 original-byte change proves that statistical observations changed.
 
 ## Qualified absence and version chain
 
-\`SourceAssetIdentity(series_id, issue_id, asset_id)\` is the portable key.
+`SourceAssetIdentity(series_id, issue_id, asset_id)` is the portable key.
 It excludes URLs, filenames, human-readable roles and SHA hashes. A filename
 date can be a publisher issue hint; it is not automatically an economic
-\`observation_period\`. Conflicting issue hints remain ambiguous.
+`observation_period`. Conflicting issue hints remain ambiguous.
 
-\`\`\`python
+```python
 from stratbox.shared.source_publications import (
     SourceAssetIdentity, InventoryAbsenceEvidence,
 )
@@ -129,13 +129,13 @@ assert same.state == "unchanged"
 # new = compare_original_versions(
 #     CompareOriginalVersionsRequest(candidate, "absent_proven", absence=absence)
 # ).value
-\`\`\`
+```
 
-\`CompareOriginalVersionsRequest\` has explicit states:
-\`initial\`, \`available\`, \`absent_proven\` and \`unavailable\`.
-Its results are \`first_seen\`, \`unchanged\`, \`revised\`, \`new_release\`,
-\`new_asset\` and \`indeterminate\`. A proof about an existing issue's new
-attachment produces \`new_asset\`. \`new_release\` requires absence of its
+`CompareOriginalVersionsRequest` has explicit states:
+`initial`, `available`, `absent_proven` and `unavailable`.
+Its results are `first_seen`, `unchanged`, `revised`, `new_release`,
+`new_asset` and `indeterminate`. A proof about an existing issue's new
+attachment produces `new_asset`. `new_release` requires absence of its
 entire issue in the qualified previous scope.
 
 ## Publication and alerts
@@ -149,7 +149,7 @@ SHA, transition ID and artifact reference for reproducibility.
 After confirming final publication and independently verifying its owner
 effect, construct:
 
-\`\`\`python
+```python
 from stratbox.shared.evidence import PublicationReceipt
 from stratbox.shared.source_publications import (
     PublishedArtifactRef, ConfirmedOriginalPublication,
@@ -171,39 +171,39 @@ fact = fact_from_original_version_commit(
     first, publication, asset=key, mode="live",
     occurred_at_utc=observation_time_utc,
 )
-\`\`\`
+```
 
-The fact contains a safe, structured \`artifact_ref\` (scope, artifact ID,
+The fact contains a safe, structured `artifact_ref` (scope, artifact ID,
 version ID, hash, size), not a guessed Git URL or private filesystem path.
 The owner must independently verify that its publication receipt is authentic;
-constructing a dataclass with \`confirmation="confirmed"\` alone does not
+constructing a dataclass with `confirmation="confirmed"` alone does not
 verify an actual remote Git push.
 
-The \`source.original_version_committed\` topic suppresses first-seen
+The `source.original_version_committed` topic suppresses first-seen
 onboarding and requires explicit opt-in to backfill. Use that topic as the
 canonical user notification for new issues, new assets and revised originals.
-The older \`source.bytes_changed\` helper only accepts live revisions and
+The older `source.bytes_changed` helper only accepts live revisions and
 should not be subscribed to alongside the canonical topic by default.
-Core \`notifications.prepare/deliver/qualify/reconcile\` handle delivery,
+Core `notifications.prepare/deliver/qualify/reconcile` handle delivery,
 deduplication and uncertain responses. The application owns its durable
 journal/checkpoint/outbox and its actual Telegram credentials.
 
 ## Failure handling and source health
 
-\`core.operations.source.checks.assess_source_check\` produces a neutral
+`core.operations.source.checks.assess_source_check` produces a neutral
 health observation from an execution result, without claiming "unchanged".
 A missing source, broken HTML profile, unsafe link or download timeout must
 not replace the last confirmed version or turn into a source-update event.
 Repeated health failures may be separately alerted by consumer policy.
 
-Do not use \`immutable\` with the *same physical filename* for different
+Do not use `immutable` with the *same physical filename* for different
 original byte revisions without a version-retention strategy. Choose
 immutable version paths or versioned Git history with a pinned commit;
 only update the latest-confirmed pointer after final owner publication.
 
 ## Local QA and live admission
 
-\`\`\`bash
+```bash
 python -m compileall -q src tests examples/rosstat_originals_offline.py
 python -m pytest -q tests/unit/base/test_original_versions.py \
     tests/unit/base/test_rosstat_publications.py \
@@ -212,11 +212,11 @@ python -m pytest -q tests/unit/base/test_original_versions.py \
     tests/unit/notifications/test_original_version_commits.py \
     tests/unit/notifications/test_rosstat_notification.py
 python examples/rosstat_originals_offline.py
-\`\`\`
+```
 
 The above shell commands are the acceptance procedure; their execution in
 the actual project checkout has **not yet been verified** through the GitHub
 connector. The live publisher gate is independent: record real HTML and
 one native attachment per family, verified redirect/MIME/size and approved
-profile section coverage. Until then leave automatic \`latest\` and absence
+profile section coverage. Until then leave automatic `latest` and absence
 notifications disabled.

@@ -1,6 +1,6 @@
 # Rosstat
 
-\`rosstat.publications\` handles official publisher releases and original
+`rosstat.publications` handles official publisher releases and original
 file acquisition. It shares network/storage/byte-identity infrastructure with
 other sources and does not contain a scheduler or proprietary runtime logic.
 
