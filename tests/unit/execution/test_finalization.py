@@ -610,6 +610,7 @@ def test_fallback_normalization_keeps_primary_and_effect_diagnostics(monkeypatch
 
 
 def test_computation_is_preserved_when_returned_output_exceeds_budget():
+    from stratbox.core.limits import ExecutionBudget
     from stratbox.shared.data.representation import Representation
     blob = Representation("report", 1, "text/csv", b"long-output-data")
     definition = OperationDefinition(

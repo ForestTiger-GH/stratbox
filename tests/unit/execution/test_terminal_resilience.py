@@ -262,8 +262,8 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
 
 @pytest.mark.parametrize("bad", [float("inf"), float("-inf"), float("nan"), True, "bad"])
 def test_invalid_monotonic_origin_rejected_before_execution(bad):
-    from stratbox.core.limits import BudgetMeter
-    with pytest.raises(ValueError):
+    from stratbox.core.limits import BudgetClockError, BudgetMeter
+    with pytest.raises(BudgetClockError):
         BudgetMeter(ExecutionBudget(seconds=1), now=lambda: bad)
 
 
@@ -391,3 +391,21 @@ def test_strict_clock_fault_with_unknown_effect_dominates_outcome():
     assert {d.code for d in result.diagnostics} >= {
         "budget.clock_unavailable", "effect.outcome_unknown",
     }
+
+
+def test_zip_reader_propagates_clock_fault_without_falsely_marking_corruption():
+    from io import BytesIO
+    from zipfile import ZipFile
+    from stratbox.core.formats.archives.members import open_zip
+    from stratbox.core.limits import BudgetClockError, BudgetMeter
+    stream = BytesIO()
+    with ZipFile(stream, "w") as archive:
+        archive.writestr("valid.txt", "valid")
+    # First budget checkpoint is before ZIP parsing; second occurs in
+    # its try block and must not be reclassified as archive.invalid_zip.
+    meter = BudgetMeter(
+        ExecutionBudget(seconds=10), now=_TickSequence((100, 100, 99)),
+    )
+    with pytest.raises(BudgetClockError, match="budget.clock_unavailable"):
+        with open_zip(stream.getvalue(), budget=meter):
+            pass
