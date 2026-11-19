@@ -86,6 +86,8 @@ def qualify_index(series_id: str, payload: SourcePayload, *, text: str) -> Rosst
             fmt, spec.landing_url, payload.identity, PROFILE_VERSION, link.position,
             "qualified" if key else "ambiguous",
         ))
+    if not candidates:
+        raise ValueError("rosstat.index_unrecognized")
     # Collapse repeated exact references; retain source occurrence as first evidence.
     distinct = {}
     for item in candidates:

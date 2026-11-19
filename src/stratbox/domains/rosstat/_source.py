@@ -13,7 +13,7 @@ MEDIA_TYPES = frozenset({
     "application/octet-stream", "application/pdf", "application/zip",
     "application/x-zip-compressed", "application/x-rar-compressed",
     "application/vnd.rar", "application/x-rar", "application/x-binary",
-    "application/force-download",
+    "application/force-download", "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 })
 FILE_PREFIXES = ("/storage/mediabank/", "/upload/")

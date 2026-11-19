@@ -39,6 +39,7 @@ def fact_from_original_version_commit(
         raise ValueError("original.publication_mode_invalid")
     subject = ObjectRef("source", comparison.source_id, identity=comparison.new_identity)
     payload = {
+        "data_version": 1,
         "source_id": comparison.source_id,
         "series_id": series_id, "issue_id": issue_id, "asset_id": asset_id,
         "transition_id": comparison.transition_id, "change": comparison.state,
@@ -70,6 +71,7 @@ def fact_from_original_bytes_changed(
         raise ValueError("original.prior_version_required")
     subject = ObjectRef("source", comparison.source_id, identity=comparison.new_identity)
     payload = {
+        "data_version": 1,
         "source_id": comparison.source_id,
         "transition_id": comparison.transition_id,
         "old_sha256": comparison.old_identity.sha256,
