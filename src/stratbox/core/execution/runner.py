@@ -51,6 +51,7 @@ class Invocation:
         self.used_inputs: list[UsedInputReceipt] = []
         self._effects = _EffectAccumulator()
         self._sealed = False
+        self._terminal_emitted = False
         self.parents: list[tuple[str, ComputationReceipt]] = []
         self.computation: ComputationReceipt | None = None
 
@@ -64,7 +65,11 @@ class Invocation:
             raise RuntimeError("Invocation has already been finalized")
 
     def seal(self) -> None:
+        if self._sealed:
+            raise RuntimeError("Invocation has already been finalized")
         self._sealed = True
+        # Public facts are fixed before the final outcome is resolved.
+        self.used_inputs = tuple(self.used_inputs)
 
     def now(self):
         value = self.context.clock.now()
@@ -218,7 +223,10 @@ class Invocation:
             retry_disposition=disposition,
         )
 
-    def finish(self, outcome: Outcome, diagnostic: Diagnostic | None) -> ObservabilitySummary:
+    def _finish(self, outcome: Outcome, diagnostic: Diagnostic | None) -> ObservabilitySummary:
+        if not self._sealed or self._terminal_emitted:
+            raise RuntimeError("Invalid terminal observation transition")
+        self._terminal_emitted = True
         elapsed = max(0, int((self.context.clock.monotonic() - self._started) * 1000))
         self._emit(
             "operation.finished",
@@ -354,7 +362,7 @@ def run(
     completed = _execute_work(definition, request, work, invocation, providers)
     invocation.seal()
     result = _validated_result(definition, invocation, completed)
-    summary = invocation.finish(
+    summary = invocation._finish(
         result.outcome, result.diagnostics[0] if result.diagnostics else None
     )
     # Only telemetry counters may change after validated finalization.

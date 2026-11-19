@@ -390,3 +390,19 @@ def test_conflict_does_not_hide_other_kind_with_same_effect_id():
     assert sum(x.code == "effect.receipt_conflict" for x in result.diagnostics) == 1
     assert any(x.code == "effect.outcome_unknown" and x.evidence_ref == "shared"
                for x in result.diagnostics)
+
+
+def test_terminal_observation_is_private_and_single_attempt():
+    retained = []
+    sink = InMemorySink()
+
+    def handler(value, invocation):
+        retained.append(invocation)
+        assert not hasattr(invocation, "finish")
+        return value
+
+    result = run(operation(), "ok", handler, context=ExecutionContext(sink=sink))
+    assert result.outcome == "succeeded"
+    with pytest.raises(RuntimeError, match="terminal observation"):
+        retained[0]._finish("succeeded", None)
+    assert len([event for event in sink.events if event.kind == "operation.finished"]) == 1
