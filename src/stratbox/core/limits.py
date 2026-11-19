@@ -122,7 +122,11 @@ class BudgetMeter:
         target = (identity, covered_by)
         existing = self._output_units.get(key)
         if existing is not None:
-            if existing != target:
+            # The runner checks "returned" without knowing whether the
+            # handler already explicitly linked it to a publishing unit.
+            if existing[0] != identity or (
+                covered_by is not None and existing[1] != covered_by
+            ):
                 raise ValueError("Conflicting output accounting claim")
             return
         if covered_by is not None:

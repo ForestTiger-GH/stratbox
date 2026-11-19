@@ -59,9 +59,12 @@ def _resolve_completion(
         if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
             diagnostic = Diagnostic(
                 "effect.outcome_unknown", component=effect.kind, evidence_ref=effect.effect_id,
-                reconciliation_owner=effect.reconciliation_owner, retry_disposition="reconcile",
+                reconciliation_owner=effect.reconciliation_owner,
+                retry_disposition="reconcile" if effect.effect_id is not None else "none",
             )
-            if diagnostic not in diagnostics:
+            if effect.effect_id is None or diagnostic not in diagnostics:
+                # Anonymous receipts are independent; keep diagnostic
+                # multiplicity without inventing a durable effect ID.
                 diagnostics.append(diagnostic)
 
     if integrity_diagnostics or any(effect.state == "unknown" for effect in effects):
@@ -73,5 +76,9 @@ def _resolve_completion(
     if outcome != "succeeded" and not diagnostics:
         diagnostics.append(Diagnostic("operation.incomplete"))
     # Deduplicate equal evidence without collapsing distinct effect references.
-    unique = tuple(dict.fromkeys(diagnostics))
-    return _ResolvedCompletion(outcome, value, unique)
+    unique: list[Diagnostic] = []
+    for diagnostic in diagnostics:
+        if (diagnostic.code == "effect.outcome_unknown" and diagnostic.evidence_ref is None
+                or diagnostic not in unique):
+            unique.append(diagnostic)
+    return _ResolvedCompletion(outcome, value, tuple(unique))

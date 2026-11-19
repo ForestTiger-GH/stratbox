@@ -525,3 +525,38 @@ def test_effect_view_is_read_only_and_linear_time_for_boolean_reads():
     assert result.outcome == "succeeded"
     assert len(result.effects) == 100
     assert tuple(captured[0].effects) == result.effects
+
+
+def test_two_anonymous_unknown_effects_keep_two_diagnostics_without_fake_ids():
+    def worker(request, invocation):
+        invocation.effect(EffectReceipt("storage.write", "unknown"))
+        invocation.effect(EffectReceipt("storage.write", "unknown"))
+        return request
+
+    result = run(operation(), "sample", worker)
+    assert result.outcome == "unknown"
+    unresolved = [d for d in result.diagnostics if d.code == "effect.outcome_unknown"]
+    assert len(result.effects) == len(unresolved) == 2
+    assert all(d.evidence_ref is None and d.retry_disposition == "none" for d in unresolved)
+
+
+@pytest.mark.parametrize("state, expected", [
+    ("confirmed", "failed"),
+    ("failed", "failed"),
+    ("unknown", "unknown"),
+])
+def test_computation_survives_later_publication_error(state, expected):
+    from stratbox.shared.identity import ByteIdentity
+    computed = ByteIdentity.of(b"prepared-output")
+
+    def worker(request, invocation):
+        invocation.record(computed, parameters={"phase": "computed"})
+        invocation.effect(EffectReceipt("storage.write", state, effect_id="publish"))
+        raise RuntimeError("publishing adapter failed after computation")
+
+    result = run(operation(), "ok", worker)
+    assert result.outcome == expected
+    assert result.value is None
+    assert result.computation is not None
+    assert result.computation.output == computed
+    assert result.effects[0].state == state

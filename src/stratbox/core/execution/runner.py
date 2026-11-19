@@ -161,8 +161,10 @@ class Invocation:
     def progress(self, completed: int, total: int | None = None) -> None:
         self._require_open()
         self.check_cancelled()
-        if not 0 <= completed <= 2**53 - 1 or (
-            total is not None and not completed <= total <= 2**53 - 1
+        if type(completed) is not int or not 0 <= completed <= 2**53 - 1 or (
+            total is not None and (
+                type(total) is not int or not completed <= total <= 2**53 - 1
+            )
         ):
             raise ValueError("Invalid progress counters")
         now = self.context.clock.monotonic()
