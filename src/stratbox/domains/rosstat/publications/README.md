@@ -37,7 +37,8 @@ claims are refused until qualified evidence is available.
 The publisher may change a URL or link label without revising an original.
 The stable `SourceAssetIdentity` deliberately excludes locators and SHA.
 `source.compare_original_versions` compares accepted original identities
-against a durable previous transition or a fully qualified prior inventory.
+against a durable previous transition or *both* a qualified prior absence and
+current verified presence under a matching publisher scope/profile.
 `source.original_version_committed` is emitted only on an owner-verified
 publication version, and `core.notifications` owns reliable delivery.
 `first_seen` and historical backfill are not automatic fresh-release alerts.

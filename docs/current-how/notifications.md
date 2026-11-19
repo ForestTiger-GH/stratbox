@@ -45,3 +45,23 @@ python examples/acquire_store_parse_notify.py tests/fixtures/universal_core/offi
 ```
 
 [Architecture and evidence boundaries](../architecture/notifications.md)
+
+
+## Original-source publication topic integrity
+
+The `source.original_version_committed` topic is distinct from a transport
+success or a native-file storage receipt. Its producer must provide
+`ConfirmedOriginalPublication` with an owner-verified
+`PublishedArtifactRef` and the exact `SourceAssetIdentity` used by the
+byte comparison. The topic recomputes the series/issue/asset source ID and
+validates the published artifact's SHA, size and scope. The owner must still
+verify the real storage or remote Git transaction before issuing its
+confirmation; the type does not authenticate a remote repository.
+
+The first `first_seen` baseline is journalled but silent.
+`new_release`, `new_asset`, and `revised` changes are eligible only
+after that owner's final publication confirmation. Historical `backfill`
+needs explicit subscription opt-in. The older `source.bytes_changed`
+legacy helper is restricted to explicitly live revisions to avoid accidental
+backfill notifications. Consumers should route one canonical topic to a
+recipient to prevent intentional duplicate alerts.

@@ -99,6 +99,7 @@ date can be a publisher issue hint; it is not automatically an economic
 ```python
 from stratbox.shared.source_publications import (
     SourceAssetIdentity, InventoryAbsenceEvidence,
+    QualifiedAssetPresenceEvidence,
 )
 from stratbox.core.operations.source.version_comparison import (
     OriginalVersion, CompareOriginalVersionsRequest, compare_original_versions,
@@ -123,11 +124,17 @@ same = compare_original_versions(
 assert same.state == "unchanged"
 
 # For a truly new issue or asset, the owner provides InventoryAbsenceEvidence
-# built from a versioned, verified-complete inventory in the SAME series and
-# declared issue scope. Passing any arbitrary SHA string is never sufficient.
+# built from a versioned, verified-complete inventory, and separate
+# QualifiedAssetPresenceEvidence from a CURRENT verified-complete index in
+# the SAME series, scope, profile and profile version. A raw SHA is insufficient.
 # absence = InventoryAbsenceEvidence(key, previous_qualified_inventory)
+# presence = qualified_presence_from_index(
+#     current_approved_index, key.source_id, owner_evidence_ref="current-review",
+# )
 # new = compare_original_versions(
-#     CompareOriginalVersionsRequest(candidate, "absent_proven", absence=absence)
+#     CompareOriginalVersionsRequest(
+#         candidate, "absent_proven", absence=absence, presence=presence,
+#     )
 # ).value
 ```
 
@@ -136,7 +143,7 @@ assert same.state == "unchanged"
 Its results are `first_seen`, `unchanged`, `revised`, `new_release`,
 `new_asset` and `indeterminate`. A proof about an existing issue's new
 attachment produces `new_asset`. `new_release` requires absence of its
-entire issue in the qualified previous scope.
+entire issue in the qualified previous scope and verified current presence.
 
 ## Publication and alerts
 
