@@ -92,6 +92,7 @@ REQUIRED_FILES = [
     'tests/unit/execution/test_output_accounting.py',
     'tests/unit/execution/test_capability_declarations.py',
     'tests/unit/execution/test_terminal_resilience.py',
+    'tests/unit/observability/test_result_summary_bounds.py',
     'docs/architecture/execution-finalization.md',
     'tests/unit/execution/test_finalization.py',
     'tests/integration/universal_core/test_execution_effect_pipeline.py',

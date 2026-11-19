@@ -61,7 +61,12 @@ applies. Supported nested readers and writers share a meter. Returned
 registered effects. Published outputs account their obligations before commit;
 explicit coverage is necessary to avoid double-counting the same returned
 and published unit. A final deadline-only check is separate from cancellation.
-Missing/failed optional telemetry clocks never erase known effect receipts. Long in-process
+Missing/failed optional telemetry clocks never erase known effect receipts.
+A strict deadline uses `BudgetError` for qualified budget faults, with
+`BudgetClockError` specifically identifying invalid, backward or unavailable
+monotonic clocks. Optional stage/progress sampling is skipped when no event
+sink is attached. A returned representation is accounted after computation
+evidence is recorded, even when output admission then fails. Long in-process
 decoder calls, provider calls and OS lookups may complete at their next
 checkpoint. A consumer with a hard deadline or resource requirement uses
 an independently constrained adapter.

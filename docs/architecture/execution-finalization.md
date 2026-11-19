@@ -120,8 +120,11 @@ Primary work diagnostics are kept in original order. Additional system
 diagnostics are appended for unresolved effects (`effect.outcome_unknown`,
 one qualified entry per independent known effect) or contradictory receipts
 (`effect.receipt_conflict`). A known failed effect from a successful
-handler adds `effect.failed`. Equivalent diagnostics may be deduplicated;
-distinct evidence references must survive.
+handler adds `effect.failed`. Normal diagnostics use stable, expected-linear
+hash-based deduplication; independent anonymous unknown effect observations
+retain multiplicity and must never acquire fabricated effect IDs. Identical
+domain diagnostics are deduplicated by value. Fallback finalization applies
+the same safe stage/component/reason classification.
 
 A domain-level `unknown` retains its own diagnosis without a fabricated
 effect-reconciliation instruction. Addressable external uncertainty and receipt
@@ -138,7 +141,11 @@ as public diagnostic values.
 
 `BudgetMeter.account_output(key, identity, covered_by=None, completed=False)`
 records one invocation-local logical output obligation. Each key is unique;
-repeating the same key with identical bytes is idempotent. Distinct destinations
+repeating a claim is idempotent **only** when `(key, ByteIdentity, covered_by)`
+is identical. `BudgetMeter.ensure_returned_output(identity)` checks the
+already-declared `returned` claim (including explicit coverage), or registers
+an otherwise absent output. This separate check avoids weakening the claim
+idempotency rule for the runner's automatic completion path. Distinct destinations
 must use distinct keys even for identical payloads. The `ByteIdentity` proves
 the bytes/size, **not** the identity of the output obligation.
 `covered_by` explicitly links a returned output to a previously accounted
@@ -157,6 +164,9 @@ materialized preview; it does not automatically cover the returned output.
 
 A successfully recorded `ComputationReceipt` is retained even when the
 subsequent publication fails or becomes unknown and the final value is absent.
+For an already-built returned `Representation`, the runner records its
+computation identity **before** checking the output-byte admission, so a
+budget rejection cannot erase evidence of computed content.
 It is evidence of **calculated content**, not file publication or usability.
 No raw content/paths are projected into the result journal.
 
@@ -171,12 +181,21 @@ retain their primary reason; any unknown physical effect still forces
 `unknown`. Already confirmed physical effects are never rolled back by a
 late deadline or cancellation observation.
 
-If monotonic measurement fails under a strict deadline, a successful
-computation cannot assert timeliness: it becomes `failed` with
-`budget.clock_unavailable`, preserving receipts. With no deadline, the
+Strict `BudgetMeter` timestamps must be finite `int|float` samples and
+nondecreasing within one meter. Equal ticks are valid; backward ticks,
+nonnumeric/nonfinite samples and clock exceptions become
+`BudgetClockError(code="budget.clock_unavailable")`, distinct from
+`BudgetExceeded(code="budget.deadline")`. Both inherit `BudgetError`, and
+archive/batch/domain consumers must propagate and classify them without
+renaming an invalid clock into corrupt input. If a strict deadline clock
+fails, a successful computation cannot assert timeliness: it becomes
+`failed` with `budget.clock_unavailable`, preserving receipts. With no deadline, the
 business outcome remains intact. Optional terminal timing failures produce
 nullable `duration_ms`/`stage_elapsed_ms` and
-`ObservabilitySummary.timing_degraded=True`; if trusted UTC cannot be
+`ObservabilitySummary.timing_degraded=True` when a sink actually requests
+timing. Stage/progress telemetry reads are best-effort and skipped if no
+event sink exists; with a sink, missing throttle time skips optional progress
+emission. Required budget checkpoints remain independent. If trusted UTC cannot be
 obtained, the event is dropped with coverage degradation rather than a fake
 timestamp. These failures never authorize re-emission.
 
@@ -198,6 +217,28 @@ dependencies separately in the catalog, with `phase=scoped|conditional`.
 Notification runtime declarations cover state, authority, journal source and
 conditional consumer. Real scope-bound grants still belong to
 `core.notifications.runtime.require_binding`, not to catalog metadata.
+
+## Bounded result-summary projection
+
+`record_from_result` retains the full `OperationResult` under the caller's
+authority but emits an intentionally bounded, privacy-minimal journal
+projection. Its `diagnostics`, `inputs`, `effects` and references are
+prefix-limited (initially 128 of each, reduced further if journal node or
+byte limits require). `details_coverage` is `complete` only when all three
+safe projection lists fit; otherwise it is `summarized`.
+`details_counts` reports totals and effect states, with a bounded breakdown
+of effect kinds; `details_included` reports displayed prefix lengths.
+`details_digest` is an order-sensitive SHA-256 of all complete **safe
+projections**, not a digest of raw private paths, material bytes, or the
+provider-owned receipt itself. This digest cannot authenticate a provider
+or prove a missing chunk exists. The journal never infers effect absence
+from truncated detail; no durable effect ledger is created.
+
+The standalone observation and actual-finish-linked result summary retain
+their existing qualified identities and schema-version conventions. Full
+receipts remain accessible to the caller through the returned result.
+Independent bounded detail persistence, if required by a host, belongs to
+its authorized storage/retention policy.
 
 ## Consumer integration and test conformance
 

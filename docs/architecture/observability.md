@@ -10,7 +10,13 @@ The optional timing measurements may be unavailable without affecting
 business truth: `ObservabilitySummary.timing_degraded` records this separately
 from `dropped` events. The result-summary projection includes the same
 qualified field. If the UTC clock fails, no fabricated timestamp is emitted.
-See [Execution finalization](execution-finalization.md).
+Large results are projected as bounded `result_summary` records. The safe
+detail arrays and references are limited per record; `details_coverage`,
+`details_counts`, `details_included` and an order-sensitive
+`details_digest` make intentional omissions explicit. The digest covers the
+full privacy-minimized projection, not physical content or provider authority.
+The caller's full `OperationResult` is unaffected. See
+[Execution finalization](execution-finalization.md).
 
 ## 1. Six independently qualified propositions
 
