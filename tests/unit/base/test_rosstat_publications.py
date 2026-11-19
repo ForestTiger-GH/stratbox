@@ -127,3 +127,15 @@ def test_wrong_series_payload_is_rejected_offline():
     result = discover(DiscoverRosstatRequest(series, payload))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "rosstat.index_source_mismatch"
+
+
+def test_official_file_redirects_stay_within_source_roots():
+    from stratbox.domains.rosstat._source import file_request
+    request = file_request(
+        "https://rosstat.gov.ru/storage/mediabank/2026-08.xlsx",
+        1024 * 1024, 30,
+    )
+    assert request.permits("https://www.rosstat.gov.ru/storage/mediabank/renamed.xlsx")
+    assert request.permits("https://rosstat.gov.ru/upload/other.xlsx")
+    assert not request.permits("https://rosstat.gov.ru/admin/private.xlsx")
+    assert not request.permits("https://evil.example/storage/mediabank/2026-08.xlsx")

@@ -59,11 +59,12 @@ def page_request(url: str, canonical: str, limit: int = 10 * 1024 * 1024) -> Htt
 def file_request(url: str, limit: int, deadline: float) -> HttpRequest:
     if not allowed_file_url(url):
         raise ValueError("rosstat.file_url_forbidden")
-    path = unquote(urlsplit(url).path, errors="strict")
-    # A redirect must preserve the specific path and stay on the explicitly accepted hosts.
+    # Redirects may move between official media-bank objects but never escape
+    # the explicit publisher-host and vetted storage/upload path boundaries.
     return HttpRequest(
         "GET", url,
-        tuple(HttpsEndpoint(host, path) for host in PUBLISHER_HOSTS),
+        tuple(HttpsEndpoint(host, prefix, subtree=True)
+              for host in PUBLISHER_HOSTS for prefix in FILE_PREFIXES),
         headers={"Accept": "application/octet-stream,*/*"},
         deadline_seconds=deadline, max_response_bytes=limit,
     )
