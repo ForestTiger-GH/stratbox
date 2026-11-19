@@ -44,7 +44,7 @@ class Invocation:
             raise ValueError("Invalid execution clock at admission")
         self.budget = BudgetMeter(
             ExecutionBudget.intersect(definition.limits, context.ceiling, context.budget),
-            now=context.clock.monotonic,
+            now=context.clock.monotonic, origin=self._started,
         )
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0

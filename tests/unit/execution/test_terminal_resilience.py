@@ -255,9 +255,9 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
     ))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "internal.error"
-    # Start + budget initialization + initial admission + terminal check.
+    # One shared admission origin + admission checkpoint + terminal checkpoint.
     # No event sink means no optional final timing measurement.
-    assert clock.calls == 4
+    assert clock.calls == 3
 
 
 @pytest.mark.parametrize("bad", [float("inf"), float("-inf"), float("nan"), True, "bad"])
@@ -409,3 +409,18 @@ def test_zip_reader_propagates_clock_fault_without_falsely_marking_corruption():
     with pytest.raises(BudgetClockError, match="budget.clock_unavailable"):
         with open_zip(stream.getvalue(), budget=meter):
             pass
+
+
+def test_budget_measures_from_initial_invocation_tick():
+    class ReverseImmediately(ControlledClock):
+        def __init__(self):
+            super().__init__()
+            self.times = iter((100, 99, 100))
+        def monotonic(self):
+            return next(self.times)
+    clock = ReverseImmediately()
+    result = run(OP, "ok", lambda req, invocation: req, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=10),
+    ))
+    assert result.outcome == "failed"
+    assert any(d.code == "budget.clock_unavailable" for d in result.diagnostics)

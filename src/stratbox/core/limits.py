@@ -73,7 +73,8 @@ class BudgetMeter:
     """Cumulative resources and a monotonic deadline for one invocation."""
 
     def __init__(
-        self, limits: ExecutionBudget, *, now: Callable[[], float] = monotonic
+        self, limits: ExecutionBudget, *, now: Callable[[], float] = monotonic,
+        origin: float | None = None,
     ):
         self.limits = limits
         self._now = now
@@ -81,10 +82,11 @@ class BudgetMeter:
         if limits.seconds is None:
             self._deadline = inf
         else:
-            try:
-                origin = now()
-            except Exception as error:
-                raise BudgetClockError() from error
+            if origin is None:
+                try:
+                    origin = now()
+                except Exception as error:
+                    raise BudgetClockError() from error
             if type(origin) not in (int, float) or not isfinite(origin):
                 raise BudgetClockError()
             self._deadline = origin + limits.seconds
