@@ -17,6 +17,8 @@ from stratbox.shared.evidence import PublicationReceipt, StoredBytesReceipt
 from stratbox.core.execution import (Correlation, Diagnostic, EffectReceipt,
                                 ObservabilitySummary, OperationDefinition, OperationResult,
                                 ExecutionEvent, ExecutionContext, run)
+from stratbox.core.execution import EffectKey
+from stratbox.core.observability.records.effect_refs import effect_ref_id
 from stratbox.core.observability import (
     CapturePolicy, PersistencePolicy, PresentationPolicy, RecordMemorySink, FileEventSink,
     JournalRecord, JournalNamespace, DomainFact, ObjectRef, PayloadLimits, OriginClaim,
@@ -72,10 +74,10 @@ def test_mapping_proxy_diagnostics_and_effects():
     history = build_operation_history((record(1, "operation.started", "attempt1"),
                                        record(2, "operation.finished", "attempt1"), item), "attempt1")
     assert summarize_operations((history,)).diagnostic_codes == {"http.timeout": 1}
-    state = project_effect_state((item,), "E1")
+    state = project_effect_state((item,), EffectKey("storage.write", "E1"))
     assert state.states == ("confirmed",) and not state.needs_reconciliation
     decoded, = decode_records(encode_records((item,)))
-    assert project_effect_state((decoded,), "E1") == state
+    assert project_effect_state((decoded,), EffectKey("storage.write", "E1")) == state
 
 
 @pytest.mark.parametrize("storage_status,effect_state", [
@@ -87,10 +89,10 @@ def test_storage_status_mapping(storage_status, effect_state):
                                  storage_status, "atomic_create", "local", effect_id="effect_1")
     fact = fact_from_stored_bytes(receipt, subject_id="source_1", observed_at_utc=TIME)
     assert fact.payload["effect_state"] == effect_state
-    assert fact.references[0].object_id == "effect_1"
+    assert fact.references[0].object_id == effect_ref_id(EffectKey("storage.write", "effect_1"))
     rec = record_from_fact(fact)
-    assert project_effect_state((rec,), "effect_1").states == (effect_state,)
-    assert project_effect_state(decode_records(encode_records((rec,))), "effect_1").states == (effect_state,)
+    assert project_effect_state((rec,), EffectKey("storage.write", "effect_1")).states == (effect_state,)
+    assert project_effect_state(decode_records(encode_records((rec,))), EffectKey("storage.write", "effect_1")).states == (effect_state,)
     assert "/private/path" not in encode_records((rec,)).decode("utf-8")
 
 

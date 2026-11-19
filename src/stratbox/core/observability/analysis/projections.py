@@ -3,14 +3,16 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from typing import Literal
 
-from stratbox.core.execution import OperationResult
+from stratbox.core.execution import EffectKey, OperationResult
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.evidence import PublicationReceipt, StoredBytesReceipt
 from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.assessment.coverage import CaptureCoverage
 from stratbox.core.observability.analysis.history import build_operation_history
 from stratbox.core.observability.capture.adapters import effect_state_from_storage_status
+from stratbox.core.observability.records.effect_refs import effect_ref_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,10 +100,12 @@ class ArtifactState:
 
 @dataclass(frozen=True, slots=True)
 class EffectState:
-    effect_id: str
+    key: EffectKey
     states: tuple[str, ...]
-    needs_reconciliation: bool
+    needs_reconciliation: bool | None
     conflicting_receipts: bool
+    evidence_coverage: Literal["complete", "partial", "not_observed", "indeterminate"]
+    observed_attempts: tuple[str, ...] = ()
 
 
 def _facts(records, kinds: frozenset[str], namespace: str, ident: str):
@@ -218,34 +222,106 @@ def project_artifact_state(records: Iterable[JournalRecord], artifact_id: str, *
                          not selected or identity is None)
 
 
-def project_effect_state(records: Iterable[JournalRecord], effect_id: str) -> EffectState:
-    receipts: list[tuple[str | None, str]] = []
-    for rec in records:
-        c = rec.correlation
-        attempt = c.attempt_id or rec.invocation_id
-        if rec.record_type == "result_summary":
-            effects = rec.payload.get("effects", ())
-            if isinstance(effects, (tuple, list)):
-                for evidence in effects:
-                    if isinstance(evidence, Mapping) and evidence.get("effect_id") == effect_id and evidence.get("state") in {"confirmed", "failed", "unknown"}:
-                        receipts.append((attempt, str(evidence["state"])))
-        elif rec.record_type in {"domain_fact", "effect"} and rec.kind in {"material.stored", "effect.unknown", "effect.failed", "effect.confirmed"}:
-            is_related = any(ref.namespace == "effect" and ref.object_id == effect_id for ref in rec.references)
-            if not is_related and rec.kind in {"material.stored", "effect.unknown", "effect.failed"}:
-                is_related = rec.payload.get("effect_id") == effect_id  # explicit historical storage evidence only
-            if is_related:
-                state = rec.payload.get("effect_state", rec.payload.get("state"))
-                if state is None and rec.payload.get("status") in {"stored", "already_present", "failed", "unknown"}:
-                    state = effect_state_from_storage_status(str(rec.payload["status"]))
-                if state in {"confirmed", "failed", "unknown"}:
-                    receipts.append((attempt, str(state)))
-    distinct = tuple(sorted({state for _, state in receipts}))
+def _qualified_effect_state(
+    key: EffectKey, observations: list[tuple[str, str]], *,
+    partial: bool, scope_observed: bool, single_invocation: bool,
+) -> EffectState:
     grouped: dict[str, set[str]] = {}
-    for attempt, state in receipts:
-        if attempt is not None:
-            grouped.setdefault(attempt, set()).add(state)
-    conflict = any("confirmed" in states and "failed" in states for states in grouped.values())
-    return EffectState(effect_id, distinct, conflict or "confirmed" not in distinct and (not distinct or "unknown" in distinct), conflict)
+    for attempt, state in observations:
+        grouped.setdefault(attempt, set()).add(state)
+    states = tuple(sorted({state for _, state in observations}))
+    attempts = tuple(sorted(grouped))
+    conflict = any(
+        "confirmed" in values and "failed" in values
+        for values in grouped.values()
+    )
+    if not states:
+        return EffectState(
+            key, (), None, False,
+            "partial" if partial else "not_observed" if scope_observed else "indeterminate",
+        )
+    uncertain_attempt = not single_invocation and len(grouped) > 1
+    coverage = "partial" if partial else "indeterminate" if uncertain_attempt else "complete"
+    if conflict or "unknown" in states:
+        reconciliation: bool | None = True
+    elif partial or uncertain_attempt:
+        # Another (possibly truncated) attempt cannot close a different
+        # attempt without qualified provider-owned equivalence.
+        reconciliation = None
+    else:
+        reconciliation = False
+    return EffectState(key, states, reconciliation, conflict, coverage, attempts)
+
+
+def project_effect_state(
+    records: Iterable[JournalRecord], key: EffectKey, *,
+    invocation_id: str | None = None,
+) -> EffectState:
+    """Qualified, attempt-aware and prefix-coverage-aware effect projection.
+
+    A positive observation is evidence of an observed state, not a claim that
+    the physical effect is globally unique across invocation attempts.
+    """
+    if not isinstance(key, EffectKey):
+        raise TypeError("Use a kind-qualified EffectKey")
+    ref_id = effect_ref_id(key)
+    observations: list[tuple[str, str]] = []
+    partial = False
+    saw_scope = False
+    for rec in records:
+        if invocation_id is not None and rec.invocation_id != invocation_id:
+            continue
+        attempt = rec.invocation_id or rec.correlation.attempt_id or "unspecified"
+        if rec.record_type == "result_summary" and rec.kind == "operation.result":
+            saw_scope = True
+            effects = rec.payload.get("effects")
+            counts = rec.payload.get("details_counts")
+            included = rec.payload.get("details_included")
+            if not isinstance(effects, (tuple, list)):
+                partial = True
+                continue
+            expected = counts.get("effects") if isinstance(counts, Mapping) else None
+            shown = included.get("effects") if isinstance(included, Mapping) else None
+            if type(expected) is not int or type(shown) is not int or (
+                expected < len(effects) or shown != len(effects) or expected != shown
+            ):
+                partial = True
+            for item in effects:
+                if not isinstance(item, Mapping):
+                    partial = True
+                    continue
+                if (item.get("kind") == key.kind and item.get("effect_id") == key.effect_id
+                        and item.get("state") in {"confirmed", "failed", "unknown"}):
+                    observations.append((attempt, str(item["state"])))
+        elif rec.record_type in {"domain_fact", "effect"} and rec.kind in {
+            "material.stored", "effect.unknown", "effect.failed", "effect.confirmed",
+        }:
+            related = any(
+                ref.namespace == "effect" and ref.object_id == ref_id
+                for ref in rec.references
+            )
+            tagged = (rec.payload.get("effect_kind") == key.kind
+                      and rec.payload.get("effect_id") == key.effect_id)
+            if not related and not tagged:
+                continue
+            saw_scope = True
+            if (rec.payload.get("effect_kind") is not None
+                    and not tagged):
+                partial = True  # Internally contradictory identity labels.
+                continue
+            state = rec.payload.get("effect_state", rec.payload.get("state"))
+            if state is None and rec.payload.get("status") in {
+                "stored", "already_present", "failed", "unknown",
+            }:
+                state = effect_state_from_storage_status(str(rec.payload["status"]))
+            if state in {"confirmed", "failed", "unknown"}:
+                observations.append((attempt, str(state)))
+            else:
+                partial = True
+    return _qualified_effect_state(
+        key, observations, partial=partial, scope_observed=saw_scope,
+        single_invocation=invocation_id is not None,
+    )
 
 
 def projection_rows(items: Iterable[object], fields: tuple[str, ...], *,
@@ -275,7 +351,14 @@ def artifact_state_from_storage(receipt: StoredBytesReceipt, *, artifact_id: str
                          receipt.status in {"stored", "already_present"}, False)
 
 
-def effect_state_from_result(result: OperationResult, *, effect_id: str) -> EffectState:
-    states = {item.state for item in result.effects if item.effect_id == effect_id}
-    return EffectState(effect_id, tuple(sorted(states)), not states or "unknown" in states and "confirmed" not in states,
-                       "confirmed" in states and "failed" in states)
+def effect_state_from_result(
+    result: OperationResult, *, key: EffectKey,
+) -> EffectState:
+    if not isinstance(key, EffectKey):
+        raise TypeError("Use a kind-qualified EffectKey")
+    observations = [(result.invocation_id, effect.state)
+                    for effect in result.effects if effect.key == key]
+    return _qualified_effect_state(
+        key, observations, partial=False, scope_observed=True,
+        single_invocation=True,
+    )

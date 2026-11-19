@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
-from stratbox.core.execution import ExecutionContext, OperationDefinition, run
+from stratbox.core.execution import EffectKey, ExecutionContext, OperationDefinition, run
 from stratbox.core.operations.source.originals import OriginalDestination, SaveOriginalRequest, save_original
 from stratbox.core.observability import (
     CapturePolicy, RecordMemorySink, FileJournalWriter, FileJournalReader,
@@ -37,7 +37,7 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
     records = collector.records
     effect_id = observed.effects[0].effect_id
     assert effect_id
-    assert project_effect_state(records, effect_id).states == ("confirmed",)
+    assert project_effect_state(records, EffectKey("storage.write", effect_id)).states == ("confirmed",)
     coverage = collector.coverage_for(observed.invocation_id, producer=observed.observability)
     history = build_operation_history(records, observed.invocation_id, coverage=coverage)
     assert history.coverage == "complete"
@@ -59,7 +59,7 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
     recovered = reader.read_report(manifest_receipt=manifest_receipt)
     assert recovered.complete
     assert recovered.records == records
-    assert project_effect_state(recovered.records, effect_id).states == ("confirmed",)
+    assert project_effect_state(recovered.records, EffectKey("storage.write", effect_id)).states == ("confirmed",)
 
 
 def test_real_computation_receipt_is_logged_without_raw_output():
