@@ -226,7 +226,9 @@ def test_elapsed_clock_failure_after_effect_is_visible_in_result_summary():
         clock.bad_monotonic = True
         return request
 
-    result = run(OP, "ok", worker, context=ExecutionContext(clock=clock))
+    result = run(OP, "ok", worker, context=ExecutionContext(
+        clock=clock, sink=InMemorySink(),
+    ))
     record = record_from_result(result)
     assert record.payload["observability"]["timing_degraded"] is True
     assert record.payload["observability"]["degraded"] is True
@@ -253,9 +255,9 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
     ))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "internal.error"
-    # Start + budget initialization + initial admission + terminal check
-    # + final best-effort measurement; invalid progress adds no clock read.
-    assert clock.calls == 5
+    # Start + budget initialization + initial admission + terminal check.
+    # No event sink means no optional final timing measurement.
+    assert clock.calls == 4
 
 
 @pytest.mark.parametrize("bad", [float("inf"), float("-inf"), float("nan"), True, "bad"])

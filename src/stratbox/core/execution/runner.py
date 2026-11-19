@@ -340,16 +340,14 @@ def _execute_work(
                 # Pure in-memory representations have not been charged by a
                 # publishing provider. A publishing provider already charged
                 # physical output at its own effect boundary.
-                invocation.account_output(
-                    output.identity, key="returned", completed=True,
-                )
-                # Computation identity is distinct from external publication:
-                # registering a confirmed effect must not suppress provenance.
+                # Computation evidence describes already built content.
+                # A later output-budget rejection must not erase that fact.
                 if invocation.computation is None:
                     invocation.record(
                         output.identity,
                         parameters={"profile": output.profile_id, "profile_version": output.version},
                     )
+                invocation.budget.ensure_returned_output(output.identity, completed=True)
         return _WorkCompletion(outcome, value, diagnostics)
     except OperationFailure as error:
         return _WorkCompletion(error.outcome, None, (error.diagnostic,))
@@ -377,6 +375,23 @@ def _terminal_budget(invocation: Invocation, work_result: _WorkCompletion) -> _W
     return work_result
 
 
+def _normalize_diagnostics(
+    invocation: Invocation, diagnostics: tuple[Diagnostic, ...], outcome: Outcome,
+) -> tuple[Diagnostic, ...]:
+    """One safe envelope in both normal and emergency finalization paths."""
+    result: list[Diagnostic] = []
+    for item in diagnostics:
+        try:
+            result.append(invocation.describe(item, outcome))
+        except Exception as error:
+            incident = invocation.incident(error)
+            result.append(replace(
+                incident, stage=invocation._stage or "admission",
+                component="internal", reason_class="internal",
+            ))
+    return tuple(result)
+
+
 def _validated_result(
     definition: OperationDefinition,
     invocation: Invocation,
@@ -390,8 +405,7 @@ def _validated_result(
         resolved = _resolve_completion(
             definition, work_result, effects, integrity, conflict_keys,
         )
-        diagnostics = tuple(invocation.describe(item, resolved.outcome)
-                            for item in resolved.diagnostics)
+        diagnostics = _normalize_diagnostics(invocation, resolved.diagnostics, resolved.outcome)
         return OperationResult(
             definition, invocation.id, resolved.outcome, resolved.value, diagnostics,
             inputs, effects, invocation._summary(), invocation.computation,
@@ -411,7 +425,7 @@ def _validated_result(
                     retry_disposition="reconcile" if effect.effect_id else "none",
                 ))
         diagnostics.append(incident)
-        fallback = tuple(diagnostics)
+        fallback = _normalize_diagnostics(invocation, tuple(diagnostics), outcome)
         try:
             return OperationResult(
                 definition, invocation.id, outcome, None, fallback, inputs,

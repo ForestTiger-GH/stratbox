@@ -587,3 +587,54 @@ def test_many_distinct_effects_preserve_order_and_anonymous_multiplicity():
         "receipt_0", "receipt_1", "receipt_2",
     ]
     assert all(item.evidence_ref is None for item in result.diagnostics[-3:])
+
+
+def test_fallback_normalization_keeps_primary_and_effect_diagnostics(monkeypatch):
+    from stratbox.core.execution import runner
+    def broken_resolver(*args, **kwargs):
+        raise RuntimeError("injected resolution error")
+    monkeypatch.setattr(runner, "_resolve_completion", broken_resolver)
+    sink = InMemorySink()
+    def worker(value, invocation):
+        invocation.stage("commit")
+        invocation.effect(EffectReceipt("storage.write", "unknown", effect_id="unknown_1"))
+        return Completion(value, "failed", "domain.primary")
+    result = run(operation(), "value", worker, context=ExecutionContext(sink=sink))
+    assert result.outcome == "unknown"
+    assert {d.code for d in result.diagnostics} >= {
+        "domain.primary", "effect.outcome_unknown", "internal.error",
+    }
+    assert all(d.stage == "commit" and d.component and d.reason_class
+               for d in result.diagnostics)
+    assert sink.events[-1].outcome == "unknown"
+
+
+def test_computation_is_preserved_when_returned_output_exceeds_budget():
+    from stratbox.shared.data.representation import Representation
+    blob = Representation("report", 1, "text/csv", b"long-output-data")
+    definition = OperationDefinition(
+        "test.compute_before_output_admission", 1, "method-1",
+        bytes, Representation,
+    )
+    result = run(definition, b"", lambda request, invocation: blob,
+                 context=ExecutionContext(budget=ExecutionBudget(output_bytes=3)))
+    assert result.outcome == "failed"
+    assert result.value is None
+    assert result.computation is not None
+    assert result.computation.output == blob.identity
+    assert any(item.code == "budget.output_bytes" for item in result.diagnostics)
+
+
+def test_normalizer_failure_yields_safe_internal_diagnostic(monkeypatch):
+    from stratbox.core.execution import runner
+    def broken_describe(self, diagnostic, outcome):
+        raise RuntimeError("do-not-leak")
+    monkeypatch.setattr(runner.Invocation, "describe", broken_describe)
+    result = run(operation(), "value",
+                 lambda value, invocation: Completion(value, "failed", "domain.error"))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "internal.error"
+    assert result.diagnostics[0].stage == "admission"
+    assert result.diagnostics[0].component == "internal"
+    assert result.diagnostics[0].reason_class == "internal"
+    assert "do-not-leak" not in str(result.diagnostics)
