@@ -1,6 +1,7 @@
 """Pure adapters from competent core receipts to immutable, minimal observations."""
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -8,7 +9,7 @@ import json
 from uuid import uuid4
 
 from stratbox.shared.evidence import AcquisitionReceipt, PublicationReceipt, StoredBytesReceipt
-from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.comparison import Comparison
 from stratbox.core.execution import ExecutionEvent, OperationResult
 from stratbox.core.execution.contracts import Correlation
@@ -55,6 +56,62 @@ def record_from_fact(fact: DomainFact, *, operation_id: str | None = None,
     return record
 
 
+_RESULT_DETAIL_LIMIT = 128
+
+
+def _diagnostic_detail(item) -> dict[str, object]:
+    return {
+        "code": item.code, "stage": item.stage, "component": item.component,
+        "reason_class": item.reason_class, "retry_disposition": item.retry_disposition,
+        "evidence_ref": item.evidence_ref, "incident_id": item.incident_id,
+    }
+
+
+def _input_detail(item) -> dict[str, object]:
+    return {
+        "role": item.role, "source_id": item.source_id, "identity": _byte(item.identity),
+        "version": _byte(item.version), "container": _byte(item.container),
+    }
+
+
+def _effect_detail(item) -> dict[str, object]:
+    return {
+        "kind": item.kind, "state": item.state, "effect_id": item.effect_id,
+        "stage": item.stage, "identity": _byte(item.identity),
+        "guarantee": item.guarantee, "reconciliation_owner": item.reconciliation_owner,
+    }
+
+
+def _details_metadata(result: OperationResult) -> tuple[str, dict[str, object]]:
+    """Stable digest of complete safe projections, never private locators."""
+    digest = sha256()
+    streams = (
+        ("diagnostics", result.diagnostics, _diagnostic_detail),
+        ("inputs", result.used_inputs, _input_detail),
+        ("effects", result.effects, _effect_detail),
+    )
+    for name, entries, project in streams:
+        for index, item in enumerate(entries):
+            serialized = canonical_manifest_bytes({
+                "stream": name, "position": index, "receipt": project(item),
+            })
+            digest.update(len(serialized).to_bytes(8, "big"))
+            digest.update(serialized)
+    states = Counter(effect.state for effect in result.effects)
+    kinds = Counter(effect.kind for effect in result.effects)
+    names = sorted(kinds)
+    return digest.hexdigest(), {
+        "diagnostics": len(result.diagnostics),
+        "inputs": len(result.used_inputs),
+        "effects": len(result.effects),
+        "confirmed": states["confirmed"],
+        "failed": states["failed"],
+        "unknown": states["unknown"],
+        "effect_kinds": {name: kinds[name] for name in names[:32]},
+        "other_effect_kinds": len(names) - min(len(names), 32),
+    }
+
+
 def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | None = None,
                        finished_event: ExecutionEvent | None = None,
                        observation_id: str | None = None,
@@ -89,45 +146,73 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
         safe_token(stamp)
         record_id = _id("result_observation", f"{result.invocation_id}:{stamp}")
         time_basis = "observation"
-    data = {
+    digest, counts = _details_metadata(result)
+    computation = (
+        {"id": _byte(result.computation.computation_id),
+         "output": _byte(result.computation.output),
+         "dataset_id": result.computation.version.dataset_id,
+         "release_id": result.computation.version.release_id,
+         "method_version": result.computation.version.method_version}
+        if result.computation is not None else None
+    )
+    metadata = {
         "contract_version": result.definition.contract_version,
         "method_version": result.definition.method_version,
         "time_basis": time_basis,
-        "diagnostics": [{"code": d.code, "stage": d.stage, "component": d.component,
-                         "reason_class": d.reason_class, "retry_disposition": d.retry_disposition,
-                         "evidence_ref": d.evidence_ref, "incident_id": d.incident_id}
-                        for d in result.diagnostics],
-        "inputs": [{"role": r.role, "source_id": r.source_id, "identity": _byte(r.identity),
-                    "version": _byte(r.version), "container": _byte(r.container)}
-                   for r in result.used_inputs],
-        "effects": [{"kind": r.kind, "state": r.state, "effect_id": r.effect_id,
-                     "stage": r.stage, "identity": _byte(r.identity),
-                     "guarantee": r.guarantee, "reconciliation_owner": r.reconciliation_owner}
-                    for r in result.effects],
-        "computation": ({"id": _byte(result.computation.computation_id),
-                         "output": _byte(result.computation.output),
-                         "dataset_id": result.computation.version.dataset_id,
-                         "release_id": result.computation.version.release_id,
-                         "method_version": result.computation.version.method_version}
-                        if result.computation is not None else None),
-        "observability": {"emitted": result.observability.emitted, "dropped": result.observability.dropped,
-                          "incidents_dropped": result.observability.incidents_dropped,
-                          "timing_degraded": result.observability.timing_degraded,
-                          "degraded": result.observability.degraded},
+        "details_digest": digest,
+        "details_counts": counts,
+        "computation": computation,
+        "observability": {
+            "emitted": result.observability.emitted,
+            "dropped": result.observability.dropped,
+            "incidents_dropped": result.observability.incidents_dropped,
+            "timing_degraded": result.observability.timing_degraded,
+            "degraded": result.observability.degraded,
+        },
         "resources_used": [{"resource": str(resource), "count": count}
                            for resource, count in result.resources_used],
     }
     if finished_event is not None:
-        data["data_version"] = 2
-    refs = tuple(ObjectRef("effect", item.effect_id, "receipt", identity=item.identity)
-                 for item in result.effects if item.effect_id is not None)
-    rec = JournalRecord(record_id, "result_summary", "operation.result", instant, data,
-                        observed_at_utc=instant if time_basis == "observation" else None,
-                        correlation=correlation or Correlation(), invocation_id=result.invocation_id,
-                        operation_id=result.operation_id, references=refs, outcome=result.outcome,
-                        cause_record_ids=cause_ids)
-    validate_builtin_fields(rec)
-    return rec
+        metadata["data_version"] = 2
+
+    # A single bounded record cannot convey all receipts of a massive run.
+    # Count and hash the entire safe projection, and explicitly label coverage.
+    limit = _RESULT_DETAIL_LIMIT
+    while True:
+        included = {
+            "diagnostics": min(len(result.diagnostics), limit),
+            "inputs": min(len(result.used_inputs), limit),
+            "effects": min(len(result.effects), limit),
+        }
+        complete = all(included[key] == counts[key] for key in included)
+        data = {
+            **metadata,
+            "diagnostics": [_diagnostic_detail(item) for item in result.diagnostics[:limit]],
+            "inputs": [_input_detail(item) for item in result.used_inputs[:limit]],
+            "effects": [_effect_detail(item) for item in result.effects[:limit]],
+            "details_included": included,
+            "details_coverage": "complete" if complete else "summarized",
+        }
+        refs = tuple(
+            ObjectRef("effect", item.effect_id, "receipt", identity=item.identity)
+            for item in result.effects[:limit] if item.effect_id is not None
+        )
+        try:
+            rec = JournalRecord(
+                record_id, "result_summary", "operation.result", instant, data,
+                observed_at_utc=instant if time_basis == "observation" else None,
+                correlation=correlation or Correlation(), invocation_id=result.invocation_id,
+                operation_id=result.operation_id, references=refs, outcome=result.outcome,
+                cause_record_ids=cause_ids,
+            )
+            validate_builtin_fields(rec)
+            return rec
+        except ValueError as error:
+            if limit == 0 or not str(error).startswith((
+                "journal.payload_", "journal.field_length_limit",
+            )):
+                raise
+            limit //= 2
 
 
 def fact_from_acquisition(receipt: AcquisitionReceipt, *, correlation: Correlation | None = None) -> DomainFact:

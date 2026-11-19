@@ -75,6 +75,10 @@ SCHEMAS = {
         AllowedField("computation", "optional", "operational"),
         AllowedField("observability", "mapping", "operational"),
         AllowedField("resources_used", "sequence", "operational"),
+        AllowedField("details_coverage", "string", "public", max_length=16),
+        AllowedField("details_digest", "string", "operational", max_length=64),
+        AllowedField("details_counts", "mapping", "operational"),
+        AllowedField("details_included", "mapping", "operational"),
     )),
 }
 
