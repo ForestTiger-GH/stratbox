@@ -5,6 +5,13 @@ JSON interface. Domain modules own release selection, labels, interpretation
 and calculations. General-purpose HTTP, file, archive and format commands
 live in `stratbox.core.storage`, `stratbox.core.network`, and `stratbox.core.formats`. Callers choose periods, repetition and destinations.
 
+The runner resolves every operation's outcome against all registered external
+effect receipts before validating the result and emitting the optional terminal
+event. An explicit domain partial result remains partial after known failed
+effects; an unresolved effect or contradictory receipt yields `unknown`.
+See [Execution finalization and effect integrity](../architecture/execution-finalization.md)
+for the canonical matrix, effect identities, diagnostic precedence and limits.
+
 ## Discover and bind
 
 Use `stratbox.domains.registry.operation_catalog().describe()` to obtain operation IDs,
@@ -51,6 +58,11 @@ applies. Supported nested readers and writers share a meter. Long in-process
 decoder calls, provider calls and OS lookups may complete at their next
 checkpoint. A consumer with a hard deadline or resource requirement uses
 an independently constrained adapter.
+
+Cancellation is cooperative **at handler checkpoints**; it is not a promise
+of immediate preemption. A request arriving after a handler completes does
+not reclassify established success. Effect receipts from earlier work remain
+visible even when a later checkpoint accepts cancellation.
 
 Execution events use envelope version 3 and include correlation IDs, stage
 timing, classified outcomes and incident IDs. A separate optional technical

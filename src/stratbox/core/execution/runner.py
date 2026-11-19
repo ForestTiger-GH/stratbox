@@ -269,18 +269,24 @@ def _execute_work(
         # Retain the existing output-budget boundary: storage operations charge
         # their own output bytes at commit, so charging a second time here would
         # double-count them. Pure representations are charged once at completion.
-        if outcome in {"succeeded", "partial"} and not invocation.effects:
+        if outcome in {"succeeded", "partial"}:
             output = value if isinstance(value, Representation) else getattr(value, "representation", None)
             if isinstance(output, Representation):
-                invocation.budget.charge(
-                    "output_bytes", output.identity.size, completed=outcome == "partial"
-                )
+                # Pure in-memory representations have not been charged by a
+                # publishing provider. A publishing provider already charged
+                # physical output at its own effect boundary.
+                if not invocation.effects:
+                    invocation.budget.charge(
+                        "output_bytes", output.identity.size, completed=outcome == "partial"
+                    )
+                # Computation identity is distinct from external publication:
+                # registering a confirmed effect must not suppress provenance.
                 if invocation.computation is None:
                     invocation.record(
                         output.identity,
                         parameters={"profile": output.profile_id, "profile_version": output.version},
                     )
-            elif outcome == "succeeded" and not definition.partial_allowed:
+            elif outcome == "succeeded" and not definition.partial_allowed and not invocation.effects:
                 invocation.budget.checkpoint()
         return _WorkCompletion(outcome, value, diagnostics)
     except OperationFailure as error:

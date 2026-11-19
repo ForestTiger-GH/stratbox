@@ -2,6 +2,12 @@
 
 `stratbox.core.observability` is an **optional, storage-independent Python facility** for capturing, inspecting, serializing, and recovering events and qualified facts. `stratbox.core.execution.run` remains the single operation runner. Importing this module does not inspect host identity, create files, open network connections, or start threads. Normal business operations retain their full result and receipt semantics with no observer.
 
+The execution runner validates its typed outcome and effect consistency
+**before** emitting `operation.finished`. Optional journal collection cannot
+change that outcome. When a sink accepts the finish event and then raises,
+the runner does not retry the event; collection coverage records the ambiguity.
+See [Execution finalization](execution-finalization.md).
+
 ## 1. Six independently qualified propositions
 
 | Proposition | Competent source | What it establishes | What it does **not** establish |

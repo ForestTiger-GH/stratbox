@@ -33,6 +33,11 @@ family's dedicated `common` modules, while direct cross-owner dependencies
 are allowed only for specifically identified source-schema reuse. A grouping
 package never owns an operation without a local `_registration.py`. Publisher-neutral execution remains in core.
 
+The execution finalizer owns the single-invocation outcome, agrees it with
+effect receipts and validates the result before the terminal event. It does
+not create a second durable JobManager or trust provider. See
+[Execution finalization and effect integrity](execution-finalization.md).
+
 ## Dependency contract
 
 Shared semantic contracts depend on neither the executable core nor concrete

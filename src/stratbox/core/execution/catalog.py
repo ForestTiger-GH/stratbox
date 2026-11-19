@@ -134,7 +134,7 @@ class OperationCatalog:
                 "effects": [asdict(effect) for effect in op.effects],
                 "limits": asdict(op.limits) if op.limits else None,
                 "partial_allowed": op.partial_allowed,
-                "cancellation": "cooperative",
+                "cancellation": "cooperative_at_checkpoints",
                 "diagnostic_envelope": 3,
                 "machine_read_only": codec is not None,
             })
