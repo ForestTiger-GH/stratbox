@@ -1,44 +1,50 @@
-"""Owner-qualified original version facts and closed notification topic."""
+"""Publisher-neutral asset-bound and owner-bound facts must be well-typed."""
 
 from datetime import datetime, timezone
-
 import pytest
 
 from stratbox.core.observability import fact_from_original_version_commit, record_from_fact
 from stratbox.core.notifications.topics import build_catalog
-from stratbox.core.observability.records.field_policy import FieldSchemaRegistry
 from stratbox.core.operations.source.version_comparison import (
     OriginalVersion, CompareOriginalVersionsRequest, compare_original_versions,
 )
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import PublicationReceipt
+from stratbox.shared.source_publications import (
+    SourceAssetIdentity, ConfirmedOriginalPublication, PublishedArtifactRef,
+)
 
 
-def test_committed_original_topic_rejects_unconfirmed_publication():
-    candidate = OriginalVersion("rosstat.original", ByteIdentity.of(b"first"))
-    change = compare_original_versions(
-        CompareOriginalVersionsRequest(candidate, "confirmed_absent")
+def test_confirmed_original_requires_a_consistent_artifact_reference():
+    asset = SourceAssetIdentity("rosstat.test", "2026-08", "workbook")
+    candidate = OriginalVersion(asset.source_id, ByteIdentity.of(b"first"))
+    comparison = compare_original_versions(
+        CompareOriginalVersionsRequest(candidate, "initial")
     ).value
-    assert change.state == "first_seen"
     receipt = PublicationReceipt(
-        "tabularium", "source_archive", candidate.source_id,
-        change.transition_id, candidate.identity, "unknown",
+        "owner", "storage", asset.source_id,
+        comparison.transition_id, candidate.identity, "unknown",
+    )
+    artifact = PublishedArtifactRef(
+        "storage", asset.source_id, candidate.identity.sha256,
+        candidate.identity, "owner-ref",
     )
     with pytest.raises(ValueError):
-        fact_from_original_version_commit(
-            change, receipt, series_id="rosstat.test", issue_id="2026-08",
-            asset_id="primary", mode="live", occurred_at_utc=datetime.now(timezone.utc),
-        )
-    receipt = PublicationReceipt(
-        receipt.owner_id, receipt.destination_id, receipt.release_id,
-        receipt.transition_id, receipt.identity, "confirmed",
+        ConfirmedOriginalPublication(receipt, artifact)
+    committed = ConfirmedOriginalPublication(
+        PublicationReceipt(
+            "owner", "storage", asset.source_id,
+            comparison.transition_id, candidate.identity, "confirmed",
+        ), artifact,
     )
     fact = fact_from_original_version_commit(
-        change, receipt, series_id="rosstat.test", issue_id="2026-08",
-        asset_id="primary", mode="live", occurred_at_utc=datetime.now(timezone.utc),
+        comparison, committed, asset=asset, mode="live",
+        occurred_at_utc=datetime.now(timezone.utc),
     )
     record = record_from_fact(fact)
-    catalog = build_catalog()
-    names = {item.topic_id for item in catalog.definitions()}
-    assert "source.original_version_committed" in names
     assert record.kind == "source.original_version_committed"
+    assert record.payload["source_id"] == asset.source_id
+    assert record.payload["publication_proof_ref"] == "owner-ref"
+    assert "source.original_version_committed" in {
+        row.topic_id for row in build_catalog().definitions()
+    }
