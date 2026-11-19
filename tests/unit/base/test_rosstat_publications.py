@@ -14,7 +14,9 @@ from stratbox.domains.rosstat.publications.contracts import DiscoverRosstatReque
 from stratbox.domains.rosstat.publications.discovery.selection import (
     compare_publication_indices, select_assets,
 )
-from stratbox.domains.rosstat.publications.discovery.coverage import qualified_inventory_from_index
+from stratbox.domains.rosstat.publications.discovery.coverage import (
+    qualified_inventory_from_index, qualified_presence_from_index,
+)
 from stratbox.domains.rosstat.publications.operations import discover
 from stratbox.domains.rosstat.publications.download.envelope import detect_bytes
 from stratbox.domains.rosstat._source import allowed_file_url, file_request
@@ -224,6 +226,12 @@ def test_owner_review_of_exact_http_page_can_create_scoped_inventory():
     )
     assert inventory.assets == (ref.key.identity,)
     assert inventory.covers_issue("2026-09")
+    presence = qualified_presence_from_index(
+        approved, ref.key.source_id, owner_evidence_ref="verified-current-index",
+    )
+    assert presence.asset == ref.key.identity
+    with pytest.raises(ValueError):
+        qualified_presence_from_index(source, ref.key.source_id, owner_evidence_ref="unreviewed")
     with pytest.raises(ValueError):
         qualified_inventory_from_index(source, owner_evidence_ref="unapproved")
 

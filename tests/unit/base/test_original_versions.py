@@ -8,6 +8,7 @@ import pytest
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.source_publications import (
     SourceAssetIdentity, QualifiedInventory, InventoryAbsenceEvidence,
+    QualifiedAssetPresenceEvidence,
 )
 from stratbox.core.operations.source.version_comparison import (
     CompareOriginalVersionsRequest, OriginalVersion, compare_original_versions,
@@ -34,6 +35,16 @@ def inventory(known=(), *, series="rosstat.test", floor="2026-01"):
     )
 
 
+def presence(asset, prior, *, profile_version=None, scope_id=None):
+    return QualifiedAssetPresenceEvidence(
+        asset, prior.series_id, scope_id or prior.scope_id,
+        prior.profile_id, profile_version or prior.profile_version,
+        ByteIdentity.of(b"<a>current-page</a>"),
+        datetime(2026, 11, 20, tzinfo=timezone.utc), "owner-current-review",
+        prior.issue_lower_bound, prior.issue_upper_bound,
+    )
+
+
 def test_initial_has_silent_distinct_transition():
     key = SourceAssetIdentity("rosstat.test", "2026-08", "workbook")
     first = _version(CompareOriginalVersionsRequest(_candidate(key, b"A"), "initial"))
@@ -52,10 +63,12 @@ def test_proven_absence_distinguishes_new_issue_from_extra_asset():
     added = _version(CompareOriginalVersionsRequest(
         _candidate(additional, b"A"), "absent_proven",
         absence=InventoryAbsenceEvidence(additional, verified),
+        presence=presence(additional, verified),
     ))
     fresh = _version(CompareOriginalVersionsRequest(
         _candidate(future, b"A"), "absent_proven",
         absence=InventoryAbsenceEvidence(future, verified),
+        presence=presence(future, verified),
     ))
     assert added.state == "new_asset"
     assert fresh.state == "new_release"
@@ -74,6 +87,30 @@ def test_wrong_inventory_and_existing_asset_cannot_prove_absence():
         CompareOriginalVersionsRequest(_candidate(key, b"A"), "absent_proven")
     with pytest.raises(ValueError):
         CompareOriginalVersionsRequest(_candidate(key, b"A"), "absent_proven", absence="f" * 64)
+
+
+def test_current_presence_must_share_prior_scope_profile_and_time():
+    key = SourceAssetIdentity("rosstat.test", "2026-09", "main")
+    prior = inventory()
+    absence = InventoryAbsenceEvidence(key, prior)
+    with pytest.raises(ValueError, match="source.absence_unproven"):
+        CompareOriginalVersionsRequest(_candidate(key, b"A"), "absent_proven", absence=absence)
+    with pytest.raises(ValueError, match="source.inventory_profile_mismatch"):
+        CompareOriginalVersionsRequest(
+            _candidate(key, b"A"), "absent_proven",
+            absence=absence, presence=presence(key, prior, profile_version="other-version"),
+        )
+    with pytest.raises(ValueError, match="source.inventory_profile_mismatch"):
+        CompareOriginalVersionsRequest(
+            _candidate(key, b"A"), "absent_proven",
+            absence=absence, presence=presence(key, prior, scope_id="other-scope"),
+        )
+    from dataclasses import replace as swap
+    current = swap(presence(key, prior), observed_at_utc=datetime(2026, 11, 18, tzinfo=timezone.utc))
+    with pytest.raises(ValueError, match="source.inventory_out_of_order"):
+        CompareOriginalVersionsRequest(
+            _candidate(key, b"A"), "absent_proven", absence=absence, presence=current,
+        )
 
 
 def test_a_b_a_b_chain_needs_confirmed_parent_and_retry_is_idempotent():
