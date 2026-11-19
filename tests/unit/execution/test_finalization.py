@@ -481,3 +481,16 @@ def test_representation_accounting_and_computation_receipt_is_independent_of_eff
     assert dict(saved.resources_used)["output_bytes"] == payload.identity.size
     assert saved.computation is not None
     assert saved.effects[0].state == "confirmed"
+
+
+def test_same_id_across_different_kinds_keeps_two_unresolved_diagnostics():
+    def handler(value, invocation):
+        invocation.effect(EffectReceipt("storage.write", "unknown", effect_id="shared"))
+        invocation.effect(EffectReceipt("notification.handoff", "unknown", effect_id="shared"))
+        return value
+
+    result = run(operation(), "ok", handler)
+    assert result.outcome == "unknown"
+    sources = [d.component for d in result.diagnostics if d.code == "effect.outcome_unknown"]
+    assert sources == ["storage.write", "notification.handoff"]
+    assert len(result.effects) == 2

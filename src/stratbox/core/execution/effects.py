@@ -42,7 +42,7 @@ class _EffectAccumulator:
         if not self._consistent(previous, receipt):
             self._items[position] = replace(previous, state="unknown")
             self._conflicts[key] = Diagnostic(
-                "effect.receipt_conflict", evidence_ref=receipt.effect_id,
+                "effect.receipt_conflict", component=receipt.kind, evidence_ref=receipt.effect_id,
                 reconciliation_owner=previous.reconciliation_owner or receipt.reconciliation_owner,
                 retry_disposition="reconcile",
             )

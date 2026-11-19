@@ -50,7 +50,7 @@ def _resolve_completion(
     for effect in effects:
         if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
             diagnostic = Diagnostic(
-                "effect.outcome_unknown", evidence_ref=effect.effect_id,
+                "effect.outcome_unknown", component=effect.kind, evidence_ref=effect.effect_id,
                 reconciliation_owner=effect.reconciliation_owner, retry_disposition="reconcile",
             )
             if diagnostic not in diagnostics:
