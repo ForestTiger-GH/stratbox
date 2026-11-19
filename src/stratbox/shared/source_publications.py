@@ -141,6 +141,47 @@ class InventoryAbsenceEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class QualifiedAssetPresenceEvidence:
+    """A current, owner-reviewed publisher index explicitly contains this asset.
+
+    Both the current and prior inventories must have matching publisher
+    profile/scope definitions before a NEW_RELEASE or NEW_ASSET conclusion.
+    """
+    asset: SourceAssetIdentity
+    series_id: str
+    scope_id: str
+    profile_id: str
+    profile_version: str
+    index_identity: ByteIdentity
+    observed_at_utc: datetime
+    owner_evidence_ref: str
+    issue_lower_bound: str | None = None
+    issue_upper_bound: str | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.asset, SourceAssetIdentity) or self.asset.series_id != self.series_id:
+            raise ValueError("source.presence_asset_invalid")
+        for value in (self.series_id, self.scope_id, self.profile_id,
+                      self.profile_version, self.owner_evidence_ref):
+            _token(value)
+        if not isinstance(self.index_identity, ByteIdentity):
+            raise ValueError("source.presence_index_invalid")
+        _utc(self.observed_at_utc)
+        if self.issue_lower_bound is not None:
+            _token(self.issue_lower_bound)
+        if self.issue_upper_bound is not None:
+            _token(self.issue_upper_bound)
+        if self.scope_id != "full_series" and (
+            self.issue_lower_bound is None and self.issue_upper_bound is None
+        ):
+            raise ValueError("source.presence_scope_unbounded")
+        if self.issue_lower_bound is not None and self.asset.issue_id < self.issue_lower_bound:
+            raise ValueError("source.presence_out_of_scope")
+        if self.issue_upper_bound is not None and self.asset.issue_id > self.issue_upper_bound:
+            raise ValueError("source.presence_out_of_scope")
+
+
+@dataclass(frozen=True, slots=True)
 class PublishedArtifactRef:
     """Safe semantic reference to one owner-confirmed, re-readable version."""
     scope_id: str
