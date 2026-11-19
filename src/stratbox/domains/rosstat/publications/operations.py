@@ -75,7 +75,7 @@ def discover(
             )
             payload = source.payload
             acquisition = source.receipt
-        if payload.source_id is not None and payload.source_id != req.series_id + ".index":
+        if payload.source_id != req.series_id + ".index":
             raise OperationFailure("rosstat.index_source_mismatch")
         if payload.media_type not in _HTML:
             raise OperationFailure("rosstat.index_media_type_unexpected")
@@ -83,7 +83,14 @@ def discover(
         invocation.stage("qualify_publication_links")
         try:
             return qualify_index(req.series_id, payload, text=decode_html(payload), acquisition=acquisition)
-        except (UnicodeError, ValueError):
+        except ValueError as error:
+            code = str(error)
+            if code in {
+                "rosstat.html_limit", "rosstat.html_link_limit",
+                "rosstat.html_label_limit", "rosstat.html_base_forbidden",
+                "rosstat.index_unrecognized",
+            }:
+                raise OperationFailure(code) from None
             raise OperationFailure("rosstat.index_unrecognized") from None
     return run(DISCOVER, request, work, context=context, providers={"http": transport})
 

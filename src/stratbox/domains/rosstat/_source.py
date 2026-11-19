@@ -9,7 +9,6 @@ from stratbox.core.network.contracts import public_https_parts
 
 PUBLISHER_HOSTS = ("rosstat.gov.ru", "www.rosstat.gov.ru")
 MEDIA_TYPES = frozenset({
-    "text/html", "application/xhtml+xml",
     "application/octet-stream", "application/pdf", "application/zip",
     "application/x-zip-compressed", "application/x-rar-compressed",
     "application/vnd.rar", "application/x-rar", "application/x-binary",

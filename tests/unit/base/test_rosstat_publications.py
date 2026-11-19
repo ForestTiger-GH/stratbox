@@ -151,11 +151,12 @@ def test_html_bounds_and_unrecognized_index_fail():
         "text/html", series + ".index",
     )))
     assert bad.outcome == "failed"
-    huge = _index if False else ('<a href="/storage/mediabank/2026-08.xlsx">' + "z"*9000 + "</a>")
+    huge = ('<a href="/storage/mediabank/2026-08.xlsx">' + "z"*9000 + "</a>")
     result = discover(DiscoverRosstatRequest(series, SourcePayload(
         huge.encode(), "text/html", series + ".index",
     )))
     assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "rosstat.html_label_limit"
 
 
 def test_untrusted_html_base_and_urls_rejected_before_download():
