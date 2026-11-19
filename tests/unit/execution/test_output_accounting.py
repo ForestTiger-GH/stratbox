@@ -107,3 +107,36 @@ def test_multiple_outputs_share_same_budget_without_effect_dedup():
     with pytest.raises(BudgetExceeded):
         meter.account_output("render:b", ByteIdentity.of(b"bbbb"))
     assert meter.used("output_bytes") == 3
+
+
+def test_repeat_claim_requires_identical_coverage_and_output_identity():
+    meter = BudgetMeter(ExecutionBudget(output_bytes=20))
+    blob = ByteIdentity.of(b"contents")
+    meter.account_output("publish:one", blob)
+    meter.account_output("returned", blob, covered_by="publish:one")
+    meter.account_output("returned", blob, covered_by="publish:one")
+    with pytest.raises(ValueError, match="Conflicting"):
+        meter.account_output("returned", blob)
+    meter.ensure_returned_output(blob)
+    assert meter.used("output_bytes") == blob.size
+
+
+def test_ensure_returned_output_rejects_mismatched_published_alias():
+    meter = BudgetMeter(ExecutionBudget(output_bytes=20))
+    a, b = ByteIdentity.of(b"data"), ByteIdentity.of(b"different")
+    meter.account_output("publish:a", a)
+    meter.account_output("returned", a, covered_by="publish:a")
+    with pytest.raises(ValueError, match="returned output identity"):
+        meter.ensure_returned_output(b)
+    assert meter.used("output_bytes") == a.size
+
+
+def test_retry_same_output_key_is_one_logical_obligation():
+    meter = BudgetMeter(ExecutionBudget(output_bytes=4))
+    identity = ByteIdentity.of(b"1234")
+    meter.account_output("publish:same", identity)
+    meter.account_output("publish:same", identity)
+    assert meter.used("output_bytes") == 4
+    # A different published destination is an independent obligation.
+    with pytest.raises(BudgetExceeded):
+        meter.account_output("publish:other", identity)

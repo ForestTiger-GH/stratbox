@@ -156,11 +156,7 @@ class BudgetMeter:
         target = (identity, covered_by)
         existing = self._output_units.get(key)
         if existing is not None:
-            # The runner checks "returned" without knowing whether the
-            # handler already explicitly linked it to a publishing unit.
-            if existing[0] != identity or (
-                covered_by is not None and existing[1] != covered_by
-            ):
+            if existing != target:
                 raise ValueError("Conflicting output accounting claim")
             return
         if covered_by is not None:
@@ -172,6 +168,25 @@ class BudgetMeter:
             # ceiling still applies even when the deadline has passed.
             self.charge("output_bytes", identity.size, completed=completed)
         self._output_units[key] = target
+
+    def ensure_returned_output(self, identity: ByteIdentity, *, completed: bool = True) -> None:
+        """Runner-only verification of the returned representation's obligation.
+
+        An existing explicit returned alias is verified without silently
+        relaxing the strict account_output idempotency contract.
+        """
+        if not isinstance(identity, ByteIdentity):
+            raise ValueError("Invalid output identity")
+        existing = self._output_units.get("returned")
+        if existing is None:
+            self.account_output("returned", identity, completed=completed)
+            return
+        if existing[0] != identity:
+            raise ValueError("Conflicting returned output identity")
+        if existing[1] is not None:
+            covered = self._output_units.get(existing[1])
+            if covered is None or covered[0] != identity:
+                raise ValueError("Returned output coverage is no longer valid")
 
     def output_accounting(self) -> tuple[tuple[str, ByteIdentity, str | None], ...]:
         return tuple((key, identity, covered_by)
