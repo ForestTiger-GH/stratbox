@@ -35,22 +35,40 @@ R = TypeVar("R")
 
 
 class Invocation:
-    def __init__(self, definition: OperationDefinition, context: ExecutionContext):
+    def __init__(
+        self, definition: OperationDefinition, context: ExecutionContext, *,
+        invocation_id: str | None = None,
+    ):
         self.definition = definition
         self.context = context
-        self.id = uuid4().hex
-        self._started = context.clock.monotonic()
-        if type(self._started) not in (int, float) or not isfinite(self._started):
-            raise ValueError("Invalid execution clock at admission")
+        self.id = invocation_id or uuid4().hex
+        limits = ExecutionBudget.intersect(definition.limits, context.ceiling, context.budget)
+        self._started: float | None = None
+        self._timing_degraded = False
+        if limits.seconds is not None:
+            try:
+                origin = context.clock.monotonic()
+            except Exception as error:
+                raise BudgetClockError() from error
+            if type(origin) not in (int, float) or not isfinite(origin):
+                raise BudgetClockError()
+            self._started = origin
+        elif context.sink is not None:
+            # Optional timing never blocks the handler.
+            try:
+                sampled = context.clock.monotonic()
+                if type(sampled) not in (int, float) or not isfinite(sampled):
+                    raise ValueError("Invalid telemetry tick")
+                self._started = sampled
+            except Exception:
+                self._timing_degraded = True
         self.budget = BudgetMeter(
-            ExecutionBudget.intersect(definition.limits, context.ceiling, context.budget),
-            now=context.clock.monotonic, origin=self._started,
+            limits, now=context.clock.monotonic, origin=self._started,
         )
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0
         self._incidents_dropped = 0
-        self._timing_degraded = False
-        self._telemetry_last_tick: float = self._started
+        self._telemetry_last_tick: float | None = self._started
         self._stage: str | None = None
         self._stage_started: float | None = self._started
         self.used_inputs: list[UsedInputReceipt] = []
@@ -84,7 +102,7 @@ class Invocation:
         try:
             value = self.context.clock.monotonic()
             if (type(value) not in (int, float) or not isfinite(value)
-                    or value < self._telemetry_last_tick):
+                    or (self._telemetry_last_tick is not None and value < self._telemetry_last_tick)):
                 raise ValueError("Invalid telemetry timestamp")
             self._telemetry_last_tick = value
             return value
@@ -474,9 +492,20 @@ def run(
     context: ExecutionContext | None = None,
     providers: Mapping[str, object] | None = None,
 ) -> OperationResult[T]:
-    invocation = Invocation(
-        definition, context if context is not None else ExecutionContext()
-    )
+    active_context = context if context is not None else ExecutionContext()
+    invocation_id = uuid4().hex
+    try:
+        invocation = Invocation(definition, active_context, invocation_id=invocation_id)
+    except BudgetClockError:
+        # Admission failed before any handler effect. No fictitious timestamps.
+        return OperationResult(
+            definition, invocation_id, "failed", None,
+            (Diagnostic(
+                "budget.clock_unavailable", stage="admission",
+                component="budget", reason_class="budget",
+                retry_disposition="after_condition",
+            ),), (), (), ObservabilitySummary(0, 0, timing_degraded=True),
+        )
     invocation._emit("operation.started")
     completed = _execute_work(definition, request, work, invocation, providers)
     completed = _admit_returned_output(definition, invocation, completed)

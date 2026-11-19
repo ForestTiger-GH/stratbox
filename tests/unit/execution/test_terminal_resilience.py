@@ -463,3 +463,68 @@ def test_optional_progress_backward_tick_only_degrades_telemetry():
     assert result.outcome == "succeeded"
     assert result.observability.timing_degraded
     assert len([e for e in sink.events if e.kind == "operation.progress"]) == 1
+
+
+def test_no_deadline_and_no_sink_do_not_call_faulty_monotonic():
+    class ExplodingClock:
+        def now(self):
+            raise AssertionError("UTC clock should not be read")
+        def monotonic(self):
+            raise AssertionError("monotonic should not be read")
+    calls = []
+    result = run(OP, "ok", lambda req, inv: calls.append(1) or req,
+                 context=ExecutionContext(clock=ExplodingClock()))
+    assert result.outcome == "succeeded"
+    assert calls == [1]
+    assert not result.observability.timing_degraded
+
+
+def test_optional_initial_clock_fault_preserves_operation_outcome():
+    class FailFirstClock(ControlledClock):
+        def __init__(self):
+            super().__init__()
+            self.calls = 0
+        def monotonic(self):
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("initial sample unavailable")
+            return self.t
+    clock = FailFirstClock()
+    sink = InMemorySink()
+    result = run(OP, "ok", lambda req, inv: req,
+                 context=ExecutionContext(clock=clock, sink=sink))
+    assert result.outcome == "succeeded"
+    assert result.observability.timing_degraded
+    assert sink.events[-1].kind == "operation.finished"
+    assert sink.events[-1].duration_ms is None
+
+
+@pytest.mark.parametrize("bad", ["raises", "nan", "inf", "bool"])
+def test_strict_initial_clock_fault_is_a_qualified_result_without_handler(bad):
+    class AdmissionClock(ControlledClock):
+        def monotonic(self):
+            if bad == "raises":
+                raise RuntimeError("clock unavailable")
+            if bad == "nan":
+                return float("nan")
+            if bad == "inf":
+                return float("inf")
+            return True
+    called = []
+    sink = InMemorySink()
+    result = run(OP, "ok", lambda req, inv: called.append(1) or req,
+                 context=ExecutionContext(
+                     clock=AdmissionClock(), sink=sink, budget=ExecutionBudget(seconds=10),
+                 ))
+    assert not called
+    assert result.value is None and result.outcome == "failed"
+    assert result.effects == ()
+    assert [d.code for d in result.diagnostics] == ["budget.clock_unavailable"]
+    assert result.diagnostics[0].stage == "admission"
+    assert result.observability.timing_degraded
+    assert not sink.events
+
+
+def test_invalid_definition_is_not_reclassified_as_clock_fault():
+    with pytest.raises(ValueError):
+        OperationDefinition("invalid definition with spaces", 1, "v1", int, int)
