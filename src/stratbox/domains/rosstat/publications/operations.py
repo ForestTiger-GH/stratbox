@@ -15,7 +15,7 @@ from stratbox.core.operations.source.validation import decode_html, use_payload
 from stratbox.domains.rosstat._source import (
     MEDIA_TYPES, allowed_file_url, file_request, page_request,
 )
-from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 from .catalog import get_rosstat_source
 from .contracts import (
@@ -75,6 +75,8 @@ def discover(
             )
             payload = source.payload
             acquisition = source.receipt
+        if not isinstance(payload, SourcePayload):
+            raise OperationFailure("input.payload_required")
         if payload.source_id != req.series_id + ".index":
             raise OperationFailure("rosstat.index_source_mismatch")
         if payload.media_type not in _HTML:

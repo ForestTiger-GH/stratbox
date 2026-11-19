@@ -258,3 +258,11 @@ def test_manual_review_must_bind_current_byte_version_and_all_assets():
     )
     with pytest.raises(ValueError, match="rosstat.review_evidence_mismatch"):
         approve_index(source, wrong_members)
+
+
+
+def test_supplied_index_requires_typed_payload_before_attribute_access():
+    series = "rosstat.short_term_indicators"
+    invalid = discover(DiscoverRosstatRequest(series, index=object()))
+    assert invalid.outcome == "failed"
+    assert invalid.diagnostics[0].code == "input.payload_required"
