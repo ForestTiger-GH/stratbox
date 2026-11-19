@@ -216,6 +216,18 @@ def _bytes_changed(record: JournalRecord, data: Data) -> bool:
 
 
 def _original_committed(record: JournalRecord, data: Data) -> bool:
+    from stratbox.shared.source_publications import SourceAssetIdentity
+    try:
+        expected = SourceAssetIdentity(data["series_id"], data["issue_id"], data["asset_id"])
+    except ValueError:
+        raise ValueError("journal.original_asset_invalid") from None
+    if expected.source_id != data["source_id"]:
+        raise ValueError("journal.original_asset_identity_mismatch")
+    artifact = data["artifact_ref"]
+    if (artifact["scope_id"] != data["destination_id"]
+            or artifact["sha256"] != data["current_sha256"]
+            or artifact["size_bytes"] != data["size_bytes"]):
+        raise ValueError("journal.original_artifact_mismatch")
     if record.subject is None or record.subject.namespace != "source":
         raise ValueError("journal.original_subject_missing")
     if record.subject.object_id != data["source_id"] or (
@@ -229,6 +241,10 @@ def _original_committed(record: JournalRecord, data: Data) -> bool:
     ):
         raise ValueError("journal.original_transition_invalid")
     if data["change"] != "revised" and data["previous_sha256"] is not None:
+        raise ValueError("journal.original_transition_invalid")
+    if data["change"] == "revised" and data["previous_transition_id"] is None:
+        raise ValueError("journal.original_transition_chain_missing")
+    if data["change"] != "revised" and data["previous_transition_id"] is not None:
         raise ValueError("journal.original_transition_invalid")
     # Onboarding is recorded as provenance, not sent as a fresh-release alert.
     return data["change"] != "first_seen"
@@ -260,7 +276,7 @@ _builtin_topics = (
     NotificationTopic("source.original_version_committed", 1, (SOURCE_ORIGINAL_COMMITTED.key,), (
         _project(SOURCE_ORIGINAL_COMMITTED, "original_version_public", *(f.name for f in SOURCE_ORIGINAL_COMMITTED.fields)),
     ), "transition", ("source_id", "series_id", "issue_id", "asset_id",
-                       "current_sha256", "change", "mode"),
+                       "current_sha256", "change", "mode", "publication_proof_ref"),
        frozenset({"source_id", "series_id", "change", "mode"}), _original_committed,
        explicit_opt_in=("mode", "backfill")),
     NotificationTopic("publication.committed", 1, (PUBLICATION_COMMITTED.key,), (
