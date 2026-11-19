@@ -230,7 +230,8 @@ def _original_committed(record: JournalRecord, data: Data) -> bool:
         raise ValueError("journal.original_transition_invalid")
     if data["change"] != "revised" and data["previous_sha256"] is not None:
         raise ValueError("journal.original_transition_invalid")
-    return True
+    # Onboarding is recorded as provenance, not sent as a fresh-release alert.
+    return data["change"] != "first_seen"
 
 
 def _project(

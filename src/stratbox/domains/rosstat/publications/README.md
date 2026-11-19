@@ -30,7 +30,8 @@ The application that controls definitive publication issues a
 PublicationReceipt with confirmation=confirmed, a matching source_id as
 release_id, the same transition_id and the saved ByteIdentity. The independent
 helper fact_from_original_version_commit then creates the qualified journal
-fact eligible for the notification topic source.original_version_committed.
+fact eligible for the notification topic source.original_version_committed. The topic suppresses
+FIRST_SEEN onboarding facts by default, and requires explicit opt-in to backfill.
 The helper fact_from_original_bytes_changed is available for revisions only.
 Do not subscribe to both change topics in the same user channel by default.
 

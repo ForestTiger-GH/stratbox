@@ -98,7 +98,7 @@ def main():
         assert Path(path, "2026-08.pdf").read_bytes() == original
         candidate = OriginalVersion(asset.key.source_id, stored.source.storage.identity)
         comparison = value(compare_original_versions(
-            CompareOriginalVersionsRequest(candidate, "confirmed_absent")
+            CompareOriginalVersionsRequest(candidate, "confirmed_absent", prior_inventory_identity="f" * 64)
         ))
         # The local store is the explicitly chosen final owner of this demo.
         receipt = PublicationReceipt(

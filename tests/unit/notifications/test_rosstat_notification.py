@@ -47,6 +47,16 @@ def test_owner_confirmation_is_required():
 def test_first_seen_and_revised_events_have_correct_schema():
     catalog = build_catalog()
     assert "source.original_version_committed" in {x.topic_id for x in catalog.definitions()}
+    topic = next(t for t in catalog.definitions() if t.topic_id == "source.original_version_committed")
+    onboarding = _transition(None, b"baseline")
+    onboarding_fact = fact_from_original_version_commit(
+        onboarding, _receipt(onboarding), series_id="rosstat.test",
+        issue_id="2026-08", asset_id="primary", mode="live",
+        occurred_at_utc=datetime.now(timezone.utc),
+    )
+    from stratbox.core.observability.records.event_schemas import SOURCE_ORIGINAL_COMMITTED
+    rec = record_from_fact(onboarding_fact)
+    assert not topic.eligible(rec, SOURCE_ORIGINAL_COMMITTED.validate(rec))
     for old, new, state in ((None, b"first", "first_seen"), (b"first", b"second", "revised")):
         change = _transition(old, new)
         assert change.state == state
