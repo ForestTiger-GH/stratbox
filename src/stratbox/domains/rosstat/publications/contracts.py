@@ -1,19 +1,21 @@
-"""Publication identity and source-level evidence, without statistical semantics."""
+"""Publisher issue and source-asset identity, separate from statistical observations."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from hashlib import sha256
+from datetime import datetime
 from typing import Literal
 
 from stratbox.core.network import RetryPolicy
 from stratbox.core.operations.source.originals import OriginalDestination, StoredOriginal
-from stratbox.shared.evidence import AcquiredSource, SourcePayload
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, SourcePayload
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.source_publications import SourceAssetIdentity
 
 Format = Literal["pdf", "xlsx", "zip", "rar"]
 Qualification = Literal["qualified", "ambiguous"]
 Coverage = Literal["complete", "partial", "unknown"]
+AssessmentStatus = Literal["verified_complete", "verified_partial", "unverified"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,17 +52,66 @@ class AssetKey:
     asset_id: str
 
     def __post_init__(self):
-        if not self.asset_id or len(self.asset_id) > 80:
+        if not isinstance(self.issue, IssueKey) or not self.asset_id or len(self.asset_id) > 80:
             raise ValueError("rosstat.asset_invalid")
+        SourceAssetIdentity(self.issue.series_id, self.issue.issue_id, self.asset_id)
+
+    @property
+    def identity(self) -> SourceAssetIdentity:
+        return SourceAssetIdentity(self.issue.series_id, self.issue.issue_id, self.asset_id)
 
     @property
     def source_id(self) -> str:
-        digest = sha256(canonical_manifest_bytes({
-            "series_id": self.issue.series_id,
-            "issue_id": self.issue.issue_id,
-            "asset_id": self.asset_id,
-        })).hexdigest()
-        return "rosstat." + digest
+        return self.identity.source_id
+
+
+@dataclass(frozen=True, slots=True)
+class IndexScope:
+    series_id: str
+    scope_id: str
+    covered_sections: tuple[str, ...] = ()
+    issue_lower_bound: str | None = None
+    issue_upper_bound: str | None = None
+
+    def __post_init__(self):
+        if not self.series_id.startswith("rosstat.") or not self.scope_id:
+            raise ValueError("rosstat.scope_invalid")
+        if len(self.covered_sections) > 128 or len(set(self.covered_sections)) != len(self.covered_sections):
+            raise ValueError("rosstat.scope_sections_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryAssessment:
+    status: AssessmentStatus
+    profile_id: str
+    profile_version: str
+    scope: IndexScope
+    layout_identity: str
+    recognized_count: int
+    unresolved_count: int
+    reason_codes: tuple[str, ...] = ()
+    expected_sections: tuple[str, ...] = ()
+    # No profile is approved until live publisher HTML calibrates its scope.
+    admission_evidence_ref: str | None = None
+
+    def __post_init__(self):
+        if self.status not in {"verified_complete", "verified_partial", "unverified"}:
+            raise ValueError("rosstat.assessment_invalid")
+        if self.recognized_count < 0 or self.unresolved_count < 0 or len(self.reason_codes) > 32:
+            raise ValueError("rosstat.assessment_invalid")
+        if self.status.startswith("verified") and self.admission_evidence_ref is None:
+            raise ValueError("rosstat.assessment_proof_required")
+        if self.status == "verified_complete" and (
+            self.unresolved_count or set(self.expected_sections) != set(self.scope.covered_sections)
+        ):
+            raise ValueError("rosstat.assessment_not_complete")
+
+    @property
+    def coverage(self) -> Coverage:
+        return {
+            "verified_complete": "complete", "verified_partial": "partial",
+            "unverified": "unknown",
+        }[self.status]
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,12 +128,21 @@ class DiscoveredAsset:
     profile_version: str
     position: int
     qualification: Qualification
+    issue_label: str | None = None
+    issue_period_hint: str | None = None
+    issue_evidence: str | None = None
+    publisher_publication_date: str | None = None
+    diagnostic_codes: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        if self.qualification == "qualified" and self.key is None:
+            raise ValueError("rosstat.asset_unqualified")
+        if self.position < 0 or not isinstance(self.index_identity, ByteIdentity):
+            raise ValueError("rosstat.asset_invalid")
 
     @property
     def series_id(self) -> str:
-        if self.key is not None:
-            return self.key.issue.series_id
-        return ""
+        return self.key.issue.series_id if self.key is not None else ""
 
     @property
     def source_id(self) -> str | None:
@@ -98,9 +158,37 @@ class RosstatPublicationIndex:
     qualified_assets: tuple[DiscoveredAsset, ...]
     ambiguous_assets: tuple[DiscoveredAsset, ...]
     unclassified_count: int
-    coverage: Coverage
-    # Real page layouts and final attachment destinations require live calibration.
-    live_profile_verified: bool = False
+    assessment: DiscoveryAssessment
+    acquisition: AcquisitionReceipt | None = None
+    source_kind: Literal["publisher_http", "supplied_payload"] = "supplied_payload"
+
+    def __post_init__(self):
+        if self.assessment.scope.series_id != self.series_id:
+            raise ValueError("rosstat.index_scope_mismatch")
+        if self.assessment.profile_version != self.profile_version:
+            raise ValueError("rosstat.index_profile_mismatch")
+        if self.acquisition is not None and (
+            self.acquisition.identity != self.index_identity
+            or self.acquisition.source_id != self.series_id + ".index"
+            or self.source_kind != "publisher_http"
+        ):
+            raise ValueError("rosstat.index_acquisition_invalid")
+        if self.source_kind == "publisher_http" and self.acquisition is None:
+            raise ValueError("rosstat.index_acquisition_missing")
+        if self.assessment.status == "verified_complete" and self.source_kind != "publisher_http":
+            raise ValueError("rosstat.index_offline_unverified")
+
+    @property
+    def coverage(self) -> Coverage:
+        return self.assessment.coverage
+
+    @property
+    def live_profile_verified(self) -> bool:
+        return self.assessment.status.startswith("verified")
+
+    @property
+    def observed_at_utc(self) -> datetime | None:
+        return self.acquisition.observed_at_utc if self.acquisition else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,3 +236,5 @@ class PublicationIndexDelta:
     missing_asset_ids: tuple[str, ...]
     relocated_asset_ids: tuple[str, ...]
     reason: str
+    # Advisory discoveries are not proof of complete inventory.
+    observed_candidate_ids: tuple[str, ...] = ()
