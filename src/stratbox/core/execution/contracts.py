@@ -47,6 +47,20 @@ def _effect_description(kind: str) -> EffectDescriptor:
 
 
 @dataclass(frozen=True, slots=True)
+class RuntimeDependency:
+    """A dependency checked by its own scoped runtime, not eager runner binding."""
+    role: str
+    phase: Literal["scoped", "conditional"]
+    owner: str
+
+    def __post_init__(self) -> None:
+        safe_token(self.role)
+        safe_token(self.owner)
+        if self.phase not in {"scoped", "conditional"}:
+            raise ValueError("Invalid runtime binding phase")
+
+
+@dataclass(frozen=True, slots=True)
 class OperationDefinition:
     operation_id: str
     contract_version: int
@@ -58,6 +72,7 @@ class OperationDefinition:
     partial_allowed: bool = False
     optional_capabilities: frozenset[str] = frozenset()
     limits: ExecutionBudget | None = None
+    runtime_dependencies: tuple[RuntimeDependency, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.request_type, type):
@@ -73,6 +88,14 @@ class OperationDefinition:
             self.limits is not None and not isinstance(self.limits, ExecutionBudget)
         ):
             raise ValueError("Invalid operation policy")
+        if not isinstance(self.runtime_dependencies, tuple) or any(
+            not isinstance(item, RuntimeDependency) for item in self.runtime_dependencies
+        ) or len({item.role for item in self.runtime_dependencies}) != len(self.runtime_dependencies):
+            raise ValueError("Invalid runtime dependency declarations")
+        if {item.role for item in self.runtime_dependencies} & (
+            self.required_capabilities | self.optional_capabilities
+        ):
+            raise ValueError("Runtime and runner-managed capabilities must have distinct owners")
         for token in (
             self.operation_id,
             self.method_version,
@@ -93,6 +116,8 @@ class OperationDefinition:
         return tuple(_effect_description(kind) for kind in sorted(self.possible_effects))
 
     def capability(self, role: str, *, managed: bool = False) -> CapabilityRequirement:
+        if role not in self.required_capabilities | self.optional_capabilities:
+            raise ValueError("provider.capability_undeclared")
         guarantees: set[str] = set()
         if managed:
             guarantees.update({

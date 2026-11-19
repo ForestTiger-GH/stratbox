@@ -251,3 +251,22 @@ def test_computation_identity_keeps_source_method_and_projection_distinct():
     }
     assert len(keys) == 7
     assert key(parameters={"period": _DAY, "scale": 1}) == key(parameters={"scale": 1, "period": _DAY})
+
+
+
+def test_builtin_catalog_declares_indirect_notification_runtime_dependencies():
+    all_specs = {entry["operation_id"]: entry for entry in operation_catalog().describe()}
+    for opid in ("notifications.prepare", "notifications.deliver", "notifications.reconcile"):
+        spec = all_specs[opid]
+        assert not spec["capabilities"]  # No eager binding for dynamic scope.
+        assert {(entry["role"], entry["owner"]) for entry in spec["runtime_dependencies"]}
+        assert all(entry["phase"] in {"scoped", "conditional"} for entry in spec["runtime_dependencies"])
+    roles = lambda opid: {dep["role"] for dep in all_specs[opid]["runtime_dependencies"]}
+    assert roles("notifications.prepare") == {
+        "notification_authority", "notification_state", "journal_source"
+    }
+    assert roles("notifications.deliver") == {
+        "notification_authority", "notification_state", "journal_source", "notification"
+    }
+    assert roles("notifications.reconcile") == roles("notifications.deliver")
+    assert roles("notifications.qualify") == set()

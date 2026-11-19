@@ -132,6 +132,7 @@ class OperationCatalog:
                     for role in required + optional
                 ],
                 "effects": [asdict(effect) for effect in op.effects],
+                "runtime_dependencies": [asdict(item) for item in op.runtime_dependencies],
                 "limits": asdict(op.limits) if op.limits else None,
                 "partial_allowed": op.partial_allowed,
                 "cancellation": "cooperative_at_checkpoints",

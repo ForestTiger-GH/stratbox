@@ -106,6 +106,7 @@ class Invocation:
         return Diagnostic("internal.error", incident_id=incident_id)
 
     def provider(self, role: str, provider: object | None = None):
+        self._declared_provider(role)
         if (
             provider is None and self.context.profile == "local"
             and role in {"http", "filestore", "output_filestore"}
@@ -117,7 +118,12 @@ class Invocation:
         self.require_provider(role, provider)
         return provider
 
+    def _declared_provider(self, role: str) -> None:
+        if role not in self.definition.required_capabilities | self.definition.optional_capabilities:
+            raise OperationFailure("provider.capability_undeclared")
+
     def require_provider(self, role: str, provider: object) -> None:
+        self._declared_provider(role)
         if provider is None:
             raise OperationFailure("provider.capability_missing")
         managed = self.context.profile == "managed"
