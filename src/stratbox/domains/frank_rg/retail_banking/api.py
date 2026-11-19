@@ -162,7 +162,7 @@ def _mutate(action, store, invocation, intent):
             return CleanupReceipt(action, "failed", "effect.source_unreadable")
         if ByteIdentity.of(data) != action.source.identity:
             return CleanupReceipt(action, "failed", "effect.source_changed")
-        invocation.budget.charge("output_bytes", len(data))
+        invocation.account_output(action.source.identity, key=f"copy:{intent.effect_id}")
         invocation.check_cancelled()
         if not managed:
             invocation.effect(_cleanup_effect(intent, "unknown"))

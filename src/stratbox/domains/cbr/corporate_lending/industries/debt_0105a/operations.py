@@ -505,7 +505,7 @@ def render_industries(
                 industry_code=code, include_metadata_sheet=req.include_metadata_sheet,
             )
             value, _ = _render_one_industry(req.stream, private_stream, fmt, invocation)
-            invocation.budget.charge("output_bytes", value.representation.identity.size)
+            invocation.account_output(value.representation.identity, key=f"render:{code}")
             items.append(value)
         result = IndustryWorkbooksResult(tuple(items))
         if not result.ok:

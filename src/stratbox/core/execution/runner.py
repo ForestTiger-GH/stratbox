@@ -173,6 +173,14 @@ class Invocation:
         self.computation = ComputationReceipt(version, identity, receipts, computation_id, tuple(self.parents))
         return self.computation
 
+    def account_output(
+        self, identity, *, key: str = "returned", covered_by: str | None = None,
+        completed: bool = False,
+    ) -> None:
+        """Charge a specific output once; an explicit alias proves coverage."""
+        self._require_open()
+        self.budget.account_output(key, identity, covered_by=covered_by, completed=completed)
+
     def effect(self, receipt: EffectReceipt) -> None:
         self._require_open()
         if not isinstance(receipt, EffectReceipt) or receipt.kind not in self.definition.possible_effects:
@@ -284,10 +292,9 @@ def _execute_work(
                 # Pure in-memory representations have not been charged by a
                 # publishing provider. A publishing provider already charged
                 # physical output at its own effect boundary.
-                if not invocation.effects:
-                    invocation.budget.charge(
-                        "output_bytes", output.identity.size, completed=outcome == "partial"
-                    )
+                invocation.account_output(
+                    output.identity, key="returned", completed=True,
+                )
                 # Computation identity is distinct from external publication:
                 # registering a confirmed effect must not suppress provenance.
                 if invocation.computation is None:

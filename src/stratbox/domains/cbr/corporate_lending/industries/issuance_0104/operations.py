@@ -363,7 +363,7 @@ def render_industries(
             value, _ = _render_one_issuance(
                 req.stream, frame, code, req.include_metadata_sheet, invocation, periods,
             )
-            invocation.budget.charge("output_bytes", value.representation.identity.size)
+            invocation.account_output(value.representation.identity, key=f"render:{code}")
             items.append(value)
         result = IssuanceWorkbooksResult(tuple(items))
         if not result.ok:

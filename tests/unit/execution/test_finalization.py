@@ -471,7 +471,8 @@ def test_representation_accounting_and_computation_receipt_is_independent_of_eff
     assert purely_computed.computation is not None
 
     def published(req, inv):
-        inv.budget.charge("output_bytes", payload.identity.size)
+        inv.account_output(payload.identity, key="publish:write_id")
+        inv.account_output(payload.identity, key="returned", covered_by="publish:write_id")
         inv.effect(EffectReceipt("storage.write", "confirmed", effect_id="write_id"))
         return payload
 

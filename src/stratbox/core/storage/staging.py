@@ -110,7 +110,9 @@ def commit_staged(
             on_effect(value)
         return value
 
-    budget.charge("output_bytes", identity.size)
+    # Account the exact published obligation before any physical commit.
+    # An effect receipt reports a physical outcome, never a budget charge.
+    budget.account_output(f"publish:{effect_id}", identity)
     checkpoint()
     admitted_commit = getattr(stage, "commit_admitted", None)
     if require_admission and (operation_id is None or plan_identity is None or not callable(admitted_commit)):
