@@ -22,7 +22,7 @@ from .contracts import (
     AcquireRosstatRequest, AcquireRosstatToStoreRequest, AcquiredRosstatAsset,
     DiscoverRosstatRequest, RosstatPublicationIndex, StoredRosstatAsset,
 )
-from .discovery.profiles import PROFILE_VERSION, qualify_index
+from .discovery.profiles import profile_for, qualify_index
 from .download.envelope import detect_bytes, detect_envelope
 
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
@@ -61,6 +61,7 @@ def discover(
         except ValueError:
             raise OperationFailure("rosstat.series_unknown") from None
         payload = req.index
+        acquisition = None
         if payload is None:
             invocation.stage("acquire_publication_page")
             source = receive_source(
@@ -72,12 +73,15 @@ def discover(
                 retry=RetryPolicy(),
             )
             payload = source.payload
+            acquisition = source.receipt
         if payload.source_id is not None and payload.source_id != req.series_id + ".index":
             raise OperationFailure("rosstat.index_source_mismatch")
+        if payload.media_type not in _HTML:
+            raise OperationFailure("rosstat.index_media_type_unexpected")
         use_payload(payload, invocation, role="publisher_index", limit=10 * 1024 * 1024)
         invocation.stage("qualify_publication_links")
         try:
-            return qualify_index(req.series_id, payload, text=decode_html(payload))
+            return qualify_index(req.series_id, payload, text=decode_html(payload), acquisition=acquisition)
         except (UnicodeError, ValueError):
             raise OperationFailure("rosstat.index_unrecognized") from None
     return run(DISCOVER, request, work, context=context, providers={"http": transport})
@@ -90,9 +94,10 @@ def _admit(asset, *, size_limit, deadline):
         spec = get_rosstat_source(asset.key.issue.series_id)
     except ValueError:
         raise OperationFailure("rosstat.series_unknown") from None
-    if asset.profile_version != PROFILE_VERSION or asset.landing_url != spec.landing_url:
+    if asset.profile_version != profile_for(asset.key.issue.series_id).profile_version or asset.landing_url != spec.landing_url:
         raise OperationFailure("rosstat.asset_profile_mismatch")
-    if asset.declared_format not in spec.accepted_formats or not allowed_file_url(asset.url):
+    if (asset.declared_format not in spec.accepted_formats or not allowed_file_url(asset.url)
+            or asset.index_identity.size == 0 or not asset.issue_evidence):
         raise OperationFailure("rosstat.asset_url_forbidden")
     if type(size_limit) is not int or not 0 < size_limit <= _FORMAT_LIMITS[asset.declared_format]:
         raise OperationFailure("rosstat.acquisition_limit_invalid")

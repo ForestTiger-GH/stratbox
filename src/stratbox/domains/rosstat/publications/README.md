@@ -41,7 +41,7 @@ must not overwrite an earlier confirmed baseline.
 
 ## Format and security limits
 
-The initial HTML profiles are deliberately narrow and provisional. They match
+The four family-specific HTML profiles are deliberately narrow and provisional. They match
 only a compatible file format, a publisher-hosted permitted path, and a
 recognizable publisher issue label or filename. Duplicate logical asset keys
 with distinct URLs remain ambiguous, while unfamiliar indexes fail closed.
