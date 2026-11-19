@@ -133,10 +133,13 @@ for _kind in ("operation.started", "operation.stage", "operation.progress", "ope
 
 def _validate_summary_v3(record: JournalRecord) -> None:
     """Check evidence-coverage claims against the actually projected prefix."""
-    _SUMMARY_V3.validate(record.payload)
     fields = record.payload
+    if "data_version" in fields:
+        _SUMMARY_V3.validate(fields)
+    else:
+        SCHEMAS[("result_summary", "operation.result")].validate(fields)
     required = {
-        "data_version", "details_digest", "details_digest_profile",
+        "details_digest", "details_digest_profile",
         "details_counts", "details_included", "details_coverage",
         "privacy_qualification", "diagnostics", "inputs", "effects",
         "contract_version", "method_version", "time_basis",
@@ -213,6 +216,9 @@ class FieldSchemaRegistry:
             else:
                 self.data_schema((*key, version)).validate(record)
             return
+        if key == _SUMMARY_KEY:
+            _validate_summary_v3(record)
+            return
         schema = self._schemas.get(key)
         if schema is None:
             raise ValueError("journal.field_schema_missing")
@@ -248,6 +254,9 @@ def validate_builtin_fields(record: JournalRecord) -> None:
         _EXPLICIT_BUILTINS[key].validate(record)
         return
     if key == _SUMMARY_KEY and type(record.payload.get("data_version")) is int and record.payload["data_version"] == 3:
+        _validate_summary_v3(record)
+        return
+    if key == _SUMMARY_KEY:
         _validate_summary_v3(record)
         return
     schema = SCHEMAS.get(key)
