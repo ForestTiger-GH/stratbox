@@ -40,6 +40,8 @@ class SourceAssetIdentity:
         _token(self.series_id)
         _token(self.issue_id)
         _token(self.asset_id)
+        if len(self.series_id.split(".", 1)[0]) > 63:
+            raise ValueError("source.publisher_namespace_too_long")
 
     @property
     def source_id(self) -> str:

@@ -72,6 +72,7 @@ def approve_index(
     assessment = replace(
         index.assessment, status="verified_complete", scope=scope,
         expected_sections=evidence.expected_sections,
+        reason_codes=("owner_reviewed_exact_page",),
         admission_evidence_ref=evidence.owner_evidence_ref,
     )
     return replace(index, assessment=assessment)
