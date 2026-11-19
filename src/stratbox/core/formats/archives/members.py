@@ -12,7 +12,7 @@ from unicodedata import normalize
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
-from stratbox.core.limits import BudgetExceeded, BudgetMeter
+from stratbox.core.limits import BudgetError, BudgetMeter
 from stratbox.core.storage.bytes import OutputBuffer
 
 
@@ -124,7 +124,7 @@ def open_zip_stream(
             if budget is not None:
                 budget.charge("objects", len(members))
             yield archive
-    except BudgetExceeded:
+    except BudgetError:
         raise
     except (BadZipFile, EOFError, NotImplementedError, RuntimeError) as error:
         raise ArchiveError("archive.invalid_zip") from error

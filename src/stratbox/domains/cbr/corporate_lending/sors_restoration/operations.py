@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from stratbox.core.limits import BudgetExceeded
+from stratbox.core.limits import BudgetError
 from stratbox.core.execution import OperationFailure
 
 from stratbox import __version__ as STRATBOX_VERSION
@@ -257,7 +257,7 @@ def restore_bundle(
                     threads=config.optimization.threads,
                 )
                 solver_frames.append(conflict_runs)
-            except (BudgetExceeded, OperationFailure):
+            except (BudgetError, OperationFailure):
                 raise
             except Exception as exc:
                 conflicts = pd.DataFrame([

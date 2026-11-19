@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Callable, Generic, Sequence, TypeVar
 
-from stratbox.core.limits import BudgetExceeded
+from stratbox.core.limits import BudgetError
 
 from stratbox.core.execution.contracts import Diagnostic, OperationFailure
 
@@ -27,7 +27,7 @@ def attempt_batch(items: Sequence[T], read: Callable[[T], R], invocation, *, con
     for index, item in enumerate(items):
         try:
             invocation.progress(index, len(items))
-        except (BudgetExceeded, OperationFailure) as error:
+        except (BudgetError, OperationFailure) as error:
             stopped = error.diagnostic if isinstance(error, OperationFailure) else Diagnostic(error.code)
             break
         attempted += 1
@@ -41,7 +41,7 @@ def attempt_batch(items: Sequence[T], read: Callable[[T], R], invocation, *, con
             if not continue_on_error:
                 stopped = error.diagnostic
                 break
-        except BudgetExceeded as error:
+        except BudgetError as error:
             stopped, interrupted = Diagnostic(error.code), item
             break
         except Exception as error:

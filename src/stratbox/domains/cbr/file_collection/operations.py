@@ -6,7 +6,7 @@ import re
 from stratbox.core.formats.archives.store import ArchiveEntry, PathArchiveReceipt, zip_to_store
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
 from stratbox.core.storage.staging import current_revision, storage_scope, store_identity
-from stratbox.core.limits import BudgetExceeded, ExecutionBudget
+from stratbox.core.limits import BudgetError, ExecutionBudget
 from stratbox.core.network import HttpTransport, StreamingHttpTransport
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
@@ -121,7 +121,7 @@ def _collect(req, invocation, transport, *, destinations=None, store=None):
             break
         try:
             invocation.budget.checkpoint()
-        except BudgetExceeded as error:
+        except BudgetError as error:
             stop = error.code
             break
         attempted.append(key)
@@ -142,7 +142,7 @@ def _collect(req, invocation, transport, *, destinations=None, store=None):
                 size = storage.identity.size
             else:
                 size = item.source.payload.identity.size
-        except BudgetExceeded as error:
+        except BudgetError as error:
             stop = error.code
             interrupted = CollectFailure(key, stop)
             break

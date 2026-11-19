@@ -10,7 +10,7 @@ from stratbox.core.formats.archives.store import ArchiveEntry, PathArchiveReceip
 from stratbox.core.operations.source.originals import storage_effect
 from stratbox.core.storage.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, zip_bytes
-from stratbox.core.limits import BudgetExceeded
+from stratbox.core.limits import BudgetError
 from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
@@ -250,13 +250,13 @@ def apply_cleanup(
                     )
                     try:
                         receipt = _mutate(action, store, invocation, intent)
-                    except (OperationFailure, BudgetExceeded) as error:
+                    except (OperationFailure, BudgetError) as error:
                         receipts.extend(
                             CleanupReceipt(item, "not_attempted")
                             for item in current.actions[index:]
                         )
                         if invocation.effects:
-                            code = error.code if isinstance(error, BudgetExceeded) else error.diagnostic.code
+                            code = error.code if isinstance(error, BudgetError) else error.diagnostic.code
                             return Completion(tuple(receipts), "partial", code)
                         raise
                     receipts.append(receipt)
