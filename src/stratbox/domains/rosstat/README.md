@@ -1,18 +1,17 @@
 # Rosstat
 
-The package groups official Rosstat domains by publisher. It does not register
-operations itself. The owner rosstat.publications manages source landing
-pages, publisher issues, attachment identities, and exact original acquisition.
+\`rosstat.publications\` handles official publisher releases and original
+file acquisition. It shares network/storage/byte-identity infrastructure with
+other sources and does not contain a scheduler or proprietary runtime logic.
 
-Future Rosstat statistical parsers, derived tables and series-local
-representations will live in neighboring source-family packages. Their
-business and classification rules must not be embedded in the common
-publication downloader.
+Its four family profiles specialize publisher link and issue/attachment
+identification. All four are currently provisional pending real HTML
+verification. Even a correctly downloaded XLSX/PDF/ZIP/RAR does not prove
+that an entire historical archive has been enumerated.
 
-The initial HTML source profiles are provisional. The four official landing
-pages are fixed, but real current markup, attachments, delivery hosts and
-possible JavaScript publication catalogs require live calibration. Until
-then synthetic HTML tests establish offline API behavior, not live availability.
-The source may be unavailable: 404, 502 and timeout do not signify no updates.
+Future neighboring owners may interpret the original PDF report, regional
+archive, monthly indicator workbook or municipal population workbook.
+Those owners will define table/observation periods, geography, indicators
+and flakes independently from publisher-document issue dates.
 
-See publications/README.md.
+See [publications](publications/README.md).

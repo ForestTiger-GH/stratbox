@@ -1,69 +1,54 @@
-# Rosstat: exact source publications
+# Rosstat official publication originals
 
-## Scope
+Registered owner: \`rosstat.publications\`.
 
-This package distinguishes series, issue, attachment and original byte version.
-The series catalog fixes four officially supplied Rosstat landing pages.
-An asset key consists of (series_id, issue_id, asset_id); a change in attachment
-URL or filename without changed bytes is not a raw-source revision.
+**Scope:** series → publisher issue → logical file asset → exact original
+byte version. The four original formats are PDF, XLSX, ZIP and RAR. All
+technical receive, stage, save, read, hash, compare, observe and notify
+infrastructure is reused from \`core\` or \`shared\`.
 
-Use independent operations:
+There are three independent operations:
 
-- rosstat.publications.discover: supplied HTML (offline) or HTTPS landing
-  page (online), returning an index with qualified/ambiguous candidates.
-- rosstat.publications.acquire: native bytes with a SHA acquisition receipt.
-- rosstat.publications.acquire_to_store: stage, verify envelope, and commit to
-  caller-provided filestore without modifying publisher bytes.
-- source.compare_original_versions: first_seen, new_release (requires
-  trustworthy previous inventory), revised, unchanged or indeterminate.
-- source.read_original and source.reconcile_original: existing neutral replay
-  and verification operations.
-- source.original_version_committed event plus core.notifications delivery.
+- \`rosstat.publications.discover\`: a publisher-acquired or explicitly supplied
+  HTML page, converted into a bounded, evidence-qualified index.
+- \`rosstat.publications.acquire\`: one explicit attachment downloaded with
+  strict HTTPS admission and native envelope validation, returned as bytes.
+- \`rosstat.publications.acquire_to_store\`: streaming native file acquisition
+  and staged storage using the consumer's chosen \`OriginalDestination\`.
 
-Index comparison and asset selection are pure functions in discovery.selection.
-The caller chooses the original file destination (including any Git directory),
-monitoring schedule, durable baseline keyed by each asset, release inventory,
-publication authority, notification subscription, route and retry policy.
-Storage confirmation is not remote Git publication confirmation.
+Pure helpers: \`discovery.selection.select_assets\`,
+\`discovery.selection.compare_publication_indices\`, and
+\`discovery.coverage.qualified_inventory_from_index\`.
 
-The application that controls definitive publication issues a
-PublicationReceipt with confirmation=confirmed, a matching source_id as
-release_id, the same transition_id and the saved ByteIdentity. The independent
-helper fact_from_original_version_commit then creates the qualified journal
-fact eligible for the notification topic source.original_version_committed. The topic suppresses
-FIRST_SEEN onboarding facts by default, and requires explicit opt-in to backfill.
-The helper fact_from_original_bytes_changed is available for revisions only.
-Do not subscribe to both change topics in the same user channel by default.
+The \`discovery/families/\` directory owns source-specific *publication*
+identity, not economic table semantics. The file \`discovery/links.py\`
+contains bounded literal anchor extraction. \`discovery/approval.py\` lets
+a trusted owner explicitly attest to the complete set of files on ONE
+concretely acquired HTML page, with an evidence reference and declared
+sections. This is not a global certification of the site's present layout
+or future releases.
 
-First-time backfills must not be reported as fresh publisher releases. The
-notification topic requires explicit opt-in to mode=backfill. A failed check
-must not overwrite an earlier confirmed baseline.
+**Current operational restriction:** automatic publisher HTML completeness
+is unverified for all four landing pages. The source-specific patterns
+are provisional. Recognized candidates may be chosen explicitly, but
+\`coverage\` is \`unknown\` and automatic \`latest_qualified\` and absence
+claims are refused until qualified evidence is available.
 
-## Format and security limits
+The publisher may change a URL or link label without revising an original.
+The stable \`SourceAssetIdentity\` deliberately excludes locators and SHA.
+\`source.compare_original_versions\` compares accepted original identities
+against a durable previous transition or a fully qualified prior inventory.
+\`source.original_version_committed\` is emitted only on an owner-verified
+publication version, and \`core.notifications\` owns reliable delivery.
+\`first_seen\` and historical backfill are not automatic fresh-release alerts.
 
-The four family-specific HTML profiles are deliberately narrow and provisional. They match
-only a compatible file format, a publisher-hosted permitted path, and a
-recognizable publisher issue label or filename. Duplicate logical asset keys
-with distinct URLs remain ambiguous, while unfamiliar indexes fail closed.
-Downloads currently accept only the Rosstat central storage/mediabank and
-upload paths. Other official paths/hosts require explicit live evidence.
+The consumer owns exact original destination, release-commit proof,
+version history/retention policy, durable monitored state, schedule, journal,
+notification subscriptions, queues, channels and Git publication.
+No Git/Telegram integrations or statistical parsers are bundled with this
+owner. Readers, archive extractors, table parsers, period interpreters,
+flake representations and economic calculations can be added as neighboring
+source-family owners without modifying the original publication contract.
 
-PDF signature and EOF, ZIP central directory, OOXML required parts, and RAR
-signature are checked without interpreting statistics. ZIP member CRC and RAR
-archive integrity are not verified in this layer; use later archive readers
-for those checks. Per-file limits are 100 MiB for XLSX/PDF, 256 MiB for
-ZIP/RAR. Streaming stores use staged writes with readback verification.
-Temporary network 404/403/5xx failures preserve existing saved originals.
-
-Each operation can be called on its own. A consumer may also compose:
-discover -> select_assets -> acquire/acquire_to_store -> compare original
-identities -> owner confirmation -> event -> notifications.prepare/deliver.
-This is a useful workflow, not a mandatory pipeline for every source.
-
-## Next stages
-
-Source-family owners can consume MaterialReference or SourcePayload directly,
-then implement archive inspection, table extraction, period/classification
-provenance, series-local representations (flakes), semantic comparisons and
-calculations. They must never replace raw-byte change notifications with an
-unsupported assertion that statistical observations changed.
+See [the complete how-to](../../../../../docs/current-how/rosstat-publications.md)
+and [the offline example](../../../../../examples/rosstat_originals_offline.py).
