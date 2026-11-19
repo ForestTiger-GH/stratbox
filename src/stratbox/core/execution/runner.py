@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import timezone
+from math import isfinite
 from collections import deque
 from typing import Callable, Generic, Mapping, Sequence, TypeVar
 from uuid import uuid4
@@ -27,7 +28,7 @@ from stratbox.core.execution.contracts import (
 )
 from stratbox.core.execution.events import ExecutionEvent, TechnicalIncident
 from stratbox.core.execution.effects import _EffectAccumulator
-from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion
+from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion, _terminal_constraint
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -46,6 +47,7 @@ class Invocation:
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0
         self._incidents_dropped = 0
+        self._timing_degraded = False
         self._stage: str | None = None
         self._stage_started = self._started
         self.used_inputs: list[UsedInputReceipt] = []
@@ -65,12 +67,26 @@ class Invocation:
         if self._sealed:
             raise RuntimeError("Invocation has already been finalized")
 
-    def seal(self) -> None:
+    def _seal(self) -> None:
         if self._sealed:
             raise RuntimeError("Invocation has already been finalized")
         self._sealed = True
-        # Public facts are fixed before the final outcome is resolved.
         self.used_inputs = tuple(self.used_inputs)
+
+    def _elapsed_ms(self, started: float) -> int | None:
+        try:
+            elapsed = self.context.clock.monotonic() - started
+            if not isfinite(elapsed) or not 0 <= elapsed <= (2**53 - 1) / 1000:
+                raise ValueError("Invalid monotonic measurement")
+            return int(elapsed * 1000)
+        except Exception:
+            self._timing_degraded = True
+            return None
+
+    def _summary(self) -> ObservabilitySummary:
+        return ObservabilitySummary(
+            self._emitted, self._dropped, self._incidents_dropped, self._timing_degraded,
+        )
 
     def now(self):
         value = self.context.clock.now()
@@ -199,25 +215,21 @@ class Invocation:
             return
         self._sequence += 1
         try:
-            sink.emit(
-                ExecutionEvent(
-                    3,
-                    kind,
-                    self.id,
-                    self.definition.operation_id,
-                    self.definition.contract_version,
-                    self.definition.method_version,
-                    self._sequence,
-                    self.now(),
-                    self.context.correlation,
-                    stage=self._stage,
-                    stage_elapsed_ms=(
-                        max(0, int((self.context.clock.monotonic() - self._stage_started) * 1000))
-                        if self._stage is not None else None
-                    ),
-                    **fields,
-                )
+            timestamp = self.now()
+        except Exception:
+            # No fabricated UTC timestamps when the supplied clock fails.
+            self._timing_degraded = True
+            self._dropped += 1
+            return
+        stage_elapsed = self._elapsed_ms(self._stage_started) if self._stage else None
+        try:
+            event = ExecutionEvent(
+                3, kind, self.id, self.definition.operation_id,
+                self.definition.contract_version, self.definition.method_version,
+                self._sequence, timestamp, self.context.correlation,
+                stage=self._stage, stage_elapsed_ms=stage_elapsed, **fields,
             )
+            sink.emit(event)
         except Exception:
             self._dropped += 1
         else:
@@ -242,7 +254,7 @@ class Invocation:
         if not self._sealed or self._terminal_emitted:
             raise RuntimeError("Invalid terminal observation transition")
         self._terminal_emitted = True
-        elapsed = max(0, int((self.context.clock.monotonic() - self._started) * 1000))
+        elapsed = self._elapsed_ms(self._started)
         self._emit(
             "operation.finished",
             outcome=outcome,
@@ -251,7 +263,7 @@ class Invocation:
             incident_id=diagnostic.incident_id if diagnostic else None,
             duration_ms=elapsed,
         )
-        return ObservabilitySummary(self._emitted, self._dropped, self._incidents_dropped)
+        return self._summary()
 
 
 class Completion(Generic[T]):
@@ -308,8 +320,6 @@ def _execute_work(
                         output.identity,
                         parameters={"profile": output.profile_id, "profile_version": output.version},
                     )
-            elif outcome == "succeeded" and not definition.partial_allowed and not invocation.effects:
-                invocation.budget.checkpoint()
         return _WorkCompletion(outcome, value, diagnostics)
     except OperationFailure as error:
         return _WorkCompletion(error.outcome, None, (error.diagnostic,))
@@ -321,6 +331,20 @@ def _execute_work(
         return _WorkCompletion("failed", None, (invocation.incident(error),))
 
 
+def _terminal_budget(invocation: Invocation, work_result: _WorkCompletion) -> _WorkCompletion:
+    """Check the deadline alone, without re-reading a late cancellation token."""
+    if invocation.budget.limits.seconds is None:
+        return work_result
+    try:
+        invocation.budget.checkpoint()
+    except BudgetExceeded as exc:
+        return _terminal_constraint(work_result, Diagnostic(exc.code))
+    except Exception:
+        invocation._timing_degraded = True
+        return _terminal_constraint(work_result, Diagnostic("budget.clock_unavailable"))
+    return work_result
+
+
 def _validated_result(
     definition: OperationDefinition,
     invocation: Invocation,
@@ -329,36 +353,47 @@ def _validated_result(
     effects = invocation._effects.snapshot()
     inputs = tuple(invocation.used_inputs)
     integrity = invocation._effects.integrity_diagnostics()
-    resolved = _resolve_completion(
-        definition, work_result, effects, integrity, invocation._effects.conflict_keys()
-    )
-    diagnostics = tuple(invocation.describe(item, resolved.outcome) for item in resolved.diagnostics)
-    summary = ObservabilitySummary(
-        invocation._emitted, invocation._dropped, invocation._incidents_dropped
-    )
+    conflict_keys = invocation._effects.conflict_keys()
     try:
-        # Validate *before* producing an irreversible terminal observation.
+        resolved = _resolve_completion(
+            definition, work_result, effects, integrity, conflict_keys,
+        )
+        diagnostics = tuple(invocation.describe(item, resolved.outcome)
+                            for item in resolved.diagnostics)
         return OperationResult(
             definition, invocation.id, resolved.outcome, resolved.value, diagnostics,
-            inputs, effects, summary,
-            invocation.computation if resolved.value is not None else None,
+            inputs, effects, invocation._summary(), invocation.computation,
             invocation.budget.usage(),
         )
     except Exception as error:
-        # A contract/finalizer defect must not emit a false successful finish.
-        # Do not rerun the handler or any effect. Preserve qualified receipts.
         incident = invocation.incident(error)
-        fallback = _resolve_completion(
-            definition, _WorkCompletion("failed", None, (incident,)), effects, integrity,
-            invocation._effects.conflict_keys(),
-        )
-        diagnostics = tuple(invocation.describe(item, fallback.outcome) for item in fallback.diagnostics)
-        return OperationResult(
-            definition, invocation.id, fallback.outcome, None, diagnostics,
-            inputs, effects,
-            ObservabilitySummary(invocation._emitted, invocation._dropped, invocation._incidents_dropped),
-            None, invocation.budget.usage(),
-        )
+        unresolved = bool(conflict_keys) or any(e.state == "unknown" for e in effects)
+        outcome: Outcome = "unknown" if unresolved else "failed"
+        diagnostics = list(work_result.diagnostics)
+        diagnostics.extend(integrity)
+        for effect in effects:
+            if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
+                diagnostics.append(Diagnostic(
+                    "effect.outcome_unknown", component=effect.kind, evidence_ref=effect.effect_id,
+                    reconciliation_owner=effect.reconciliation_owner,
+                    retry_disposition="reconcile" if effect.effect_id else "none",
+                ))
+        diagnostics.append(incident)
+        fallback = tuple(diagnostics)
+        try:
+            return OperationResult(
+                definition, invocation.id, outcome, None, fallback, inputs,
+                effects, invocation._summary(), invocation.computation,
+                invocation.budget.usage(),
+            )
+        except Exception:
+            # A patched/failed constructor cannot erase a known effect.
+            from stratbox.core.execution.contracts import OperationResult as ValidatedResult
+            return ValidatedResult(
+                definition, invocation.id, outcome, None, fallback, inputs,
+                effects, invocation._summary(), invocation.computation,
+                invocation.budget.usage(),
+            )
 
 
 def run(
@@ -374,10 +409,23 @@ def run(
     )
     invocation._emit("operation.started")
     completed = _execute_work(definition, request, work, invocation, providers)
-    invocation.seal()
+    completed = _terminal_budget(invocation, completed)
+    try:
+        invocation._seal()
+    except Exception as error:
+        completed = _WorkCompletion(
+            "failed", None, completed.diagnostics + (invocation.incident(error),),
+        )
+        invocation._sealed = True
+        invocation.used_inputs = tuple(invocation.used_inputs)
     result = _validated_result(definition, invocation, completed)
-    summary = invocation._finish(
-        result.outcome, result.diagnostics[0] if result.diagnostics else None
-    )
-    # Only telemetry counters may change after validated finalization.
+    try:
+        summary = invocation._finish(
+            result.outcome, result.diagnostics[0] if result.diagnostics else None
+        )
+    except Exception:
+        # A terminal event might have been accepted; never retry the emission.
+        invocation._timing_degraded = True
+        invocation._dropped += 1
+        summary = invocation._summary()
     return replace(result, observability=summary)

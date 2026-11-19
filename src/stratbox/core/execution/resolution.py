@@ -24,6 +24,14 @@ class _ResolvedCompletion:
     diagnostics: tuple[Diagnostic, ...]
 
 
+def _terminal_constraint(
+    work: _WorkCompletion, diagnostic: Diagnostic,
+) -> _WorkCompletion:
+    """Late budget violations never undo already-confirmed effects."""
+    outcome = "failed" if work.outcome == "succeeded" else work.outcome
+    return _WorkCompletion(outcome, work.value, work.diagnostics + (diagnostic,))
+
+
 def _resolve_completion(
     definition: OperationDefinition,
     work: _WorkCompletion,

@@ -230,10 +230,11 @@ class ObservabilitySummary:
     emitted: int
     dropped: int
     incidents_dropped: int = 0
+    timing_degraded: bool = False
 
     @property
     def degraded(self) -> bool:
-        return self.dropped > 0 or self.incidents_dropped > 0
+        return self.dropped > 0 or self.incidents_dropped > 0 or self.timing_degraded
 
 
 @dataclass(frozen=True, slots=True)

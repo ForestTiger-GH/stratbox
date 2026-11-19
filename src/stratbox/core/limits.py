@@ -71,10 +71,11 @@ class BudgetMeter:
         self._output_units: dict[str, tuple[ByteIdentity, str | None]] = {}
 
     def seconds_left(self) -> float:
-        return max(0, self._deadline - self._now())
+        return inf if self._deadline == inf else max(0, self._deadline - self._now())
 
     def checkpoint(self) -> None:
-        if self.seconds_left() <= 0:
+        # No configured deadline means no clock dependency for budget checks.
+        if self._deadline != inf and self.seconds_left() <= 0:
             raise BudgetExceeded("deadline")
 
     def used(self, resource: Resource) -> int:

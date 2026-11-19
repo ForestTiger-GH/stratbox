@@ -112,6 +112,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
                         if result.computation is not None else None),
         "observability": {"emitted": result.observability.emitted, "dropped": result.observability.dropped,
                           "incidents_dropped": result.observability.incidents_dropped,
+                          "timing_degraded": result.observability.timing_degraded,
                           "degraded": result.observability.degraded},
         "resources_used": [{"resource": str(resource), "count": count}
                            for resource, count in result.resources_used],
