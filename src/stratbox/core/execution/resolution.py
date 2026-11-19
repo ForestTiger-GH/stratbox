@@ -29,6 +29,7 @@ def _resolve_completion(
     work: _WorkCompletion,
     effects: tuple[EffectReceipt, ...],
     integrity_diagnostics: tuple[Diagnostic, ...] = (),
+    conflict_keys: frozenset[tuple[str, str]] = frozenset(),
 ) -> _ResolvedCompletion:
     outcome, value = work.outcome, work.value
     diagnostics = list(work.diagnostics)
@@ -46,15 +47,8 @@ def _resolve_completion(
         if diagnostic not in diagnostics:
             diagnostics.append(diagnostic)
 
-    conflicted = {
-        (effect.kind, diagnostic.evidence_ref)
-        for effect in effects for diagnostic in integrity_diagnostics
-        if diagnostic.code == "effect.receipt_conflict"
-        and diagnostic.evidence_ref is not None
-        and diagnostic.evidence_ref == effect.effect_id
-    }
     for effect in effects:
-        if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflicted:
+        if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
             diagnostic = Diagnostic(
                 "effect.outcome_unknown", evidence_ref=effect.effect_id,
                 reconciliation_owner=effect.reconciliation_owner, retry_disposition="reconcile",

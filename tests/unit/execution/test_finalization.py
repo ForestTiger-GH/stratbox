@@ -375,3 +375,18 @@ def test_invalid_operation_definition_is_rejected(params):
     kwargs.update(params)
     with pytest.raises(ValueError):
         OperationDefinition(**kwargs)
+
+
+def test_conflict_does_not_hide_other_kind_with_same_effect_id():
+    # The ID namespace for qualifications is (kind, effect_id), not just ID.
+    def handler(value, invocation):
+        invocation.effect(EffectReceipt("storage.write", "confirmed", effect_id="shared"))
+        invocation.effect(EffectReceipt("storage.write", "failed", effect_id="shared"))
+        invocation.effect(EffectReceipt("notification.handoff", "unknown", effect_id="shared"))
+        return value
+
+    result = run(operation(), "ok", handler)
+    assert result.outcome == "unknown"
+    assert sum(x.code == "effect.receipt_conflict" for x in result.diagnostics) == 1
+    assert any(x.code == "effect.outcome_unknown" and x.evidence_ref == "shared"
+               for x in result.diagnostics)

@@ -307,7 +307,9 @@ def _validated_result(
     effects = invocation.effects
     inputs = tuple(invocation.used_inputs)
     integrity = invocation._effects.integrity_diagnostics()
-    resolved = _resolve_completion(definition, work_result, effects, integrity)
+    resolved = _resolve_completion(
+        definition, work_result, effects, integrity, invocation._effects.conflict_keys()
+    )
     diagnostics = tuple(invocation.describe(item, resolved.outcome) for item in resolved.diagnostics)
     summary = ObservabilitySummary(
         invocation._emitted, invocation._dropped, invocation._incidents_dropped
@@ -325,7 +327,8 @@ def _validated_result(
         # Do not rerun the handler or any effect. Preserve qualified receipts.
         incident = invocation.incident(error)
         fallback = _resolve_completion(
-            definition, _WorkCompletion("failed", None, (incident,)), effects, integrity
+            definition, _WorkCompletion("failed", None, (incident,)), effects, integrity,
+            invocation._effects.conflict_keys(),
         )
         diagnostics = tuple(invocation.describe(item, fallback.outcome) for item in fallback.diagnostics)
         return OperationResult(
