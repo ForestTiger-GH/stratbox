@@ -162,3 +162,15 @@ def test_domain_wrappers_project_core_material_evidence(tmp_path):
     capture_operation_result(saved, memory)
     kinds = {entry.kind for entry in memory.records}
     assert "material.stored" in kinds
+
+
+def test_forged_asset_id_fails_before_network():
+    from dataclasses import replace
+    from stratbox.domains.rosstat.publications.contracts import IssueKey, AssetKey
+    old = asset()
+    fake_key = AssetKey(IssueKey("rosstat.short_term_indicators", "2025-08"), "main_workbook")
+    transport = Publisher(workbook())
+    result = acquire(AcquireRosstatRequest(replace(old, key=fake_key)), transport=transport)
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "rosstat.asset_identity_unverified"
+    assert not transport.requests

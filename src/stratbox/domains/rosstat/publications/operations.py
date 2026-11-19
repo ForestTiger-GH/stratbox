@@ -23,6 +23,7 @@ from .contracts import (
     DiscoverRosstatRequest, RosstatPublicationIndex, StoredRosstatAsset,
 )
 from .discovery.profiles import profile_for, qualify_index
+from .discovery.families.rules import parse_issue
 from .download.envelope import detect_bytes, detect_envelope
 
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
@@ -99,6 +100,20 @@ def _admit(asset, *, size_limit, deadline):
     if (asset.declared_format not in spec.accepted_formats or not allowed_file_url(asset.url)
             or asset.index_identity.size == 0 or not asset.issue_evidence):
         raise OperationFailure("rosstat.asset_url_forbidden")
+    # Re-run profile interpretation against the candidate's own provenance.
+    # This is consistency validation, not a cryptographic publisher proof.
+    rule = profile_for(spec.series_id)
+    issue_id, _, diagnostics = parse_issue(rule, asset.filename, asset.label_literal)
+    asset_id, asset_role, _ = rule.asset_id(asset.label_literal, asset.filename)
+    from urllib.parse import unquote, urlsplit
+    from pathlib import PurePosixPath
+    if (
+        diagnostics or issue_id != asset.key.issue.issue_id
+        or asset_id != asset.key.asset_id or asset_role != asset.asset_role
+        or PurePosixPath(unquote(urlsplit(asset.url).path)).name != asset.filename
+        or not asset.url.lower().endswith("." + asset.declared_format)
+    ):
+        raise OperationFailure("rosstat.asset_identity_unverified")
     if type(size_limit) is not int or not 0 < size_limit <= _FORMAT_LIMITS[asset.declared_format]:
         raise OperationFailure("rosstat.acquisition_limit_invalid")
     if not 1 <= deadline <= 600:
