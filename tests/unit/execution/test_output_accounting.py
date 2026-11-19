@@ -140,3 +140,86 @@ def test_retry_same_output_key_is_one_logical_obligation():
     # A different published destination is an independent obligation.
     with pytest.raises(BudgetExceeded):
         meter.account_output("publish:other", identity)
+
+
+@pytest.mark.parametrize(("outcome", "reason"), [
+    ("failed", "domain.failed"), ("unknown", "domain.ambiguous"),
+    ("partial", "domain.partial"),
+])
+def test_incomplete_work_output_is_budgeted_and_diagnostics_are_retained(outcome, reason):
+    blob = Representation("table", 1, "text/csv", b"x" * 33)
+    def worker(request, invocation):
+        return Completion(blob, outcome, reason)
+    result = run(OUTPUT, b"", worker, context=ExecutionContext(
+        budget=ExecutionBudget(output_bytes=1),
+    ))
+    assert result.value is None
+    assert result.outcome == ("unknown" if outcome == "unknown" else "failed")
+    assert {d.code for d in result.diagnostics} >= {reason, "budget.output_bytes"}
+    assert result.computation is not None
+    assert result.computation.output == blob.identity
+    assert not result.effects
+
+
+@pytest.mark.parametrize("outcome", ["failed", "unknown"])
+def test_incomplete_returned_output_exact_limit_and_zero_boundaries(outcome):
+    empty = Representation("table", 1, "text/csv", b"")
+    content = Representation("table", 1, "text/csv", b"12")
+    for blob, allowed in ((empty, 0), (content, 2)):
+        result = run(OUTPUT, b"", lambda req, inv: Completion(blob, outcome, "domain.reason"),
+                     context=ExecutionContext(budget=ExecutionBudget(output_bytes=allowed)))
+        assert result.outcome == outcome
+        assert result.value is blob
+        assert dict(result.resources_used)["output_bytes"] == allowed
+    rejection = run(OUTPUT, b"", lambda req, inv: Completion(content, outcome, "domain.reason"),
+                    context=ExecutionContext(budget=ExecutionBudget(output_bytes=0)))
+    assert rejection.value is None
+    assert rejection.outcome == outcome
+    assert {d.code for d in rejection.diagnostics} >= {"domain.reason", "budget.output_bytes"}
+
+
+def test_output_refusal_keeps_unresolved_external_effect_and_computation():
+    blob = Representation("table", 1, "text/csv", b"x" * 40)
+    def worker(req, invocation):
+        invocation.effect(EffectReceipt(
+            "notification.handoff", "unknown", effect_id="h1",
+            reconciliation_owner="consumer",
+        ))
+        return Completion(blob, "unknown", "domain.ambiguous")
+    result = run(OUTPUT, b"", worker, context=ExecutionContext(
+        budget=ExecutionBudget(output_bytes=1),
+    ))
+    assert result.outcome == "unknown"
+    assert result.value is None
+    assert len(result.effects) == 1 and result.effects[0].state == "unknown"
+    assert {d.code for d in result.diagnostics} >= {
+        "domain.ambiguous", "budget.output_bytes", "effect.outcome_unknown",
+    }
+    assert result.computation is not None
+
+
+def test_returned_output_supported_wrapper_is_checked_for_failed():
+    from dataclasses import dataclass
+    @dataclass(frozen=True)
+    class Wrapper:
+        representation: Representation
+    wrapper = Wrapper(Representation("table", 1, "text/csv", b"12345"))
+    operation = OperationDefinition("test.output_wrapper", 1, "method-1", bytes, Wrapper)
+    result = run(operation, b"", lambda req, inv: Completion(wrapper, "failed", "domain.failed"),
+                 context=ExecutionContext(budget=ExecutionBudget(output_bytes=3)))
+    assert result.outcome == "failed" and result.value is None
+    assert {d.code for d in result.diagnostics} == {"domain.failed", "budget.output_bytes"}
+    assert result.computation is not None
+
+
+def test_output_refusal_after_confirmed_effect_does_not_erase_receipt():
+    blob = Representation("table", 1, "text/csv", b"x" * 80)
+    def worker(req, invocation):
+        invocation.effect(EffectReceipt("storage.write", "confirmed", effect_id="write_1"))
+        return Completion(blob, "failed", "domain.publication_failed")
+    result = run(OUTPUT, b"", worker, context=ExecutionContext(
+        budget=ExecutionBudget(output_bytes=1),
+    ))
+    assert result.outcome == "failed" and result.value is None
+    assert result.effects[0].state == "confirmed"
+    assert {d.code for d in result.diagnostics} == {"domain.publication_failed", "budget.output_bytes"}

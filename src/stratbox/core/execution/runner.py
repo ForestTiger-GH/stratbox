@@ -337,23 +337,6 @@ def _execute_work(
         else:
             outcome, value, diagnostics = "succeeded", completed, ()
 
-        # Retain the existing output-budget boundary: storage operations charge
-        # their own output bytes at commit, so charging a second time here would
-        # double-count them. Pure representations are charged once at completion.
-        if outcome in {"succeeded", "partial"}:
-            output = value if isinstance(value, Representation) else getattr(value, "representation", None)
-            if isinstance(output, Representation):
-                # Pure in-memory representations have not been charged by a
-                # publishing provider. A publishing provider already charged
-                # physical output at its own effect boundary.
-                # Computation evidence describes already built content.
-                # A later output-budget rejection must not erase that fact.
-                if invocation.computation is None:
-                    invocation.record(
-                        output.identity,
-                        parameters={"profile": output.profile_id, "profile_version": output.version},
-                    )
-                invocation.budget.ensure_returned_output(output.identity, completed=True)
         return _WorkCompletion(outcome, value, diagnostics)
     except OperationFailure as error:
         return _WorkCompletion(error.outcome, None, (error.diagnostic,))
@@ -363,6 +346,41 @@ def _execute_work(
         return _WorkCompletion("failed", None, (Diagnostic("provider.capability_missing"),))
     except Exception as error:
         return _WorkCompletion("failed", None, (invocation.incident(error),))
+
+
+
+def _admit_returned_output(
+    definition: OperationDefinition, invocation: Invocation, work_result: _WorkCompletion,
+) -> _WorkCompletion:
+    """Admit every typed returned representation, independent of work outcome.
+
+    Budget refusal suppresses the candidate bytes while preserving work
+    diagnostics, known effect receipts, and completed computation evidence.
+    """
+    value = work_result.value
+    if value is None or work_result.outcome == "cancelled" or not isinstance(
+        value, definition.value_type,
+    ):
+        return work_result
+    try:
+        output = value if isinstance(value, Representation) else getattr(value, "representation", None)
+        if not isinstance(output, Representation):
+            return work_result
+        if invocation.computation is None:
+            invocation.record(
+                output.identity,
+                parameters={"profile": output.profile_id, "profile_version": output.version},
+            )
+        invocation.budget.ensure_returned_output(output.identity, completed=True)
+    except BudgetError as error:
+        outcome: Outcome = "unknown" if work_result.outcome == "unknown" else "failed"
+        return _WorkCompletion(outcome, None, work_result.diagnostics + (Diagnostic(error.code),))
+    except Exception as error:
+        outcome: Outcome = "unknown" if work_result.outcome == "unknown" else "failed"
+        return _WorkCompletion(
+            outcome, None, work_result.diagnostics + (invocation.incident(error),),
+        )
+    return work_result
 
 
 def _terminal_budget(invocation: Invocation, work_result: _WorkCompletion) -> _WorkCompletion:
@@ -461,6 +479,7 @@ def run(
     )
     invocation._emit("operation.started")
     completed = _execute_work(definition, request, work, invocation, providers)
+    completed = _admit_returned_output(definition, invocation, completed)
     completed = _terminal_budget(invocation, completed)
     try:
         invocation._seal()
