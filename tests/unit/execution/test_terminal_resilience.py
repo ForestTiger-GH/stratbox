@@ -230,3 +230,27 @@ def test_elapsed_clock_failure_after_effect_is_visible_in_result_summary():
     record = record_from_result(result)
     assert record.payload["observability"]["timing_degraded"] is True
     assert record.payload["observability"]["degraded"] is True
+
+
+def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
+    from stratbox.core.execution import runner
+    class BrokenOnProgressClock:
+        calls = 0
+        def monotonic(self):
+            self.calls += 1
+            if self.calls > 2:
+                raise OSError("clock should not be touched for invalid progress")
+            return 0.0
+        def now(self):
+            return datetime(2026, 11, 19, tzinfo=timezone.utc)
+    clock = BrokenOnProgressClock()
+    op = OperationDefinition("test.invalid_progress_early", 1, "m-1", int, int)
+    def work(request, invocation):
+        invocation.progress(True, True)
+        return request
+    result = run(op, 1, work, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=30),
+    ))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "internal.error"
+    assert clock.calls >= 2
