@@ -62,8 +62,9 @@ class Invocation:
                 self._started = sampled
             except Exception:
                 self._timing_degraded = True
-        self.budget = BudgetMeter(
-            limits, now=context.clock.monotonic, origin=self._started,
+        self.budget = (
+            BudgetMeter(limits, now=context.clock.monotonic, origin=self._started)
+            if limits.seconds is not None else BudgetMeter(limits)
         )
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0
