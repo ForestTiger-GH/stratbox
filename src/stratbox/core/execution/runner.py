@@ -51,8 +51,9 @@ class Invocation:
         self._incidents_dropped = 0
         self._timing_degraded = False
         self._stage: str | None = None
-        self._stage_started = self._started
+        self._stage_started: float | None = self._started
         self.used_inputs: list[UsedInputReceipt] = []
+        self._input_index: set[UsedInputReceipt] = set()
         self._effects = _EffectAccumulator()
         self._effect_view = self._effects.view()
         self._sealed = False
@@ -75,7 +76,22 @@ class Invocation:
         self._sealed = True
         self.used_inputs = tuple(self.used_inputs)
 
-    def _elapsed_ms(self, started: float) -> int | None:
+    def _telemetry_tick(self) -> float | None:
+        """Best-effort sample. It must never decide the operation outcome."""
+        if self.context.sink is None:
+            return None
+        try:
+            value = self.context.clock.monotonic()
+            if type(value) not in (int, float) or not isfinite(value):
+                raise ValueError("Invalid telemetry timestamp")
+            return value
+        except Exception:
+            self._timing_degraded = True
+            return None
+
+    def _elapsed_ms(self, started: float | None) -> int | None:
+        if started is None:
+            return None
         try:
             elapsed = self.context.clock.monotonic() - started
             if not isfinite(elapsed) or not 0 <= elapsed <= (2**53 - 1) / 1000:
@@ -154,9 +170,10 @@ class Invocation:
 
     def stage(self, name: str) -> None:
         self._require_open()
+        name = safe_token(name)
         self.check_cancelled()
-        self._stage = safe_token(name)
-        self._stage_started = self.context.clock.monotonic()
+        self._stage = name
+        self._stage_started = self._telemetry_tick()
         self._progress_at = float("-inf")
         self._emit("operation.stage")
 
@@ -170,14 +187,22 @@ class Invocation:
         ):
             raise ValueError("Invalid progress counters")
         self.check_cancelled()
-        now = self.context.clock.monotonic()
-        if now - self._progress_at >= 0.25 or completed == total:
-            self._progress_at = now
+        if self.context.sink is None:
+            return
+        sampled = self._telemetry_tick()
+        if sampled is None:
+            # Without a valid throttle time, omit optional progress events.
+            return
+        if sampled - self._progress_at >= 0.25 or completed == total:
+            self._progress_at = sampled
             self._emit("operation.progress", completed=completed, total=total)
 
     def use(self, receipt: UsedInputReceipt) -> None:
         self._require_open()
-        if receipt not in self.used_inputs:
+        if not isinstance(receipt, UsedInputReceipt):
+            raise TypeError("Expected a qualified input receipt")
+        if receipt not in self._input_index:
+            self._input_index.add(receipt)
             self.used_inputs.append(receipt)
 
     def record(self, identity, *, parameters=None, resources=None, inputs=None):
@@ -259,7 +284,7 @@ class Invocation:
         if not self._sealed or self._terminal_emitted:
             raise RuntimeError("Invalid terminal observation transition")
         self._terminal_emitted = True
-        elapsed = self._elapsed_ms(self._started)
+        elapsed = self._elapsed_ms(self._started) if self.context.sink is not None else None
         self._emit(
             "operation.finished",
             outcome=outcome,

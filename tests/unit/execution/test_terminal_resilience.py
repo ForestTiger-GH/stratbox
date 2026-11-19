@@ -283,3 +283,49 @@ def test_nonfinite_monotonic_after_handler_cannot_claim_timed_success():
     assert result.outcome == "failed"
     assert any(d.code == "budget.clock_unavailable" for d in result.diagnostics)
     assert result.effects[0].state == "confirmed"
+
+
+@pytest.mark.parametrize("feature", ("stage", "progress"))
+@pytest.mark.parametrize("sink_enabled", (False, True))
+@pytest.mark.parametrize("failure", ("exception", "nan"))
+def test_optional_stage_progress_clock_failure_does_not_change_work(
+    feature, sink_enabled, failure,
+):
+    clock = ControlledClock()
+    sink = InMemorySink() if sink_enabled else None
+
+    def work(value, invocation):
+        if failure == "exception":
+            clock.bad_monotonic = True
+        else:
+            clock.t = float("nan")
+        if feature == "stage":
+            invocation.stage("load")
+        else:
+            invocation.progress(1, 2)
+        return value
+
+    result = run(OP, "ok", work, context=ExecutionContext(clock=clock, sink=sink))
+    assert result.outcome == "succeeded"
+    assert result.observability.timing_degraded is sink_enabled
+    if sink_enabled and feature == "progress":
+        assert not any(event.kind == "operation.progress" for event in sink.events)
+
+
+def test_many_used_input_receipts_keep_order_and_deduplicate():
+    from stratbox.shared.evidence import UsedInputReceipt
+    from stratbox.shared.identity import ByteIdentity
+    def worker(value, invocation):
+        for index in range(10_000):
+            item = UsedInputReceipt(
+                "source", ByteIdentity.of(str(index).encode()),
+                "text/plain", "inline",
+            )
+            invocation.use(item)
+            invocation.use(item)
+        return value
+    result = run(OP, "ok", worker)
+    assert result.outcome == "succeeded"
+    assert len(result.used_inputs) == 10_000
+    assert result.used_inputs[0].identity == ByteIdentity.of(b"0")
+    assert result.used_inputs[-1].identity == ByteIdentity.of(b"9999")
