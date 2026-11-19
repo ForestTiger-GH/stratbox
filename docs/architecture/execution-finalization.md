@@ -261,7 +261,10 @@ portable evidence. The projected `EffectState` carries the selected key,
 observed states, `needs_reconciliation: bool|None`,
 `evidence_coverage: complete|partial|not_observed|indeterminate`, and
 observed attempts. An observed `unknown` always requires reconciliation,
-even if a different attempt reports confirmed; absent evidence in a
+even if a different attempt reports confirmed. Contradictory byte identities
+for one qualified key within the same attempt are also treated as a receipt
+conflict requiring reconciliation, even if both observations say confirmed;
+absent evidence in a
 truncated prefix results in `None` (indeterminate), not a false success.
 `confirmed` across multiple unrelated invocations never closes another
 attempt without resource-owner evidence.

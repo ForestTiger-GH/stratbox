@@ -528,3 +528,13 @@ def test_strict_initial_clock_fault_is_a_qualified_result_without_handler(bad):
 def test_invalid_definition_is_not_reclassified_as_clock_fault():
     with pytest.raises(ValueError):
         OperationDefinition("invalid definition with spaces", 1, "v1", int, int)
+
+
+def test_no_deadline_and_no_sink_work_without_monotonic_attribute():
+    class UtcOnlyClock:
+        def now(self):
+            raise AssertionError("UTC is optional without event sink")
+    result = run(OP, "ok", lambda value, invocation: value,
+                 context=ExecutionContext(clock=UtcOnlyClock()))
+    assert result.outcome == "succeeded"
+    assert result.observability.emitted == 0

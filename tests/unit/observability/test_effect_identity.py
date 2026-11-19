@@ -158,7 +158,8 @@ def test_sensitive_input_source_and_member_do_not_enter_journal():
     secret_member = "../private/contract-amounts.csv"
     receipt = UsedInputReceipt(
         "source", ByteIdentity.of(b"hi"), "text/plain", "inline",
-        source_id=source, member=secret_member,
+        source_id=source, container=ByteIdentity.of(b"archive"),
+        member=secret_member,
     )
     def handler(req, invocation):
         invocation.use(receipt)
@@ -224,3 +225,32 @@ def test_same_effect_key_with_conflicting_byte_identifications_requires_reconcil
     assert projected.states == ("confirmed",)
     assert projected.conflicting_receipts
     assert projected.needs_reconciliation is True
+
+
+def test_qualified_record_selection_uses_composite_reference_not_raw_provider_id():
+    from stratbox.core.observability import RecordFilter, select_records
+    result = _run()
+    summary = record_from_result(result, occurred_at_utc=TIME)
+    found = tuple(select_records(
+        (summary,), RecordFilter(
+            related_namespace="effect", related_id=effect_ref_id(KEY_HANDOFF),
+        ),
+    ))
+    assert found == (summary,)
+    assert tuple(select_records(
+        (summary,), RecordFilter(
+            related_namespace="effect", related_id="shared",
+        ),
+    )) == ()
+
+
+def test_field_registry_present_rejects_unqualified_standalone_summary():
+    from stratbox.core.observability import FieldSchemaRegistry
+    result = _run(("confirmed",))
+    record = record_from_result(result, occurred_at_utc=TIME)
+    broken = replace(record, payload={
+        **record.payload, "details_digest_profile": "invalid_digest_profile",
+    })
+    registry = FieldSchemaRegistry()
+    with pytest.raises(ValueError):
+        registry.present(broken, allow=frozenset({"public", "operational"}))
