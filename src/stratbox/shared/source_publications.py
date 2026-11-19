@@ -94,6 +94,10 @@ class QualifiedInventory:
             self.issue_lower_bound > self.issue_upper_bound
         ):
             raise ValueError("source.inventory_scope_invalid")
+        if self.scope_id != "full_series" and (
+            self.issue_lower_bound is None and self.issue_upper_bound is None
+        ):
+            raise ValueError("source.inventory_scope_unbounded")
 
     @property
     def identity(self) -> str:

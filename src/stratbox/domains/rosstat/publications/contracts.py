@@ -102,7 +102,8 @@ class DiscoveryAssessment:
         if self.status.startswith("verified") and self.admission_evidence_ref is None:
             raise ValueError("rosstat.assessment_proof_required")
         if self.status == "verified_complete" and (
-            self.unresolved_count or set(self.expected_sections) != set(self.scope.covered_sections)
+            self.unresolved_count or not self.expected_sections or not self.scope.covered_sections
+            or set(self.expected_sections) != set(self.scope.covered_sections)
         ):
             raise ValueError("rosstat.assessment_not_complete")
 

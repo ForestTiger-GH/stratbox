@@ -42,7 +42,9 @@ def qualified_inventory_from_index(
     needs to verify the durable publication state and the owner evidence reference.
     """
     if (
-        index.coverage != "complete" or not index.live_profile_verified
+        (index.assessment.scope.scope_id != "full_series"
+         and issue_lower_bound is None and issue_upper_bound is None)
+        or index.coverage != "complete" or not index.live_profile_verified
         or index.acquisition is None or index.observed_at_utc is None
     ):
         raise ValueError("rosstat.inventory_not_verified")
