@@ -174,3 +174,46 @@ def test_forged_asset_id_fails_before_network():
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "rosstat.asset_identity_unverified"
     assert not transport.requests
+
+
+
+def test_new_valid_file_cannot_overwrite_existing_immutable_original(tmp_path):
+    first_bytes = workbook()
+    other = BytesIO()
+    with ZipFile(other, "w") as z:
+        z.writestr("[Content_Types].xml", "<Types/>")
+        z.writestr("_rels/.rels", "<Relationships/>")
+        z.writestr("xl/workbook.xml", "<workbook changed='yes'/>")
+        z.writestr("xl/extra.xml", "<extra/>")
+    changed_bytes = other.getvalue()
+    assert changed_bytes != first_bytes
+    request = AcquireRosstatToStoreRequest(
+        asset(), OriginalDestination("2026-08.xlsx", mode="immutable"),
+    )
+    store = LocalFileStore(str(tmp_path))
+    assert acquire_to_store(request, store=store, transport=Publisher(first_bytes)).outcome == "succeeded"
+    second = acquire_to_store(request, store=store, transport=Publisher(changed_bytes))
+    assert second.outcome != "succeeded"
+    assert (tmp_path / "2026-08.xlsx").read_bytes() == first_bytes
+
+
+def test_304_without_qualified_baseline_does_not_claim_unchanged(tmp_path):
+    result = acquire_to_store(
+        AcquireRosstatToStoreRequest(
+            asset(), OriginalDestination("2026-08.xlsx", mode="immutable"),
+        ),
+        transport=Publisher(b"", status=304),
+        store=LocalFileStore(str(tmp_path)),
+    )
+    assert result.outcome == "failed"
+    assert not (tmp_path / "2026-08.xlsx").exists()
+
+
+def test_no_filename_suffix_accepted_by_qualified_asset_replay():
+    from dataclasses import replace
+    item = asset()
+    invalid = replace(item, url="https://rosstat.gov.ru/storage/mediabank/2026-08")
+    transport = Publisher(workbook())
+    result = acquire(AcquireRosstatRequest(invalid), transport=transport)
+    assert result.outcome == "failed"
+    assert not transport.requests
