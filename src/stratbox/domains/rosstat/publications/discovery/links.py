@@ -36,7 +36,7 @@ class _Anchors(HTMLParser):
     def handle_endtag(self, tag):
         if tag.lower() == "a" and self.active is not None:
             href, pieces = self.active
-            self.links.append((href, " ".join(" ".join(pieces).split())))
+            self.links.append((href, "".join(pieces)))
             self.active = None
 
 

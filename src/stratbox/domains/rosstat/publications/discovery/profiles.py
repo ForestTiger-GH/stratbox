@@ -13,7 +13,7 @@ from pathlib import PurePosixPath
 import re
 from urllib.parse import unquote, urlsplit
 
-from stratbox.domains.rosstat._source import allowed_file_url, allowed_page_url
+from stratbox.domains.rosstat._source import allowed_file_url, allowed_rosstat_base
 from .links import PageLink, parse_page_links
 from ..catalog import get_rosstat_source
 from ..contracts import AssetKey, DiscoveredAsset, IssueKey, RosstatPublicationIndex
@@ -65,7 +65,7 @@ def qualify_index(series_id: str, payload: SourcePayload, *, text: str) -> Rosst
     spec = get_rosstat_source(series_id)
     links = parse_page_links(
         text, spec.landing_url,
-        lambda url: allowed_page_url(url, spec.landing_url),
+        allowed_rosstat_base,
     )
     candidates: list[DiscoveredAsset] = []
     unclassified = 0

@@ -139,3 +139,14 @@ def test_official_file_redirects_stay_within_source_roots():
     assert request.permits("https://rosstat.gov.ru/upload/other.xlsx")
     assert not request.permits("https://rosstat.gov.ru/admin/private.xlsx")
     assert not request.permits("https://evil.example/storage/mediabank/2026-08.xlsx")
+
+
+def test_official_html_base_root_and_source_text_are_preserved():
+    series = "rosstat.short_term_indicators"
+    html = '<base href="/"><a href="storage/mediabank/2026-08.xlsx"> Aug  2026 </a>'
+    index = _index(series, html)
+    assert len(index.qualified_assets) == 1
+    item = index.qualified_assets[0]
+    assert item.url == "https://rosstat.gov.ru/storage/mediabank/2026-08.xlsx"
+    assert item.label_literal == " Aug  2026 "
+    assert item.raw_href == "storage/mediabank/2026-08.xlsx"

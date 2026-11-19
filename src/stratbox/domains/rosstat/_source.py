@@ -19,6 +19,15 @@ MEDIA_TYPES = frozenset({
 FILE_PREFIXES = ("/storage/mediabank/", "/upload/")
 
 
+def allowed_rosstat_base(url: str) -> bool:
+    """An HTML base may be the publisher root, not necessarily the landing page."""
+    try:
+        p = public_https_parts(url)
+    except (TypeError, ValueError):
+        return False
+    return p.hostname in PUBLISHER_HOSTS and not p.query and p.port in (None, 443)
+
+
 def allowed_page_url(url: str, canonical: str) -> bool:
     try:
         p = public_https_parts(url)
