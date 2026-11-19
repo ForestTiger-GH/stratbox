@@ -182,7 +182,9 @@ retain their primary reason; any unknown physical effect still forces
 late deadline or cancellation observation.
 
 Strict `BudgetMeter` timestamps must be finite `int|float` samples and
-nondecreasing within one meter. Equal ticks are valid; backward ticks,
+nondecreasing within one meter. The runner reuses the initial invocation
+monotonic tick as the budget origin, so an immediate backward step is also
+detected without extending the deadline. Equal ticks are valid; backward ticks,
 nonnumeric/nonfinite samples and clock exceptions become
 `BudgetClockError(code="budget.clock_unavailable")`, distinct from
 `BudgetExceeded(code="budget.deadline")`. Both inherit `BudgetError`, and

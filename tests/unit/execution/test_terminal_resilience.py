@@ -424,3 +424,23 @@ def test_budget_measures_from_initial_invocation_tick():
     ))
     assert result.outcome == "failed"
     assert any(d.code == "budget.clock_unavailable" for d in result.diagnostics)
+
+
+def test_batch_keeps_clock_diagnostic_instead_of_internal_error():
+    from stratbox.core.execution.batch import attempt_batch
+    clock = ControlledClock()
+    ticks = iter((100, 100, 99, 100))
+    clock.monotonic = lambda: next(ticks)
+    definition = OperationDefinition(
+        "test.batch_budget_clock", 1, "v1", str, tuple, partial_allowed=True,
+    )
+    def worker(value, invocation):
+        batch = attempt_batch((1, 2), lambda item: item, invocation, continue_on_error=True)
+        assert batch.stopped is not None
+        return Completion(batch.values, "failed", batch.stopped)
+    result = run(definition, "input", worker, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=10),
+    ))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "budget.clock_unavailable"
+    assert not any(d.code == "internal.error" for d in result.diagnostics)

@@ -639,3 +639,19 @@ def test_normalizer_failure_yields_safe_internal_diagnostic(monkeypatch):
     assert result.diagnostics[0].component == "internal"
     assert result.diagnostics[0].reason_class == "internal"
     assert "do-not-leak" not in str(result.diagnostics)
+
+
+def test_same_input_bytes_with_different_roles_remain_distinct():
+    from stratbox.shared.evidence import UsedInputReceipt
+    identity = ByteIdentity.of(b"same-data")
+    def worker(value, invocation):
+        first = UsedInputReceipt("baseline", identity, "text/plain", "inline")
+        second = UsedInputReceipt("candidate", identity, "text/plain", "inline")
+        invocation.use(first)
+        invocation.use(second)
+        invocation.use(first)
+        return value
+    result = run(operation(), "value", worker)
+    assert result.outcome == "succeeded"
+    assert len(result.used_inputs) == 2
+    assert [item.role for item in result.used_inputs] == ["baseline", "candidate"]
