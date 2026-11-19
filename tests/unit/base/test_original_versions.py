@@ -1,64 +1,124 @@
-"""Publisher-neutral original-byte comparison and registry execution."""
+"""Publisher-neutral original comparison with qualified prior-absence evidence."""
 
 from dataclasses import replace
+from datetime import datetime, timezone
 
 import pytest
 
 from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.source_publications import (
+    SourceAssetIdentity, QualifiedInventory, InventoryAbsenceEvidence,
+)
 from stratbox.core.operations.source.version_comparison import (
     CompareOriginalVersionsRequest, OriginalVersion, compare_original_versions,
 )
 from stratbox.domains.registry import operation_catalog
 
 
-def _version(content: bytes, *, parent=None, source_id="original.demo.issue.asset"):
-    return OriginalVersion(source_id, ByteIdentity.of(content), parent)
+def _candidate(asset: SourceAssetIdentity, content: bytes):
+    return OriginalVersion(asset.source_id, ByteIdentity.of(content))
 
 
-def _value(request):
+def _version(request):
     result = compare_original_versions(request)
-    assert result.outcome == "succeeded"
+    assert result.outcome == "succeeded", result.diagnostics
     return result.value
 
 
-def test_first_seen_and_new_release_are_different():
-    candidate = _version(b"one")
-    observed = _value(CompareOriginalVersionsRequest(candidate, "confirmed_absent"))
-    assert observed.state == "first_seen"
-    assert observed.old_identity is None
-    published = _value(CompareOriginalVersionsRequest(
-        candidate, "confirmed_absent", prior_inventory_identity="f" * 64))
-    assert published.state == "new_release"
-    assert published.transition_id != observed.transition_id
+def inventory(known=(), *, series="rosstat.test", floor="2026-01"):
+    return QualifiedInventory(
+        series, "recent_listing", "tested-profile", "tested-version",
+        datetime(2026, 11, 19, tzinfo=timezone.utc), ByteIdentity.of(b"<a>snapshot</a>"),
+        tuple(known), "trusted-owner-revision-1",
+        issue_lower_bound=floor,
+    )
 
 
-def test_revision_unchanged_and_unavailable():
-    candidate = _version(b"two")
-    baseline = _version(b"one")
-    revised = _value(CompareOriginalVersionsRequest(candidate, "available", baseline))
-    assert revised.state == "revised" and revised.old_identity == baseline.identity
-    assert revised.transition_id
-    same = _value(CompareOriginalVersionsRequest(baseline, "available", baseline))
-    assert same.state == "unchanged" and same.transition_id is None
-    unknown = _value(CompareOriginalVersionsRequest(candidate, "unavailable"))
-    assert unknown.state == "indeterminate" and unknown.transition_id is None
+def test_initial_has_silent_distinct_transition():
+    key = SourceAssetIdentity("rosstat.test", "2026-08", "workbook")
+    first = _version(CompareOriginalVersionsRequest(_candidate(key, b"A"), "initial"))
+    assert first.state == "first_seen"
+    assert first.transition_id and first.old_identity is None
+    assert first.transition_id == _version(
+        CompareOriginalVersionsRequest(_candidate(key, b"A"), "initial")
+    ).transition_id
 
 
-def test_a_b_a_b_transitions_are_unique_and_retry_is_stable():
-    a, b = _version(b"A"), _version(b"B")
-    ab = _value(CompareOriginalVersionsRequest(b, "available", a))
-    assert ab.transition_id == _value(CompareOriginalVersionsRequest(b, "available", a)).transition_id
-    ba = _value(CompareOriginalVersionsRequest(a, "available", replace(b, transition_id=ab.transition_id)))
-    ab2 = _value(CompareOriginalVersionsRequest(b, "available", replace(a, transition_id=ba.transition_id)))
-    assert ab2.transition_id != ab.transition_id
+def test_proven_absence_distinguishes_new_issue_from_extra_asset():
+    main = SourceAssetIdentity("rosstat.test", "2026-08", "main_workbook")
+    additional = SourceAssetIdentity("rosstat.test", "2026-08", "appendix_1")
+    future = SourceAssetIdentity("rosstat.test", "2026-09", "main_workbook")
+    verified = inventory((main,))
+    added = _version(CompareOriginalVersionsRequest(
+        _candidate(additional, b"A"), "absent_proven",
+        absence=InventoryAbsenceEvidence(additional, verified),
+    ))
+    fresh = _version(CompareOriginalVersionsRequest(
+        _candidate(future, b"A"), "absent_proven",
+        absence=InventoryAbsenceEvidence(future, verified),
+    ))
+    assert added.state == "new_asset"
+    assert fresh.state == "new_release"
+    assert added.transition_id != fresh.transition_id
 
 
-def test_cross_asset_compare_is_invalid():
+def test_wrong_inventory_and_existing_asset_cannot_prove_absence():
+    key = SourceAssetIdentity("rosstat.test", "2026-08", "main")
     with pytest.raises(ValueError):
-        CompareOriginalVersionsRequest(_version(b"A"), "available", _version(b"A", source_id="other"))
+        InventoryAbsenceEvidence(key, inventory((key,)))
+    with pytest.raises(ValueError):
+        InventoryAbsenceEvidence(key, inventory(series="rosstat.other"))
+    with pytest.raises(ValueError):
+        InventoryAbsenceEvidence(key, inventory(floor="2027-01"))
+    with pytest.raises(ValueError):
+        CompareOriginalVersionsRequest(_candidate(key, b"A"), "absent_proven")
+    with pytest.raises(ValueError):
+        CompareOriginalVersionsRequest(_candidate(key, b"A"), "absent_proven", absence="f" * 64)
 
 
-def test_public_source_receive_to_store_handler_is_registered():
+def test_a_b_a_b_chain_needs_confirmed_parent_and_retry_is_idempotent():
+    key = SourceAssetIdentity("rosstat.test", "2026-08", "main")
+    a, b = _candidate(key, b"A"), _candidate(key, b"B")
+    first = _version(CompareOriginalVersionsRequest(a, "initial"))
+    with pytest.raises(ValueError):
+        CompareOriginalVersionsRequest(b, "available", a)
+    ab = _version(CompareOriginalVersionsRequest(
+        b, "available", replace(a, transition_id=first.transition_id),
+    ))
+    assert ab.state == "revised"
+    assert ab.transition_id == _version(CompareOriginalVersionsRequest(
+        b, "available", replace(a, transition_id=first.transition_id),
+    )).transition_id
+    ba = _version(CompareOriginalVersionsRequest(
+        a, "available", replace(b, transition_id=ab.transition_id),
+    ))
+    ab_again = _version(CompareOriginalVersionsRequest(
+        b, "available", replace(a, transition_id=ba.transition_id),
+    ))
+    assert len({ab.transition_id, ba.transition_id, ab_again.transition_id}) == 3
+
+
+def test_unchanged_and_unavailable():
+    key = SourceAssetIdentity("rosstat.test", "2026-08", "main")
+    a = _candidate(key, b"A")
+    prior = replace(a, transition_id="f" * 64)
+    assert _version(CompareOriginalVersionsRequest(a, "available", prior)).state == "unchanged"
+    result = _version(CompareOriginalVersionsRequest(a, "unavailable"))
+    assert result.state == "indeterminate" and result.transition_id is None
+
+
+def test_cross_asset_compare_rejected_and_keys_stable():
+    asset_a = SourceAssetIdentity("rosstat.test", "2026-08", "report")
+    asset_b = SourceAssetIdentity("rosstat.test", "2026-08", "tables")
+    assert asset_a.source_id != asset_b.source_id
+    with pytest.raises(ValueError):
+        CompareOriginalVersionsRequest(
+            _candidate(asset_a, b"A"), "available",
+            replace(_candidate(asset_b, b"A"), transition_id="a" * 64),
+        )
+
+
+def test_public_source_receive_to_store_handler_and_comparator_registered():
     catalog = operation_catalog()
     definition, handler, _ = catalog.resolve("source.receive_to_store", 1)
     assert definition.operation_id == "source.receive_to_store"
