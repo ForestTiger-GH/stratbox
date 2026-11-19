@@ -50,6 +50,7 @@ class Invocation:
         self._sequence = self._emitted = self._dropped = 0
         self._incidents_dropped = 0
         self._timing_degraded = False
+        self._telemetry_last_tick: float = self._started
         self._stage: str | None = None
         self._stage_started: float | None = self._started
         self.used_inputs: list[UsedInputReceipt] = []
@@ -82,8 +83,10 @@ class Invocation:
             return None
         try:
             value = self.context.clock.monotonic()
-            if type(value) not in (int, float) or not isfinite(value):
+            if (type(value) not in (int, float) or not isfinite(value)
+                    or value < self._telemetry_last_tick):
                 raise ValueError("Invalid telemetry timestamp")
+            self._telemetry_last_tick = value
             return value
         except Exception:
             self._timing_degraded = True
@@ -92,8 +95,11 @@ class Invocation:
     def _elapsed_ms(self, started: float | None) -> int | None:
         if started is None:
             return None
+        sampled = self._telemetry_tick()
+        if sampled is None:
+            return None
         try:
-            elapsed = self.context.clock.monotonic() - started
+            elapsed = sampled - started
             if not isfinite(elapsed) or not 0 <= elapsed <= (2**53 - 1) / 1000:
                 raise ValueError("Invalid monotonic measurement")
             return int(elapsed * 1000)

@@ -444,3 +444,22 @@ def test_batch_keeps_clock_diagnostic_instead_of_internal_error():
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "budget.clock_unavailable"
     assert not any(d.code == "internal.error" for d in result.diagnostics)
+
+
+def test_optional_progress_backward_tick_only_degrades_telemetry():
+    clock = ControlledClock()
+    sink = InMemorySink()
+    def worker(value, invocation):
+        clock.t = 5.0
+        invocation.stage("export")
+        invocation.progress(1, 10)
+        clock.t = 4.0
+        invocation.progress(2, 10)
+        clock.t = 6.0
+        return value
+    result = run(OP, "value", worker, context=ExecutionContext(
+        clock=clock, sink=sink,
+    ))
+    assert result.outcome == "succeeded"
+    assert result.observability.timing_degraded
+    assert len([e for e in sink.events if e.kind == "operation.progress"]) == 1
