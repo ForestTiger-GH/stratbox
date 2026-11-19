@@ -5,6 +5,7 @@ Schemas validate *content*, never authenticate a user or authorize filesystem ac
 from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+import re
 from stratbox.core.observability.records.contracts import JournalRecord
 from stratbox.core.observability.records.event_schemas import BUILTIN_DATA_SCHEMAS
 from stratbox.core.observability.records.schema import FieldClass, RecordDataSchema
@@ -130,6 +131,43 @@ for _kind in ("operation.started", "operation.stage", "operation.progress", "ope
     ), record_type="execution")
 
 
+def _validate_summary_v3(record: JournalRecord) -> None:
+    """Check evidence-coverage claims against the actually projected prefix."""
+    _SUMMARY_V3.validate(record.payload)
+    fields = record.payload
+    required = {
+        "data_version", "details_digest", "details_digest_profile",
+        "details_counts", "details_included", "details_coverage",
+        "privacy_qualification", "diagnostics", "inputs", "effects",
+        "contract_version", "method_version", "time_basis",
+        "observability", "resources_used", "computation",
+    }
+    if not required.issubset(fields):
+        raise ValueError("journal.result_summary_missing_fields")
+    if (fields["details_digest_profile"] != "stratbox.result-details.v3"
+            or fields["privacy_qualification"] != "safe_fields_only_private_locators_omitted"
+            or type(fields["details_digest"]) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", fields["details_digest"]) is None):
+        raise ValueError("journal.result_summary_digest_profile_invalid")
+    counts = fields["details_counts"]
+    included = fields["details_included"]
+    if not isinstance(counts, Mapping) or not isinstance(included, Mapping):
+        raise ValueError("journal.result_summary_coverage_invalid")
+    complete = True
+    for stream in ("diagnostics", "inputs", "effects"):
+        declared, shown = counts.get(stream), included.get(stream)
+        values = fields[stream]
+        if (type(declared) is not int or type(shown) is not int
+                or declared < 0 or not 0 <= shown <= declared
+                or not isinstance(values, (list, tuple)) or len(values) != shown):
+            raise ValueError("journal.result_summary_coverage_invalid")
+        if declared != shown:
+            complete = False
+    expected = "complete" if complete else "summarized"
+    if fields["details_coverage"] != expected:
+        raise ValueError("journal.result_summary_coverage_invalid")
+
+
 class FieldSchemaRegistry:
     """Caller-owned explicit schema extensions; never a process-global registration."""
     def __init__(self, schemas=()):
@@ -171,7 +209,7 @@ class FieldSchemaRegistry:
             if type(version) is not int:
                 raise ValueError("journal.unsupported_data_schema")
             if key == _SUMMARY_KEY and version == 3:
-                _SUMMARY_V3.validate(record.payload)
+                _validate_summary_v3(record)
             else:
                 self.data_schema((*key, version)).validate(record)
             return
@@ -210,7 +248,7 @@ def validate_builtin_fields(record: JournalRecord) -> None:
         _EXPLICIT_BUILTINS[key].validate(record)
         return
     if key == _SUMMARY_KEY and type(record.payload.get("data_version")) is int and record.payload["data_version"] == 3:
-        _SUMMARY_V3.validate(record.payload)
+        _validate_summary_v3(record)
         return
     schema = SCHEMAS.get(key)
     if schema:

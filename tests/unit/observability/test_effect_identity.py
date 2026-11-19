@@ -186,3 +186,18 @@ def test_finish_linked_v3_schema_preserves_typed_projection_after_roundtrip():
     assert record.payload["details_digest_profile"] == "stratbox.result-details.v3"
     read, = decode_records(encode_records((record,)))
     assert read == record
+
+
+def test_result_summary_v3_rejects_false_complete_coverage_and_unknown_digest_profile():
+    from stratbox.core.observability.records.field_policy import validate_builtin_fields
+    result = _run(("confirmed",))
+    summary = record_from_result(result, occurred_at_utc=TIME)
+    for change in (
+        {"details_included": {"diagnostics": 0, "inputs": 0, "effects": 0}},
+        {"details_counts": {"diagnostics": 0, "inputs": 0, "effects": 0}},
+        {"details_coverage": "summarized"},
+        {"details_digest_profile": "unqualified"},
+    ):
+        broken = replace(summary, payload={**summary.payload, **change})
+        with pytest.raises(ValueError):
+            validate_builtin_fields(broken)
