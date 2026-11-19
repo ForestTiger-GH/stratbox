@@ -572,3 +572,38 @@ def test_file_event_sink_policy_filter_counts_as_seen_but_not_lost(tmp_path):
     assert coverage.policy_excluded_ranges == (SequenceRange(3, 3),)
     receipts = collector.close()
     assert all(x.state == "confirmed" for x in receipts)
+
+
+def test_qualified_diagnostic_selection_preserves_truncated_unknowns():
+    from stratbox.core.observability import (
+        QualifiedSelection, select_records_qualified, RecordFilter,
+    )
+    from stratbox.core.execution import run, Completion
+    op = OperationDefinition("test.many_diagnostics", 1, "method-v1", int, int)
+    codes = tuple(f"domain.code_{i}" for i in range(500))
+    result = run(op, 1, lambda req, inv: Completion(req, "failed", *codes))
+    summary = record_from_result(result, occurred_at_utc=TIME)
+    requested = RecordFilter(diagnostic_code="domain.code_450")
+    assert list(select_records((summary,), requested)) == []
+    qualified = select_records_qualified((summary,), requested)
+    assert isinstance(qualified, QualifiedSelection)
+    assert not qualified.matches
+    assert qualified.indeterminate_candidates == (summary,)
+    assert qualified.coverage == "indeterminate"
+    positive = select_records_qualified((summary,), RecordFilter(diagnostic_code="domain.code_1"))
+    assert positive.matches == (summary,)
+
+
+def test_diagnostic_statistics_separately_qualify_result_prefix_coverage():
+    from stratbox.core.execution import run, Completion
+    op = OperationDefinition("test.stats_prefix", 1, "method-v1", int, int)
+    result = run(op, 1, lambda req, inv: Completion(
+        req, "failed", *(f"domain.issue_{i}" for i in range(500)),
+    ))
+    summary = record_from_result(result, occurred_at_utc=TIME)
+    history = build_operation_history((summary,), result.invocation_id)
+    aggregate = summarize_operations((history,))
+    assert aggregate.diagnostics_total == 500
+    assert aggregate.diagnostics_observed <= 128
+    assert aggregate.diagnostic_coverage == "summarized"
+    assert sum(aggregate.diagnostic_codes.values()) == aggregate.diagnostics_observed

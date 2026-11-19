@@ -1,9 +1,9 @@
 """Lazy selection, bounded grouping and iterative, qualified causal traversal."""
 from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Literal
 
 from stratbox.core.observability.records.contracts import JournalRecord, require_utc
 
@@ -70,6 +70,51 @@ def select_records(records: Iterable[JournalRecord], criteria: RecordFilter) -> 
             if criteria.diagnostic_code not in codes:
                 continue
         yield record
+
+
+
+@dataclass(frozen=True, slots=True)
+class QualifiedSelection:
+    """Observed positive matches and candidates with omitted diagnostic codes."""
+    matches: tuple[JournalRecord, ...]
+    indeterminate_candidates: tuple[JournalRecord, ...]
+    coverage: Literal["complete", "indeterminate"]
+
+
+def select_records_qualified(
+    records: Iterable[JournalRecord], criteria: RecordFilter, *,
+    max_records: int = 100_000,
+) -> QualifiedSelection:
+    """Never treat missing codes in a truncated summary as a proven negative."""
+    if type(max_records) is not int or not 1 <= max_records <= 1_000_000:
+        raise ValueError("journal.projection_limit")
+    matches: list[JournalRecord] = []
+    uncertain: list[JournalRecord] = []
+    outer = replace(criteria, diagnostic_code=None)
+    for index, record in enumerate(select_records(records, outer), 1):
+        if index > max_records:
+            raise ValueError("journal.projection_limit")
+        if criteria.diagnostic_code is None:
+            matches.append(record)
+            continue
+        items = record.payload.get("diagnostics", ())
+        visible = {item.get("code") for item in items if isinstance(item, Mapping)} \
+            if isinstance(items, (tuple, list)) else set()
+        visible.add(record.payload.get("diagnostic_code"))
+        if criteria.diagnostic_code in visible:
+            matches.append(record)
+            continue
+        if record.record_type == "result_summary" and record.kind == "operation.result":
+            count = record.payload.get("details_counts")
+            included = record.payload.get("details_included")
+            declared = count.get("diagnostics") if isinstance(count, Mapping) else None
+            shown = included.get("diagnostics") if isinstance(included, Mapping) else None
+            if type(declared) is not int or type(shown) is not int or shown < declared:
+                uncertain.append(record)
+    return QualifiedSelection(
+        tuple(matches), tuple(uncertain),
+        "indeterminate" if uncertain else "complete",
+    )
 
 
 def group_records(records: Iterable[JournalRecord], key: Callable[[JournalRecord], str | None], *,

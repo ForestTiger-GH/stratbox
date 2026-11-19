@@ -131,6 +131,9 @@ class OperationStatistics:
     incomplete: int
     indeterminate: int
     coverage: str
+    diagnostic_coverage: str = "indeterminate"
+    diagnostics_total: int = 0
+    diagnostics_observed: int = 0
 
 
 def summarize_operations(histories: Iterable[OperationHistory], *, max_histories: int = 100_000) -> OperationStatistics:
@@ -138,6 +141,8 @@ def summarize_operations(histories: Iterable[OperationHistory], *, max_histories
     diagnostics: Counter[str] = Counter()
     durations: list[int] = []
     total = incomplete = indeterminate = 0
+    diagnostics_total = diagnostics_observed = 0
+    diagnostic_summarized = diagnostic_indeterminate = False
     seen = set()
     for read, history in enumerate(histories, 1):
         if read > max_histories:
@@ -154,12 +159,41 @@ def summarize_operations(histories: Iterable[OperationHistory], *, max_histories
             incomplete += 1
         elif history.coverage == "indeterminate":
             indeterminate += 1
-        for rec in history.records:
-            if rec.record_id == history.summary_record_id:
-                entries = rec.payload.get("diagnostics", ())
-                if isinstance(entries, (tuple, list)):
-                    diagnostics.update(item["code"] for item in entries if isinstance(item, Mapping)
-                                       and type(item.get("code")) is str)
+        summaries = [
+            rec for rec in history.records if rec.record_id == history.summary_record_id
+        ]
+        if len(summaries) != 1:
+            diagnostic_indeterminate = True
+            continue
+        summary = summaries[0]
+        entries = summary.payload.get("diagnostics", ())
+        if not isinstance(entries, (tuple, list)):
+            diagnostic_indeterminate = True
+            continue
+        visible = [
+            item["code"] for item in entries
+            if isinstance(item, Mapping) and type(item.get("code")) is str
+        ]
+        diagnostics.update(visible)
+        diagnostics_observed += len(visible)
+        counts = summary.payload.get("details_counts")
+        included = summary.payload.get("details_included")
+        total_count = counts.get("diagnostics") if isinstance(counts, Mapping) else None
+        included_count = included.get("diagnostics") if isinstance(included, Mapping) else None
+        if type(total_count) is not int or type(included_count) is not int:
+            diagnostic_indeterminate = True
+            diagnostics_total += len(visible)
+        else:
+            diagnostics_total += total_count
+            if included_count != len(entries) or total_count < included_count:
+                diagnostic_indeterminate = True
+            elif total_count > included_count:
+                diagnostic_summarized = True
+    diagnostic_coverage = (
+        "indeterminate" if diagnostic_indeterminate or not total
+        else "summarized" if diagnostic_summarized else "complete"
+    )
     return OperationStatistics(total, dict(outcomes), dict(diagnostics), tuple(durations),
                                incomplete, indeterminate,
-                               "complete" if total and not incomplete and not indeterminate else "qualified")
+                               "complete" if total and not incomplete and not indeterminate else "qualified",
+                               diagnostic_coverage, diagnostics_total, diagnostics_observed)

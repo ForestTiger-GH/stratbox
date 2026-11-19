@@ -18,7 +18,7 @@ from stratbox.core.observability.capture.health import ObserverHealthSnapshot
 from stratbox.core.observability.capture.sinks import CaptureDisposition, CompositeEventSink, RecordMemorySink
 from stratbox.core.observability.capture.file_sink import FileEventSink
 from stratbox.core.observability.assessment.generation import ObserverGenerationSnapshot
-from stratbox.core.observability.analysis.selection import CausalInspection, RecordFilter, group_records, inspect_causes, select_records
+from stratbox.core.observability.analysis.selection import CausalInspection, QualifiedSelection, RecordFilter, group_records, inspect_causes, select_records, select_records_qualified
 from stratbox.core.observability.assessment.lifecycle import ExecutionLifecycleAssessment, inspect_execution_lifecycle, assess_generation_coverage
 from stratbox.core.observability.analysis.history import OperationHistory, OperationStatistics, build_operation_history, summarize_operations
 from stratbox.core.observability.analysis.projections import (OperationState, SourceCheckState, PublicationObservation, RevisionResolution, DatasetState, ArtifactState, EffectState,
