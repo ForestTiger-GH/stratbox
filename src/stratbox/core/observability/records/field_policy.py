@@ -233,6 +233,8 @@ class FieldSchemaRegistry:
             schema_v = self._data[(*key, record.payload["data_version"])]
             return {field.name: record.payload[field.name] for field in schema_v.fields
                     if field.classification in allow and field.name in record.payload}
+        if key == _SUMMARY_KEY:
+            _validate_summary_v3(record)
         schema = self._schemas.get(key)
         if schema is None:
             raise ValueError("journal.field_schema_missing")
