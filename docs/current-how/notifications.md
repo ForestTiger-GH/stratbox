@@ -13,6 +13,7 @@ The initial catalog includes the following topics.
 | `operation.completed` | Actual terminal execution event, including failed and cancelled outcomes | `operation_summary` |
 | `operation.failed` | Actual terminal execution event with a failed outcome | `operation_summary` |
 | `material.stored` | Confirmed new storage effect with its effect ID | `stored_material` |
+| `source.original_version_committed` | Owner-confirmed first observation, new official issue, or revised original source file; supports new versions without an old SHA | `original_version_public` |
 | `source.bytes_changed` | Registered source transition between different byte digests | `bytes_change_public` |
 | `publication.committed` | Owner-committed dataset version with an artifact identity | `publication_summary` |
 

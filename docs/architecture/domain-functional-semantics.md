@@ -12,6 +12,7 @@ subject boundary rather than pretending to belong to a single publisher.
 
 | Registered owner | Original and economic object | Time and quantity semantics |
 | --- | --- | --- |
+| `rosstat.publications` | Official Rosstat publication indexes, release/asset identity and exact native files; acquisition precedes any statistical interpretation | Publisher issue labels are not inferred observation periods; PDF/XLSX/ZIP/RAR bytes are versioned independently of extracted facts |
 | `cbr.file_collection` | Official Bank of Russia original-file catalogs, acquisition and archival preparation | Original source identity; no implied statistical period |
 | `cbr.reporting_forms` | Bank-reporting forms and their physical/formula models | Each published form owns its reporting periods and measurement definitions |
 | `cbr.escrow` | Escrow account histories, tables and Excel workbooks | Periods and indicators as published in each source workbook |

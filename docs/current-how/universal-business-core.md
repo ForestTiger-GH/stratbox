@@ -7,7 +7,8 @@ format primitives are reusable across domains.
 
 | Domain | Public operations | Subject and result |
 | --- | --- | --- |
-| `core.operations.source` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
+| `domains.rosstat.publications` | `discover`, `acquire`, `acquire_to_store` | Four fixed official Rosstat landing pages and provenance-qualified issue/assets; bounded PDF/XLSX/ZIP/RAR original acquisition without economic parsing; unresolved links are never overwritten automatically. |
+| `core.operations.source` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original`, `compare_original_versions` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
 | `domains.cbr.service_network.bank_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
 | `domains.cbr.service_network.territorial_offices` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
 | `domains.fns.sme_register` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |

@@ -3,7 +3,7 @@
 Source-specific business logic lives under `stratbox.domains.<publisher>`,
 then substantive publication families and independently owned statistical series.
 
-Current publishers are `cbr`, `fns`, and `frank_rg`. Grouping packages may
+Current publishers are `cbr`, `fns`, `frank_rg`, and `rosstat`. Grouping packages may
 contain source-level helpers but never claim child operations implicitly.
 
 An owner publishes exactly one `_registration.py` containing its immutable
