@@ -40,6 +40,8 @@ class Invocation:
         self.context = context
         self.id = uuid4().hex
         self._started = context.clock.monotonic()
+        if type(self._started) not in (int, float) or not isfinite(self._started):
+            raise ValueError("Invalid execution clock at admission")
         self.budget = BudgetMeter(
             ExecutionBudget.intersect(definition.limits, context.ceiling, context.budget),
             now=context.clock.monotonic,

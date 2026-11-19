@@ -256,3 +256,30 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
     # Start + budget initialization + initial admission + terminal check
     # + final best-effort measurement; invalid progress adds no clock read.
     assert clock.calls == 5
+
+
+@pytest.mark.parametrize("bad", [float("inf"), float("-inf"), float("nan"), True, "bad"])
+def test_invalid_monotonic_origin_rejected_before_execution(bad):
+    from stratbox.core.limits import BudgetMeter
+    with pytest.raises(ValueError):
+        BudgetMeter(ExecutionBudget(seconds=1), now=lambda: bad)
+
+
+def test_nonfinite_monotonic_after_handler_cannot_claim_timed_success():
+    class NaNClock(ControlledClock):
+        def monotonic(self):
+            return float("nan") if self.bad_monotonic else self.t
+
+    clock = NaNClock()
+
+    def work(req, inv):
+        inv.effect(EffectReceipt("storage.write", "confirmed", effect_id="write"))
+        clock.bad_monotonic = True
+        return req
+
+    result = run(OP, "ok", work, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=1),
+    ))
+    assert result.outcome == "failed"
+    assert any(d.code == "budget.clock_unavailable" for d in result.diagnostics)
+    assert result.effects[0].state == "confirmed"

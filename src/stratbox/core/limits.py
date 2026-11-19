@@ -66,12 +66,25 @@ class BudgetMeter:
     ):
         self.limits = limits
         self._now = now
-        self._deadline = now() + limits.seconds if limits.seconds is not None else inf
+        if limits.seconds is None:
+            self._deadline = inf
+        else:
+            origin = now()
+            if type(origin) not in (int, float) or not isfinite(origin):
+                raise ValueError("Invalid monotonic budget clock")
+            self._deadline = origin + limits.seconds
+            if not isfinite(self._deadline):
+                raise ValueError("Invalid monotonic budget deadline")
         self._used: dict[Resource, int] = {}
         self._output_units: dict[str, tuple[ByteIdentity, str | None]] = {}
 
     def seconds_left(self) -> float:
-        return inf if self._deadline == inf else max(0, self._deadline - self._now())
+        if self._deadline == inf:
+            return inf
+        observed = self._now()
+        if type(observed) not in (int, float) or not isfinite(observed):
+            raise ValueError("Invalid monotonic budget clock")
+        return max(0, self._deadline - observed)
 
     def checkpoint(self) -> None:
         # No configured deadline means no clock dependency for budget checks.
