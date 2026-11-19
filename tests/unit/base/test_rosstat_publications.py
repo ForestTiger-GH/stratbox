@@ -7,6 +7,7 @@ from zipfile import ZipFile
 import pytest
 
 from stratbox.shared.evidence import SourcePayload
+from stratbox.shared.identity import ByteIdentity
 from stratbox.core.network import HttpResponse
 from stratbox.domains.rosstat.publications.catalog import list_rosstat_sources, get_rosstat_source
 from stratbox.domains.rosstat.publications.contracts import DiscoverRosstatRequest
@@ -201,3 +202,50 @@ def test_registered_discovery_and_acquisition_handlers():
                  "rosstat.publications.acquire",
                  "rosstat.publications.acquire_to_store"):
         assert catalog.get(name, 1).operation_id == name
+
+
+def test_owner_review_of_exact_http_page_can_create_scoped_inventory():
+    from stratbox.domains.rosstat.publications.discovery.approval import (
+        ReviewedIndexScope, approve_index,
+    )
+    series = "rosstat.short_term_indicators"
+    source = discover(DiscoverRosstatRequest(series), transport=_PagePublisher()).value
+    ref, = source.qualified_assets
+    evidence = ReviewedIndexScope(
+        series, source.assessment.profile_id, source.profile_version,
+        source.index_identity, "recent_listing", ("official_current_issues",),
+        (ref.key.source_id,), "human-reviewed-publisher-page-2026-11",
+    )
+    approved = approve_index(source, evidence)
+    assert approved.coverage == "complete"
+    inventory = qualified_inventory_from_index(
+        approved, owner_evidence_ref="verified-owner-state",
+        issue_lower_bound="2026-01",
+    )
+    assert inventory.assets == (ref.key.identity,)
+    assert inventory.covers_issue("2026-09")
+    with pytest.raises(ValueError):
+        qualified_inventory_from_index(source, owner_evidence_ref="unapproved")
+
+
+def test_manual_review_must_bind_current_byte_version_and_all_assets():
+    from stratbox.domains.rosstat.publications.discovery.approval import (
+        ReviewedIndexScope, approve_index,
+    )
+    series = "rosstat.short_term_indicators"
+    source = discover(DiscoverRosstatRequest(series), transport=_PagePublisher()).value
+    key, = (item.key.source_id for item in source.qualified_assets)
+    wrong = ReviewedIndexScope(
+        series, source.assessment.profile_id, source.profile_version,
+        ByteIdentity.of(b"other-page"), "recent_listing", ("current",),
+        (key,), "reviewer",
+    )
+    with pytest.raises(ValueError, match="rosstat.review_evidence_mismatch"):
+        approve_index(source, wrong)
+    wrong_members = ReviewedIndexScope(
+        series, source.assessment.profile_id, source.profile_version,
+        source.index_identity, "recent_listing", ("current",),
+        (), "reviewer",
+    )
+    with pytest.raises(ValueError, match="rosstat.review_evidence_mismatch"):
+        approve_index(source, wrong_members)
