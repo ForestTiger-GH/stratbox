@@ -194,6 +194,10 @@ class EffectReceipt:
         for value in (self.effect_id, self.stage, self.guarantee, self.reconciliation_owner):
             if value is not None:
                 safe_token(value)
+        if self.reference is not None and not isinstance(self.reference, str):
+            raise ValueError("Invalid effect reference")
+        if self.identity is not None and not isinstance(self.identity, ByteIdentity):
+            raise ValueError("Invalid effect identity")
 
 
 @dataclass(frozen=True, slots=True)

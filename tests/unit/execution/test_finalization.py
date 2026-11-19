@@ -494,3 +494,13 @@ def test_same_id_across_different_kinds_keeps_two_unresolved_diagnostics():
     sources = [d.component for d in result.diagnostics if d.code == "effect.outcome_unknown"]
     assert sources == ["storage.write", "notification.handoff"]
     assert len(result.effects) == 2
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"reference": object()},
+    {"identity": "not-a-byte-identity"},
+    {"identity": []},
+])
+def test_invalid_effect_identity_or_reference_is_rejected(kwargs):
+    with pytest.raises(ValueError):
+        EffectReceipt("storage.write", "confirmed", effect_id="effect_1", **kwargs)
