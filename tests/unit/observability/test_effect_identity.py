@@ -201,3 +201,26 @@ def test_result_summary_v3_rejects_false_complete_coverage_and_unknown_digest_pr
         broken = replace(summary, payload={**summary.payload, **change})
         with pytest.raises(ValueError):
             validate_builtin_fields(broken)
+
+
+def test_same_effect_key_with_conflicting_byte_identifications_requires_reconciliation():
+    ident_a = ByteIdentity.of(b"version-a")
+    ident_b = ByteIdentity.of(b"version-b")
+    def worker(req, inv):
+        inv.effect(EffectReceipt(
+            "storage.write", "confirmed", effect_id="shared", identity=ident_a,
+        ))
+        return req
+    result = run(DEFINITION, "ok", worker)
+    summary = record_from_result(result, occurred_at_utc=TIME)
+    material = StoredBytesReceipt(
+        "private/location", ident_b, "stored", "atomic_create", "local",
+        effect_id="shared",
+    )
+    fact = fact_from_stored_bytes(material, subject_id="dataset", observed_at_utc=TIME)
+    rec = record_from_fact(fact, invocation_id=result.invocation_id)
+    projected = project_effect_state((summary, rec), KEY_WRITE,
+                                     invocation_id=result.invocation_id)
+    assert projected.states == ("confirmed",)
+    assert projected.conflicting_receipts
+    assert projected.needs_reconciliation is True

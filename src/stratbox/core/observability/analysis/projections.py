@@ -225,13 +225,14 @@ def project_artifact_state(records: Iterable[JournalRecord], artifact_id: str, *
 def _qualified_effect_state(
     key: EffectKey, observations: list[tuple[str, str]], *,
     partial: bool, scope_observed: bool, single_invocation: bool,
+    identity_conflict: bool = False,
 ) -> EffectState:
     grouped: dict[str, set[str]] = {}
     for attempt, state in observations:
         grouped.setdefault(attempt, set()).add(state)
     states = tuple(sorted({state for _, state in observations}))
     attempts = tuple(sorted(grouped))
-    conflict = any(
+    conflict = identity_conflict or any(
         "confirmed" in values and "failed" in values
         for values in grouped.values()
     )
@@ -266,8 +267,16 @@ def project_effect_state(
         raise TypeError("Use a kind-qualified EffectKey")
     ref_id = effect_ref_id(key)
     observations: list[tuple[str, str]] = []
+    identities: dict[str, set[tuple[str, int]]] = {}
     partial = False
     saw_scope = False
+
+    def remember_identity(attempt: str, evidence: object) -> None:
+        if not isinstance(evidence, Mapping):
+            return
+        digest, size = evidence.get("sha256"), evidence.get("size")
+        if type(digest) is str and type(size) is int:
+            identities.setdefault(attempt, set()).add((digest, size))
     for rec in records:
         if invocation_id is not None and rec.invocation_id != invocation_id:
             continue
@@ -293,6 +302,7 @@ def project_effect_state(
                 if (item.get("kind") == key.kind and item.get("effect_id") == key.effect_id
                         and item.get("state") in {"confirmed", "failed", "unknown"}):
                     observations.append((attempt, str(item["state"])))
+                    remember_identity(attempt, item.get("identity"))
         elif rec.record_type in {"domain_fact", "effect"} and rec.kind in {
             "material.stored", "effect.unknown", "effect.failed", "effect.confirmed",
         }:
@@ -316,11 +326,18 @@ def project_effect_state(
                 state = effect_state_from_storage_status(str(rec.payload["status"]))
             if state in {"confirmed", "failed", "unknown"}:
                 observations.append((attempt, str(state)))
+                remember_identity(attempt, rec.payload.get("identity"))
+                for ref in rec.references:
+                    if ref.namespace == "effect" and ref.object_id == ref_id and ref.identity is not None:
+                        identities.setdefault(attempt, set()).add(
+                            (ref.identity.sha256, ref.identity.size)
+                        )
             else:
                 partial = True
+    identity_conflict = any(len(versions) > 1 for versions in identities.values())
     return _qualified_effect_state(
         key, observations, partial=partial, scope_observed=saw_scope,
-        single_invocation=invocation_id is not None,
+        single_invocation=invocation_id is not None, identity_conflict=identity_conflict,
     )
 
 
