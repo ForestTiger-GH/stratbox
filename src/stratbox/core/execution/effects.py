@@ -6,8 +6,25 @@ it does not perform an effect, authenticate a receipt, or reconcile external sta
 from __future__ import annotations
 
 from dataclasses import replace
+from collections.abc import Sequence
 
 from stratbox.core.execution.contracts import Diagnostic, EffectReceipt
+
+
+class _EffectView(Sequence[EffectReceipt]):
+    """Live read-only view; avoids copying all receipts on each handler read."""
+
+    def __init__(self, accumulator: _EffectAccumulator) -> None:
+        self._accumulator = accumulator
+
+    def __len__(self) -> int:
+        return len(self._accumulator._items)
+
+    def __getitem__(self, index):
+        return self._accumulator._items[index]
+
+    def __iter__(self):
+        return iter(self._accumulator._items)
 
 
 class _EffectAccumulator:
@@ -15,6 +32,10 @@ class _EffectAccumulator:
         self._items: list[EffectReceipt] = []
         self._indexes: dict[tuple[str, str], int] = {}
         self._conflicts: dict[tuple[str, str], Diagnostic] = {}
+        self._view = _EffectView(self)
+
+    def view(self) -> Sequence[EffectReceipt]:
+        return self._view
 
     @staticmethod
     def _consistent(previous: EffectReceipt, incoming: EffectReceipt) -> bool:

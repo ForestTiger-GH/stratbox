@@ -322,7 +322,8 @@ def test_invocation_is_sealed_and_result_receipts_are_snapshotted():
     with pytest.raises(RuntimeError, match="finalized"):
         retained[0].stage("late")
     assert result.effects[0].state == "confirmed"
-    assert isinstance(retained[0].effects, tuple)
+    assert len(retained[0].effects) == 1
+    assert not hasattr(retained[0].effects, "append")
 
 
 def test_sink_accept_then_raise_is_not_retried_or_business_failure():
@@ -504,3 +505,22 @@ def test_same_id_across_different_kinds_keeps_two_unresolved_diagnostics():
 def test_invalid_effect_identity_or_reference_is_rejected(kwargs):
     with pytest.raises(ValueError):
         EffectReceipt("storage.write", "confirmed", effect_id="effect_1", **kwargs)
+
+
+def test_effect_view_is_read_only_and_linear_time_for_boolean_reads():
+    captured = []
+
+    def handler(value, invocation):
+        captured.append(invocation)
+        for index in range(100):
+            invocation.effect(EffectReceipt("storage.write", "confirmed",
+                                            effect_id=f"item_{index}"))
+            assert bool(invocation.effects)
+            assert len(invocation.effects) == index + 1
+        assert not hasattr(invocation.effects, "append")
+        return value
+
+    result = run(operation(), "ok", handler)
+    assert result.outcome == "succeeded"
+    assert len(result.effects) == 100
+    assert tuple(captured[0].effects) == result.effects

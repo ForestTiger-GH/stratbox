@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import timezone
 from collections import deque
-from typing import Callable, Generic, Mapping, TypeVar
+from typing import Callable, Generic, Mapping, Sequence, TypeVar
 from uuid import uuid4
 
 from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
@@ -50,15 +50,16 @@ class Invocation:
         self._stage_started = self._started
         self.used_inputs: list[UsedInputReceipt] = []
         self._effects = _EffectAccumulator()
+        self._effect_view = self._effects.view()
         self._sealed = False
         self._terminal_emitted = False
         self.parents: list[tuple[str, ComputationReceipt]] = []
         self.computation: ComputationReceipt | None = None
 
     @property
-    def effects(self) -> tuple[EffectReceipt, ...]:
-        """Read-only current receipt projection, in first-registration order."""
-        return self._effects.snapshot()
+    def effects(self) -> Sequence[EffectReceipt]:
+        """Live read-only receipt view, in first-registration order."""
+        return self._effect_view
 
     def _require_open(self) -> None:
         if self._sealed:
@@ -312,7 +313,7 @@ def _validated_result(
     invocation: Invocation,
     work_result: _WorkCompletion,
 ) -> OperationResult:
-    effects = invocation.effects
+    effects = invocation._effects.snapshot()
     inputs = tuple(invocation.used_inputs)
     integrity = invocation._effects.integrity_diagnostics()
     resolved = _resolve_completion(
