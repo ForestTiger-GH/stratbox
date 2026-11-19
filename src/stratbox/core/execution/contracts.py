@@ -60,6 +60,19 @@ class OperationDefinition:
     limits: ExecutionBudget | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.request_type, type):
+            raise ValueError("Invalid request type")
+        value_types = self.value_type if isinstance(self.value_type, tuple) else (self.value_type,)
+        if not value_types or not all(isinstance(kind, type) for kind in value_types):
+            raise ValueError("Invalid value type")
+        if any(not isinstance(group, frozenset) or
+               any(not isinstance(name, str) for name in group)
+               for group in (self.required_capabilities, self.optional_capabilities, self.possible_effects)):
+            raise ValueError("Invalid capability/effect declaration")
+        if type(self.partial_allowed) is not bool or (
+            self.limits is not None and not isinstance(self.limits, ExecutionBudget)
+        ):
+            raise ValueError("Invalid operation policy")
         for token in (
             self.operation_id,
             self.method_version,
@@ -75,10 +88,9 @@ class OperationDefinition:
 
     @property
     def effects(self) -> tuple[EffectDescriptor, ...]:
-        kinds = self.possible_effects
-        if "http" in self.required_capabilities | self.optional_capabilities:
-            kinds = kinds | {"network.receive"}
-        return tuple(_effect_description(kind) for kind in sorted(kinds))
+        # HTTP is a capability. Source acquisition has its own receipt; do not
+        # advertise an EffectReceipt kind the runner would reject.
+        return tuple(_effect_description(kind) for kind in sorted(self.possible_effects))
 
     def capability(self, role: str, *, managed: bool = False) -> CapabilityRequirement:
         guarantees: set[str] = set()
@@ -238,6 +250,10 @@ class OperationResult(Generic[T]):
             for effect in self.effects
         ):
             raise ValueError("Undeclared effect")
+        if self.outcome != "unknown" and any(
+            effect.state == "unknown" for effect in self.effects
+        ):
+            raise ValueError("Unresolved external effect requires unknown outcome")
         if self.outcome == "succeeded" and any(
             effect.state != "confirmed" for effect in self.effects
         ):

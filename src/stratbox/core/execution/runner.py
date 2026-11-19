@@ -26,6 +26,8 @@ from stratbox.core.execution.contracts import (
     safe_token,
 )
 from stratbox.core.execution.events import ExecutionEvent, TechnicalIncident
+from stratbox.core.execution.effects import _EffectAccumulator
+from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -47,9 +49,22 @@ class Invocation:
         self._stage: str | None = None
         self._stage_started = self._started
         self.used_inputs: list[UsedInputReceipt] = []
-        self.effects: list[EffectReceipt] = []
+        self._effects = _EffectAccumulator()
+        self._sealed = False
         self.parents: list[tuple[str, ComputationReceipt]] = []
         self.computation: ComputationReceipt | None = None
+
+    @property
+    def effects(self) -> tuple[EffectReceipt, ...]:
+        """Read-only current receipt projection, in first-registration order."""
+        return self._effects.snapshot()
+
+    def _require_open(self) -> None:
+        if self._sealed:
+            raise RuntimeError("Invocation has already been finalized")
+
+    def seal(self) -> None:
+        self._sealed = True
 
     def now(self):
         value = self.context.clock.now()
@@ -108,6 +123,7 @@ class Invocation:
             raise OperationFailure("provider.binding_mismatch")
 
     def stage(self, name: str) -> None:
+        self._require_open()
         self.check_cancelled()
         self._stage = safe_token(name)
         self._stage_started = self.context.clock.monotonic()
@@ -115,6 +131,7 @@ class Invocation:
         self._emit("operation.stage")
 
     def progress(self, completed: int, total: int | None = None) -> None:
+        self._require_open()
         self.check_cancelled()
         if not 0 <= completed <= 2**53 - 1 or (
             total is not None and not completed <= total <= 2**53 - 1
@@ -126,10 +143,12 @@ class Invocation:
             self._emit("operation.progress", completed=completed, total=total)
 
     def use(self, receipt: UsedInputReceipt) -> None:
+        self._require_open()
         if receipt not in self.used_inputs:
             self.used_inputs.append(receipt)
 
     def record(self, identity, *, parameters=None, resources=None, inputs=None):
+        self._require_open()
         definition = self.definition
         receipts = tuple(self.used_inputs) if inputs is None else inputs
         version = build_dataset_version(
@@ -149,13 +168,10 @@ class Invocation:
         return self.computation
 
     def effect(self, receipt: EffectReceipt) -> None:
-        if receipt.kind not in self.definition.possible_effects:
+        self._require_open()
+        if not isinstance(receipt, EffectReceipt) or receipt.kind not in self.definition.possible_effects:
             raise ValueError("Undeclared effect")
-        for index, existing in enumerate(self.effects):
-            if existing.effect_id == receipt.effect_id and existing.kind == receipt.kind:
-                self.effects[index] = receipt
-                return
-        self.effects.append(receipt)
+        self._effects.register(receipt)
 
     def _emit(self, kind, **fields) -> None:
         sink = self.context.sink
@@ -188,19 +204,18 @@ class Invocation:
             self._emitted += 1
 
     def describe(self, diagnostic: Diagnostic, outcome: Outcome) -> Diagnostic:
-        effect = next((item for item in reversed(self.effects) if item.state == "unknown"), None)
         category = diagnostic.code.split(".", 1)[0]
+        disposition = diagnostic.retry_disposition
+        if disposition == "none" and category in {"budget", "http", "provider"}:
+            disposition = "after_condition"
+        # External effect uncertainty receives its own separate diagnostic.
+        # A domain-level unknown (e.g. ambiguous workbook) is not a file retry.
         return replace(
             diagnostic,
             stage=diagnostic.stage or self._stage or "admission",
             component=diagnostic.component or category,
             reason_class=diagnostic.reason_class or category,
-            retry_disposition="reconcile" if outcome == "unknown" or effect else
-                "after_condition" if category in {"budget", "http", "provider"} else "none",
-            evidence_ref=diagnostic.evidence_ref or (effect.effect_id if effect else None),
-            reconciliation_owner=diagnostic.reconciliation_owner or (
-                effect.reconciliation_owner if effect else None
-            ),
+            retry_disposition=disposition,
         )
 
     def finish(self, outcome: Outcome, diagnostic: Diagnostic | None) -> ObservabilitySummary:
@@ -231,6 +246,90 @@ class Completion(Generic[T]):
         )
 
 
+def _execute_work(
+    definition: OperationDefinition,
+    request: R,
+    work: Callable[[R, Invocation], T | Completion[T]],
+    invocation: Invocation,
+    providers: Mapping[str, object] | None,
+) -> _WorkCompletion:
+    try:
+        invocation.check_cancelled()
+        if not isinstance(request, definition.request_type):
+            raise OperationFailure("request.invalid_type")
+        available = providers if providers is not None else {}
+        for role in sorted(definition.required_capabilities):
+            invocation.provider(role, available.get(role))
+        completed = work(request, invocation)
+        if isinstance(completed, Completion):
+            outcome, value, diagnostics = completed.outcome, completed.value, completed.diagnostics
+        else:
+            outcome, value, diagnostics = "succeeded", completed, ()
+
+        # Retain the existing output-budget boundary: storage operations charge
+        # their own output bytes at commit, so charging a second time here would
+        # double-count them. Pure representations are charged once at completion.
+        if outcome in {"succeeded", "partial"} and not invocation.effects:
+            output = value if isinstance(value, Representation) else getattr(value, "representation", None)
+            if isinstance(output, Representation):
+                invocation.budget.charge(
+                    "output_bytes", output.identity.size, completed=outcome == "partial"
+                )
+                if invocation.computation is None:
+                    invocation.record(
+                        output.identity,
+                        parameters={"profile": output.profile_id, "profile_version": output.version},
+                    )
+            elif outcome == "succeeded" and not definition.partial_allowed:
+                invocation.budget.checkpoint()
+        return _WorkCompletion(outcome, value, diagnostics)
+    except OperationFailure as error:
+        return _WorkCompletion(error.outcome, None, (error.diagnostic,))
+    except (BudgetExceeded, BindingError, RuntimeProviderError) as error:
+        return _WorkCompletion("failed", None, (Diagnostic(error.code),))
+    except MissingExtra:
+        return _WorkCompletion("failed", None, (Diagnostic("provider.capability_missing"),))
+    except Exception as error:
+        return _WorkCompletion("failed", None, (invocation.incident(error),))
+
+
+def _validated_result(
+    definition: OperationDefinition,
+    invocation: Invocation,
+    work_result: _WorkCompletion,
+) -> OperationResult:
+    effects = invocation.effects
+    inputs = tuple(invocation.used_inputs)
+    integrity = invocation._effects.integrity_diagnostics()
+    resolved = _resolve_completion(definition, work_result, effects, integrity)
+    diagnostics = tuple(invocation.describe(item, resolved.outcome) for item in resolved.diagnostics)
+    summary = ObservabilitySummary(
+        invocation._emitted, invocation._dropped, invocation._incidents_dropped
+    )
+    try:
+        # Validate *before* producing an irreversible terminal observation.
+        return OperationResult(
+            definition, invocation.id, resolved.outcome, resolved.value, diagnostics,
+            inputs, effects, summary,
+            invocation.computation if resolved.value is not None else None,
+            invocation.budget.usage(),
+        )
+    except Exception as error:
+        # A contract/finalizer defect must not emit a false successful finish.
+        # Do not rerun the handler or any effect. Preserve qualified receipts.
+        incident = invocation.incident(error)
+        fallback = _resolve_completion(
+            definition, _WorkCompletion("failed", None, (incident,)), effects, integrity
+        )
+        diagnostics = tuple(invocation.describe(item, fallback.outcome) for item in fallback.diagnostics)
+        return OperationResult(
+            definition, invocation.id, fallback.outcome, None, diagnostics,
+            inputs, effects,
+            ObservabilitySummary(invocation._emitted, invocation._dropped, invocation._incidents_dropped),
+            None, invocation.budget.usage(),
+        )
+
+
 def run(
     definition: OperationDefinition,
     request: R,
@@ -243,64 +342,11 @@ def run(
         definition, context if context is not None else ExecutionContext()
     )
     invocation._emit("operation.started")
-    outcome: Outcome = "succeeded"
-    diagnostics: tuple[Diagnostic, ...] = ()
-    value = None
-    try:
-        invocation.check_cancelled()
-        if not isinstance(request, definition.request_type):
-            raise OperationFailure("request.invalid_type")
-        available = providers if providers is not None else {}
-        for role in sorted(definition.required_capabilities):
-            invocation.provider(role, available.get(role))
-        completed = work(request, invocation)
-        if isinstance(completed, Completion):
-            outcome, value, diagnostics = (
-                completed.outcome,
-                completed.value,
-                completed.diagnostics,
-            )
-        else:
-            value = completed
-        if not isinstance(value, definition.value_type) or (
-            outcome == "partial" and not definition.partial_allowed
-        ):
-            raise TypeError("Operation returned a value outside its contract")
-        if outcome in {"succeeded", "partial"} and not invocation.effects:
-            output = value if isinstance(value, Representation) else getattr(value, "representation", None)
-            if isinstance(output, Representation):
-                invocation.budget.charge("output_bytes", output.identity.size, completed=outcome == "partial")
-                if invocation.computation is None:
-                    invocation.record(output.identity, parameters={"profile": output.profile_id,
-                                                                    "profile_version": output.version})
-            elif outcome == "succeeded" and not definition.partial_allowed:
-                invocation.budget.checkpoint()
-    except OperationFailure as error:
-        outcome, diagnostics, value = error.outcome, (error.diagnostic,), None
-    except (BudgetExceeded, BindingError, RuntimeProviderError) as error:
-        outcome, diagnostics, value = "failed", (Diagnostic(error.code),), None
-    except MissingExtra:
-        outcome, diagnostics, value = (
-            "failed",
-            (Diagnostic("provider.capability_missing"),),
-            None,
-        )
-    except Exception as error:
-        outcome, diagnostics, value = "failed", (invocation.incident(error),), None
-    if any(effect.state == "unknown" for effect in invocation.effects):
-        outcome = "unknown"
-        diagnostics = diagnostics or (Diagnostic("effect.outcome_unknown"),)
-    diagnostics = tuple(invocation.describe(item, outcome) for item in diagnostics)
-    summary = invocation.finish(outcome, diagnostics[0] if diagnostics else None)
-    return OperationResult(
-        definition,
-        invocation.id,
-        outcome,
-        value,
-        diagnostics,
-        tuple(invocation.used_inputs),
-        tuple(invocation.effects),
-        summary,
-        invocation.computation if value is not None else None,
-        invocation.budget.usage(),
+    completed = _execute_work(definition, request, work, invocation, providers)
+    invocation.seal()
+    result = _validated_result(definition, invocation, completed)
+    summary = invocation.finish(
+        result.outcome, result.diagnostics[0] if result.diagnostics else None
     )
+    # Only telemetry counters may change after validated finalization.
+    return replace(result, observability=summary)
