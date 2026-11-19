@@ -15,10 +15,21 @@ Resource = Literal[
 ]
 
 
-class BudgetExceeded(RuntimeError):
+class BudgetError(Exception):
+    """Base type for qualified budget violations and deadline clock faults."""
+    code: str
+
+
+class BudgetExceeded(BudgetError):
     def __init__(self, resource: str):
         self.resource = resource
         self.code = f"budget.{resource}"
+        super().__init__(self.code)
+
+
+class BudgetClockError(BudgetError):
+    def __init__(self):
+        self.code = "budget.clock_unavailable"
         super().__init__(self.code)
 
 
@@ -66,24 +77,34 @@ class BudgetMeter:
     ):
         self.limits = limits
         self._now = now
+        self._last_tick: float | None = None
         if limits.seconds is None:
             self._deadline = inf
         else:
-            origin = now()
+            try:
+                origin = now()
+            except Exception as error:
+                raise BudgetClockError() from error
             if type(origin) not in (int, float) or not isfinite(origin):
-                raise ValueError("Invalid monotonic budget clock")
+                raise BudgetClockError()
             self._deadline = origin + limits.seconds
             if not isfinite(self._deadline):
-                raise ValueError("Invalid monotonic budget deadline")
+                raise BudgetClockError()
+            self._last_tick = origin
         self._used: dict[Resource, int] = {}
         self._output_units: dict[str, tuple[ByteIdentity, str | None]] = {}
 
     def seconds_left(self) -> float:
         if self._deadline == inf:
             return inf
-        observed = self._now()
-        if type(observed) not in (int, float) or not isfinite(observed):
-            raise ValueError("Invalid monotonic budget clock")
+        try:
+            observed = self._now()
+        except Exception as error:
+            raise BudgetClockError() from error
+        if (type(observed) not in (int, float) or not isfinite(observed)
+                or (self._last_tick is not None and observed < self._last_tick)):
+            raise BudgetClockError()
+        self._last_tick = observed
         return max(0, self._deadline - observed)
 
     def checkpoint(self) -> None:

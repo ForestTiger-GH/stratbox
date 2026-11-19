@@ -11,7 +11,7 @@ from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_vers
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.core.runtime.capabilities import BindingError, select_provider
-from stratbox.core.limits import BudgetExceeded, BudgetMeter, ExecutionBudget
+from stratbox.core.limits import BudgetError, BudgetClockError, BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
 from stratbox.core.runtime.dependencies import MissingExtra
 
@@ -353,7 +353,7 @@ def _execute_work(
         return _WorkCompletion(outcome, value, diagnostics)
     except OperationFailure as error:
         return _WorkCompletion(error.outcome, None, (error.diagnostic,))
-    except (BudgetExceeded, BindingError, RuntimeProviderError) as error:
+    except (BudgetError, BindingError, RuntimeProviderError) as error:
         return _WorkCompletion("failed", None, (Diagnostic(error.code),))
     except MissingExtra:
         return _WorkCompletion("failed", None, (Diagnostic("provider.capability_missing"),))
@@ -367,7 +367,9 @@ def _terminal_budget(invocation: Invocation, work_result: _WorkCompletion) -> _W
         return work_result
     try:
         invocation.budget.checkpoint()
-    except BudgetExceeded as exc:
+    except BudgetError as exc:
+        if isinstance(exc, BudgetClockError):
+            invocation._timing_degraded = True
         return _terminal_constraint(work_result, Diagnostic(exc.code))
     except Exception:
         invocation._timing_degraded = True

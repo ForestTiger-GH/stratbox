@@ -329,3 +329,63 @@ def test_many_used_input_receipts_keep_order_and_deduplicate():
     assert len(result.used_inputs) == 10_000
     assert result.used_inputs[0].identity == ByteIdentity.of(b"0")
     assert result.used_inputs[-1].identity == ByteIdentity.of(b"9999")
+
+
+class _TickSequence:
+    def __init__(self, ticks):
+        self._ticks = iter(ticks)
+    def __call__(self):
+        return next(self._ticks)
+
+
+@pytest.mark.parametrize("ticks", [
+    (100, 99), (100, float("nan")), (100, float("inf")),
+    (100, True), (100, "invalid"),
+])
+def test_strict_budget_rejects_reversing_or_invalid_monotonic(ticks):
+    from stratbox.core.limits import BudgetClockError, BudgetMeter
+    meter = BudgetMeter(ExecutionBudget(seconds=10), now=_TickSequence(ticks))
+    with pytest.raises(BudgetClockError, match="budget.clock_unavailable"):
+        meter.checkpoint()
+
+
+def test_strict_budget_accepts_equal_forward_and_expires():
+    from stratbox.core.limits import BudgetMeter
+    meter = BudgetMeter(ExecutionBudget(seconds=10),
+                        now=_TickSequence((100, 100, 101, 110)))
+    assert meter.seconds_left() == 10
+    assert meter.seconds_left() == 9
+    with pytest.raises(Exception, match="budget.deadline"):
+        meter.checkpoint()
+
+
+@pytest.mark.parametrize("feature", ("stage", "progress"))
+def test_strict_clock_fault_at_work_checkpoint_is_qualified(feature):
+    clock = ControlledClock()
+    def work(value, invocation):
+        clock.bad_monotonic = True
+        if feature == "stage":
+            invocation.stage("parse")
+        else:
+            invocation.progress(1, 2)
+        return value
+    result = run(OP, "ok", work, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=10),
+    ))
+    assert result.outcome == "failed"
+    assert any(d.code == "budget.clock_unavailable" for d in result.diagnostics)
+
+
+def test_strict_clock_fault_with_unknown_effect_dominates_outcome():
+    clock = ControlledClock()
+    def work(value, invocation):
+        invocation.effect(EffectReceipt("storage.write", "unknown", effect_id="write"))
+        clock.bad_monotonic = True
+        return value
+    result = run(OP, "ok", work, context=ExecutionContext(
+        clock=clock, budget=ExecutionBudget(seconds=10),
+    ))
+    assert result.outcome == "unknown"
+    assert {d.code for d in result.diagnostics} >= {
+        "budget.clock_unavailable", "effect.outcome_unknown",
+    }
