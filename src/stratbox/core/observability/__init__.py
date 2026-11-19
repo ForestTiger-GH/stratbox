@@ -43,3 +43,5 @@ from stratbox.core.observability.capture.operations import (CaptureReport, Recor
 from stratbox.core.observability.journal.sources import (EpochJournalSource, FileJournalSource, IndexedSegment, JournalCursor, JournalEntry,
                      JournalHead, JournalPage, JournalReadLimits, JournalReadProblem,
                      JournalSource, SnapshotJournalSource, SourceProfile, StreamKey)
+
+from stratbox.core.observability.capture.original_versions import fact_from_original_version_commit, fact_from_original_bytes_changed

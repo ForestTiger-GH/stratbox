@@ -10,7 +10,7 @@ from typing import Literal
 from stratbox.core.execution.contracts import safe_token
 from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
 from stratbox.core.observability.records.event_schemas import (
-    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED,
+    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED,
 )
 from stratbox.core.observability.records.schema import ValueRule
 
@@ -215,6 +215,24 @@ def _bytes_changed(record: JournalRecord, data: Data) -> bool:
     return data["old_sha256"] != data["new_sha256"]
 
 
+def _original_committed(record: JournalRecord, data: Data) -> bool:
+    if record.subject is None or record.subject.namespace != "source":
+        raise ValueError("journal.original_subject_missing")
+    if record.subject.object_id != data["source_id"] or (
+        record.subject.identity is None
+        or record.subject.identity.sha256 != data["current_sha256"]
+        or record.subject.identity.size != data["size_bytes"]
+    ):
+        raise ValueError("journal.original_identity_mismatch")
+    if data["change"] == "revised" and (
+        data["previous_sha256"] is None or data["previous_sha256"] == data["current_sha256"]
+    ):
+        raise ValueError("journal.original_transition_invalid")
+    if data["change"] != "revised" and data["previous_sha256"] is not None:
+        raise ValueError("journal.original_transition_invalid")
+    return True
+
+
 def _project(
     schema: RecordDataSchema, name: str, *fields: str, metadata: frozenset[str] | None = None,
 ) -> Projection:
@@ -238,6 +256,12 @@ _builtin_topics = (
         _project(SOURCE_BYTES_CHANGED, "bytes_change_public", *(field.name for field in SOURCE_BYTES_CHANGED.fields)),
     ), "transition", ("source_id", "old_sha256", "new_sha256", "size_bytes"),
        frozenset({"source_id"}), _bytes_changed),
+    NotificationTopic("source.original_version_committed", 1, (SOURCE_ORIGINAL_COMMITTED.key,), (
+        _project(SOURCE_ORIGINAL_COMMITTED, "original_version_public", *(f.name for f in SOURCE_ORIGINAL_COMMITTED.fields)),
+    ), "transition", ("source_id", "series_id", "issue_id", "asset_id",
+                       "current_sha256", "change", "mode"),
+       frozenset({"source_id", "series_id", "change", "mode"}), _original_committed,
+       explicit_opt_in=("mode", "backfill")),
     NotificationTopic("publication.committed", 1, (PUBLICATION_COMMITTED.key,), (
         _project(PUBLICATION_COMMITTED, "publication_summary", *(field.name for field in PUBLICATION_COMMITTED.fields)),
     ), "transition", ("series_id", "reference_date", "change", "mode", "artifact_ref"),

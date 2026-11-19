@@ -70,4 +70,20 @@ PUBLICATION_COMMITTED = RecordDataSchema("domain_fact", "publication.committed",
     FieldRule("legal_kinds", COUNT, required=False, classification="public"),
 ))
 
-BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED)
+
+SOURCE_ORIGINAL_COMMITTED = RecordDataSchema("domain_fact", "source.original_version_committed", 1, (
+    FieldRule("source_id", TOKEN, classification="public"),
+    FieldRule("series_id", TOKEN, classification="public"),
+    FieldRule("issue_id", TOKEN, classification="public"),
+    FieldRule("asset_id", TOKEN, classification="public"),
+    FieldRule("transition_id", TOKEN, classification="public"),
+    FieldRule("change", ValueRule("token", choices=("first_seen", "new_release", "revised")), classification="public"),
+    FieldRule("previous_sha256", ValueRule("hash", nullable=True), classification="public"),
+    FieldRule("current_sha256", HASH, classification="public"),
+    FieldRule("size_bytes", COUNT, classification="public"),
+    FieldRule("mode", ValueRule("token", choices=("live", "backfill")), classification="public"),
+    FieldRule("owner_id", TOKEN, classification="public"),
+    FieldRule("destination_id", TOKEN, classification="public"),
+), implicit_version_one=True)
+
+BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED, SOURCE_ORIGINAL_COMMITTED)
