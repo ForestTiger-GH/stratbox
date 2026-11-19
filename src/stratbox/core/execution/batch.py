@@ -1,7 +1,7 @@
 """Ordered attempts for computations whose parsed items can be retained."""
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Callable, Generic, Sequence, TypeVar
 
 from stratbox.core.limits import BudgetExceeded
 
@@ -20,7 +20,7 @@ class BatchAttempt(Generic[T, R]):
     stopped: Diagnostic | None
 
 
-def attempt_batch(items, read, invocation, *, continue_on_error):
+def attempt_batch(items: Sequence[T], read: Callable[[T], R], invocation, *, continue_on_error: bool):
     values, failed = [], []
     stopped = interrupted = None
     attempted = 0

@@ -20,7 +20,8 @@ Invocation + optional started event
     -> type and provider admission
     -> handler execution / expected-error classification
     -> output accounting / computation evidence where applicable
-    -> seal invocation facts
+    -> deadline-only post-handler check (independent of late cancellation)
+    -> runner-owned seal of invocation facts
     -> resolve work outcome against effect receipts
     -> validate immutable OperationResult envelope
     -> attempt exactly one best-effort operation.finished event
@@ -106,10 +107,12 @@ host may later reconcile the prior effect; the runner does not rewrite
 historical outcomes or execute a compensating action.
 
 The return envelope snapshots all effects in first-registration order and
-all used-input entries. The invocation is sealed before resolution;
-`stage`, `progress`, `use`, `record` and `effect` cannot be called
-after finalization through the supported API. The frozen envelope does not
-deep-freeze arbitrary domain values such as mutable DataFrames.
+all used-input entries. The runner alone invokes private `Invocation._seal()`
+before resolution; a handler invoking the previously exposed `seal()` fails
+as a classified internal contract error. Even early private seal misuse does
+not drop receipts. `stage`, `progress`, `use`, `record`, `account_output`
+and `effect` reject supported mutations after finalization. The frozen
+envelope does not deep-freeze arbitrary domain values such as DataFrames.
 
 ## Diagnostics, result and resource accounting
 
@@ -121,23 +124,80 @@ handler adds `effect.failed`. Equivalent diagnostics may be deduplicated;
 distinct evidence references must survive.
 
 A domain-level `unknown` retains its own diagnosis without a fabricated
-effect-reconciliation instruction. External uncertainty and receipt
+effect-reconciliation instruction. Addressable external uncertainty and receipt
 conflicts carry `reconcile` with the concrete effect ID and known owner.
+Independent anonymous unknown receipts retain separate diagnostic entries
+with `evidence_ref=None` and `retry_disposition=none`: there is no
+fabricated addressable reconciliation identity.
 Budget, HTTP and provider failures usually carry `after_condition`.
 Internals are reduced to `internal.error` with a separate incident ID;
 exception strings, raw paths, credentials and payloads are never projected
 as public diagnostic values.
 
-Output bytes for an in-memory `Representation` are accounted at the
-operation boundary when no physical publication effect has already been
-charged. Storage publication charges its bytes at the owning commit
-boundary. Computation identity may be recorded for a representation
-**regardless of whether an effect also occurred**; it describes calculated
-content and must not be interpreted as proof of durable publication.
+### Output obligations and explicit coverage
 
-Budget/deadline checking is cooperative. The runner does not claim to
-interrupt unbounded native calls, recover mid-commit process failures,
-or provide transaction-wide atomicity across multiple resources.
+`BudgetMeter.account_output(key, identity, covered_by=None, completed=False)`
+records one invocation-local logical output obligation. Each key is unique;
+repeating the same key with identical bytes is idempotent. Distinct destinations
+must use distinct keys even for identical payloads. The `ByteIdentity` proves
+the bytes/size, **not** the identity of the output obligation.
+`covered_by` explicitly links a returned output to a previously accounted
+obligation of exactly the same bytes; the runner never infers coverage from
+`Invocation.effects`, storage success or a matching SHA alone.
+
+`Invocation.account_output(identity, key="returned", covered_by=...)` allows
+a handler to make an explicit claim. The runner accounts a returned
+`Representation` (including the supported `.representation` wrapper) using
+the `returned` key, irrespective of unrelated effects. Staged storage charges
+`publish:<effect_id>` **before** physical commit, and per-industry multi-render
+results account each `render:<code>` independently. Physical confirmation
+remains exclusively an `EffectReceipt`. Independent low-level
+`BudgetMeter.charge("output_bytes")` is still appropriate for a separately
+materialized preview; it does not automatically cover the returned output.
+
+A successfully recorded `ComputationReceipt` is retained even when the
+subsequent publication fails or becomes unknown and the final value is absent.
+It is evidence of **calculated content**, not file publication or usability.
+No raw content/paths are projected into the result journal.
+
+### Deadlines, cancellation and clocks
+
+Internal checkpoints remain cooperative. After a handler returns, the runner
+performs a deadline-only check for every outcome, without checking the
+cancellation token again. An otherwise successful run beyond the deadline
+is `failed` with `budget.deadline`; an explicitly useful `partial` remains
+`partial` with the extra deadline diagnostic. Other failures and cancellation
+retain their primary reason; any unknown physical effect still forces
+`unknown`. Already confirmed physical effects are never rolled back by a
+late deadline or cancellation observation.
+
+If monotonic measurement fails under a strict deadline, a successful
+computation cannot assert timeliness: it becomes `failed` with
+`budget.clock_unavailable`, preserving receipts. With no deadline, the
+business outcome remains intact. Optional terminal timing failures produce
+nullable `duration_ms`/`stage_elapsed_ms` and
+`ObservabilitySummary.timing_degraded=True`; if trusted UTC cannot be
+obtained, the event is dropped with coverage degradation rather than a fake
+timestamp. These failures never authorize re-emission.
+
+The runner does not claim hard preemption of native calls, crash recovery
+during a commit or transaction-wide atomicity across resources.
+
+### Declared ports and external-runtime dependencies
+
+Every `Invocation.provider` / `Invocation.require_provider` role must first
+appear in the operation's `required_capabilities` or
+`optional_capabilities`; `OperationDefinition.capability(role)` applies
+the same invariant. Local defaults cannot bypass the declaration. Required
+ports are eagerly admitted and optional ports are admitted when used.
+
+Some operations receive a separate scoped runtime whose own owner resolves
+dependent providers at runtime; forcing these ports into eager runner admission
+would be incorrect. `RuntimeDependency(role, phase, owner)` describes such
+dependencies separately in the catalog, with `phase=scoped|conditional`.
+Notification runtime declarations cover state, authority, journal source and
+conditional consumer. Real scope-bound grants still belong to
+`core.notifications.runtime.require_binding`, not to catalog metadata.
 
 ## Consumer integration and test conformance
 

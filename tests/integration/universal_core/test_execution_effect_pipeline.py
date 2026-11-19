@@ -85,3 +85,28 @@ def test_frank_cleanup_unknown_after_second_mutation_does_not_claim_partial(tmp_
     assert result.outcome == "unknown"
     assert [effect.state for effect in result.effects] == ["confirmed", "unknown"]
     assert any(d.code == "effect.outcome_unknown" for d in result.diagnostics)
+
+
+def test_staged_store_output_budget_is_checked_before_commit(tmp_path):
+    from stratbox.core.execution import ExecutionBudget, ExecutionContext
+    payload = SourcePayload(b"published-content")
+    destination = OriginalDestination("budgeted.bin")
+
+    too_small = save_original(
+        SaveOriginalRequest(payload, destination),
+        store=LocalFileStore(str(tmp_path)),
+        context=ExecutionContext(budget=ExecutionBudget(output_bytes=len(payload.data) - 1)),
+    )
+    assert too_small.outcome == "failed"
+    assert any(d.code == "budget.output_bytes" for d in too_small.diagnostics)
+    assert not (tmp_path / "budgeted.bin").exists()
+    assert not too_small.effects
+
+    exactly = save_original(
+        SaveOriginalRequest(payload, destination),
+        store=LocalFileStore(str(tmp_path)),
+        context=ExecutionContext(budget=ExecutionBudget(output_bytes=len(payload.data))),
+    )
+    assert exactly.outcome == "succeeded"
+    assert exactly.effects[0].state == "confirmed"
+    assert dict(exactly.resources_used)["output_bytes"] == len(payload.data)

@@ -23,7 +23,12 @@ identity, safe events and outcome checks.
 A provider-dependent operation declares the required capability and passes
 the explicitly supplied provider to `run`. An effectful operation declares
 its effect types and records per-attempt outcomes. Source validators and
-comparators belong next to the domain entry point. Reusable byte and format
-commands belong in `base`.
+comparators belong next to the domain entry point. Reusable byte and format commands belong in `core.storage`, `core.network`
+and `core.formats`. Returned outputs are accounted with
+`Invocation.account_output(identity, key=...)`; already charged publication
+coverage requires an explicit `covered_by` key. A provider requested through
+`Invocation.provider` must be declared required or optional. Runtime-scope
+providers resolved independently by a trusted runtime are described via
+`RuntimeDependency`, not invented as eager bindings.
 
 [Runtime contracts](universal-business-core.md)

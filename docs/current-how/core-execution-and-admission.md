@@ -15,8 +15,8 @@ for the canonical matrix, effect identities, diagnostic precedence and limits.
 ## Discover and bind
 
 Use `stratbox.domains.registry.operation_catalog().describe()` to obtain operation IDs,
-request and result types, versions, capability roles, effect descriptions
-and limits. The domain registry discovers local declarations from built-in packages.
+request and result types, versions, declared eager/optional capability roles,
+scoped runtime dependencies, effect descriptions and limits. The domain registry discovers local declarations from built-in packages.
 Import `wire_schemas` and `invoke_read_only` from
 `stratbox.core.execution.machine` and pass `catalog=operation_catalog()`
 explicitly. The generic executor has no direct imports of concrete domains.
@@ -45,6 +45,8 @@ the core package. A sibling factory exposes `create_providers()`. The
 factory returns a `Providers` bundle, which the runtime caches for the
 process. Ambiguous or invalid configurations raise a provider error.
 
+Every directly requested provider role must be declared as required or optional
+in `OperationDefinition`, including local default-provider resolution.
 A managed `ExecutionContext` requires one matching `ProviderBinding` for
 each capability used, with the expected version and guarantees. Use
 `select_provider` or an explicit `probe_provider` to test binding and readiness.
@@ -54,7 +56,12 @@ enforces the actual scope and effect conditions.
 `ExecutionBudget` can cap time, input, wire, decoded and output bytes, HTTP
 requests, visited objects, cells, temporary bytes and archive nesting.
 The strictest value across the operation, application ceiling and request
-applies. Supported nested readers and writers share a meter. Long in-process
+applies. Supported nested readers and writers share a meter. Returned
+`Representation` bytes are accounted by output identity, irrespective of
+registered effects. Published outputs account their obligations before commit;
+explicit coverage is necessary to avoid double-counting the same returned
+and published unit. A final deadline-only check is separate from cancellation.
+Missing/failed optional telemetry clocks never erase known effect receipts. Long in-process
 decoder calls, provider calls and OS lookups may complete at their next
 checkpoint. A consumer with a hard deadline or resource requirement uses
 an independently constrained adapter.

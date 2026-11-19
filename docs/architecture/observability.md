@@ -6,6 +6,10 @@ The execution runner validates its typed outcome and effect consistency
 **before** emitting `operation.finished`. Optional journal collection cannot
 change that outcome. When a sink accepts the finish event and then raises,
 the runner does not retry the event; collection coverage records the ambiguity.
+The optional timing measurements may be unavailable without affecting
+business truth: `ObservabilitySummary.timing_degraded` records this separately
+from `dropped` events. The result-summary projection includes the same
+qualified field. If the UTC clock fails, no fabricated timestamp is emitted.
 See [Execution finalization](execution-finalization.md).
 
 ## 1. Six independently qualified propositions
