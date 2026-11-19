@@ -43,6 +43,7 @@ OPERATION_FINISHED = RecordDataSchema("execution", "operation.finished", 1, (
 MATERIAL_STORED = RecordDataSchema("domain_fact", "material.stored", 1, (
     FieldRule("status", ValueRule("token", choices=("stored", "already_present")), classification="public"),
     FieldRule("effect_state", ValueRule("token", choices=("confirmed",))),
+    FieldRule("effect_kind", TOKEN, required=False),
     FieldRule("guarantee", TOKEN),
     FieldRule("identity", IDENTITY),
     FieldRule("effect_id", TOKEN, required=False),

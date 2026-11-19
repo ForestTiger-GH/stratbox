@@ -93,3 +93,32 @@ def test_real_computation_receipt_is_logged_without_raw_output():
         "role", "source_id_digest", "identity", "media_type", "availability",
         "version", "container",
     }
+
+
+def test_same_raw_id_different_effect_kinds_persist_without_false_reconciliation(tmp_path):
+    from stratbox.core.execution import EffectReceipt
+    from stratbox.core.observability import encode_records, decode_records
+    definition = OperationDefinition(
+        "test.mixed_effects_roundtrip", 1, "v1", int, int,
+        possible_effects=frozenset({"storage.write", "notification.handoff"}),
+    )
+    def handler(value, invocation):
+        invocation.effect(EffectReceipt("storage.write", "confirmed", effect_id="shared"))
+        invocation.effect(EffectReceipt("notification.handoff", "unknown", effect_id="shared"))
+        return value
+    result = run(definition, 7, handler)
+    assert result.outcome == "unknown"
+    record = record_from_result(result, occurred_at_utc=TIME)
+    assert len({ref.object_id for ref in record.references}) == 2
+    store = LocalFileStore(str(tmp_path / "qualified_journal"))
+    writer = FileJournalWriter(store, "effects", writer_id="qualified_writer")
+    receipt = writer.write_batch((record,))
+    assert receipt.state == "confirmed"
+    reader = FileJournalReader(store, namespace=writer.namespace)
+    restored = reader.read_report([receipt.locator])
+    assert restored.records == (record,)
+    summary, = decode_records(encode_records(restored.records))
+    assert project_effect_state((summary,), EffectKey("storage.write", "shared")).needs_reconciliation is False
+    unresolved = project_effect_state((summary,), EffectKey("notification.handoff", "shared"))
+    assert unresolved.states == ("unknown",)
+    assert unresolved.needs_reconciliation is True

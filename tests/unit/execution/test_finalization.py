@@ -680,3 +680,19 @@ def test_effect_key_is_kind_qualified_and_validates_public_result_snapshot():
         (Diagnostic("effect.outcome_unknown"),), (), (unnamed, unnamed),
         ObservabilitySummary(0, 0))
     assert len(independent.effects) == 2
+
+
+def test_public_result_evidence_rejects_mutable_or_malformed_items():
+    from stratbox.core.execution import OperationResult, ObservabilitySummary
+    op = operation()
+    base = OperationResult(
+        op, "invocation", "succeeded", "ok", (), (), (),
+        ObservabilitySummary(0, 0),
+    )
+    for changes in (
+        {"effects": []}, {"diagnostics": ["domain.problem"]},
+        {"used_inputs": [object()]}, {"observability": object()},
+        {"invocation_id": "invalid invocation"},
+    ):
+        with pytest.raises(ValueError):
+            replace(base, **changes)

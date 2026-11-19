@@ -270,6 +270,18 @@ class OperationResult(Generic[T]):
         return self.definition.operation_id
 
     def __post_init__(self) -> None:
+        if not isinstance(self.definition, OperationDefinition):
+            raise ValueError("Invalid operation definition")
+        safe_token(self.invocation_id)
+        if (not isinstance(self.diagnostics, tuple)
+                or any(not isinstance(item, Diagnostic) for item in self.diagnostics)
+                or not isinstance(self.used_inputs, tuple)
+                or any(not isinstance(item, UsedInputReceipt) for item in self.used_inputs)
+                or not isinstance(self.effects, tuple)
+                or not isinstance(self.observability, ObservabilitySummary)):
+            raise ValueError("Invalid operation result evidence envelope")
+        if self.computation is not None and not isinstance(self.computation, ComputationReceipt):
+            raise ValueError("Invalid computation evidence")
         if self.outcome not in {
             "succeeded",
             "partial",
