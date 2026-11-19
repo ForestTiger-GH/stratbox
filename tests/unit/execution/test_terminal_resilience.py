@@ -197,3 +197,36 @@ def test_no_deadline_does_not_depend_on_budget_clock():
     meter = BudgetMeter(ExecutionBudget(), now=now)
     meter.checkpoint()
     assert meter.seconds_left() == float("inf")
+
+
+def test_second_constructor_fault_keeps_effect_receipts(monkeypatch):
+    from stratbox.core.execution import runner
+    original = runner.OperationResult
+    monkeypatch.setattr(runner, "OperationResult",
+                        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("constructor broken")))
+
+    def worker(request, invocation):
+        invocation.effect(EffectReceipt("storage.write", "confirmed", effect_id="write"))
+        return request
+
+    result = run(OP, "ok", worker)
+    assert isinstance(result, original)
+    assert result.outcome == "failed"
+    assert result.effects[0].state == "confirmed"
+    assert result.diagnostics[-1].code == "internal.error"
+
+
+def test_elapsed_clock_failure_after_effect_is_visible_in_result_summary():
+    from stratbox.core.observability.capture.adapters import record_from_result
+    clock = ControlledClock()
+
+    def worker(request, invocation):
+        invocation.stage("work")
+        invocation.effect(EffectReceipt("storage.write", "confirmed", effect_id="write"))
+        clock.bad_monotonic = True
+        return request
+
+    result = run(OP, "ok", worker, context=ExecutionContext(clock=clock))
+    record = record_from_result(result)
+    assert record.payload["observability"]["timing_degraded"] is True
+    assert record.payload["observability"]["degraded"] is True

@@ -23,6 +23,11 @@ See [Execution finalization](execution-finalization.md).
 | Capture coverage | Actual collector observations and qualified producer counters | Event capture within a **named** scope and bounded producer range | Events that producer did not emit or could falsify |
 | Provenance / authority | A separate host or runtime attestor, if any | Host-bound identity under that attestor's authority | Domain truth, even when correctly signed |
 
+`InMemorySink` is intentionally unbounded and suitable for tests or tightly
+bounded local invocation scopes. Long-running hosts should provide explicit
+bounded or durable sinks and qualified retention, not reuse an unlimited
+in-memory list as their production event store.
+
 A file hash and a manifest held in one writable namespace provide **internal consistency**, not independent authentication or resistance to coordinated replacement of that entire namespace. Do not infer successful execution of an external effect from a `finished` event or from a confirmed pre-action audit intent.
 
 ## 2. Records, identifiers and minimizing data

@@ -24,7 +24,9 @@ def test_undeclared_local_provider_is_rejected_before_default_lookup(monkeypatch
     assert not result.effects
 
 
-def test_required_and_optional_are_different_admission_phases():
+def test_required_and_optional_are_different_admission_phases(monkeypatch):
+    from stratbox.core.execution import runner
+    monkeypatch.setattr(runner, "active_providers", lambda: None)
     op = OperationDefinition("test.optional", 1, "v-1", int, int,
                              optional_capabilities=frozenset({"http"}))
     assert run(op, 1, lambda req, inv: req).outcome == "succeeded"
@@ -91,3 +93,21 @@ def test_external_runtime_ports_are_descriptors_not_fake_eager_capabilities():
         OperationDefinition("test.conflict", 1, "v-1", int, int,
             required_capabilities=frozenset({"http"}),
             runtime_dependencies=(RuntimeDependency("http", "conditional", "adapter"),))
+
+
+def test_scoped_notification_runtime_binding_keeps_host_guarantees():
+    from stratbox.core.notifications.runtime import require_binding
+    from stratbox.core.runtime.capabilities import BindingError
+    provider = object()
+    capability = CapabilityRequirement("notification", guarantees=frozenset({
+        "recipient_bound", "durable_acceptance", "idempotent_acceptance",
+    }))
+    bound = ProviderBinding("consumer", capability, "ready", provider, "scope1")
+    context = ExecutionContext(profile="managed", bindings=(bound,))
+    require_binding(context, "scope1", "notification", provider, "recipient_bound")
+    with pytest.raises(BindingError):
+        require_binding(context, "scope2", "notification", provider, "recipient_bound")
+    with pytest.raises(BindingError):
+        require_binding(context, "scope1", "notification", object(), "recipient_bound")
+    with pytest.raises(BindingError):
+        require_binding(context, "scope1", "notification", provider, "unprovided_guarantee")
