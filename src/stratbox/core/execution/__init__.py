@@ -1,7 +1,7 @@
 """Explicit execution context, typed results and bounded event streams."""
 
 from stratbox.core.execution.contracts import (
-    CancellationToken, Clock, Correlation, Diagnostic, EffectDescriptor, EffectReceipt, ExecutionContext,
+    CancellationToken, Clock, Correlation, Diagnostic, EffectDescriptor, EffectKey, EffectReceipt, ExecutionContext,
     ObservabilitySummary, OperationDefinition, OperationFailure, OperationResult, Outcome, SystemClock,
     RuntimeDependency,
 )

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from stratbox.core.execution.contracts import Diagnostic, EffectReceipt, OperationDefinition, Outcome
+from stratbox.core.execution.contracts import Diagnostic, EffectKey, EffectReceipt, OperationDefinition, Outcome
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +37,7 @@ def _resolve_completion(
     work: _WorkCompletion,
     effects: tuple[EffectReceipt, ...],
     integrity_diagnostics: tuple[Diagnostic, ...] = (),
-    conflict_keys: frozenset[tuple[str, str]] = frozenset(),
+    conflict_keys: frozenset[EffectKey] = frozenset(),
 ) -> _ResolvedCompletion:
     outcome, value = work.outcome, work.value
     diagnostics: list[Diagnostic] = []
@@ -75,7 +75,7 @@ def _resolve_completion(
         if effect.state != "unknown":
             continue
         unknown_effect = True
-        if (effect.kind, effect.effect_id) in conflict_keys:
+        if effect.key in conflict_keys:
             continue
         add(
             Diagnostic(

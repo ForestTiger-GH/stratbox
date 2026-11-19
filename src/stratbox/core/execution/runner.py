@@ -424,7 +424,7 @@ def _validated_result(
         diagnostics = list(work_result.diagnostics)
         diagnostics.extend(integrity)
         for effect in effects:
-            if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
+            if effect.state == "unknown" and effect.key not in conflict_keys:
                 diagnostics.append(Diagnostic(
                     "effect.outcome_unknown", component=effect.kind, evidence_ref=effect.effect_id,
                     reconciliation_owner=effect.reconciliation_owner,

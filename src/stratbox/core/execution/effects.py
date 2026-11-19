@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import replace
 from collections.abc import Sequence
 
-from stratbox.core.execution.contracts import Diagnostic, EffectReceipt
+from stratbox.core.execution.contracts import Diagnostic, EffectKey, EffectReceipt
 
 
 class _EffectView(Sequence[EffectReceipt]):
@@ -30,8 +30,8 @@ class _EffectView(Sequence[EffectReceipt]):
 class _EffectAccumulator:
     def __init__(self) -> None:
         self._items: list[EffectReceipt] = []
-        self._indexes: dict[tuple[str, str], int] = {}
-        self._conflicts: dict[tuple[str, str], Diagnostic] = {}
+        self._indexes: dict[EffectKey, int] = {}
+        self._conflicts: dict[EffectKey, Diagnostic] = {}
         self._view = _EffectView(self)
 
     def view(self) -> Sequence[EffectReceipt]:
@@ -51,7 +51,7 @@ class _EffectAccumulator:
             # Anonymous receipts are *independent* physical observations.
             self._items.append(receipt)
             return
-        key = (receipt.kind, receipt.effect_id)
+        key = receipt.key
         position = self._indexes.get(key)
         if position is None:
             self._indexes[key] = len(self._items)
@@ -85,5 +85,5 @@ class _EffectAccumulator:
     def integrity_diagnostics(self) -> tuple[Diagnostic, ...]:
         return tuple(self._conflicts.values())
 
-    def conflict_keys(self) -> frozenset[tuple[str, str]]:
+    def conflict_keys(self) -> frozenset[EffectKey]:
         return frozenset(self._conflicts)

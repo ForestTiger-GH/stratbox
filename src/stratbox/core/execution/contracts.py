@@ -202,6 +202,17 @@ class Diagnostic:
 
 
 @dataclass(frozen=True, slots=True)
+class EffectKey:
+    """Identified effect within one invocation; no global provider authority implied."""
+    kind: str
+    effect_id: str
+
+    def __post_init__(self) -> None:
+        safe_token(self.kind)
+        safe_token(self.effect_id)
+
+
+@dataclass(frozen=True, slots=True)
 class EffectReceipt:
     kind: str
     state: EffectState
@@ -223,6 +234,10 @@ class EffectReceipt:
             raise ValueError("Invalid effect reference")
         if self.identity is not None and not isinstance(self.identity, ByteIdentity):
             raise ValueError("Invalid effect identity")
+
+    @property
+    def key(self) -> EffectKey | None:
+        return EffectKey(self.kind, self.effect_id) if self.effect_id is not None else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,10 +291,14 @@ class OperationResult(Generic[T]):
         if self.outcome == "cancelled" and self.value is not None:
             raise ValueError("Cancelled operations cannot carry values")
         if any(
-            effect.kind not in self.definition.possible_effects
+            not isinstance(effect, EffectReceipt)
+            or effect.kind not in self.definition.possible_effects
             for effect in self.effects
         ):
-            raise ValueError("Undeclared effect")
+            raise ValueError("Undeclared or malformed effect")
+        effect_keys = [effect.key for effect in self.effects if effect.key is not None]
+        if len(effect_keys) != len(set(effect_keys)):
+            raise ValueError("Duplicate identified effect in final operation result")
         if self.outcome != "unknown" and any(
             effect.state == "unknown" for effect in self.effects
         ):

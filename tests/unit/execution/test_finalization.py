@@ -655,3 +655,28 @@ def test_same_input_bytes_with_different_roles_remain_distinct():
     assert result.outcome == "succeeded"
     assert len(result.used_inputs) == 2
     assert [item.role for item in result.used_inputs] == ["baseline", "candidate"]
+
+
+def test_effect_key_is_kind_qualified_and_validates_public_result_snapshot():
+    from stratbox.core.execution import EffectKey, OperationResult, ObservabilitySummary
+    from stratbox.core.execution import EffectReceipt
+    import pytest
+    a = EffectReceipt("storage.write", "confirmed", effect_id="shared")
+    b = EffectReceipt("notification.handoff", "unknown", effect_id="shared")
+    assert a.key == EffectKey("storage.write", "shared")
+    assert b.key == EffectKey("notification.handoff", "shared")
+    assert a.key != b.key
+    op = OperationDefinition("test.keyed", 1, "m-v1", str, str,
+        possible_effects=frozenset({"storage.write", "notification.handoff"}))
+    with pytest.raises(ValueError, match="Duplicate identified effect"):
+        OperationResult(op, "invocation", "unknown", "ok", (Diagnostic("effect.outcome_unknown"),),
+                        (), (a, a), ObservabilitySummary(0, 0))
+    legal = OperationResult(op, "invocation", "unknown", "ok",
+        (Diagnostic("effect.outcome_unknown"),), (), (a, b),
+        ObservabilitySummary(0, 0))
+    assert len(legal.effects) == 2
+    unnamed = EffectReceipt("storage.write", "unknown")
+    independent = OperationResult(op, "invocation", "unknown", "ok",
+        (Diagnostic("effect.outcome_unknown"),), (), (unnamed, unnamed),
+        ObservabilitySummary(0, 0))
+    assert len(independent.effects) == 2
