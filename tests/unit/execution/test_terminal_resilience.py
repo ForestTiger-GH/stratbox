@@ -238,7 +238,7 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
         calls = 0
         def monotonic(self):
             self.calls += 1
-            if self.calls > 2:
+            if self.calls > 3:
                 raise OSError("clock should not be touched for invalid progress")
             return 0.0
         def now(self):
@@ -253,4 +253,6 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
     ))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "internal.error"
-    assert clock.calls >= 2
+    # Start + budget initialization + initial admission + terminal check
+    # + final best-effort measurement; invalid progress adds no clock read.
+    assert clock.calls == 5
