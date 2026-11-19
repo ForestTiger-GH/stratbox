@@ -18,6 +18,7 @@ independent business packages under `stratbox.domains`.
 - [Execution and storage boundaries](docs/architecture/core-operation-boundaries.md)
 - [Observability: qualified events, journals and recovery](docs/architecture/observability.md)
 - [Notification subscriptions and recovery](docs/current-how/notifications.md)
+- [Rosstat publisher original acquisition and revision evidence](docs/current-how/rosstat-publications.md)
 - [Strategy Box Knowledge Product](docs/README.md)
 
 ```sh

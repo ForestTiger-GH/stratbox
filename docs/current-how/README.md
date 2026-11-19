@@ -29,3 +29,5 @@
 These modules have local static evidence, but no GUI, tests, filesystem mutation, fault injection or installed application was executed. They do not prove currentness of all other domains, complete coverage of the 566 registered file source identities, or end-to-end reliability.
 
 Uncovered mechanisms remain owned by their direct implementation and test source files. The scientific and target documents do not override their observed control flows.
+
+- [Rosstat original publication acquisition and version evidence](rosstat-publications.md)
