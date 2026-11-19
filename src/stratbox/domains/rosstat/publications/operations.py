@@ -72,6 +72,8 @@ def discover(
                 retry=RetryPolicy(),
             )
             payload = source.payload
+        if payload.source_id is not None and payload.source_id != req.series_id + ".index":
+            raise OperationFailure("rosstat.index_source_mismatch")
         use_payload(payload, invocation, role="publisher_index", limit=10 * 1024 * 1024)
         invocation.stage("qualify_publication_links")
         try:

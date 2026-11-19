@@ -116,3 +116,14 @@ def test_registered_operations_resolve():
         "rosstat.publications.acquire",
         "rosstat.publications.acquire_to_store",
     ))
+
+
+def test_wrong_series_payload_is_rejected_offline():
+    series = "rosstat.short_term_indicators"
+    payload = SourcePayload(
+        b'<a href="/storage/mediabank/2026-08.xlsx">X</a>',
+        "text/html", "rosstat.socioeconomic_russia.index",
+    )
+    result = discover(DiscoverRosstatRequest(series, payload))
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "rosstat.index_source_mismatch"
