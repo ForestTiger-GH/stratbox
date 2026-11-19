@@ -40,45 +40,59 @@ def _resolve_completion(
     conflict_keys: frozenset[tuple[str, str]] = frozenset(),
 ) -> _ResolvedCompletion:
     outcome, value = work.outcome, work.value
-    diagnostics = list(work.diagnostics)
-    # Treat an invalid *handler* result as a contract failure before applying
-    # effect precedence. Unknown external effects still take priority.
+    diagnostics: list[Diagnostic] = []
+    seen: set[Diagnostic] = set()
+
+    def add(diagnostic: Diagnostic, *, independent_anonymous: bool = False) -> None:
+        """Stable, expected O(1) de-duplication of ordinary diagnostics.
+
+        Anonymous effect observations carry multiplicity, even when identical.
+        A separate external effect never acquires a synthetic durable ID.
+        """
+        if independent_anonymous or diagnostic not in seen:
+            diagnostics.append(diagnostic)
+        seen.add(diagnostic)
+
+    for item in work.diagnostics:
+        add(item)
+    # Invalid handler results are qualified before effect precedence.
     invalid_value = value is not None and not isinstance(value, definition.value_type)
     missing_value = outcome in {"succeeded", "partial"} and value is None
     illegal_partial = outcome == "partial" and not definition.partial_allowed
     illegal_cancelled_value = outcome == "cancelled" and value is not None
     if invalid_value or missing_value or illegal_partial or illegal_cancelled_value:
         outcome, value = "failed", None
-        diagnostics.append(Diagnostic("internal.error"))
+        add(Diagnostic("internal.error"))
 
-    for diagnostic in integrity_diagnostics:
-        if diagnostic not in diagnostics:
-            diagnostics.append(diagnostic)
+    for item in integrity_diagnostics:
+        add(item)
 
+    unknown_effect = False
+    failed_effect = False
     for effect in effects:
-        if effect.state == "unknown" and (effect.kind, effect.effect_id) not in conflict_keys:
-            diagnostic = Diagnostic(
-                "effect.outcome_unknown", component=effect.kind, evidence_ref=effect.effect_id,
+        if effect.state == "failed":
+            failed_effect = True
+        if effect.state != "unknown":
+            continue
+        unknown_effect = True
+        if (effect.kind, effect.effect_id) in conflict_keys:
+            continue
+        add(
+            Diagnostic(
+                "effect.outcome_unknown", component=effect.kind,
+                evidence_ref=effect.effect_id,
                 reconciliation_owner=effect.reconciliation_owner,
                 retry_disposition="reconcile" if effect.effect_id is not None else "none",
-            )
-            if effect.effect_id is None or diagnostic not in diagnostics:
-                # Anonymous receipts are independent; keep diagnostic
-                # multiplicity without inventing a durable effect ID.
-                diagnostics.append(diagnostic)
+            ),
+            independent_anonymous=effect.effect_id is None,
+        )
 
-    if integrity_diagnostics or any(effect.state == "unknown" for effect in effects):
+    if integrity_diagnostics or unknown_effect:
         outcome = "unknown"
-    elif outcome == "succeeded" and any(effect.state == "failed" for effect in effects):
+    elif outcome == "succeeded" and failed_effect:
         outcome = "failed"
-        diagnostics.append(Diagnostic("effect.failed"))
+        add(Diagnostic("effect.failed"))
 
     if outcome != "succeeded" and not diagnostics:
-        diagnostics.append(Diagnostic("operation.incomplete"))
-    # Deduplicate equal evidence without collapsing distinct effect references.
-    unique: list[Diagnostic] = []
-    for diagnostic in diagnostics:
-        if (diagnostic.code == "effect.outcome_unknown" and diagnostic.evidence_ref is None
-                or diagnostic not in unique):
-            unique.append(diagnostic)
-    return _ResolvedCompletion(outcome, value, tuple(unique))
+        add(Diagnostic("operation.incomplete"))
+    return _ResolvedCompletion(outcome, value, tuple(diagnostics))

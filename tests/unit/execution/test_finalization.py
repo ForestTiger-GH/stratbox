@@ -560,3 +560,30 @@ def test_computation_survives_later_publication_error(state, expected):
     assert result.computation is not None
     assert result.computation.output == computed
     assert result.effects[0].state == state
+
+
+def test_large_diagnostics_are_ordered_and_deduplicated_linearly():
+    from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion
+    size = 10_000
+    items = tuple(Diagnostic(f"domain.issue_{index}") for index in range(size))
+    result = _resolve_completion(operation(), _WorkCompletion(
+        "failed", None, items + items[::100],
+    ), ())
+    assert result.outcome == "failed"
+    assert result.diagnostics == items
+
+
+def test_many_distinct_effects_preserve_order_and_anonymous_multiplicity():
+    from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion
+    named = tuple(EffectReceipt("storage.write", "unknown", effect_id=f"receipt_{i}")
+                  for i in range(10_000))
+    unnamed = (EffectReceipt("storage.write", "unknown"),) * 3
+    result = _resolve_completion(
+        operation(), _WorkCompletion("succeeded", "ok"), named + unnamed,
+    )
+    assert result.outcome == "unknown"
+    assert len(result.diagnostics) == 10_003
+    assert [item.evidence_ref for item in result.diagnostics[:3]] == [
+        "receipt_0", "receipt_1", "receipt_2",
+    ]
+    assert all(item.evidence_ref is None for item in result.diagnostics[-3:])
