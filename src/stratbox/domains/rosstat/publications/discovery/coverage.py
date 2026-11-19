@@ -33,8 +33,7 @@ def assess(
 
 def qualified_inventory_from_index(
     index: RosstatPublicationIndex, *,
-    owner_evidence_ref: str, issue_lower_bound: str | None = None,
-    issue_upper_bound: str | None = None,
+    owner_evidence_ref: str,
 ) -> QualifiedInventory:
     """A future verified profile may yield an owner-attested absence baseline.
 
@@ -42,9 +41,7 @@ def qualified_inventory_from_index(
     needs to verify the durable publication state and the owner evidence reference.
     """
     if (
-        (index.assessment.scope.scope_id != "full_series"
-         and issue_lower_bound is None and issue_upper_bound is None)
-        or index.coverage != "complete" or not index.live_profile_verified
+        index.coverage != "complete" or not index.live_profile_verified
         or index.acquisition is None or index.observed_at_utc is None
     ):
         raise ValueError("rosstat.inventory_not_verified")
@@ -53,5 +50,6 @@ def qualified_inventory_from_index(
         index.assessment.profile_id, index.assessment.profile_version,
         index.observed_at_utc, index.index_identity,
         tuple(item.key.identity for item in index.qualified_assets),
-        owner_evidence_ref, issue_lower_bound, issue_upper_bound,
+        owner_evidence_ref, index.assessment.scope.issue_lower_bound,
+        index.assessment.scope.issue_upper_bound,
     )

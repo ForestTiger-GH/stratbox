@@ -215,12 +215,12 @@ def test_owner_review_of_exact_http_page_can_create_scoped_inventory():
         series, source.assessment.profile_id, source.profile_version,
         source.index_identity, "recent_listing", ("official_current_issues",),
         (ref.key.source_id,), "human-reviewed-publisher-page-2026-11",
+        issue_lower_bound="2026-01",
     )
     approved = approve_index(source, evidence)
     assert approved.coverage == "complete"
     inventory = qualified_inventory_from_index(
         approved, owner_evidence_ref="verified-owner-state",
-        issue_lower_bound="2026-01",
     )
     assert inventory.assets == (ref.key.identity,)
     assert inventory.covers_issue("2026-09")
@@ -238,14 +238,14 @@ def test_manual_review_must_bind_current_byte_version_and_all_assets():
     wrong = ReviewedIndexScope(
         series, source.assessment.profile_id, source.profile_version,
         ByteIdentity.of(b"other-page"), "recent_listing", ("current",),
-        (key,), "reviewer",
+        (key,), "reviewer", issue_lower_bound="2026-01",
     )
     with pytest.raises(ValueError, match="rosstat.review_evidence_mismatch"):
         approve_index(source, wrong)
     wrong_members = ReviewedIndexScope(
         series, source.assessment.profile_id, source.profile_version,
         source.index_identity, "recent_listing", ("current",),
-        (), "reviewer",
+        (), "reviewer", issue_lower_bound="2026-01",
     )
     with pytest.raises(ValueError, match="rosstat.review_evidence_mismatch"):
         approve_index(source, wrong_members)
