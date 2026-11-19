@@ -112,3 +112,36 @@ def test_unapproved_asset_url_fails_before_http_request():
     result = acquire(AcquireRosstatRequest(fake), transport=source)
     assert result.outcome == "failed"
     assert not source.requests
+
+
+def test_resolved_public_stream_source_handler_is_executable(tmp_path):
+    """The core registry must point to the public operation, not its internal helper."""
+    from stratbox.core.operations.source.originals import ReceiveOriginalRequest, ReceiveToStoreRequest
+    from stratbox.core.network import HttpRequest, HttpsEndpoint
+    from stratbox.domains.registry import operation_catalog
+
+    body = workbook()
+    selected = asset()
+    request = HttpRequest(
+        "GET", selected.url,
+        (HttpsEndpoint("rosstat.gov.ru", "/storage/mediabank/", subtree=True),),
+        max_response_bytes=1024 * 1024,
+    )
+    core_request = ReceiveToStoreRequest(
+        ReceiveOriginalRequest(request, selected.key.source_id, frozenset({
+            "application/octet-stream",
+        })),
+        OriginalDestination("source_original.xlsx"),
+    )
+    _, handler, _ = operation_catalog().resolve("source.receive_to_store", 1)
+    saved = handler(core_request, transport=Publisher(body), store=LocalFileStore(str(tmp_path)))
+    assert saved.outcome == "succeeded", saved.diagnostics
+    assert (tmp_path / "source_original.xlsx").read_bytes() == body
+
+
+def test_complete_offline_example(capsys):
+    from runpy import run_path
+    code = Path(__file__).resolve().parents[3] / "examples" / "rosstat_originals_offline.py"
+    main = run_path(str(code))["main"]
+    main()
+    assert "consumer_accepted" in capsys.readouterr().out
