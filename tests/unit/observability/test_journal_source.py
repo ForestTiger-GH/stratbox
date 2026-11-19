@@ -68,7 +68,7 @@ def test_finished_summary_is_linked_and_snapshot_remains_volatile():
     capture_operation_result(result, sink)
     summary = sink.records[-1]
     finish = next(record for record in sink.records if record.kind == "operation.finished")
-    assert summary.payload["data_version"] == 2
+    assert summary.payload["data_version"] == 3
     assert summary.cause_record_ids == (finish.record_id,)
     assert summary.correlation == finish.correlation
     older_view = record_from_result(result, occurred_at_utc=TIME)

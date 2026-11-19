@@ -88,7 +88,7 @@ def test_canonical_finish_link_remains_deterministic_for_large_result():
     record = record_from_result(result, finished_event=final)
     again = record_from_result(result, finished_event=final)
     assert record == again
-    assert record.payload["data_version"] == 2
+    assert record.payload["data_version"] == 3
     assert record.payload["details_coverage"] == "summarized"
     assert len(record.cause_record_ids) == 1
     assert record.record_id == again.record_id

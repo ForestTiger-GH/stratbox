@@ -84,7 +84,12 @@ def test_real_computation_receipt_is_logged_without_raw_output():
     assert set(summary.payload) == {
         "contract_version", "method_version", "time_basis", "diagnostics", "inputs",
         "effects", "computation", "observability", "resources_used",
+        "details_coverage", "details_counts", "details_included", "details_digest",
+        "details_digest_profile", "privacy_qualification",
     }
     assert summary.payload["computation"]["output"] == {"sha256": ByteIdentity.of(b"6").sha256, "size": 1}
     assert set(summary.payload["computation"]) == {"id", "output", "dataset_id", "release_id", "method_version"}
-    assert set(summary.payload["inputs"][0]) == {"role", "source_id", "identity", "version", "container"}
+    assert set(summary.payload["inputs"][0]) == {
+        "role", "source_id_digest", "identity", "media_type", "availability",
+        "version", "container",
+    }

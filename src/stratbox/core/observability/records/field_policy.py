@@ -77,6 +77,8 @@ SCHEMAS = {
         AllowedField("resources_used", "sequence", "operational"),
         AllowedField("details_coverage", "string", "public", max_length=16),
         AllowedField("details_digest", "string", "operational", max_length=64),
+        AllowedField("details_digest_profile", "string", "operational", max_length=128),
+        AllowedField("privacy_qualification", "string", "operational", max_length=128),
         AllowedField("details_counts", "mapping", "operational"),
         AllowedField("details_included", "mapping", "operational"),
     )),
@@ -168,8 +170,8 @@ class FieldSchemaRegistry:
         if "data_version" in record.payload:
             if type(version) is not int:
                 raise ValueError("journal.unsupported_data_schema")
-            if key == _SUMMARY_KEY and version == 2:
-                _SUMMARY_V2.validate(record.payload)
+            if key == _SUMMARY_KEY and version == 3:
+                _SUMMARY_V3.validate(record.payload)
             else:
                 self.data_schema((*key, version)).validate(record)
             return
@@ -182,8 +184,8 @@ class FieldSchemaRegistry:
         key = (record.record_type, record.kind)
         if "data_version" in record.payload:
             self.validate(record)
-            if key == _SUMMARY_KEY and record.payload["data_version"] == 2:
-                return _SUMMARY_V2.present(record, allow=allow)
+            if key == _SUMMARY_KEY and record.payload["data_version"] == 3:
+                return _SUMMARY_V3.present(record, allow=allow)
             schema_v = self._data[(*key, record.payload["data_version"])]
             return {field.name: record.payload[field.name] for field in schema_v.fields
                     if field.classification in allow and field.name in record.payload}
@@ -193,7 +195,7 @@ class FieldSchemaRegistry:
         return schema.present(record, allow=allow)
 
 _SUMMARY_KEY = ("result_summary", "operation.result")
-_SUMMARY_V2 = replace(SCHEMAS[_SUMMARY_KEY], fields=SCHEMAS[_SUMMARY_KEY].fields + (
+_SUMMARY_V3 = replace(SCHEMAS[_SUMMARY_KEY], fields=SCHEMAS[_SUMMARY_KEY].fields + (
     AllowedField("data_version", "integer"),
 ))
 _EXPLICIT_BUILTINS = {
@@ -207,8 +209,8 @@ def validate_builtin_fields(record: JournalRecord) -> None:
     if key in _EXPLICIT_BUILTINS:
         _EXPLICIT_BUILTINS[key].validate(record)
         return
-    if key == _SUMMARY_KEY and type(record.payload.get("data_version")) is int and record.payload["data_version"] == 2:
-        _SUMMARY_V2.validate(record.payload)
+    if key == _SUMMARY_KEY and type(record.payload.get("data_version")) is int and record.payload["data_version"] == 3:
+        _SUMMARY_V3.validate(record.payload)
         return
     schema = SCHEMAS.get(key)
     if schema:

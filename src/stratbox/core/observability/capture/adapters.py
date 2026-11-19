@@ -64,13 +64,22 @@ def _diagnostic_detail(item) -> dict[str, object]:
     return {
         "code": item.code, "stage": item.stage, "component": item.component,
         "reason_class": item.reason_class, "retry_disposition": item.retry_disposition,
-        "evidence_ref": item.evidence_ref, "incident_id": item.incident_id,
+        "evidence_ref": item.evidence_ref,
+        "reconciliation_owner": item.reconciliation_owner,
+        "incident_id": item.incident_id,
     }
 
 
 def _input_detail(item) -> dict[str, object]:
+    # Source identifiers may be opaque locators. Publish identity digest only.
+    source_digest = (
+        sha256(item.source_id.encode("utf-8")).hexdigest()
+        if item.source_id is not None else None
+    )
     return {
-        "role": item.role, "source_id": item.source_id, "identity": _byte(item.identity),
+        "role": item.role, "source_id_digest": source_digest,
+        "identity": _byte(item.identity), "media_type": item.media_type,
+        "availability": item.availability,
         "version": _byte(item.version), "container": _byte(item.container),
     }
 
@@ -85,7 +94,7 @@ def _effect_detail(item) -> dict[str, object]:
 
 def _details_metadata(result: OperationResult) -> tuple[str, dict[str, object]]:
     """Stable digest of complete safe projections, never private locators."""
-    digest = sha256()
+    digest = sha256(b"stratbox.result-details.v3:\0")
     streams = (
         ("diagnostics", result.diagnostics, _diagnostic_detail),
         ("inputs", result.used_inputs, _input_detail),
@@ -161,6 +170,8 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
         "method_version": result.definition.method_version,
         "time_basis": time_basis,
         "details_digest": digest,
+        "details_digest_profile": "stratbox.result-details.v3",
+        "privacy_qualification": "safe_fields_only_private_locators_omitted",
         "details_counts": counts,
         "computation": computation,
         "observability": {
@@ -174,7 +185,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
                            for resource, count in result.resources_used],
     }
     if finished_event is not None:
-        metadata["data_version"] = 2
+        metadata["data_version"] = 3
 
     # A single bounded record cannot convey all receipts of a massive run.
     # Count and hash the entire safe projection, and explicitly label coverage.
