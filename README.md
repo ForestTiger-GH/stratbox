@@ -13,6 +13,7 @@ independent business packages under `stratbox.domains`.
 - [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
+- [Execution finalization and effect integrity](docs/architecture/execution-finalization.md)
 - [Installation and offline quickstart](docs/how/install-and-run-core.md)
 - [Execution and storage boundaries](docs/architecture/core-operation-boundaries.md)
 - [Observability: qualified events, journals and recovery](docs/architecture/observability.md)

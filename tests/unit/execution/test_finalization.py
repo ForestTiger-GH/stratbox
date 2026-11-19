@@ -406,3 +406,78 @@ def test_terminal_observation_is_private_and_single_attempt():
     with pytest.raises(RuntimeError, match="terminal observation"):
         retained[0]._finish("succeeded", None)
     assert len([event for event in sink.events if event.kind == "operation.finished"]) == 1
+
+
+@pytest.mark.parametrize("effect_state, expected", [
+    (None, "failed"), ("confirmed", "failed"), ("unknown", "unknown"),
+])
+def test_finalizer_constructor_failure_is_classified_before_terminal_event(monkeypatch, effect_state, expected):
+    from stratbox.core.execution import runner as module
+    original = module.OperationResult
+    calls = []
+
+    def inject_validation_error(*args, **kwargs):
+        calls.append(True)
+        if len(calls) == 1:
+            raise ValueError("synthetic validation failure")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "OperationResult", inject_validation_error)
+    sink = InMemorySink()
+
+    def handler(value, invocation):
+        if effect_state is not None:
+            invocation.effect(EffectReceipt("storage.write", effect_state, effect_id="effect_X"))
+        return value
+
+    result = run(operation(), "ok", handler, context=ExecutionContext(sink=sink))
+    assert len(calls) == 2
+    assert result.outcome == expected
+    assert result.value is None
+    assert any(d.code == "internal.error" for d in result.diagnostics)
+    assert sink.events[-1].outcome == expected
+    assert len([event for event in sink.events if event.kind == "operation.finished"]) == 1
+
+
+def test_finalization_freezes_input_evidence_even_if_invocation_is_retained():
+    from stratbox.shared.evidence import UsedInputReceipt
+    retained = []
+    receipt = UsedInputReceipt("input", ByteIdentity.of(b"input"), "application/octet-stream", "inline")
+
+    def handler(value, invocation):
+        retained.append(invocation)
+        invocation.use(receipt)
+        return value
+
+    result = run(operation(), "ok", handler)
+    assert result.used_inputs == (receipt,)
+    assert retained[0].used_inputs == (receipt,)
+    with pytest.raises(RuntimeError, match="finalized"):
+        retained[0].use(receipt)
+    assert result.used_inputs == (receipt,)
+
+
+def test_representation_accounting_and_computation_receipt_is_independent_of_effects():
+    from stratbox.shared.data.representation import Representation
+    from stratbox.core.limits import ExecutionBudget
+
+    op = OperationDefinition("test.render", 1, "render-v1", bytes, Representation,
+                             possible_effects=frozenset({"storage.write"}))
+    payload = Representation("sample.csv", 1, "text/csv", b"x,y\\n1,2\\n")
+    purely_computed = run(op, b"seed", lambda req, inv: payload)
+    assert purely_computed.outcome == "succeeded"
+    assert dict(purely_computed.resources_used)["output_bytes"] == payload.identity.size
+    assert purely_computed.computation is not None
+
+    def published(req, inv):
+        inv.budget.charge("output_bytes", payload.identity.size)
+        inv.effect(EffectReceipt("storage.write", "confirmed", effect_id="write_id"))
+        return payload
+
+    saved = run(op, b"seed", published, context=ExecutionContext(
+        budget=ExecutionBudget(output_bytes=payload.identity.size),
+    ))
+    assert saved.outcome == "succeeded"
+    assert dict(saved.resources_used)["output_bytes"] == payload.identity.size
+    assert saved.computation is not None
+    assert saved.effects[0].state == "confirmed"
