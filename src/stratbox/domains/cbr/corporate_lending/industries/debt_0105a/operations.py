@@ -18,6 +18,8 @@ from stratbox.core.operations.tables import (
 from ..common.operation_helpers import (
     _stream_metadata, _select_industry, _pivot_tables, _pivot_metadata, _seal_pivots,
 )
+from ..common.extraction import record_flakes, seal_flake
+from ..common.integration import assemble_flakes
 from stratbox.domains.cbr._source import (
     HTML_TYPES,
     WORKBOOK_LIMIT,
@@ -94,7 +96,7 @@ def discover(
             official_url(source.url, roots=_ROOTS)
         return found
 
-    return run(DISCOVER, request, work, context=context)
+    return run(DISCOVER, request, work, context=context, providers={"http": transport})
 
 
 def _validate_link(source):
@@ -166,16 +168,20 @@ def _parse(req, invocation, *, selection: IndustrySelection | None = None):
         raise OperationFailure("source.workbook_layout_unresolved") from None
 
 
+def _parse_flake(req, invocation, *, selection=None):
+    value = _parse(req, invocation, selection=selection)
+    return seal_flake(value, req.payload, PARSE, invocation, parameters={
+        "report_date": value.report_date, "unmapped_headers": value.unmapped_headers,
+        **selection_parameters(value.selection),
+    })
+
+
 def parse(
     request: ParseIndustryRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[ParsedCbr0105ADebtCorpFile]:
     def work(req, invocation):
         invocation.stage("parse")
-        value = _parse(req, invocation)
-        value = seal_stream(invocation, value, parameters={
-            "report_date": value.report_date, "unmapped_headers": value.unmapped_headers,
-            **selection_parameters(value.selection),
-        })
+        value = _parse_flake(req, invocation)
         if any(issue.severity == "error" for issue in value.validation_issues):
             return Completion(value, "failed", "source.validation_failed")
         return value
@@ -189,9 +195,9 @@ def build_stream(
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from .parser import concat_industry_streams
         from .regions import normalize_cbr_0105a_debt_corp_regions_to_latest
         from .sources import report_date_from_cbr_0105a_filename
+        from .snapshot_operations import _result
 
         invocation.stage("parse")
         if not req.sources:
@@ -210,7 +216,7 @@ def build_stream(
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
         batch = attempt_batch(tuple(zip(req.sources, selected, strict=True)),
-                              lambda pair: _parse(pair[0], invocation, selection=req.selection), invocation,
+                              lambda pair: _parse_flake(pair[0], invocation, selection=req.selection), invocation,
                               continue_on_error=req.continue_on_error)
         require_batch_values(batch, "source.no_valid_workbooks")
         failures = [
@@ -225,39 +231,19 @@ def build_stream(
             invocation.stage("normalize_geography")
         invocation.budget.check("cells", sum(item.df_stream.size for item in batch.values),
                                 completed=checkpoint is not None)
-        files = normalize_cbr_0105a_debt_corp_regions_to_latest(batch.values)
-        stream = concat_industry_streams(item.df_stream for item in files)
-        stream = stream.sort_values(
-            ["report_date", "sheet_order", "region_order", "industry_order"],
-            kind="stable",
-        ).reset_index(drop=True)
-        dates = tuple(sorted(item.report_date for item in files))
-        latest = max(files, key=lambda item: item.report_date)
-        value = Cbr0105ADebtCorpStreamResult(
-            tuple(item.source for item in req.sources if item.source is not None),
-            tuple(failures),
-            files,
-            tuple(issue for item in files for issue in item.validation_issues),
-            stream,
-            dates,
-            latest.report_date,
-            max(selected),
-            latest.report_date,
-            latest.report_date == max(selected),
-            latest.regions,
-            latest.industries,
-            len(stream), stop_reason=batch.stopped.code if batch.stopped else None,
-            selection=req.selection,
-        )
+        record_flakes(batch.values, invocation)
+        value, parameters = assemble_flakes(batch.values, selected, family="0105a",
+            normalize_geography=normalize_cbr_0105a_debt_corp_regions_to_latest,
+            result_factory=_result, failures=tuple(failures),
+            stop_reason=batch.stopped.code if batch.stopped else None)
         value = seal_stream(invocation, value, parameters={
-            "selected": selected, "accepted": dates,
+            **parameters,
             **selection_parameters(req.selection),
-            "quantity_kind": "stock", "period_basis": "as_of", "unit": "million_rubles",
-            "geography_anchor": latest.report_date, "geography_method": value.geography_method_version,
+            "geography_anchor": value.latest_report_date, "geography_method": value.geography_method_version,
             "coverage": "subset" if failures or batch.stopped else "complete",
             "not_started": [item[0].source_name if isinstance(item, tuple) else item.source_name for item in batch.remaining],
             "interrupted": batch.interrupted[0].source_name if batch.interrupted else None,
-            "unmapped_headers": [pair for item in files for pair in item.unmapped_headers],
+            "unmapped_headers": [pair for item in batch.values for pair in item.unmapped_headers],
         }, checkpoint=checkpoint)
         if not value.validation_ok:
             return Completion(value, "failed", "source.validation_failed")
@@ -273,7 +259,6 @@ def calculate_apk(
 ) -> OperationResult[Cbr0105ADebtCorpApkCalculationResult]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
-        require_extra("openpyxl", "excel")
         from .derived import (
             Cbr0105ADebtCorpDerivedIndustryError,
             calculate_cbr_0105a_debt_corp_apk_industry,
@@ -303,7 +288,6 @@ def build_pivots(
 ) -> OperationResult[Cbr0105ADebtCorpPivotSetResult]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
-        require_extra("openpyxl", "excel")
         from .pivots import (
             Cbr0105ADebtCorpPivotError,
             build_cbr_0105a_debt_corp_pivot_set,

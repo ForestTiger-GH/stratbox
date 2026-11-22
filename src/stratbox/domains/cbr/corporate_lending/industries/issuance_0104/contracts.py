@@ -16,6 +16,7 @@ from ..common.contracts import (
     IndustryRegionSpec as RegionSpec,
     IndustryValidationIssue as ValidationIssue,
     IndustrySelection,
+    IndustryPivotSetResult,
 )
 
 if TYPE_CHECKING:
@@ -90,6 +91,13 @@ class ParsedIssuanceFile:
     unmapped_headers: tuple[tuple[str, str], ...] = ()
     selection: IndustrySelection = IndustrySelection()
     source_validation_scope: str = "full"
+    geography_reference_version: str = "cbr-industry-geography-2026-06-01"
+
+
+@dataclass(frozen=True, slots=True)
+class IntegrateIssuanceFlakesRequest:
+    flakes: tuple[ParsedIssuanceFile, ...]
+    expected_report_dates: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -112,6 +120,7 @@ class IssuanceStreamResult:
     stop_reason: str | None = None
     selection: IndustrySelection = IndustrySelection()
     source_validation_scope: str = "full"
+    geography_reference_version: str = "cbr-industry-geography-2026-06-01"
 
     @property
     def is_partial(self) -> bool:
@@ -177,3 +186,12 @@ class IssuanceWorkbooksResult:
     @property
     def ok(self) -> bool:
         return bool(self.items) and all(item.ok for item in self.items)
+
+
+@dataclass(frozen=True, slots=True)
+class RenderIssuancePivotsRequest:
+    tables: IndustryPivotSetResult
+    industry_code: str
+    industry_name_ru: str
+    reference_periods: tuple[str, ...]
+    include_metadata_sheet: bool = False

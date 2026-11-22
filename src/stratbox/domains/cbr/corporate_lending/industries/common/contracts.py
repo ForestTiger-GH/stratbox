@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Mapping
 
 from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.snapshots import DatasetSnapshot
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -19,6 +20,18 @@ if TYPE_CHECKING:
 class IndustrySelection:
     """Published industry codes to materialize; None means all published codes."""
     industry_codes: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IndustrySnapshotRequest:
+    value: object
+    dataset_id: str
+    version_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReadIndustrySnapshotRequest:
+    snapshot: DatasetSnapshot
 
 
 IndustryPivotDimension = Literal[

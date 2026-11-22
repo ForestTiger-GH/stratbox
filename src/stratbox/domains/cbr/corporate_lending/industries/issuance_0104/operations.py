@@ -32,6 +32,8 @@ from stratbox.domains.cbr.corporate_lending.industries.common.contracts import I
 from stratbox.domains.cbr.corporate_lending.industries.common.operation_helpers import (
     _seal_pivots, _select_industry, _stream_metadata,
 )
+from ..common.extraction import record_flakes, seal_flake
+from ..common.integration import assemble_flakes
 from .sources import CBR_SORS_INDEX_URL, SERIES_CODE, discover_links, reference_period, report_date_from_filename
 
 from .definitions import (
@@ -74,7 +76,7 @@ def discover(request: DiscoverIssuanceRequest, *, transport: HttpTransport | Non
         for source in sources:
             _check_source(source)
         return sources
-    return run(DISCOVER, request, work, context=context)
+    return run(DISCOVER, request, work, context=context, providers={"http": transport})
 
 
 def acquire(request: IssuanceSourceLink, *, transport: HttpTransport | None = None,
@@ -115,16 +117,20 @@ def _parse(req: ParseIssuanceRequest, invocation, *, selection: IndustrySelectio
         raise OperationFailure("source.workbook_layout_unresolved") from None
 
 
+def _parse_flake(req, invocation, *, selection=None):
+    parsed = _parse(req, invocation, selection=selection)
+    return seal_flake(parsed, req.payload, PARSE, invocation, parameters={
+        "report_date": parsed.report_date, "reference_period": parsed.reference_period,
+        "unmapped_headers": parsed.unmapped_headers,
+        **selection_parameters(parsed.selection),
+    })
+
+
 def parse(request: ParseIssuanceRequest, *, context: ExecutionContext | None = None
           ) -> OperationResult[ParsedIssuanceFile]:
     def work(req, invocation):
         invocation.stage("parse")
-        parsed = _parse(req, invocation)
-        parsed = seal_stream(invocation, parsed, parameters={
-            "report_date": parsed.report_date, "reference_period": parsed.reference_period,
-            "unmapped_headers": parsed.unmapped_headers,
-            **selection_parameters(parsed.selection),
-        })
+        parsed = _parse_flake(req, invocation)
         if any(issue.severity == "error" for issue in parsed.validation_issues):
             return Completion(parsed, "failed", "source.validation_failed")
         return parsed
@@ -136,8 +142,8 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
     def work(req, invocation):
         require_extra("pandas", "dataframe")
         require_extra("openpyxl", "excel")
-        from stratbox.domains.cbr.corporate_lending.industries.common.streams import concat_industry_streams
         from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import normalize_cbr_0105a_debt_corp_regions_to_latest
+        from .snapshot_operations import _result
 
         invocation.stage("parse")
         if not req.sources:
@@ -152,7 +158,7 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
             raise OperationFailure("request.source_filename_invalid") from None
         if len(set(selected)) != len(selected):
             raise OperationFailure("request.duplicate_release")
-        batch = attempt_batch(req.sources, lambda item: _parse(item, invocation, selection=req.selection), invocation,
+        batch = attempt_batch(req.sources, lambda item: _parse_flake(item, invocation, selection=req.selection), invocation,
                               continue_on_error=req.continue_on_error)
         require_batch_values(batch, "source.no_valid_workbooks")
         failures = [
@@ -165,30 +171,19 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
             invocation.stage("normalize_geography")
         invocation.budget.check("cells", sum(item.df_stream.size for item in batch.values),
                                 completed=checkpoint is not None)
-        files = normalize_cbr_0105a_debt_corp_regions_to_latest(batch.values)
-        stream = concat_industry_streams(x.df_stream for x in files)
-        stream = stream.sort_values(["report_date", "sheet_order", "region_order", "industry_order"],
-                                    kind="stable").reset_index(drop=True)
-        latest = max(files, key=lambda x: x.report_date)
-        result = IssuanceStreamResult(
-            tuple(x.source for x in req.sources if x.source is not None), tuple(failures),
-            files, tuple(issue for x in files for issue in x.validation_issues),
-            stream, tuple(x.report_date for x in files),
-            tuple(x.reference_period for x in files), latest.report_date, max(selected),
-            latest.report_date, latest.report_date == max(selected),
-            latest.regions, latest.industries, len(stream),
-            stop_reason=batch.stopped.code if batch.stopped else None,
-            selection=req.selection,
-        )
+        record_flakes(batch.values, invocation)
+        result, parameters = assemble_flakes(batch.values, selected, family="0104a",
+            normalize_geography=normalize_cbr_0105a_debt_corp_regions_to_latest,
+            result_factory=_result, failures=tuple(failures),
+            stop_reason=batch.stopped.code if batch.stopped else None)
         result = seal_stream(invocation, result, parameters={
-            "selected": selected, "accepted": result.dates,
+            **parameters,
             **selection_parameters(req.selection),
-            "quantity_kind": "flow", "period_basis": "reference_month", "unit": "million_rubles",
-            "reference_periods": result.reference_periods, "geography_anchor": latest.report_date,
+            "reference_periods": result.reference_periods, "geography_anchor": result.latest_report_date,
             "geography_method": "cbr-0105a-geography-1", "coverage": "subset" if failures or batch.stopped else "complete",
             "not_started": [item[0].source_name if isinstance(item, tuple) else item.source_name for item in batch.remaining],
             "interrupted": batch.interrupted.source_name if batch.interrupted else None,
-            "unmapped_headers": [pair for item in files for pair in item.unmapped_headers],
+            "unmapped_headers": [pair for item in batch.values for pair in item.unmapped_headers],
         }, checkpoint=checkpoint)
         if any(x.severity == "error" for x in result.validation_issues):
             return Completion(result, "failed", "source.validation_failed")
@@ -355,3 +350,36 @@ def render_industries(
         })
         return result
     return run(RENDER_INDUSTRIES, request, work, context=context)
+
+
+def render_pivots(request, *, context: ExecutionContext | None = None):
+    """Format a complete prepared view, including one restored from a snapshot."""
+    from .definitions import RENDER_PIVOTS
+
+    def work(req, invocation):
+        require_extra("pandas", "dataframe")
+        require_extra("openpyxl", "excel")
+        from stratbox.core.operations.tables import use_tables
+        from ..common.operation_helpers import _pivot_tables, _pivot_metadata
+        from .export import render_issuance_workbook
+
+        invocation.stage("render")
+        if not req.tables.tables or req.tables.is_partial:
+            raise OperationFailure("request.incomplete_views")
+        frames = use_tables(invocation, _pivot_tables(req.tables), receipt=req.tables.evidence,
+                            role="pivots", metadata=_pivot_metadata(req.tables))
+        tables = replace(req.tables, tables=tuple(replace(table, df_table=frame)
+            for table, frame in zip(req.tables.tables, frames, strict=True)))
+        try:
+            value = render_issuance_workbook(tables, industry_code=req.industry_code,
+                industry_name_ru=req.industry_name_ru, reference_periods=req.reference_periods,
+                include_metadata_sheet=req.include_metadata_sheet, budget=invocation.budget)
+        except ValueError:
+            raise OperationFailure("source.industry_views_invalid") from None
+        invocation.record(value.representation.identity, parameters={
+            "profile": value.representation.profile_id, "industry": req.industry_code,
+            "industry_name": req.industry_name_ru, "reference_periods": req.reference_periods,
+            "metadata_sheet": req.include_metadata_sheet,
+        })
+        return value
+    return run(RENDER_PIVOTS, request, work, context=context)

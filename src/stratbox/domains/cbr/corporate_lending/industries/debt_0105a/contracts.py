@@ -98,6 +98,7 @@ class ParsedCbr0105ADebtCorpFile:
     unmapped_headers: tuple[tuple[str, str], ...] = ()
     selection: IndustrySelection = IndustrySelection()
     source_validation_scope: str = "full"
+    geography_reference_version: str = "cbr-industry-geography-2026-06-01"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +119,12 @@ class BuildIndustryStreamRequest:
     sources: tuple[ParseIndustryRequest, ...]
     continue_on_error: bool = False
     selection: IndustrySelection = IndustrySelection()
+
+
+@dataclass(frozen=True, slots=True)
+class IntegrateIndustryFlakesRequest:
+    flakes: tuple[ParsedCbr0105ADebtCorpFile, ...]
+    expected_report_dates: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +149,7 @@ class Cbr0105ADebtCorpStreamResult:
     stop_reason: str | None = None
     selection: IndustrySelection = IndustrySelection()
     source_validation_scope: str = "full"
+    geography_reference_version: str = "cbr-industry-geography-2026-06-01"
 
     @property
     def sources_ok(self) -> bool:

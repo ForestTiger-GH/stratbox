@@ -108,7 +108,7 @@ PARSE = OperationDefinition(
                 "source",
                 DataContract("cbr.industries.0105a.original", 1, DataRole.ORIGINALS),
                 path="payload",
-                qualifications=frozenset(("source.cbr.industries.0105a",)),
+                alternatives=(DataContract("source.payload", 1, DataRole.ORIGINALS), DataContract("material.payload", 1)),
             ),
         ),
         outputs=(
@@ -129,13 +129,13 @@ PARSE = OperationDefinition(
 BUILD_STREAM = OperationDefinition(
     f"{_DATASET}.build_stream",
     3,
-    "cbr-0105a-stream-3",
+    "cbr-0105a-stream-4",
     BuildIndustryStreamRequest,
     Cbr0105ADebtCorpStreamResult,
     partial_allowed=True,
     limits=_TABLE_LIMITS,
     processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT, ProcessingStage.CALCULATE),
+        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE),
         composition=True,
         summary="Parse supplied workbooks and combine a source-series stream with coverage evidence.",
         inputs=(
@@ -150,13 +150,13 @@ BUILD_STREAM = OperationDefinition(
         outputs=(
             OutputPort(
                 "stream",
-                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.INTEGRATED),
                 path="df_stream",
             ),
             OutputPort(
                 "result",
                 DataContract(
-                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                    "cbr.industries.0105a.stream_result", 1, DataRole.INTEGRATED
                 ),
             ),
         ),
@@ -179,9 +179,14 @@ CALCULATE_APK = OperationDefinition(
                 "stream",
                 DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
                 path="stream",
+                alternatives=(DataContract("cbr.industries.0105a.stream", 1, DataRole.INTEGRATED),
+                              DataContract("cbr.industries.0105a.stream_result", 1, DataRole.INTEGRATED),
+                              DataContract("cbr.industries.0105a.parsed_file", 1, DataRole.EXTRACTS),
+                              DataContract("cbr.industries.0105a.calculation", 1, DataRole.INTEGRATED)),
             ),
         ),
         outputs=(
+            OutputPort("result", DataContract("cbr.industries.0105a.calculation", 1, DataRole.INTEGRATED)),
             OutputPort(
                 "stream",
                 DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
@@ -207,6 +212,10 @@ PIVOT = OperationDefinition(
                 "stream",
                 DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
                 path="stream",
+                alternatives=(DataContract("cbr.industries.0105a.stream", 1, DataRole.INTEGRATED),
+                              DataContract("cbr.industries.0105a.stream_result", 1, DataRole.INTEGRATED),
+                              DataContract("cbr.industries.0105a.parsed_file", 1, DataRole.EXTRACTS),
+                              DataContract("cbr.industries.0105a.calculation", 1, DataRole.INTEGRATED)),
             ),
         ),
         outputs=(
@@ -255,13 +264,14 @@ RENDER_INDUSTRY = OperationDefinition(
     Cbr0105ADebtCorpIndustryWorkbookResult,
     limits=_TABLE_LIMITS,
     processing=OperationSemantics(
-        stages=(ProcessingStage.RENDER,),
+        stages=(ProcessingStage.CALCULATE, ProcessingStage.VIEW, ProcessingStage.RENDER,),
+        composition=True,
         summary="Render one industry workbook from supplied data.",
         inputs=(
             InputPort(
                 "stream",
                 DataContract(
-                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                    "cbr.industries.0105a.stream_result", 1, DataRole.INTEGRATED
                 ),
                 path="stream",
             ),
@@ -285,13 +295,14 @@ RENDER_INDUSTRIES = OperationDefinition(
     IndustryWorkbooksResult,
     limits=_TABLE_LIMITS,
     processing=OperationSemantics(
-        stages=(ProcessingStage.RENDER,),
+        stages=(ProcessingStage.CALCULATE, ProcessingStage.VIEW, ProcessingStage.RENDER,),
+        composition=True,
         summary="Render independently qualified industry workbooks from supplied data.",
         inputs=(
             InputPort(
                 "stream",
                 DataContract(
-                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                    "cbr.industries.0105a.stream_result", 1, DataRole.INTEGRATED
                 ),
                 path="stream",
             ),
@@ -303,5 +314,27 @@ RENDER_INDUSTRIES = OperationDefinition(
             ),
         ),
         parameters=("industry_codes", "include_metadata_sheet"),
+    ),
+)
+
+
+from .contracts import IntegrateIndustryFlakesRequest
+from ..common.snapshot_definitions import snapshot_definitions
+
+FLAKE_SNAPSHOT, READ_FLAKE_SNAPSHOT = snapshot_definitions("0105a", "flake", ParsedCbr0105ADebtCorpFile)
+STREAM_SNAPSHOT, READ_STREAM_SNAPSHOT = snapshot_definitions("0105a", "stream", Cbr0105ADebtCorpStreamResult)
+CALCULATION_SNAPSHOT, READ_CALCULATION_SNAPSHOT = snapshot_definitions("0105a", "calculation", Cbr0105ADebtCorpApkCalculationResult)
+VIEW_SNAPSHOT, READ_VIEW_SNAPSHOT = snapshot_definitions("0105a", "view", Cbr0105ADebtCorpPivotSetResult)
+
+INTEGRATE_FLAKES = OperationDefinition(
+    f"{_DATASET}.integrate_flakes", 1, "cbr-industry-integration-1", IntegrateIndustryFlakesRequest,
+    Cbr0105ADebtCorpStreamResult, partial_allowed=True, limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.INTEGRATE,),
+        summary="Integrate source-local flakes with explicit release selection and a pinned geography profile.",
+        inputs=(InputPort("flakes", DataContract(f"{_DATASET}.parsed_files", 1, DataRole.EXTRACTS), path="flakes"),),
+        outputs=(OutputPort("result", DataContract(f"{_DATASET}.stream_result", 1, DataRole.INTEGRATED)),
+                 OutputPort("stream", DataContract(f"{_DATASET}.stream", 1, DataRole.INTEGRATED), path="df_stream")),
+        parameters=("expected_report_dates",),
     ),
 )
