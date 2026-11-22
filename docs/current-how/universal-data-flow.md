@@ -1,7 +1,7 @@
 # Universal material flow and operation handoff
 
-Scope: implemented core contracts and the Minfin and Frank RG pilots in Stratbox
-0.17.0. Original formats include PDF, workbooks, archives, HTML and arbitrary
+Scope: implemented core contracts and the Minfin, Frank RG and grouped CBR routes
+in Stratbox 0.18.0. Original formats include PDF, workbooks, archives, HTML and arbitrary
 admitted byte representations. Logical dataset adapters have a separate typed
 table interface.
 
@@ -20,7 +20,7 @@ Contents:
 5. Logical datasets — the common boundary for file and database representations.
 6. Shared archives — exact members and separately identified generated containers.
 7. HTTP routes — logical publisher policy and qualified transport evidence.
-8. Pilot lifecycles — Minfin and Frank RG behavior.
+8. Domain lifecycles — Minfin, Frank RG and CBR behavior.
 9. Integration boundaries — supplied routes, external owners and operational limits.
 
 ## 1. Independent identities and responsibilities
@@ -35,6 +35,7 @@ Contents:
 | `MaterialReference` | Exact bytes at one store location and observed revision | Yes |
 | `ArtifactReference` | Pinned representation and complete descriptor | Yes |
 | `DatasetSnapshot` | Typed table components under an immutable logical manifest | No |
+| `CollectionManifest` | Ordered materials, semantic roles, exact identities and per-item outcomes | No |
 | `SnapshotReference` | Provider, scope, dataset, version and expected logical identity | Provider and scope |
 | `ResultReference` | Consumer-owned handle to an operation result | Opaque consumer authority |
 
@@ -56,7 +57,7 @@ it from filenames, URLs or observation dates.
 | --- | --- | --- |
 | `source.receive_original` | Admitted HTTP request and accepted media types | Exact bytes and HTTP receipt |
 | `source.receive_to_store` | HTTP source and independent destination | Verified streaming storage result |
-| `material.read_location` | Explicit store locator, optional expected hash/revision | Exact payload and pinned reference |
+| `material.read_location` | Explicit store locator, optional expected hash/revision | Neutral exact payload and pinned reference |
 | `source.read_original` | Pinned material reference | Verified original payload |
 | `source.save_original` | Original payload and destination | Exact byte-preserving storage result |
 | `material.transfer` | Pinned material and independent destination | Streaming copy; source remains present |
@@ -69,6 +70,11 @@ retained hash and, when supplied, the observed revision. A revision change
 during a read fails that read. An explicit missing file, unavailable adapter or
 incorrect identity terminates the operation; acquisition never switches to a
 default Internet route.
+
+An arbitrary file read returns `material.payload` with no original role. The
+receiving source operation admits its format and explicit source context before
+treating it as an original. Existing complete artifact descriptors retain their
+own roles during replay; storage itself never changes a product into an original.
 
 `ArtifactDestination("flakes/budget.json")` retains raw representation bytes at
 that locator and a canonical descriptor at
@@ -190,6 +196,11 @@ manifest last. `DatasetAssembly` pins components in other snapshots/providers;
 selected reading resolves only requested members and performs no automatic
 row concatenation.
 
+Domain snapshot constructors encode in-memory representations. The independent
+`dataset.write_snapshot` operation performs ingestion and preservation. Repeated
+logical components with identical table identities share one physical object
+while retaining every component name in the manifest.
+
 See [logical dataset snapshots](logical-dataset-snapshots.md) for executable
 examples, type semantics, publication guarantees and bounded storage behavior.
 The implementation provides a usable file representation of a logical database;
@@ -201,6 +212,18 @@ a desktop SQL engine remains an adapter implementation owned by that consumer.
 or pinned references from independently selected stores. It preserves exact
 member bytes, validates member names and collisions, rejects source/destination
 aliases, and commits the generated archive through the receiving store.
+
+Every generated archive includes a shared `CollectionManifest`. A supplied
+manifest must agree with the exact member names, hashes, sizes and media types.
+Member roles and source-asset identities remain independent of the generated
+container. Per-item dispositions and source coverage remain explicit; successful
+selection completion does not assert complete publication history.
+
+Relative nested names are supported. The writer rejects traversal, ambiguous
+Unicode/case names and file-parent collisions. `ArchiveWriteLimits` separates
+member, input-byte and supplemental-byte limits; the default member ceiling is
+10,000, including supplemental files. `material.serialize_collection` and
+`material.read_collection` provide canonical portable manifest replay.
 
 The ZIP has its own byte identity. Each returned member receipt records its
 source identity, container identity and archive member name. It does not replace
@@ -226,7 +249,7 @@ route policy separately, and preserves hashes of both targets. Route admission
 does not promote a gateway connection into direct publisher peer evidence.
 Conditional HTTP 304 reuse remains disabled for routed requests.
 
-## 8. Pilot lifecycles
+## 8. Domain lifecycles
 
 ### 8.1. Minfin
 
@@ -257,9 +280,25 @@ can then choose independent destinations. Discovery, acquisition and guarded
 housekeeping accept named selections.
 
 Cleanup retains explicit plan/revalidation/conditional-effect boundaries.
-Table parsing, flakes and financial calculations are outside this domain's
-implemented scope. Other domains retain their existing operation surfaces;
-this release's complete portable lifecycles cover Minfin and Frank RG.
+Both Frank RG ZIP routes now embed the common material manifest. An optional
+selection report is an explicitly identified supplemental member. The generated
+container is a product; its unchanged report members remain originals.
+Table parsing, flakes and financial calculations remain outside this domain's
+implemented scope.
+
+### 8.3. CBR
+
+A common registry separates 57 logical source series from acquisition defaults
+and versioned processing profiles. The mixed-input collector accepts supplied
+bytes, references from individually selected stores and explicit HTTP sources.
+It preserves exact original identity and an ordered per-item outcome ledger.
+
+Reporting forms, corporate debt/issuance, regional escrow, service-network
+releases and SORS calculations have explicit snapshot codecs. They reconstruct
+the complete domain value required by the next operation. Reporting-form CSV
+collections also preserve schema, physical record flags and original members.
+The domain guide explains source-only variants and remaining parser boundaries:
+[CBR processing routes](cbr-data-pipeline.md).
 
 ## 9. Integration boundaries
 

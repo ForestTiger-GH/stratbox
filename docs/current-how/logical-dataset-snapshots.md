@@ -1,6 +1,7 @@
 # Logical dataset snapshots
 
-Scope: implemented core contracts, memory and file reference adapters, and the Minfin flake integration.
+Scope: implemented core contracts, memory and file reference adapters, Minfin
+flake integration and the grouped CBR snapshot codecs in Stratbox 0.18.0.
 
 Stratbox represents a logical dataset as an immutable versioned manifest and
 explicitly typed table components. Domain code supplies the same value to any
@@ -185,6 +186,11 @@ The manifest makes the version visible to its catalog. A failed attempt can
 leave reusable component objects, while no confirmed snapshot reference is
 returned for an incomplete publication.
 
+Identical content-addressed components within one snapshot are written once.
+Their logical names remain separate manifest entries and selected reads still
+address each name independently. This prevents conflicting effect receipts for
+an identical physical object during one invocation.
+
 An existing dataset/version with different logical content produces
 `dataset.version_conflict`. An identical immutable write can return
 `already_present` after verification. There is no automatic mutable `latest`
@@ -215,7 +221,23 @@ unlimited single-object tables.
 Minfin's `minfin.flake_snapshot` and `minfin.read_flake_snapshot` operations
 preserve a complete source-local flake as metadata, column and row components.
 The same flake can therefore round-trip through memory or file snapshots while
-retaining its domain meaning. Frank RG currently retains its file-oriented
+retaining its domain meaning. CBR adds complete codecs for reporting-form source
+records and results, corporate-lending flakes/streams/calculations/views, escrow
+flakes/datasets/views, service-network releases and SORS bundles/results. Their
+domain decoders require complete component sets and verify source context and
+computation lineage. See [CBR routes](cbr-data-pipeline.md).
+
+The explicit dataframe codec preserves ordered axes, nullable values, supported
+dtypes, categorical dictionaries and exact scalar values. Mixed scalar objects
+use allowlisted tags; arbitrary Python objects and executable descriptors fail
+admission. Its default limit is five million cells per frame.
+
+Snapshot constructors advertise `render`, because they prepare a logical value
+in memory. `dataset.write_snapshot` advertises `ingest` and `preserve`, while the
+matching domain restore operation advertises `read_extract`. Confirmed durable
+storage requires the actual dataset write receipt.
+
+Frank RG currently retains its file-oriented
 scope and does not acquire a table parser or analytical database through this
 infrastructure.
 

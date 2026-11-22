@@ -5,19 +5,26 @@ calculation and representation operations. Each domain owns its source
 identity and analytical rules. HTTP, file and directory commands, and
 format primitives are reusable across domains.
 
-| Domain | Public operations | Subject and result |
+The table lists representative public operations. The machine catalog supplies
+the complete versioned surface. The [CBR route guide](cbr-data-pipeline.md)
+describes the full persistence and replay boundaries added in 0.18.0.
+
+| Domain | Selected public operations | Subject and result |
 | --- | --- | --- |
 | `domains.rosstat.publications` | `discover`, `acquire`, `acquire_to_store` | Four fixed official Rosstat landing pages and provenance-qualified issue/assets; bounded PDF/XLSX/ZIP/RAR original acquisition without economic parsing; unresolved links are never overwritten automatically. |
 | `core.operations.source` | `receive_original`, `save_original`, `receive_to_store`, `read_original`, `reconcile_original`, `compare_original_versions` | Original bytes, acquisition and storage receipts, versioned material references and conditional verification. |
+| `core.operations.materials` | `read_location`, `save_artifact`, `read_artifact`, `transfer_artifact`, `archive_materials`, `serialize_collection`, `read_collection` | Neutral bytes, full semantic descriptors and manifest-bearing exact-member archives. |
+| `core.storage.datasets` | `write_snapshot`, `read_snapshot`, `list_versions` | Immutable logical typed datasets, selected reads and pinned cross-provider assemblies. |
+| `domains.cbr.publications` | `list_sources`, `discover`, `identify` | 57 logical series in 11 families; separate acquisition and exact processing profiles, explicit original admission and qualified inventory. |
 | `domains.cbr.service_network.bank_offices` | `acquire`, `parse`, `capture`, `read_representation`, `compare` | Exact HTML and a literal bank-by-territory CSV. Capture date uses the supplied zone. An asserted official as-of date has its own field. |
 | `domains.cbr.service_network.territorial_offices` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Monthly territorial XLSX and wide CSV. Formula lineage preserves the formula and attributes alongside cached values. |
 | `domains.fns.sme_register` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Regional register JSON, typed counts and literal CSV. Comparison tracks changes by the published region code and qualifies drops in coverage. |
 | `domains.fns.legal_entities_1yur` | `discover`, `acquire`, `parse`, `capture`, `read_representation`, `compare` | Part I from BIFF, OOXML, ZIP or a supplied RAR reader. The dated field map retains identity-equivalent columns, records omissions and keeps original geographic perimeters. |
-| `domains.cbr.file_collection` | `discover`, `collect_raw`, `collect_to_store`, `prepare_archive`, `archive_to_store` | Explicit selection from 41 official files, original bytes and acquisition receipts. A partial result lists attempted, completed, failed and remaining IDs. |
+| `domains.cbr.file_collection` | `discover`, `collect_raw`, `collect_to_store`, `collect_materials`, `prepare_archive`, `archive_to_store` | The 41-file convenience selection plus mixed supplied/reference/HTTP collection; exact originals and ordered dispositions; ZIPs include a common material manifest. |
 | `domains.cbr.corporate_lending.industries.debt_0105a` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_pivots`, `render_industry`, `render_industries` | Monthly 01_05_A_Debt_corp **stock** series. Full original validation, selective materialization, official industry/geography checks and provenance-preserving XLSX exports. |
 | `domains.cbr.corporate_lending.industries.issuance_0104` | `discover`, `acquire`, `parse`, `build_stream`, `calculate_apk`, `build_pivots`, `render_industry`, `render_industries` | Monthly 01_04_A_New_loans_corp **flow** series, independent operation owner. Reuses the published industry, region, APK and workbook semantics of the official 01_05_A reference profile where applicable. |
-| `domains.cbr.reporting_forms` | `select_sources`, `acquire`, `parse_form`, `build_form_data`, `build_form_views`, `render_workbook` | 101, 102, 123, 135, 802 and 805. Selected DBF member and packaged model have independent byte evidence. Formula outputs require all referenced source values. |
-| `domains.cbr.escrow` | `discover`, `acquire`, `parse`, `build_history`, `build_views`, `render_workbook` | Caller-selected releases, region and indicator history, and workbook bytes. |
+| `domains.cbr.reporting_forms` | `discover_sources`, `acquire`, `extract_forms`, `normalize_form`, `integrate_forms`, `render_flakes`, `build_form_data`, `build_form_views`, `render_workbook` | All-member DBF extraction with independent schema/lexeme/flag evidence; eight registered source families and six financial model families; complete snapshot and CSV-collection replay. |
+| `domains.cbr.escrow` | `discover`, `acquire`, `parse`, `integrate_flakes`, `build_history`, `build_views`, `render_workbook` | Source cell tokens and statuses, selected integrated history, prepared views and independent replay at every boundary. |
 | `domains.cbr.corporate_lending.sors_restoration` | `read_source_files`, `load_sources`, `restore`, `run_crosswalk`, `build_pivot`, `render_workbook` | Exact workbook and classifier inputs, tiered inference, strict feasibility and projections. The result carries bounds, proof and publication statuses. |
 | `domains.frank_rg` | `discover`, `inspect`, `select`, `scan`, `acquire`, `capture`, `prepare_file`, `plan_updates`, `assess_material`, `plan_cleanup`, `apply_cleanup`, `prepare_archive`, `prepare_archive_to_store` | Logical report registries and typed profiles; caller-supplied directory/store or original bytes; standard naming, revision-qualified copy/rename/removal, and verified archives using shared core ZIP methods. |
 | `core.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
@@ -62,6 +69,12 @@ representation digest. Offline replay uses the same method. CSV replay
 carries CSV input evidence. `first_seen` requires an explicitly confirmed
 absent baseline. An unavailable or incompatible baseline gives a successful
 comparison with an `indeterminate` decision.
+
+For service-network releases, a complete snapshot restores the original typed
+observations, qualification, acquisition and version evidence. A literal CSV
+remains a narrower representation: bank-office CSV reads require a separate
+capture date, and an official reference date remains unknown unless supplied
+explicitly. See [service-network replay](cbr-service-network.md).
 
 Computations carry their direct input receipts and parent manifests in
 `OperationResult.computation`. Pass the typed result of `build_stream` to

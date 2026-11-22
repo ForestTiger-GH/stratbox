@@ -6,6 +6,18 @@
 
 [Logical dataset snapshots and storage adapters](logical-dataset-snapshots.md)
 
+[CBR publication registry and independent processing routes](cbr-data-pipeline.md)
+
+[CBR reporting forms: complete DBF flakes, CSV collections and calculation replay](cbr-reporting-forms.md)
+
+[CBR corporate debt and issuance: retained flakes, histories, calculations and views](cbr-corporate-lending.md)
+
+[CBR escrow: source cells, integrated history and prepared-view replay](cbr-escrow.md)
+
+[CBR service network: qualified releases and explicit-date replay](cbr-service-network.md)
+
+[CBR SORS: source dependencies and calculation snapshots](cbr-sors-snapshots.md)
+
 [Current shared semantic contracts](shared-semantic-contracts.md)
 
 [Versioned reference snapshots and update procedure](reference-snapshots-and-update.md)
@@ -18,7 +30,13 @@
 
 [Processing roles, qualified connections and bounded operation discovery](processing-operation-catalog.md)
 
-**Status:** maintained current shared contracts plus nine bounded historical implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
+**Status:** maintained current shared contracts and CBR processing routes, plus
+the nine bounded historical implementation slices below. The current route
+guides describe executable local operations and regression coverage. Full
+Current HOW reconstruction, deployed-state verification and independent
+assurance remain open.
+
+## Historical implementation slices
 
 - [Public AppDock Recorder and exact ProblemQuery](appdock-public-problem-contracts.md) — existing neutral contracts for recorded occurrences, unconfirmed references and five lookup outcomes; installed app-client integration unverified.
 - [Public AppDock activation versus host attachment](appdock-activation-host-attachment-boundary.md) — actual process launch, explicit delegated-backend unavailability and remaining remote host evidence gap.

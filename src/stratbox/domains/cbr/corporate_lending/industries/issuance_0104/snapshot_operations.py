@@ -42,4 +42,3 @@ def build_view_snapshot(request, *, context=None):
 
 def read_view_snapshot(request, *, context=None):
     return shared.read_snapshot(request, family=FAMILY, kind="view", definition=D.READ_VIEW_SNAPSHOT, types=TYPES, context=context)
-

@@ -15,6 +15,7 @@ independent business packages under `stratbox.domains`.
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Universal material flow, named adapters and typed operation handoff](docs/current-how/universal-data-flow.md)
 - [Logical dataset snapshots in memory, files and distributed stores](docs/current-how/logical-dataset-snapshots.md)
+- [CBR publication registry, collection and independent processing routes](docs/current-how/cbr-data-pipeline.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
 - [Execution finalization and effect integrity](docs/architecture/execution-finalization.md)
 - [Installation and offline quickstart](docs/how/install-and-run-core.md)
@@ -34,5 +35,5 @@ python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):
 # python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.17.0-py3-none-any.whl
+# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.18.0-py3-none-any.whl
 ```

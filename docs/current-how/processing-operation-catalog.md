@@ -24,7 +24,7 @@ Contents:
 
 | Code | `DataRole` | Meaning |
 | --- | --- | --- |
-| R01 | `ORIGINALS` / `originals` | Source-native material, including an archive that preserves original members. |
+| R01 | `ORIGINALS` / `originals` | Source-native material, including an archive published by the source. Original members retain this role inside a separately generated container. |
 | R02 | `READABLE` / `readable` | A reading-oriented publication representation. |
 | R03 | `EXTRACTS` / `extracts` | Source-local structured data or its retained representation. |
 | R04 | `INTEGRATED` / `integrated` | Data aligned under a shared semantic integration model. |
@@ -181,9 +181,16 @@ stage mismatches and delegation to a composite fail explicitly. Use the merged
 
 Selected statistical owners delegate original save/read calls to neutral source
 operations. Their binding retains source-issue association and requires
-source-specific readmission after reading. Missing readable, integration and
-ingestion stages remain visible engineering gaps. Coverage entries never create
-callable tools or substitute empty success for absent functionality.
+source-specific readmission after reading. Complete domain snapshot constructors
+advertise `render`; ingestion delegates to `dataset.write_snapshot`, whose
+receiving adapter performs the actual persistent write. Snapshot reads and
+domain restore operations provide the explicit continuation boundary.
+
+Missing readable conversion, semantic integration or external publication stages
+remain visible where the owner has no implementation. A shared ingestion adapter
+does not imply a reviewed cross-source semantic database or remote publication.
+Coverage entries never create callable tools or substitute empty success for
+absent functionality.
 
 Runtime availability is separate: an implemented acquisition can still require
 an HTTP provider in a particular environment. Likewise, an unused stage does

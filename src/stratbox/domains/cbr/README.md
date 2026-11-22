@@ -1,5 +1,12 @@
-# cbr
+# Bank of Russia data routes
 
-Bank of Russia source-specific rules and operations.
+The parent CBR owner registers the shared publication catalog, acquisition
+profiles and explicit original admission. Its logical series records are shared
+by reporting forms, the file collector and domain dependency manifests.
 
-Operation owners declare their operations in a local `_registration.py`; grouping packages are metadata-only and have no operation registration.
+Independent child owners implement source extraction, semantic integration,
+calculations and presentation for each family. Each owner declares operations in
+its local `_registration.py`. Intermediate grouping packages contain no sibling
+operation dispatch.
+
+[Publication and processing routes](../../../../docs/current-how/cbr-data-pipeline.md)
