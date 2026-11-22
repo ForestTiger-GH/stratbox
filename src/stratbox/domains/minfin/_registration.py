@@ -31,10 +31,13 @@ REGISTRATION = OperationRegistration(
     ),
     stages=(
         StageDeclaration(ProcessingStage.PRESERVE, "delegated", "minfin.original_storage_shared",
-            (OperationKey("source.save_original", 1), OperationKey("source.read_original", 1)),
-            "Bind a confirmed acquired SourcePayload to the neutral source original storage operation; the destination belongs to the caller."),
+            (OperationKey("source.save_original", 1), OperationKey("source.read_original", 1),
+             OperationKey("dataset.write_snapshot", 1), OperationKey("dataset.read_snapshot", 1)),
+            "Bind confirmed original bytes or a complete source-flake DatasetSnapshot to the neutral storage operation; the destination belongs to the caller."),
         StageDeclaration(ProcessingStage.INTEGRATE, "missing", "minfin.integration_pending"),
-        StageDeclaration(ProcessingStage.INGEST, "missing", "minfin.ingestion_pending"),
+        StageDeclaration(ProcessingStage.INGEST, "delegated", "minfin.flake_dataset_storage",
+            (OperationKey("dataset.write_snapshot", 1),),
+            "Encode the complete source flake with minfin.flake_snapshot and ingest its typed tables through the selected dataset adapter."),
         StageDeclaration(ProcessingStage.PUBLISH, "missing", "minfin.publication_owned_by_consumer"),
     ),
 )

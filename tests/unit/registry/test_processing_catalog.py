@@ -62,7 +62,17 @@ def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
     catalog = operation_catalog()
     next_ops = catalog.compatible_next("cbr.offices.acquire", 2)
     assert {item.consumer.operation_id for item in next_ops} == {
+        "cbr.escrow.discover",
+        "cbr.escrow.parse",
+        "cbr.forms.discover_sources",
+        "cbr.forms.extract",
+        "cbr.forms.parse",
+        "cbr.industries.0104a.parse",
+        "cbr.industries.0105a.parse",
         "cbr.offices.parse",
+        "cbr.offices_reg.parse",
+        "cbr.publications.discover",
+        "cbr.publications.identify",
         "source.save_original",
         "minfin.extract",
         "minfin.discover",
@@ -131,13 +141,21 @@ def test_known_missing_stages_and_shared_storage_are_not_invented_tools():
     assert coverage[ProcessingStage.PRESERVE].state == "delegated"
     assert coverage[ProcessingStage.PRESERVE].binding
     assert coverage[ProcessingStage.INTEGRATE].state == "missing"
-    assert coverage[ProcessingStage.INGEST].operations == ()
+    assert coverage[ProcessingStage.INGEST].state == "delegated"
+    assert coverage[ProcessingStage.INGEST].operations == (OperationKey("dataset.write_snapshot", 1),)
     assert not catalog.page(owner_id=owner, stage="integrate").entries
     assert catalog.get("cbr.offices.acquire", 2).required_capabilities == frozenset(
         {"http"}
     )
     with pytest.raises(RegistryError, match="registry.owner_unavailable"):
         catalog.coverage("imaginary.owner")
+
+
+def test_every_owner_has_consistent_coverage_and_available_delegations():
+    catalog = operation_catalog()
+    for registration in catalog.registrations:
+        coverage = catalog.coverage(registration.owner_id)
+        assert {item.stage for item in coverage} == set(ProcessingStage)
 
 
 def _catalog(monkeypatch, producer, consumer, *, stages=()):

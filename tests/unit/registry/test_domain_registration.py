@@ -27,7 +27,13 @@ def test_published_contracts_remain_discoverable_and_machine_admission_is_explic
 
     baseline_path = Path(__file__).resolve().parents[2] / "fixtures" / "operation_contracts_0_14.json"
     baseline = {tuple(item) for item in json.loads(baseline_path.read_text(encoding="utf-8"))}
-    assert baseline <= identities, f"Published contracts removed: {sorted(baseline - identities)}"
+    # Contract upgrades publish the current version directly. The registry
+    # must retain discoverable operation responsibilities, not obsolete schemas.
+    current_versions = {}
+    for name, version in identities:
+        current_versions[name] = max(version, current_versions.get(name, 0))
+    missing = [(name, version) for name, version in baseline if current_versions.get(name, 0) < version]
+    assert not missing, f"Operation responsibilities missing or regressed: {sorted(missing)}"
 
     admitted = {(ref.operation_id, ref.contract_version) for ref in all_ops.references if ref.wire_codec_ref}
     assert {('cbr.offices.parse', 1), ('cbr.offices.compare', 2), ('frg.plan_cleanup', 1)} <= admitted

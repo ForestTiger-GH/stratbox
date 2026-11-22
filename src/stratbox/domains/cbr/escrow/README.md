@@ -14,5 +14,5 @@ Historical HTML issues remain discoverable and can be acquired as originals.
 Their table interpretation has an explicit unsupported layout status. Source
 coverage remains distinct from successful processing of a supplied selection.
 
-See [the escrow route](../../../../docs/current-how/cbr-escrow.md) for independent
+See [the escrow route](../../../../../docs/current-how/cbr-escrow.md) for independent
 operations, storage examples, duplicate policy and interpretation limits.

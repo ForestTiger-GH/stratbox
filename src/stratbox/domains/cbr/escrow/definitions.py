@@ -195,7 +195,7 @@ INTEGRATE = OperationDefinition(
 def _snapshot_definition(operation, request_type, source_name, source_contract, snapshot_contract):
     return OperationDefinition(
         operation, 1, "cbr-escrow-snapshot-1", request_type, DatasetSnapshot, limits=_TABLES,
-        processing=OperationSemantics(stages=(ProcessingStage.PRESERVE,),
+        processing=OperationSemantics(stages=(ProcessingStage.RENDER,),
             inputs=(InputPort(source_name, source_contract, path=source_name),),
             outputs=(OutputPort("snapshot", snapshot_contract), OutputPort("dataset", DataContract("dataset.snapshot"))),
             parameters=("dataset_id", "version_id"), summary="Encode a complete escrow value for any logical dataset adapter."),
