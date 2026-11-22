@@ -104,8 +104,15 @@ class FileDatasetStore:
                         "assembly": loads(encode_assembly(snapshot))}
         else:
             objects = []
+            committed = {}
             for name, table in snapshot.tables:
                 controls.checkpoint()
+                # Several logical components may intentionally carry the same
+                # table. Commit its content-addressed object once, retaining
+                # every component name in the publication manifest.
+                if table.identity in committed:
+                    objects.append({"name": name, "identity": identity_value(committed[table.identity])})
+                    continue
                 if table.identity.size > self.max_object_bytes:
                     raise DatasetStorageError("dataset.encoding_limit")
                 controls.budget.check("temporary_bytes", table.identity.size)
@@ -115,6 +122,7 @@ class FileDatasetStore:
                 writes.append(receipt)
                 if receipt.status not in {"stored", "already_present"}:
                     return DatasetWriteResult(None, receipt.status, receipt.diagnostic_code, tuple(writes))
+                committed[table.identity] = identity
                 objects.append({"name": name, "identity": identity_value(identity)})
             envelope = {"encoding": "stratbox.dataset-files.v1", "kind": "tables",
                         "manifest": manifest_value(manifest), "objects": objects}

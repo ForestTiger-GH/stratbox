@@ -138,6 +138,22 @@ def test_component_selection_preserves_manifest_and_has_no_implicit_concat(tmp_p
         store.read_snapshot(reference, controls=DatasetReadControls(max_cells=1))
 
 
+def test_identical_components_commit_once_and_replay_under_both_names(tmp_path):
+    value = table()
+    original = DatasetSnapshot.build("example.repeated", "v1", DataContract("example.repeated"),
+        (("source", value), ("integrated", value)), coverage=SnapshotCoverage("unknown"))
+    store = file_store(tmp_path)
+    written = write_snapshot(WriteSnapshotRequest(original), store=store)
+    assert written.outcome == "succeeded", written.diagnostics
+    assert len(written.value.writes) == 2  # One table object and the version manifest.
+    assert len({item.effect_id for item in written.effects}) == len(written.effects)
+    reader = file_store(tmp_path)
+    restored = read_snapshot(ReadSnapshotRequest(written.value.reference), store=reader)
+    assert restored.outcome == "succeeded", restored.diagnostics
+    assert restored.value == original
+    assert reader.read_snapshot(written.value.reference, ("integrated",)).tables == (("integrated", value),)
+
+
 def test_file_tampering_and_missing_components_fail_before_return(tmp_path):
     store = file_store(tmp_path)
     reference = store.write_snapshot(snapshot()).reference
