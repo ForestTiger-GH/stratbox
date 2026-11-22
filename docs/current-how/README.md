@@ -12,6 +12,8 @@
 
 [Core operation construction](core-operation-construction.md)
 
+[Processing roles, qualified connections and bounded operation discovery](processing-operation-catalog.md)
+
 **Status:** maintained current shared contracts plus nine bounded historical implementation slices, including pinned public external-platform launch and problem-contract boundaries. Full Current HOW reconstruction, deployed-state verification and independent assurance remain open.
 
 - [Public AppDock Recorder and exact ProblemQuery](appdock-public-problem-contracts.md) — existing neutral contracts for recorded occurrences, unconfirmed references and five lookup outcomes; installed app-client integration unverified.

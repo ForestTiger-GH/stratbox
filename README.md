@@ -11,6 +11,7 @@ independent business packages under `stratbox.domains`.
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
 - [Geography name matching](docs/current-how/geography-name-resolution.md)
 - [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
+- [Processing roles, bounded catalog discovery and domain coverage](docs/current-how/processing-operation-catalog.md)
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
 - [Execution finalization and effect integrity](docs/architecture/execution-finalization.md)

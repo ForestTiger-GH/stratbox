@@ -31,4 +31,10 @@ coverage requires an explicit `covered_by` key. A provider requested through
 providers resolved independently by a trusted runtime are described via
 `RuntimeDependency`, not invented as eager bindings.
 
+Definitions can additionally declare `OperationSemantics` with processing
+stages, editioned input/output contracts, qualifications and selection
+parameters. Keep those definitions independent of executable handlers so
+catalog inspection remains lightweight. See
+[processing contracts and qualified connections](processing-operation-catalog.md).
+
 [Runtime contracts](universal-business-core.md)

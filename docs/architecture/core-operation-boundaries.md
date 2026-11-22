@@ -12,7 +12,7 @@ operation calls and scheduling outside the library.
 | `core.network` | Typed requests, response/peer qualification and transport. |
 | `core.formats` | Independent file format parsers, workbook codecs and archive handlers. |
 | `core.rendering` | Presentation-oriented projections and Excel styling. |
-| `core.execution` | Invocation context, runner, cancellation, outcomes, event stream and immutable operation catalog. |
+| `core.execution` | Invocation context, runner, cancellation, outcomes, event stream, processing semantics and immutable operation catalog. |
 | `core.operations` | Domain-neutral acquisition, original-byte storage, comparison, validation and table operations. |
 | `core.observability` | Event records, evidence assessment, capture, immutable journals and analysis. |
 | `core.notifications` | Topic/subscription definitions, authorized intents, transaction state and qualified handoff. |
@@ -20,6 +20,7 @@ operation calls and scheduling outside the library.
 | `shared.identity` | Immutable digest/byte size and canonical manifest encoding. |
 | `shared.evidence` | Source materials and acquisition, used-input, storage and publication receipts. |
 | `shared.data` | Observation, dataset version, computation, representation, release comparison and table contracts. |
+| `shared.data.processing` | Storage-independent data roles and editioned semantic schema identities. |
 | `shared.reference` | Explicitly versioned packaged assets, bank and OKVED2 references and territorial name resolution. |
 | `shared.time` | Date-only calendar period and anchor generation. |
 | `domains.registry` | Discovers independent domain declarations and joins them with neutral operations. |

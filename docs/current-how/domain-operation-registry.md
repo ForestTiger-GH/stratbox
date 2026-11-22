@@ -12,7 +12,7 @@ from stratbox.domains.registry import domain_catalog, operation_catalog
 business = domain_catalog()                  # all installed source-domain operations
 catalog = operation_catalog()                # domain operations and neutral core
 references = catalog.list_refs()
-descriptions = catalog.describe()             # resolves executable contracts
+descriptions = catalog.describe()             # definitions and schemas, no handlers
 definition = catalog.get("frg.plan_cleanup", 1)
 definition, handler, codec = catalog.resolve("frg.plan_cleanup", 1)
 ```
@@ -34,7 +34,7 @@ need no manifest. A broken existing manifest raises `RegistryError`.
 
 Each declaration is an `OperationRegistration` with a dotted `owner_id`
 relative to `stratbox.domains`. Its `OperationRef` entries reference an
-`OperationDefinition`, its callable handler and an optional machine codec by
+`OperationDefinition`, its callable handler and optional machine contract/codec by
 fully qualified Python module and symbol name.
 
 The registry validates all module references against the **nearest registered
@@ -58,14 +58,15 @@ REGISTRATION = OperationRegistration(
     operations=(
         OperationRef(
             "cbr.series_a.parse", 1,
-            "stratbox.domains.cbr.new_family.series_a.operations:PARSE",
+            "stratbox.domains.cbr.new_family.series_a.definitions:PARSE",
             "stratbox.domains.cbr.new_family.series_a.operations:parse",
         ),
     ),
 )
 ```
 
-Executable methods stay in `operations.py` or `api.py`. A business source
+Typed operation definitions stay in lightweight `definitions.py` modules.
+Executable methods import these definitions into `operations.py` or `api.py`. A business source
 registry may separately use `registry.py` for publication definitions; that
 file is **not** the operation manifest. No global list of publishers, families,
 or operations is maintained. Parent grouping packages should remain lightweight.
@@ -91,9 +92,12 @@ schema, response_schema = wire_schemas("cbr.offices.parse", 1, catalog=catalog)
 
 Machine read-only admission remains limited to `cbr.offices.parse` v1,
 `cbr.offices.compare` v2 and `frg.plan_cleanup` v1. Their codecs live with
-their respective owner. Machine admission never grants authorization for
+their respective owner; immutable schemas live separately in `machine_contracts.py`.
+Machine admission never grants authorization for
 network, storage, deletion or publication side effects.
 
 Logical operation IDs and versions are independent of Python module paths.
 The new module topology is canonical; no historical import aliases are
 provided.
+
+[Processing roles, bounded catalog discovery and qualified stage connections](processing-operation-catalog.md)
