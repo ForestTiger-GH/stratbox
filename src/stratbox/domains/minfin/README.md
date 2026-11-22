@@ -25,7 +25,7 @@ The registry format is the JSON subset of YAML 1.2 (`.yaml` files) to retain the
 | `minfin.capture` | Convenient acquisition + source-cell extraction for table-compatible formats. |
 | `minfin.extract` | Extract XLSX/XLSM/XLS/CSV or an explicitly chosen spreadsheet member of a ZIP, preserving cells, formulas and cached formula values; comments and merged-cell layout require separate coverage qualification. |
 | `minfin.validate` | Check structural geometry, missing formula cache, blank sheets; **not** economic equivalence. |
-| `minfin.compare` | Compare cell coordinates for extracts of the same source and sheet-selection scope. |
+| `minfin.compare` | Compare cell coordinates **and** sheet membership/geometry for compatible source editions. |
 | `minfin.serialize` / `minfin.read_representation` | Reversible JSON representation of source-cell extracts including empty-sheet geometry. |
 | `minfin.map_observations` | Convert **explicitly supplied/reviewed cell bindings** to typed metric/period/geography/unit values. No inferred budget codes. |
 | `minfin.render_csv` | Render source-cell observations as deterministic UTF-8 CSV. |

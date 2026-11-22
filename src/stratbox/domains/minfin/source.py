@@ -110,7 +110,7 @@ class _Anchors(HTMLParser):
 
 
 def discover_links(family: SourceFamily, index: SourcePayload, max_links: int = 2000) -> PublicationIndex:
-    if max_links < 1 or max_links > 5000:
+    if type(max_links) is not int or not 1 <= max_links <= 5000:
         raise ValueError("minfin.index_limit_invalid")
     if index.media_type not in PAGE_MIMES or index.identity.size > 8 * 1024 * 1024:
         raise ValueError("minfin.index_invalid_media")

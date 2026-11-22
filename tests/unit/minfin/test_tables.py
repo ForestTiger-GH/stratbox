@@ -141,3 +141,16 @@ def test_docx_source_readable_is_qualified_partial():
     assert result.outcome == 'partial', result.diagnostics
     assert result.value.coverage == 'text_only_partial'
     assert any('Остаток' in p for p in result.value.pages)
+
+
+def test_comparison_detects_empty_sheet_edition_changes():
+    from dataclasses import replace
+    from stratbox.domains.minfin.models import Sheet
+    old = _extract()
+    after = replace(old, sheets=old.sheets[:-1] + (Sheet('Без значений', 6, 3, ()),))
+    difference = compare(CompareRequest(old, after))
+    assert difference.outcome == 'succeeded', difference.diagnostics
+    assert difference.value.changes == ()
+    change, = difference.value.layout_changes
+    assert change.sheet == 'Без значений'
+    assert change.after_rows == 6 and change.after_columns == 3

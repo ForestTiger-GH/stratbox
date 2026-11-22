@@ -129,11 +129,21 @@ class CellChange:
 
 
 @dataclass(frozen=True, slots=True)
+class SheetChange:
+    sheet: str
+    before_rows: int | None
+    before_columns: int | None
+    after_rows: int | None
+    after_columns: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class TableComparison:
     family_id: str
     before_identity: ByteIdentity
     after_identity: ByteIdentity
     changes: tuple[CellChange, ...]
+    layout_changes: tuple[SheetChange, ...] = ()
     layer: Literal["source_cells"] = "source_cells"
 
 
@@ -260,7 +270,7 @@ class ReadRepresentationRequest:
 
 __all__ = (
     "SourceFamily", "Variant", "Asset", "PublicationIndex", "DiscoverRequest", "AcquireRequest", "AcquiredAsset",
-    "Cell", "Sheet", "TableExtract", "ExtractRequest", "CellChange", "TableComparison", "CompareRequest",
+    "Cell", "Sheet", "TableExtract", "ExtractRequest", "CellChange", "SheetChange", "TableComparison", "CompareRequest",
     "InspectRequest", "Inspection", "ValidateRequest", "Validation", "RenderRequest", "MetricBinding", "MetricObservation", "MappedObservations", "MapRequest", "ReadableRequest",
     "ReadableDocument", "CaptureRequest", "CaptureResult", "SerializeRequest", "ReadRepresentationRequest", "Representation",
 )

@@ -19,7 +19,7 @@ from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 from .models import (
     Cell, CellChange, CompareRequest, ExtractRequest, MapRequest, MappedObservations,
-    MetricObservation, RenderRequest, Sheet, TableComparison, TableExtract, ValidateRequest, Validation,
+    MetricObservation, RenderRequest, Sheet, SheetChange, TableComparison, TableExtract, ValidateRequest, Validation,
 )
 from .registry import family
 
@@ -171,7 +171,8 @@ def extract_tables(request: ExtractRequest, invocation=None) -> TableExtract:
         raise ValueError("minfin.cell_limit_invalid")
     if request.format not in spec.formats:
         raise ValueError("minfin.format_unsupported")
-    if request.payload.source_id is not None and not request.payload.source_id.startswith(spec.family_id + "."):
+    permitted_ids = {spec.default_source_id, *(variant.source_id for variant in spec.variants)}
+    if request.payload.source_id is not None and request.payload.source_id not in permitted_ids:
         raise ValueError("minfin.source_family_mismatch")
     data = request.payload.data
     member = request.member
@@ -214,20 +215,28 @@ def extract_tables(request: ExtractRequest, invocation=None) -> TableExtract:
 def compare_tables(request: CompareRequest) -> TableComparison:
     before, after = request.before, request.after
     if (before.family_id != after.family_id or before.source_id != after.source_id or
-        before.member != after.member or before.format != after.format or
-        {sheet.name for sheet in before.sheets} != {sheet.name for sheet in after.sheets}):
+        before.member != after.member or before.format != after.format):
         raise ValueError("minfin.compare_incompatible_sources")
     if type(request.max_changes) is not int or not 1 <= request.max_changes <= 500_000:
         raise ValueError("minfin.compare_limit_invalid")
     old = {(c.sheet, c.row, c.column): c for sh in before.sheets for c in sh.cells}
     new = {(c.sheet, c.row, c.column): c for sh in after.sheets for c in sh.cells}
+    old_layout = {sheet.name: sheet for sheet in before.sheets}
+    new_layout = {sheet.name: sheet for sheet in after.sheets}
+    layout_changes = []
+    for name in sorted(set(old_layout) | set(new_layout)):
+        a, b = old_layout.get(name), new_layout.get(name)
+        previous = (a.rows, a.columns) if a is not None else (None, None)
+        current = (b.rows, b.columns) if b is not None else (None, None)
+        if previous != current:
+            layout_changes.append(SheetChange(name, previous[0], previous[1], current[0], current[1]))
     changes = []
     for key in sorted(set(old) | set(new)):
         if old.get(key) != new.get(key):
             changes.append(CellChange(*key, old.get(key), new.get(key)))
             if len(changes) > request.max_changes:
                 raise ValueError("minfin.compare_limit_exceeded")
-    return TableComparison(before.family_id, before.source_identity, after.source_identity, tuple(changes))
+    return TableComparison(before.family_id, before.source_identity, after.source_identity, tuple(changes), tuple(layout_changes))
 
 
 def render_csv(request: RenderRequest) -> Representation:
@@ -355,7 +364,7 @@ def read_serialized_tables(request) -> TableExtract:
         raise ValueError("minfin.representation_invalid")
     fam = family(document["family_id"])
     if (not isinstance(document["source_id"], str) or
-        not document["source_id"].startswith(fam.family_id + ".") or
+        document["source_id"] not in {fam.default_source_id, *(v.source_id for v in fam.variants)} or
         document["format"] not in fam.formats or
         not isinstance(document["coverage"], str) or
         not isinstance(document["sheets"], list) or
