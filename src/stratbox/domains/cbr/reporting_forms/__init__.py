@@ -25,6 +25,9 @@ _SYMBOL_MODULES = {'ACQUIRE': '.definitions',
  'parse_form': '.operations',
  'render_workbook': '.operations',
  'select_sources': '.operations'}
+_SYMBOL_MODULES.update({'ExtractFormRequest': '.contracts', 'FormMember': '.contracts', 'FormFlakes': '.contracts', 'NormalizeFormRequest': '.contracts', 'FormFlakeSnapshotRequest': '.contracts', 'DiscoverFormsRequest': '.contracts', 'FormInventory': '.contracts', 'IntegrateFormsRequest': '.contracts', 'FormResultSnapshotRequest': '.contracts', 'discover_sources': '.source_operations', 'extract_forms': '.source_operations', 'normalize_form': '.source_operations', 'flake_snapshot': '.source_operations', 'restore_flakes': '.source_operations', 'snapshot_result': '.source_operations', 'restore_normalized': '.source_operations', 'restore_data': '.source_operations', 'restore_views': '.source_operations', 'integrate_forms': '.source_operations', 'restore_history': '.source_operations'})
+_SYMBOL_MODULES.update({"RenderFormFlakesRequest": ".contracts", "FormFlakeExport": ".contracts", "render_flakes": ".flake_export"})
+_SYMBOL_MODULES.update({"ReadFormFlakeExportRequest": ".contracts", "read_flake_export": ".flake_export"})
 __all__ = tuple(_SYMBOL_MODULES)
 
 

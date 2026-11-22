@@ -54,7 +54,7 @@ def _data_metadata(form, indicator_order):
 def _source(key: FormKey) -> FormSource:
     if (
         not isinstance(key, FormKey)
-        or key.code not in FORM_REGISTRY
+        or type(key.code) is not str or len(key.code) != 3 or not key.code.isascii() or not key.code.isdigit()
         or type(key.as_of) is not date
     ):
         raise OperationFailure("request.form_key_invalid")
@@ -106,82 +106,18 @@ def parse_form(
     rar_reader: ArchiveReader | None = None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[FormSnapshot]:
-    def work(req, invocation):
-        invocation.stage("select_dbf")
-        _source(req.key)
-        require_extra("pandas", "dataframe")
-        require_extra("dbfread", "dbf")
-        from .common.dbf_picker import decode_dbf, pick_dbf_fields
-        from .common.direct_form import DirectDatasetSpec, normalize_direct_snapshot
+    """Compose all-member extraction and explicit form normalization."""
+    from .contracts import ExtractFormRequest, NormalizeFormRequest
+    from .flakes import extract_value, normalize_value
+    from .source_operations import _failure
 
-        spec = FORM_REGISTRY[req.key.code].spec
-        use_payload(
-            req.payload, invocation, role="source_form", limit=_LIMITS.packed_bytes
-        )
-        direct = isinstance(spec, DirectDatasetSpec)
-        if direct:
-            required = {
-                "REGN": spec.bank_fields,
-                "CODE": spec.code_fields,
-                **spec.measure_fields,
-            }
-            optional = spec.optional_measure_fields
-            preferred = spec.prefer_stem_contains
-        else:
-            required = spec.fields
-            optional = {"SIDE": spec.side_fields} if spec.side_fields else {}
-            preferred = spec.preferred_stem
-        if req.payload.data.startswith(b"Rar!") and invocation.context.profile == "managed":
-            invocation.require_provider("archive_decoder", rar_reader)
-        archived = req.payload.data.startswith((b"Rar!", b"PK"))
+    def work(req, invocation):
         try:
-            members = (
-                extract_members(
-                    req.payload.data,
-                    select=lambda names: tuple(
-                        name for name in names if name.lower().endswith(".dbf")
-                    ),
-                    limits=_LIMITS,
-                    rar_reader=rar_reader, budget=invocation.budget,
-                    checkpoint=invocation.check_cancelled,
-                )
-                if archived
-                else {"source.dbf": req.payload.data}
-            )
-            name, fields = pick_dbf_fields(
-                members,
-                field_candidates=required,
-                optional_field_candidates=optional,
-                prefer_stem_contains=preferred, budget=invocation.budget,
-            )
-            if archived:
-                member = SourcePayload(members[name], _DBF, req.payload.source_id)
-                invocation.use(
-                    UsedInputReceipt.for_payload(
-                        member,
-                        "dbf_member",
-                        container=req.payload.identity,
-                        member=name,
-                    )
-                )
-            invocation.stage("decode_dbf")
-            frame = decode_dbf(
-                members[name],
-                fields,
-                tuple(required) + tuple(optional),
-                checkpoint=invocation.check_cancelled, budget=invocation.budget,
-            )
-        except (ArchiveError, OSError, ValueError) as error:
-            raise source_failure(error) from None
-        if frame.empty:
-            raise OperationFailure("source.dbf_empty")
-        if direct:
-            frame = normalize_direct_snapshot(frame, spec)
-        if frame.empty:
-            raise OperationFailure("source.dbf_no_observations")
-        evidence = record_tables(invocation, (("dbf_rows", frame),),
-                                 metadata=_snapshot_metadata(req.key, fields))
-        return FormSnapshot(req.key, MappingProxyType(dict(fields)), frame, tuple(invocation.used_inputs), evidence)
+            flakes = extract_value(ExtractFormRequest(req.key, req.payload), invocation,
+                                   rar_reader=rar_reader)
+            return normalize_value(NormalizeFormRequest(flakes), invocation)
+        except (ArchiveError, ValueError) as error:
+            raise _failure(error) from None
 
     return run(PARSE, request, work, context=context)
 

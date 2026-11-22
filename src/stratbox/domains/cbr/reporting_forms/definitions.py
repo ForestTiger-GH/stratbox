@@ -70,20 +70,22 @@ ACQUIRE = OperationDefinition(
 PARSE = OperationDefinition(
     "cbr.forms.parse",
     2,
-    "cbr-forms-physical-layout-1",
+    "cbr-forms-all-members-normalization-1",
     ParseFormRequest,
     FormSnapshot,
     optional_capabilities=frozenset({"archive_decoder"}),
     limits=_TABLES,
     processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT,),
-        summary="Extract the physical reporting-form layout without applying a business model.",
+        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE),
+        composition=True,
+        summary="Compose all-member DBF extraction and supported form normalization.",
         inputs=(
             InputPort(
                 "source",
-                DataContract("cbr.forms.original", 1, DataRole.ORIGINALS),
+                DataContract("material.payload", 1),
                 path="payload",
-                qualifications=frozenset(("source.cbr.forms",)),
+                alternatives=(DataContract("cbr.forms.original", 1, DataRole.ORIGINALS),
+                              DataContract("source.payload", 1, DataRole.ORIGINALS)),
             ),
         ),
         outputs=(
@@ -113,7 +115,7 @@ BUILD = OperationDefinition(
             ),
         ),
         outputs=(
-            OutputPort("data", DataContract("cbr.forms.data", 1, DataRole.EXTRACTS)),
+            OutputPort("data", DataContract("cbr.forms.data", 1, DataRole.INTEGRATED)),
         ),
         parameters=("banks", "model"),
     ),
@@ -130,7 +132,7 @@ VIEWS = OperationDefinition(
         stages=(ProcessingStage.VIEW,),
         summary="Construct reporting-form presentation views from evaluated data.",
         inputs=(
-            InputPort("data", DataContract("cbr.forms.data", 1, DataRole.EXTRACTS)),
+            InputPort("data", DataContract("cbr.forms.data", 1, DataRole.INTEGRATED)),
         ),
         outputs=(
             OutputPort("views", DataContract("cbr.forms.views", 1, DataRole.PRODUCTS)),
