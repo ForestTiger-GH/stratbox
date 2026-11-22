@@ -24,6 +24,7 @@ minfin/
 │   ├── contracts.py
 │   ├── catalog.py
 │   ├── access.py
+│   ├── materials.py
 │   ├── discovery.py
 │   └── updates.py
 ├── tables/                 # exact extraction, cleaned flakes, typed representations

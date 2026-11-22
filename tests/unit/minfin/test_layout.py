@@ -7,7 +7,7 @@ from pathlib import Path
 
 from stratbox.domains import minfin
 from stratbox.domains.registry import operation_catalog
-from stratbox.domains.minfin.publications import access, catalog, contracts as publications
+from stratbox.domains.minfin.publications import access, catalog, materials, contracts as publications
 from stratbox.domains.minfin.tables import contracts as tables, cleaning, extraction, representation
 from stratbox.domains.minfin.analytics import contracts as analytics, indicators, notices
 from stratbox.domains.minfin.operations import contracts as composite
@@ -39,6 +39,8 @@ def test_public_api_is_the_same_type_as_its_semantic_contract():
     assert minfin.family is catalog.family
     assert minfin.checkpoint_for.__module__.endswith(".publications.updates")
     assert callable(access.allowed_file)
+    assert callable(materials.acquire_material)
+    assert callable(materials.read_document)
     assert callable(cleaning.build_flake)
     assert callable(extraction.extract_tables)
     assert callable(representation.render_flake_csv)
