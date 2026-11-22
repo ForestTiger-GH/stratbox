@@ -19,6 +19,11 @@ REGISTRATION = OperationRegistration(
         OperationRef("minfin.map_observations", 1, _BASE + ".definitions:MAP", _BASE + ".operations:map_observations"),
         OperationRef("minfin.render_csv", 1, _BASE + ".definitions:RENDER", _BASE + ".operations:render_csv_cells"),
         OperationRef("minfin.readable", 1, _BASE + ".definitions:READABLE", _BASE + ".operations:readable_document"),
+        OperationRef("minfin.plan_updates", 1, _BASE + ".pipeline_definitions:PLAN_UPDATES", _BASE + ".pipeline_operations:plan_updates"),
+        OperationRef("minfin.build_flake", 1, _BASE + ".pipeline_definitions:BUILD_FLAKE", _BASE + ".pipeline_operations:build_source_flake"),
+        OperationRef("minfin.render_flake", 1, _BASE + ".pipeline_definitions:RENDER_FLAKE", _BASE + ".pipeline_operations:render_source_flake"),
+        OperationRef("minfin.summarize", 1, _BASE + ".pipeline_definitions:SUMMARIZE", _BASE + ".pipeline_operations:calculate_headlines"),
+        OperationRef("minfin.prepare_notice", 1, _BASE + ".pipeline_definitions:PREPARE_NOTICE", _BASE + ".pipeline_operations:prepare_notice_facts"),
     ),
     stages=(
         StageDeclaration(ProcessingStage.PRESERVE, "delegated", "minfin.original_storage_shared",
@@ -26,8 +31,6 @@ REGISTRATION = OperationRegistration(
             "Bind a confirmed acquired SourcePayload to the neutral source original storage operation; the destination belongs to the caller."),
         StageDeclaration(ProcessingStage.INTEGRATE, "missing", "minfin.integration_pending"),
         StageDeclaration(ProcessingStage.INGEST, "missing", "minfin.ingestion_pending"),
-        StageDeclaration(ProcessingStage.CALCULATE, "missing", "minfin.economic_calculation_requires_verified_layout"),
-        StageDeclaration(ProcessingStage.VIEW, "missing", "minfin.view_requires_verified_layout"),
         StageDeclaration(ProcessingStage.PUBLISH, "missing", "minfin.publication_owned_by_consumer"),
     ),
 )

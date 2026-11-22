@@ -15,7 +15,7 @@ from .models import SourceFamily, Variant
 _NAMES = ("FEDBUD", "CONBUD", "SUBBUD", "NWF")
 _ID = re.compile(r"[a-z][a-z0-9_.-]{2,127}\Z")
 _FORMATS = frozenset({"xlsx", "xls", "xlsm", "csv", "zip", "pdf", "doc", "docx"})
-_OPERATIONS = {"discover", "acquire", "extract", "compare", "render", "map", "readable", "capture", "serialize", "read_extract", "validate"}
+_OPERATIONS = {"discover", "acquire", "extract", "compare", "render", "map", "readable", "capture", "serialize", "read_extract", "validate", "plan_updates", "build_flake", "render_flake", "summarize", "prepare_notice"}
 
 
 def _identity(value: str) -> str:
@@ -44,7 +44,7 @@ def _decode(data: bytes) -> SourceFamily:
     if not isinstance(obj["variants"], list):
         raise ValueError("minfin.registry.invalid_variants")
     for v in obj["variants"]:
-        if not isinstance(v, dict) or set(v) != {"source_id", "asset_id", "title", "prefix", "suffix", "basis_hint"}:
+        if not isinstance(v, dict) or set(v) != {"source_id", "asset_id", "title", "prefix", "suffix", "basis_hint", "periodicity"}:
             raise ValueError("minfin.registry.invalid_variant")
         for key in ("prefix", "suffix", "title"):
             if not isinstance(v[key], str) or not v[key] or len(v[key]) > 256:
@@ -53,7 +53,9 @@ def _decode(data: bytes) -> SourceFamily:
             raise ValueError("minfin.registry.invalid_variant")
         if v["basis_hint"] not in {"ytd", "annual", "stock", "unknown"}:
             raise ValueError("minfin.registry.invalid_basis")
-        variants.append(Variant(_identity(v["source_id"]), _identity(v["asset_id"]), v["title"], v["prefix"], v["suffix"], v["basis_hint"]))
+        if v["periodicity"] not in {"monthly", "quarterly", "annual", "unknown"}:
+            raise ValueError("minfin.registry.invalid_periodicity")
+        variants.append(Variant(_identity(v["source_id"]), _identity(v["asset_id"]), v["title"], v["prefix"], v["suffix"], v["basis_hint"], v["periodicity"]))
     if len({v.asset_id for v in variants}) != len(variants) or len({v.source_id for v in variants}) != len(variants):
         raise ValueError("minfin.registry.duplicate_variant")
     operations = obj["operations"]

@@ -23,7 +23,8 @@
       "title": "Движение и результаты управления средствами ФНБ",
       "prefix": "Dannye_",
       "suffix": ".xlsx",
-      "basis_hint": "unknown"
+      "basis_hint": "stock",
+      "periodicity": "monthly"
     },
     {
       "source_id": "minfin.nwf.veb_deposits",
@@ -31,7 +32,8 @@
       "title": "Размещение средств ФНБ на депозитах ВЭБ.РФ",
       "prefix": "Svedeniya_o_razmeshchenii_sredstv_FNB_na_depozitakh_v_VEB",
       "suffix": ".doc",
-      "basis_hint": "unknown"
+      "basis_hint": "unknown",
+      "periodicity": "unknown"
     },
     {
       "source_id": "minfin.nwf.volume",
@@ -39,7 +41,8 @@
       "title": "Объем ФНБ",
       "prefix": "Obem_na_",
       "suffix": ".docx",
-      "basis_hint": "stock"
+      "basis_hint": "stock",
+      "periodicity": "unknown"
     },
     {
       "source_id": "minfin.nwf.preferred_shares",
@@ -47,7 +50,8 @@
       "title": "Размещение средств ФНБ в привилегированные акции российских кредитных организаций",
       "prefix": "Svedeniya_na_",
       "suffix": ".docx",
-      "basis_hint": "unknown"
+      "basis_hint": "unknown",
+      "periodicity": "unknown"
     }
   ],
   "operations": {
@@ -60,6 +64,11 @@
     "map": "minfin.map_observations",
     "readable": "minfin.readable",
     "serialize": "minfin.serialize",
-    "read_extract": "minfin.read_representation"
+    "read_extract": "minfin.read_representation",
+    "plan_updates": "minfin.plan_updates",
+    "build_flake": "minfin.build_flake",
+    "render_flake": "minfin.render_flake",
+    "summarize": "minfin.summarize",
+    "prepare_notice": "minfin.prepare_notice"
   }
 }

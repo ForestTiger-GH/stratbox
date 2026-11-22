@@ -49,7 +49,9 @@ def discover(request: DiscoverRequest, *, transport: HttpTransport | None = None
                 source = result.payload
             invocation.stage("parse_landing_page")
             use_payload(source, invocation, role="publisher_index", limit=8 * 1024 * 1024)
-            return discover_links(spec, source, req.max_links)
+            from .publication_adapter import enrich_index
+            text = source.data.decode(source.charset or "utf-8", errors="strict")
+            return enrich_index(discover_links(spec, source, req.max_links), text, spec.landing_url)
         except ValueError as exc:
             raise _error(exc) from None
     return run(D.DISCOVER, request, work, context=context, providers={"http": transport})

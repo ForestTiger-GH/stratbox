@@ -21,7 +21,8 @@
       "title": "Месячное исполнение консолидированного бюджета РФ и государственных внебюджетных фондов",
       "prefix": "Prilozhenie_8_dannye_115-117_",
       "suffix": "_mesyats.xlsx",
-      "basis_hint": "ytd"
+      "basis_hint": "ytd",
+      "periodicity": "monthly"
     },
     {
       "source_id": "minfin.conbud.quarterly",
@@ -29,7 +30,8 @@
       "title": "Квартальное исполнение консолидированного бюджета РФ и государственных внебюджетных фондов",
       "prefix": "Prilozhenie_8_dannye_115-117_",
       "suffix": "_kvartal.xlsx",
-      "basis_hint": "ytd"
+      "basis_hint": "ytd",
+      "periodicity": "quarterly"
     },
     {
       "source_id": "minfin.conbud.annual",
@@ -37,7 +39,8 @@
       "title": "Годовое исполнение консолидированного бюджета РФ и государственных внебюджетных фондов",
       "prefix": "Prilozhenie_8_dannye_115-117_",
       "suffix": "_god.xlsx",
-      "basis_hint": "annual"
+      "basis_hint": "annual",
+      "periodicity": "annual"
     }
   ],
   "operations": {
@@ -50,6 +53,11 @@
     "map": "minfin.map_observations",
     "readable": "minfin.readable",
     "serialize": "minfin.serialize",
-    "read_extract": "minfin.read_representation"
+    "read_extract": "minfin.read_representation",
+    "plan_updates": "minfin.plan_updates",
+    "build_flake": "minfin.build_flake",
+    "render_flake": "minfin.render_flake",
+    "summarize": "minfin.summarize",
+    "prepare_notice": "minfin.prepare_notice"
   }
 }

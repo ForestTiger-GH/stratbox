@@ -21,7 +21,8 @@
       "title": "Месячное исполнение консолидированных бюджетов субъектов РФ",
       "prefix": "Prilozhenie_6_dannye_112-114_",
       "suffix": "_mes.xlsx",
-      "basis_hint": "ytd"
+      "basis_hint": "ytd",
+      "periodicity": "monthly"
     },
     {
       "source_id": "minfin.subbud.quarterly",
@@ -29,7 +30,8 @@
       "title": "Квартальное исполнение консолидированных бюджетов субъектов РФ",
       "prefix": "Prilozhenie_6_dannye_112-114_",
       "suffix": "_kvartal.xlsx",
-      "basis_hint": "ytd"
+      "basis_hint": "ytd",
+      "periodicity": "quarterly"
     },
     {
       "source_id": "minfin.subbud.annual",
@@ -37,7 +39,8 @@
       "title": "Годовое исполнение консолидированных бюджетов субъектов РФ",
       "prefix": "Prilozhenie_6_dannye_112-114_",
       "suffix": "_god.xlsx",
-      "basis_hint": "annual"
+      "basis_hint": "annual",
+      "periodicity": "annual"
     }
   ],
   "operations": {
@@ -50,6 +53,11 @@
     "map": "minfin.map_observations",
     "readable": "minfin.readable",
     "serialize": "minfin.serialize",
-    "read_extract": "minfin.read_representation"
+    "read_extract": "minfin.read_representation",
+    "plan_updates": "minfin.plan_updates",
+    "build_flake": "minfin.build_flake",
+    "render_flake": "minfin.render_flake",
+    "summarize": "minfin.summarize",
+    "prepare_notice": "minfin.prepare_notice"
   }
 }

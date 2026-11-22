@@ -6,6 +6,7 @@ period, or that a visual row label is a stable economic indicator identifier.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Literal
 
 from stratbox.shared.evidence import AcquiredSource, SourcePayload
@@ -21,6 +22,7 @@ class Variant:
     prefix: str
     suffix: str
     basis_hint: str = "unknown"
+    periodicity: str = "unknown"
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +48,10 @@ class Asset:
     label: str
     recognition: Literal["registered_variant", "unclassified"]
     index_identity: ByteIdentity
+    published_on: date | None = None
+    modified_on: date | None = None
+    document_id: str | None = None
+    document_title: str = ""
 
 
 @dataclass(frozen=True, slots=True)
