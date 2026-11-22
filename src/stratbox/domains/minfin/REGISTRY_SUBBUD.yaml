@@ -1,0 +1,55 @@
+{
+  "schema": "stratbox.minfin.registry.v1",
+  "family_id": "minfin.subbud",
+  "publisher_id": "minfin",
+  "title": "Исполнение бюджетов субъектов Российской Федерации",
+  "landing_url": "https://minfin.gov.ru/ru/statistics/subbud/execute",
+  "frequency": "mixed",
+  "formats": [
+    "xlsx",
+    "xls",
+    "xlsm",
+    "csv",
+    "zip",
+    "pdf"
+  ],
+  "default_source_id": "minfin.subbud.attachments",
+  "variants": [
+    {
+      "source_id": "minfin.subbud.monthly",
+      "asset_id": "annex6_monthly",
+      "title": "Месячное исполнение консолидированных бюджетов субъектов РФ",
+      "prefix": "Prilozhenie_6_dannye_112-114_",
+      "suffix": "_mes.xlsx",
+      "basis_hint": "ytd"
+    },
+    {
+      "source_id": "minfin.subbud.quarterly",
+      "asset_id": "annex6_quarterly",
+      "title": "Квартальное исполнение консолидированных бюджетов субъектов РФ",
+      "prefix": "Prilozhenie_6_dannye_112-114_",
+      "suffix": "_kvartal.xlsx",
+      "basis_hint": "ytd"
+    },
+    {
+      "source_id": "minfin.subbud.annual",
+      "asset_id": "annex6_annual",
+      "title": "Годовое исполнение консолидированных бюджетов субъектов РФ",
+      "prefix": "Prilozhenie_6_dannye_112-114_",
+      "suffix": "_god.xlsx",
+      "basis_hint": "annual"
+    }
+  ],
+  "operations": {
+    "discover": "minfin.discover",
+    "acquire": "minfin.acquire",
+    "extract": "minfin.extract",
+    "compare": "minfin.compare",
+    "render": "minfin.render_csv",
+    "validate": "minfin.validate",
+    "map": "minfin.map_observations",
+    "readable": "minfin.readable",
+    "serialize": "minfin.serialize",
+    "read_extract": "minfin.read_representation"
+  }
+}

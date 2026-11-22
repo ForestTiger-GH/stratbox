@@ -1,0 +1,65 @@
+{
+  "schema": "stratbox.minfin.registry.v1",
+  "family_id": "minfin.nwf",
+  "publisher_id": "minfin",
+  "title": "Статистика Фонда национального благосостояния",
+  "landing_url": "https://minfin.gov.ru/ru/perfomance/nationalwealthfund/statistics/",
+  "frequency": "mixed",
+  "formats": [
+    "xlsx",
+    "xls",
+    "xlsm",
+    "csv",
+    "zip",
+    "pdf",
+    "doc",
+    "docx"
+  ],
+  "default_source_id": "minfin.nwf.attachments",
+  "variants": [
+    {
+      "source_id": "minfin.nwf.flows",
+      "asset_id": "movement_workbook",
+      "title": "Движение и результаты управления средствами ФНБ",
+      "prefix": "Dannye_",
+      "suffix": ".xlsx",
+      "basis_hint": "unknown"
+    },
+    {
+      "source_id": "minfin.nwf.veb_deposits",
+      "asset_id": "veb_deposits",
+      "title": "Размещение средств ФНБ на депозитах ВЭБ.РФ",
+      "prefix": "Svedeniya_o_razmeshchenii_sredstv_FNB_na_depozitakh_v_VEB",
+      "suffix": ".doc",
+      "basis_hint": "unknown"
+    },
+    {
+      "source_id": "minfin.nwf.volume",
+      "asset_id": "volume_report",
+      "title": "Объем ФНБ",
+      "prefix": "Obem_na_",
+      "suffix": ".docx",
+      "basis_hint": "stock"
+    },
+    {
+      "source_id": "minfin.nwf.preferred_shares",
+      "asset_id": "preferred_shares",
+      "title": "Размещение средств ФНБ в привилегированные акции российских кредитных организаций",
+      "prefix": "Svedeniya_na_",
+      "suffix": ".docx",
+      "basis_hint": "unknown"
+    }
+  ],
+  "operations": {
+    "discover": "minfin.discover",
+    "acquire": "minfin.acquire",
+    "extract": "minfin.extract",
+    "compare": "minfin.compare",
+    "render": "minfin.render_csv",
+    "validate": "minfin.validate",
+    "map": "minfin.map_observations",
+    "readable": "minfin.readable",
+    "serialize": "minfin.serialize",
+    "read_extract": "minfin.read_representation"
+  }
+}
