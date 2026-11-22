@@ -4,14 +4,19 @@ No arbitrary Python refs in YAML; logical source identity survives file renames.
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Callable
 
 
 @dataclass(frozen=True, slots=True)
 class PublicationProfile:
     profile_id: str
     layout: Literal["document_cards"]
+    parse_cards: Callable[[str], tuple]
     method_version: int = 1
+
+    def __post_init__(self):
+        if not callable(self.parse_cards):
+            raise ValueError("minfin.profile.discovery_invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +73,16 @@ class IdentificationProfile:
         return None, "unclassified"
 
 
-_PUBLICATIONS = {"minfin.document_cards.v1": PublicationProfile("minfin.document_cards.v1", "document_cards")}
+def _parse_document_cards(html: str) -> tuple:
+    # A lazy import avoids coupling profile declaration to parser initialization.
+    from .discovery import document_attachments
+    return document_attachments(html)
+
+
+_PUBLICATIONS = {
+    "minfin.document_cards.v1": PublicationProfile(
+        "minfin.document_cards.v1", "document_cards", _parse_document_cards),
+}
 
 
 def _budget(profile_id: str, annex: str, doc_ids: tuple[str, str, str], prefix: str,

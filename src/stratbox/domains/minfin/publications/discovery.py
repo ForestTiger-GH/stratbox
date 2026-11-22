@@ -15,7 +15,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from stratbox.shared.evidence import SourcePayload
 from .contracts import Asset, PublicationIndex, SourceFamily
 from .access import PAGE_MIMES, allowed_file
-from .profiles import IdentificationProfile
+from .profiles import IdentificationProfile, PublicationProfile
 
 _DOCUMENT = re.compile(r"(?:[?&])id_(57|4)=([0-9]{1,16})(?:[^0-9]|$)")
 _DATE = re.compile(r"^(Опубликовано|Изменено):\s*([0-3]?\d\.[01]?\d\.\d{4})$")
@@ -210,9 +210,10 @@ def discover_links(family: SourceFamily, index: SourcePayload, max_links: int = 
                             index.identity, rejected_links=rejected)
 
 
-def enrich_index(index: PublicationIndex, html: str, landing_url: str) -> PublicationIndex:
+def enrich_index(index: PublicationIndex, html: str, landing_url: str, *,
+                 profile: PublicationProfile) -> PublicationIndex:
     """Associate document-card evidence with its own attachment, never page-wide."""
-    links = document_attachments(html)
+    links = profile.parse_cards(html)
     if not links:
         return index
     by_url = {}

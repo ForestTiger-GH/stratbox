@@ -64,7 +64,8 @@ def discover(request: DiscoverRequest, *, transport: HttpTransport | None = None
             use_payload(source, invocation, role="publisher_index", limit=8 * 1024 * 1024)
             text = source.data.decode(source.charset or "utf-8", errors="strict")
             return identify_index(enrich_index(discover_links(spec, source, req.max_links),
-                                               text, spec.landing_url), spec, bound.identification)
+                                               text, spec.landing_url, profile=bound.publication),
+                                  spec, bound.identification)
         except ValueError as exc:
             raise _error(exc) from None
     return run(D.DISCOVER, request, work, context=context, providers={"http": transport})
