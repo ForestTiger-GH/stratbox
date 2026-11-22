@@ -168,12 +168,12 @@ SUMMARIZE = OperationDefinition(
         summary="Calculate three budget headlines or NWF total/liquid stocks and same-period prior-year percentages."),
 )
 PREPARE_NOTICE = OperationDefinition(
-    "minfin.prepare_notice", 1, "minfin.notice-facts.v1", NoticeRequest, NoticePreparation,
+    "minfin.prepare_notice", 1, "minfin.notice-facts.v2", NoticeRequest, NoticePreparation,
     processing=OperationSemantics((ProcessingStage.VIEW,),
         inputs=(InputPort("summary", _SUMMARY, "summary"),
                 InputPort("asset", DataContract("minfin.asset", 1, None), "asset"),
                 InputPort("decision", DataContract("minfin.update_decision", 1, None), "decision")),
         outputs=(OutputPort("preparation", _NOTICE),),
-        parameters=("include_initial",),
+        parameters=("include_initial", "baseline_original_identity"),
         summary="Prepare a source-qualified, channel-neutral notification candidate; initial loads are quiet by default."),
 )

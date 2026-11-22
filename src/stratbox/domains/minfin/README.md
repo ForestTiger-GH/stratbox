@@ -141,7 +141,12 @@ A `profile` is not an ordered recipe or task runner; `OperationCatalog` owns
 operation definitions. `SourceCheckpoint` makes independent publisher, material
 and method state views available through `.publication`, `.material`, and
 `.processing` properties. Marker preflight is a cheap decision, not proof of
-byte equality. A same-byte rediscovery does not by itself authorize a notice.
+byte equality. A same-byte rediscovery does not by itself authorize a notice. If an explicit forced
+refresh discovers different original bytes under an unchanged publisher
+modification date, the notice is qualified as a `material_revision` rather
+than a new publisher publication. This requires a confirmed prior original
+identity and a new source digest. Reprocessing the same bytes under a new
+profile does not create a publication alert.
 A parser-profile change can require reprocessing a retained original without
 downloading again. The effective flake method version is taken from the
 resolved table profile rather than accepting an arbitrary method identity from the caller. Consumers

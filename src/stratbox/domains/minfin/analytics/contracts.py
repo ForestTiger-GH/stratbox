@@ -60,7 +60,7 @@ class NotificationFacts:
     original_sha256: str
     source_url: str
     values: tuple[NotificationDatum, ...]
-    publication_state: Literal["revised", "initial"]
+    publication_state: Literal["revised", "initial", "material_revision"]
     tags: tuple[str, ...]
 
 

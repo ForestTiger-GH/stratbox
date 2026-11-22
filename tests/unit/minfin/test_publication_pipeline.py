@@ -233,3 +233,34 @@ def test_marker_revision_without_byte_revision_does_not_notify():
     assert notice.value.state == "skipped"
     assert notice.value.reason == "minfin.notice.source_bytes_unchanged"
     assert notice.value.facts is None
+
+def test_verified_same_date_byte_revision_can_produce_qualified_notice():
+    index = _index()
+    asset, = index.assets
+    original = _extract(asset.source_id, index.family_id, ("окт.25", "окт.26"), (
+        ("1", "Доходы, всего", (100, 110)),
+        ("2", "Расходы, всего", (120, 135)),
+        ("3", "Дефицит (-)/Профицит (+)", (-20, -25)),
+    ))
+    flake = build_source_flake(M.BuildFlakeRequest(original, asset.source_id)).value
+    summary = calculate_headlines(M.SummaryRequest(flake)).value
+    baseline = M.SourceCheckpoint(
+        asset.source_id, asset.asset_id, asset.document_id,
+        asset.modified_on, asset.url, ByteIdentity.of(b"previous official original"),
+        flake.method_version,
+    )
+    plan = plan_updates(M.UpdateRequest(
+        index, (baseline,), (asset.source_id,), frozenset({asset.source_id}),
+        "probe", force_refresh=True,
+    ))
+    assert plan.outcome == "succeeded"
+    decision, = plan.value.decisions
+    assert decision.state == "unchanged" and decision.download_required
+    assert not decision.processing_required
+    prepared = prepare_notice_facts(M.NoticeRequest(
+        summary, asset, decision, baseline_original_identity=baseline.original_identity,
+    ))
+    assert prepared.outcome == "succeeded"
+    assert prepared.value.state == "ready"
+    assert prepared.value.facts.publication_state == "material_revision"
+    assert prepared.value.facts.original_sha256 == flake.original_identity.sha256

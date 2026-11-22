@@ -20,8 +20,16 @@ def prepare_notification(request: NoticeRequest) -> tuple[NotificationFacts | No
         return None, "minfin.notice.source_bytes_unchanged"
     if decision.state == "initial" and not request.include_initial:
         return None, "minfin.notice.initial_suppressed"
-    if decision.state not in {"revised", "initial"}:
+    material_revision = (
+        decision.state == "unchanged"
+        and decision.download_required
+        and decision.reason == "minfin.update.forced_material_verification"
+        and request.baseline_original_identity is not None
+        and request.baseline_original_identity != summary.original_identity
+    )
+    if decision.state not in {"revised", "initial"} and not material_revision:
         return None, "minfin.notice.no_new_publication"
+    transition = "material_revision" if material_revision else decision.state
     if asset.document_id is None or asset.modified_on is None:
         return None, "minfin.notice.publication_marker_unqualified"
     version = {
@@ -29,6 +37,7 @@ def prepare_notification(request: NoticeRequest) -> tuple[NotificationFacts | No
         "document_id": asset.document_id, "modified_on": asset.modified_on.isoformat(),
         "source_sha": summary.original_identity.sha256,
         "period": summary.period_id, "summary_method": summary.flake_method_version,
+        "transition": transition,
     }
     key = hashlib.sha256(json.dumps(version, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     topic = "minfin.nwf_headline" if summary.family_id == "minfin.nwf" else "minfin.budget_headline"
@@ -37,4 +46,4 @@ def prepare_notification(request: NoticeRequest) -> tuple[NotificationFacts | No
                    for x in summary.metrics)
     return NotificationFacts(key, topic, summary.family_id, summary.source_id, summary.period_id,
                              asset.published_on, asset.modified_on, summary.original_identity.sha256,
-                             asset.url, values, decision.state, tags), "minfin.notice.ready"
+                             asset.url, values, transition, tags), "minfin.notice.ready"
