@@ -37,6 +37,11 @@ _SYMBOL_MODULES = {'CROSSWALK': '.definitions',
  'render_workbook': '.api',
  'restore': '.api',
  'run_crosswalk': '.api'}
+_SYMBOL_MODULES.update({
+    **{name: ".definitions" for name in ("SorsBundleSnapshotRequest", "SorsRestorationSnapshotRequest", "SorsCrosswalkSnapshotRequest", "ReadSorsSnapshotRequest")},
+    **{name: ".snapshot_operations" for name in ("build_bundle_snapshot", "read_bundle_snapshot", "build_restoration_snapshot", "read_restoration_snapshot", "build_crosswalk_snapshot", "read_crosswalk_snapshot")},
+    "DEPENDENCIES": ".dependencies", "SorsDependency": ".dependencies",
+})
 __all__ = tuple(_SYMBOL_MODULES)
 
 

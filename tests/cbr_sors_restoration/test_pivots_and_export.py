@@ -76,7 +76,7 @@ def test_crosswalk_workbook_exports_primary_facts_bounds_and_mapping(
         audit_grid=pd.DataFrame([{'key': 'status', 'value': 'OPTIMAL'}]),
         crosswalk_run_id='test',
         status='OPTIMAL',
-        _strict_result=small_result,
+        strict_result=small_result,
     )
     operation = render_workbook(RenderSorsRequest(
         result,

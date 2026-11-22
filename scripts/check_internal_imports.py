@@ -195,6 +195,7 @@ def _approved_inter_owner_reference(source: str, target: str, module: str) -> bo
         allowed = {
             "parser": {"", "parse_cbr_0105a_debt_corp_excel_bytes"},
             "schema": {"", "CBR_0105A_DEBT_CORP_INDUSTRY_SPECS"},
+            "contracts": {"", "ParsedCbr0105ADebtCorpFile"},
         }
         return any(
             module == prefix + name or module in {

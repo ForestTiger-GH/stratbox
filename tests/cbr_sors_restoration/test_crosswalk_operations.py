@@ -192,7 +192,7 @@ def _strict_with_bundle() -> SorsRestorationResult:
         conflicts_grid=empty,
         audit_grid=empty,
         summary=summary,
-        _source_bundle=bundle,
+        source_bundle=bundle,
     )
 
 
@@ -232,11 +232,11 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
     strict = _strict_with_bundle()
     snapshot = run(
         OperationDefinition("test.sors.snapshot", 1, "test-1", SorsSourceBundle, SorsSourceBundle),
-        strict._source_bundle,
+        strict.source_bundle,
         lambda value, invocation: _seal_grids(invocation, value),
     )
     assert snapshot.outcome == "succeeded", snapshot.diagnostics
-    strict = replace(strict, _source_bundle=snapshot.value)
+    strict = replace(strict, source_bundle=snapshot.value)
 
     execution = run_crosswalk(CrosswalkSorsRequest(
         strict,
@@ -294,7 +294,7 @@ def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
     from stratbox.domains.cbr.corporate_lending.sors_restoration.sources import loader
 
     config = SorsRunConfig(as_of_date="2026-06-01")
-    fixture = replace(_strict_with_bundle()._source_bundle,
+    fixture = replace(_strict_with_bundle().source_bundle,
                       as_of_date=config.as_of_date, publication_step=config.publication_step)
     monkeypatch.setattr(loader, "parse_source_inputs", lambda *args, **kwargs: fixture)
     book = Workbook()

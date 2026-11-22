@@ -176,7 +176,7 @@ def render_sors_workbook(
     strict_source = (
         result
         if isinstance(result, SorsRestorationResult)
-        else result._strict_result
+        else result.strict_result
     )
     if request.include_restored_facts and strict_source is not None:
         columns = [

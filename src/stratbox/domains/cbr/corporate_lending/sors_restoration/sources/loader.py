@@ -4,7 +4,8 @@ from dataclasses import replace
 
 import pandas as pd
 
-from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload
+from ..dependencies import DEPENDENCIES, dependency_manifest, original_input
 
 from stratbox.domains.cbr.corporate_lending.sors_restoration.contracts import (
     SorsSourceBundle,
@@ -30,7 +31,7 @@ from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.regional_to
     parse_regional_totals_history,
 )
 from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.regional_traditional import (
-    parse_regional_traditional,
+    parse_regional_traditional, regional_traditional_from_flake,
 )
 from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.sme import (
     parse_sme_national_okved2,
@@ -38,10 +39,6 @@ from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.sme import 
     parse_sme_regional_totals,
 )
 from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.validation import validate_source_bundle
-
-
-def _manifest(series: str, path, rows: int, role: str) -> dict[str, object]:
-    return source_manifest_record(series, path, rows, required=True, role=role)
 
 
 def parse_source_inputs(
@@ -55,8 +52,10 @@ def parse_source_inputs(
     target remains ``CORPORATE_TOTAL``; segment rows exist only to tighten it.
     """
 
+    dependency_grid = dependency_manifest(files, as_of_date, publication_step)
     policy = RoundingPolicy(step=publication_step)
-    regional, geography, atomic = parse_regional_traditional(
+    regional_parser = parse_regional_traditional if isinstance(files.regional_traditional, SourcePayload) else regional_traditional_from_flake
+    regional, geography, atomic = regional_parser(
         files.regional_traditional, as_of_date, policy
     )
     national_traditional = parse_national_traditional(
@@ -173,36 +172,23 @@ def parse_source_inputs(
             f'Expected complete portfolio scopes {PORTFOLIO_SCOPES}, got {scopes}'
         )
 
-    manifest_rows = [
-        _manifest('01_05_A', files.regional_traditional, len(regional), 'STRICT_REGIONAL_TOTALS_AND_CROSSWALK_LEGACY'),
-        _manifest('01_02_A', files.national_traditional, len(national_traditional), 'STRICT_NATIONAL_TOTAL_AND_CROSSWALK_LEGACY'),
-        _manifest('01_02_C', files.national_okved2, len(national_okved2), 'STRICT_NATIONAL_OKVED2'),
-        _manifest('01_03_C', files.federal_district_okved2, len(fd_okved2), 'STRICT_FD_OKVED2'),
-        _manifest('01_11', files.sme_national_totals, len(sme_national_totals), 'STRICT_NATIONAL_SME_TOTALS'),
-        _manifest('01_11_F', files.sme_national_okved2, len(sme_national_okved2), 'STRICT_NATIONAL_OKVED2_SME'),
-        _manifest('01_11_I', files.sme_ie_national_okved2, len(sme_ie_national_okved2), 'STRICT_NATIONAL_OKVED2_SME_IE'),
-        _manifest('01_12_A', files.sme_federal_district_okved2, len(sme_fd_okved2), 'STRICT_FD_OKVED2_SME'),
-        _manifest('01_13_F', files.sme_regional_totals, len(sme_regional), 'STRICT_REGIONAL_TOTALS_SME'),
-        _manifest('01_13_I', files.sme_ie_regional_totals, len(sme_ie_regional), 'STRICT_REGIONAL_TOTALS_SME_IE'),
-    ]
-    if files.regional_totals_history is not None:
-        manifest_rows.append(
-            source_manifest_record(
-                '01_05_D', files.regional_totals_history, len(history),
-                required=False, role='OPTIONAL_VALIDATION_AND_HISTORY'
-            )
-        )
-
-    by_name = {
-        '01_05_A': files.regional_traditional, '01_02_A': files.national_traditional,
-        '01_02_C': files.national_okved2, '01_03_C': files.federal_district_okved2,
-        '01_11': files.sme_national_totals, '01_11_F': files.sme_national_okved2,
-        '01_11_I': files.sme_ie_national_okved2, '01_12_A': files.sme_federal_district_okved2,
-        '01_13_F': files.sme_regional_totals, '01_13_I': files.sme_ie_regional_totals,
-        '01_05_D': files.regional_totals_history,
+    input_frames = {
+        "regional_traditional": regional, "national_traditional": national_traditional,
+        "national_okved2": national_okved2, "federal_district_okved2": fd_okved2,
+        "sme_national_totals": sme_national_totals, "sme_national_okved2": sme_national_okved2,
+        "sme_ie_national_okved2": sme_ie_national_okved2, "sme_federal_district_okved2": sme_fd_okved2,
+        "sme_regional_totals": sme_regional, "sme_ie_regional_totals": sme_ie_regional,
+        "regional_totals_history": history,
     }
-    lineage = tuple(UsedInputReceipt.for_payload(payload, key)
-                    for key, payload in by_name.items() if payload is not None) + tuple(registry_inputs)
+    manifest_rows = [
+        {**source_manifest_record(item.source_series, getattr(files, item.input_name), len(input_frames[item.input_name]),
+                                  required=item.required, role=item.source_role),
+         "series_id": item.series_id, "method_version": item.method_version, "as_of_date": as_of_date}
+        for item in DEPENDENCIES if getattr(files, item.input_name) is not None
+    ]
+
+    lineage = tuple(original_input(getattr(files, item.input_name), item.source_series)
+                    for item in DEPENDENCIES if getattr(files, item.input_name) is not None) + tuple(registry_inputs)
     bundle = SorsSourceBundle(
         source_grid=source_grid,
         regional_traditional_grid=regional,
@@ -226,6 +212,7 @@ def parse_source_inputs(
         lineage=lineage,
         as_of_date=as_of_date,
         publication_step=publication_step,
+        dependency_manifest_grid=dependency_grid,
     )
     validation = validate_source_bundle(bundle, raise_on_error=True)
     return replace(bundle, validation_grid=validation)

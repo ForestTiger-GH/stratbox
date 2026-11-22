@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.representation import Representation
+from .contracts import SorsSourceBundle, SorsRunConfig, SorsCrosswalkConfig
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -82,8 +83,8 @@ class SorsRestorationResult:
     target_bounds_grid: pd.DataFrame = field(default_factory=_empty_frame)
     rounding_profiles_grid: pd.DataFrame = field(default_factory=_empty_frame)
     selection_attempts_grid: pd.DataFrame = field(default_factory=_empty_frame)
-    _source_bundle: object | None = None
-    _strict_problem: object | None = None
+    source_bundle: SorsSourceBundle | None = None
+    run_config: SorsRunConfig | None = None
     evidence: ComputationReceipt | None = None
 
 
@@ -104,7 +105,8 @@ class SorsCrosswalkResult:
     audit_grid: pd.DataFrame
     crosswalk_run_id: str
     status: str
-    _strict_result: object | None = None
+    strict_result: SorsRestorationResult | None = None
+    crosswalk_config: SorsCrosswalkConfig | None = None
     evidence: ComputationReceipt | None = None
 
 

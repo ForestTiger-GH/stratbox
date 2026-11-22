@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.data.snapshots import SnapshotCoverage
+from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import ParsedCbr0105ADebtCorpFile
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -38,7 +40,7 @@ class SorsSourceFiles:
 
 @dataclass(frozen=True, slots=True)
 class SorsSourceInputs:
-    regional_traditional: SourcePayload
+    regional_traditional: SourcePayload | ParsedCbr0105ADebtCorpFile
     national_okved2: SourcePayload
     federal_district_okved2: SourcePayload
     national_traditional: SourcePayload
@@ -254,6 +256,11 @@ class SorsRunConfig:
             )
 
 
+def _empty_frame():
+    from pandas import DataFrame
+    return DataFrame()
+
+
 @dataclass(frozen=True)
 class SorsSourceBundle:
     source_grid: pd.DataFrame
@@ -279,6 +286,11 @@ class SorsSourceBundle:
     evidence: ComputationReceipt | None = None
     as_of_date: str | None = None
     publication_step: float | None = None
+    dependency_manifest_grid: pd.DataFrame = field(default_factory=_empty_frame)
+    coverage: SnapshotCoverage = SnapshotCoverage(
+        "unknown", "Selected publication slice; publisher historical coverage is unspecified."
+    )
+    method_version: str = "sors-source-bundle-2"
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,6 +10,7 @@ from stratbox.core.storage.filestore import FileStore
 from stratbox.core.storage.bytes import read_bounded_bytes
 from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.data.lineage import input_value
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
     Completion, ExecutionContext, OperationFailure, OperationResult, run,
@@ -76,9 +77,15 @@ def _load(sources, config, invocation):
     for field in fields(SorsSourceInputs):
         invocation.check_cancelled()
         payload = getattr(sources, field.name)
-        if payload is not None:
+        if isinstance(payload, SourcePayload):
             invocation.budget.charge("input_bytes", payload.identity.size)
             admit_workbook(payload.data, invocation)
+        elif payload is not None and getattr(payload, "evidence", None) is not None:
+            # The shared 0105a extractor is a declared computational parent.
+            # No original workbook is reopened when a sealed flake is supplied.
+            invocation.parents.append((field.name + "_flake", payload.evidence))
+            invocation.use(UsedInputReceipt(field.name + "_flake", payload.evidence.output,
+                                            "application/vnd.stratbox.table-manifest+json", "reference_only"))
     try:
         bundle = parse_source_inputs(
             sources, config.as_of_date, publication_step=config.publication_step
@@ -108,21 +115,17 @@ def _grid_metadata(value):
     if isinstance(value, SorsSourceBundle):
         return {
             "as_of_date": value.as_of_date, "publication_step": _parameters(value.publication_step),
-            "lineage": [{
-                "role": item.role,
-                "sha256": item.identity.sha256,
-                "size": item.identity.size,
-                "source_id": item.source_id,
-                "media_type": item.media_type,
-                "availability": item.availability,
-                "reference_snapshot_sha256": item.version.sha256 if item.version else None,
-                "reference_snapshot_size": item.version.size if item.version else None,
-            } for item in value.lineage],
+            "coverage": asdict(value.coverage), "method_version": value.method_version,
+            "lineage": [input_value(item) for item in value.lineage],
         }
     if isinstance(value, SorsRestorationResult):
-        return _parameters(asdict(value.summary))
+        return {"summary": _parameters(asdict(value.summary)),
+                "run_config": _parameters(asdict(value.run_config)) if value.run_config else None,
+                "source_context": asdict(value.source_bundle.evidence.output) if value.source_bundle is not None and value.source_bundle.evidence else None}
     if isinstance(value, SorsCrosswalkResult):
-        return {"status": value.status, "crosswalk_run_id": value.crosswalk_run_id}
+        return {"status": value.status, "crosswalk_run_id": value.crosswalk_run_id,
+                "crosswalk_config": _parameters(asdict(value.crosswalk_config)) if value.crosswalk_config else None,
+                "strict_context": asdict(value.strict_result.evidence.output) if value.strict_result is not None and value.strict_result.evidence else None}
     return None
 
 
@@ -195,10 +198,10 @@ def restore(
             raise OperationFailure("sors.fixed_point_limit") from None
         except ValueError:
             raise OperationFailure("sors.model_invalid") from None
-        if result._source_bundle is not None:
+        if result.source_bundle is not None:
             # The solver attaches observation bindings. Seal the resulting bundle
             # before handing it to a separately invoked crosswalk.
-            result = replace(result, _source_bundle=_seal_grids(invocation, result._source_bundle))
+            result = replace(result, source_bundle=_seal_grids(invocation, result.source_bundle))
         result = _seal_grids(invocation, result, parameters=_parameters(asdict(req.config)))
         if result.summary.strict_status == "SOLVER_UNAVAILABLE":
             return Completion(result, "failed", "provider.capability_missing")
@@ -219,8 +222,8 @@ def run_crosswalk(
 
         invocation.stage("crosswalk")
         strict = _use_grids(invocation, req.strict, "sors_restoration")
-        if strict._source_bundle is not None:
-            strict = replace(strict, _source_bundle=_use_grids(invocation, strict._source_bundle, "sors_source_bundle"))
+        if strict.source_bundle is not None:
+            strict = replace(strict, source_bundle=_use_grids(invocation, strict.source_bundle, "sors_source_bundle"))
         from .crosswalk.mapping import capture_mapping_inputs
 
         try:
@@ -268,8 +271,8 @@ def render_workbook(
 
         invocation.stage("render")
         result = _use_grids(invocation, req.result, "sors_result")
-        if isinstance(result, SorsCrosswalkResult) and result._strict_result is not None:
-            result = replace(result, _strict_result=_use_grids(invocation, result._strict_result, "sors_restoration"))
+        if isinstance(result, SorsCrosswalkResult) and result.strict_result is not None:
+            result = replace(result, strict_result=_use_grids(invocation, result.strict_result, "sors_restoration"))
         value = render_sors_workbook(
             result, req.workbook, checkpoint=invocation.check_cancelled, budget=invocation.budget,
         )

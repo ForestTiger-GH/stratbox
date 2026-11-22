@@ -477,9 +477,9 @@ def _run_scenario(
     config: SorsCrosswalkConfig,
     scenario_id: str,
 ) -> _ScenarioExecution:
-    assert strict_result._source_bundle is not None
+    assert strict_result.source_bundle is not None
     compilation = compile_crosswalk_problem(
-        strict_result._source_bundle,
+        strict_result.source_bundle,
         strict_result.components_grid,
         config,
         scenario_id,
@@ -926,7 +926,7 @@ def run_sors_crosswalk(
         raise ValueError(
             'Crosswalk mode is disabled; choose feasibility, targets or all'
         )
-    if strict_result._source_bundle is None:
+    if strict_result.source_bundle is None:
         raise ValueError('Strict result does not contain its source bundle')
     known = set(read_crosswalk_scenarios(config.mapping_version))
     unknown = sorted(set(config.scenario_ids) - known)
@@ -1041,5 +1041,6 @@ def run_sors_crosswalk(
         audit_grid=audit,
         crosswalk_run_id=crosswalk_run_id,
         status=status,
-        _strict_result=strict_result,
+        strict_result=strict_result,
+        crosswalk_config=config,
     )

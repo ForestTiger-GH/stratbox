@@ -110,12 +110,14 @@ def source_manifest_record(
     required: bool,
     role: str,
 ) -> dict[str, object]:
+    from ..dependencies import original_input
+    receipt = original_input(source, source_series)
     return {
         'source_series': source_series,
         'source_role': role,
         'required': bool(required),
-        'source_file_actual': source.source_id or source_series,
-        'sha256': source.identity.sha256,
-        'size_bytes': source.identity.size,
+        'source_file_actual': receipt.source_id or source_series,
+        'sha256': receipt.identity.sha256,
+        'size_bytes': receipt.identity.size,
         'rows': int(rows),
     }

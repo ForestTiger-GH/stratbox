@@ -91,7 +91,7 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
     monkeypatch.setattr(operations, '_run_scenario', lambda *args: execution)
 
     result = operations.run_sors_crosswalk(
-        replace(small_result, _source_bundle=object()),
+        replace(small_result, source_bundle=object()),
         SorsCrosswalkConfig(mode='feasibility'),
     )
     assert result.status == 'SOLVER_UNAVAILABLE'

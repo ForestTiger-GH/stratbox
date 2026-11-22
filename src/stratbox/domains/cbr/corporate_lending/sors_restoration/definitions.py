@@ -22,6 +22,7 @@ from .results import (
 )
 
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.core.execution.semantics import (
     InputPort,
     OutputPort,
@@ -64,17 +65,17 @@ _TABLES = ExecutionBudget(cells=80_000_000, output_bytes=256 * 1024 * 1024)
 
 READ = OperationDefinition(
     "cbr.sors.read_source_files",
-    1,
+    2,
     "sors-file-read-1",
     SorsSourceFiles,
     SorsSourceInputs,
     frozenset({"filestore"}),
     processing=OperationSemantics(
-        stages=(ProcessingStage.PRESERVE,),
+        stages=(ProcessingStage.ACQUIRE,),
         summary="Read a caller-selected bundle of retained source files with bounded byte checks.",
         outputs=(
             OutputPort(
-                "sources", DataContract("cbr.sors.source_inputs", 1, DataRole.ORIGINALS)
+                "sources", DataContract("cbr.sors.source_inputs", 2)
             ),
         ),
         parameters=(
@@ -95,24 +96,25 @@ READ = OperationDefinition(
 
 LOAD = OperationDefinition(
     "cbr.sors.load_sources",
-    3,
-    "sors-source-bundle-1",
+    4,
+    "sors-source-bundle-2",
     LoadSorsRequest,
     SorsSourceBundle,
     limits=_TABLES,
     processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT,),
+        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE),
+        composition=True,
         summary="Load and align the complete SORS constraint input bundle.",
         inputs=(
             InputPort(
                 "sources",
-                DataContract("cbr.sors.source_inputs", 1, DataRole.ORIGINALS),
+                DataContract("cbr.sors.source_inputs", 2),
                 path="sources",
             ),
         ),
         outputs=(
             OutputPort(
-                "bundle", DataContract("cbr.sors.source_bundle", 1, DataRole.EXTRACTS)
+                "bundle", DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED)
             ),
         ),
         parameters=("config",),
@@ -121,7 +123,7 @@ LOAD = OperationDefinition(
 
 RESTORE = OperationDefinition(
     "cbr.sors.restore",
-    3,
+    4,
     "sors-multiscope-rounding-dominance-2026.7",
     RestoreSorsRequest,
     SorsRestorationResult,
@@ -132,16 +134,16 @@ RESTORE = OperationDefinition(
         inputs=(
             InputPort(
                 "bundle",
-                DataContract("cbr.sors.source_bundle", 1, DataRole.EXTRACTS),
+                DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED),
                 path="source",
                 alternatives=(
-                    DataContract("cbr.sors.source_inputs", 1, DataRole.ORIGINALS),
+                    DataContract("cbr.sors.source_inputs", 2),
                 ),
             ),
         ),
         outputs=(
             OutputPort(
-                "result", DataContract("cbr.sors.restoration", 1, DataRole.EXTRACTS)
+                "result", DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED)
             ),
         ),
         parameters=("config",),
@@ -150,7 +152,7 @@ RESTORE = OperationDefinition(
 
 CROSSWALK = OperationDefinition(
     "cbr.sors.crosswalk",
-    2,
+    3,
     "sors-crosswalk-1",
     CrosswalkSorsRequest,
     SorsCrosswalkResult,
@@ -161,13 +163,13 @@ CROSSWALK = OperationDefinition(
         inputs=(
             InputPort(
                 "strict",
-                DataContract("cbr.sors.restoration", 1, DataRole.EXTRACTS),
+                DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED),
                 path="strict",
             ),
         ),
         outputs=(
             OutputPort(
-                "result", DataContract("cbr.sors.crosswalk", 1, DataRole.EXTRACTS)
+                "result", DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED)
             ),
         ),
         parameters=("config",),
@@ -176,7 +178,7 @@ CROSSWALK = OperationDefinition(
 
 PIVOT = OperationDefinition(
     "cbr.sors.build_pivot",
-    2,
+    3,
     "sors-pivot-1",
     PivotSorsRequest,
     SorsPivotResult,
@@ -187,10 +189,10 @@ PIVOT = OperationDefinition(
         inputs=(
             InputPort(
                 "result",
-                DataContract("cbr.sors.restoration", 1, DataRole.EXTRACTS),
+                DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED),
                 path="result",
                 alternatives=(
-                    DataContract("cbr.sors.crosswalk", 1, DataRole.EXTRACTS),
+                    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED),
                 ),
             ),
         ),
@@ -203,7 +205,7 @@ PIVOT = OperationDefinition(
 
 RENDER = OperationDefinition(
     "cbr.sors.render_workbook",
-    2,
+    3,
     "sors-xlsx-1",
     RenderSorsRequest,
     SorsWorkbookResult,
@@ -214,10 +216,10 @@ RENDER = OperationDefinition(
         inputs=(
             InputPort(
                 "result",
-                DataContract("cbr.sors.restoration", 1, DataRole.EXTRACTS),
+                DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED),
                 path="result",
                 alternatives=(
-                    DataContract("cbr.sors.crosswalk", 1, DataRole.EXTRACTS),
+                    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED),
                 ),
             ),
         ),
@@ -231,3 +233,58 @@ RENDER = OperationDefinition(
         parameters=("workbook",),
     ),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class SorsBundleSnapshotRequest:
+    value: SorsSourceBundle
+    dataset_id: str = "cbr.sors.bundle"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SorsRestorationSnapshotRequest:
+    value: SorsRestorationResult
+    dataset_id: str = "cbr.sors.restoration"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SorsCrosswalkSnapshotRequest:
+    value: SorsCrosswalkResult
+    dataset_id: str = "cbr.sors.crosswalk"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadSorsSnapshotRequest:
+    snapshot: DatasetSnapshot
+
+
+def _snapshot_definition(name, request_type, contract, snapshot_contract):
+    return OperationDefinition(f"cbr.sors.{name}", 1, "sors-replay-context-1", request_type, DatasetSnapshot, limits=_TABLES,
+        processing=OperationSemantics(stages=(ProcessingStage.RENDER,),
+            inputs=(InputPort("value", contract, path="value"),),
+            outputs=(OutputPort("snapshot", snapshot_contract), OutputPort("dataset", DataContract("dataset.snapshot"))),
+            parameters=("dataset_id", "version_id"), summary="Encode all SORS data and declared continuation dependencies."))
+
+
+def _read_snapshot_definition(name, result_type, contract, snapshot_contract):
+    return OperationDefinition(f"cbr.sors.{name}", 1, "sors-replay-context-1", ReadSorsSnapshotRequest, result_type, limits=_TABLES,
+        processing=OperationSemantics(stages=(ProcessingStage.READ_EXTRACT,),
+            inputs=(InputPort("snapshot", snapshot_contract, path="snapshot", alternatives=(DataContract("dataset.snapshot"),)),),
+            outputs=(OutputPort("value", contract),), summary="Validate and reconstruct the complete SORS continuation context."))
+
+
+BUNDLE_SNAPSHOT = _snapshot_definition("bundle_snapshot", SorsBundleSnapshotRequest,
+    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED))
+READ_BUNDLE_SNAPSHOT = _read_snapshot_definition("read_bundle_snapshot", SorsSourceBundle,
+    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED))
+RESTORATION_SNAPSHOT = _snapshot_definition("restoration_snapshot", SorsRestorationSnapshotRequest,
+    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED))
+READ_RESTORATION_SNAPSHOT = _read_snapshot_definition("read_restoration_snapshot", SorsRestorationResult,
+    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED))
+CROSSWALK_SNAPSHOT = _snapshot_definition("crosswalk_snapshot", SorsCrosswalkSnapshotRequest,
+    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED))
+READ_CROSSWALK_SNAPSHOT = _read_snapshot_definition("read_crosswalk_snapshot", SorsCrosswalkResult,
+    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED))

@@ -143,6 +143,15 @@ def _concat(frames: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(usable, ignore_index=True, sort=False) if usable else pd.DataFrame()
 
 
+def _constraint_records(frame: pd.DataFrame) -> pd.DataFrame:
+    """Expose expression coordinates as immutable data, independent of NumPy."""
+    result = frame.copy(deep=True)
+    for name, convert in (("expression_indices", int), ("expression_coefficients", float)):
+        if name in result.columns:
+            result[name] = result[name].map(lambda values: tuple(convert(value) for value in values))
+    return result
+
+
 def restore_bundle(
     bundle: SorsSourceBundle,
     config: SorsRunConfig,
@@ -518,7 +527,7 @@ def restore_bundle(
         components_grid=components_grid,
         restored_facts_grid=restored_facts,
         derivations_grid=closure_state.derivations_grid,
-        constraints_grid=final_problem.constraints_grid,
+        constraints_grid=_constraint_records(final_problem.constraints_grid),
         variables_grid=final_problem.variables_grid,
         solver_runs_grid=solver_runs,
         conflicts_grid=conflicts,
@@ -535,6 +544,6 @@ def restore_bundle(
         target_bounds_grid=target_bounds_grid,
         rounding_profiles_grid=rounding_profiles,
         selection_attempts_grid=selection_attempts_grid,
-        _source_bundle=bundle,
-        _strict_problem=final_problem,
+        source_bundle=bundle,
+        run_config=config,
     )
