@@ -5,9 +5,14 @@ member of each file family. For large collections, publish the approved
 selection directly to a filesystem ZIP with `frg.prepare_archive_to_store`.
 This operation keeps only a fixed-size transfer chunk in memory.
 
+The domain owns logical report selection and standard member names. Core owns
+ZIP construction, streaming, byte verification and staged storage commits.
+Source registries contain no input directory, output location or physical filename;
+the caller supplies those locations for each execution.
+
 ```python
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.frank_rg import retail_banking as frg
+from stratbox.domains import frank_rg as frg
 
 inputs = LocalFileStore(root='/content')
 outputs = LocalFileStore(root='/content/stratbox_outputs/frg')
@@ -38,3 +43,8 @@ disk-streamed operation for large selections.
 
 Directory mutation is separate: only after ZIP success may a caller choose
 to invoke `frg.apply_cleanup` using an authorized, still-current plan.
+
+Same-period candidates with different bytes are ambiguous and block archive
+planning. Byte-identical candidates can be qualified during cleanup planning,
+including an original supplier file and its previously created standard copy.
+Workbook contents remain opaque throughout selection, naming and archiving.

@@ -1,0 +1,49 @@
+{
+  "schema": "stratbox.frg.registry.v1",
+  "family_id": "frg.regional",
+  "publisher_id": "frank_rg",
+  "title": "Regional retail banking monitoring",
+  "profiles": {
+    "discovery": "frg.directory.v1",
+    "identification": "frg.identification.regional.v1",
+    "selection": "frg.latest_period.v1",
+    "naming": "frg.canonical.v1"
+  },
+  "series": [
+    {
+      "source_id": "frg.regional.issuance",
+      "slot": "issuance",
+      "title": "Regional loan issuance",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.regional.portfolios",
+      "slot": "portfolios",
+      "title": "Regional loan portfolios",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.regional.issuance_mortgage",
+      "slot": "issuance_mortgage",
+      "title": "Regional mortgage issuance",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.regional.portfolios_mortgage",
+      "slot": "portfolios_mortgage",
+      "title": "Regional mortgage portfolios",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.regional.issuance_cards",
+      "slot": "issuance_cards",
+      "title": "Regional credit card issuance",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    }
+  ]
+}

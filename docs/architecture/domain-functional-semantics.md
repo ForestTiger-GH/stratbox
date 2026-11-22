@@ -23,7 +23,7 @@ subject boundary rather than pretending to belong to a single publisher.
 | `cbr.corporate_lending.sors_restoration` | Constraint-based restoration of regional economic activity observations | Derived estimates with explicit feasibility/evidence/rounding semantics; never relabel as original observations |
 | `fns.legal_entities_1yur` | Legal entities by status, legal form and geographic unit | Dated snapshots; historically changing published columns require explicit epoch mappings |
 | `fns.sme_register` | Regional SME register statistics | Dated regional/monthly snapshots; preserve published identity and measure |
-| `frank_rg.retail_banking` | Supplier file catalog, selection, cleanup plan and archive | File/campaign identity; catalog operations do **not** imply that future report parsers are implemented |
+| `frank_rg` | Logical report sources, runtime delivery, standard naming, cleanup plans and archive selection | Supplier snapshot dates and numbered weeks within a month; file metadata and exact byte revisions remain separate; workbook interpretation and calculations are explicit gaps |
 
 A grouping package is not automatically an operation owner. It becomes an owner
 only with an exact local `_registration.py`. One logical operation ID belongs

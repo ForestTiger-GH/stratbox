@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.frg.registry.v1",
+  "family_id": "frg.special",
+  "publisher_id": "frank_rg",
+  "title": "Special retail banking reports",
+  "profiles": {
+    "discovery": "frg.directory.v1",
+    "identification": "frg.identification.special.v1",
+    "selection": "frg.latest_period.v1",
+    "naming": "frg.canonical.v1"
+  },
+  "series": [
+    {
+      "source_id": "frg.special.mortgage_refinancing",
+      "slot": "mortgage_refinancing",
+      "title": "Mortgage refinancing",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    }
+  ]
+}

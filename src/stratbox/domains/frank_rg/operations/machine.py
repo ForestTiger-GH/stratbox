@@ -5,8 +5,8 @@ from __future__ import annotations
 from stratbox.core.execution.machine.contracts import (
     DirectoryMaterial, ReadOnlyWireCodec, WireRequestError,
 )
-from . import api
-from .cleanup import PlanCleanupRequest
+from . import housekeeping
+from ..publications.cleanup import PlanCleanupRequest
 
 from .machine_contracts import PLAN_CONTRACT
 
@@ -16,7 +16,7 @@ def _plan(data, materials, context):
     directory = materials.directory(data["directory_ref"])
     if not isinstance(directory, DirectoryMaterial):
         raise WireRequestError("material.invalid_directory")
-    return api.plan_cleanup(
+    return housekeeping.plan_cleanup(
         PlanCleanupRequest(directory.directory, data.get("delete_others", False)),
         store=directory.store, context=context,
     )

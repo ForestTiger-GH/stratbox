@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pandas import DataFrame
-
 from dataclasses import dataclass
 from stratbox.core.storage.filestore import WriteMode
 from stratbox.core.formats.archives.store import PathArchiveReceipt
 from stratbox.shared.data.representation import Representation
 from stratbox.core.execution.contracts import OperationDefinition
-from .cleanup import ApplyCleanupRequest, CleanupPlan, PlanCleanupRequest
+from ..publications.cleanup import ApplyCleanupRequest, CleanupPlan, PlanCleanupRequest
 
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.core.execution.semantics import (
@@ -35,25 +30,12 @@ class StreamArchiveRequest:
     expected_revision: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class ScanRequest:
-    directory: str
-    recursive: bool = False
-
-
-@dataclass(frozen=True, slots=True)
-class Catalog:
-    files: DataFrame
-    latest: DataFrame
-    dispatch: DataFrame
-
-
 _STREAM_STORES = frozenset({"filestore", "output_filestore"})
 
 STREAM_ARCHIVE = OperationDefinition(
     "frg.prepare_archive_to_store",
     2,
-    "frg-verified-streaming-zip-2",
+    "frg-verified-streaming-zip-profile-3",
     StreamArchiveRequest,
     PathArchiveReceipt,
     _STREAM_STORES,
@@ -84,25 +66,10 @@ _STORE = frozenset({"filestore"})
 
 _EFFECTS = frozenset({"storage.copy", "storage.rename", "storage.remove"})
 
-SCAN = OperationDefinition(
-    "frg.scan",
-    1,
-    "frg-catalog-1",
-    ScanRequest,
-    Catalog,
-    _STORE,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.DISCOVER, ProcessingStage.INSPECT),
-        summary="Inspect a retained report directory using report-family filename semantics.",
-        outputs=(OutputPort("catalog", DataContract("frg.catalog", 1, None)),),
-        parameters=("directory", "recursive"),
-    ),
-)
-
 PLAN = OperationDefinition(
     "frg.plan_cleanup",
     1,
-    "frg-cleanup-plan-1",
+    "frg-cleanup-plan-profile-2",
     PlanCleanupRequest,
     CleanupPlan,
     _STORE,
@@ -117,7 +84,7 @@ PLAN = OperationDefinition(
 APPLY = OperationDefinition(
     "frg.apply_cleanup",
     1,
-    "frg-conditional-cleanup-1",
+    "frg-conditional-cleanup-profile-2",
     ApplyCleanupRequest,
     tuple,
     _STORE,
@@ -139,7 +106,7 @@ APPLY = OperationDefinition(
 ARCHIVE = OperationDefinition(
     "frg.prepare_archive",
     1,
-    "frg-latest-zip-1",
+    "frg-latest-zip-profile-2",
     CleanupPlan,
     Representation,
     _STORE,

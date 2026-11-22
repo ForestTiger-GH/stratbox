@@ -1,8 +1,6 @@
-"""Read-only FRG catalog operations and explicit conditional cleanup."""
+"""Revision-bound file housekeeping and domain archive selection."""
 
 from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 from stratbox.core.storage.filestore import (
     FileMutation, FileStore, MutationRejected, StagedWriter,
@@ -12,7 +10,6 @@ from stratbox.core.operations.source.originals import storage_effect
 from stratbox.core.storage.bytes import inspect_file_version, read_bounded_bytes, write_verified_bytes
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, zip_bytes
 from stratbox.core.limits import BudgetError
-from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
@@ -20,48 +17,18 @@ from stratbox.core.execution import (
     Completion, EffectReceipt, ExecutionContext, OperationFailure, OperationResult, run,
 )
 
-if TYPE_CHECKING:
-    from pandas import DataFrame
-
-from .cleanup import (
+from ..publications.cleanup import (
     ApplyCleanupRequest,
     CleanupPlan,
     CleanupReceipt,
     PlanCleanupRequest,
     create_plan,
+    validate_plan,
 )
 
-from .definitions import (
-    APPLY, ARCHIVE, Catalog, PLAN, SCAN, STREAM_ARCHIVE, ScanRequest, StreamArchiveRequest, _EFFECTS, _STORE, _STREAM_STORES,
+from .housekeeping_definitions import (
+    APPLY, ARCHIVE, PLAN, STREAM_ARCHIVE, StreamArchiveRequest,
 )
-
-
-def scan(
-    request: ScanRequest,
-    *,
-    store: FileStore | None = None,
-    context: ExecutionContext | None = None,
-) -> OperationResult[Catalog]:
-    def work(req, invocation, given_store=store):
-        store = invocation.provider("filestore", given_store)
-        require_extra("pandas", "dataframe")
-        from .catalog import build_frg_catalog
-        from .dispatch import dispatch_latest_frg_files
-        from .selection import select_latest_frg_files
-
-        invocation.stage("scan")
-        try:
-            files = build_frg_catalog(
-                req.directory, recursive=req.recursive, filestore=store,
-                budget=invocation.budget, checkpoint=invocation.check_cancelled,
-            )
-        except (OSError, ValueError):
-            raise OperationFailure("storage.catalog_unreadable") from None
-        invocation.stage("select_latest")
-        latest = select_latest_frg_files(files)
-        return Catalog(files, latest, dispatch_latest_frg_files(latest))
-
-    return run(SCAN, request, work, context=context, providers={"filestore": store})
 
 
 def plan_cleanup(
@@ -72,7 +39,6 @@ def plan_cleanup(
 ) -> OperationResult[CleanupPlan]:
     def work(req, invocation, given_store=store):
         store = invocation.provider("filestore", given_store)
-        require_extra("pandas", "dataframe")
         if any(
             not callable(getattr(store, name, None))
             for name in ("inspect_file", "directory_identity")
@@ -157,7 +123,6 @@ def apply_cleanup(
 ) -> OperationResult[tuple[CleanupReceipt, ...]]:
     def work(req, invocation, given_store=store):
         store = invocation.provider("filestore", given_store)
-        require_extra("pandas", "dataframe")
         invocation.stage("authorize")
         if (
             req.plan.request.directory != req.authorized_directory
@@ -239,6 +204,7 @@ def prepare_archive(
     def work(req, invocation, given_store=store):
         store = invocation.provider("filestore", given_store)
         invocation.stage("prepare_archive")
+        validate_plan(req)
         if (
             not callable(getattr(store, "directory_identity", None))
             or store.directory_identity(req.request.directory) != req.directory_identity
@@ -278,7 +244,9 @@ def prepare_archive(
                 raise OperationFailure("archive.selection_invalid")
             files[name] = data
             invocation.use(
-                UsedInputReceipt.for_payload(SourcePayload(data), "latest_file")
+                UsedInputReceipt.for_payload(
+                    SourcePayload(data, source_id=action.source_id), "latest_file",
+                )
             )
         try:
             return Representation(
@@ -307,7 +275,7 @@ def prepare_archive_to_store(
             "directory_identity", "inspect_file", "open_read",
         )):
             raise OperationFailure("provider.capability_missing")
-        if not req.destination or req.destination in {".", ".."} or "\\x00" in req.destination:
+        if not req.destination or req.destination in {".", ".."} or "\x00" in req.destination:
             raise OperationFailure("effect.destination_invalid")
         if invocation.context.profile == "managed" and req.mode == "best_effort_verified":
             raise OperationFailure("effect.mode_forbidden")
@@ -341,10 +309,14 @@ def prepare_archive_to_store(
             raise OperationFailure(str(error)) from None
         except OSError:
             raise OperationFailure("storage.archive_unavailable") from None
+        source_ids = {
+            action.source.path: action.source_id for action in current.actions
+            if action.kind != "remove"
+        }
         for entry in entries:
             invocation.use(UsedInputReceipt(
                 "frg_archive_file", entry.identity, "application/octet-stream",
-                "reference_only", source_id=entry.source,
+                "reference_only", source_id=source_ids[entry.source],
             ))
         receipt = result.storage
         state = {"stored": "confirmed", "already_present": "confirmed",

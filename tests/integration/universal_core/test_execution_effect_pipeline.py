@@ -4,7 +4,7 @@ from stratbox.core.operations.source.originals import (
     OriginalDestination, SaveOriginalRequest, save_original,
 )
 from stratbox.core.storage.filestore import LocalFileStore, MutationRejected
-from stratbox.domains.frank_rg import retail_banking as frg
+from stratbox.domains import frank_rg as frg
 from stratbox.shared.evidence import SourcePayload
 
 

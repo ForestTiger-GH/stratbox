@@ -3,7 +3,7 @@
 import argparse
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.frank_rg import retail_banking as frg
+from stratbox.domains import frank_rg as frg
 
 
 def main():

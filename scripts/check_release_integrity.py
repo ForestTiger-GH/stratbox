@@ -82,7 +82,7 @@ REQUIRED_FILES = [
     'src/stratbox/domains/fns/legal_entities_1yur/_registration.py',
     'src/stratbox/domains/fns/sme_register/_registration.py',
     'src/stratbox/domains/frank_rg/__init__.py',
-    'src/stratbox/domains/frank_rg/retail_banking/_registration.py',
+    'src/stratbox/domains/frank_rg/_registration.py',
     'src/stratbox/domains/registry.py',
     'src/stratbox/core/execution/catalog.py',
     'src/stratbox/core/execution/runner.py',

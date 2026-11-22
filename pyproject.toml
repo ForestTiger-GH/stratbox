@@ -41,6 +41,7 @@ version = {attr = "stratbox.__version__"}
 "stratbox.shared.reference.geography" = ["_resources/**/*", "_resources/*.json", "_resources/*.csv"]
 "stratbox.domains.cbr.reporting_forms.models" = ["*.csv"]
 "stratbox.domains.minfin" = ["REGISTRY_*.yaml"]
+"stratbox.domains.frank_rg" = ["REGISTRY_*.yaml"]
 "stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
 
 [tool.setuptools.packages.find]

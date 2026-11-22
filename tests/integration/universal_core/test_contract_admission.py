@@ -92,7 +92,7 @@ def test_invalid_wire_input_stops_before_material_provider(raw, code):
 
 
 def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_path):
-    from stratbox.domains.frank_rg import retail_banking as frg
+    from stratbox.domains import frank_rg as frg
 
     source = SourcePayload(_FIXTURE.read_bytes(), "text/html")
     parsed = cbr_offices.parse(cbr_offices.ParseOfficesRequest(source, _DAY))

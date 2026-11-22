@@ -64,7 +64,20 @@ def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
     assert {item.consumer.operation_id for item in next_ops} == {
         "cbr.offices.parse",
         "source.save_original",
+        "minfin.extract",
+        "frg.capture",
     }
+    # A shared byte payload can reach explicit admission boundaries, but it
+    # does not itself establish another publisher's identity or period.
+    minfin = next(item for item in next_ops if item.consumer.operation_id == "minfin.extract")
+    assert minfin.state == "conditional"
+    assert "source.minfin" in minfin.missing_qualifications
+    assert "family_id" in minfin.parameters
+    frank = next(item for item in next_ops if item.consumer.operation_id == "frg.capture")
+    assert frank.state == "conditional"
+    assert set(frank.parameters) == {"source_id", "period", "format"}
+    # Naming accepts an admitted Frank RG report, not an arbitrary payload.
+    assert not any(item.consumer.operation_id == "frg.prepare_file" for item in next_ops)
     parse = next(
         item for item in next_ops if item.consumer.operation_id == "cbr.offices.parse"
     )

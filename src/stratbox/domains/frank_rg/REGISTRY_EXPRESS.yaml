@@ -1,0 +1,49 @@
+{
+  "schema": "stratbox.frg.registry.v1",
+  "family_id": "frg.express",
+  "publisher_id": "frank_rg",
+  "title": "Express retail banking monitoring",
+  "profiles": {
+    "discovery": "frg.directory.v1",
+    "identification": "frg.identification.express.v1",
+    "selection": "frg.latest_period.v1",
+    "naming": "frg.canonical.v1"
+  },
+  "series": [
+    {
+      "source_id": "frg.express.issuance",
+      "slot": "issuance",
+      "title": "Loan issuance",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.express.portfolios",
+      "slot": "portfolios",
+      "title": "Loan portfolios",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.express.passives",
+      "slot": "passives",
+      "title": "Retail liabilities",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.express.issuance_weekly",
+      "slot": "issuance_weekly",
+      "title": "Weekly loan issuance",
+      "periodicity": "month_week",
+      "kind": "workbook"
+    },
+    {
+      "source_id": "frg.express.issuance_cards",
+      "slot": "issuance_cards",
+      "title": "Credit card issuance",
+      "periodicity": "snapshot",
+      "kind": "workbook"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.frank_rg import retail_banking as frg
+from stratbox.domains import frank_rg as frg
 
 LATEST = "2026-05-01_Экспресс выдачи.xlsx"
 OLDER = "2026-04-01_Экспресс выдачи.xlsx"
@@ -54,6 +54,7 @@ def test_large_frg_archive_streams_to_disk_with_report(tmp_path):
             digest.update(chunk)
     assert digest.hexdigest() == receipt.identity.sha256
     assert latest.stat().st_size == 105 * 1024 * 1024
+    assert {item.source_id for item in result.used_inputs} == {"frg.express.issuance"}
 
 
 def test_changed_source_blocks_archive_and_preserves_existing_output(tmp_path):
@@ -134,7 +135,7 @@ def test_managed_archive_and_cleanup_recheck_scope_at_store(tmp_path):
     from stratbox.core.runtime.capabilities import ProviderBinding
     from stratbox.core.storage.filestore import MutationRejected
     from stratbox.core.execution import ExecutionContext
-    from stratbox.domains.frank_rg.retail_banking.api import APPLY, STREAM_ARCHIVE
+    from stratbox.domains.frank_rg.operations.housekeeping_definitions import APPLY, STREAM_ARCHIVE
 
     inp, _, plan, _, outputs = _setup(tmp_path)
 
@@ -211,3 +212,42 @@ def test_directory_and_planning_budget_stop_before_archive_stage(tmp_path):
                                               context=ExecutionContext(budget=cap))
         assert result.diagnostics[0].code == reason
         assert not result.effects and not list(outputs.iterdir())
+
+
+def test_in_memory_archive_rejects_edited_plan_before_reading_sources(tmp_path):
+    from dataclasses import replace
+
+    inp, _, plan, _, _ = _setup(tmp_path)
+    edited = replace(plan, actions=(replace(plan.actions[0], destination="other-name.xlsx"),))
+    result = frg.prepare_archive(edited, store=inp)
+
+    assert result.outcome == "failed"
+    assert result.diagnostics[0].code == "effect.plan_invalid"
+    assert not result.effects and not result.used_inputs
+
+
+def test_in_memory_archive_reads_renamed_destination_with_original_bytes(tmp_path):
+    from io import BytesIO
+
+    supplier_name = "FRG. Экспресс-мониторинг рынка выдачи 2026-05-01.xlsx"
+    original = b"original report bytes"
+    (tmp_path / supplier_name).write_bytes(original)
+    store = LocalFileStore(str(tmp_path))
+    planned = frg.plan_cleanup(
+        frg.PlanCleanupRequest(".", delete_others=True), store=store,
+    )
+    assert planned.outcome == "succeeded", planned.diagnostics
+    assert [item.kind for item in planned.value.actions] == ["rename"]
+    applied = frg.apply_cleanup(
+        frg.ApplyCleanupRequest(planned.value, ".", planned.value.identity.sha256),
+        store=store,
+    )
+    assert applied.outcome == "succeeded", applied.diagnostics
+    assert not (tmp_path / supplier_name).exists()
+
+    archived = frg.prepare_archive(planned.value, store=store)
+    assert archived.outcome == "succeeded", archived.diagnostics
+    with ZipFile(BytesIO(archived.value.data)) as package:
+        assert package.namelist() == [LATEST]
+        assert package.read(LATEST) == original
+    assert {item.source_id for item in archived.used_inputs} == {"frg.express.issuance"}
