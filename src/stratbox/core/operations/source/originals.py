@@ -39,13 +39,14 @@ def _receive_options(req, invocation):
 
 
 def receive_original(request: ReceiveOriginalRequest, *, transport: HttpTransport | None = None,
-                     context: ExecutionContext | None = None):
+                     selection=None, context: ExecutionContext | None = None):
     def work(req, invocation):
         invocation.stage("receive")
         value = receive_source(req.request, transport=transport, **_receive_options(req, invocation))
         invocation.use(UsedInputReceipt.for_payload(value.payload, "original"))
         return value
-    return run(RECEIVE, request, work, context=context, providers={"http": transport})
+    return run(RECEIVE, request, work, context=context, providers={"http": transport},
+               provider_selections={"http": selection} if selection is not None else None)
 
 
 def storage_effect(invocation, storage):
@@ -74,7 +75,7 @@ def _store(invocation, target, store, produce):
     result = None
     try:
         with store.stage_write(target.locator) as stage:
-            invocation.stage("stage_original")
+            invocation.stage("stage_material")
             bounded = BoundedStage(stage.stream, invocation.budget)
             identity, mime, source_id, charset, acquisition = produce(bounded)
             bounded.flush()
@@ -84,7 +85,7 @@ def _store(invocation, target, store, produce):
                 raise OperationFailure("input.identity_mismatch") from None
             if verified != identity:
                 raise OperationFailure("input.identity_mismatch")
-            invocation.stage("commit_original")
+            invocation.stage("commit_material")
             storage = commit_staged(
                 stage, target.locator, identity, store=store, budget=invocation.budget,
                 checkpoint=invocation.check_cancelled, mode=target.mode,
@@ -116,7 +117,7 @@ def _stored_completion(value):
 
 
 def save_original(request: SaveOriginalRequest, *, store: StagedWriter | None = None,
-                  context: ExecutionContext | None = None):
+                  selection=None, context: ExecutionContext | None = None):
     def work(req, invocation, given_store=store):
         store = invocation.provider("output_filestore", given_store)
         acquired = req.source if isinstance(req.source, AcquiredSource) else None
@@ -134,7 +135,8 @@ def save_original(request: SaveOriginalRequest, *, store: StagedWriter | None = 
 
         return _stored_completion(_store(invocation, req.destination, store, produce))
 
-    return run(SAVE, request, work, context=context, providers={"output_filestore": store})
+    return run(SAVE, request, work, context=context, providers={"output_filestore": store},
+               provider_selections={"output_filestore": selection} if selection is not None else None)
 
 
 def receive_original_to_store(req, *, transport, store, invocation, validate=None, baseline_store=None):
@@ -172,15 +174,20 @@ def receive_original_to_store(req, *, transport, store, invocation, validate=Non
 def receive_to_store(request: ReceiveToStoreRequest, *, transport: StreamingHttpTransport | None = None,
                      store: StagedWriter | None = None,
                      baseline_store: SourceStore | None = None,
+                     http_selection=None, output_selection=None, baseline_selection=None,
                      context: ExecutionContext | None = None):
     def work(req, invocation, given_store=store):
         store = invocation.provider("output_filestore", given_store)
+        reader = (invocation.provider("filestore", baseline_store) if req.baseline is not None
+                  and (baseline_store is not None or baseline_selection is not None) else baseline_store)
         return _stored_completion(receive_original_to_store(
             req, transport=invocation.provider("http", transport), store=store,
-            invocation=invocation, baseline_store=baseline_store,
+            invocation=invocation, baseline_store=reader,
         ))
     return run(RECEIVE_TO_STORE, request, work, context=context,
-               providers={"http": transport, "output_filestore": store})
+               providers={"http": transport, "output_filestore": store},
+               provider_selections={k: v for k, v in {"http": http_selection,
+                   "output_filestore": output_selection, "filestore": baseline_selection}.items() if v is not None})
 
 
 def _material_admission(material, store, invocation, limit):
@@ -228,7 +235,7 @@ def _copy_material(material, store, invocation, sink):
         raise OperationFailure("input.identity_mismatch")
 
 
-def read_material(material, store, invocation, *, limit):
+def read_material(material, store, invocation, *, limit, role="original"):
     _material_admission(material, store, invocation, limit)
     try:
         revision = current_revision(store, material.locator)
@@ -247,20 +254,22 @@ def read_material(material, store, invocation, *, limit):
         raise OperationFailure("input.identity_mismatch") from None
     except OSError:
         raise OperationFailure("input.material_unavailable") from None
-    invocation.use(UsedInputReceipt.for_payload(payload, "original"))
+    invocation.use(UsedInputReceipt.for_payload(payload, role))
     return payload
 
 
-def read_original(request: ReadOriginalRequest, *, store: SourceStore | None = None, context: ExecutionContext | None = None):
+def read_original(request: ReadOriginalRequest, *, store: SourceStore | None = None,
+                  selection=None, context: ExecutionContext | None = None):
     def work(req, invocation, given_store=store):
         store = invocation.provider("filestore", given_store)
         invocation.stage("read_original")
         return read_material(req.material, store, invocation, limit=req.limit)
-    return run(READ, request, work, context=context, providers={"filestore": store})
+    return run(READ, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def reconcile_original(request: ReconcileOriginalRequest, *, store: SourceStore | None = None,
-                       context: ExecutionContext | None = None):
+                       selection=None, context: ExecutionContext | None = None):
     def work(req, invocation, given_store=store):
         store = invocation.provider("filestore", given_store)
         invocation.stage("verify_destination")
@@ -284,4 +293,5 @@ def reconcile_original(request: ReconcileOriginalRequest, *, store: SourceStore 
         code = "effect.read_back_mismatch" if actual is not None else "effect.read_back_unavailable"
         value = replace(prior, status="unknown", stage="verify", diagnostic_code=code, observed_identity=actual)
         return Completion(value, "unknown", code)
-    return run(RECONCILE, request, work, context=context, providers={"filestore": store})
+    return run(RECONCILE, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)

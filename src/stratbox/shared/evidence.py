@@ -52,6 +52,7 @@ class AcquisitionReceipt:
     route_id: str | None = None
     logical_target_sha256: str | None = None
     transport_assurance: Literal["provider_reported", "tls_host", "peer_bound"] | None = None
+    route_policy_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +79,20 @@ class UsedInputReceipt:
     container: ByteIdentity | None = None
     member: str | None = None
     version: ByteIdentity | None = None
+
+    def __post_init__(self) -> None:
+        if (not isinstance(self.role, str) or not self.role
+                or not isinstance(self.identity, ByteIdentity)
+                or not isinstance(self.media_type, str) or not _MEDIA.fullmatch(self.media_type)
+                or not isinstance(self.availability, str) or self.availability not in {"inline", "reference_only"}):
+            raise ValueError("input.receipt_invalid")
+        if any(value is not None and (not isinstance(value, str) or not value)
+               for value in (self.source_id, self.member)):
+            raise ValueError("input.receipt_invalid")
+        if any(value is not None and not isinstance(value, ByteIdentity) for value in (self.container, self.version)):
+            raise ValueError("input.receipt_invalid")
+        if (self.container is None) != (self.member is None):
+            raise ValueError("Archive evidence requires a container and member")
 
     @classmethod
     def for_payload(

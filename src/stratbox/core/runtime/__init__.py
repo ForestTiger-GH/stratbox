@@ -10,6 +10,7 @@ _SYMBOLS = {
     "local_providers": "providers", "active_providers": "providers",
     "default_filestore": "providers", "default_secrets": "providers",
     "CapabilityRequirement": "capabilities", "ProviderBinding": "capabilities",
+    "ProviderSelection": "capabilities",
     "Readiness": "capabilities", "BindingError": "capabilities",
     "probe_provider": "capabilities", "select_provider": "capabilities",
     "MissingExtra": "dependencies", "require_extra": "dependencies",

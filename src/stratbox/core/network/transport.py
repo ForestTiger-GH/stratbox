@@ -436,6 +436,20 @@ class HttpsRoute:
         endpoint = HttpsEndpoint(gateway.hostname, unquote(path), allow_query="?" in request.url)
         return replace(request, url=url, endpoints=(endpoint,), max_redirects=0)
 
+    @property
+    def policy_identity(self) -> str:
+        """Pin the exact logical-host/gateway mapping admitted by an environment."""
+        from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+        return ByteIdentity.of(canonical_manifest_bytes({
+            "schema": "https-route.v1", "route_id": self.route_id,
+            "source_hosts": sorted(self.source_hosts), "gateway_base": self.gateway_base,
+            "methods": sorted(self.methods),
+        })).sha256
+
+    @property
+    def admission_guarantee(self) -> str:
+        return "route:" + self.policy_identity
+
 
 class RoutedTransport:
     """Keep the logical policy and the observed gateway identity distinct."""

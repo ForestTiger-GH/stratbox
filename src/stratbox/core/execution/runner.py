@@ -10,7 +10,7 @@ from uuid import uuid4
 from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.core.runtime.capabilities import BindingError, select_provider
+from stratbox.core.runtime.capabilities import BindingError, ProviderBinding, ProviderSelection, select_provider
 from stratbox.core.limits import BudgetError, BudgetClockError, BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
 from stratbox.core.runtime.dependencies import MissingExtra
@@ -38,9 +38,12 @@ class Invocation:
     def __init__(
         self, definition: OperationDefinition, context: ExecutionContext, *,
         invocation_id: str | None = None,
+        provider_selections: Mapping[str, ProviderSelection] | None = None,
     ):
         self.definition = definition
         self.context = context
+        self._provider_selections = provider_selections if provider_selections is not None else {}
+        self._selected_bindings: dict[str, ProviderBinding] = {}
         self.id = invocation_id or uuid4().hex
         limits = ExecutionBudget.intersect(definition.limits, context.ceiling, context.budget)
         self._started: float | None = None
@@ -78,7 +81,7 @@ class Invocation:
         self._effect_view = self._effects.view()
         self._sealed = False
         self._terminal_emitted = False
-        self.parents: list[tuple[str, ComputationReceipt]] = []
+        self.parents: list[tuple[str, ComputationReceipt]] = list(context.input_computations)
         self.computation: ComputationReceipt | None = None
 
     @property
@@ -164,34 +167,78 @@ class Invocation:
                 self._incidents_dropped += 1
         return Diagnostic("internal.error", incident_id=incident_id)
 
-    def provider(self, role: str, provider: object | None = None):
+    def provider(
+        self, role: str, provider: object | None = None, *,
+        selection: ProviderSelection | None = None,
+        provider_id: str | None = None, scope_id: str | None = None,
+    ):
+        """Resolve the actual selected adapter and admit its declared capability.
+
+        Explicit adapter objects may disambiguate bindings by identity. A named
+        selection is authoritative, including when it is unavailable; it never
+        enables fallback to another scope or the process-wide local default.
+        """
         self._declared_provider(role)
+        if isinstance(provider, ProviderSelection):
+            if selection is not None:
+                raise BindingError("provider.selection_conflict")
+            selection, provider = provider, None
+        if provider_id is not None or scope_id is not None:
+            if selection is not None:
+                raise BindingError("provider.selection_conflict")
+            selection = ProviderSelection(provider_id, scope_id)
+        if selection is None:
+            selection = self._provider_selections.get(role)
+        if selection is not None and not isinstance(selection, ProviderSelection):
+            raise BindingError("provider.selection_invalid")
+        bindings = tuple(
+            binding for binding in self.context.bindings
+            if binding.capability.role == role
+        )
+        managed = self.context.profile == "managed"
+        if bindings or managed or selection is not None:
+            candidates = bindings
+            if provider is not None and selection is None:
+                candidates = tuple(binding for binding in bindings if binding.provider is provider)
+                if bindings and not candidates:
+                    raise OperationFailure("provider.binding_mismatch")
+            binding = select_provider(
+                self.definition.capability(role, managed=managed), candidates,
+                provider_id=selection.provider_id if selection else None,
+                scope_id=selection.scope_id if selection else None,
+            )
+            if provider is not None and binding.provider is not provider:
+                raise OperationFailure("provider.binding_mismatch")
+            self._selected_bindings[role] = binding
+            return binding.provider
         if (
             provider is None and self.context.profile == "local"
             and role in {"http", "filestore", "output_filestore"}
-            and not any(binding.capability.role == role for binding in self.context.bindings)
         ):
             defaults = active_providers()
             if defaults is not None:
                 provider = defaults.http if role == "http" else defaults.filestore
-        self.require_provider(role, provider)
+        if provider is None:
+            raise OperationFailure("provider.capability_missing")
         return provider
 
     def _declared_provider(self, role: str) -> None:
         if role not in self.definition.required_capabilities | self.definition.optional_capabilities:
             raise OperationFailure("provider.capability_undeclared")
 
-    def require_provider(self, role: str, provider: object) -> None:
+    def selected_binding(self, role: str) -> ProviderBinding | None:
+        """The binding most recently admitted for this port, without discovery."""
+        self._declared_provider(role)
+        return self._selected_bindings.get(role)
+
+    def require_provider(
+        self, role: str, provider: object, *, selection: ProviderSelection | None = None,
+        provider_id: str | None = None, scope_id: str | None = None,
+    ) -> None:
         self._declared_provider(role)
         if provider is None:
             raise OperationFailure("provider.capability_missing")
-        managed = self.context.profile == "managed"
-        bindings = self.context.bindings
-        if not managed and not any(binding.capability.role == role for binding in bindings):
-            return
-        binding = select_provider(self.definition.capability(role, managed=managed), bindings)
-        if binding.provider is not provider:
-            raise OperationFailure("provider.binding_mismatch")
+        self.provider(role, provider, selection=selection, provider_id=provider_id, scope_id=scope_id)
 
     def stage(self, name: str) -> None:
         self._require_open()
@@ -347,7 +394,21 @@ def _execute_work(
         invocation.check_cancelled()
         if not isinstance(request, definition.request_type):
             raise OperationFailure("request.invalid_type")
+        if not isinstance(invocation._provider_selections, Mapping):
+            raise BindingError("provider.selection_invalid")
+        for role, selection in invocation._provider_selections.items():
+            invocation._declared_provider(role)
+            if not isinstance(selection, ProviderSelection):
+                raise BindingError("provider.selection_invalid")
         available = providers if providers is not None else {}
+        selections = dict(invocation._provider_selections)
+        for role, candidate in available.items():
+            if isinstance(candidate, ProviderSelection):
+                invocation._declared_provider(role)
+                if role in selections and selections[role] != candidate:
+                    raise BindingError("provider.selection_conflict")
+                selections[role] = candidate
+        invocation._provider_selections = selections
         for role in sorted(definition.required_capabilities):
             invocation.provider(role, available.get(role))
         completed = work(request, invocation)
@@ -492,11 +553,15 @@ def run(
     *,
     context: ExecutionContext | None = None,
     providers: Mapping[str, object] | None = None,
+    provider_selections: Mapping[str, ProviderSelection] | None = None,
 ) -> OperationResult[T]:
     active_context = context if context is not None else ExecutionContext()
     invocation_id = uuid4().hex
     try:
-        invocation = Invocation(definition, active_context, invocation_id=invocation_id)
+        invocation = Invocation(
+            definition, active_context, invocation_id=invocation_id,
+            provider_selections=provider_selections,
+        )
     except BudgetClockError:
         # Admission failed before any handler effect. No fictitious timestamps.
         return OperationResult(

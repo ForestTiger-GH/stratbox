@@ -19,7 +19,9 @@ class Representation:
     identity: ByteIdentity = field(init=False)
 
     def __post_init__(self) -> None:
-        if not self.profile_id or self.version < 1:
+        if (not isinstance(self.profile_id, str) or not self.profile_id
+                or type(self.version) is not int or self.version < 1
+                or self.encoding is not None and (not isinstance(self.encoding, str) or not self.encoding)):
             raise ValueError("Invalid representation profile")
         payload = SourcePayload(self.data, self.media_type)
         object.__setattr__(self, "data", payload.data)

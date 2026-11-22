@@ -41,3 +41,14 @@ from stratbox.core.execution.semantics import (
     StageCoverage,
     StageDeclaration,
 )
+from stratbox.core.execution.handoff import (
+    BoundRequest,
+    HandoffError,
+    ProjectedOutput,
+    ResultReference,
+    ResultResolver,
+    bind_request,
+    project_output,
+    reference_output,
+    resolve_output,
+)

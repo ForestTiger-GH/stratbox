@@ -40,10 +40,15 @@ def _transport_identity(transport: HttpTransport) -> str:
 
 
 def _request_identity(request: HttpRequest, invocation: Invocation, transport: HttpTransport) -> str:
-    binding = next(
-        (item for item in invocation.context.bindings
-         if item.capability.role == "http" and item.provider is transport), None
-    )
+    selected = getattr(invocation, "selected_binding", None)
+    if callable(selected):
+        binding = selected("http")
+    else:
+        candidates = tuple(item for item in invocation.context.bindings
+                           if item.capability.role == "http" and item.provider is transport)
+        if len(candidates) > 1:
+            raise OperationFailure("provider.binding_conflict")
+        binding = candidates[0] if candidates else None
     return ByteIdentity.of(canonical_manifest_bytes({
         "method": request.method,
         "url": request.url,
@@ -96,8 +101,11 @@ def _receive(
     fingerprint = _request_identity(request, invocation, transport)
     managed = invocation.context.profile == "managed"
     routed = isinstance(transport, RoutedTransport) and request.permits(request.url) and transport.route_for(request) is not None
+    route = transport.route_for(request) if routed else None
     if managed and routed:
-        raise OperationFailure("http.destination_unqualified")
+        binding = invocation.selected_binding("http")
+        if binding is None or route.admission_guarantee not in binding.capability.guarantees:
+            raise OperationFailure("http.route_not_admitted")
     if managed and not getattr(transport, "accounts_http_budget", False):
         raise OperationFailure("provider.guarantee_missing")
     prior = (
@@ -132,8 +140,13 @@ def _receive(
             raise OperationFailure("effect.staging_failed")
         raise OperationFailure(f"http.{result.reason}", component=f"http.{result.stage}")
     response = result if sink is None else result.response
-    if managed and response.origin_assurance != "peer_bound":
-        raise OperationFailure("http.destination_unqualified")
+    if managed:
+        if routed:
+            if (response.transport_assurance != "peer_bound"
+                    or not transport.accepts_response(request, response)):
+                raise OperationFailure("http.destination_unqualified")
+        elif response.origin_assurance != "peer_bound":
+            raise OperationFailure("http.destination_unqualified")
     if response.status_code == 304:
         if (
             prior is None
@@ -182,5 +195,6 @@ def _receive(
         content_encoding=response.headers.get("content-encoding", "identity").strip().lower() or "identity",
         wire_size=response.wire_size, route_id=response.route_id,
         logical_target_sha256=response.logical_target_sha256, transport_assurance=response.transport_assurance,
+        route_policy_id=route.policy_identity if route is not None else None,
     )
     return receipt, metadata.get_content_charset(), response.body

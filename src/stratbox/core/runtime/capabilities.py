@@ -30,6 +30,26 @@ class CapabilityRequirement:
 
 
 @dataclass(frozen=True, slots=True)
+class ProviderSelection:
+    """An explicit adapter/scope choice, independent of a physical locator.
+
+    A selection never falls back to a different binding or to local defaults.
+    Leaving one coordinate absent is allowed only when the remaining choice is
+    unambiguous. An empty selection is rejected: omit it to request the default.
+    """
+
+    provider_id: str | None = None
+    scope_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.provider_id is None and self.scope_id is None:
+            raise ValueError("provider.selection_required")
+        for value in (self.provider_id, self.scope_id):
+            if value is not None:
+                _identifier(value)
+
+
+@dataclass(frozen=True, slots=True)
 class ProviderBinding:
     """Selection and observed readiness supplied by the application."""
 

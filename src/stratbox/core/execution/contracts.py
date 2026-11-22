@@ -31,6 +31,8 @@ class EffectDescriptor:
 
 
 def _effect_description(kind: str) -> EffectDescriptor:
+    if kind == "dataset.write":
+        return EffectDescriptor(kind, "dataset", "dataset_store", "immutable_snapshot_receipt", "reconcile")
     if kind == "network.receive":
         return EffectDescriptor(
             kind,
@@ -157,7 +159,11 @@ class OperationDefinition:
                 {
                     "http": {"destination_bound", "budget_enforced"},
                     "filestore": {"scope_bound"},
+                    "descriptor_filestore": {"scope_bound"},
                     "output_filestore": {"scope_bound", "verified_commit"},
+                    "dataset_reader": {"scope_bound"},
+                    "dataset_catalog": {"scope_bound"},
+                    "dataset_writer": {"scope_bound", "verified_commit"},
                     "notification": {"recipient_bound"},
                     "archive_decoder": {"isolation_enforced"},
                 }.get(role, ())
@@ -212,10 +218,22 @@ class ExecutionContext:
     profile: Literal["local", "managed"] = "local"
     bindings: tuple[ProviderBinding, ...] = ()
     incident_sink: IncidentSink | None = field(default=None, repr=False)
+    input_computations: tuple[tuple[str, ComputationReceipt], ...] = ()
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:
             raise ValueError("Invalid execution profile")
+        if not isinstance(self.input_computations, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2
+            or not isinstance(item[1], ComputationReceipt)
+            for item in self.input_computations
+        ):
+            raise ValueError("Invalid input computation evidence")
+        names = [name for name, _ in self.input_computations]
+        if len(set(names)) != len(names):
+            raise ValueError("Duplicate input computation role")
+        for name in names:
+            safe_token(name)
 
 
 @dataclass(frozen=True, slots=True)
