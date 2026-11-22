@@ -170,13 +170,16 @@ def readable_document(request: ReadableRequest, *, context: ExecutionContext | N
 
 def serialize_extract(request: SerializeRequest, *, context: ExecutionContext | None = None):
     def work(req, invocation):
-        bound = bind_family(req.extract.family_id)
-        if req.extract.source_id not in {
-            bound.source.default_source_id,
-            *(s.source_id for s in bound.source.series if s.kind == "table"),
-        }:
-            raise OperationFailure("minfin.source_family_mismatch")
-        return serialize_tables(req)
+        try:
+            bound = bind_family(req.extract.family_id)
+            if req.extract.source_id not in {
+                bound.source.default_source_id,
+                *(s.source_id for s in bound.source.series if s.kind == "table"),
+            }:
+                raise ValueError("minfin.source_family_mismatch")
+            return serialize_tables(req)
+        except ValueError as exc:
+            raise _error(exc, "minfin.representation_invalid") from None
     return run(D.SERIALIZE, request, work, context=context)
 
 

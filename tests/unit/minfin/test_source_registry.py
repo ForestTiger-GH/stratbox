@@ -72,7 +72,10 @@ def test_four_root_registries_are_distinct_and_versioned():
     assert len(set(all_sources())) == len(all_sources())
     for item in all_families:
         assert item.landing_url.startswith('https://minfin.gov.ru/ru/')
-        assert dict(item.operations)['discover'] == 'minfin.discover'
+        assert item.profiles.discovery == 'minfin.document_cards.v1'
+        assert item.profiles.identification.startswith('minfin.')
+        assert item.series and all(series.source_id.startswith(item.family_id + '.')
+                                   for series in item.series)
     assert [v.basis for v in family('minfin.fedbud').series] == ['ytd', 'ytd', 'annual']
 
 

@@ -27,7 +27,7 @@ _LIMIT = ExecutionBudget(input_bytes=64 * 1024 * 1024, output_bytes=64 * 1024 * 
                          temporary_bytes=256 * 1024 * 1024, cells=500_000)
 
 DISCOVER = OperationDefinition(
-    "minfin.discover", 1, "minfin-index-1", DiscoverRequest, PublicationIndex,
+    "minfin.discover", 1, "minfin-index-profile-2", DiscoverRequest, PublicationIndex,
     optional_capabilities=_HTTP, limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.DISCOVER,),
         inputs=(InputPort("index", _HTML, "index", required=False),),
@@ -43,7 +43,7 @@ INSPECT = OperationDefinition(
         summary="Compare candidate link inventories, without asserting publisher absence or source revision."),
 )
 ACQUIRE = OperationDefinition(
-    "minfin.acquire", 1, "minfin-original-1", AcquireRequest, AcquiredAsset,
+    "minfin.acquire", 1, "minfin-original-profile-2", AcquireRequest, AcquiredAsset,
     required_capabilities=_HTTP, limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.ACQUIRE,),
         inputs=(InputPort("asset", DataContract("minfin.asset", 1, None), "asset"),),
@@ -135,7 +135,7 @@ _SUMMARY = DataContract("minfin.headlines", 1, DataRole.PRODUCTS)
 _NOTICE = DataContract("minfin.notice_preparation", 1, None)
 
 PLAN_UPDATES = OperationDefinition(
-    "minfin.plan_updates", 1, "minfin.publisher-marker-check-1", UpdateRequest, UpdatePlan,
+    "minfin.plan_updates", 1, "minfin.publisher-marker-profile-2", UpdateRequest, UpdatePlan,
     processing=OperationSemantics((ProcessingStage.INSPECT,),
         inputs=(InputPort("index", _INDEX, "index"),),
         outputs=(OutputPort("plan", DataContract("minfin.update_plan", 1, None)),),
@@ -143,7 +143,7 @@ PLAN_UPDATES = OperationDefinition(
         summary="Compare publisher document modification markers to caller-owned confirmed checkpoints without downloading XLSX."),
 )
 BUILD_FLAKE = OperationDefinition(
-    "minfin.build_flake", 1, "minfin.flake.v1", BuildFlakeRequest, FlakeTable,
+    "minfin.build_flake", 1, "minfin.profile-flake.v2", BuildFlakeRequest, FlakeTable,
     limits=ExecutionBudget(cells=500_000, output_bytes=64 * 1024 * 1024),
     processing=OperationSemantics((ProcessingStage.EXTRACT,),
         inputs=(InputPort("source", _CELLS, "extract"),),
@@ -160,7 +160,7 @@ RENDER_FLAKE = OperationDefinition(
         summary="Render a clean deterministic UTF-8 CSV for optional consumer-owned flake storage."),
 )
 SUMMARIZE = OperationDefinition(
-    "minfin.summarize", 1, "minfin.headlines.v1", SummaryRequest, HeadlineSummary,
+    "minfin.summarize", 1, "minfin.profile-headlines.v2", SummaryRequest, HeadlineSummary,
     processing=OperationSemantics((ProcessingStage.CALCULATE,),
         inputs=(InputPort("flake", _FLAKE, "flake"),),
         outputs=(OutputPort("summary", _SUMMARY),),

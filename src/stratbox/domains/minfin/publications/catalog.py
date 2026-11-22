@@ -44,6 +44,8 @@ def _decode(data: bytes) -> SourceFamily:
         raise ValueError("minfin.registry.invalid_series")
     series = []
     family_id = _identity(obj["family_id"])
+    if not family_id.startswith("minfin."):
+        raise ValueError("minfin.registry.invalid_family")
     for item in items:
         if not isinstance(item, dict) or set(item) != {
             "source_id", "slot", "title", "periodicity", "basis", "kind"
