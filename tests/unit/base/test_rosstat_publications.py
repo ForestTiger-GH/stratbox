@@ -77,8 +77,8 @@ def test_explicit_multi_asset_keys_and_duplicate_ambiguity():
     html = (
         '<a href="/storage/mediabank/2026-08.xlsx">Основной выпуск 2026-08</a>'
         '<a href="/storage/mediabank/table_2026-08.xlsx">Таблицы 2026-08</a>'
-        '<a href="/storage/mediabank/a_2026-08.xlsx">Приложение 1 2026-08</a>'
-        '<a href="/storage/mediabank/b_2026-08.xlsx">Приложение 2 2026-08</a>'
+        '<a href="/storage/mediabank/a_2026-08.xlsx">Приложение 1, 2026-08</a>'
+        '<a href="/storage/mediabank/b_2026-08.xlsx">Приложение 2, 2026-08</a>'
     )
     index = _index(series, html)
     assert len(index.qualified_assets) == 4

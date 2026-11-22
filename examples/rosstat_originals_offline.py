@@ -113,12 +113,12 @@ def main():
             CompareOriginalVersionsRequest(candidate, "available", prior)
         ))
         verified = PublishedArtifactRef(
-            "local_originals", asset.key.source_id,
+            "demo", asset.key.source_id,
             candidate.identity.sha256, candidate.identity, "verified-readback",
         )
         publication = ConfirmedOriginalPublication(
             PublicationReceipt(
-                "demo", "local_originals", candidate.source_id,
+                "demo", "demo", candidate.source_id,
                 comparison.transition_id, candidate.identity, "confirmed",
             ),
             verified,

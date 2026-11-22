@@ -20,6 +20,16 @@ def _tool(name: str):
     return runpy.run_path(str(_ROOT / "scripts" / name))
 
 
+def _domain_materials():
+    """Supply complete current domain owners/data to resource-only archive fixtures."""
+    source = _ROOT / "src/stratbox/domains"
+    asset = _tool("inspect_reference_wheel.py")["_domain_asset"]
+    for path in sorted(source.rglob("*")):
+        relative = path.relative_to(source).as_posix()
+        if path.is_file() and (path.name in {"__init__.py", "_registration.py"} or asset(relative)):
+            yield "stratbox/domains/" + relative, path.read_bytes()
+
+
 def test_reference_edition_verifier_covers_all_bundled_editions(capsys):
     verify = _tool("reference_editions.py")["verify"]
     verify("all")
@@ -69,6 +79,8 @@ def test_zip_validator_checks_bytes_and_rejects_missing_assets(tmp_path):
     wheel = tmp_path / "stratbox-0.0-py3-none-any.whl"
     families = ("banks", "okved2", "geography")
     with ZipFile(wheel, "w") as archive:
+        for name, raw in _domain_materials():
+            archive.writestr(name, raw)
         for name in ("identity.py", "evidence.py"):
             archive.writestr(f"stratbox/shared/{name}", b"# fixture")
         archive.writestr("stratbox/shared/data/datasets.py", b"# fixture")
@@ -165,6 +177,8 @@ def test_sdist_validator_checks_all_declared_resource_materials(tmp_path):
             entry = tarfile.TarInfo(root + name)
             entry.size = len(raw)
             archive.addfile(entry, io.BytesIO(raw))
+        for name, raw in _domain_materials():
+            add(name, raw)
         for name in (
             "stratbox/shared/identity.py", "stratbox/shared/evidence.py",
             "stratbox/shared/data/datasets.py", "stratbox/shared/reference/assets.py",

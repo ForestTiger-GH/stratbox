@@ -19,7 +19,7 @@ def test_broken_link_at_nested_depth_is_detected(tmp_path):
     package = tmp_path / "src/stratbox/domains/cbr/series"
     package.mkdir(parents=True)
     (package / "README.md").write_text(
-        "# Series\n\n[missing](../../../../../../docs/missing.md)\n",
+        "# Series\n\n[missing](../../../../../docs/missing.md)\n",
         encoding="utf-8",
     )
     issues = checker["check_links"](tmp_path / "src/stratbox", repository=tmp_path)

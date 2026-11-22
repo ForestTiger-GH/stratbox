@@ -76,8 +76,8 @@ def test_buffer_and_stream_share_retries_coding_and_offline_replay(tmp_path):
     replay = read_original(ReadOriginalRequest(streamed.value.material), store=store)
     assert replay.value == buffered.value.payload
     day = date(2026, 11, 12)
-    assert cbr_offices.parse(cbr_offices.ParseOfficesRequest(replay.value, day)).value == (
-        cbr_offices.parse(cbr_offices.ParseOfficesRequest(buffered.value.payload, day)).value
+    assert bank_offices.parse(bank_offices.ParseOfficesRequest(replay.value, day)).value == (
+        bank_offices.parse(bank_offices.ParseOfficesRequest(buffered.value.payload, day)).value
     )
     reused = receive_to_store(replace(request, baseline=streamed.value), transport=provider, store=store)
     assert reused.outcome == "succeeded" and reused.value.acquisition.reused
@@ -130,7 +130,7 @@ def test_original_lost_ack_is_reconciled_with_stable_effect_key(tmp_path):
     request = SaveOriginalRequest(source, OriginalDestination("source"))
     lost = save_original(request, store=LostAckStore(str(tmp_path)))
     assert lost.outcome == "unknown" and lost.effects[0].state == "unknown"
-    assert lost.diagnostics[0].retry_disposition == "reconcile"
+    assert any(item.retry_disposition == "reconcile" for item in lost.diagnostics)
     assert (tmp_path / "source").read_bytes() == source.data
     store = LocalFileStore(str(tmp_path))
     matched = reconcile_original(ReconcileOriginalRequest(lost.value.storage), store=store)

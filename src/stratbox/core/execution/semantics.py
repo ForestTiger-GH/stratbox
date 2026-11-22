@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from stratbox.shared.data.processing import DataContract
-from stratbox.core.execution.contracts import safe_token
+from stratbox.core.execution.identifiers import safe_token
 
 
 class ProcessingStage(str, Enum):

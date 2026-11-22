@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-import re
 from time import monotonic
 from typing import Generic, Literal, Protocol, TypeVar, TYPE_CHECKING
 
@@ -11,21 +10,15 @@ from stratbox.core.limits import ExecutionBudget, Resource
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
+from stratbox.core.execution.identifiers import safe_token
+from stratbox.core.execution.semantics import OperationSemantics
 
 if TYPE_CHECKING:
     from stratbox.core.execution.events import EventSink, IncidentSink
-    from stratbox.core.execution.semantics import OperationSemantics
 
 T = TypeVar("T")
 Outcome = Literal["succeeded", "partial", "failed", "cancelled", "unknown"]
 EffectState = Literal["confirmed", "failed", "unknown"]
-_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", re.ASCII)
-
-
-def safe_token(value: str) -> str:
-    if not isinstance(value, str) or not _TOKEN.fullmatch(value):
-        raise ValueError("Expected a bounded identifier")
-    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,8 +133,6 @@ class OperationDefinition:
         if self.required_capabilities & self.optional_capabilities:
             raise ValueError("A capability role must be either required or optional")
         if self.processing is not None:
-            from stratbox.core.execution.semantics import OperationSemantics
-
             if not isinstance(self.processing, OperationSemantics):
                 raise ValueError("processing.invalid_semantics")
             if not self.partial_allowed and any(

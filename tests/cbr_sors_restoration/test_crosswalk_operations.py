@@ -225,9 +225,21 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
 ) -> None:
     monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
     from stratbox.domains.cbr.corporate_lending.sors_restoration import CrosswalkSorsRequest, run_crosswalk
+    from dataclasses import replace
+    from stratbox.core.execution import OperationDefinition, run
+    from stratbox.domains.cbr.corporate_lending.sors_restoration.api import _seal_grids
+
+    strict = _strict_with_bundle()
+    snapshot = run(
+        OperationDefinition("test.sors.snapshot", 1, "test-1", SorsSourceBundle, SorsSourceBundle),
+        strict._source_bundle,
+        lambda value, invocation: _seal_grids(invocation, value),
+    )
+    assert snapshot.outcome == "succeeded", snapshot.diagnostics
+    strict = replace(strict, _source_bundle=snapshot.value)
 
     execution = run_crosswalk(CrosswalkSorsRequest(
-        _strict_with_bundle(),
+        strict,
         SorsCrosswalkConfig(
             mode='feasibility',
             scenario_ids=('core',),

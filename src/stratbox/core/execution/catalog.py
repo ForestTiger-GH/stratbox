@@ -180,12 +180,18 @@ class OperationCatalog:
             raise RegistryError("registry.invalid_catalog_owners")
         index = dict(zip(keys, self.references))
         owners = {}
+        logical_owners = {}
         for item in self.registrations:
             for ref in item.operations:
                 key = (ref.operation_id, ref.contract_version)
                 if key in owners or index.get(key) != ref:
                     raise RegistryError("registry.catalog_owner_mismatch")
                 owners[key] = item.owner_id
+                if (
+                    logical_owners.setdefault(ref.operation_id, item.owner_id)
+                    != item.owner_id
+                ):
+                    raise RegistryError("registry.logical_owner")
         object.__setattr__(self, "_index", MappingProxyType(index))
         object.__setattr__(self, "_owners", MappingProxyType(owners))
 

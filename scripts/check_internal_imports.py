@@ -58,9 +58,9 @@ def _literal_module_refs(tree: ast.AST):
             if isinstance(literal, ast.Constant) and isinstance(literal.value, str):
                 yield node.lineno, literal.value
         if operation == "OperationRef":
-            values = (*node.args[2:5], *(
+            values = (*node.args[2:6], *(
                 keyword.value for keyword in node.keywords
-                if keyword.arg in {"definition_ref", "handler_ref", "wire_codec_ref"}
+                if keyword.arg in {"definition_ref", "handler_ref", "wire_codec_ref", "wire_contract_ref"}
             ))
             for value in values:
                 if isinstance(value, ast.Constant) and isinstance(value.value, str):
@@ -127,10 +127,13 @@ def _imports(path: Path, tree: ast.AST):
                     continue
             else:
                 target = node.module or ""
-            yield node.lineno, target
-            if target.startswith(("stratbox.core", "stratbox.shared", "stratbox.domains")):
+            if target.startswith(("stratbox.core", "stratbox.shared", "stratbox.domains")) and all(
+                alias.name != "*" for alias in node.names
+            ):
                 for alias in node.names:
                     yield node.lineno, f"{target}.{alias.name}"
+            else:
+                yield node.lineno, target
 
 
 def _owner(path: Path, owners: frozenset[str]) -> str:

@@ -192,6 +192,7 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
         (directory / "_registration.py").write_text("", encoding="utf-8")
         return directory
 
+    (package / "domains").mkdir(parents=True)
     (package / "domains" / "__init__.py").write_text("", encoding="utf-8")
     escrow = owner("cbr/escrow")
     owner("cbr/reporting_forms")

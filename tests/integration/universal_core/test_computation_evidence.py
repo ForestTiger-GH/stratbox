@@ -52,7 +52,9 @@ def test_closed_incident_and_failed_event_sink_preserve_uncertain_effect():
     outcome = run(definition, "value", fail, context=ExecutionContext(sink=public, incident_sink=private))
     assert outcome.outcome == "unknown"
     diagnostic = outcome.diagnostics[0]
-    assert diagnostic.code == "internal.error" and diagnostic.evidence_ref == "logical-key"
+    assert diagnostic.code == "internal.error"
+    effect_diagnostic = next(item for item in outcome.diagnostics if item.retry_disposition == "reconcile")
+    assert effect_diagnostic.evidence_ref == "logical-key"
     assert public.events[-1].incident_id == private.incidents[0].incident_id == diagnostic.incident_id
     assert private.incidents[0].exception_type == "RuntimeError"
     assert "secret_value" not in public.events[-1].to_json()

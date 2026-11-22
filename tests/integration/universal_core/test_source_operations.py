@@ -144,13 +144,13 @@ def test_monthly_discovery_cached_formula_and_workbook_bytes():
 
 def test_sme_post_and_offline_representations_match():
     expected = (FIXTURES / "sme-reg.csv").read_bytes()
-    first = fns_sme.parse(
-        fns_sme.ParseSmeRequest(SourcePayload(encoded(fixture())), SME_DAY)
+    first = sme_register.parse(
+        sme_register.ParseSmeRequest(SourcePayload(encoded(fixture())), SME_DAY)
     )
     provider = FakeHTTP(
         encoded(fixture(as_strings=True)), "application/json", "rmsp.nalog.ru"
     )
-    second = fns_sme.capture(fns_sme.AcquireSmeRequest(SME_DAY), transport=provider)
+    second = sme_register.capture(sme_register.AcquireSmeRequest(SME_DAY), transport=provider)
     assert first.outcome == second.outcome == "succeeded"
     assert (
         first.value.representation.data == second.value.representation.data == expected
@@ -159,15 +159,15 @@ def test_sme_post_and_offline_representations_match():
     assert provider.requests[0].method == "POST"
     assert provider.requests[0].form_fields == {"statDate": "10.11.2026"}
     assert (
-        fns_sme.compare(CompareReleaseRequest(second.value, first.value)).value.state
+        sme_register.compare(CompareReleaseRequest(second.value, first.value)).value.state
         == "unchanged"
     )
     assert (
-        fns_sme.compare(CompareReleaseRequest(second.value)).value.state
+        sme_register.compare(CompareReleaseRequest(second.value)).value.state
         == "indeterminate"
     )
     assert (
-        fns_sme.compare(
+        sme_register.compare(
             CompareReleaseRequest(second.value, baseline_state="confirmed_absent")
         ).value.state
         == "first_seen"
@@ -177,12 +177,12 @@ def test_sme_post_and_offline_representations_match():
 
 def test_sme_region_drop_date_mismatch_and_duplicate_json_keys():
     def parse(data):
-        return fns_sme.parse(fns_sme.ParseSmeRequest(SourcePayload(data), SME_DAY))
+        return sme_register.parse(sme_register.ParseSmeRequest(SourcePayload(data), SME_DAY))
 
     older = parse(encoded(fixture(count=95))).value
     newer = parse(encoded(fixture(count=80))).value
     assert (
-        fns_sme.compare(CompareReleaseRequest(newer, older)).value.reason
+        sme_register.compare(CompareReleaseRequest(newer, older)).value.reason
         == "source.coverage_drop"
     )
     assert (
@@ -204,7 +204,7 @@ def test_1yur_epoch_parity_and_independent_archive_member_evidence(
     source = form_workbook(indicators, kinds, legacy=epoch == "A")
     member = "edition_I.xls"  # OOXML can be published with a legacy suffix.
     container = SourcePayload(zip_bytes({member: source, "edition_II.xls": b"ignored"}))
-    parsed = fns_1yur.parse(fns_1yur.Parse1YurRequest(container, day))
+    parsed = legal_entities_1yur.parse(legal_entities_1yur.Parse1YurRequest(container, day))
     assert parsed.outcome == "succeeded", parsed.diagnostics
     assert parsed.value.source_details["mapping"]["epoch"] == epoch
     assert (
@@ -217,7 +217,7 @@ def test_1yur_epoch_parity_and_independent_archive_member_evidence(
     assert parsed.used_inputs[1].member == member
     if epoch == "B":
         assert parsed.value.source_details["mapping"]["omitted_fields"]
-    baseline = fns_1yur.read_representation(
+    baseline = legal_entities_1yur.read_representation(
         ReadReleaseRequest(
             SourcePayload(parsed.value.representation.data),
             day,
@@ -225,7 +225,7 @@ def test_1yur_epoch_parity_and_independent_archive_member_evidence(
     )
     assert baseline.outcome == "succeeded", baseline.diagnostics
     assert (
-        fns_1yur.compare(
+        legal_entities_1yur.compare(
             CompareReleaseRequest(parsed.value, baseline.value)
         ).value.state
         == "unchanged"
@@ -238,11 +238,11 @@ def test_1yur_unsafe_archive_part_ii_and_unavailable_rar_reader():
         with ZipFile(stream, "w") as archive:
             archive.writestr("../edition_I.xls", b"data")
         unsafe = stream.getvalue()
-    result = fns_1yur.parse(fns_1yur.Parse1YurRequest(SourcePayload(unsafe), day))
+    result = legal_entities_1yur.parse(legal_entities_1yur.Parse1YurRequest(SourcePayload(unsafe), day))
     assert result.diagnostics[0].code == "archive.unsafe_member"
     part_ii = SourcePayload(zip_bytes({"edition_II.xls": b"data"}))
-    assert fns_1yur.parse(fns_1yur.Parse1YurRequest(part_ii, day)).outcome == "failed"
-    rar = fns_1yur.parse(fns_1yur.Parse1YurRequest(SourcePayload(b"Rar!"), day))
+    assert legal_entities_1yur.parse(legal_entities_1yur.Parse1YurRequest(part_ii, day)).outcome == "failed"
+    rar = legal_entities_1yur.parse(legal_entities_1yur.Parse1YurRequest(SourcePayload(b"Rar!"), day))
     assert rar.diagnostics[0].code == "provider.capability_missing"
 
 

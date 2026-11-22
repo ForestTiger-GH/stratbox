@@ -1,6 +1,7 @@
 """Semantic admission preserves editions, qualifications and incomplete outcomes."""
 
 from dataclasses import replace
+from typing import get_type_hints
 
 import pytest
 
@@ -18,6 +19,12 @@ from stratbox.core.execution.semantics import (
 
 SOURCE = DataContract("example.source", 1, DataRole.ORIGINALS)
 EXTRACT = DataContract("example.extract", 1, DataRole.EXTRACTS)
+
+
+def test_definition_type_hints_are_resolvable_for_application_schema_adapters():
+    assert (
+        get_type_hints(OperationDefinition)["processing"] == OperationSemantics | None
+    )
 
 
 def test_roles_do_not_define_schema_compatibility_or_storage_locations():

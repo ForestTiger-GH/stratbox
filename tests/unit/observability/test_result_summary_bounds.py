@@ -118,8 +118,8 @@ def test_private_resource_reference_never_enters_portable_summary():
 def test_oversized_individual_field_degrades_detail_coverage_without_false_success():
     def worker(value, invocation):
         invocation.use(UsedInputReceipt(
-            "source", ByteIdentity.of(b"ok"), "text/plain", "inline",
-            source_id="x" * 20_000,
+            "source", ByteIdentity.of(b"ok"), "x" * 20_000, "inline",
+            source_id="bounded-source",
         ))
         return value
     result = run(OP, 1, worker)
