@@ -5,6 +5,7 @@ from typing import Literal
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.snapshots import DatasetSnapshot
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,3 +196,25 @@ class BuildFlakeRequest:
 @dataclass(frozen=True, slots=True)
 class RenderFlakeRequest:
     flake: FlakeTable
+
+
+@dataclass(frozen=True, slots=True)
+class SerializeFlakeRequest:
+    flake: FlakeTable
+
+
+@dataclass(frozen=True, slots=True)
+class ReadFlakeRequest:
+    representation: Representation
+
+
+@dataclass(frozen=True, slots=True)
+class FlakeSnapshotRequest:
+    flake: FlakeTable
+    dataset_id: str
+    version_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReadFlakeSnapshotRequest:
+    snapshot: DatasetSnapshot

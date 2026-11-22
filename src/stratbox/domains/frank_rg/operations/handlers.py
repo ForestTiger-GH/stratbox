@@ -127,7 +127,7 @@ def _checkpoint(value):
                     min_period_date=bound.rule.min_period_date)
 
 
-def discover(request: DiscoveryRequest, *, store=None, context=None):
+def discover(request: DiscoveryRequest, *, store=None, selection=None, context=None):
     def work(req, invocation):
         try:
             return _discover(req, invocation.provider("filestore", store), invocation)
@@ -135,7 +135,8 @@ def discover(request: DiscoveryRequest, *, store=None, context=None):
             raise _error(error) from None
         except OSError:
             raise OperationFailure("frg.discovery.storage_unavailable") from None
-    return run(D.DISCOVER, request, work, context=context, providers={"filestore": store})
+    return run(D.DISCOVER, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def inspect(request: InspectionRequest, *, context=None):
@@ -156,7 +157,7 @@ def select(request: SelectionRequest, *, context=None):
     return run(D.SELECT, request, work, context=context)
 
 
-def scan(request: DiscoveryRequest, *, store=None, context=None):
+def scan(request: DiscoveryRequest, *, store=None, selection=None, context=None):
     def work(req, invocation):
         try:
             index = _discover(req, invocation.provider("filestore", store), invocation)
@@ -166,10 +167,11 @@ def scan(request: DiscoveryRequest, *, store=None, context=None):
             raise _error(error) from None
         except OSError:
             raise OperationFailure("frg.discovery.storage_unavailable") from None
-    return run(D.SCAN, request, work, context=context, providers={"filestore": store})
+    return run(D.SCAN, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
-def acquire(request: AcquireRequest, *, store=None, context=None):
+def acquire(request: AcquireRequest, *, store=None, selection=None, context=None):
     def work(req, invocation):
         try:
             _asset(req.asset)
@@ -181,7 +183,8 @@ def acquire(request: AcquireRequest, *, store=None, context=None):
             raise _error(error) from None
         except OSError:
             raise OperationFailure("frg.material.storage_unavailable") from None
-    return run(D.ACQUIRE, request, work, context=context, providers={"filestore": store})
+    return run(D.ACQUIRE, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def capture(request: CaptureRequest, *, context=None):
@@ -210,6 +213,11 @@ def prepare_file(request: PrepareFileRequest, *, context=None):
             filename = build_internal_file_name(req.report.period, bound.rule,
                                                 format=req.report.format, profile=profile)
             invocation.account_output(req.report.payload.identity)
+            invocation.record(req.report.payload.identity, parameters={
+                "source_id": req.report.source_id, "filename": filename,
+                "format": req.report.format, "naming_profile": profile.profile_id,
+                "naming_method": str(profile.method_version),
+            })
             return PreparedFile(req.report.source_id, req.report.period, filename,
                                 req.report.payload, profile.profile_id, str(profile.method_version))
         except ValueError as error:

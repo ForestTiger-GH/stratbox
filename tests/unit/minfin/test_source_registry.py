@@ -11,7 +11,7 @@ from stratbox.shared.evidence import SourcePayload
 from stratbox.core.network import HttpResponse
 from stratbox.domains.minfin import (
     DiscoverRequest, AcquireRequest, InspectRequest, discover, acquire, inspect,
-    family, families, all_sources,
+    family, families, all_sources, bind_family,
 )
 from stratbox.domains.minfin.publications.access import allowed_file
 
@@ -71,7 +71,8 @@ def test_four_root_registries_are_distinct_and_versioned():
     assert len(all_sources()) == 17  # four fallback families + 3+3+3+4 known statistical series
     assert len(set(all_sources())) == len(all_sources())
     for item in all_families:
-        assert item.landing_url.startswith('https://minfin.gov.ru/ru/')
+        assert bind_family(item.family_id).acquisition.landing_url.startswith('https://minfin.gov.ru/ru/')
+        assert not hasattr(item, 'landing_url')
         assert item.profiles.discovery == 'minfin.document_cards.v1'
         assert item.profiles.identification.startswith('minfin.')
         assert item.series and all(series.source_id.startswith(item.family_id + '.')
@@ -147,3 +148,67 @@ def test_download_uses_exact_minfin_host_and_preserves_bytes(official_pages):
     assert result.outcome == 'succeeded', result.diagnostics
     assert result.value.source.payload.data == content
     assert result.value.source.receipt.identity == result.value.source.payload.identity
+
+def test_explicit_saved_page_is_authoritative_and_never_falls_back_to_http():
+    class ForbiddenTransport:
+        def exchange(self, request, *, cancelled=None):
+            raise AssertionError("An explicit supplied page must never fetch another page")
+
+    page = SourcePayload(b'<a href="/common/upload/library/new.xlsx">Attachment</a>', "text/html",
+                         "minfin.fedbud.index")
+    result = discover(DiscoverRequest("minfin.fedbud", page), transport=ForbiddenTransport())
+    assert result.outcome == "succeeded", result.diagnostics
+    invalid = SourcePayload(b"malformed saved page", "text/html", "minfin.fedbud.index")
+    failed = discover(DiscoverRequest("minfin.fedbud", invalid), transport=ForbiddenTransport())
+    assert failed.outcome == "failed"
+    assert failed.diagnostics[0].code == "minfin.index_no_links"
+
+
+def test_explicit_http_route_overrides_profile_default_and_refusal_has_no_fallback():
+    selected = "https://minfin.gov.ru/ru/statistics/fedbud/execute/archive/"
+    seen = []
+
+    class PageTransport:
+        def exchange(self, request, *, cancelled=None):
+            seen.append(request.url)
+            return HttpResponse(200, b'<a href="/common/upload/library/new.xlsx">Attachment</a>',
+                                {"content-type": "text/html; charset=utf-8"},
+                                datetime(2026, 11, 22, tzinfo=timezone.utc), "https://minfin.gov.ru")
+
+    result = discover(DiscoverRequest("minfin.fedbud", page_url=selected), transport=PageTransport())
+    assert result.outcome == "succeeded", result.diagnostics
+    assert seen == [selected]
+    refused = discover(DiscoverRequest("minfin.fedbud", page_url="https://example.invalid/other"),
+                       transport=PageTransport())
+    assert refused.outcome == "failed"
+    assert refused.diagnostics[0].code == "minfin.page_forbidden"
+    assert seen == [selected]
+
+
+def test_named_http_adapter_is_used_without_ambiguous_default_selection(official_pages):
+    from stratbox.core.execution import ExecutionContext
+    from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding, ProviderSelection
+
+    family_id = "minfin.nwf"
+    asset, = [a for a in discover(DiscoverRequest(family_id, _page(family_id, official_pages[family_id]))).value.assets
+              if a.asset_id == "movement_workbook"]
+    calls = []
+    class Chosen:
+        def exchange(self, request, *, cancelled=None):
+            calls.append("selected")
+            return HttpResponse(200, b"PK\x03\x04original", {"content-type": "application/octet-stream"},
+                                datetime(2026, 11, 23, tzinfo=timezone.utc), "https://minfin.gov.ru")
+    class Unused:
+        def exchange(self, request, *, cancelled=None):
+            calls.append("other")
+            raise AssertionError("The explicitly selected route must be respected")
+    context = ExecutionContext(bindings=(
+        ProviderBinding("chosen", CapabilityRequirement("http"), "ready", Chosen(), "primary"),
+        ProviderBinding("other", CapabilityRequirement("http"), "ready", Unused(), "secondary"),
+    ))
+    result = acquire(AcquireRequest(asset), selection=ProviderSelection("chosen", "primary"), context=context)
+    assert result.outcome == "succeeded", result.diagnostics
+    refused = acquire(AcquireRequest(asset), selection=ProviderSelection("missing", "primary"), context=context)
+    assert refused.outcome == "failed"
+    assert refused.diagnostics[0].code == "provider.capability_missing"
+    assert calls == ["selected"]

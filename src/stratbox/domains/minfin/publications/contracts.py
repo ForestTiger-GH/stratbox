@@ -23,6 +23,7 @@ class SourceSeries:
 
 @dataclass(frozen=True, slots=True)
 class SourceProfileRefs:
+    acquisition: str
     discovery: str
     identification: str
     table: str
@@ -33,7 +34,6 @@ class SourceProfileRefs:
 class SourceFamily:
     family_id: str
     title: str
-    landing_url: str
     profiles: SourceProfileRefs
     series: tuple[SourceSeries, ...]
 
@@ -86,6 +86,7 @@ class DiscoverRequest:
     family_id: str
     index: SourcePayload | None = None
     max_links: int = 2000
+    page_url: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

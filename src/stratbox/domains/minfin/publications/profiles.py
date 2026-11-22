@@ -8,6 +8,38 @@ from typing import Literal, Callable
 
 
 @dataclass(frozen=True, slots=True)
+class AcquisitionProfile:
+    """An optional autonomous route, independent of logical source identity."""
+    profile_id: str
+    landing_url: str
+    method_version: int = 1
+
+    def __post_init__(self) -> None:
+        from .access import allowed_page
+        if not self.profile_id or not allowed_page(self.landing_url):
+            raise ValueError("minfin.profile.acquisition_invalid")
+
+
+_ACQUISITIONS = {
+    "minfin.fedbud.publication_page.v1": AcquisitionProfile(
+        "minfin.fedbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/fedbud/execute/"),
+    "minfin.conbud.publication_page.v1": AcquisitionProfile(
+        "minfin.conbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/conbud/execute"),
+    "minfin.subbud.publication_page.v1": AcquisitionProfile(
+        "minfin.subbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/subbud/execute"),
+    "minfin.nwf.publication_page.v1": AcquisitionProfile(
+        "minfin.nwf.publication_page.v1", "https://minfin.gov.ru/ru/perfomance/nationalwealthfund/statistics/"),
+}
+
+
+def acquisition_profile(profile_id: str) -> AcquisitionProfile:
+    try:
+        return _ACQUISITIONS[profile_id]
+    except (KeyError, TypeError):
+        raise ValueError("minfin.profile.acquisition_unknown") from None
+
+
+@dataclass(frozen=True, slots=True)
 class PublicationProfile:
     profile_id: str
     layout: Literal["document_cards"]
@@ -126,5 +158,5 @@ def identification_profile(profile_id: str) -> IdentificationProfile:
         raise ValueError("minfin.profile.identification_unknown") from None
 
 
-__all__ = ("PublicationProfile", "AssetRule", "IdentificationProfile",
+__all__ = ("AcquisitionProfile", "acquisition_profile", "PublicationProfile", "AssetRule", "IdentificationProfile",
            "publication_profile", "identification_profile")

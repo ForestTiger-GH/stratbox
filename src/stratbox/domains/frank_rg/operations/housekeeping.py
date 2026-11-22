@@ -35,6 +35,7 @@ def plan_cleanup(
     request: PlanCleanupRequest,
     *,
     store: FileStore | None = None,
+    selection=None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[CleanupPlan]:
     def work(req, invocation, given_store=store):
@@ -50,7 +51,8 @@ def plan_cleanup(
         except (OSError, ValueError):
             raise OperationFailure("storage.catalog_unreadable") from None
 
-    return run(PLAN, request, work, context=context, providers={"filestore": store})
+    return run(PLAN, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def _mutate(action, store, invocation, intent):
@@ -119,6 +121,7 @@ def apply_cleanup(
     request: ApplyCleanupRequest,
     *,
     store: FileStore | None = None,
+    selection=None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[tuple[CleanupReceipt, ...]]:
     def work(req, invocation, given_store=store):
@@ -192,13 +195,15 @@ def apply_cleanup(
             raise OperationFailure("effect.directory_unavailable") from None
         return tuple(receipts)
 
-    return run(APPLY, request, work, context=context, providers={"filestore": store})
+    return run(APPLY, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def prepare_archive(
     request: CleanupPlan,
     *,
     store: FileStore | None = None,
+    selection=None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[Representation]:
     def work(req, invocation, given_store=store):
@@ -255,7 +260,8 @@ def prepare_archive(
         except ArchiveError:
             raise OperationFailure("archive.preparation_failed") from None
 
-    return run(ARCHIVE, request, work, context=context, providers={"filestore": store})
+    return run(ARCHIVE, request, work, context=context, providers={"filestore": store},
+               provider_selections={"filestore": selection} if selection is not None else None)
 
 
 def prepare_archive_to_store(
@@ -263,6 +269,7 @@ def prepare_archive_to_store(
     *,
     store: FileStore | None = None,
     output_store: StagedWriter | None = None,
+    selection=None, output_selection=None,
     context: ExecutionContext | None = None,
 ) -> OperationResult[PathArchiveReceipt]:
     """Stream selected inputs through a receiving store's staged commit."""
@@ -328,4 +335,5 @@ def prepare_archive_to_store(
     return run(
         STREAM_ARCHIVE, request, work, context=context,
         providers={"filestore": store, "output_filestore": output_store},
+        provider_selections={k: v for k, v in {"filestore": selection, "output_filestore": output_selection}.items() if v is not None},
     )

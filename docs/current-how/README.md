@@ -2,6 +2,10 @@
 
 [Stratbox core operations](universal-business-core.md)
 
+[Universal material flow and typed operation handoff](universal-data-flow.md)
+
+[Logical dataset snapshots and storage adapters](logical-dataset-snapshots.md)
+
 [Current shared semantic contracts](shared-semantic-contracts.md)
 
 [Versioned reference snapshots and update procedure](reference-snapshots-and-update.md)

@@ -24,6 +24,13 @@ logical sources. The operation catalog discovers one `frank_rg` owner with
 the `frg.*` operation namespace. Importing the domain requires no spreadsheet
 or dataframe dependency.
 
+The [universal material flow](../../../../docs/current-how/universal-data-flow.md)
+provides typed handoff, retained references and independent named input/output
+providers. `discover`, `scan`, `acquire`, `plan_cleanup`, `apply_cleanup` and
+`prepare_archive` accept `selection=ProviderSelection(...)`; the streaming
+archive composition also accepts `output_selection`. Binding-only invocation
+resolves the selected provider from the execution context.
+
 ## Directory input in Colab or a mounted filesystem
 
 ```python

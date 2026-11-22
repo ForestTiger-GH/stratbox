@@ -17,6 +17,7 @@ from .tables.contracts import (
     ExtractRequest, CompareRequest, MapRequest, MetricBinding, RenderRequest,
     ValidateRequest, SerializeRequest, ReadRepresentationRequest,
     BuildFlakeRequest, FlakeTable, RenderFlakeRequest, TableExtract,
+    SerializeFlakeRequest, ReadFlakeRequest, FlakeSnapshotRequest, ReadFlakeSnapshotRequest,
 )
 from .analytics.contracts import (
     SummaryRequest, HeadlineSummary, NoticeRequest, NoticePreparation,
@@ -28,7 +29,8 @@ _OPERATIONS = frozenset({
     "map_observations", "render_csv_cells", "readable_document",
     "serialize_extract", "read_representation", "plan_updates",
     "build_source_flake", "render_source_flake", "calculate_headlines",
-    "prepare_notice_facts",
+    "prepare_notice_facts", "serialize_source_flake", "read_source_flake",
+    "build_flake_snapshot", "read_flake_snapshot",
 })
 
 
@@ -46,9 +48,9 @@ __all__ = (
     "families", "family", "all_sources", "DiscoverRequest", "AcquireRequest",
     "ExtractRequest", "CompareRequest", "MapRequest", "MetricBinding", "RenderRequest",
     "ValidateRequest", "InspectRequest", "ReadableRequest", "CaptureRequest",
-    "SerializeRequest", "ReadRepresentationRequest",
+    "SerializeRequest", "ReadRepresentationRequest", "SerializeFlakeRequest", "ReadFlakeRequest",
     "SourceCheckpoint", "UpdateRequest", "UpdateDecision", "UpdatePlan",
-    "BuildFlakeRequest", "FlakeTable", "RenderFlakeRequest",
+    "BuildFlakeRequest", "FlakeTable", "RenderFlakeRequest", "FlakeSnapshotRequest", "ReadFlakeSnapshotRequest",
     "SummaryRequest", "HeadlineSummary", "NoticeRequest", "NoticePreparation",
     "Asset", "PublicationIndex", "TableExtract", "checkpoint_for", *_OPERATIONS,
 )

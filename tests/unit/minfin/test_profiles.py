@@ -57,12 +57,15 @@ def test_registry_declares_only_source_identifiers_and_profile_refs():
         if not path.name.startswith("REGISTRY_"):
             continue
         content = json.loads(path.read_text(encoding="utf-8"))
-        assert content["schema"] == "stratbox.minfin.registry.v2"
-        assert set(content) == {"schema", "family_id", "publisher_id", "title", "location", "profiles", "series"}
+        assert content["schema"] == "stratbox.minfin.registry.v3"
+        assert set(content) == {"schema", "family_id", "publisher_id", "title", "profiles", "series"}
         assert all(set(item) == {"source_id", "slot", "title", "periodicity", "basis", "kind"}
                    for item in content["series"])
         assert "prefix" not in path.read_text() and "suffix" not in path.read_text()
         assert "operations" not in content and "parser" not in content
+        assert "https://" not in path.read_text()
+        assert "filename" not in path.read_text()
+        assert content["profiles"]["acquisition"].startswith("minfin.")
         assert content["profiles"]["identification"].startswith("minfin.")
 
 

@@ -10,7 +10,6 @@ import json
 import re
 
 from .contracts import SourceFamily, SourceProfileRefs, SourceSeries
-from .access import allowed_page
 
 _ID = re.compile(r"[a-z][a-z0-9_.-]{2,127}\Z")
 _BASIS = frozenset({"ytd", "annual", "stock", "unknown"})
@@ -29,16 +28,13 @@ def _decode(data: bytes) -> SourceFamily:
     except (ValueError, UnicodeError, RecursionError):
         raise ValueError("minfin.registry.invalid_yaml") from None
     if not isinstance(obj, dict) or set(obj) != {
-        "schema", "family_id", "publisher_id", "title", "location", "profiles", "series"
-    } or obj["schema"] != "stratbox.minfin.registry.v2" or obj["publisher_id"] != "minfin":
+        "schema", "family_id", "publisher_id", "title", "profiles", "series"
+    } or obj["schema"] != "stratbox.minfin.registry.v3" or obj["publisher_id"] != "minfin":
         raise ValueError("minfin.registry.invalid_shape")
-    loc = obj["location"]
-    if not isinstance(loc, dict) or set(loc) != {"kind", "url"} or loc["kind"] != "publication_page" or not allowed_page(loc["url"]):
-        raise ValueError("minfin.registry.invalid_location")
     refs = obj["profiles"]
-    if not isinstance(refs, dict) or set(refs) != {"discovery", "identification", "table", "metrics"}:
+    if not isinstance(refs, dict) or set(refs) != {"acquisition", "discovery", "identification", "table", "metrics"}:
         raise ValueError("minfin.registry.invalid_profiles")
-    profiles = SourceProfileRefs(*(_identity(refs[key]) for key in ("discovery", "identification", "table", "metrics")))
+    profiles = SourceProfileRefs(*(_identity(refs[key]) for key in ("acquisition", "discovery", "identification", "table", "metrics")))
     items = obj["series"]
     if not isinstance(items, list) or not 1 <= len(items) <= 64:
         raise ValueError("minfin.registry.invalid_series")
@@ -62,7 +58,7 @@ def _decode(data: bytes) -> SourceFamily:
         raise ValueError("minfin.registry.duplicate_series")
     if not isinstance(obj["title"], str) or not obj["title"].strip():
         raise ValueError("minfin.registry.invalid_title")
-    return SourceFamily(family_id, obj["title"], loc["url"], profiles, tuple(series))
+    return SourceFamily(family_id, obj["title"], profiles, tuple(series))
 
 
 @lru_cache(maxsize=1)

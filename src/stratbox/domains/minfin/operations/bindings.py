@@ -11,6 +11,7 @@ from functools import lru_cache
 from ..publications.catalog import family, families
 from ..publications.contracts import SourceFamily, SourceSeries
 from ..publications.profiles import (
+    AcquisitionProfile, acquisition_profile,
     PublicationProfile, IdentificationProfile, publication_profile, identification_profile,
 )
 from ..tables.profiles import TableProfile, table_profile
@@ -20,6 +21,7 @@ from ..analytics.profiles import HeadlineProfile, headline_profile
 @dataclass(frozen=True, slots=True)
 class BoundFamily:
     source: SourceFamily
+    acquisition: AcquisitionProfile
     publication: PublicationProfile
     identification: IdentificationProfile
 
@@ -39,13 +41,14 @@ class BoundSeries:
 @lru_cache(maxsize=128)
 def bind_family(family_id: str) -> BoundFamily:
     source = family(family_id)
+    acquisition = acquisition_profile(source.profiles.acquisition)
     publication = publication_profile(source.profiles.discovery)
     identification = identification_profile(source.profiles.identification)
     actual = {item.slot for item in source.series}
     supported = {item.slot for item in identification.rules}
     if actual != supported:
         raise ValueError("minfin.profile.series_slots_incomplete")
-    return BoundFamily(source, publication, identification)
+    return BoundFamily(source, acquisition, publication, identification)
 
 
 @lru_cache(maxsize=512)

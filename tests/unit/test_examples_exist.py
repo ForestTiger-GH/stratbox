@@ -12,7 +12,8 @@ def test_examples_exist() -> None:
         'examples/cbr_sors_restoration_crosswalk.py',
         'examples/escrow_example.py',
         'examples/frg_cleanup_example.py',
-        'examples/frg_stage1_example.py',
+        'examples/frg_scan_example.py',
+        'examples/universal_storage_flow.py',
     ]
     for rel in expected:
         assert (ROOT / rel).is_file(), rel

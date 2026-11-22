@@ -51,8 +51,8 @@ def test_public_api_is_the_same_type_as_its_semantic_contract():
 def test_all_minfin_operations_resolve_to_one_owner_and_semantic_handlers():
     register = operation_catalog()
     ref = tuple(r for r in register.references if r.operation_id.startswith("minfin."))
-    assert len(ref) == 17
-    assert len({r.operation_id for r in ref}) == 17
+    assert len(ref) == 21
+    assert len({r.operation_id for r in ref}) == 21
     for operation in ref:
         assert register.owner_of(operation.operation_id, operation.contract_version) == "minfin"
         assert operation.definition_ref.startswith("stratbox.domains.minfin.operations.definitions:")

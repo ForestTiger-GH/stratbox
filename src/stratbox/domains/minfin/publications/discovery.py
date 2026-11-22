@@ -170,7 +170,8 @@ def _unclassified_id(url: str) -> str:
     return "file_" + sha256(urlsplit(url).path.encode()).hexdigest()[:24]
 
 
-def discover_links(family: SourceFamily, index: SourcePayload, max_links: int = 2000) -> PublicationIndex:
+def discover_links(family: SourceFamily, index: SourcePayload, max_links: int = 2000,
+                   *, page_url: str) -> PublicationIndex:
     """Discover exact publisher URLs without interpreting filenames prematurely."""
     if type(max_links) is not int or not 1 <= max_links <= 5000:
         raise ValueError("minfin.index_limit_invalid")
@@ -197,7 +198,7 @@ def discover_links(family: SourceFamily, index: SourcePayload, max_links: int = 
         if not isinstance(href, str) or len(href) > 8192:
             rejected += 1
             continue
-        url = urljoin(family.landing_url, unescape(href.strip()))
+        url = urljoin(page_url, unescape(href.strip()))
         if not allowed_file(url):
             rejected += 1
             continue

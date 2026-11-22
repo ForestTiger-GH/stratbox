@@ -5,6 +5,7 @@ from stratbox.core.execution import OperationDefinition, OperationSemantics, Pro
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.snapshots import DatasetSnapshot
 from ..publications.contracts import (
     AcquireRequest, AcquiredAsset, DiscoverRequest, InspectRequest, Inspection,
     PublicationIndex, ReadableDocument, ReadableRequest, UpdateRequest, UpdatePlan,
@@ -13,6 +14,7 @@ from ..tables.contracts import (
     CompareRequest, ExtractRequest, MapRequest, MappedObservations, RenderRequest,
     TableComparison, TableExtract, ValidateRequest, Validation, SerializeRequest,
     ReadRepresentationRequest, BuildFlakeRequest, FlakeTable, RenderFlakeRequest,
+    SerializeFlakeRequest, ReadFlakeRequest, FlakeSnapshotRequest, ReadFlakeSnapshotRequest,
 )
 from ..analytics.contracts import SummaryRequest, HeadlineSummary, NoticeRequest, NoticePreparation
 from .contracts import CaptureRequest, CaptureResult
@@ -27,12 +29,13 @@ _LIMIT = ExecutionBudget(input_bytes=64 * 1024 * 1024, output_bytes=64 * 1024 * 
                          temporary_bytes=256 * 1024 * 1024, cells=500_000)
 
 DISCOVER = OperationDefinition(
-    "minfin.discover", 1, "minfin-index-profile-2", DiscoverRequest, PublicationIndex,
+    "minfin.discover", 1, "minfin-index-profile-3", DiscoverRequest, PublicationIndex,
     optional_capabilities=_HTTP, limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.DISCOVER,),
-        inputs=(InputPort("index", _HTML, "index", required=False),),
+        inputs=(InputPort("index", _HTML, "index", required=False,
+                          alternatives=(DataContract("source.payload", 1, DataRole.ORIGINALS),)),),
         outputs=(OutputPort("index", _INDEX),),
-        parameters=("family_id", "max_links"),
+        parameters=("family_id", "max_links", "page_url"),
         summary="Inspect one Minfin landing page and return bounded source candidates with unknown inventory coverage."),
 )
 INSPECT = OperationDefinition(
@@ -56,7 +59,7 @@ EXTRACT = OperationDefinition(
     "minfin.extract", 1, "minfin-source-cells-1", ExtractRequest, TableExtract,
     limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.EXTRACT,),
-        inputs=(InputPort("original", _ORIGINAL, "payload", qualifications=frozenset({"source.minfin"}),
+        inputs=(InputPort("original", _ORIGINAL, "payload",
                           alternatives=(DataContract("source.payload", 1, DataRole.ORIGINALS),)),),
         outputs=(OutputPort("extract", _TABLES),),
         parameters=("family_id", "format", "member", "selected_sheets", "max_cells", "csv_encoding"),
@@ -74,6 +77,7 @@ CAPTURE = OperationDefinition(
 )
 VALIDATE = OperationDefinition(
     "minfin.validate", 1, "minfin-structure-1", ValidateRequest, Validation,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.VALIDATE,),
         inputs=(InputPort("extract", _TABLES, "extract"),),
         outputs=(OutputPort("validation", DataContract("minfin.structural_validation", 1, None)),),
@@ -81,6 +85,7 @@ VALIDATE = OperationDefinition(
 )
 COMPARE = OperationDefinition(
     "minfin.compare", 1, "minfin-cell-delta-1", CompareRequest, TableComparison,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.COMPARE,),
         inputs=(InputPort("before", _TABLES, "before"), InputPort("after", _TABLES, "after")),
         outputs=(OutputPort("changes", DataContract("minfin.source_cell_delta", 1, None)),),
@@ -89,13 +94,16 @@ COMPARE = OperationDefinition(
 )
 MAP = OperationDefinition(
     "minfin.map_observations", 1, "minfin-reviewed-mapping-1", MapRequest, MappedObservations,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.EXTRACT,),
         inputs=(InputPort("extract", _TABLES, "extract"),),
         outputs=(OutputPort("observations", _OBSERVATIONS),),
+        parameters=("bindings",),
         summary="Map only explicitly reviewed source-cell coordinates to metric, geography, unit and period IDs."),
 )
 RENDER = OperationDefinition(
     "minfin.render_csv", 1, "minfin-cells-csv-1", RenderRequest, Representation,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.RENDER,),
         inputs=(InputPort("extract", _TABLES, "extract"),),
         outputs=(OutputPort("csv", DataContract("minfin.source_cells.csv", 1, DataRole.PRODUCTS)),),
@@ -105,15 +113,17 @@ READABLE = OperationDefinition(
     "minfin.readable", 1, "minfin-pdf-text-1", ReadableRequest, ReadableDocument,
     partial_allowed=True, limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.READABLE,),
-        inputs=(InputPort("original", _ORIGINAL, "payload"),),
+        inputs=(InputPort("original", _ORIGINAL, "payload",
+                          alternatives=(DataContract("source.payload", 1, DataRole.ORIGINALS),)),),
         outputs=(OutputPort("text", DataContract("minfin.document_text", 1, DataRole.READABLE),
                             outcomes=frozenset({"partial"}), qualifications=frozenset({"text_only"})),),
-        parameters=("max_pages",),
+        parameters=("family_id", "max_pages", "format"),
         summary="Extract PDF text only, with an explicit incomplete-visual-coverage qualification."),
 )
 
 SERIALIZE = OperationDefinition(
     "minfin.serialize", 1, "minfin-extract-json-1", SerializeRequest, Representation,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.RENDER,),
         inputs=(InputPort("extract", _TABLES, "extract"),),
         outputs=(OutputPort("representation", DataContract("minfin.source_cells.json", 1, DataRole.EXTRACTS)),),
@@ -121,6 +131,7 @@ SERIALIZE = OperationDefinition(
 )
 READ_EXTRACT = OperationDefinition(
     "minfin.read_representation", 1, "minfin-extract-json-1", ReadRepresentationRequest, TableExtract,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
         inputs=(InputPort("representation", DataContract("minfin.source_cells.json", 1, DataRole.EXTRACTS), "representation"),),
         outputs=(OutputPort("extract", _TABLES),),
@@ -139,12 +150,12 @@ PLAN_UPDATES = OperationDefinition(
     processing=OperationSemantics((ProcessingStage.INSPECT,),
         inputs=(InputPort("index", _INDEX, "index"),),
         outputs=(OutputPort("plan", DataContract("minfin.update_plan", 1, None)),),
-        parameters=("target", "selected_sources", "force_reprocess", "force_refresh"),
+        parameters=("target", "selected_sources", "checkpoints", "retained_sources", "force_reprocess", "force_refresh"),
         summary="Compare publisher document modification markers to caller-owned confirmed checkpoints without downloading XLSX."),
 )
 BUILD_FLAKE = OperationDefinition(
     "minfin.build_flake", 1, "minfin.profile-flake.v2", BuildFlakeRequest, FlakeTable,
-    limits=ExecutionBudget(cells=500_000, output_bytes=64 * 1024 * 1024),
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.EXTRACT,),
         inputs=(InputPort("source", _CELLS, "extract"),),
         outputs=(OutputPort("flake", _FLAKE),),
@@ -153,14 +164,31 @@ BUILD_FLAKE = OperationDefinition(
 )
 RENDER_FLAKE = OperationDefinition(
     "minfin.render_flake", 1, "minfin.flake-csv.v1", RenderFlakeRequest, Representation,
-    limits=ExecutionBudget(output_bytes=64 * 1024 * 1024),
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.RENDER,),
         inputs=(InputPort("flake", _FLAKE, "flake"),),
         outputs=(OutputPort("csv", DataContract("minfin.flake.csv", 1, DataRole.EXTRACTS)),),
-        summary="Render a clean deterministic UTF-8 CSV for optional consumer-owned flake storage."),
+        summary="Export source-local flake values as CSV; use the JSON codec for complete replay."),
+)
+SERIALIZE_FLAKE = OperationDefinition(
+    "minfin.serialize_flake", 1, "minfin.flake-json.v1", SerializeFlakeRequest, Representation,
+    limits=_LIMIT,
+    processing=OperationSemantics((ProcessingStage.RENDER,),
+        inputs=(InputPort("flake", _FLAKE, "flake"),),
+        outputs=(OutputPort("representation", DataContract("minfin.flake.json", 1, DataRole.EXTRACTS)),),
+        summary="Serialize the complete source-local flake, including economic axes, units and original evidence."),
+)
+READ_FLAKE = OperationDefinition(
+    "minfin.read_flake", 1, "minfin.flake-json.v1", ReadFlakeRequest, FlakeTable,
+    limits=_LIMIT,
+    processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
+        inputs=(InputPort("representation", DataContract("minfin.flake.json", 1, DataRole.EXTRACTS), "representation"),),
+        outputs=(OutputPort("flake", _FLAKE),),
+        summary="Restore a complete source-local flake from a verified representation without reacquiring its original."),
 )
 SUMMARIZE = OperationDefinition(
     "minfin.summarize", 1, "minfin.profile-headlines.v2", SummaryRequest, HeadlineSummary,
+    limits=_LIMIT,
     processing=OperationSemantics((ProcessingStage.CALCULATE,),
         inputs=(InputPort("flake", _FLAKE, "flake"),),
         outputs=(OutputPort("summary", _SUMMARY),),
@@ -176,4 +204,25 @@ PREPARE_NOTICE = OperationDefinition(
         outputs=(OutputPort("preparation", _NOTICE),),
         parameters=("include_initial", "baseline_original_identity"),
         summary="Prepare a source-qualified, channel-neutral notification candidate; initial loads are quiet by default."),
+)
+
+
+FLAKE_SNAPSHOT = OperationDefinition(
+    "minfin.flake_snapshot", 1, "minfin.flake-snapshot.v1", FlakeSnapshotRequest, DatasetSnapshot,
+    limits=_LIMIT,
+    processing=OperationSemantics((ProcessingStage.RENDER,),
+        inputs=(InputPort("flake", _FLAKE, "flake"),),
+        outputs=(OutputPort("snapshot", DataContract("minfin.flake.snapshot", 1, DataRole.EXTRACTS)),
+                 OutputPort("dataset", DataContract("dataset.snapshot", 1, None))),
+        parameters=("dataset_id", "version_id"),
+        summary="Encode a complete source-local flake as typed metadata, column and value tables for any logical dataset backend."),
+)
+READ_FLAKE_SNAPSHOT = OperationDefinition(
+    "minfin.read_flake_snapshot", 1, "minfin.flake-snapshot.v1", ReadFlakeSnapshotRequest, FlakeTable,
+    limits=_LIMIT,
+    processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
+        inputs=(InputPort("snapshot", DataContract("minfin.flake.snapshot", 1, DataRole.EXTRACTS), "snapshot",
+                          alternatives=(DataContract("dataset.snapshot", 1, None),)),),
+        outputs=(OutputPort("flake", _FLAKE),),
+        summary="Restore a source-local flake from a complete pinned logical dataset after verifying every component schema."),
 )

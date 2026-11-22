@@ -65,13 +65,15 @@ def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
         "cbr.offices.parse",
         "source.save_original",
         "minfin.extract",
+        "minfin.discover",
+        "minfin.readable",
         "frg.capture",
     }
     # A shared byte payload can reach explicit admission boundaries, but it
     # does not itself establish another publisher's identity or period.
     minfin = next(item for item in next_ops if item.consumer.operation_id == "minfin.extract")
     assert minfin.state == "conditional"
-    assert "source.minfin" in minfin.missing_qualifications
+    assert "source.minfin" not in minfin.missing_qualifications
     assert "family_id" in minfin.parameters
     frank = next(item for item in next_ops if item.consumer.operation_id == "frg.capture")
     assert frank.state == "conditional"
