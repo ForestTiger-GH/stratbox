@@ -25,7 +25,8 @@ def _identity(value):
 
 
 def _read_identity(value):
-    if not isinstance(value, dict) or set(value) != {"sha256", "size"}:
+    if (not isinstance(value, dict) or set(value) != {"sha256", "size"}
+            or not isinstance(value["sha256"], str) or type(value["size"]) is not int):
         raise ValueError("collection.identity_invalid")
     return ByteIdentity(value["sha256"], value["size"])
 
@@ -53,11 +54,14 @@ class CollectionMember:
         _name(self.name)
         if not isinstance(self.contract, DataContract) or not isinstance(self.identity, ByteIdentity):
             raise ValueError("collection.member_invalid")
+        _read_identity(_identity(self.identity))
         SourcePayload(b"", self.media_type)
         if self.source_asset is not None and not isinstance(self.source_asset, SourceAssetIdentity):
             raise ValueError("collection.asset_invalid")
         if self.descriptor_identity is not None and not isinstance(self.descriptor_identity, ByteIdentity):
             raise ValueError("collection.descriptor_invalid")
+        if self.descriptor_identity is not None:
+            _read_identity(_identity(self.descriptor_identity))
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +109,9 @@ class CollectionManifest:
         if not isinstance(self.inputs, tuple):
             raise ValueError("collection.inputs_invalid")
         for item in self.inputs:
-            input_value(item)
+            if not isinstance(item, UsedInputReceipt):
+                raise ValueError("collection.inputs_invalid")
+            input_from(input_value(item))
 
     @property
     def complete(self) -> bool:

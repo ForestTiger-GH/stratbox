@@ -14,7 +14,7 @@ REGISTRATION = OperationRegistration("core.materials", tuple(
     )
 ) + (OperationRef("material.archive", 1, "stratbox.core.operations.materials.archive_definitions:ARCHIVE",
                   "stratbox.core.operations.materials.archive:archive_materials"),
-     OperationRef("material.serialize_collection", 1, "stratbox.core.operations.materials.collections:SERIALIZE",
+     OperationRef("material.serialize_collection", 1, "stratbox.core.operations.materials.collection_definitions:SERIALIZE",
                   "stratbox.core.operations.materials.collections:serialize_collection"),
-     OperationRef("material.read_collection", 1, "stratbox.core.operations.materials.collections:READ",
+     OperationRef("material.read_collection", 1, "stratbox.core.operations.materials.collection_definitions:READ",
                   "stratbox.core.operations.materials.collections:read_collection"),))

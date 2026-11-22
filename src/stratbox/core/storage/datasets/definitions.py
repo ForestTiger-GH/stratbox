@@ -51,7 +51,7 @@ READ = OperationDefinition("dataset.read_snapshot", 1, "dataset-read-1", ReadSna
 
 WRITE = OperationDefinition("dataset.write_snapshot", 1, "dataset-write-1", WriteSnapshotRequest, DatasetWriteResult,
     frozenset({"dataset_writer"}), frozenset({"dataset.write", "storage.write"}), partial_allowed=True, limits=_LIMITS,
-    processing=OperationSemantics((ProcessingStage.PRESERVE,),
+    processing=OperationSemantics((ProcessingStage.INGEST, ProcessingStage.PRESERVE),
         inputs=(InputPort("snapshot", _SNAPSHOT, path="snapshot", alternatives=(DataContract("dataset.assembly", 1),)),),
         outputs=(OutputPort("reference", _REFERENCE, path="reference", qualifications=frozenset({"storage.confirmed"})),
                  OutputPort("receipt", DataContract("dataset.write_receipt", 1))),

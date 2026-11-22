@@ -18,7 +18,7 @@ class ByteIdentity:
     size: int
 
     def __post_init__(self) -> None:
-        if not _DIGEST.fullmatch(self.sha256) or self.size < 0:
+        if type(self.size) is not int or not _DIGEST.fullmatch(self.sha256) or self.size < 0:
             raise ValueError("Invalid byte identity")
 
     @classmethod

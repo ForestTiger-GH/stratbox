@@ -41,6 +41,12 @@ def test_byte_identity_and_source_receipt_do_not_disagree():
         AcquiredSource(SourcePayload(b"modified", "text/csv", "source:fixture"), receipt)
 
 
+@pytest.mark.parametrize("size", [False, True, 1.0, 1.5])
+def test_byte_identity_size_is_an_exact_integer(size):
+    with pytest.raises(ValueError, match="Invalid byte identity"):
+        ByteIdentity("0" * 64, size)
+
+
 def test_dataset_and_computation_identity_are_resource_sensitive():
     source = SourcePayload(b"123", "text/plain", "source:fixture")
     used = (UsedInputReceipt.for_payload(source, "source"),)

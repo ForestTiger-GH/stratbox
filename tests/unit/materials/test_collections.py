@@ -1,10 +1,13 @@
 from dataclasses import replace
 from io import BytesIO
+import json
 from zipfile import ZipFile
 
 import pytest
 
 from stratbox.core.execution.handoff import project_output
+from stratbox.core.execution import ExecutionContext
+from stratbox.core.limits import ExecutionBudget
 from stratbox.core.formats.archives.store import ArchiveWriteLimits
 from stratbox.core.operations.materials.archive import archive_materials
 from stratbox.core.operations.materials.archive_definitions import ArchiveMember, ArchiveRequest
@@ -16,8 +19,9 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.snapshots import SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload
+from stratbox.shared.identity import canonical_manifest_bytes
 from stratbox.shared.material_collections import (
-    CollectionDisposition, CollectionManifest, CollectionMember, decode_collection,
+    CollectionDisposition, CollectionManifest, CollectionMember, decode_collection, encode_collection,
 )
 
 
@@ -85,3 +89,24 @@ def test_reading_an_unclassified_file_does_not_assert_original_role(tmp_path):
     assert result.outcome == "succeeded"
     assert project_output(result, "source").contract == DataContract("material.payload")
     assert project_output(result, "material").contract == DataContract("material.reference")
+
+
+def test_manifest_rejects_boolean_identity_size():
+    payload = SourcePayload(b"x")
+    member = CollectionMember("source", "original.bin", DataContract("source.original", 1, DataRole.ORIGINALS), payload.identity)
+    manifest = CollectionManifest("example", "v1", (member,),
+        (CollectionDisposition("source", "completed"),), SnapshotCoverage("unknown"))
+    encoded = json.loads(encode_collection(manifest))
+    encoded["members"][0]["identity"]["size"] = True
+    with pytest.raises(ValueError, match="collection.identity_invalid"):
+        decode_collection(canonical_manifest_bytes(encoded))
+
+
+def test_manifest_serialization_accounts_exact_output_once():
+    manifest = CollectionManifest("example", "v1", (),
+        (CollectionDisposition("missing", "not_attempted"),), SnapshotCoverage("unknown"))
+    required = len(encode_collection(manifest))
+    accepted = serialize_collection(manifest, context=ExecutionContext(budget=ExecutionBudget(output_bytes=required)))
+    assert accepted.outcome == "succeeded", accepted.diagnostics
+    rejected = serialize_collection(manifest, context=ExecutionContext(budget=ExecutionBudget(output_bytes=required - 1)))
+    assert rejected.outcome == "failed" and rejected.diagnostics[0].code == "budget.output_bytes"
