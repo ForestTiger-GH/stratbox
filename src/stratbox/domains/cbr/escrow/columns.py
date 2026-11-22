@@ -75,6 +75,16 @@ ESCROW_INDICATOR_SPECS: tuple[EscrowIndicatorSpec, ...] = (
         value_kind="percent",
     ),
     EscrowIndicatorSpec(
+        code="average_rate_federal_district_percent",
+        canonical_name="Средняя ставка по кредитным договорам по федеральному округу, %",
+        sheet_code="СПКДПФО",
+        required_tokens=("средняя", "ставка", "кредитным", "договорам", "федеральному", "округу", "процент"),
+        forbidden_tokens=("средневзвешенная",),
+        order=7,
+        value_kind="percent",
+        is_required=False,
+    ),
+    EscrowIndicatorSpec(
         code="revealed_escrow_accounts_count",
         canonical_name="Кол-во «раскрытых» счетов эскроу",
         sheet_code="КРСЭ",
@@ -143,21 +153,6 @@ def _spec_matches_header(spec: EscrowIndicatorSpec, normalized_header: str) -> b
     tokens = set(normalized_header.split())
     required_tokens = set(spec.required_tokens)
     forbidden_tokens = set(spec.forbidden_tokens)
-
-    # Для ставки по кредитным договорам в исторических файлах встречаются
-    # как формулировки "Средневзвешенная ставка...", так и более старый
-    # вариант "Средняя ставка...". Парсер должен устойчиво принимать оба
-    # варианта, не смешивая показатель с другими столбцами.
-    if spec.code == "weighted_rate_federal_district_percent":
-        base_tokens = {"ставка", "кредитным", "договорам", "федеральному", "округу", "процент"}
-        adjective_tokens = {"средняя", "средневзвешенная"}
-        if not base_tokens.issubset(tokens):
-            return False
-        if not adjective_tokens.intersection(tokens):
-            return False
-        if forbidden_tokens.intersection(tokens):
-            return False
-        return True
 
     if not required_tokens.issubset(tokens):
         return False
@@ -228,7 +223,7 @@ def probe_indicator_columns(
         used_codes.add(spec.code)
         resolved.append(
             ResolvedEscrowColumn(
-                source_name=str(source_name).strip(),
+                source_name=str(source_name),
                 source_index=source_index,
                 spec=spec,
             )

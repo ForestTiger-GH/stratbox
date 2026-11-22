@@ -22,6 +22,16 @@ _SYMBOL_MODULES = {'ACQUIRE': '.definitions',
  'discover': '.operations',
  'parse': '.operations',
  'render_workbook': '.operations'}
+_SYMBOL_MODULES.update({
+    **{name: ".contracts" for name in (
+        "ParsedEscrowFile", "EscrowDataset", "EscrowPivotPack", "EscrowRelease", "IntegrateEscrowRequest",
+        "EscrowFlakeSnapshotRequest", "EscrowDatasetSnapshotRequest", "EscrowViewSnapshotRequest", "ReadEscrowSnapshotRequest",
+    )},
+    **{name: ".lifecycle" for name in (
+        "integrate_flakes", "build_flake_snapshot", "read_flake_snapshot", "build_dataset_snapshot", "read_dataset_snapshot",
+        "build_view_snapshot", "read_view_snapshot",
+    )},
+})
 __all__ = tuple(_SYMBOL_MODULES)
 
 

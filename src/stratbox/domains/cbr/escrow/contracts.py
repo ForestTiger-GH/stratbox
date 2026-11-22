@@ -18,7 +18,9 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload
+from stratbox.shared.identity import ByteIdentity
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -78,6 +80,10 @@ class ParsedEscrowFile:
     df_long: pd.DataFrame
     evidence: ComputationReceipt | None = None
     unmapped_headers: tuple[str, ...] = ()
+    df_cells: pd.DataFrame | None = None
+    original_identity: ByteIdentity | None = None
+    source_id: str | None = None
+    method_version: str = "cbr-escrow-xlsx-flake-1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +94,9 @@ class EscrowSourceLink:
     url: str
     source_name: str
     file_date_hint: str | None = None
+    format: str = "xlsx"
+    extraction_status: str = "supported"
+    profile_id: str = "cbr-escrow-xlsx-flake-1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +138,7 @@ class EscrowViewBuildRequest:
     regions_mode: RegionOrderMode = "latest"
     custom_regions: tuple[str, ...] = ()
     require_complete_history: bool = True
+    missing_display: Literal["source_token", "blank"] = "source_token"
 
 
 @dataclass(frozen=True)
@@ -158,9 +168,77 @@ class EscrowPivotPack:
     region_order: tuple[str, ...]
     date_order: tuple[str, ...]
     evidence: ComputationReceipt | None = None
+    source_dataset: ByteIdentity | None = None
+    coverage: SnapshotCoverage = SnapshotCoverage("unknown")
+    missing_display: str = "source_token"
+    row_metadata: tuple[tuple[str, str, str | None], ...] = ()
 
 
 @dataclass(frozen=True)
 class BuildEscrowViewsRequest:
-    history: EscrowHistoryResult
+    history: EscrowHistoryResult | EscrowDataset
     view: EscrowViewBuildRequest = EscrowViewBuildRequest()
+
+
+@dataclass(frozen=True, slots=True)
+class EscrowRelease:
+    """One admitted publication and its interpretation profile."""
+
+    period: str
+    source_name: str
+    source_id: str | None
+    original_identity: ByteIdentity
+    sheet_name: str
+    method_version: str
+    unmapped_headers: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class EscrowDataset:
+    """Integrated observations and period-specific row dimensions.
+
+    Publication coverage is distinct from successful processing of the selected
+    flakes. No live parsed-file objects are needed to prepare views.
+    """
+
+    observations: pd.DataFrame
+    rows: pd.DataFrame
+    releases: tuple[EscrowRelease, ...]
+    indicator_specs: tuple[EscrowIndicatorSpec, ...]
+    coverage: SnapshotCoverage
+    selection_complete: bool = True
+    evidence: ComputationReceipt | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IntegrateEscrowRequest:
+    flakes: tuple[ParsedEscrowFile, ...]
+    coverage: SnapshotCoverage = SnapshotCoverage(
+        "unknown", "Selected publication flakes; publisher historical coverage is unspecified."
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class EscrowFlakeSnapshotRequest:
+    flake: ParsedEscrowFile
+    dataset_id: str = "cbr.escrow.flake"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EscrowDatasetSnapshotRequest:
+    dataset: EscrowDataset
+    dataset_id: str = "cbr.escrow.integrated"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EscrowViewSnapshotRequest:
+    view: EscrowPivotPack
+    dataset_id: str = "cbr.escrow.prepared_view"
+    version_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadEscrowSnapshotRequest:
+    snapshot: DatasetSnapshot

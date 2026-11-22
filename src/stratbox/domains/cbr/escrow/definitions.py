@@ -14,10 +14,12 @@ from .contracts import (
     EscrowPivotPack,
     EscrowSourceLink,
     ParseEscrowRequest,
-    ParsedEscrowFile,
+    ParsedEscrowFile, EscrowDataset, IntegrateEscrowRequest, EscrowFlakeSnapshotRequest,
+    EscrowDatasetSnapshotRequest, EscrowViewSnapshotRequest, ReadEscrowSnapshotRequest,
 )
 
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.core.execution.semantics import (
     InputPort,
     OutputPort,
@@ -43,6 +45,7 @@ DISCOVER = OperationDefinition(
                 DataContract("cbr.escrow.index_material", 1, DataRole.ORIGINALS),
                 path="index",
                 required=False,
+                alternatives=(DataContract("material.payload"), DataContract("source.payload", 1, DataRole.ORIGINALS)),
             ),
         ),
         outputs=(OutputPort("sources", DataContract("cbr.escrow.index", 1, None)),),
@@ -58,7 +61,7 @@ ACQUIRE = OperationDefinition(
     frozenset({"http"}),
     processing=OperationSemantics(
         stages=(ProcessingStage.ACQUIRE,),
-        summary="Acquire one official escrow workbook.",
+        summary="Acquire an official escrow XLSX or historical HTML original.",
         inputs=(InputPort("source", DataContract("cbr.escrow.source", 1, None)),),
         outputs=(
             OutputPort(
@@ -78,8 +81,8 @@ ACQUIRE = OperationDefinition(
 
 PARSE = OperationDefinition(
     "cbr.escrow.parse",
-    2,
-    "cbr-escrow-layout-2",
+    3,
+    "cbr-escrow-xlsx-flake-1",
     ParseEscrowRequest,
     ParsedEscrowFile,
     limits=_TABLES,
@@ -91,12 +94,12 @@ PARSE = OperationDefinition(
                 "source",
                 DataContract("cbr.escrow.original", 1, DataRole.ORIGINALS),
                 path="payload",
-                qualifications=frozenset(("source.cbr.escrow",)),
+                alternatives=(DataContract("material.payload"), DataContract("source.payload", 1, DataRole.ORIGINALS)),
             ),
         ),
         outputs=(
             OutputPort(
-                "file", DataContract("cbr.escrow.parsed_file", 1, DataRole.EXTRACTS)
+                "file", DataContract("cbr.escrow.parsed_file", 2, DataRole.EXTRACTS)
             ),
         ),
         parameters=("source_name", "as_of"),
@@ -105,14 +108,14 @@ PARSE = OperationDefinition(
 
 HISTORY = OperationDefinition(
     "cbr.escrow.build_history",
-    2,
-    "cbr-escrow-history-2",
+    3,
+    "cbr-escrow-history-3",
     EscrowHistoryBuildRequest,
     EscrowHistoryResult,
     partial_allowed=True,
     limits=_TABLES,
     processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT, ProcessingStage.CALCULATE),
+        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE),
         composition=True,
         summary="Parse supplied escrow sources and construct their history.",
         inputs=(
@@ -133,8 +136,8 @@ HISTORY = OperationDefinition(
 
 VIEWS = OperationDefinition(
     "cbr.escrow.build_views",
-    2,
-    "cbr-escrow-views-1",
+    3,
+    "cbr-escrow-views-2",
     BuildEscrowViewsRequest,
     EscrowPivotPack,
     limits=_TABLES,
@@ -146,6 +149,7 @@ VIEWS = OperationDefinition(
                 "history",
                 DataContract("cbr.escrow.history", 1, DataRole.EXTRACTS),
                 path="history",
+                alternatives=(DataContract("cbr.escrow.dataset", 1, DataRole.INTEGRATED),),
             ),
         ),
         outputs=(
@@ -158,7 +162,7 @@ VIEWS = OperationDefinition(
 RENDER = OperationDefinition(
     "cbr.escrow.render_workbook",
     2,
-    "cbr-escrow-xlsx-1",
+    "cbr-escrow-xlsx-2",
     EscrowPivotPack,
     Representation,
     limits=_TABLES,
@@ -175,3 +179,48 @@ RENDER = OperationDefinition(
         ),
     ),
 )
+
+
+INTEGRATE = OperationDefinition(
+    "cbr.escrow.integrate_flakes", 1, "cbr-escrow-integration-1", IntegrateEscrowRequest, EscrowDataset,
+    limits=_TABLES, processing=OperationSemantics(
+        stages=(ProcessingStage.INTEGRATE,),
+        inputs=(InputPort("flakes", DataContract("cbr.escrow.flakes", 1, DataRole.EXTRACTS), path="flakes"),),
+        outputs=(OutputPort("dataset", DataContract("cbr.escrow.dataset", 1, DataRole.INTEGRATED)),),
+        parameters=("coverage",), summary="Integrate admitted publication flakes with explicit duplicate and edition checks.",
+    ),
+)
+
+
+def _snapshot_definition(operation, request_type, source_name, source_contract, snapshot_contract):
+    return OperationDefinition(
+        operation, 1, "cbr-escrow-snapshot-1", request_type, DatasetSnapshot, limits=_TABLES,
+        processing=OperationSemantics(stages=(ProcessingStage.PRESERVE,),
+            inputs=(InputPort(source_name, source_contract, path=source_name),),
+            outputs=(OutputPort("snapshot", snapshot_contract), OutputPort("dataset", DataContract("dataset.snapshot"))),
+            parameters=("dataset_id", "version_id"), summary="Encode a complete escrow value for any logical dataset adapter."),
+    )
+
+
+def _read_definition(operation, result_type, name, result_contract, snapshot_contract):
+    return OperationDefinition(
+        operation, 1, "cbr-escrow-snapshot-1", ReadEscrowSnapshotRequest, result_type, limits=_TABLES,
+        processing=OperationSemantics(stages=(ProcessingStage.READ_EXTRACT,),
+            inputs=(InputPort("snapshot", snapshot_contract, path="snapshot", alternatives=(DataContract("dataset.snapshot"),)),),
+            outputs=(OutputPort(name, result_contract),),
+            summary="Validate complete escrow snapshot components and restore the domain value."),
+    )
+
+
+FLAKE_SNAPSHOT = _snapshot_definition("cbr.escrow.flake_snapshot", EscrowFlakeSnapshotRequest, "flake",
+    DataContract("cbr.escrow.parsed_file", 2, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 1, DataRole.EXTRACTS))
+READ_FLAKE_SNAPSHOT = _read_definition("cbr.escrow.read_flake_snapshot", ParsedEscrowFile, "file",
+    DataContract("cbr.escrow.parsed_file", 2, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 1, DataRole.EXTRACTS))
+DATASET_SNAPSHOT = _snapshot_definition("cbr.escrow.dataset_snapshot", EscrowDatasetSnapshotRequest, "dataset",
+    DataContract("cbr.escrow.dataset", 1, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 1, DataRole.INTEGRATED))
+READ_DATASET_SNAPSHOT = _read_definition("cbr.escrow.read_dataset_snapshot", EscrowDataset, "dataset",
+    DataContract("cbr.escrow.dataset", 1, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 1, DataRole.INTEGRATED))
+VIEW_SNAPSHOT = _snapshot_definition("cbr.escrow.view_snapshot", EscrowViewSnapshotRequest, "view",
+    DataContract("cbr.escrow.views", 1, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 1, DataRole.PRODUCTS))
+READ_VIEW_SNAPSHOT = _read_definition("cbr.escrow.read_view_snapshot", EscrowPivotPack, "views",
+    DataContract("cbr.escrow.views", 1, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 1, DataRole.PRODUCTS))

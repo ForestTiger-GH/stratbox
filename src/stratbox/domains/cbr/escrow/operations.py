@@ -31,6 +31,7 @@ from .contracts import (
     DiscoverEscrowRequest,
     EscrowHistoryBuildRequest,
     EscrowHistoryResult,
+    EscrowDataset,
     EscrowPivotPack,
     EscrowSourceFailure,
     EscrowSourceLink,
@@ -74,7 +75,7 @@ def discover(
             raise OperationFailure("source.index_empty")
         return links
 
-    return run(DISCOVER, request, work, context=context)
+    return run(DISCOVER, request, work, context=context, providers={"http": transport})
 
 
 def acquire(
@@ -89,21 +90,24 @@ def acquire(
         invocation.stage("acquire")
         path = official_url(req.url, roots=_ROOTS)
         if (
-            not path.casefold().endswith(".xlsx")
-            or PurePosixPath(path).name != req.source_name
+            req.format not in {"xlsx", "html"}
+            or (req.format == "xlsx" and not path.casefold().endswith(".xlsx"))
+            or (req.format == "html" and not path.casefold().startswith("/analytics/finansirovanie-dolevogo-stroitelstva/"))
+            or (req.format == "xlsx" and PurePosixPath(path).name != req.source_name)
             or req.source_id != _source_id_from_absolute_url(req.url)
         ):
             raise OperationFailure("request.source_identity_mismatch")
         acquired = receive_cbr(
             req.url,
             roots=_ROOTS,
-            media_types=XLSX_TYPES,
+            media_types=XLSX_TYPES if req.format == "xlsx" else HTML_TYPES,
             limit=WORKBOOK_LIMIT,
             source_id=req.source_id,
             transport=transport,
             invocation=invocation,
         )
-        validate_workbook(acquired.payload.data, budget=invocation.budget)
+        if req.format == "xlsx":
+            validate_workbook(acquired.payload.data, budget=invocation.budget)
         return acquired
 
     return run(ACQUIRE, request, work, context=context, providers={"http": transport})
@@ -115,6 +119,8 @@ def _parse(req, invocation):
     from .parser import extract_date_from_filename, parse_escrow_excel_bytes
 
     use_payload(req.payload, invocation, role="source_workbook", limit=WORKBOOK_LIMIT)
+    if req.source_name.casefold().endswith((".html", ".htm")) or req.payload.media_type == "text/html":
+        raise OperationFailure("source.escrow_layout_unsupported")
     admit_workbook(req.payload.data, invocation)
     named_date = extract_date_from_filename(req.source_name)
     try:
@@ -129,13 +135,15 @@ def _parse(req, invocation):
         value = parse_escrow_excel_bytes(
             req.payload.data, source_name=req.source_name, as_of=day.isoformat()
         )
+        from .snapshots import flake_tables
+        flake_tables(value)
     except ValueError:
         raise OperationFailure("source.workbook_layout_unresolved") from None
     except (KeyError, OSError):
         raise OperationFailure("source.workbook_invalid") from None
-    if value.df_long.empty:
+    if value.df_cells.empty:
         raise OperationFailure("source.observations_empty")
-    return value
+    return replace(value, source_id=req.payload.source_id)
 
 
 def parse(
@@ -144,10 +152,8 @@ def parse(
     def work(req, invocation):
         invocation.stage("parse")
         value = _parse(req, invocation)
-        evidence = record_tables(invocation, (("rows", value.df_rows), ("observations", value.df_long)),
-                                 parameters={"date": value.file_date, "sheet": value.sheet_name,
-                                             "unmapped_headers": value.unmapped_headers})
-        return replace(value, evidence=evidence)
+        from .lifecycle import seal_flake
+        return seal_flake(value, invocation)
 
     return run(PARSE, request, work, context=context)
 
@@ -211,15 +217,23 @@ def build_history(
 
 
 def _history_tables(result):
-    tables = (("observations", result.df_long),) + tuple(
-        (item.file_date, item.df_rows) for item in result.parsed_files
-    )
-    return tables, {"dates": result.dates, "failed": bool(result.failures), "stop_reason": result.stop_reason}
+    from .lifecycle import flake_evidence
+    tables = [("observations", result.df_long)]
+    sources = []
+    for index, item in enumerate(result.parsed_files):
+        parts, metadata = flake_evidence(item)
+        tables.extend((f"source_{index}_{name}", frame) for name, frame in parts)
+        sources.append(metadata)
+    return tuple(tables), {"dates": result.dates, "failed": bool(result.failures),
+                           "stop_reason": result.stop_reason, "sources": sources}
 
 
 def _pivot_metadata(result):
     return {"indicators": [asdict(spec) for spec in result.indicator_specs],
-            "regions": result.region_order, "dates": result.date_order}
+            "regions": result.region_order, "dates": result.date_order,
+            "source_dataset": asdict(result.source_dataset) if result.source_dataset else None,
+            "coverage": asdict(result.coverage), "missing_display": result.missing_display,
+            "row_metadata": result.row_metadata}
 
 
 def build_views(
@@ -227,26 +241,27 @@ def build_views(
 ) -> OperationResult[EscrowPivotPack]:
     def work(req, invocation):
         require_extra("pandas", "dataframe")
-        from .pivots import build_escrow_pivots
+        from .lifecycle import integrate_values, prepare_dataset_view
+        from stratbox.shared.data.snapshots import SnapshotCoverage
 
         invocation.stage("build_views")
         if req.view.regions_mode not in {"latest", "custom"}:
             raise OperationFailure("request.region_order_invalid")
-        if not req.history.ok and req.view.require_complete_history:
-            raise OperationFailure("source.history_incomplete")
-        tables, metadata = _history_tables(req.history)
-        long, *rows = use_tables(invocation, tables, receipt=req.history.evidence,
-                                 role="escrow_history", metadata=metadata)
-        files = tuple(replace(item, df_rows=frame) for item, frame in zip(req.history.parsed_files, rows, strict=True))
+        if isinstance(req.history, EscrowDataset):
+            dataset = req.history
+        else:
+            if not req.history.ok and req.view.require_complete_history:
+                raise OperationFailure("source.history_incomplete")
+            tables, metadata = _history_tables(req.history)
+            use_tables(invocation, tables, receipt=req.history.evidence, role="escrow_history", metadata=metadata)
+            dataset = integrate_values(req.history.parsed_files,
+                SnapshotCoverage("unknown", "Selected workbook history; publisher inventory is unspecified."),
+                selection_complete=req.history.ok)
         try:
-            pivots, indicators, regions, dates = build_escrow_pivots(
-                long, parsed_files=files, regions_mode=req.view.regions_mode,
-                custom_regions=req.view.custom_regions, budget=invocation.budget,
-            )
+            value = prepare_dataset_view(dataset, req.view, invocation)
         except ValueError:
             raise OperationFailure("request.escrow_view_invalid") from None
-        value = EscrowPivotPack(pivots, tuple(indicators), tuple(regions), tuple(dates))
-        return replace(value, evidence=record_tables(invocation, tuple(pivots.items()),
+        return replace(value, evidence=record_tables(invocation, tuple(value.pivots.items()),
                                                     metadata=_pivot_metadata(value), parameters=asdict(req.view)))
 
     return run(VIEWS, request, work, context=context)
@@ -267,7 +282,8 @@ def render_workbook(
         frames = use_tables(invocation, tables, receipt=req.evidence, role="escrow_views", metadata=_pivot_metadata(req))
         pivots = dict(zip((name for name, _ in tables), frames, strict=True))
         workbook = build_escrow_workbook(
-            pivots, list(req.indicator_specs), checkpoint=invocation.check_cancelled
+            pivots, list(req.indicator_specs), checkpoint=invocation.check_cancelled,
+            row_metadata=req.row_metadata,
         )
         try:
             return Representation(

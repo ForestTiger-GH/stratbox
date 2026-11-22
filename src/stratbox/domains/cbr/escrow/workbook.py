@@ -35,6 +35,7 @@ def build_escrow_workbook(
     *,
     title_row_font: Font | None = None,
     checkpoint=None,
+    row_metadata=(),
 ) -> Workbook:
     """Формирует книгу Excel: один показатель — один лист."""
     workbook = Workbook()
@@ -42,6 +43,7 @@ def build_escrow_workbook(
 
     title_font = title_row_font or Font(name="Times New Roman", size=10, bold=True)
     used_sheet_names = set()
+    row_kinds = {region: kind for region, kind, district in row_metadata}
     for spec in indicator_specs:
         if checkpoint is not None:
             checkpoint()
@@ -61,10 +63,12 @@ def build_escrow_workbook(
             highlight_row = False
             if row_idx > start_row:
                 region_value = str(row[0])
-                if " ФО" in region_value or "Итого по РФ" in region_value:
+                if row_kinds.get(region_value) in {"federal_district", "rf_total"} or (not row_kinds and (" ФО" in region_value or "Итого по РФ" in region_value)):
                     highlight_row = True
 
             for col_idx, value in enumerate(row, 1):
+                if value is not None and not isinstance(value, str) and pd.isna(value):
+                    value = None
                 cell = worksheet.cell(row=row_idx, column=col_idx, value=value)
 
                 if row_idx == start_row:
@@ -81,7 +85,7 @@ def build_escrow_workbook(
                         cell.font = FIRST_COL_FONT
                     if col_idx > 1 and pd.notnull(value):
                         if isinstance(value, Number):
-                            cell.number_format = "#,##0"
+                            cell.number_format = "#,##0.00" if spec.value_kind == "percent" else "#,##0.##########"
                     if highlight_row:
                         cell.fill = PALE_GREEN_FILL
 

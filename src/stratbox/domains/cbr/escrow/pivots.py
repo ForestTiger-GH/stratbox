@@ -35,7 +35,9 @@ def build_escrow_pivot(
 ) -> pd.DataFrame:
     """Строит сводную матрицу по одному показателю: строки витрины × даты."""
     df_ind = result_df.loc[result_df["indicator_code"] == indicator_code].copy()
-    pivot = df_ind.pivot_table(index="Регион", columns="Дата", values="Значение")
+    if df_ind.duplicated(["Регион", "Дата"]).any():
+        raise ValueError("escrow.duplicate_observation")
+    pivot = df_ind.pivot(index="Регион", columns="Дата", values="Значение")
     pivot = pivot.reindex(region_order)
     pivot = pivot.reindex(columns=date_order)
     return pivot

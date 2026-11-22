@@ -1,76 +1,34 @@
-"""Published operation references for escrow."""
-
+"""Published independent escrow operations and storage delegation."""
 from stratbox.core.execution.catalog import OperationRegistration, OperationRef
+from stratbox.core.execution.semantics import ProcessingStage, StageDeclaration, OperationKey
 
-from stratbox.core.execution.semantics import (
-    ProcessingStage,
-    StageDeclaration,
-    OperationKey,
+_BASE = "stratbox.domains.cbr.escrow"
+_ITEMS = (
+    ("discover", 1, "DISCOVER", "operations", "discover"),
+    ("acquire", 1, "ACQUIRE", "operations", "acquire"),
+    ("parse", 3, "PARSE", "operations", "parse"),
+    ("build_history", 3, "HISTORY", "operations", "build_history"),
+    ("build_views", 3, "VIEWS", "operations", "build_views"),
+    ("render_workbook", 2, "RENDER", "operations", "render_workbook"),
+    ("integrate_flakes", 1, "INTEGRATE", "lifecycle", "integrate_flakes"),
+    ("flake_snapshot", 1, "FLAKE_SNAPSHOT", "lifecycle", "build_flake_snapshot"),
+    ("read_flake_snapshot", 1, "READ_FLAKE_SNAPSHOT", "lifecycle", "read_flake_snapshot"),
+    ("dataset_snapshot", 1, "DATASET_SNAPSHOT", "lifecycle", "build_dataset_snapshot"),
+    ("read_dataset_snapshot", 1, "READ_DATASET_SNAPSHOT", "lifecycle", "read_dataset_snapshot"),
+    ("view_snapshot", 1, "VIEW_SNAPSHOT", "lifecycle", "build_view_snapshot"),
+    ("read_view_snapshot", 1, "READ_VIEW_SNAPSHOT", "lifecycle", "read_view_snapshot"),
 )
-
 REGISTRATION = OperationRegistration(
     owner_id="cbr.escrow",
-    operations=(
-        OperationRef(
-            "cbr.escrow.discover",
-            1,
-            "stratbox.domains.cbr.escrow.definitions:DISCOVER",
-            "stratbox.domains.cbr.escrow.operations:discover",
-        ),
-        OperationRef(
-            "cbr.escrow.acquire",
-            1,
-            "stratbox.domains.cbr.escrow.definitions:ACQUIRE",
-            "stratbox.domains.cbr.escrow.operations:acquire",
-        ),
-        OperationRef(
-            "cbr.escrow.parse",
-            2,
-            "stratbox.domains.cbr.escrow.definitions:PARSE",
-            "stratbox.domains.cbr.escrow.operations:parse",
-        ),
-        OperationRef(
-            "cbr.escrow.build_history",
-            2,
-            "stratbox.domains.cbr.escrow.definitions:HISTORY",
-            "stratbox.domains.cbr.escrow.operations:build_history",
-        ),
-        OperationRef(
-            "cbr.escrow.build_views",
-            2,
-            "stratbox.domains.cbr.escrow.definitions:VIEWS",
-            "stratbox.domains.cbr.escrow.operations:build_views",
-        ),
-        OperationRef(
-            "cbr.escrow.render_workbook",
-            2,
-            "stratbox.domains.cbr.escrow.definitions:RENDER",
-            "stratbox.domains.cbr.escrow.operations:render_workbook",
-        ),
-    ),
+    operations=tuple(OperationRef(f"cbr.escrow.{name}", version, f"{_BASE}.definitions:{definition}",
+                                  f"{_BASE}.{module}:{handler}") for name, version, definition, module, handler in _ITEMS),
     stages=(
-        StageDeclaration(
-            ProcessingStage.PRESERVE,
-            "delegated",
-            "processing.neutral_original_storage",
-            (
-                OperationKey("source.save_original", 1),
-                OperationKey("source.read_original", 1),
-            ),
-            "Bind the acquired payload to SaveOriginalRequest.source and supply a caller-owned "
-            "destination. Retain source-issue association with the material; read its exact bytes "
-            "through ReadOriginalRequest before source-specific readmission.",
-        ),
-        StageDeclaration(
-            ProcessingStage.READABLE, "missing", "processing.readable_not_implemented"
-        ),
-        StageDeclaration(
-            ProcessingStage.INTEGRATE,
-            "missing",
-            "processing.integration_not_implemented",
-        ),
-        StageDeclaration(
-            ProcessingStage.INGEST, "missing", "processing.ingestion_not_implemented"
-        ),
+        StageDeclaration(ProcessingStage.READABLE, "missing", "processing.readable_not_implemented"),
+        StageDeclaration(ProcessingStage.INGEST, "delegated", "processing.logical_dataset_storage",
+            (OperationKey("dataset.write_snapshot", 1), OperationKey("dataset.read_snapshot", 1)),
+            "Encode a complete flake, integrated dataset or prepared view, retain it through a caller-selected dataset adapter, then decode the restored snapshot."),
+        StageDeclaration(ProcessingStage.PUBLISH, "delegated", "processing.neutral_material_storage",
+            (OperationKey("material.save_artifact", 1), OperationKey("material.read_artifact", 1)),
+            "Retain the rendered product as a material artifact through a caller-selected destination. External publication policy belongs to the receiver."),
     ),
 )
