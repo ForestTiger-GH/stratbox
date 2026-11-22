@@ -14,6 +14,7 @@ from stratbox.shared.identity import ByteIdentity
 
 if TYPE_CHECKING:
     from stratbox.core.execution.events import EventSink, IncidentSink
+    from stratbox.core.execution.semantics import OperationSemantics
 
 T = TypeVar("T")
 Outcome = Literal["succeeded", "partial", "failed", "cancelled", "unknown"]
@@ -38,17 +39,28 @@ class EffectDescriptor:
 
 def _effect_description(kind: str) -> EffectDescriptor:
     if kind == "network.receive":
-        return EffectDescriptor(kind, "official_source", "transport", "acquisition_receipt", "qualified_read")
+        return EffectDescriptor(
+            kind,
+            "official_source",
+            "transport",
+            "acquisition_receipt",
+            "qualified_read",
+        )
     if kind == "notification.handoff":
-        return EffectDescriptor(kind, "recipient", "consumer", "acceptance_receipt", "reconcile")
+        return EffectDescriptor(
+            kind, "recipient", "consumer", "acceptance_receipt", "reconcile"
+        )
     if kind == "notification.state_commit":
-        return EffectDescriptor(kind, "notification_state", "store", "state_receipt", "reconcile")
+        return EffectDescriptor(
+            kind, "notification_state", "store", "state_receipt", "reconcile"
+        )
     return EffectDescriptor(kind, "file", "store", "effect_receipt", "reconcile")
 
 
 @dataclass(frozen=True, slots=True)
 class RuntimeDependency:
     """A dependency checked by its own scoped runtime, not eager runner binding."""
+
     role: str
     phase: Literal["scoped", "conditional"]
     owner: str
@@ -73,29 +85,48 @@ class OperationDefinition:
     optional_capabilities: frozenset[str] = frozenset()
     limits: ExecutionBudget | None = None
     runtime_dependencies: tuple[RuntimeDependency, ...] = ()
+    processing: OperationSemantics | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.request_type, type):
             raise ValueError("Invalid request type")
-        value_types = self.value_type if isinstance(self.value_type, tuple) else (self.value_type,)
+        value_types = (
+            self.value_type
+            if isinstance(self.value_type, tuple)
+            else (self.value_type,)
+        )
         if not value_types or not all(isinstance(kind, type) for kind in value_types):
             raise ValueError("Invalid value type")
-        if any(not isinstance(group, frozenset) or
-               any(not isinstance(name, str) for name in group)
-               for group in (self.required_capabilities, self.optional_capabilities, self.possible_effects)):
+        if any(
+            not isinstance(group, frozenset)
+            or any(not isinstance(name, str) for name in group)
+            for group in (
+                self.required_capabilities,
+                self.optional_capabilities,
+                self.possible_effects,
+            )
+        ):
             raise ValueError("Invalid capability/effect declaration")
         if type(self.partial_allowed) is not bool or (
             self.limits is not None and not isinstance(self.limits, ExecutionBudget)
         ):
             raise ValueError("Invalid operation policy")
-        if not isinstance(self.runtime_dependencies, tuple) or any(
-            not isinstance(item, RuntimeDependency) for item in self.runtime_dependencies
-        ) or len({item.role for item in self.runtime_dependencies}) != len(self.runtime_dependencies):
+        if (
+            not isinstance(self.runtime_dependencies, tuple)
+            or any(
+                not isinstance(item, RuntimeDependency)
+                for item in self.runtime_dependencies
+            )
+            or len({item.role for item in self.runtime_dependencies})
+            != len(self.runtime_dependencies)
+        ):
             raise ValueError("Invalid runtime dependency declarations")
         if {item.role for item in self.runtime_dependencies} & (
             self.required_capabilities | self.optional_capabilities
         ):
-            raise ValueError("Runtime and runner-managed capabilities must have distinct owners")
+            raise ValueError(
+                "Runtime and runner-managed capabilities must have distinct owners"
+            )
         for token in (
             self.operation_id,
             self.method_version,
@@ -108,27 +139,42 @@ class OperationDefinition:
             raise ValueError("Invalid operation contract version")
         if self.required_capabilities & self.optional_capabilities:
             raise ValueError("A capability role must be either required or optional")
+        if self.processing is not None:
+            from stratbox.core.execution.semantics import OperationSemantics
+
+            if not isinstance(self.processing, OperationSemantics):
+                raise ValueError("processing.invalid_semantics")
+            if not self.partial_allowed and any(
+                "partial" in port.outcomes for port in self.processing.outputs
+            ):
+                raise ValueError("processing.partial_output_undeclared")
 
     @property
     def effects(self) -> tuple[EffectDescriptor, ...]:
         # HTTP is a capability. Source acquisition has its own receipt; do not
         # advertise an EffectReceipt kind the runner would reject.
-        return tuple(_effect_description(kind) for kind in sorted(self.possible_effects))
+        return tuple(
+            _effect_description(kind) for kind in sorted(self.possible_effects)
+        )
 
     def capability(self, role: str, *, managed: bool = False) -> CapabilityRequirement:
         if role not in self.required_capabilities | self.optional_capabilities:
             raise ValueError("provider.capability_undeclared")
         guarantees: set[str] = set()
         if managed:
-            guarantees.update({
-                "http": {"destination_bound", "budget_enforced"},
-                "filestore": {"scope_bound"},
-                "output_filestore": {"scope_bound", "verified_commit"},
-                "notification": {"recipient_bound"},
-                "archive_decoder": {"isolation_enforced"},
-            }.get(role, ()))
+            guarantees.update(
+                {
+                    "http": {"destination_bound", "budget_enforced"},
+                    "filestore": {"scope_bound"},
+                    "output_filestore": {"scope_bound", "verified_commit"},
+                    "notification": {"recipient_bound"},
+                    "archive_decoder": {"isolation_enforced"},
+                }.get(role, ())
+            )
             if role == "filestore" and self.possible_effects & {
-                "storage.copy", "storage.rename", "storage.remove",
+                "storage.copy",
+                "storage.rename",
+                "storage.remove",
             }:
                 guarantees.add("revision_guarded")
         return CapabilityRequirement(role, guarantees=frozenset(guarantees))
@@ -193,8 +239,15 @@ class Diagnostic:
     incident_id: str | None = None
 
     def __post_init__(self) -> None:
-        for value in (self.code, self.stage, self.component, self.reason_class,
-                      self.evidence_ref, self.reconciliation_owner, self.incident_id):
+        for value in (
+            self.code,
+            self.stage,
+            self.component,
+            self.reason_class,
+            self.evidence_ref,
+            self.reconciliation_owner,
+            self.incident_id,
+        ):
             if value is not None:
                 safe_token(value)
         if self.retry_disposition not in {"none", "after_condition", "reconcile"}:
@@ -204,6 +257,7 @@ class Diagnostic:
 @dataclass(frozen=True, slots=True)
 class EffectKey:
     """Identified effect within one invocation; no global provider authority implied."""
+
     kind: str
     effect_id: str
 
@@ -227,7 +281,12 @@ class EffectReceipt:
         safe_token(self.kind)
         if self.state not in {"confirmed", "failed", "unknown"}:
             raise ValueError("Invalid effect state")
-        for value in (self.effect_id, self.stage, self.guarantee, self.reconciliation_owner):
+        for value in (
+            self.effect_id,
+            self.stage,
+            self.guarantee,
+            self.reconciliation_owner,
+        ):
             if value is not None:
                 safe_token(value)
         if self.reference is not None and not isinstance(self.reference, str):
@@ -237,7 +296,9 @@ class EffectReceipt:
 
     @property
     def key(self) -> EffectKey | None:
-        return EffectKey(self.kind, self.effect_id) if self.effect_id is not None else None
+        return (
+            EffectKey(self.kind, self.effect_id) if self.effect_id is not None else None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,14 +334,18 @@ class OperationResult(Generic[T]):
         if not isinstance(self.definition, OperationDefinition):
             raise ValueError("Invalid operation definition")
         safe_token(self.invocation_id)
-        if (not isinstance(self.diagnostics, tuple)
-                or any(not isinstance(item, Diagnostic) for item in self.diagnostics)
-                or not isinstance(self.used_inputs, tuple)
-                or any(not isinstance(item, UsedInputReceipt) for item in self.used_inputs)
-                or not isinstance(self.effects, tuple)
-                or not isinstance(self.observability, ObservabilitySummary)):
+        if (
+            not isinstance(self.diagnostics, tuple)
+            or any(not isinstance(item, Diagnostic) for item in self.diagnostics)
+            or not isinstance(self.used_inputs, tuple)
+            or any(not isinstance(item, UsedInputReceipt) for item in self.used_inputs)
+            or not isinstance(self.effects, tuple)
+            or not isinstance(self.observability, ObservabilitySummary)
+        ):
             raise ValueError("Invalid operation result evidence envelope")
-        if self.computation is not None and not isinstance(self.computation, ComputationReceipt):
+        if self.computation is not None and not isinstance(
+            self.computation, ComputationReceipt
+        ):
             raise ValueError("Invalid computation evidence")
         if self.outcome not in {
             "succeeded",
@@ -331,6 +396,10 @@ class OperationFailure(Exception):
         outcome: Literal["failed", "cancelled", "unknown"] = "failed",
         component: str | None = None,
     ):
-        self.diagnostic = code if isinstance(code, Diagnostic) else Diagnostic(code, component=component)
+        self.diagnostic = (
+            code
+            if isinstance(code, Diagnostic)
+            else Diagnostic(code, component=component)
+        )
         self.outcome = outcome
         super().__init__(self.diagnostic.code)

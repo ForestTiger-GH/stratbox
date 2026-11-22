@@ -4,26 +4,24 @@
 
 from importlib import import_module as _import_module
 
-_SYMBOL_MODULES = {
-    "BuildEscrowViewsRequest": ".contracts",
-    "DiscoverEscrowRequest": ".contracts",
-    "EscrowHistoryBuildRequest": ".contracts",
-    "EscrowSourceLink": ".contracts",
-    "EscrowViewBuildRequest": ".contracts",
-    "ParseEscrowRequest": ".contracts",
-    "ACQUIRE": ".operations",
-    "DISCOVER": ".operations",
-    "HISTORY": ".operations",
-    "PARSE": ".operations",
-    "RENDER": ".operations",
-    "VIEWS": ".operations",
-    "acquire": ".operations",
-    "build_history": ".operations",
-    "build_views": ".operations",
-    "discover": ".operations",
-    "parse": ".operations",
-    "render_workbook": ".operations",
-}
+_SYMBOL_MODULES = {'ACQUIRE': '.definitions',
+ 'BuildEscrowViewsRequest': '.contracts',
+ 'DISCOVER': '.definitions',
+ 'DiscoverEscrowRequest': '.contracts',
+ 'EscrowHistoryBuildRequest': '.contracts',
+ 'EscrowSourceLink': '.contracts',
+ 'EscrowViewBuildRequest': '.contracts',
+ 'HISTORY': '.definitions',
+ 'PARSE': '.definitions',
+ 'ParseEscrowRequest': '.contracts',
+ 'RENDER': '.definitions',
+ 'VIEWS': '.definitions',
+ 'acquire': '.operations',
+ 'build_history': '.operations',
+ 'build_views': '.operations',
+ 'discover': '.operations',
+ 'parse': '.operations',
+ 'render_workbook': '.operations'}
 __all__ = tuple(_SYMBOL_MODULES)
 
 

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
 from dataclasses import dataclass
 from stratbox.core.storage.filestore import WriteMode
 from stratbox.core.formats.archives.store import PathArchiveReceipt
@@ -9,9 +14,19 @@ from stratbox.shared.data.representation import Representation
 from stratbox.core.execution.contracts import OperationDefinition
 from .cleanup import ApplyCleanupRequest, CleanupPlan, PlanCleanupRequest
 
+from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.core.execution.semantics import (
+    InputPort,
+    OutputPort,
+    OperationSemantics,
+    ProcessingStage,
+)
+
+
 @dataclass(frozen=True, slots=True)
 class StreamArchiveRequest:
     """Publish the approved FRG latest-file selection as a disk-streamed ZIP."""
+
     plan: CleanupPlan
     destination: str
     report_json: bytes | None = None
@@ -19,16 +34,19 @@ class StreamArchiveRequest:
     mode: WriteMode = "immutable"
     expected_revision: str | None = None
 
+
 @dataclass(frozen=True, slots=True)
 class ScanRequest:
     directory: str
     recursive: bool = False
+
 
 @dataclass(frozen=True, slots=True)
 class Catalog:
     files: DataFrame
     latest: DataFrame
     dispatch: DataFrame
+
 
 _STREAM_STORES = frozenset({"filestore", "output_filestore"})
 
@@ -40,16 +58,60 @@ STREAM_ARCHIVE = OperationDefinition(
     PathArchiveReceipt,
     _STREAM_STORES,
     frozenset({"storage.write"}),
+    processing=OperationSemantics(
+        stages=(ProcessingStage.RENDER, ProcessingStage.PRESERVE),
+        summary="Stream selected original reports into a verified archive commit.",
+        inputs=(
+            InputPort("plan", DataContract("frg.cleanup_plan", 1, None), path="plan"),
+        ),
+        outputs=(
+            OutputPort(
+                "archive", DataContract("frg.stored_archive", 1, DataRole.ORIGINALS)
+            ),
+        ),
+        parameters=(
+            "destination",
+            "report_json",
+            "compression",
+            "mode",
+            "expected_revision",
+        ),
+        composition=True,
+    ),
 )
 
 _STORE = frozenset({"filestore"})
 
 _EFFECTS = frozenset({"storage.copy", "storage.rename", "storage.remove"})
 
-SCAN = OperationDefinition("frg.scan", 1, "frg-catalog-1", ScanRequest, Catalog, _STORE)
+SCAN = OperationDefinition(
+    "frg.scan",
+    1,
+    "frg-catalog-1",
+    ScanRequest,
+    Catalog,
+    _STORE,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.DISCOVER, ProcessingStage.INSPECT),
+        summary="Inspect a retained report directory using report-family filename semantics.",
+        outputs=(OutputPort("catalog", DataContract("frg.catalog", 1, None)),),
+        parameters=("directory", "recursive"),
+    ),
+)
 
 PLAN = OperationDefinition(
-    "frg.plan_cleanup", 1, "frg-cleanup-plan-1", PlanCleanupRequest, CleanupPlan, _STORE
+    "frg.plan_cleanup",
+    1,
+    "frg-cleanup-plan-1",
+    PlanCleanupRequest,
+    CleanupPlan,
+    _STORE,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.INSPECT,),
+        summary="Prepare a read-only, revision-bound report cleanup proposal.",
+        outputs=(OutputPort("plan", DataContract("frg.cleanup_plan", 1, None)),),
+        parameters=("directory", "delete_others"),
+    ),
 )
 
 APPLY = OperationDefinition(
@@ -61,9 +123,32 @@ APPLY = OperationDefinition(
     _STORE,
     _EFFECTS,
     partial_allowed=True,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.PUBLISH,),
+        summary="Apply explicitly authorized cleanup effects with per-action receipts.",
+        inputs=(
+            InputPort("plan", DataContract("frg.cleanup_plan", 1, None), path="plan"),
+        ),
+        outputs=(
+            OutputPort("receipts", DataContract("frg.cleanup_receipts", 1, None)),
+        ),
+        parameters=("authorized_directory", "expected_sha256"),
+    ),
 )
 
 ARCHIVE = OperationDefinition(
-    "frg.prepare_archive", 1, "frg-latest-zip-1", CleanupPlan, Representation, _STORE
+    "frg.prepare_archive",
+    1,
+    "frg-latest-zip-1",
+    CleanupPlan,
+    Representation,
+    _STORE,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.RENDER,),
+        summary="Package the selected retained original reports without executing cleanup.",
+        inputs=(InputPort("plan", DataContract("frg.cleanup_plan", 1, None)),),
+        outputs=(
+            OutputPort("archive", DataContract("frg.archive", 1, DataRole.ORIGINALS)),
+        ),
+    ),
 )
-

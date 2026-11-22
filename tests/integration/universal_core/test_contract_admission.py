@@ -42,6 +42,13 @@ from stratbox.domains.registry import operation_catalog
 from stratbox.core.execution import OperationDefinition
 catalog = operation_catalog()
 descriptions = catalog.describe()
+catalog.page(stage='extract', limit=5)
+catalog.compatible_next('cbr.offices.acquire', 2)
+catalog.coverage('cbr.service_network.bank_offices')
+from stratbox.core.execution.machine import wire_schemas
+for ref in catalog.references:
+    if ref.wire_contract_ref:
+        wire_schemas(ref.operation_id, ref.contract_version, catalog=catalog)
 registered = {(d['operation_id'], d['contract_version']) for d in descriptions}
 assert len(registered) >= 60
 modules = [name for name in sys.modules if name.startswith('stratbox.')]

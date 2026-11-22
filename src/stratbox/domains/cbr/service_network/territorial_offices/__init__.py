@@ -4,26 +4,24 @@
 
 from importlib import import_module as _import_module
 
-_SYMBOL_MODULES = {
-    "CompareReleaseRequest": "stratbox.shared.data.releases",
-    "ReadReleaseRequest": "stratbox.shared.data.releases",
-    "ReleaseLink": "stratbox.shared.data.releases",
-    "ACQUIRE": ".operations",
-    "CAPTURE": ".operations",
-    "COMPARE": ".operations",
-    "DISCOVER": ".operations",
-    "PARSE": ".operations",
-    "READ": ".operations",
-    "DiscoverOfficesRegRequest": ".operations",
-    "OfficesRegCandidates": ".operations",
-    "ParseOfficesRegRequest": ".operations",
-    "acquire": ".operations",
-    "capture": ".operations",
-    "compare": ".operations",
-    "discover": ".operations",
-    "parse": ".operations",
-    "read_representation": ".operations",
-}
+_SYMBOL_MODULES = {'ACQUIRE': '.definitions',
+ 'CAPTURE': '.definitions',
+ 'COMPARE': '.definitions',
+ 'CompareReleaseRequest': 'stratbox.shared.data.releases',
+ 'DISCOVER': '.definitions',
+ 'DiscoverOfficesRegRequest': '.definitions',
+ 'OfficesRegCandidates': '.definitions',
+ 'PARSE': '.definitions',
+ 'ParseOfficesRegRequest': '.definitions',
+ 'READ': '.definitions',
+ 'ReadReleaseRequest': 'stratbox.shared.data.releases',
+ 'ReleaseLink': 'stratbox.shared.data.releases',
+ 'acquire': '.operations',
+ 'capture': '.operations',
+ 'compare': '.operations',
+ 'discover': '.operations',
+ 'parse': '.operations',
+ 'read_representation': '.operations'}
 __all__ = tuple(_SYMBOL_MODULES)
 
 

@@ -36,8 +36,8 @@ def test_independent_series_keep_published_operation_contracts():
 
 
 def test_shared_operations_are_owned_by_common_not_other_series():
-    assert debt_operations._TABLE_LIMITS is operation_helpers._TABLE_LIMITS
-    assert issuance_operations._TABLE_LIMITS is operation_helpers._TABLE_LIMITS
+    assert debt_operations.PARSE.limits is operation_helpers._TABLE_LIMITS
+    assert issuance_operations.PARSE.limits is operation_helpers._TABLE_LIMITS
     assert debt_operations._seal_pivots is operation_helpers._seal_pivots
     assert issuance_operations._seal_pivots is operation_helpers._seal_pivots
     assert debt_operations._select_industry is issuance_operations._select_industry

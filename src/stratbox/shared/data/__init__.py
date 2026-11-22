@@ -6,3 +6,4 @@ from .observations import MetricRef, Observation, ObservationBatch, PeriodRef, S
 from .representation import Representation
 from .releases import ReleaseQualification
 from .tables import table_identity
+from .processing import DataContract, DataRole

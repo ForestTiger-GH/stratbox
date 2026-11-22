@@ -93,7 +93,9 @@ def _validated_domain_snapshot() -> tuple[
                     f"{original_owner}:{owner}"
                 )
             refs.append(ref)
-    return tuple(registrations), OperationCatalog(tuple(refs))
+    return tuple(registrations), OperationCatalog.from_registrations(
+        *(declaration for _, declaration in registrations)
+    )
 
 
 def domain_catalog() -> OperationCatalog:

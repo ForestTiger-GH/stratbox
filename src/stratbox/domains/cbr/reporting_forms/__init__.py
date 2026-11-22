@@ -4,29 +4,27 @@
 
 from importlib import import_module as _import_module
 
-_SYMBOL_MODULES = {
-    "BankSelection": ".contracts",
-    "BuildFormDataRequest": ".contracts",
-    "FormData": ".contracts",
-    "FormKey": ".contracts",
-    "FormSnapshot": ".contracts",
-    "FormSource": ".contracts",
-    "FormViews": ".contracts",
-    "ParseFormRequest": ".contracts",
-    "SelectFormSourcesRequest": ".contracts",
-    "ACQUIRE": ".operations",
-    "BUILD": ".operations",
-    "PARSE": ".operations",
-    "RENDER": ".operations",
-    "SELECT": ".operations",
-    "VIEWS": ".operations",
-    "acquire": ".operations",
-    "build_form_data": ".operations",
-    "build_form_views": ".operations",
-    "parse_form": ".operations",
-    "render_workbook": ".operations",
-    "select_sources": ".operations",
-}
+_SYMBOL_MODULES = {'ACQUIRE': '.definitions',
+ 'BUILD': '.definitions',
+ 'BankSelection': '.contracts',
+ 'BuildFormDataRequest': '.contracts',
+ 'FormData': '.contracts',
+ 'FormKey': '.contracts',
+ 'FormSnapshot': '.contracts',
+ 'FormSource': '.contracts',
+ 'FormViews': '.contracts',
+ 'PARSE': '.definitions',
+ 'ParseFormRequest': '.contracts',
+ 'RENDER': '.definitions',
+ 'SELECT': '.definitions',
+ 'SelectFormSourcesRequest': '.contracts',
+ 'VIEWS': '.definitions',
+ 'acquire': '.operations',
+ 'build_form_data': '.operations',
+ 'build_form_views': '.operations',
+ 'parse_form': '.operations',
+ 'render_workbook': '.operations',
+ 'select_sources': '.operations'}
 __all__ = tuple(_SYMBOL_MODULES)
 
 

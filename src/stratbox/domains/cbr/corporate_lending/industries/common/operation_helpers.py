@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from dataclasses import asdict, replace
 
-from stratbox.core.limits import ExecutionBudget
 from stratbox.core.execution import OperationFailure
 from stratbox.core.operations.tables import record_tables
 
-_TABLE_LIMITS = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
+from .limits import TABLE_LIMITS as _TABLE_LIMITS
 
 
 def _stream_metadata(request):

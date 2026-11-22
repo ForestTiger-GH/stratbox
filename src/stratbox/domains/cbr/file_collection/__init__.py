@@ -4,28 +4,26 @@
 
 from importlib import import_module as _import_module
 
-_SYMBOL_MODULES = {
-    "CbrFileRegistryItem": ".contracts",
-    "CollectedFile": ".contracts",
-    "Collection": ".contracts",
-    "CollectFailure": ".contracts",
-    "CollectFilesRequest": ".contracts",
-    "CollectToStoreRequest": ".contracts",
-    "DiscoverFilesRequest": ".contracts",
-    "PrepareArchiveRequest": ".contracts",
-    "StoreArchiveRequest": ".contracts",
-    "StoredCollectedFile": ".contracts",
-    "ARCHIVE": ".operations",
-    "ARCHIVE_TO_STORE": ".operations",
-    "COLLECT": ".operations",
-    "COLLECT_TO_STORE": ".operations",
-    "DISCOVER": ".operations",
-    "archive_to_store": ".operations",
-    "collect_raw": ".operations",
-    "collect_to_store": ".operations",
-    "discover": ".operations",
-    "prepare_archive": ".operations",
-}
+_SYMBOL_MODULES = {'ARCHIVE': '.definitions',
+ 'ARCHIVE_TO_STORE': '.definitions',
+ 'COLLECT': '.definitions',
+ 'COLLECT_TO_STORE': '.definitions',
+ 'CbrFileRegistryItem': '.contracts',
+ 'CollectFailure': '.contracts',
+ 'CollectFilesRequest': '.contracts',
+ 'CollectToStoreRequest': '.contracts',
+ 'CollectedFile': '.contracts',
+ 'Collection': '.contracts',
+ 'DISCOVER': '.definitions',
+ 'DiscoverFilesRequest': '.contracts',
+ 'PrepareArchiveRequest': '.contracts',
+ 'StoreArchiveRequest': '.contracts',
+ 'StoredCollectedFile': '.contracts',
+ 'archive_to_store': '.operations',
+ 'collect_raw': '.operations',
+ 'collect_to_store': '.operations',
+ 'discover': '.operations',
+ 'prepare_archive': '.operations'}
 __all__ = tuple(_SYMBOL_MODULES)
 
 

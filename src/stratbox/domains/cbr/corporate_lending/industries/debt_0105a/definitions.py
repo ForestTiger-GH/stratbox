@@ -4,8 +4,33 @@ from __future__ import annotations
 
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.core.execution.contracts import OperationDefinition
-from ..common.operation_helpers import _TABLE_LIMITS
-from .contracts import BuildIndustryStreamRequest, CalculateApkRequest, Cbr0105ADebtCorpApkCalculationResult, Cbr0105ADebtCorpIndustryWorkbookResult, Cbr0105ADebtCorpPivotSetResult, Cbr0105ADebtCorpPivotWorkbookResult, Cbr0105ADebtCorpSourceLink, Cbr0105ADebtCorpStreamResult, DiscoverIndustriesRequest, IndustryWorkbooksResult, ParseIndustryRequest, ParsedCbr0105ADebtCorpFile, PivotInput, RenderIndustriesRequest, RenderIndustryRequest, RenderPivotRequest
+from ..common.limits import TABLE_LIMITS as _TABLE_LIMITS
+from .contracts import (
+    BuildIndustryStreamRequest,
+    CalculateApkRequest,
+    Cbr0105ADebtCorpApkCalculationResult,
+    Cbr0105ADebtCorpIndustryWorkbookResult,
+    Cbr0105ADebtCorpPivotSetResult,
+    Cbr0105ADebtCorpPivotWorkbookResult,
+    Cbr0105ADebtCorpSourceLink,
+    Cbr0105ADebtCorpStreamResult,
+    DiscoverIndustriesRequest,
+    IndustryWorkbooksResult,
+    ParseIndustryRequest,
+    ParsedCbr0105ADebtCorpFile,
+    PivotInput,
+    RenderIndustriesRequest,
+    RenderIndustryRequest,
+    RenderPivotRequest,
+)
+
+from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.core.execution.semantics import (
+    InputPort,
+    OutputPort,
+    OperationSemantics,
+    ProcessingStage,
+)
 
 _DATASET = "cbr.industries.0105a"
 
@@ -14,8 +39,29 @@ _METHOD = "cbr-0105a-workbook-2"
 _HTTP = frozenset({"http"})
 
 DISCOVER = OperationDefinition(
-    f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple,
+    f"{_DATASET}.discover",
+    1,
+    "cbr-0105a-index-1",
+    DiscoverIndustriesRequest,
+    tuple,
     optional_capabilities=frozenset({"http"}),
+    processing=OperationSemantics(
+        stages=(ProcessingStage.DISCOVER,),
+        summary="Discover the selected stock or flow publication series.",
+        inputs=(
+            InputPort(
+                "index",
+                DataContract(
+                    "cbr.industries.0105a.index_material", 1, DataRole.ORIGINALS
+                ),
+                path="index",
+                required=False,
+            ),
+        ),
+        outputs=(
+            OutputPort("sources", DataContract("cbr.industries.0105a.index", 1, None)),
+        ),
+    ),
 )
 
 ACQUIRE = OperationDefinition(
@@ -25,11 +71,59 @@ ACQUIRE = OperationDefinition(
     Cbr0105ADebtCorpSourceLink,
     AcquiredSource,
     _HTTP,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.ACQUIRE,),
+        summary="Acquire a selected industry workbook under its own publication contract.",
+        inputs=(
+            InputPort("source", DataContract("cbr.industries.0105a.source", 1, None)),
+        ),
+        outputs=(
+            OutputPort(
+                "source",
+                DataContract("cbr.industries.0105a.original", 1, DataRole.ORIGINALS),
+                path="payload",
+                qualifications=frozenset(("source.cbr.industries.0105a",)),
+            ),
+            OutputPort(
+                "payload",
+                DataContract("source.payload", 1, DataRole.ORIGINALS),
+                path="payload",
+            ),
+        ),
+    ),
 )
 
 PARSE = OperationDefinition(
-    f"{_DATASET}.parse", 3, _METHOD + "-selective", ParseIndustryRequest, ParsedCbr0105ADebtCorpFile,
+    f"{_DATASET}.parse",
+    3,
+    _METHOD + "-selective",
+    ParseIndustryRequest,
+    ParsedCbr0105ADebtCorpFile,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.EXTRACT,),
+        summary="Extract source-local industry data with selection and validation scope.",
+        inputs=(
+            InputPort(
+                "source",
+                DataContract("cbr.industries.0105a.original", 1, DataRole.ORIGINALS),
+                path="payload",
+                qualifications=frozenset(("source.cbr.industries.0105a",)),
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "file",
+                DataContract("cbr.industries.0105a.parsed_file", 1, DataRole.EXTRACTS),
+            ),
+            OutputPort(
+                "stream",
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                path="df_stream",
+            ),
+        ),
+        parameters=("source_name", "source", "selection"),
+    ),
 )
 
 BUILD_STREAM = OperationDefinition(
@@ -40,6 +134,34 @@ BUILD_STREAM = OperationDefinition(
     Cbr0105ADebtCorpStreamResult,
     partial_allowed=True,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.EXTRACT, ProcessingStage.CALCULATE),
+        composition=True,
+        summary="Parse supplied workbooks and combine a source-series stream with coverage evidence.",
+        inputs=(
+            InputPort(
+                "sources",
+                DataContract(
+                    "cbr.industries.0105a.parse_requests", 1, DataRole.ORIGINALS
+                ),
+                path="sources",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "stream",
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                path="df_stream",
+            ),
+            OutputPort(
+                "result",
+                DataContract(
+                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                ),
+            ),
+        ),
+        parameters=("continue_on_error", "selection"),
+    ),
 )
 
 CALCULATE_APK = OperationDefinition(
@@ -49,6 +171,25 @@ CALCULATE_APK = OperationDefinition(
     CalculateApkRequest,
     Cbr0105ADebtCorpApkCalculationResult,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.CALCULATE,),
+        summary="Calculate the APK aggregate while retaining its source-series identity.",
+        inputs=(
+            InputPort(
+                "stream",
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                path="stream",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "stream",
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                path="df_stream",
+                qualifications=frozenset(("derived.apk",)),
+            ),
+        ),
+    ),
 )
 
 PIVOT = OperationDefinition(
@@ -58,6 +199,24 @@ PIVOT = OperationDefinition(
     PivotInput,
     Cbr0105ADebtCorpPivotSetResult,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.VIEW,),
+        summary="Construct industry pivots at the requested grain.",
+        inputs=(
+            InputPort(
+                "stream",
+                DataContract("cbr.industries.0105a.stream", 1, DataRole.EXTRACTS),
+                path="stream",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "pivots",
+                DataContract("cbr.industries.0105a.pivots", 1, DataRole.PRODUCTS),
+            ),
+        ),
+        parameters=("pivot", "source", "industry_code"),
+    ),
 )
 
 RENDER_PIVOTS = OperationDefinition(
@@ -67,6 +226,25 @@ RENDER_PIVOTS = OperationDefinition(
     RenderPivotRequest,
     Cbr0105ADebtCorpPivotWorkbookResult,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.RENDER,),
+        summary="Render supplied industry pivots into a workbook.",
+        inputs=(
+            InputPort(
+                "pivots",
+                DataContract("cbr.industries.0105a.pivots", 1, DataRole.PRODUCTS),
+                path="tables",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "workbook",
+                DataContract("cbr.industries.0105a.workbook", 1, DataRole.PRODUCTS),
+                path="representation",
+            ),
+        ),
+        parameters=("format",),
+    ),
 )
 
 RENDER_INDUSTRY = OperationDefinition(
@@ -76,10 +254,54 @@ RENDER_INDUSTRY = OperationDefinition(
     RenderIndustryRequest,
     Cbr0105ADebtCorpIndustryWorkbookResult,
     limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.RENDER,),
+        summary="Render one industry workbook from supplied data.",
+        inputs=(
+            InputPort(
+                "stream",
+                DataContract(
+                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                ),
+                path="stream",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "workbook",
+                DataContract("cbr.industries.0105a.workbook", 1, DataRole.PRODUCTS),
+                path="representation",
+            ),
+        ),
+        parameters=("format",),
+    ),
 )
 
 RENDER_INDUSTRIES = OperationDefinition(
-    f"{_DATASET}.render_industries", 1, "cbr-0105a-industry-batch-1",
-    RenderIndustriesRequest, IndustryWorkbooksResult, limits=_TABLE_LIMITS,
+    f"{_DATASET}.render_industries",
+    1,
+    "cbr-0105a-industry-batch-1",
+    RenderIndustriesRequest,
+    IndustryWorkbooksResult,
+    limits=_TABLE_LIMITS,
+    processing=OperationSemantics(
+        stages=(ProcessingStage.RENDER,),
+        summary="Render independently qualified industry workbooks from supplied data.",
+        inputs=(
+            InputPort(
+                "stream",
+                DataContract(
+                    "cbr.industries.0105a.stream_result", 1, DataRole.EXTRACTS
+                ),
+                path="stream",
+            ),
+        ),
+        outputs=(
+            OutputPort(
+                "workbooks",
+                DataContract("cbr.industries.0105a.workbooks", 1, DataRole.PRODUCTS),
+            ),
+        ),
+        parameters=("industry_codes", "include_metadata_sheet"),
+    ),
 )
-

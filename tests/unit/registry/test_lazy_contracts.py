@@ -35,10 +35,15 @@ def test_machine_contract_and_codec_must_be_registered_together():
         replace(ref, wire_contract_ref=None)
 
 
-def test_read_only_contract_cannot_advertise_effectful_work():
+def test_read_only_contract_cannot_advertise_effectful_work(monkeypatch):
+    from stratbox.core.execution import catalog as implementation
     catalog = operation_catalog()
-    effect = catalog.reference("source.save_original", 1)
     parse = catalog.reference("cbr.offices.parse", 1)
-    forged = replace(parse, definition_ref=effect.definition_ref)
-    with pytest.raises(RegistryError, match="registry.contract_mismatch"):
+    original_load = implementation._load
+    definition = replace(catalog.get(parse.operation_id, 1), possible_effects=frozenset({"storage.write"}))
+    monkeypatch.setattr(implementation, "_load", lambda ref: (
+        definition if ref == "hypothetical.definitions:PARSE" else original_load(ref)
+    ))
+    forged = replace(parse, definition_ref="hypothetical.definitions:PARSE")
+    with pytest.raises(RegistryError, match="registry.read_only_effects"):
         OperationCatalog((forged,)).describe()

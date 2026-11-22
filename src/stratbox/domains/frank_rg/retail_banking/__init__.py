@@ -4,26 +4,24 @@
 
 from importlib import import_module as _import_module
 
-_SYMBOL_MODULES = {
-    "APPLY": ".api",
-    "ARCHIVE": ".api",
-    "PLAN": ".api",
-    "SCAN": ".api",
-    "STREAM_ARCHIVE": ".api",
-    "Catalog": ".api",
-    "ScanRequest": ".api",
-    "StreamArchiveRequest": ".api",
-    "apply_cleanup": ".api",
-    "plan_cleanup": ".api",
-    "prepare_archive": ".api",
-    "prepare_archive_to_store": ".api",
-    "scan": ".api",
-    "ApplyCleanupRequest": ".cleanup",
-    "CleanupAction": ".cleanup",
-    "CleanupPlan": ".cleanup",
-    "CleanupReceipt": ".cleanup",
-    "PlanCleanupRequest": ".cleanup",
-}
+_SYMBOL_MODULES = {'APPLY': '.definitions',
+ 'ARCHIVE': '.definitions',
+ 'ApplyCleanupRequest': '.cleanup',
+ 'Catalog': '.definitions',
+ 'CleanupAction': '.cleanup',
+ 'CleanupPlan': '.cleanup',
+ 'CleanupReceipt': '.cleanup',
+ 'PLAN': '.definitions',
+ 'PlanCleanupRequest': '.cleanup',
+ 'SCAN': '.definitions',
+ 'STREAM_ARCHIVE': '.definitions',
+ 'ScanRequest': '.definitions',
+ 'StreamArchiveRequest': '.definitions',
+ 'apply_cleanup': '.api',
+ 'plan_cleanup': '.api',
+ 'prepare_archive': '.api',
+ 'prepare_archive_to_store': '.api',
+ 'scan': '.api'}
 __all__ = tuple(_SYMBOL_MODULES)
 
 
