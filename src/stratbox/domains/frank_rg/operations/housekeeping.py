@@ -12,7 +12,11 @@ from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, 
 from stratbox.core.limits import BudgetError
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.snapshots import SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.material_collections import CollectionDisposition, CollectionManifest, CollectionMember, encode_collection
+from stratbox.shared.source_publications import SourceAssetIdentity
 from stratbox.core.execution import (
     Completion, EffectReceipt, ExecutionContext, OperationFailure, OperationResult, run,
 )
@@ -29,6 +33,55 @@ from ..publications.cleanup import (
 from .housekeeping_definitions import (
     APPLY, ARCHIVE, PLAN, STREAM_ARCHIVE, StreamArchiveRequest,
 )
+
+
+def _archive_manifest(plan: CleanupPlan, report_json: bytes | None = None) -> bytes:
+    """Describe the logical selected originals independently of their source paths."""
+    from .bindings import bind_source
+    from ..publications.materials import MEDIA_TYPES
+    from ..publications.naming import _canonical_period, build_internal_file_name
+
+    members, inputs = [], []
+    try:
+        for action in sorted((item for item in plan.actions if item.kind != "remove"),
+                             key=lambda item: (item.source_id, item.destination)):
+            name = action.destination.replace("\\", "/").rsplit("/", 1)[-1]
+            stem, extension = name.rsplit(".", 1)
+            interpreted = _canonical_period(stem)
+            bound = bind_source(action.source_id)
+            if interpreted is None or interpreted[2] is None:
+                raise ValueError("frg.archive.period_invalid")
+            period = interpreted[2]
+            if name != build_internal_file_name(period, bound.rule, format=extension, profile=bound.parent.naming):
+                raise ValueError("frg.archive.name_mismatch")
+            issue = (period.snapshot_date.isoformat() if period.week_no is None
+                     else f"{period.snapshot_date:%Y-%m}-week-{period.week_no}")
+            asset = SourceAssetIdentity(action.source_id, issue, extension)
+            media_type = MEDIA_TYPES[extension]
+            members.append(CollectionMember(action.source_id, name,
+                DataContract("frg.original", 1, DataRole.ORIGINALS), action.source.identity, media_type, asset))
+            inputs.append(UsedInputReceipt("selected_original", action.source.identity,
+                media_type, "reference_only", source_id=action.source_id))
+        if not members:
+            raise ValueError("archive.selection_invalid")
+        if report_json is not None:
+            if not isinstance(report_json, bytes):
+                raise ValueError("archive.extra_invalid")
+            identity = ByteIdentity.of(report_json)
+            members.append(CollectionMember("selection_report", "selection_report.json",
+                DataContract("frg.selection_report", 1), identity, "application/json"))
+        version = ByteIdentity.of(canonical_manifest_bytes([
+            {"key": member.key, "name": member.name, "sha256": member.identity.sha256, "size": member.identity.size,
+             "issue": member.source_asset.issue_id if member.source_asset else None}
+            for member in members
+        ])).sha256
+        value = CollectionManifest("frg.selected-reports", version, tuple(members),
+            tuple(CollectionDisposition(member.key, "completed") for member in members),
+            SnapshotCoverage("complete", "All selected archive members; publisher-wide report inventory is unspecified."),
+            tuple(inputs))
+        return encode_collection(value)
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise OperationFailure("archive.manifest_invalid") from None
 
 
 def plan_cleanup(
@@ -254,8 +307,9 @@ def prepare_archive(
                 )
             )
         try:
+            files["manifest.json"] = _archive_manifest(req)
             return Representation(
-                "frg.latest-zip", 1, "application/zip", zip_bytes(files, limits=limits, budget=invocation.budget)
+                "frg.latest-zip", 2, "application/zip", zip_bytes(files, limits=limits, budget=invocation.budget)
             )
         except ArchiveError:
             raise OperationFailure("archive.preparation_failed") from None
@@ -302,10 +356,13 @@ def prepare_archive_to_store(
                 name = action.destination.replace("\\", "/").rsplit("/", 1)[-1]
                 entries.append(ArchiveEntry(action.source.path, name, action.source.identity))
             invocation.stage("prepare_archive")
+            extras = {"manifest.json": _archive_manifest(current, req.report_json)}
+            if req.report_json is not None:
+                extras["selection_report.json"] = req.report_json
             result = zip_to_store(
                 tuple(entries), req.destination, source_store=store, output_store=output_store,
                 budget=invocation.budget, checkpoint=invocation.check_cancelled,
-                extras={"selection_report.json": req.report_json} if req.report_json is not None else None,
+                extras=extras,
                 compression=req.compression, mode=req.mode, expected_revision=req.expected_revision,
                 plan_identity=current.identity, operation_id=STREAM_ARCHIVE.operation_id,
                 require_admission=invocation.context.profile == "managed",

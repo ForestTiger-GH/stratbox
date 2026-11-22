@@ -34,8 +34,8 @@ _STREAM_STORES = frozenset({"filestore", "output_filestore"})
 
 STREAM_ARCHIVE = OperationDefinition(
     "frg.prepare_archive_to_store",
-    2,
-    "frg-verified-streaming-zip-profile-3",
+    3,
+    "frg-verified-streaming-manifest-zip-profile-4",
     StreamArchiveRequest,
     PathArchiveReceipt,
     _STREAM_STORES,
@@ -48,7 +48,7 @@ STREAM_ARCHIVE = OperationDefinition(
         ),
         outputs=(
             OutputPort(
-                "archive", DataContract("frg.stored_archive", 1, DataRole.ORIGINALS)
+                "archive", DataContract("frg.stored_archive", 2, DataRole.PRODUCTS)
             ),
         ),
         parameters=(
@@ -105,8 +105,8 @@ APPLY = OperationDefinition(
 
 ARCHIVE = OperationDefinition(
     "frg.prepare_archive",
-    1,
-    "frg-latest-zip-profile-2",
+    2,
+    "frg-latest-manifest-zip-profile-3",
     CleanupPlan,
     Representation,
     _STORE,
@@ -115,7 +115,7 @@ ARCHIVE = OperationDefinition(
         summary="Package the selected retained original reports without executing cleanup.",
         inputs=(InputPort("plan", DataContract("frg.cleanup_plan", 1, None)),),
         outputs=(
-            OutputPort("archive", DataContract("frg.archive", 1, DataRole.ORIGINALS)),
+            OutputPort("archive", DataContract("frg.archive", 2, DataRole.PRODUCTS)),
         ),
     ),
 )

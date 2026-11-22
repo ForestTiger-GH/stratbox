@@ -118,3 +118,11 @@ archive functions create and verify ZIP bytes. Use `prepare_archive` for a small
 in-memory result and `prepare_archive_to_store` for staged streaming to a caller
 selected store. The latter supports large files, immutable retries and conditional
 replacement. See the [streaming archive usage](../../../../docs/current-how/frg-streaming-archive.md).
+
+Both archive routes include `manifest.json` with the selected original members,
+their logical series and issues, byte identities, media types and completed
+dispositions. Its logical identity excludes source directories, provider names,
+file revisions and cleanup plan locations. The optional `selection_report.json`
+remains a separate supplemental member with its own identity. Complete archive
+membership describes the selected reports; publisher inventory coverage remains
+unspecified. Packaging preserves every selected original's exact bytes.

@@ -45,7 +45,7 @@ def test_large_frg_archive_streams_to_disk_with_report(tmp_path):
     assert data.exists()
     expected = next(action.destination.split("/")[-1] for action in plan.actions if action.kind != "remove")
     with ZipFile(data) as package:
-        assert set(package.namelist()) == {expected, "selection_report.json"}
+        assert set(package.namelist()) == {expected, "selection_report.json", "manifest.json"}
         assert package.getinfo(expected).file_size == 105 * 1024 * 1024
         assert package.read("selection_report.json") == b'{"status":"complete"}'
     digest = sha256()
@@ -248,6 +248,6 @@ def test_in_memory_archive_reads_renamed_destination_with_original_bytes(tmp_pat
     archived = frg.prepare_archive(planned.value, store=store)
     assert archived.outcome == "succeeded", archived.diagnostics
     with ZipFile(BytesIO(archived.value.data)) as package:
-        assert package.namelist() == [LATEST]
+        assert set(package.namelist()) == {LATEST, "manifest.json"}
         assert package.read(LATEST) == original
     assert {item.source_id for item in archived.used_inputs} == {"frg.express.issuance"}

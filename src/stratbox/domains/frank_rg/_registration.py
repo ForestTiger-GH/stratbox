@@ -19,8 +19,8 @@ REGISTRATION = OperationRegistration(
         OperationRef("frg.plan_cleanup", 1, _BASE + ".housekeeping_definitions:PLAN", _BASE + ".housekeeping:plan_cleanup",
                      _BASE + ".machine:PLAN_CODEC", _BASE + ".machine_contracts:PLAN_CONTRACT"),
         OperationRef("frg.apply_cleanup", 1, _BASE + ".housekeeping_definitions:APPLY", _BASE + ".housekeeping:apply_cleanup"),
-        OperationRef("frg.prepare_archive", 1, _BASE + ".housekeeping_definitions:ARCHIVE", _BASE + ".housekeeping:prepare_archive"),
-        OperationRef("frg.prepare_archive_to_store", 2, _BASE + ".housekeeping_definitions:STREAM_ARCHIVE", _BASE + ".housekeeping:prepare_archive_to_store"),
+        OperationRef("frg.prepare_archive", 2, _BASE + ".housekeeping_definitions:ARCHIVE", _BASE + ".housekeeping:prepare_archive"),
+        OperationRef("frg.prepare_archive_to_store", 3, _BASE + ".housekeeping_definitions:STREAM_ARCHIVE", _BASE + ".housekeeping:prepare_archive_to_store"),
     ),
     stages=(
         StageDeclaration(ProcessingStage.PRESERVE, "delegated", "frg.original_storage_shared",
