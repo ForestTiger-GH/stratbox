@@ -68,13 +68,13 @@ COLLECT = OperationDefinition(
 
 ARCHIVE = OperationDefinition(
     "cbr.file_collector.prepare_archive",
-    1,
-    "cbr-file-zip-1",
+    2,
+    "cbr-file-manifest-zip-2",
     PrepareArchiveRequest,
     Representation,
     processing=OperationSemantics(
         stages=(ProcessingStage.RENDER,),
-        summary="Package original files without changing their processing role.",
+        summary="Render a manifest-bearing archive whose members retain their original role.",
         inputs=(
             InputPort(
                 "files",
@@ -87,7 +87,7 @@ ARCHIVE = OperationDefinition(
         outputs=(
             OutputPort(
                 "archive",
-                DataContract("cbr.file_collector.archive", 1, DataRole.ORIGINALS),
+                DataContract("cbr.file_collector.archive", 2, DataRole.PRODUCTS),
             ),
         ),
     ),
@@ -123,8 +123,8 @@ COLLECT_TO_STORE = OperationDefinition(
 
 ARCHIVE_TO_STORE = OperationDefinition(
     "cbr.file_collector.archive_to_store",
-    1,
-    "cbr-file-stream-zip-1",
+    2,
+    "cbr-file-stream-manifest-zip-2",
     StoreArchiveRequest,
     PathArchiveReceipt,
     frozenset({"filestore", "output_filestore"}),
@@ -148,7 +148,7 @@ ARCHIVE_TO_STORE = OperationDefinition(
             OutputPort(
                 "archive",
                 DataContract(
-                    "cbr.file_collector.stored_archive", 1, DataRole.ORIGINALS
+                    "cbr.file_collector.stored_archive", 2, DataRole.PRODUCTS
                 ),
             ),
         ),

@@ -14,6 +14,7 @@ class CbrFileRegistryItem:
     url: str
     title: str = ""
     expected_file_name: str | None = None
+    series_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

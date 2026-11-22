@@ -6,6 +6,8 @@ from openpyxl import Workbook
 
 from stratbox.core.network import HttpResponse
 from stratbox.domains.cbr import file_collection as collector
+from stratbox.shared.material_collections import decode_collection
+from stratbox.shared.data.processing import DataRole
 
 
 class ArchiveTransport:
@@ -56,5 +58,8 @@ def test_collection_partial_receipt_and_repeatable_archive():
     assert archive.outcome == "succeeded"
     assert archive.value == collector.prepare_archive(request).value
     with ZipFile(BytesIO(archive.value.data)) as packed:
-        assert len(set(packed.namelist())) == 2
-        assert all(packed.read(name) == bytes_received for name in packed.namelist())
+        assert len(set(packed.namelist())) == 3
+        manifest = decode_collection(packed.read("manifest.json"))
+        assert manifest.complete and manifest.coverage.status == "unknown"
+        assert all(member.contract.role is DataRole.ORIGINALS for member in manifest.members)
+        assert all(packed.read(member.name) == bytes_received for member in manifest.members)

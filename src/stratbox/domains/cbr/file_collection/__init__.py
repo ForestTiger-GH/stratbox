@@ -24,6 +24,9 @@ _SYMBOL_MODULES = {'ARCHIVE': '.definitions',
  'collect_to_store': '.operations',
  'discover': '.operations',
  'prepare_archive': '.operations'}
+_SYMBOL_MODULES.update({name: '.material_definitions' for name in
+    ('CollectMaterial', 'CollectMaterialsRequest', 'MaterialCollection')})
+_SYMBOL_MODULES['collect_materials'] = '.materials'
 __all__ = tuple(_SYMBOL_MODULES)
 
 

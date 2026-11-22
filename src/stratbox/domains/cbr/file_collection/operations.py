@@ -13,6 +13,7 @@ from stratbox.core.network import HttpTransport, StreamingHttpTransport
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.material_collections import encode_collection
 from stratbox.core.execution import (
     Completion, ExecutionContext, OperationFailure, OperationResult, run,
 )
@@ -29,13 +30,14 @@ from .contracts import (
     DiscoverFilesRequest, PrepareArchiveRequest, StoreArchiveRequest, StoredCollectedFile,
 )
 from .registry import DEFAULT_CBR_FILE_SOURCES
+from .manifests import archive_manifest
 
 from .definitions import (
     ARCHIVE, ARCHIVE_TO_STORE, COLLECT, COLLECT_TO_STORE, DISCOVER,
 )
 
 _ROOTS = ("/vfs/statistics/", "/content/document/file/")
-_ARCHIVE_LIMITS = ArchiveLimits(100, 256 * 1024 * 1024, WORKBOOK_LIMIT, 256 * 1024 * 1024)
+_ARCHIVE_LIMITS = ArchiveLimits(10_000, 256 * 1024 * 1024, WORKBOOK_LIMIT, 256 * 1024 * 1024)
 
 
 def discover(request: DiscoverFilesRequest, *, context: ExecutionContext | None = None
@@ -188,9 +190,12 @@ def prepare_archive(request: PrepareArchiveRequest, *,
                     context: ExecutionContext | None = None) -> OperationResult[Representation]:
     def work(req, invocation):
         invocation.stage("prepare_archive")
-        files = {}
-        names = set()
-        for item in req.files:
+        try:
+            manifest = archive_manifest(req.files)
+        except ValueError as error:
+            raise OperationFailure(str(error)) from None
+        files = {"manifest.json": encode_collection(manifest)}
+        for item, member in zip(req.files, manifest.members):
             invocation.check_cancelled()
             invocation.budget.charge("objects", 1)
             invocation.budget.charge("input_bytes", item.source.payload.identity.size)
@@ -198,20 +203,13 @@ def prepare_archive(request: PrepareArchiveRequest, *,
                 raise OperationFailure("request.archive_filename_invalid")
             if item.source.receipt.identity != item.source.payload.identity:
                 raise OperationFailure("input.digest_mismatch")
-            file = PurePosixPath(item.file_name)
-            name = file.name
-            index = 2
-            while name.casefold() in names:
-                name = f"{file.stem}_{index}{file.suffix}"
-                index += 1
-            names.add(name.casefold())
-            files[name] = item.source.payload.data
+            files[member.name] = item.source.payload.data
             invocation.use(UsedInputReceipt.for_payload(item.source.payload, item.source_id))
         try:
             data = zip_bytes(files, limits=_ARCHIVE_LIMITS, budget=invocation.budget)
         except ArchiveError as error:
             raise OperationFailure(str(error)) from None
-        return Representation("cbr.file_collector.original-zip", 1, "application/zip", data)
+        return Representation("cbr.file_collector.original-zip", 2, "application/zip", data)
 
     return run(ARCHIVE, request, work, context=context)
 
@@ -222,8 +220,12 @@ def archive_to_store(request: StoreArchiveRequest, *, source_store=None, output_
         source_store = invocation.provider("filestore", given_source_store)
         output_store = invocation.provider("output_filestore", given_output_store)
         invocation.stage("prepare_archive")
+        try:
+            manifest = archive_manifest(req.files)
+        except ValueError as error:
+            raise OperationFailure(str(error)) from None
         entries = []
-        for item in req.files:
+        for item, member in zip(req.files, manifest.members):
             invocation.check_cancelled()
             material = item.source.material
             if material is None or material.store_id != store_identity(source_store):
@@ -235,12 +237,13 @@ def archive_to_store(request: StoreArchiveRequest, *, source_store=None, output_
                     raise OperationFailure("input.material_version_changed")
             except OSError:
                 raise OperationFailure("input.material_unavailable") from None
-            entries.append(ArchiveEntry(material.locator, item.file_name, material.identity))
+            entries.append(ArchiveEntry(material.locator, member.name, material.identity))
             invocation.use(UsedInputReceipt("archive_member", material.identity, material.media_type,
                                             "reference_only", item.source_id))
         target = req.destination
         plan = ByteIdentity.of(canonical_manifest_bytes({
             "members": [[entry.name, entry.identity.sha256, entry.identity.size] for entry in entries],
+            "manifest": manifest.identity.sha256,
         }))
         if invocation.context.profile == "managed" and target.mode == "best_effort_verified":
             raise OperationFailure("effect.mode_forbidden")
@@ -251,6 +254,7 @@ def archive_to_store(request: StoreArchiveRequest, *, source_store=None, output_
                 expected_revision=target.expected_revision, operation_id=ARCHIVE_TO_STORE.operation_id,
                 require_admission=invocation.context.profile == "managed",
                 plan_identity=plan,
+                extras={"manifest.json": encode_collection(manifest)},
                 on_effect=lambda receipt: storage_effect(invocation, receipt),
             )
         except ArchiveError as error:

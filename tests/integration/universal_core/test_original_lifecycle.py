@@ -186,8 +186,12 @@ def test_collector_retains_accepted_files_when_cancelled_and_archives_references
     )
     assert archive.outcome == "succeeded", archive.diagnostics
     with ZipFile(tmp_path / "package.zip") as reader:
-        assert reader.namelist() == [saved.value.completed[0].file_name]
+        assert reader.namelist() == [saved.value.completed[0].file_name, "manifest.json"]
         assert reader.read(reader.namelist()[0]) == raw
+        from stratbox.shared.material_collections import decode_collection
+        manifest = decode_collection(reader.read("manifest.json"))
+        assert manifest.members[0].identity == saved.value.completed[0].source.material.identity
+        assert manifest.complete and manifest.coverage.status == "unknown"
 
 
 def test_404_followed_by_cancellation_remains_cancellation():

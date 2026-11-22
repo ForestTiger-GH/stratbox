@@ -1,0 +1,132 @@
+"""Logical series, discovered instances and explicit caller-supplied originals."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.snapshots import SnapshotCoverage, identifier
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.materials import MaterialArtifact
+from stratbox.shared.source_publications import SourceAssetIdentity
+
+
+@dataclass(frozen=True, slots=True)
+class SourceSeries:
+    series_id: str
+    family_id: str
+    title: str
+    issue_model: str
+    formats: tuple[str, ...]
+    acquisition_profile: str
+    extraction_profile: str | None = None
+    normalization_profile: str | None = None
+
+    def __post_init__(self):
+        for value in (self.series_id, self.family_id, self.acquisition_profile):
+            identifier(value)
+        if self.issue_model not in {"rolling", "dated", "capture"} or not self.formats or not self.title:
+            raise ValueError("cbr.registry.series_invalid")
+        for value in (self.extraction_profile, self.normalization_profile):
+            if value is not None:
+                identifier(value)
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionProfile:
+    profile_id: str
+    kind: str
+    default_url: str
+    filename_pattern: str | None = None
+
+    def __post_init__(self):
+        from urllib.parse import urlsplit
+        identifier(self.profile_id)
+        value = urlsplit(self.default_url)
+        if (self.kind not in {"fixed", "page", "index", "escrow_index", "territorial_index"}
+                or value.scheme != "https" or value.hostname not in {"cbr.ru", "www.cbr.ru"}
+                or value.username or value.password or value.query or value.fragment):
+            raise ValueError("cbr.profile.acquisition_invalid")
+        if self.kind == "index" and not self.filename_pattern:
+            raise ValueError("cbr.profile.pattern_required")
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessingProfile:
+    profile_id: str
+    operation_id: str
+    formats: tuple[str, ...]
+    scope: str
+    contract_version: int = 1
+
+    def __post_init__(self):
+        identifier(self.profile_id)
+        identifier(self.operation_id)
+        if (not self.formats or not self.scope
+                or type(self.contract_version) is not int or self.contract_version < 1):
+            raise ValueError("cbr.profile.processing_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationAsset:
+    """One publication/format candidate with all observed physical routes.
+
+    Alternative routes retain unresolved source ambiguity. Their byte equality,
+    availability and revision order require acquisition; discovery asserts none.
+    """
+    series_id: str
+    issue_id: str | None
+    asset_id: str
+    url: str
+    format: str
+    recognition: str
+    extraction_profile: str | None = None
+    alternative_urls: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationInventory:
+    series_id: str
+    assets: tuple[PublicationAsset, ...]
+    index_identity: ByteIdentity | None
+    coverage: SnapshotCoverage
+    rejected_links: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class ListSourcesRequest:
+    family_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoverRequest:
+    series_id: str
+    index: SourcePayload | None = None
+    page_url: str | None = None
+    max_links: int = 10_000
+
+
+@dataclass(frozen=True, slots=True)
+class IdentifyRequest:
+    series_id: str
+    issue_id: str
+    payload: SourcePayload
+    format: str
+    asset_id: str = "main"
+
+
+@dataclass(frozen=True, slots=True)
+class IdentifiedOriginal:
+    asset: SourceAssetIdentity
+    payload: SourcePayload
+    format: str
+    identification: str = "caller_context_and_verified_format"
+    lineage: tuple[UsedInputReceipt, ...] = ()
+
+    @property
+    def artifact(self):
+        return MaterialArtifact(DataContract("cbr.publication.original", 1, DataRole.ORIGINALS),
+            Representation("cbr.original." + self.format, 1, self.payload.media_type,
+                           self.payload.data, self.payload.charset), self.lineage,
+            self.asset.series_id, self.asset)
