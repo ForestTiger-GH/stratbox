@@ -17,7 +17,8 @@ def assess_updates(request: UpdateRequest, *, source: SourceFamily,
     sources = request.selected_sources or tuple(s.source_id for s in source.series if s.kind == "table")
     if len(sources) != len(set(sources)) or any(s not in eligible for s in sources):
         raise ValueError("minfin.update.invalid_source_selection")
-    if request.target not in {"probe", "flake"} or request.method_version == "":
+    if (request.target not in {"probe", "flake"} or type(request.force_reprocess) is not bool
+            or type(request.force_refresh) is not bool):
         raise ValueError("minfin.update.invalid_target")
     if request.target == "flake" and any(eligible[s].kind != "table" for s in sources):
         raise ValueError("minfin.update.flake_source_unsupported")
@@ -62,13 +63,17 @@ def assess_updates(request: UpdateRequest, *, source: SourceFamily,
             state, reason = "indeterminate", "minfin.update.url_changed_without_date_change"
         else:
             state, reason = "unchanged", "minfin.update.publisher_marker_unchanged"
-        required_method = request.method_version or method_versions.get(source_id)
+        required_method = method_versions.get(source_id)
         if request.target == "flake" and not required_method:
             raise ValueError("minfin.update.method_unavailable")
         needs_processing = request.target == "flake" and (
             state != "unchanged" or previous.processing.method_version != required_method
+            or request.force_reprocess
         )
-        needs_download = state != "unchanged" or (needs_processing and source_id not in request.retained_sources)
+        needs_download = (state != "unchanged" or request.force_refresh or
+                          (needs_processing and source_id not in request.retained_sources))
+        if state == "unchanged" and request.force_refresh:
+            reason = "minfin.update.forced_material_verification"
         decisions.append(UpdateDecision(source_id, asset, state, needs_download, needs_processing, reason))
     return UpdatePlan(source.family_id, request.index.index_identity, tuple(decisions))
 

@@ -166,3 +166,26 @@ def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatc
         assert {item.family_id for item in discovered} >= {"minfin.fedbud", "minfin.future"}
     finally:
         catalog.families.cache_clear()
+
+
+def test_force_refresh_and_reprocess_are_distinct_decisions():
+    index = _discover(_publisher_card())
+    asset, = index.assets
+    method_id = bind_series("minfin.fedbud", asset.source_id).method_version
+    checkpoint = SourceCheckpoint(asset.source_id, asset.asset_id, asset.document_id,
+                                  asset.modified_on, asset.url, SourcePayload(b"original").identity,
+                                  method_id)
+    common = dict(index=index, checkpoints=(checkpoint,), selected_sources=(asset.source_id,),
+                  retained_sources=frozenset({asset.source_id}))
+    same = plan_updates(UpdateRequest(**common, target="flake"))
+    assert same.value.decisions[0].state == "unchanged"
+    assert not same.value.decisions[0].processing_required
+    assert not same.value.decisions[0].download_required
+    reprocess = plan_updates(UpdateRequest(**common, target="flake", force_reprocess=True))
+    assert reprocess.value.decisions[0].processing_required
+    assert not reprocess.value.decisions[0].download_required
+    refresh = plan_updates(UpdateRequest(**common, target="probe", force_refresh=True))
+    assert refresh.value.decisions[0].state == "unchanged"
+    assert refresh.value.decisions[0].download_required
+    assert not refresh.value.decisions[0].processing_required
+    assert refresh.value.decisions[0].reason == "minfin.update.forced_material_verification"

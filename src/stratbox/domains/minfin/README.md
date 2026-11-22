@@ -144,8 +144,9 @@ and method state views available through `.publication`, `.material`, and
 byte equality. A same-byte rediscovery does not by itself authorize a notice.
 A parser-profile change can require reprocessing a retained original without
 downloading again. The effective flake method version is taken from the
-resolved table profile unless a caller deliberately provides another method
-identity. Checkpoint persistence follows the consumer's confirmed storage
+resolved table profile rather than accepting an arbitrary method identity from the caller. Consumers
+can request `force_reprocess` or `force_refresh` for exceptional runs.
+Checkpoint persistence follows the consumer's confirmed storage
 boundary and is never performed by the pure Minfin domain.
 
 Monthly and quarterly budget values remain source-reported cumulative YTD.

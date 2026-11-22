@@ -82,11 +82,11 @@ def test_cheap_update_probe_skips_redundant_file_download():
     assert item.download_required is False
     assert item.processing_required is False
     reparsing = plan_updates(M.UpdateRequest(index, (cp,), (asset.source_id,),
-                                             frozenset({asset.source_id}), "flake", "minfin.flake.v2"))
+                                             frozenset({asset.source_id}), "flake"))
     assert reparsing.value.decisions[0].download_required is False
     assert reparsing.value.decisions[0].processing_required is True
     no_retained = plan_updates(M.UpdateRequest(index, (cp,), (asset.source_id,),
-                                               frozenset(), "flake", "minfin.flake.v2"))
+                                               frozenset(), "flake"))
     assert no_retained.value.decisions[0].download_required is True
     revised = plan_updates(M.UpdateRequest(_index("13.11.2026"), (cp,), (asset.source_id,)))
     assert revised.value.decisions[0].state == "revised"

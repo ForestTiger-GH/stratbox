@@ -188,7 +188,8 @@ class UpdateRequest:
     selected_sources: tuple[str, ...] = ()
     retained_sources: frozenset[str] = frozenset()
     target: Literal["probe", "flake"] = "probe"
-    method_version: str | None = None
+    force_reprocess: bool = False
+    force_refresh: bool = False
 
 
 @dataclass(frozen=True, slots=True)

@@ -139,7 +139,7 @@ PLAN_UPDATES = OperationDefinition(
     processing=OperationSemantics((ProcessingStage.INSPECT,),
         inputs=(InputPort("index", _INDEX, "index"),),
         outputs=(OutputPort("plan", DataContract("minfin.update_plan", 1, None)),),
-        parameters=("target", "selected_sources", "method_version"),
+        parameters=("target", "selected_sources", "force_reprocess", "force_refresh"),
         summary="Compare publisher document modification markers to caller-owned confirmed checkpoints without downloading XLSX."),
 )
 BUILD_FLAKE = OperationDefinition(
