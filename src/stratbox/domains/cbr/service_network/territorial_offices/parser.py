@@ -293,7 +293,7 @@ def convert_xlsx(
     ]
     selected = [item for item in starts if national_row is None or item[1][item[4]][0] == national_row]
     if len(selected) > 1:
-        raise AmbiguousBlock(tuple((sheet, rows[i][0], col) for sheet, rows, _, _, i, col in selected[:32]))
+        raise AmbiguousBlock(tuple((sheet, rows[i][0], col) for sheet, rows, _, _, i, col in selected))
     require(bool(selected), "XLSX_NATIONAL_TOTAL_NOT_FOUND")
     sheet, rows, formulas, tree, idx, territory_col = selected[0]
     require(

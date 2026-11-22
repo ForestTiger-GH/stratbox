@@ -18,6 +18,7 @@ from .machine_contracts import PARSE_CONTRACT, COMPARE_CONTRACT
 def _parse(data, materials, context):
     try:
         day = date.fromisoformat(data["capture_date"])
+        official = date.fromisoformat(data["official_as_of"]) if "official_as_of" in data else None
     except ValueError:
         raise WireRequestError("request.invalid_date") from None
     payload = materials.source(data["source_ref"])
@@ -26,7 +27,7 @@ def _parse(data, materials, context):
     expected = data.get("expected_sha256")
     if expected is not None and payload.identity.sha256 != expected:
         raise WireRequestError("material.digest_mismatch")
-    return operations.parse(ParseOfficesRequest(payload, day), context=context)
+    return operations.parse(ParseOfficesRequest(payload, day, official), context=context)
 
 
 def _compare(data, materials, context):
@@ -39,7 +40,11 @@ def _project_parse(result):
     v = result.value
     if v is None:
         return None
-    return {"as_of": v.as_of.isoformat(), "row_count": v.row_count,
+    details = v.source_details
+    official = details.get("official_as_of")
+    return {"as_of": v.as_of.isoformat(), "captured_on": details["captured_on"].isoformat(),
+            "official_as_of": official.isoformat() if official is not None else None,
+            "row_count": v.row_count,
             "dataset_sha256": v.dataset_version.identity.sha256,
             "representation_sha256": v.representation.identity.sha256}
 

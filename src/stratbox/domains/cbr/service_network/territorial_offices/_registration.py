@@ -37,9 +37,19 @@ REGISTRATION = OperationRegistration(
         ),
         OperationRef(
             "cbr.offices_reg.read_representation",
-            1,
+            2,
             "stratbox.domains.cbr.service_network.territorial_offices.definitions:READ",
             "stratbox.domains.cbr.service_network.territorial_offices.operations:read_representation",
+        ),
+        OperationRef(
+            "cbr.offices_reg.snapshot", 1,
+            "stratbox.domains.cbr.service_network.territorial_offices.definitions:SNAPSHOT",
+            "stratbox.domains.cbr.service_network.territorial_offices.snapshots:snapshot_release",
+        ),
+        OperationRef(
+            "cbr.offices_reg.restore", 1,
+            "stratbox.domains.cbr.service_network.territorial_offices.definitions:RESTORE",
+            "stratbox.domains.cbr.service_network.territorial_offices.snapshots:restore_release",
         ),
         OperationRef(
             "cbr.offices_reg.compare",
@@ -50,16 +60,11 @@ REGISTRATION = OperationRegistration(
     ),
     stages=(
         StageDeclaration(
-            ProcessingStage.PRESERVE,
-            "delegated",
-            "processing.neutral_original_storage",
-            (
-                OperationKey("source.save_original", 1),
-                OperationKey("source.read_original", 1),
-            ),
-            "Bind the acquired payload to SaveOriginalRequest.source and supply a caller-owned "
-            "destination. Retain source-issue association with the material; read its exact bytes "
-            "through ReadOriginalRequest before source-specific readmission.",
+            ProcessingStage.PRESERVE, "delegated", "processing.neutral_material_storage",
+            (OperationKey("source.save_original", 1), OperationKey("source.read_original", 1),
+             OperationKey("dataset.write_snapshot", 1), OperationKey("dataset.read_snapshot", 1)),
+            "Save exact originals through source operations. Encode a release or unresolved candidates "
+            "with cbr.offices_reg.snapshot; read the pinned dataset before cbr.offices_reg.restore.",
         ),
         StageDeclaration(
             ProcessingStage.READABLE, "missing", "processing.readable_not_implemented"
@@ -70,7 +75,9 @@ REGISTRATION = OperationRegistration(
             "processing.integration_not_implemented",
         ),
         StageDeclaration(
-            ProcessingStage.INGEST, "missing", "processing.ingestion_not_implemented"
+            ProcessingStage.INGEST, "delegated", "processing.logical_dataset_storage",
+            (OperationKey("dataset.write_snapshot", 1),),
+            "Pass the complete territorial-office DatasetSnapshot to a selected dataset writer.",
         ),
     ),
 )

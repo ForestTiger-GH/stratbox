@@ -3,6 +3,10 @@ from __future__ import annotations
 import csv
 import io
 import re
+from collections.abc import Mapping
+
+from stratbox.domains.cbr.service_network.snapshots import detail_value
+from stratbox.shared.data.releases import csv_rows
 
 _COUNT_LABELS = frozenset({
     "головной офис", "головные офисы", "кредитные организации",
@@ -63,3 +67,55 @@ def validate_csv(blob, *, minimum_rows: int = 30):
         previous = int(row[0])
     require(serialize(rows) == blob, "CSV_NON_CANONICAL")
     return len(rows) - 1
+
+
+def validate_source_details(details, data):
+    """Validate the complete, explicitly supplied workbook evidence for CSV replay."""
+    if not isinstance(details, Mapping) or not {"selection", "formula_lineage"} <= details.keys():
+        raise ValueError("CSV_METADATA_INCOMPLETE")
+    detail_value(details)
+    selection, formulas = details["selection"], details["formula_lineage"]
+    required = {"sheet", "header_rows", "first_row", "last_row", "territory_column", "column_order",
+                "date_basis", "unresolved_fields", "scope"}
+    if not isinstance(selection, Mapping) or not required <= selection.keys() or not isinstance(formulas, Mapping):
+        raise ValueError("CSV_METADATA_INCOMPLETE")
+    if (type(selection["sheet"]) is not str or not selection["sheet"]
+            or selection["scope"] not in {"published_table", "selected_fragment"}
+            or selection["date_basis"] not in {"printed", "release"}):
+        raise ValueError("CSV_METADATA_INVALID")
+    for name, maximum in (("first_row", 1_048_576), ("last_row", 1_048_576), ("territory_column", 16_384)):
+        if type(selection[name]) is not int or not 1 <= selection[name] <= maximum:
+            raise ValueError("CSV_METADATA_INVALID")
+    for name in ("header_rows", "column_order", "unresolved_fields"):
+        if not isinstance(selection[name], tuple) or len(set(selection[name])) != len(selection[name]):
+            raise ValueError("CSV_METADATA_INVALID")
+    if (any(type(row) is not int or not 1 <= row < selection["first_row"] for row in selection["header_rows"])
+            or any(type(col) is not int or not 1 <= col <= 16_384 for col in selection["column_order"])):
+        raise ValueError("CSV_METADATA_INVALID")
+    rows = csv_rows(data)
+    header = rows[0][2:]
+    if (len(selection["column_order"]) != len(header)
+            or selection["column_order"][0] != selection["territory_column"]
+            or selection["first_row"] != int(rows[1][0]) or selection["last_row"] < int(rows[-1][0])
+            or any(type(field) is not str or field not in header for field in selection["unresolved_fields"])):
+        raise ValueError("CSV_METADATA_MISMATCH")
+    source_rows = {row[0] for row in rows[1:]}
+    headings = dict(zip(selection["column_order"], header))
+    for row, columns in formulas.items():
+        if row not in source_rows or not isinstance(columns, Mapping):
+            raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+        for column, item in columns.items():
+            if (type(column) is not str or not column.isascii() or not column.isdecimal()
+                    or int(column) not in headings or not isinstance(item, Mapping)
+                    or not set(item) <= {"formula", "attributes", "cache_missing", "error_value"}):
+                raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+            if "formula" in item and type(item["formula"]) is not str:
+                raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+            if "attributes" in item and (not isinstance(item["attributes"], Mapping)
+                    or any(type(k) is not str or type(v) is not str for k, v in item["attributes"].items())):
+                raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+            if any(flag in item and type(item[flag]) is not bool for flag in ("cache_missing", "error_value")):
+                raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+            if (item.get("cache_missing") or item.get("error_value")) and headings[int(column)] not in selection["unresolved_fields"]:
+                raise ValueError("CSV_FORMULA_EVIDENCE_INVALID")
+    return selection

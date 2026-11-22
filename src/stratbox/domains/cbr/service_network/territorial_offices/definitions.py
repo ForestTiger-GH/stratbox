@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from stratbox.shared.evidence import AcquiredSource, SourcePayload
+from typing import Mapping
+
+from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,
-    ReadReleaseRequest,
     ReleaseLink,
 )
 from stratbox.core.execution.contracts import OperationDefinition
@@ -48,6 +50,26 @@ class ParseOfficesRegRequest:
 class OfficesRegCandidates:
     source_identity: ByteIdentity
     blocks: tuple[tuple[str, int, int], ...]
+    as_of: date | None = None
+    requested_sheet: str | None = None
+    requested_national_row: int | None = None
+    requested_last_row: int | None = None
+    inputs: tuple[UsedInputReceipt, ...] = ()
+    acquisition: AcquisitionReceipt | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadOfficesRegRequest:
+    payload: SourcePayload
+    as_of: date
+    source_details: Mapping[str, object] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotOfficesRegRequest:
+    release: ParsedRelease | OfficesRegCandidates
+    dataset_id: str
+    version_id: str
 
 
 DISCOVER = OperationDefinition(
@@ -114,15 +136,17 @@ PARSE = OperationDefinition(
         inputs=(
             InputPort(
                 "source",
-                DataContract("cbr.offices_reg.original", 1, DataRole.ORIGINALS),
+                DataContract("material.payload", 1),
                 path="payload",
-                qualifications=frozenset(("source.cbr.offices_reg",)),
+                alternatives=(DataContract("cbr.offices_reg.original", 1, DataRole.ORIGINALS),
+                              DataContract("source.payload", 1, DataRole.ORIGINALS)),
             ),
         ),
         outputs=(
             OutputPort(
                 "release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS)
             ),
+            OutputPort("candidates", DataContract("cbr.offices_reg.candidates", 1), outcomes=frozenset({"partial"})),
             OutputPort(
                 "representation",
                 DataContract(
@@ -150,6 +174,7 @@ CAPTURE = OperationDefinition(
             OutputPort(
                 "release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS)
             ),
+            OutputPort("candidates", DataContract("cbr.offices_reg.candidates", 1), outcomes=frozenset({"partial"})),
             OutputPort(
                 "representation",
                 DataContract(
@@ -165,13 +190,13 @@ CAPTURE = OperationDefinition(
 
 READ = OperationDefinition(
     f"{DATASET}.read_representation",
-    1,
-    "cbr-offices-reg-csv-2",
-    ReadReleaseRequest,
+    2,
+    "cbr-offices-reg-csv-explicit-evidence-3",
+    ReadOfficesRegRequest,
     ParsedRelease,
     processing=OperationSemantics(
         stages=(ProcessingStage.READ_EXTRACT,),
-        summary="Validate a retained extract representation and rebuild its release envelope.",
+        summary="Read literal CSV; complete explicit source metadata is required to restore qualified observations.",
         inputs=(
             InputPort(
                 "representation",
@@ -186,7 +211,7 @@ READ = OperationDefinition(
                 "release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS)
             ),
         ),
-        parameters=("as_of",),
+        parameters=("as_of", "source_details"),
     ),
 )
 
@@ -220,3 +245,20 @@ COMPARE = OperationDefinition(
         parameters=("baseline_state",),
     ),
 )
+
+SNAPSHOT = OperationDefinition("cbr.offices_reg.snapshot", 1, "cbr-offices-reg-snapshot-1",
+    SnapshotOfficesRegRequest, DatasetSnapshot,
+    processing=OperationSemantics((ProcessingStage.RENDER,),
+        inputs=(InputPort("release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS),
+            path="release", alternatives=(DataContract("cbr.offices_reg.candidates", 1),), outcomes=frozenset({"succeeded", "partial"})),),
+        outputs=(OutputPort("snapshot", DataContract("dataset.snapshot", 1)),),
+        parameters=("dataset_id", "version_id"),
+        summary="Preserve complete territorial releases or unresolved block candidates, with selection and formula evidence."))
+
+RESTORE = OperationDefinition("cbr.offices_reg.restore", 1, "cbr-offices-reg-replay-1",
+    DatasetSnapshot, (ParsedRelease, OfficesRegCandidates), partial_allowed=True,
+    processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
+        inputs=(InputPort("snapshot", DataContract("dataset.snapshot", 1)),),
+        outputs=(OutputPort("release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS)),
+                 OutputPort("candidates", DataContract("cbr.offices_reg.candidates", 1), outcomes=frozenset({"partial"}))),
+        summary="Restore a full territorial release or its still-unresolved source block candidates."))

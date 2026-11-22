@@ -27,10 +27,12 @@ COVERAGE = {
 PARSE_CONTRACT = ReadOnlyWireContract(
     "cbr.offices.parse",
     1,
-    {"source_ref": REF, "expected_sha256": DIGEST, "capture_date": DAY},
+    {"source_ref": REF, "expected_sha256": DIGEST, "capture_date": DAY, "official_as_of": DAY},
     ("source_ref", "capture_date"),
     {
         "as_of": DAY,
+        "captured_on": DAY,
+        "official_as_of": {"anyOf": [DAY, {"type": "null"}]},
         "row_count": INTEGER,
         "dataset_sha256": DIGEST,
         "representation_sha256": DIGEST,

@@ -17,7 +17,6 @@ from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef,
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,
-    ReadReleaseRequest,
     ReleaseLink,
     build_release,
     csv_rows,
@@ -35,11 +34,11 @@ from stratbox.core.operations.source.validation import (
 )
 
 from .parser import AmbiguousBlock, CaptureError, LIMIT_XLSX, convert_xlsx
-from .representation import count_label, validate_csv
+from .representation import count_label, validate_csv, validate_source_details
 from .source import LIMIT_HTML, SOURCE_PAGE, discover as discover_links, url_date
 
 from .definitions import (
-    ACQUIRE, CAPTURE, COMPARE, DATASET, DISCOVER, DiscoverOfficesRegRequest, METHOD, OfficesRegCandidates, PARSE, ParseOfficesRegRequest, READ, _HTTP,
+    ACQUIRE, CAPTURE, COMPARE, DATASET, DISCOVER, DiscoverOfficesRegRequest, METHOD, OfficesRegCandidates, PARSE, ParseOfficesRegRequest, READ, ReadOfficesRegRequest, _HTTP,
 )
 
 PROFILE = "cbr.offices_reg.wide-csv"
@@ -219,7 +218,8 @@ def _parse(req, invocation, acquisition=None):
         count = validate_csv(data, minimum_rows=1 if req.last_row is not None else 30)
     except AmbiguousBlock as error:
         return Completion(
-            OfficesRegCandidates(req.payload.identity, error.candidates),
+            OfficesRegCandidates(req.payload.identity, error.candidates, req.as_of,
+                req.sheet, req.national_row, req.last_row, tuple(invocation.used_inputs), acquisition),
             "partial", "source.xlsx_national_total_ambiguous",
         )
     except (ArchiveError, CaptureError, ParseError, ValueError) as error:
@@ -271,7 +271,7 @@ def capture(
 
 
 def read_representation(
-    request: ReadReleaseRequest, *, context: ExecutionContext | None = None
+    request: ReadOfficesRegRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[ParsedRelease]:
     def work(req, invocation):
         invocation.stage("validate")
@@ -280,10 +280,15 @@ def read_representation(
             req.payload, invocation, role="csv_representation", limit=LIMIT_XLSX
         )
         try:
-            count = validate_csv(req.payload.data)
-        except (CaptureError, ValueError) as error:
+            selection = req.source_details.get("selection") if req.source_details is not None else None
+            fragment = selection is not None and selection["scope"] == "selected_fragment"
+            count = validate_csv(req.payload.data, minimum_rows=1 if fragment or req.source_details is None else 30)
+            if req.source_details is not None:
+                selection = validate_source_details(req.source_details, req.payload.data)
+        except (CaptureError, ValueError, TypeError, KeyError, AttributeError) as error:
             raise source_failure(error) from None
-        observations, excluded = _observations(req.payload.data, req.as_of)
+        observations, excluded = (_observations(req.payload.data, req.as_of, unresolved=selection["unresolved_fields"])
+                                  if selection is not None else (None, ()))
         return build_release(
             DATASET,
             PROFILE,
@@ -294,6 +299,8 @@ def read_representation(
             invocation.used_inputs,
             facts_method=METHOD,
             observations=observations, excluded_fields=excluded,
+            source_details=req.source_details,
+            scope="unqualified_csv" if selection is None else "selected_fragment" if fragment else None,
         )
 
     return run(READ, request, work, context=context)

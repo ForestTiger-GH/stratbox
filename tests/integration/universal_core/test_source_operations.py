@@ -84,7 +84,8 @@ def test_offices_from_exact_html_bytes_and_capture(layout, tmp_path):
     )
     assert not online.effects
     csv_result = daily.read_representation(
-        ReadReleaseRequest(SourcePayload(offline.value.representation.data), RELEASE)
+        daily.ReadOfficesRequest(SourcePayload(offline.value.representation.data), RELEASE,
+                                period_basis="capture")
     )
     assert csv_result.outcome == "succeeded"
     assert csv_result.used_inputs[0].role == "csv_representation"

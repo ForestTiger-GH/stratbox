@@ -10,7 +10,6 @@ from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,
-    ReadReleaseRequest,
     build_release,
     csv_rows,
 )
@@ -25,7 +24,7 @@ from stratbox.core.operations.source.validation import (
     use_payload,
 )
 
-from .contracts import AcquiredOffices, AcquireOfficesRequest, ParseOfficesRequest
+from .contracts import AcquiredOffices, AcquireOfficesRequest, ParseOfficesRequest, ReadOfficesRequest
 from .parser import CaptureError, MAX_CSV, MAX_HTML, KNOWN_CONTEXT, extract_records
 from .representation import serialize_csv, validate_csv_bytes
 
@@ -172,10 +171,15 @@ def capture(
 
 
 def read_representation(
-    request: ReadReleaseRequest, *, context: ExecutionContext | None = None
+    request: ReadOfficesRequest, *, context: ExecutionContext | None = None
 ) -> OperationResult[ParsedRelease]:
     def work(req, invocation):
         invocation.stage("validate")
+        if type(req.captured_on) is not date or (req.official_as_of is not None and type(req.official_as_of) is not date):
+            raise OperationFailure("request.invalid_date")
+        basis = req.period_basis or ("as_of" if req.official_as_of is not None else "unknown")
+        if basis not in {"capture", "as_of", "unknown"} or (basis == "as_of") != (req.official_as_of is not None):
+            raise OperationFailure("request.observation_period_invalid")
         use_payload(req.payload, invocation, role="csv_representation", limit=MAX_CSV)
         try:
             count, _ = validate_csv_bytes(req.payload.data)
@@ -186,12 +190,15 @@ def read_representation(
             DATASET,
             PROFILE,
             READ.method_version,
-            req.as_of,
+            req.captured_on,
             req.payload.data,
             count,
             invocation.used_inputs,
             facts_method=METHOD,
-            observations=_observations(rows, req.as_of, None),
+            observations=_observations(rows, req.captured_on, req.official_as_of) if basis != "unknown" else None,
+            parameters={"official_as_of": req.official_as_of, "period_basis": basis},
+            source_details={"captured_on": req.captured_on, "official_as_of": req.official_as_of,
+                            "period_basis": basis},
         )
 
     return run(READ, request, work, context=context)
