@@ -145,7 +145,7 @@ def test_docx_source_readable_is_qualified_partial():
 
 def test_comparison_detects_empty_sheet_edition_changes():
     from dataclasses import replace
-    from stratbox.domains.minfin.models import Sheet
+    from stratbox.domains.minfin.tables.contracts import Sheet
     old = _extract()
     after = replace(old, sheets=old.sheets[:-1] + (Sheet('Без значений', 6, 3, ()),))
     difference = compare(CompareRequest(old, after))

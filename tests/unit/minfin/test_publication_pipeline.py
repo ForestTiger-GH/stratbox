@@ -10,16 +10,17 @@ import pytest
 
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.identity import ByteIdentity
-from stratbox.domains.minfin.models import Cell, Sheet, TableExtract, Asset, PublicationIndex
-from stratbox.domains.minfin import pipeline_models as M
-from stratbox.domains.minfin.pipeline_operations import (
+from stratbox.domains.minfin.tables.contracts import Cell, Sheet, TableExtract
+from stratbox.domains.minfin.publications.contracts import Asset, PublicationIndex
+import stratbox.domains.minfin as M
+from stratbox.domains.minfin import (
     plan_updates, build_source_flake, render_source_flake,
     calculate_headlines, prepare_notice_facts,
 )
-from stratbox.domains.minfin.operations import discover
-from stratbox.domains.minfin.models import DiscoverRequest
-from stratbox.domains.minfin.periods import normalize_period
-from stratbox.domains.minfin.updates import checkpoint_for
+from stratbox.domains.minfin import discover
+from stratbox.domains.minfin import DiscoverRequest
+from stratbox.domains.minfin.tables.periods import normalize_period
+from stratbox.domains.minfin.publications.updates import checkpoint_for
 from stratbox.domains.registry import operation_catalog
 
 

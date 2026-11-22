@@ -12,15 +12,26 @@ from stratbox.core.operations.source.validation import use_payload
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 from . import definitions as D
-from .models import (
-    AcquireRequest, AcquiredAsset, CaptureRequest, CaptureResult, CompareRequest,
-    DiscoverRequest, InspectRequest, Inspection, MapRequest, ReadableDocument,
-    ReadableRequest, RenderRequest, ExtractRequest, ValidateRequest, SerializeRequest,
-    ReadRepresentationRequest,
+from ..publications.contracts import (
+    AcquireRequest, AcquiredAsset, DiscoverRequest, InspectRequest, Inspection,
+    ReadableDocument, ReadableRequest, UpdateRequest,
 )
-from .registry import family
-from .source import FILE_MIMES, PAGE_MIMES, check_asset, discover_links, file_request, page_request
-from .tables import compare_tables, extract_tables, map_metrics, render_csv, validate_tables, serialize_tables, read_serialized_tables
+from ..tables.contracts import (
+    CompareRequest, ExtractRequest, MapRequest, RenderRequest, ValidateRequest,
+    SerializeRequest, ReadRepresentationRequest, BuildFlakeRequest, RenderFlakeRequest,
+)
+from ..analytics.contracts import SummaryRequest, NoticeRequest, NoticePreparation
+from .contracts import CaptureRequest, CaptureResult
+from ..publications.catalog import family
+from ..publications.access import FILE_MIMES, PAGE_MIMES, file_request, page_request
+from ..publications.discovery import check_asset, discover_links
+from ..tables.extraction import compare_tables, extract_tables, validate_tables
+from ..tables.mapping import map_metrics
+from ..tables.representation import render_csv, serialize_tables, read_serialized_tables, render_flake_csv
+from ..tables.cleaning import build_flake
+from ..analytics.indicators import summarize
+from ..analytics.notices import prepare_notification
+from ..publications.updates import assess_updates
 
 
 def _error(error: Exception, fallback: str = "minfin.source_invalid") -> OperationFailure:
@@ -49,7 +60,7 @@ def discover(request: DiscoverRequest, *, transport: HttpTransport | None = None
                 source = result.payload
             invocation.stage("parse_landing_page")
             use_payload(source, invocation, role="publisher_index", limit=8 * 1024 * 1024)
-            from .publication_adapter import enrich_index
+            from ..publications.discovery import enrich_index
             text = source.data.decode(source.charset or "utf-8", errors="strict")
             return enrich_index(discover_links(spec, source, req.max_links), text, spec.landing_url)
         except ValueError as exc:
@@ -223,5 +234,69 @@ def read_representation(request: ReadRepresentationRequest, *, context: Executio
     return run(D.READ_EXTRACT, request, work, context=context)
 
 
-__all__ = ("discover", "inspect", "acquire", "capture", "extract", "validate", "compare",
-           "map_observations", "render_csv_cells", "readable_document", "serialize_extract", "read_representation")
+# Publisher-marker, clean-flake and channel-neutral analytics operations.
+
+def _wrap_error(exc: ValueError):
+    code = str(exc)
+    if code.startswith("minfin.") and len(code) <= 95 and all(c.isalnum() or c in "_." for c in code):
+        raise OperationFailure(code) from None
+    raise OperationFailure("minfin.pipeline_invalid") from None
+
+
+def plan_updates(request: UpdateRequest, *, context: ExecutionContext | None = None):
+    def work(req, invocation):
+        invocation.stage("assess_publisher_markers")
+        try:
+            return assess_updates(req)
+        except ValueError as exc:
+            _wrap_error(exc)
+    return run(D.PLAN_UPDATES, request, work, context=context)
+
+
+def build_source_flake(request: BuildFlakeRequest, *, context: ExecutionContext | None = None):
+    def work(req, invocation):
+        invocation.stage("clean_source_table")
+        try:
+            return build_flake(req)
+        except ValueError as exc:
+            _wrap_error(exc)
+    return run(D.BUILD_FLAKE, request, work, context=context)
+
+
+def render_source_flake(request: RenderFlakeRequest, *, context: ExecutionContext | None = None):
+    def work(req, invocation):
+        try:
+            return render_flake_csv(req)
+        except ValueError as exc:
+            _wrap_error(exc)
+    return run(D.RENDER_FLAKE, request, work, context=context)
+
+
+def calculate_headlines(request: SummaryRequest, *, context: ExecutionContext | None = None):
+    def work(req, invocation):
+        invocation.stage("calculate_source_headlines")
+        try:
+            return summarize(req)
+        except ValueError as exc:
+            _wrap_error(exc)
+    return run(D.SUMMARIZE, request, work, context=context)
+
+
+def prepare_notice_facts(request: NoticeRequest, *, context: ExecutionContext | None = None):
+    def work(req, invocation):
+        invocation.stage("qualify_notification_candidate")
+        try:
+            facts, reason = prepare_notification(req)
+        except ValueError as exc:
+            _wrap_error(exc)
+        return NoticePreparation("ready" if facts is not None else "skipped", facts, reason)
+    return run(D.PREPARE_NOTICE, request, work, context=context)
+
+
+__all__ = (
+    "discover", "inspect", "acquire", "capture", "extract", "validate", "compare",
+    "map_observations", "render_csv_cells", "readable_document",
+    "serialize_extract", "read_representation", "plan_updates",
+    "build_source_flake", "render_source_flake", "calculate_headlines",
+    "prepare_notice_facts",
+)

@@ -13,7 +13,7 @@ from stratbox.domains.minfin import (
     DiscoverRequest, AcquireRequest, InspectRequest, discover, acquire, inspect,
     family, families, all_sources,
 )
-from stratbox.domains.minfin.source import allowed_file
+from stratbox.domains.minfin.publications.access import allowed_file
 
 
 @pytest.fixture

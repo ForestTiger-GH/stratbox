@@ -4,6 +4,57 @@
 
 All four canonical `REGISTRY_*.yaml` records are stored **directly in the domain root**. They describe the source family, variants, periodicity, reporting basis and operation IDs; they do not hold live checkpoints, target directories, bot settings or executable Python references. These YAML files use JSON-compatible YAML 1.2 to keep the base distribution dependency-free. `pyproject.toml` packages them in wheel/sdist.
 
+## Domain directory architecture
+
+The root contains **only** the four canonical `REGISTRY_*.yaml` files, the
+single `_registration.py` operation-owner manifest, `__init__.py` and this README.
+The internal packages group work by **semantic responsibility**, not by when
+an implementation was introduced:
+
+```text
+minfin/
+├── REGISTRY_FEDBUD.yaml   # canonical source declarations (root-owned)
+├── REGISTRY_CONBUD.yaml
+├── REGISTRY_SUBBUD.yaml
+├── REGISTRY_NWF.yaml
+├── __init__.py             # small, lazy public API
+├── _registration.py       # exactly one operation owner: minfin
+├── README.md
+├── publications/           # source identity, discovery, access, revision markers
+│   ├── contracts.py
+│   ├── catalog.py
+│   ├── access.py
+│   ├── discovery.py
+│   └── updates.py
+├── tables/                 # exact extraction, cleaned flakes, typed representations
+│   ├── contracts.py
+│   ├── extraction.py
+│   ├── cleaning.py
+│   ├── periods.py
+│   ├── mapping.py
+│   └── representation.py
+├── analytics/              # source-local calculations and channel-neutral notices
+│   ├── contracts.py
+│   ├── indicators.py
+│   └── notices.py
+└── operations/             # only operation contracts and runner adapters
+    ├── contracts.py        # cross-stage capture request/result
+    ├── definitions.py      # all 17 OperationDefinition declarations
+    └── handlers.py         # all 17 callable wrappers
+```
+
+Each internal package has an `__init__.py`. No nested package declares a second
+`_registration.py`; source-record ownership stays at the domain root. The
+`operations` package delegates to independent publisher/table/analytics
+functions and the existing `stratbox.core.execution.run` runner. Actual HTTP,
+format admission, storage and notification delivery remain provided by the
+neutral core and the caller. Cross-stage `CaptureRequest` belongs in
+`operations/contracts.py`, rather than making source publication contracts
+depend on table extracts. The root API lazily exports the existing operation
+IDs and request models. The old `models.py`, `pipeline_models.py`,
+`definitions.py`, `pipeline_definitions.py`, `operations.py` and
+`pipeline_operations.py` are removed, with no duplicate compatibility layer.
+
 ## Source families and confirmed HTML markers
 
 | Root registry | Series | Last `Изменено` marker in supplied HTML, 22 Nov 2026 |
