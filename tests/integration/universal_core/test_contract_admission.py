@@ -52,8 +52,12 @@ declared = {
 }
 assert registered == declared, (registered - declared, declared - registered)
 assert not {'requests', 'pandas', 'openpyxl', 'pyxlsb', 'highspy', 'xlrd'} & sys.modules.keys()
+handlers = {ref.handler_ref.split(':')[0] for ref in catalog.references}
+codecs = {ref.wire_codec_ref.split(':')[0] for ref in catalog.references if ref.wire_codec_ref}
+assert not (handlers | codecs) & sys.modules.keys()
 """
-    package = Path(cbr_offices.__file__).resolve().parents[2]
+    import stratbox
+    package = Path(stratbox.__file__).resolve().parent
     subprocess.run([sys.executable, "-B", "-S", "-c",
                     f"import sys; sys.path.insert(0, {str(package.parent)!r})\n" + check], check=True)
     definition = operation_catalog().references[0]

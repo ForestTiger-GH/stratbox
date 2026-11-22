@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Literal
 
 from stratbox.core.network import RetryPolicy
-from stratbox.core.operations.source.originals import OriginalDestination, StoredOriginal
+from stratbox.core.operations.source.original_definitions import OriginalDestination, StoredOriginal
 from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, SourcePayload
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.source_publications import SourceAssetIdentity

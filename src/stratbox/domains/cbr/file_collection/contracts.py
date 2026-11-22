@@ -5,7 +5,7 @@ from typing import Mapping
 
 from stratbox.core.network import RetryPolicy
 from stratbox.shared.evidence import AcquiredSource
-from stratbox.core.operations.source.originals import OriginalDestination, StoredOriginal
+from stratbox.core.operations.source.original_definitions import OriginalDestination, StoredOriginal
 
 
 @dataclass(frozen=True, slots=True)

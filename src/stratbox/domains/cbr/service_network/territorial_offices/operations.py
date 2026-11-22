@@ -1,7 +1,6 @@
 """Territorial office releases published in the Bank of Russia workbook."""
 
 from collections import Counter
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 import re
@@ -10,8 +9,9 @@ from xml.etree.ElementTree import ParseError
 
 from stratbox.core.formats.archives.members import ArchiveError
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.shared.evidence import AcquiredSource, SourcePayload
-from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import (
+    AcquiredSource,
+)
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
 from stratbox.shared.data.releases import (
@@ -24,12 +24,7 @@ from stratbox.shared.data.releases import (
 )
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
-    Completion,
-    ExecutionContext,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    run,
+    Completion, ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.operations.source.acquisition import receive_source
 from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
@@ -43,67 +38,13 @@ from .parser import AmbiguousBlock, CaptureError, LIMIT_XLSX, convert_xlsx
 from .representation import count_label, validate_csv
 from .source import LIMIT_HTML, SOURCE_PAGE, discover as discover_links, url_date
 
-DATASET = "cbr.offices_reg"
+from .definitions import (
+    ACQUIRE, CAPTURE, COMPARE, DATASET, DISCOVER, DiscoverOfficesRegRequest, METHOD, OfficesRegCandidates, PARSE, ParseOfficesRegRequest, READ, _HTTP,
+)
+
 PROFILE = "cbr.offices_reg.wide-csv"
-METHOD = "cbr-offices-reg-xlsx-4"
 _HOSTS = ("www.cbr.ru", "cbr.ru")
-_HTTP = frozenset({"http"})
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
-
-
-@dataclass(frozen=True, slots=True)
-class DiscoverOfficesRegRequest:
-    index: SourcePayload | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class ParseOfficesRegRequest:
-    payload: SourcePayload
-    as_of: date
-    sheet: str | None = None
-    national_row: int | None = None
-    last_row: int | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class OfficesRegCandidates:
-    source_identity: ByteIdentity
-    blocks: tuple[tuple[str, int, int], ...]
-
-
-DISCOVER = OperationDefinition(
-    f"{DATASET}.discover",
-    1,
-    "cbr-offices-reg-index-1",
-    DiscoverOfficesRegRequest,
-    tuple,
-    optional_capabilities=frozenset({"http"}),
-)
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire", 1, METHOD, ReleaseLink, AcquiredSource, _HTTP
-)
-PARSE = OperationDefinition(
-    f"{DATASET}.parse", 3, METHOD, ParseOfficesRegRequest,
-    (ParsedRelease, OfficesRegCandidates), partial_allowed=True,
-)
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 3, METHOD, ReleaseLink,
-    (ParsedRelease, OfficesRegCandidates), _HTTP, partial_allowed=True,
-)
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "cbr-offices-reg-csv-2",
-    ReadReleaseRequest,
-    ParsedRelease,
-)
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare",
-    2,
-    "cbr-offices-reg-compare-2",
-    CompareReleaseRequest,
-    Comparison,
-)
 
 
 def discover(

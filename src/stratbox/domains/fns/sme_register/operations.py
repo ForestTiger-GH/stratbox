@@ -1,10 +1,11 @@
 """The regional SME register as independent index, source, parse and comparison operations."""
 
-from dataclasses import dataclass
 from datetime import date
 
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
-from stratbox.shared.evidence import AcquiredSource, SourcePayload
+from stratbox.shared.evidence import (
+    AcquiredSource,
+)
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
 from stratbox.shared.data.releases import (
@@ -14,11 +15,7 @@ from stratbox.shared.data.releases import (
     build_release,
 )
 from stratbox.core.execution import (
-    ExecutionContext,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    run,
+    ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.operations.source.acquisition import receive_source
 from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
@@ -35,59 +32,14 @@ from .parser import (
 )
 from .representation import read_csv, write_csv
 
-DATASET = "fns.sme"
+from .definitions import (
+    ACQUIRE, AcquireSmeRequest, CAPTURE, COMPARE, DATASET, DISCOVER, DiscoverSmeRequest, METHOD, PARSE, ParseSmeRequest, READ, _HTTP,
+)
+
 PROFILE = "fns.sme.regional-csv"
-METHOD = "fns-sme-regional-json-1"
 _HOST = "rmsp.nalog.ru"
 _PAGE = HttpsEndpoint(_HOST, "/statistics.html")
 _API = HttpsEndpoint(_HOST, "/statistics-proc.json")
-_HTTP = frozenset({"http"})
-
-
-@dataclass(frozen=True, slots=True)
-class DiscoverSmeRequest:
-    index: SourcePayload | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class AcquireSmeRequest:
-    as_of: date
-
-
-@dataclass(frozen=True, slots=True)
-class ParseSmeRequest:
-    payload: SourcePayload
-    as_of: date
-
-
-DISCOVER = OperationDefinition(
-    f"{DATASET}.discover", 1, "fns-sme-index-1", DiscoverSmeRequest, tuple,
-    optional_capabilities=frozenset({"http"}),
-)
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire",
-    1,
-    "fns-sme-regional-post-1",
-    AcquireSmeRequest,
-    AcquiredSource,
-    _HTTP,
-)
-PARSE = OperationDefinition(
-    f"{DATASET}.parse", 1, METHOD, ParseSmeRequest, ParsedRelease
-)
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 1, METHOD, AcquireSmeRequest, ParsedRelease, _HTTP
-)
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "fns-sme-csv-1",
-    ReadReleaseRequest,
-    ParsedRelease,
-)
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 2, "fns-sme-compare-1", CompareReleaseRequest, Comparison
-)
 
 
 def discover(

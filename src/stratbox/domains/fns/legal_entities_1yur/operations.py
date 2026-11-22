@@ -1,6 +1,5 @@
 """Dated 1-YUR acquisition, workbook evidence and identity-only CSV."""
 
-from dataclasses import dataclass
 from datetime import date
 from urllib.parse import unquote, urlsplit
 from xml.etree.ElementTree import ParseError
@@ -8,7 +7,9 @@ from xml.etree.ElementTree import ParseError
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveReader
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.core.runtime.dependencies import MissingExtra
-from stratbox.shared.evidence import AcquiredSource, SourcePayload, UsedInputReceipt
+from stratbox.shared.evidence import (
+    AcquiredSource, UsedInputReceipt,
+)
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.data.observations import MetricRef, Observation, PeriodRef, SubjectRef
 from stratbox.shared.data.releases import (
@@ -20,11 +21,7 @@ from stratbox.shared.data.releases import (
 )
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
-    ExecutionContext,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    run,
+    ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.operations.source.acquisition import receive_source
 from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
@@ -46,57 +43,13 @@ from .source import (
 )
 from .source_history import MAX_SOURCE, MIN_DATE, releases_from_page
 
-DATASET = "fns.1yur"
+from .definitions import (
+    ACQUIRE, CAPTURE, COMPARE, DATASET, DISCOVER, Discover1YurRequest, METHOD, PARSE, Parse1YurRequest, READ, ReleaseIndex, _HTTP, _RAR,
+)
+
 PROFILE = "fns.1yur.identity-csv"
-METHOD = "fns-1yur-part-i-1"
 _HOSTS = ("www.nalog.gov.ru", "www.nalog.ru")
-_HTTP = frozenset({"http"})
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
-
-
-@dataclass(frozen=True, slots=True)
-class Discover1YurRequest:
-    year: int
-    index: SourcePayload | None = None
-    index_url: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class ReleaseIndex:
-    releases: tuple[ReleaseLink, ...]
-    missing_assets: tuple[date, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class Parse1YurRequest:
-    payload: SourcePayload
-    as_of: date
-
-
-DISCOVER = OperationDefinition(
-    f"{DATASET}.discover", 1, "fns-1yur-index-1", Discover1YurRequest, ReleaseIndex,
-    optional_capabilities=frozenset({"http"}),
-)
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire", 1, METHOD, ReleaseLink, AcquiredSource, _HTTP
-)
-_RAR = frozenset({"archive_decoder"})
-PARSE = OperationDefinition(
-    f"{DATASET}.parse", 1, METHOD, Parse1YurRequest, ParsedRelease, optional_capabilities=_RAR,
-)
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 1, METHOD, ReleaseLink, ParsedRelease, _HTTP, optional_capabilities=_RAR,
-)
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "fns-1yur-csv-1",
-    ReadReleaseRequest,
-    ParsedRelease,
-)
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 2, "fns-1yur-compare-1", CompareReleaseRequest, Comparison
-)
 
 
 def _check_date(value):

@@ -65,6 +65,7 @@ def _validated_domain_snapshot() -> tuple[
                 ("definition", ref.definition_ref),
                 ("handler", ref.handler_ref),
                 ("codec", ref.wire_codec_ref),
+                ("wire_contract", ref.wire_contract_ref),
             ):
                 if link is None:
                     continue

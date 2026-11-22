@@ -10,8 +10,7 @@ from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import (
-    Completion, ExecutionContext, OperationDefinition, OperationFailure,
-    OperationResult, run,
+    Completion, ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.execution.batch import attempt_batch, require_batch_values
 from stratbox.core.operations.source.validation import use_payload
@@ -23,45 +22,23 @@ from stratbox.domains.cbr._source import (
 )
 
 from .contracts import (
-    BuildIssuanceStreamRequest, CalculateIssuanceApkRequest, DiscoverIssuanceRequest,
-    IssuanceSourceFailure, IssuanceSourceLink, IssuanceStreamResult,
-    IssuanceWorkbookRequest, IssuanceWorkbookResult, RenderIssuanceIndustriesRequest,
-    IssuanceWorkbooksResult, ParseIssuanceRequest, ParsedIssuanceFile,
-    PivotIssuanceRequest,
+    BuildIssuanceStreamRequest, CalculateIssuanceApkRequest, DiscoverIssuanceRequest, IssuanceSourceFailure, IssuanceSourceLink, IssuanceStreamResult, IssuanceWorkbookRequest, RenderIssuanceIndustriesRequest, IssuanceWorkbooksResult, ParseIssuanceRequest, ParsedIssuanceFile, PivotIssuanceRequest,
 )
 from ..common.contracts import (
-    IndustryApkCalculationResult, IndustryPivotSetResult, IndustryPivotRequest,
+    IndustryPivotRequest,
 )
 from .selection import resolve_industry_codes, selection_parameters
 from stratbox.domains.cbr.corporate_lending.industries.common.contracts import IndustrySelection
 from stratbox.domains.cbr.corporate_lending.industries.common.operation_helpers import (
-    _TABLE_LIMITS, _seal_pivots, _select_industry, _stream_metadata,
+    _seal_pivots, _select_industry, _stream_metadata,
 )
 from .sources import CBR_SORS_INDEX_URL, SERIES_CODE, discover_links, reference_period, report_date_from_filename
 
-_DATASET = "cbr.industries.0104a"
-_ROOTS = ("/vfs/statistics/", "/content/document/file/")
-DISCOVER = OperationDefinition(f"{_DATASET}.discover", 1, "cbr-0104a-index-1", DiscoverIssuanceRequest, tuple)
-ACQUIRE = OperationDefinition(f"{_DATASET}.acquire", 1, "cbr-0104a-source-1", IssuanceSourceLink,
-                              AcquiredSource, frozenset({"http"}))
-PARSE = OperationDefinition(f"{_DATASET}.parse", 3, "cbr-0104a-workbook-3", ParseIssuanceRequest,
-                            ParsedIssuanceFile, limits=_TABLE_LIMITS)
-BUILD_STREAM = OperationDefinition(f"{_DATASET}.build_stream", 3, "cbr-0104a-stream-3",
-                                   BuildIssuanceStreamRequest, IssuanceStreamResult,
-                                   partial_allowed=True, limits=_TABLE_LIMITS)
-CALCULATE_APK = OperationDefinition(f"{_DATASET}.calculate_apk", 2, "cbr-industry-apk-1",
-                                    CalculateIssuanceApkRequest, IndustryApkCalculationResult,
-                                    limits=_TABLE_LIMITS)
-PIVOT = OperationDefinition(f"{_DATASET}.build_pivots", 2, "cbr-industry-pivot-1",
-                            PivotIssuanceRequest, IndustryPivotSetResult, limits=_TABLE_LIMITS)
-RENDER_INDUSTRY = OperationDefinition(f"{_DATASET}.render_industry", 2, "cbr-0104a-xlsx-1",
-                                      IssuanceWorkbookRequest, IssuanceWorkbookResult, limits=_TABLE_LIMITS)
-
-
-RENDER_INDUSTRIES = OperationDefinition(
-    f"{_DATASET}.render_industries", 1, "cbr-0104a-industry-batch-1",
-    RenderIssuanceIndustriesRequest, IssuanceWorkbooksResult, limits=_TABLE_LIMITS,
+from .definitions import (
+    ACQUIRE, BUILD_STREAM, CALCULATE_APK, DISCOVER, PARSE, PIVOT, RENDER_INDUSTRIES, RENDER_INDUSTRY, _DATASET,
 )
+
+_ROOTS = ("/vfs/statistics/", "/content/document/file/")
 
 
 def _check_source(source: IssuanceSourceLink) -> None:

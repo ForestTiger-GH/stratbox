@@ -6,43 +6,21 @@ from dataclasses import replace
 from random import uniform
 
 from stratbox.core.execution import (
-    Completion, EffectReceipt, ExecutionContext, OperationDefinition, OperationFailure,
-    RuntimeDependency, run,
+    Completion, EffectReceipt, ExecutionContext, OperationFailure, run,
 )
 from stratbox.core.observability import JournalDecodeError, RequiredJournalGate
 
-from stratbox.core.notifications.dispatch.contracts import (DeliverRequest, DeliveryResult, QualifiedHandoff,
-    QualifyDeliveryRequest, ReconcileDeliveryRequest, RetryPolicy)
+from stratbox.core.notifications.dispatch.contracts import (
+    DeliverRequest, QualifyDeliveryRequest, ReconcileDeliveryRequest, RetryPolicy,
+)
 from stratbox.core.notifications.dispatch.delivery import deliver_work
 from stratbox.core.notifications.dispatch.qualification import qualify_receipt
 from stratbox.core.notifications.dispatch.reconciliation import reconcile_work
 from stratbox.core.notifications.dispatch.preparation import PrepareRequest, PreparationReport, _load_scope, prepare_page
 from stratbox.core.notifications.runtime import NotificationRuntime
 
-_SCOPE_PORTS = (
-    RuntimeDependency("notification_authority", "scoped", "notification_runtime"),
-    RuntimeDependency("notification_state", "scoped", "notification_runtime"),
-)
-_JOURNAL_PORT = RuntimeDependency("journal_source", "conditional", "notification_runtime")
-_CONSUMER_PORT = RuntimeDependency("notification", "conditional", "notification_runtime")
-
-PREPARE = OperationDefinition(
-    "notifications.prepare", 3, "notification-preparation-3", PrepareRequest, PreparationReport,
-    possible_effects=frozenset({"notification.state_commit"}), partial_allowed=True,
-    runtime_dependencies=_SCOPE_PORTS + (_JOURNAL_PORT,),
-)
-DELIVER = OperationDefinition(
-    "notifications.deliver", 3, "notification-handoff-3", DeliverRequest, DeliveryResult,
-    possible_effects=frozenset({"notification.state_commit", "notification.handoff"}),
-    runtime_dependencies=_SCOPE_PORTS + (_JOURNAL_PORT, _CONSUMER_PORT),
-)
-QUALIFY = OperationDefinition(
-    "notifications.qualify", 3, "notification-handoff-receipt-3", QualifyDeliveryRequest, QualifiedHandoff,
-)
-RECONCILE = OperationDefinition(
-    "notifications.reconcile", 2, "notification-handoff-lookup-2", ReconcileDeliveryRequest, DeliveryResult,
-    possible_effects=frozenset({"notification.state_commit"}),
-    runtime_dependencies=_SCOPE_PORTS + (_JOURNAL_PORT, _CONSUMER_PORT),
+from .definitions import (
+    DELIVER, PREPARE, QUALIFY, RECONCILE, _CONSUMER_PORT, _JOURNAL_PORT, _SCOPE_PORTS,
 )
 
 

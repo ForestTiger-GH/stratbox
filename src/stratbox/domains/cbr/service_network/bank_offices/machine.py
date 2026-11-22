@@ -11,17 +11,8 @@ from stratbox.shared.data.releases import CompareReleaseRequest
 from . import operations
 from .contracts import ParseOfficesRequest
 
-REF = {"type": "string", "pattern": r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"}
-DAY = {"type": "string", "pattern": r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "format": "date"}
-DIGEST = {"type": "string", "pattern": r"^[0-9a-f]{64}$"}
-INTEGER = {"type": "integer", "minimum": 0}
-STRING = {"type": "string"}
-LAYER = {"enum": ["same", "changed", "unavailable", "incompatible"]}
-LAYERS = ("original", "structure", "facts", "method", "representation")
-COVERAGE = {
-    "common_observations": INTEGER, "baseline_observations": INTEGER,
-    "candidate_observations": INTEGER, "common_subjects": INTEGER, "scope": STRING,
-}
+from .machine_contracts import PARSE_CONTRACT, COMPARE_CONTRACT
+
 
 
 def _parse(data, materials, context):
@@ -61,22 +52,5 @@ def _project_compare(result):
             "layers": asdict(v.layers), "coverage": asdict(v.coverage) if v.coverage else None}
 
 
-PARSE_CODEC = ReadOnlyWireCodec(
-    "cbr.offices.parse", 1,
-    {"source_ref": REF, "expected_sha256": DIGEST, "capture_date": DAY},
-    ("source_ref", "capture_date"),
-    {"as_of": DAY, "row_count": INTEGER,
-     "dataset_sha256": DIGEST, "representation_sha256": DIGEST},
-    _parse, _project_parse,
-)
-COMPARE_CODEC = ReadOnlyWireCodec(
-    "cbr.offices.compare", 2,
-    {"candidate_ref": REF, "baseline_ref": REF}, ("candidate_ref",),
-    {"state": STRING, "reason": STRING, "changed_count": INTEGER,
-     "layers": {"type": "object", "additionalProperties": False,
-                "properties": dict.fromkeys(LAYERS, LAYER), "required": list(LAYERS)},
-     "coverage": {"anyOf": [{"type": "object", "additionalProperties": False,
-                             "properties": COVERAGE, "required": list(COVERAGE)},
-                            {"type": "null"}]}},
-    _compare, _project_compare,
-)
+PARSE_CODEC = ReadOnlyWireCodec(PARSE_CONTRACT, _parse, _project_parse)
+COMPARE_CODEC = ReadOnlyWireCodec(COMPARE_CONTRACT, _compare, _project_compare)

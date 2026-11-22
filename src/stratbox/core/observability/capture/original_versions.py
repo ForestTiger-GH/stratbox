@@ -12,7 +12,7 @@ from typing import Literal
 
 from stratbox.core.execution import Correlation
 from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id, require_utc
-from stratbox.core.operations.source.version_comparison import OriginalVersionComparison
+from stratbox.core.operations.source.version_definitions import OriginalVersionComparison
 from stratbox.shared.source_publications import ConfirmedOriginalPublication, SourceAssetIdentity
 
 Mode = Literal["live", "backfill"]

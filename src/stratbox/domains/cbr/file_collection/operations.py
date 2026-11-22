@@ -6,12 +6,16 @@ import re
 from stratbox.core.formats.archives.store import ArchiveEntry, PathArchiveReceipt, zip_to_store
 from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, safe_member_name, zip_bytes
 from stratbox.core.storage.staging import current_revision, storage_scope, store_identity
-from stratbox.core.limits import BudgetError, ExecutionBudget
+from stratbox.core.limits import (
+    BudgetError,
+)
 from stratbox.core.network import HttpTransport, StreamingHttpTransport
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.core.execution import Completion, ExecutionContext, OperationDefinition, OperationFailure, OperationResult, run
+from stratbox.core.execution import (
+    Completion, ExecutionContext, OperationFailure, OperationResult, run,
+)
 from stratbox.core.operations.source.originals import (
     ReceiveOriginalRequest, ReceiveToStoreRequest, receive_original_to_store, storage_effect,
 )
@@ -26,22 +30,10 @@ from .contracts import (
 )
 from .registry import DEFAULT_CBR_FILE_SOURCES
 
-DISCOVER = OperationDefinition("cbr.file_collector.discover", 1, "cbr-file-catalog-1", DiscoverFilesRequest, tuple)
-COLLECT = OperationDefinition("cbr.file_collector.collect_raw", 2, "cbr-file-acquisition-1",
-                              CollectFilesRequest, Collection, frozenset({"http"}), partial_allowed=True)
-ARCHIVE = OperationDefinition("cbr.file_collector.prepare_archive", 1, "cbr-file-zip-1",
-                              PrepareArchiveRequest, Representation)
-COLLECT_TO_STORE = OperationDefinition(
-    "cbr.file_collector.collect_to_store", 1, "cbr-file-stream-1", CollectToStoreRequest, Collection,
-    frozenset({"http", "output_filestore"}), frozenset({"storage.write"}), partial_allowed=True,
-    limits=ExecutionBudget(temporary_bytes=256 * 1024 * 1024, output_bytes=256 * 1024 * 1024),
+from .definitions import (
+    ARCHIVE, ARCHIVE_TO_STORE, COLLECT, COLLECT_TO_STORE, DISCOVER,
 )
-ARCHIVE_TO_STORE = OperationDefinition(
-    "cbr.file_collector.archive_to_store", 1, "cbr-file-stream-zip-1", StoreArchiveRequest, PathArchiveReceipt,
-    frozenset({"filestore", "output_filestore"}), frozenset({"storage.write"}),
-    limits=ExecutionBudget(input_bytes=256 * 1024 * 1024, output_bytes=257 * 1024 * 1024,
-                           temporary_bytes=257 * 1024 * 1024),
-)
+
 _ROOTS = ("/vfs/statistics/", "/content/document/file/")
 _ARCHIVE_LIMITS = ArchiveLimits(100, 256 * 1024 * 1024, WORKBOOK_LIMIT, 256 * 1024 * 1024)
 

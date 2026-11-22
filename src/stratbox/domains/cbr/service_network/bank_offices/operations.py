@@ -15,11 +15,7 @@ from stratbox.shared.data.releases import (
     csv_rows,
 )
 from stratbox.core.execution import (
-    ExecutionContext,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    run,
+    ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.operations.source.acquisition import receive_source
 from stratbox.core.operations.source.comparison import compare_release_inputs, explain_comparison
@@ -33,37 +29,14 @@ from .contracts import AcquiredOffices, AcquireOfficesRequest, ParseOfficesReque
 from .parser import CaptureError, MAX_CSV, MAX_HTML, KNOWN_CONTEXT, extract_records
 from .representation import serialize_csv, validate_csv_bytes
 
-DATASET = "cbr.offices"
+from .definitions import (
+    ACQUIRE, CAPTURE, COMPARE, DATASET, METHOD, PARSE, READ, _HTTP,
+)
+
 PROFILE = "cbr.offices.wide-csv"
-METHOD = "cbr-offices-html-1"
 _PATH = "/banking_sector/credit/cstat/"
 _URL = "https://www.cbr.ru" + _PATH
 _ENDPOINTS = tuple(HttpsEndpoint(host, _PATH) for host in ("www.cbr.ru", "cbr.ru"))
-_HTTP = frozenset({"http"})
-PARSE = OperationDefinition(
-    f"{DATASET}.parse", 1, METHOD, ParseOfficesRequest, ParsedRelease
-)
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire",
-    2,
-    "cbr-offices-http-2",
-    AcquireOfficesRequest,
-    AcquiredOffices,
-    _HTTP,
-)
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture", 2, METHOD, AcquireOfficesRequest, ParsedRelease, _HTTP
-)
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "cbr-offices-csv-1",
-    ReadReleaseRequest,
-    ParsedRelease,
-)
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare", 2, "cbr-offices-compare-1", CompareReleaseRequest, Comparison
-)
 
 
 def _acquire(request, invocation, transport):
@@ -92,7 +65,6 @@ def _acquire(request, invocation, transport):
     return AcquiredOffices(
         source, source.receipt.observed_at_utc.astimezone(request.capture_zone).date()
     )
-
 
 
 def acquire(

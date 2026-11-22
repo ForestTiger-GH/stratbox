@@ -175,7 +175,7 @@ def test_duplicate_contract_across_nested_owners_is_rejected(monkeypatch, tmp_pa
             second: OperationRegistration(second, (_synthetic_ref(second, "same.operation"),)),
         },
     )
-    with pytest.raises(RegistryError, match="Duplicate operation contract"):
+    with pytest.raises(RegistryError, match="registry.logical_owner:same.operation"):
         catalog()
 
 

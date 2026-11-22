@@ -8,9 +8,8 @@ from stratbox.core.execution.machine.contracts import (
 from . import api
 from .cleanup import PlanCleanupRequest
 
-REF = {"type": "string", "pattern": r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"}
-INTEGER = {"type": "integer", "minimum": 0}
-DIGEST = {"type": "string", "pattern": r"^[0-9a-f]{64}$"}
+from .machine_contracts import PLAN_CONTRACT
+
 
 
 def _plan(data, materials, context):
@@ -30,10 +29,4 @@ def _project(result):
             "action_count": len(result.value.actions)}
 
 
-PLAN_CODEC = ReadOnlyWireCodec(
-    "frg.plan_cleanup", 1,
-    {"directory_ref": REF, "delete_others": {"type": "boolean"}},
-    ("directory_ref",),
-    {"plan_sha256": DIGEST, "action_count": INTEGER},
-    _plan, _project,
-)
+PLAN_CODEC = ReadOnlyWireCodec(PLAN_CONTRACT, _plan, _project)

@@ -3,25 +3,20 @@
 from dataclasses import asdict, replace
 from pathlib import PurePosixPath
 
-from stratbox.core.limits import ExecutionBudget
 from stratbox.core.network import HttpTransport
 from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import (
-    Completion,
-    ExecutionContext,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    run,
+    Completion, ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.execution.batch import attempt_batch, require_batch_values
 from stratbox.core.operations.source.validation import use_payload
-from stratbox.core.operations.tables import record_tables, seal_stream, use_stream, use_tables
+from stratbox.core.operations.tables import (
+    seal_stream, use_stream, use_tables,
+)
 from ..common.operation_helpers import (
-    _TABLE_LIMITS, _stream_metadata, _select_industry, _pivot_tables,
-    _pivot_metadata, _seal_pivots,
+    _stream_metadata, _select_industry, _pivot_tables, _pivot_metadata, _seal_pivots,
 )
 from stratbox.domains.cbr._source import (
     HTML_TYPES,
@@ -57,73 +52,11 @@ from .contracts import (
     RenderPivotRequest,
 )
 
-_DATASET = "cbr.industries.0105a"
+from .definitions import (
+    ACQUIRE, BUILD_STREAM, CALCULATE_APK, DISCOVER, PARSE, PIVOT, RENDER_INDUSTRIES, RENDER_INDUSTRY, RENDER_PIVOTS, _DATASET, _HTTP, _METHOD,
+)
+
 _ROOTS = ("/vfs/statistics/", "/content/document/file/")
-_METHOD = "cbr-0105a-workbook-2"
-_HTTP = frozenset({"http"})
-DISCOVER = OperationDefinition(
-    f"{_DATASET}.discover", 1, "cbr-0105a-index-1", DiscoverIndustriesRequest, tuple,
-    optional_capabilities=frozenset({"http"}),
-)
-ACQUIRE = OperationDefinition(
-    f"{_DATASET}.acquire",
-    1,
-    "cbr-0105a-source-1",
-    Cbr0105ADebtCorpSourceLink,
-    AcquiredSource,
-    _HTTP,
-)
-PARSE = OperationDefinition(
-    f"{_DATASET}.parse", 3, _METHOD + "-selective", ParseIndustryRequest, ParsedCbr0105ADebtCorpFile,
-    limits=_TABLE_LIMITS,
-)
-BUILD_STREAM = OperationDefinition(
-    f"{_DATASET}.build_stream",
-    3,
-    "cbr-0105a-stream-3",
-    BuildIndustryStreamRequest,
-    Cbr0105ADebtCorpStreamResult,
-    partial_allowed=True,
-    limits=_TABLE_LIMITS,
-)
-CALCULATE_APK = OperationDefinition(
-    f"{_DATASET}.calculate_apk",
-    2,
-    "cbr-0105a-derived-apk-1",
-    CalculateApkRequest,
-    Cbr0105ADebtCorpApkCalculationResult,
-    limits=_TABLE_LIMITS,
-)
-PIVOT = OperationDefinition(
-    f"{_DATASET}.build_pivots",
-    2,
-    "cbr-0105a-pivots-1",
-    PivotInput,
-    Cbr0105ADebtCorpPivotSetResult,
-    limits=_TABLE_LIMITS,
-)
-RENDER_PIVOTS = OperationDefinition(
-    f"{_DATASET}.render_pivots",
-    2,
-    "cbr-0105a-pivot-xlsx-1",
-    RenderPivotRequest,
-    Cbr0105ADebtCorpPivotWorkbookResult,
-    limits=_TABLE_LIMITS,
-)
-RENDER_INDUSTRY = OperationDefinition(
-    f"{_DATASET}.render_industry",
-    2,
-    "cbr-0105a-industry-xlsx-1",
-    RenderIndustryRequest,
-    Cbr0105ADebtCorpIndustryWorkbookResult,
-    limits=_TABLE_LIMITS,
-)
-
-
-RENDER_INDUSTRIES = OperationDefinition(
-    f"{_DATASET}.render_industries", 1, "cbr-0105a-industry-batch-1",
-    RenderIndustriesRequest, IndustryWorkbooksResult, limits=_TABLE_LIMITS,
-)
 
 
 def discover(
@@ -388,11 +321,6 @@ def build_pivots(
         return _seal_pivots(invocation, result, req.pivot, industry_code=req.industry_code)
 
     return run(PIVOT, request, work, context=context)
-
-
-
-
-
 
 
 def render_pivots(

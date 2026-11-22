@@ -71,4 +71,6 @@ def test_sink_failure_and_cooperative_cancellation_are_independent():
         Request("input"),
         lambda req, inv: Completion("value", "partial", "source.incomplete"),
     )
-    assert invalid.diagnostics[0].code == "internal.error"
+    assert invalid.outcome == "failed"
+    assert invalid.diagnostics[0].code == "source.incomplete"
+    assert "internal.error" in {item.code for item in invalid.diagnostics}

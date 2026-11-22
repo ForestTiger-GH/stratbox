@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from stratbox.core.execution import (
-    Completion, ExecutionBudget, ExecutionContext, OperationDefinition,
-    OperationFailure, OperationResult, run,
+    Completion, ExecutionContext, OperationFailure, OperationResult, run,
 )
 from stratbox.core.network import HttpTransport, RetryPolicy, StreamingHttpTransport
 from stratbox.core.operations.source.acquisition import receive_source
@@ -26,29 +25,13 @@ from .discovery.profiles import profile_for, qualify_index
 from .discovery.families.rules import parse_issue
 from .download.envelope import detect_bytes, detect_envelope
 
+from .definitions import (
+    ACQUIRE, ACQUIRE_TO_STORE, DISCOVER, _HTTP, _LIMIT, _OUTPUT, _WRITE,
+)
+
 _HTML = frozenset({"text/html", "application/xhtml+xml"})
-_HTTP = frozenset({"http"})
-_OUTPUT = frozenset({"output_filestore"})
-_WRITE = frozenset({"storage.write"})
-_LIMIT = 256 * 1024 * 1024
 _FORMAT_LIMITS = {"pdf": 100 * 1024 * 1024, "xlsx": 100 * 1024 * 1024,
                   "zip": _LIMIT, "rar": _LIMIT}
-
-DISCOVER = OperationDefinition(
-    "rosstat.publications.discover", 1, "rosstat-source-links-1",
-    DiscoverRosstatRequest, RosstatPublicationIndex, optional_capabilities=_HTTP,
-)
-ACQUIRE = OperationDefinition(
-    "rosstat.publications.acquire", 1, "rosstat-original-envelope-1",
-    AcquireRosstatRequest, AcquiredRosstatAsset, _HTTP,
-    limits=ExecutionBudget(input_bytes=_LIMIT, output_bytes=_LIMIT, temporary_bytes=_LIMIT),
-)
-ACQUIRE_TO_STORE = OperationDefinition(
-    "rosstat.publications.acquire_to_store", 1, "rosstat-original-stream-1",
-    AcquireRosstatToStoreRequest, StoredRosstatAsset, _HTTP | _OUTPUT, _WRITE,
-    optional_capabilities=frozenset({"filestore"}),
-    limits=ExecutionBudget(input_bytes=_LIMIT, output_bytes=_LIMIT, temporary_bytes=_LIMIT),
-)
 
 
 def discover(
