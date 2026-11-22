@@ -46,7 +46,7 @@ def read_location(request: D.ReadLocationRequest, *, store=None, selection=None,
             raise OperationFailure("input.material_invalid") from None
         except OSError:
             raise OperationFailure("input.material_unavailable") from None
-        invocation.use(UsedInputReceipt.for_payload(payload, "original"))
+        invocation.use(UsedInputReceipt.for_payload(payload, "material"))
         invocation.account_output(payload.identity)
         return D.LocatedMaterial(payload, ref)
     return run(D.READ_LOCATION, request, work, context=context, providers={"filestore": store},

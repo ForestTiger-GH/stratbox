@@ -2,7 +2,8 @@
 from stratbox.core.execution.catalog import OperationRef, OperationRegistration
 
 REGISTRATION = OperationRegistration("core.materials", tuple(
-    OperationRef(name, 1, f"stratbox.core.operations.materials.definitions:{definition}",
+    OperationRef(name, 2 if name in {"material.read_location", "material.transfer"} else 1,
+                 f"stratbox.core.operations.materials.definitions:{definition}",
                  f"stratbox.core.operations.materials.operations:{handler}")
     for name, definition, handler in (
         ("material.read_location", "READ_LOCATION", "read_location"),
@@ -12,4 +13,8 @@ REGISTRATION = OperationRegistration("core.materials", tuple(
         ("material.transfer_artifact", "TRANSFER_ARTIFACT", "transfer_artifact"),
     )
 ) + (OperationRef("material.archive", 1, "stratbox.core.operations.materials.archive_definitions:ARCHIVE",
-                  "stratbox.core.operations.materials.archive:archive_materials"),))
+                  "stratbox.core.operations.materials.archive:archive_materials"),
+     OperationRef("material.serialize_collection", 1, "stratbox.core.operations.materials.collections:SERIALIZE",
+                  "stratbox.core.operations.materials.collections:serialize_collection"),
+     OperationRef("material.read_collection", 1, "stratbox.core.operations.materials.collections:READ",
+                  "stratbox.core.operations.materials.collections:read_collection"),))

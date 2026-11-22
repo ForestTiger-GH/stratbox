@@ -17,9 +17,34 @@ from stratbox.core.formats.archives.members import ArchiveError, safe_member_nam
 from stratbox.core.storage.staging import BoundedStage, WRITE_GUARANTEES, commit_staged, stream_identity
 
 _CHUNK = 1024 * 1024
-_MAX_FILES = 500
-_MAX_BYTES = 64 * 1024**3
-_MAX_EXTRA_BYTES = 8 * 1024**2
+
+@dataclass(frozen=True, slots=True)
+class ArchiveWriteLimits:
+    """Bounded packaging policy, independent of a source's table layout."""
+    members: int = 10_000
+    input_bytes: int = 64 * 1024**3
+    extra_bytes: int = 8 * 1024**2
+    nested_paths: bool = True
+
+    def __post_init__(self):
+        if any(type(value) is not int or value < 1 for value in
+               (self.members, self.input_bytes, self.extra_bytes)) or type(self.nested_paths) is not bool:
+            raise ValueError("archive.limits_invalid")
+
+
+def validate_output_names(names: tuple[str, ...], *, nested_paths: bool = True) -> None:
+    """Use portable relative POSIX paths and reject aliases and file parents."""
+    if any(not isinstance(name, str) or not safe_member_name(name) or
+           "\\" in name or name.endswith("/") or (not nested_paths and "/" in name)
+           for name in names):
+        raise ArchiveError("archive.unsafe_member")
+    normalized = tuple(normalize("NFC", name).casefold() for name in names)
+    members = set(normalized)
+    if len(members) != len(names) or any(
+        "/".join(name.split("/")[:i]) in members
+        for name in normalized for i in range(1, len(name.split("/")))
+    ):
+        raise ArchiveError("archive.unsafe_member")
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +96,7 @@ def zip_to_store(
     operation_id: str | None = None, require_admission: bool = False,
     source_directory: str | None = None,
     on_effect: Callable[[StoredBytesReceipt], None] | None = None,
+    limits: ArchiveWriteLimits = ArchiveWriteLimits(),
 ) -> PathArchiveReceipt:
     """Verify a private ZIP, commit conditionally and read the actual destination."""
     if compression not in {"stored", "deflated"}:
@@ -83,18 +109,16 @@ def zip_to_store(
         raise ArchiveError("provider.capability_missing")
     additional = dict(extras or {})
     names = tuple(item.name for item in entries) + tuple(additional)
-    if not entries or len(names) > _MAX_FILES:
+    if not isinstance(limits, ArchiveWriteLimits):
+        raise ArchiveError("archive.limits_invalid")
+    if not entries or len(names) > limits.members:
         raise ArchiveError("archive.selection_invalid")
-    if (
-        len({normalize("NFC", name).casefold() for name in names}) != len(names)
-        or any(not safe_member_name(name) or "/" in name or "\\" in name for name in names)
-    ):
-        raise ArchiveError("archive.unsafe_member")
+    validate_output_names(names, nested_paths=limits.nested_paths)
     if any(not isinstance(data, bytes) for data in additional.values()):
         raise ArchiveError("archive.extra_invalid")
-    if sum(map(len, additional.values())) > _MAX_EXTRA_BYTES or sum(
+    if sum(map(len, additional.values())) > limits.extra_bytes or sum(
         item.identity.size for item in entries
-    ) > _MAX_BYTES:
+    ) > limits.input_bytes:
         raise ArchiveError("archive.size_limit")
     if source_store is output_store and any(item.source == destination for item in entries):
         raise ArchiveError("archive.source_destination_conflict")

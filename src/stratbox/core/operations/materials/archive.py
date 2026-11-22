@@ -8,6 +8,11 @@ from stratbox.core.formats.archives.members import ArchiveError
 from stratbox.core.operations.source.originals import _material_admission, storage_effect
 from stratbox.core.storage.staging import current_revision
 from stratbox.shared.evidence import MaterialReference, SourcePayload, UsedInputReceipt
+from stratbox.shared.data.processing import DataContract
+from stratbox.shared.data.snapshots import SnapshotCoverage
+from stratbox.shared.material_collections import (
+    CollectionDisposition, CollectionManifest, CollectionMember, encode_collection,
+)
 
 from .definitions import MAX_BYTES
 from .operations import _addressable, _selections
@@ -49,6 +54,11 @@ def archive_materials(request: ArchiveRequest, *, source_store=None, output_stor
             raise OperationFailure("archive.selection_invalid")
         if invocation.context.profile == "managed" and req.destination.mode == "best_effort_verified":
             raise OperationFailure("effect.mode_forbidden")
+        try:
+            manifest = _manifest(req)
+            manifest_bytes = encode_collection(manifest)
+        except ValueError as error:
+            raise OperationFailure(str(error)) from None
         writer = invocation.provider("output_filestore", output_store)
         _addressable(writer)
         from stratbox.core.storage.staging import storage_scope, store_identity
@@ -79,6 +89,7 @@ def archive_materials(request: ArchiveRequest, *, source_store=None, output_stor
                 mode=req.destination.mode, expected_revision=req.destination.expected_revision,
                 compression=req.compression, operation_id=ARCHIVE.operation_id,
                 plan_identity=_plan(req), require_admission=invocation.context.profile == "managed",
+                extras={req.manifest_name: manifest_bytes}, limits=req.limits,
                 on_effect=lambda receipt: storage_effect(invocation, receipt))
         except ArchiveError as error:
             raise OperationFailure(str(error)) from None
@@ -98,7 +109,7 @@ def archive_materials(request: ArchiveRequest, *, source_store=None, output_stor
         if storage.status in {"stored", "already_present"}:
             ref = MaterialReference(value.path, storage.store_id, value.identity, "application/zip",
                                     revision=storage.observed_revision, store_scope=storage.store_scope)
-        result = StoredArchive(value, ref, tuple(members))
+        result = StoredArchive(value, ref, tuple(members), manifest)
         return result if ref is not None else Completion(result, storage.status, storage.diagnostic_code)
     return run(ARCHIVE, request, work, context=context, providers={"output_filestore": output_store},
                provider_selections=_selections(filestore=source_selection, output_filestore=output_selection))
@@ -108,4 +119,22 @@ def _plan(request):
     from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
     return ByteIdentity.of(canonical_manifest_bytes({"members": [
         {"name": x.name, "sha256": x.source.identity.sha256, "size": x.source.identity.size}
-        for x in request.members], "compression": request.compression}))
+        for x in request.members], "compression": request.compression,
+        "manifest_name": request.manifest_name,
+        "manifest": request.manifest.identity.sha256 if request.manifest is not None else None}))
+
+
+def _manifest(request):
+    supplied = request.manifest
+    if supplied is not None:
+        if not isinstance(supplied, CollectionManifest) or tuple(
+            (member.name, member.identity, member.media_type) for member in supplied.members
+        ) != tuple((member.name, member.source.identity, member.source.media_type) for member in request.members):
+            raise ValueError("archive.manifest_mismatch")
+        return supplied
+    members = tuple(CollectionMember(f"member.{index}", member.name, DataContract("material.bytes"),
+                                    member.source.identity, member.source.media_type)
+                    for index, member in enumerate(request.members))
+    return CollectionManifest("material.archive", _plan(request).sha256, members,
+        tuple(CollectionDisposition(member.key, "completed") for member in members),
+        SnapshotCoverage("unknown", "Exact selected members; publisher inventory is unspecified."))

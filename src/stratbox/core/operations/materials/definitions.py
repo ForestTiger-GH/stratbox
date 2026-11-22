@@ -73,21 +73,22 @@ class StoredArtifact:
 
 
 READ_LOCATION = OperationDefinition(
-    "material.read_location", 1, "bounded-file-read-1", ReadLocationRequest, LocatedMaterial,
+    "material.read_location", 2, "bounded-neutral-file-read-2", ReadLocationRequest, LocatedMaterial,
     frozenset({"filestore"}), limits=LIMITS,
     processing=OperationSemantics(stages=(ProcessingStage.ACQUIRE,),
-        outputs=(OutputPort("source", DataContract("source.payload", 1, DataRole.ORIGINALS), path="payload"),
-                 OutputPort("material", DataContract("source.material_reference", 1, DataRole.ORIGINALS), path="material",
+        outputs=(OutputPort("source", DataContract("material.payload"), path="payload"),
+                 OutputPort("material", DataContract("material.reference"), path="material",
                             qualifications=frozenset({"storage.confirmed"}))),
         parameters=("locator", "media_type", "source_id", "expected_identity", "expected_revision", "limit", "charset"),
         summary="Read an explicitly supplied store location and establish exact byte identity."))
 
 TRANSFER = OperationDefinition(
-    "material.transfer", 1, "verified-stream-copy-1", TransferMaterialRequest, StoredOriginal,
+    "material.transfer", 2, "verified-neutral-stream-copy-2", TransferMaterialRequest, StoredOriginal,
     frozenset({"filestore", "output_filestore"}), frozenset({"storage.write"}), limits=LIMITS,
     processing=OperationSemantics(stages=(ProcessingStage.PRESERVE,),
-        inputs=(InputPort("material", DataContract("source.material_reference", 1, DataRole.ORIGINALS), path="material"),),
-        outputs=(OutputPort("material", DataContract("source.material_reference", 1, DataRole.ORIGINALS), path="material",
+        inputs=(InputPort("material", DataContract("material.reference"), path="material",
+                          alternatives=(DataContract("source.material_reference", 1, DataRole.ORIGINALS),)),),
+        outputs=(OutputPort("material", DataContract("material.reference"), path="material",
                             qualifications=frozenset({"storage.confirmed"})),), parameters=("destination",),
         summary="Stream an exact material between independently selected stores without deleting its source."))
 

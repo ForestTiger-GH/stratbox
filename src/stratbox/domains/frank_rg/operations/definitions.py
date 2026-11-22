@@ -61,7 +61,7 @@ ACQUIRE = OperationDefinition(
 CAPTURE = OperationDefinition(
     "frg.capture", 1, "frg.supplied-material-profile.v1", CaptureRequest, AcquiredReport, limits=_FILE_LIMITS,
     processing=OperationSemantics((ProcessingStage.ACQUIRE,),
-        inputs=(InputPort("payload", _PAYLOAD, "payload"),),
+        inputs=(InputPort("payload", _PAYLOAD, "payload", alternatives=(DataContract("material.payload"),)),),
         outputs=(OutputPort("report", _REPORT), OutputPort("payload", _PAYLOAD, "payload")),
         parameters=("source_id", "period", "format"),
         summary="Admit exact bytes supplied by a specialized method with an explicit logical source and period."),
