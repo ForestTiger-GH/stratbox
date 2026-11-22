@@ -1,158 +1,209 @@
-# Minfin — source-local budget and NWF data processing
+# Ministry of Finance (Minfin) — Source Profiles and Independent Operations
 
-**Scope:** Four publisher families, ten currently selected statistical XLSX streams (three monthly, three quarterly, three annual, and one monthly NWF workbook), publisher date-marker inspection, clean source-local extracts, reproducible CSV representations, limited headline calculations, and channel-independent notification candidates. The data owners and domain-specific rules live under `stratbox.domains.minfin`. Shared acquisition, execution, evidence, format admission, storage and notification delivery remain in `stratbox.core` and `stratbox.shared`.
+The Minfin domain is the first Strategy Box source pilot with a **four-part
+separation**: logical **sources**, subject-specific **profiles**, independently
+callable **operations**, and caller-owned **plans/checkpoints**. It implements
+four publisher families and ten XLSX statistical series (three monthly, three
+quarterly, three annual budget series and one monthly NWF workbook). Three
+historical NWF DOC/DOCX assets remain in publisher discovery but outside the
+standard flake preparation route.
 
-All four canonical `REGISTRY_*.yaml` records are stored **directly in the domain root**. They describe the source family, variants, periodicity, reporting basis and operation IDs; they do not hold live checkpoints, target directories, bot settings or executable Python references. These YAML files use JSON-compatible YAML 1.2 to keep the base distribution dependency-free. `pyproject.toml` packages them in wheel/sdist.
+All `REGISTRY_*.yaml` declarations live **at the domain root**. They do not
+contain filename patterns, Python paths, execution recipes, message routes,
+checkpoint data, schedules or duplicate operation-ID inventories. Each record
+carries source/series identities, economic period characteristics and **stable
+profile IDs**. A location is only a publication entrypoint, not an identity.
 
-## Domain directory architecture
-
-The root contains **only** the four canonical `REGISTRY_*.yaml` files, the
-single `_registration.py` operation-owner manifest, `__init__.py` and this README.
-The internal packages group work by **semantic responsibility**, not by when
-an implementation was introduced:
+## Directory responsibilities
 
 ```text
 minfin/
-├── REGISTRY_FEDBUD.yaml   # canonical source declarations (root-owned)
+├── REGISTRY_FEDBUD.yaml
 ├── REGISTRY_CONBUD.yaml
 ├── REGISTRY_SUBBUD.yaml
 ├── REGISTRY_NWF.yaml
-├── __init__.py             # small, lazy public API
-├── _registration.py       # exactly one operation owner: minfin
-├── README.md
-├── publications/           # source identity, discovery, access, revision markers
-│   ├── contracts.py
-│   ├── catalog.py
-│   ├── access.py
-│   ├── materials.py
-│   ├── discovery.py
-│   └── updates.py
-├── tables/                 # exact extraction, cleaned flakes, typed representations
-│   ├── contracts.py
-│   ├── extraction.py
-│   ├── cleaning.py
-│   ├── periods.py
-│   ├── mapping.py
-│   └── representation.py
-├── analytics/              # source-local calculations and channel-neutral notices
-│   ├── contracts.py
-│   ├── indicators.py
-│   └── notices.py
-└── operations/             # only operation contracts and runner adapters
-    ├── contracts.py        # cross-stage capture request/result
-    ├── definitions.py      # all 17 OperationDefinition declarations
-    └── handlers.py         # all 17 callable wrappers
+├── __init__.py               # compact public API, lazy handlers
+├── _registration.py         # the one operation owner, "minfin"
+├── publications/
+│   ├── contracts.py         # source identity, publication/material/processing evidence
+│   ├── catalog.py           # bounded discovery and strict decoding of root registries
+│   ├── profiles.py          # document-card and asset identification profiles
+│   ├── access.py            # explicit publisher HTTPS admission
+│   ├── discovery.py         # source index parsing, classification, conflict detection
+│   ├── materials.py         # acquisition and readable-document adapters
+│   └── updates.py           # marker-first evaluation and checkpoint candidates
+├── tables/
+│   ├── contracts.py         # exact source cells, flake and mapping contracts
+│   ├── profiles.py          # approved table geometries and cleaning method identities
+│   ├── extraction.py        # source-native reading, validation and cell comparison
+│   ├── cleaning.py          # profile-based source-local flake preparation
+│   ├── periods.py           # period normalization (including trailing footnote marks)
+│   ├── mapping.py           # explicit source-cell/metric binding
+│   └── representation.py    # reproducible extract and clean-flake representations
+├── analytics/
+│   ├── contracts.py         # headline and notification-candidate schemas
+│   ├── profiles.py          # reviewed budget/NWF calculation dispatch
+│   ├── indicators.py        # calculations and like-for-like YoY comparisons
+│   └── notices.py           # channel-neutral, deterministic notice facts
+└── operations/
+    ├── contracts.py         # cross-stage capture contract
+    ├── bindings.py          # strict source/series → profile resolution
+    ├── definitions.py       # the same 17 OperationDefinition objects
+    └── handlers.py          # thin adapters to the existing core runner
 ```
 
-Each internal package has an `__init__.py`. No nested package declares a second
-`_registration.py`; source-record ownership stays at the domain root. The
-`operations` package delegates to independent publisher/table/analytics
-functions and the existing `stratbox.core.execution.run` runner. Actual HTTP,
-format admission, storage and notification delivery remain provided by the
-neutral core and the caller. Cross-stage `CaptureRequest` belongs in
-`operations/contracts.py`, rather than making source publication contracts
-depend on table extracts. The root API lazily exports the existing operation
-IDs and request models. The old `models.py`, `pipeline_models.py`,
-`definitions.py`, `pipeline_definitions.py`, `operations.py` and
-`pipeline_operations.py` are removed, with no duplicate compatibility layer.
+The domain never creates a second operation runner, background scheduler,
+network transport, file store, delivery service, or public extension system.
+`stratbox.core.execution` retains ownership of invocation, evidence, outcomes,
+resource limits and `OperationCatalog`. All 17 operation IDs remain discoverable
+through the single domain owner declared in `_registration.py`.
 
-## Source families and confirmed HTML markers
+## Registry and profile contract
 
-| Root registry | Series | Last `Изменено` marker in supplied HTML, 22 Nov 2026 |
-| --- | --- | --- |
-| `REGISTRY_FEDBUD.yaml` | Federal budget, monthly; quarterly; annual | 2026-11-12; 2026-11-12; 2026-05-05 |
-| `REGISTRY_CONBUD.yaml` | Consolidated RF budget and state extrabudgetary funds, monthly; quarterly; annual | 2026-11-12; 2026-11-12; 2026-05-05 |
-| `REGISTRY_SUBBUD.yaml` | Consolidated budgets of RF regions, monthly; quarterly; annual | 2026-11-12; 2026-11-12; 2026-05-05 |
-| `REGISTRY_NWF.yaml` | NWF movement and management, monthly XLSX | 2026-11-13 |
+A source family may contain several statistical series. Each `REGISTRY_*.yaml`
+uses the JSON-compatible subset of YAML 1.2 and the declared schema
+`stratbox.minfin.registry.v2`. `publications/catalog.py` discovers **all**
+root `REGISTRY_*.yaml` files using `importlib.resources`, with strict shape,
+uniqueness, safety and bounded-inventory validation. Adding a source descriptor
+does not require editing a hard-coded Python filename list.
 
-The NWF landing page also lists three archival DOC/DOCX reports. They remain discoverable/acquirable, but are **not** members of the ten-XLSX processing contour. All dates above describe publisher **documents**, not observation periods or proof of equality of downloadable bytes. Page coverage remains `unknown` for inventories outside the observed HTML snapshot.
+```json
+{
+  "schema": "stratbox.minfin.registry.v2",
+  "family_id": "minfin.fedbud",
+  "publisher_id": "minfin",
+  "title": "Federal budget execution",
+  "location": {"kind": "publication_page", "url": "https://minfin.gov.ru/ru/statistics/fedbud/execute/"},
+  "profiles": {
+    "discovery": "minfin.document_cards.v1",
+    "identification": "minfin.fedbud_assets.v1",
+    "table": "minfin.budget_table.v1",
+    "metrics": "minfin.budget_headlines.v1"
+  },
+  "series": [
+    {"source_id": "minfin.fedbud.annex3.monthly", "slot": "monthly",
+     "title": "Monthly federal budget", "periodicity": "monthly",
+     "basis": "ytd", "kind": "table"}
+  ]
+}
+```
 
-## Processing model
+Example above is abbreviated to one series; the actual registry contains all
+three. Profile IDs refer to statically registered **typed** domain profiles,
+never dynamically imported callable names. `operations/bindings.py` validates
+publisher-profile, series-slot, format, frequency and economic-basis matches.
+Validation is available independently of running an operation using
+`validate_all_profiles()`.
+
+The publisher-card profile knows how Minfin exposes per-document `Опубликовано`
+and `Изменено` markers; identification profiles know the actual official
+publisher document IDs, file signatures and admitted formats. A verified
+publisher document ID still identifies a logical series after its XLSX
+filename changes. Contradictory document ID and filename evidence is reported
+as **conflicted**, not accepted as a new or changed statistical series.
+The discovered index has `coverage="unknown"`; absent links on a partial page
+do not prove absence from the publisher's full inventory.
+
+Table profiles define column roles, accepted native formats, header limits,
+period normalization and method versions. The actual cleaning algorithm accepts
+a resolved `TableProfile`, frequency and economic basis: it does not read
+registry files or select behavior through `if family_id`.
+
+Calculation profiles dispatch to reviewed budget/NWF methods through fixed
+callables registered in Python. They have separate economic basis and
+periodicity admission rules; no YAML text is evaluated as code.
+
+## Execution and data lifecycle
 
 ```text
-REGISTRY_*.yaml ───► discover page / card dates ───► plan_updates
-     │                                                    │
-     │                                publisher marker unchanged + confirmed
-     │                                checkpoint => skip redundant download
-     │                                                    │
-     ├──► existing core HTTP/acquire (when required) ──────┤
-     │                                                    ▼
-     └──► caller-supplied saved bytes ───► minfin.extract (complete source cells)
-                                                     │
-                                                     ▼
-                                         minfin.build_flake (clean, wide series)
-                                            │                    │
-                                            ▼                    ▼
-                                      minfin.render_flake    minfin.summarize
-                                            │                    │
-                                            ▼                    ▼
-                                      CSV Representation  minfin.prepare_notice
-                                            │                    │
-                                            ▼                    ▼
-                                  consumer-owned storage   domain facts candidate
+Source Registry → Source/Series Binding → Publication Discovery
+                                           │
+                                           ▼
+                                      Update Preflight
+                                           │
+                    ┌──────────────────────┴─────────────────────┐
+                    ▼                                            ▼
+              Skip download                           Source Acquire (if needed)
+                    │                                            │
+                    └─────────── Retained/Acquired Source ────────┘
+                                                       │
+                                                       ▼
+                                         Exact cells → Source Flake
+                                                        ├──→ CSV representation
+                                                        └──→ headline calculation
+                                                                   │
+                                                                   ▼
+                                                        neutral notice candidate
 ```
 
-**Stages remain independent.** Source discovery never downloads XLSX files. `plan_updates` is pure and takes caller-owned confirmed `SourceCheckpoint` values. An unchanged publisher date and stable document identity/locator allow a cheap skip, subject to the caller's actual retained-material and processing requirements. A missing date, ambiguous document, changed locator or failed prior check yields an explicit state; none is silently called unchanged. The date is an operational optimization, not a content digest. The caller retains the prior SHA-256, commits updated checkpoints only after the necessary downstream effects are confirmed, and may choose occasional forced full verification.
+The **consumer** chooses which independently callable operations to invoke.
+A `profile` is not an ordered recipe or task runner; `OperationCatalog` owns
+operation definitions. `SourceCheckpoint` makes independent publisher, material
+and method state views available through `.publication`, `.material`, and
+`.processing` properties. Marker preflight is a cheap decision, not proof of
+byte equality. A same-byte rediscovery does not by itself authorize a notice.
+A parser-profile change can require reprocessing a retained original without
+downloading again. The effective flake method version is taken from the
+resolved table profile unless a caller deliberately provides another method
+identity. Checkpoint persistence follows the consumer's confirmed storage
+boundary and is never performed by the pure Minfin domain.
 
-`minfin.extract` preserves source-local cell structure, nonempty values, formula/cache and source digest. `minfin.build_flake` accepts one admitted workbook source and produces a **clean wide table**: two descriptor columns (`code`, `indicator`), then normalized `YYYY-MM`, `YYYY-Qn` or `YYYY` period columns. Preambles, section labels, footnote blocks and trailing footnote markers are omitted. Original column spellings, original cell coordinates and the exact original digest remain available on the `FlakeTable` result; they are not written into the clean CSV. All source numbers retain their source precision. Empty measurements remain empty, not zero. Dates stored as the first or last day of a calendar month map to the same month.
+Monthly and quarterly budget values remain source-reported cumulative YTD.
+Annual budget values remain annual. NWF values are monthly stocks; liquid
+assets are the **derived** total minus assets placed in other permitted
+instruments, not an independent source observation. Like-for-like growth
+compares the same month, quarter, or year in the previous year. Publication
+modification dates do not replace economic observation periods.
 
-Budget monthly and quarterly values remain **cumulative year-to-date** (`ytd`); annual values remain full-year (`annual`). They are **not** converted into artificial monthly flows. The NWF table is a **monthly stock** (`stock`), with mixed physical units across its auxiliary rows; headline metrics use billion RUB only.
+For Tabularium, `minfin.build_flake` yields a table of indicator codes, labels,
+normalized period headers and exact values. `minfin.render_flake` produces a
+portable CSV (without document notes or header decoration). Neither operation
+owns the target path or persistence. For notifications, `minfin.summarize`
+yields a typed economic summary and `minfin.prepare_notice` yields an eligible,
+deterministic candidate; the event journal, notification service, Telegram
+formatting, deduplication and delivery are responsibilities of higher layers.
 
-## Source-local headline calculations
-
-`minfin.summarize` selects the latest observed period by default (or an explicit period) and compares it with the **same month/quarter in the previous year**, or with the preceding year for annual tables. Budget metrics are identified by reviewed source codes `1`, `2`, `3` and their labels; their signed balance must equal revenues less expenses to the configured tolerance. NWF uses reviewed source codes `2` and `5`:
-
-- `nwf.total`: row 2, fund volume at period end.
-- `nwf.liquid`: row 2 minus row 5, a **Strategy Box-derived** liquid-assets measure.
-
-Year-on-year figures compare like-for-like periods and preserve full Decimal precision in the typed result. If the previous balance is zero, absent or changes sign, a comparison state is returned instead of a misleading growth rate. Consumer presentation can round to one decimal and render a negative balance as a *deficit magnitude*. The core library never hardcodes Telegram formatting.
-
-Validated in a local review against 11 supplied official XLSX originals (nine budget files, October and November NWF versions):
-
-| Source | Latest observation period in the uploaded workbook |
-| --- | --- |
-| Federal monthly, regional monthly | 2026-10 |
-| Consolidated RF monthly | 2026-09 |
-| Three quarterly workbooks | 2026-Q3 |
-| Three annual workbooks | 2025 |
-| NWF `Dannye_20261001.xlsx` | 2026-09 |
-| NWF `Dannye_20261101.xlsx` | 2026-10 |
-
-Those observed periods can differ from the publication modification date. The complete XLSX binaries are intentionally **not** checked into this repository; tests use synthetic fixtures. A separate offline check against the eleven provided files confirmed normalized headers without duplicate periods and recovered all source-local headline rows. This does not establish future publisher schema stability.
-
-## Notification boundary
-
-`minfin.prepare_notice` returns a **typed fact candidate**, not a Telegram request or a delivery receipt. It requires an eligible publisher transition, a successfully completed and consistent source-local summary, source SHA-256 and publisher document marker. Ordinary initial observations/backfills are quiet unless the consumer opts in. Repeated preparation of the same revision yields the same `event_key`; the consumer/journal owns deduplication, qualified event recording, subscription, channel routing, retries and delivery confirmation. An unchanged source can still be reprocessed when its parser version changes, without being advertised as a *new publication*.
-
-## Offline use
+## Offline caller example
 
 ```python
 from pathlib import Path
 from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.minfin import (
-    ExtractRequest, BuildFlakeRequest, RenderFlakeRequest, SummaryRequest,
-    extract, build_source_flake, render_source_flake, calculate_headlines,
+    bind_series, BuildFlakeRequest, ExtractRequest, RenderFlakeRequest,
+    SummaryRequest, extract, build_source_flake, render_source_flake,
+    calculate_headlines,
 )
 
-source_id = "minfin.fedbud.annex3.monthly"
-payload = SourcePayload(Path("Prilozhenie_3_dannye_109-111_—_mes.xlsx").read_bytes(),
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", source_id)
+series_id = "minfin.fedbud.annex3.monthly"
+binding = bind_series("minfin.fedbud", series_id)
+assert binding.table is not None and binding.metrics is not None
+
+payload = SourcePayload(
+    Path("Prilozhenie_3_dannye_109-111_—_mes.xlsx").read_bytes(),
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", series_id,
+)
 raw = extract(ExtractRequest("minfin.fedbud", payload, "xlsx"))
 assert raw.outcome == "succeeded", raw.diagnostics
-flake = build_source_flake(BuildFlakeRequest(raw.value, source_id))
+flake = build_source_flake(BuildFlakeRequest(raw.value, series_id))
 assert flake.outcome == "succeeded", flake.diagnostics
-csv = render_source_flake(RenderFlakeRequest(flake.value))
-assert csv.outcome == "succeeded", csv.diagnostics
+csv_result = render_source_flake(RenderFlakeRequest(flake.value))
 headline = calculate_headlines(SummaryRequest(flake.value))
-assert headline.outcome == "succeeded", headline.diagnostics
-# The caller chooses where to store csv.value.data and how to present headline.value.
+assert csv_result.outcome == "succeeded" and headline.outcome == "succeeded"
 ```
 
-For the complete page workflow: `discover(DiscoverRequest(family_id, index=SourcePayload(html,...)))` yields assets with publisher `published_on`, `modified_on`, `document_id`; `plan_updates(UpdateRequest(index, checkpoints, selected_sources=...))` returns one decision per selected series. `checkpoint_for(asset, completed_flake)` builds a checkpoint **candidate**; durable state publication is the host's responsibility.
+## Verified scope and limits
 
-## Explicit boundaries
+The domain's source-specific profiles were checked offline against the four
+saved Minfin HTML pages (3+3+3+4 visible assets) and eleven provided XLSX
+snapshots (nine budgets and two successive NWF monthly files). The simple
+publisher HTML does not guarantee a complete historical inventory.
 
-- **In domain now:** publication-card dates and links; candidate update decisions; source-faithful cell extraction; clean source-local flakes; deterministic CSV bytes; limited budget/NWF headlines; notification-ready neutral facts.
-- **Already shared elsewhere:** `OperationResult`, `ExecutionContext`, HTTP, typed input receipts, original storage, package delivery and notifications infrastructure. No replacement runner, scheduler, persistence ledger or messenger was introduced.
-- **For later core/generalization:** moving source-registry composition and generic publisher-marker evaluation to a shared, evidence-qualified abstraction after cross-domain pilots; connecting facts to admitted observability schemas and subscription-based notifications; persistent destination-specific processing checkpoints.
-- **Out of scope:** database integration, cross-source harmonization, forecasting, Telegram delivery, actual Tabularium Git storage, full visual-readable PDF conversion and unrelated NWF archive DOC processing.
+No permanent source binaries are bundled. Repository tests use small synthetic
+material fixtures, including publication-card modification dates, renamed
+attachments, conflicts, retained-input processing and financial consistency.
+A complete installed-package test and live publisher acquisition remain
+necessary before enabling a production scheduled consumer.
+
+**Out of scope here:** generalizing `SourceCatalog`/`ProfileCatalog` into
+`core`, changing any other publisher domain, persistent cross-source databases,
+platform-specific scheduling and machine-protocol servers.

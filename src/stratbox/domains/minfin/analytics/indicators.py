@@ -1,9 +1,18 @@
-"""Headline extraction with period-safe prior-year comparisons."""
+"""Source-local calculations dispatched by an explicit economic profile.
+
+Same-period previous-year growth is shared; publisher-specific rows and
+consistency checks stay in registered domain calculation methods.
+"""
 from __future__ import annotations
 from decimal import Decimal, InvalidOperation, localcontext
+from typing import TYPE_CHECKING
+
 from ..tables.periods import preceding_year
 from ..tables.contracts import FlakeTable
 from .contracts import HeadlineMetric, HeadlineSummary, SummaryRequest
+if TYPE_CHECKING:
+    from .profiles import HeadlineProfile
+
 
 def _number(value: str | None) -> Decimal | None:
     if value is None or not value.strip():
@@ -42,14 +51,62 @@ def _metric(metric_id: str, label: str, current: Decimal, prior: Decimal | None)
         with localcontext() as ctx:
             ctx.prec = 38
             delta = (current / prior - Decimal(1)) * 100
-    # No implicit rounding of measurements or growth; the consumer chooses presentation precision.
     return HeadlineMetric(metric_id, label, format(current, "f"),
                           format(prior, "f") if prior is not None else None,
                           format(delta, "f") if delta is not None else None, outcome)
 
 
-def summarize(request: SummaryRequest) -> HeadlineSummary:
+def budget_metrics(flake: FlakeTable, index: int, prior_index: int | None) -> tuple[HeadlineMetric, ...]:
+    labels = (
+        ("1", "budget.revenue", "Доходы, всего"),
+        ("2", "budget.expenditure", "Расходы, всего"),
+        ("3", "budget.balance", "Дефицит (-)/Профицит (+)"),
+    )
+    current = []
+    previous = []
+    for code, metric_id, label in labels:
+        row = _row(flake, code, label)
+        current.append(_number(row.values[index]))
+        previous.append(_number(row.values[prior_index]) if prior_index is not None else None)
+    if any(item is None for item in current):
+        raise ValueError("minfin.summary.missing_headline_value")
+    if abs(current[0] - current[1] - current[2]) > Decimal("0.05"):
+        raise ValueError("minfin.summary.inconsistent_budget_totals")
+    if all(x is not None for x in previous) and abs(previous[0] - previous[1] - previous[2]) > Decimal("0.05"):
+        raise ValueError("minfin.summary.inconsistent_budget_totals")
+    return tuple(_metric(metric_id, label, now, prev)
+                 for (_, metric_id, label), now, prev in zip(labels, current, previous))
+
+
+def nwf_metrics(flake: FlakeTable, index: int, prior_index: int | None) -> tuple[HeadlineMetric, ...]:
+    total = _row(flake, "2", "Объем на конец периода")
+    other = _row(flake, "5", "Размещено в иные разрешенные активы на конец периода")
+    now_total = _number(total.values[index])
+    now_other = _number(other.values[index])
+    prev_total = _number(total.values[prior_index]) if prior_index is not None else None
+    prev_other = _number(other.values[prior_index]) if prior_index is not None else None
+    if now_total is None or now_other is None:
+        raise ValueError("minfin.summary.missing_headline_value")
+    if now_total < 0 or now_other < 0 or now_other > now_total:
+        raise ValueError("minfin.summary.invalid_nwf_balance")
+    if prev_total is not None and prev_other is not None and (
+        prev_total < 0 or prev_other < 0 or prev_other > prev_total
+    ):
+        raise ValueError("minfin.summary.invalid_nwf_balance")
+    return (
+        _metric("nwf.total", "Объем ФНБ на конец периода", now_total, prev_total),
+        _metric("nwf.liquid", "Ликвидные активы ФНБ", now_total - now_other,
+                prev_total - prev_other if prev_total is not None and prev_other is not None else None),
+    )
+
+
+def summarize(request: SummaryRequest, profile: HeadlineProfile) -> HeadlineSummary:
+    """Profile binding selects a calculation without family-ID switches."""
     flake = request.flake
+    if flake.value_basis not in profile.accepted_basis or flake.frequency not in profile.periods:
+        raise ValueError("minfin.summary.incompatible_basis")
+    if (flake.frequency == "annual") != (flake.value_basis == "annual"):
+        raise ValueError("minfin.summary.incompatible_basis")
     periods = [col.period_id for col in flake.columns]
     if len(set(periods)) != len(periods) or not periods:
         raise ValueError("minfin.summary.invalid_periods")
@@ -57,50 +114,11 @@ def summarize(request: SummaryRequest) -> HeadlineSummary:
     if target not in periods:
         raise ValueError("minfin.summary.period_unavailable")
     index = periods.index(target)
-    prior_id = preceding_year(target)
-    prior_index = periods.index(prior_id) if prior_id in periods else None
-    if flake.family_id == "minfin.nwf":
-        if flake.source_id != "minfin.nwf.flows" or flake.value_basis != "stock" or flake.frequency != "monthly":
-            raise ValueError("minfin.summary.incompatible_basis")
-        total = _row(flake, "2", "Объем на конец периода")
-        other = _row(flake, "5", "Размещено в иные разрешенные активы на конец периода")
-        now_total = _number(total.values[index]); now_other = _number(other.values[index])
-        prev_total = _number(total.values[prior_index]) if prior_index is not None else None
-        prev_other = _number(other.values[prior_index]) if prior_index is not None else None
-        if now_total is None or now_other is None:
-            raise ValueError("minfin.summary.missing_headline_value")
-        if now_total < 0 or now_other < 0 or now_other > now_total:
-            raise ValueError("minfin.summary.invalid_nwf_balance")
-        if prev_total is not None and prev_other is not None and (prev_total < 0 or prev_other < 0 or prev_other > prev_total):
-            raise ValueError("minfin.summary.invalid_nwf_balance")
-        metrics = (
-            _metric("nwf.total", "Объем ФНБ на конец периода", now_total, prev_total),
-            _metric("nwf.liquid", "Ликвидные активы ФНБ", now_total - now_other,
-                    prev_total - prev_other if prev_total is not None and prev_other is not None else None),
-        )
-    else:
-        if flake.family_id not in {"minfin.fedbud", "minfin.conbud", "minfin.subbud"} or (
-            (flake.frequency == "annual") != (flake.value_basis == "annual")
-        ) or flake.value_basis not in {"ytd", "annual"}:
-            raise ValueError("minfin.summary.incompatible_basis")
-        labels = (
-            ("1", "budget.revenue", "Доходы, всего"),
-            ("2", "budget.expenditure", "Расходы, всего"),
-            ("3", "budget.balance", "Дефицит (-)/Профицит (+)"),
-        )
-        current = []
-        previous = []
-        for code, title, label in labels:
-            row = _row(flake, code, label)
-            current.append(_number(row.values[index]))
-            previous.append(_number(row.values[prior_index]) if prior_index is not None else None)
-        if any(item is None for item in current):
-            raise ValueError("minfin.summary.missing_headline_value")
-        # Deficit (-) / surplus (+) must agree with income minus expense in the workbook.
-        if abs(current[0] - current[1] - current[2]) > Decimal("0.05"):
-            raise ValueError("minfin.summary.inconsistent_budget_totals")
-        if all(value is not None for value in previous) and abs(previous[0] - previous[1] - previous[2]) > Decimal("0.05"):
-            raise ValueError("minfin.summary.inconsistent_budget_totals")
-        metrics = tuple(_metric(mid, label, now, prev) for (code, mid, label), now, prev in zip(labels, current, previous))
+    prior = preceding_year(target)
+    prior_index = periods.index(prior) if prior in periods else None
+    metrics = profile.calculator(flake, index, prior_index)
     return HeadlineSummary(flake.family_id, flake.source_id, target, flake.frequency,
                            flake.value_basis, flake.original_identity, flake.method_version, metrics)
+
+
+__all__ = ("summarize", "budget_metrics", "nwf_metrics")

@@ -1,4 +1,8 @@
-"""Publisher identities, document evidence and caller-owned update state."""
+"""Logical source families and publisher evidence, distinct from physical filenames.
+
+Registry data names semantic sources and stable profiles. Profile implementations
+own publisher-specific naming and layout rules. Checkpoints are caller-owned.
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
@@ -8,14 +12,21 @@ from stratbox.shared.evidence import AcquiredSource, SourcePayload
 
 
 @dataclass(frozen=True, slots=True)
-class Variant:
+class SourceSeries:
     source_id: str
-    asset_id: str
+    slot: str
     title: str
-    prefix: str
-    suffix: str
-    basis_hint: str = "unknown"
-    periodicity: str = "unknown"
+    periodicity: Literal["monthly", "quarterly", "annual", "unknown"]
+    basis: Literal["ytd", "annual", "stock", "unknown"]
+    kind: Literal["table", "document"]
+
+
+@dataclass(frozen=True, slots=True)
+class SourceProfileRefs:
+    discovery: str
+    identification: str
+    table: str
+    metrics: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,11 +34,24 @@ class SourceFamily:
     family_id: str
     title: str
     landing_url: str
-    frequency: str
-    formats: tuple[str, ...]
-    default_source_id: str
-    variants: tuple[Variant, ...]
-    operations: tuple[tuple[str, str], ...]
+    profiles: SourceProfileRefs
+    series: tuple[SourceSeries, ...]
+
+    @property
+    def default_source_id(self) -> str:
+        return self.family_id + ".attachments"
+
+    def source(self, source_id: str) -> SourceSeries:
+        for item in self.series:
+            if item.source_id == source_id:
+                return item
+        raise ValueError("minfin.registry.unknown_series")
+
+    def slot(self, slot: str) -> SourceSeries:
+        for item in self.series:
+            if item.slot == slot:
+                return item
+        raise ValueError("minfin.registry.unknown_slot")
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,7 +63,7 @@ class Asset:
     filename: str
     format: str
     label: str
-    recognition: Literal["registered_variant", "unclassified"]
+    recognition: Literal["registered_variant", "unclassified", "conflicted"]
     index_identity: ByteIdentity
     published_on: date | None = None
     modified_on: date | None = None
@@ -108,7 +132,33 @@ class ReadableDocument:
 
 
 @dataclass(frozen=True, slots=True)
+class PublicationMarker:
+    source_id: str
+    asset_id: str
+    document_id: str | None
+    modified_on: date | None
+    url: str
+
+
+@dataclass(frozen=True, slots=True)
+class MaterialVersion:
+    source_id: str
+    identity: ByteIdentity
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessingVersion:
+    source_id: str
+    method_version: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class SourceCheckpoint:
+    """One caller-held checkpoint with *independently inspectable* state layers.
+
+    Keeping a single transport object does not conflate publisher changes with
+    material bytes or processing versions. Physical commit remains caller-owned.
+    """
     source_id: str
     asset_id: str
     document_id: str | None
@@ -116,6 +166,19 @@ class SourceCheckpoint:
     asset_url: str
     original_identity: ByteIdentity
     flake_method_version: str | None = None
+
+    @property
+    def publication(self) -> PublicationMarker:
+        return PublicationMarker(self.source_id, self.asset_id, self.document_id,
+                                 self.modified_on, self.asset_url)
+
+    @property
+    def material(self) -> MaterialVersion:
+        return MaterialVersion(self.source_id, self.original_identity)
+
+    @property
+    def processing(self) -> ProcessingVersion:
+        return ProcessingVersion(self.source_id, self.flake_method_version)
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,7 +188,7 @@ class UpdateRequest:
     selected_sources: tuple[str, ...] = ()
     retained_sources: frozenset[str] = frozenset()
     target: Literal["probe", "flake"] = "probe"
-    method_version: str = "minfin.flake.v1"
+    method_version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,3 +207,11 @@ class UpdatePlan:
     source_index_identity: ByteIdentity
     decisions: tuple[UpdateDecision, ...]
     inventory_coverage: Literal["unknown"] = "unknown"
+
+
+__all__ = (
+    "SourceSeries", "SourceProfileRefs", "SourceFamily", "Asset", "PublicationIndex",
+    "DiscoverRequest", "AcquireRequest", "AcquiredAsset", "InspectRequest", "Inspection",
+    "ReadableRequest", "ReadableDocument", "SourceCheckpoint", "UpdateRequest", "UpdateDecision",
+    "UpdatePlan", "PublicationMarker", "MaterialVersion", "ProcessingVersion",
+)

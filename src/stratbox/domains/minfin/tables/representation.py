@@ -4,7 +4,6 @@ import csv
 from io import StringIO
 from stratbox.shared.data.representation import Representation
 from .contracts import (Cell, RenderRequest, RenderFlakeRequest, Sheet, TableExtract)
-from ..publications.catalog import family
 
 def render_csv(request: RenderRequest) -> Representation:
     stream = StringIO(newline="")
@@ -29,7 +28,6 @@ def serialize_tables(request) -> Representation:
     import json
 
     value = request.extract
-    family(value.family_id)
     document = {
         "schema": "minfin.source_cells.v1",
         "family_id": value.family_id,
@@ -76,10 +74,9 @@ def read_serialized_tables(request) -> TableExtract:
         "format", "member", "coverage", "sheets",
     } or document["schema"] != "minfin.source_cells.v1":
         raise ValueError("minfin.representation_invalid")
-    fam = family(document["family_id"])
-    if (not isinstance(document["source_id"], str) or
-        document["source_id"] not in {fam.default_source_id, *(v.source_id for v in fam.variants)} or
-        document["format"] not in fam.formats or
+    if (not isinstance(document["family_id"], str) or not document["family_id"].startswith("minfin.") or
+        not isinstance(document["source_id"], str) or not document["source_id"].startswith(document["family_id"] + ".") or
+        document["format"] not in {"xlsx", "xls", "xlsm", "csv", "zip"} or
         not isinstance(document["coverage"], str) or
         not isinstance(document["sheets"], list) or
         not 1 <= len(document["sheets"]) <= 500 or

@@ -23,7 +23,7 @@ from ..analytics.contracts import SummaryRequest, NoticeRequest, NoticePreparati
 from .contracts import CaptureRequest, CaptureResult
 from ..publications.catalog import family
 from ..publications.access import PAGE_MIMES, page_request
-from ..publications.discovery import discover_links
+from ..publications.discovery import discover_links, enrich_index, identify_index
 from ..tables.extraction import compare_tables, extract_tables, validate_tables
 from ..tables.mapping import map_metrics
 from ..tables.representation import render_csv, serialize_tables, read_serialized_tables, render_flake_csv
@@ -32,6 +32,7 @@ from ..analytics.indicators import summarize
 from ..analytics.notices import prepare_notification
 from ..publications.updates import assess_updates
 from ..publications.materials import acquire_material, read_document
+from .bindings import bind_family, bind_series
 
 
 def _error(error: Exception, fallback: str = "minfin.source_invalid") -> OperationFailure:
@@ -47,7 +48,8 @@ def discover(request: DiscoverRequest, *, transport: HttpTransport | None = None
              context: ExecutionContext | None = None):
     def work(req, invocation):
         try:
-            spec = family(req.family_id)
+            bound = bind_family(req.family_id)
+            spec = bound.source
             source = req.index
             if source is None:
                 invocation.stage("download_landing_page")
@@ -60,9 +62,9 @@ def discover(request: DiscoverRequest, *, transport: HttpTransport | None = None
                 source = result.payload
             invocation.stage("parse_landing_page")
             use_payload(source, invocation, role="publisher_index", limit=8 * 1024 * 1024)
-            from ..publications.discovery import enrich_index
             text = source.data.decode(source.charset or "utf-8", errors="strict")
-            return enrich_index(discover_links(spec, source, req.max_links), text, spec.landing_url)
+            return identify_index(enrich_index(discover_links(spec, source, req.max_links),
+                                               text, spec.landing_url), spec, bound.identification)
         except ValueError as exc:
             raise _error(exc) from None
     return run(D.DISCOVER, request, work, context=context, providers={"http": transport})
@@ -80,7 +82,8 @@ def inspect(request: InspectRequest, *, context: ExecutionContext | None = None)
 
 def _acquire(req: AcquireRequest, invocation, transport: HttpTransport | None):
     try:
-        return acquire_material(req, invocation, transport)
+        return acquire_material(req, invocation, transport,
+                                identity_profile=bind_family(req.asset.family_id).identification)
     except ValueError as exc:
         raise _error(exc) from None
 
@@ -94,7 +97,11 @@ def _extract(req: ExtractRequest, invocation):
     invocation.stage("extract_source_cells")
     use_payload(req.payload, invocation, role="publisher_material", limit=64 * 1024 * 1024)
     try:
-        return extract_tables(req, invocation)
+        bound = bind_family(req.family_id)
+        sources = frozenset((bound.source.default_source_id,
+                             *(s.source_id for s in bound.source.series if s.kind == "table")))
+        return extract_tables(req, invocation, allowed_sources=sources,
+                              allowed_formats=frozenset({"xlsx", "xls", "xlsm", "csv", "zip"}))
     except ValueError as exc:
         raise _error(exc, "minfin.table_invalid") from None
 
@@ -118,6 +125,12 @@ def capture(request: CaptureRequest, *, transport: HttpTransport | None = None,
 def validate(request: ValidateRequest, *, context: ExecutionContext | None = None):
     def work(req, invocation):
         try:
+            bound = bind_family(req.extract.family_id)
+            if req.extract.source_id not in {
+                bound.source.default_source_id,
+                *(s.source_id for s in bound.source.series if s.kind == "table"),
+            }:
+                raise ValueError("minfin.source_family_mismatch")
             return validate_tables(req)
         except ValueError as exc:
             raise _error(exc) from None
@@ -155,13 +168,28 @@ def readable_document(request: ReadableRequest, *, context: ExecutionContext | N
     return run(D.READABLE, request, work, context=context)
 
 def serialize_extract(request: SerializeRequest, *, context: ExecutionContext | None = None):
-    return run(D.SERIALIZE, request, lambda req, invocation: serialize_tables(req), context=context)
+    def work(req, invocation):
+        bound = bind_family(req.extract.family_id)
+        if req.extract.source_id not in {
+            bound.source.default_source_id,
+            *(s.source_id for s in bound.source.series if s.kind == "table"),
+        }:
+            raise OperationFailure("minfin.source_family_mismatch")
+        return serialize_tables(req)
+    return run(D.SERIALIZE, request, work, context=context)
 
 
 def read_representation(request: ReadRepresentationRequest, *, context: ExecutionContext | None = None):
     def work(req, invocation):
         try:
-            return read_serialized_tables(req)
+            value = read_serialized_tables(req)
+            bound = bind_family(value.family_id)
+            if value.source_id not in {
+                bound.source.default_source_id,
+                *(s.source_id for s in bound.source.series if s.kind == "table"),
+            }:
+                raise ValueError("minfin.representation_invalid")
+            return value
         except ValueError as exc:
             raise _error(exc, "minfin.representation_invalid") from None
     return run(D.READ_EXTRACT, request, work, context=context)
@@ -180,7 +208,13 @@ def plan_updates(request: UpdateRequest, *, context: ExecutionContext | None = N
     def work(req, invocation):
         invocation.stage("assess_publisher_markers")
         try:
-            return assess_updates(req)
+            bound = bind_family(req.index.family_id)
+            asset_ids = {s.source_id: bound.identification.rule(s.slot).asset_id
+                         for s in bound.source.series}
+            versions = {s.source_id: bind_series(req.index.family_id, s.source_id).method_version
+                        for s in bound.source.series if s.kind == "table"}
+            return assess_updates(req, source=bound.source, asset_ids=asset_ids,
+                                  method_versions=versions)
         except ValueError as exc:
             _wrap_error(exc)
     return run(D.PLAN_UPDATES, request, work, context=context)
@@ -190,7 +224,11 @@ def build_source_flake(request: BuildFlakeRequest, *, context: ExecutionContext 
     def work(req, invocation):
         invocation.stage("clean_source_table")
         try:
-            return build_flake(req)
+            bound = bind_series(req.extract.family_id, req.source_id)
+            if bound.table is None:
+                raise ValueError("minfin.flake.source_unsupported")
+            return build_flake(req, profile=bound.table,
+                               frequency=bound.series.periodicity, basis=bound.series.basis)
         except ValueError as exc:
             _wrap_error(exc)
     return run(D.BUILD_FLAKE, request, work, context=context)
@@ -209,7 +247,14 @@ def calculate_headlines(request: SummaryRequest, *, context: ExecutionContext | 
     def work(req, invocation):
         invocation.stage("calculate_source_headlines")
         try:
-            return summarize(req)
+            bound = bind_series(req.flake.family_id, req.flake.source_id)
+            if bound.metrics is None or bound.table is None:
+                raise ValueError("minfin.summary.source_unsupported")
+            if (req.flake.method_version != bound.table.method_version or
+                req.flake.frequency != bound.series.periodicity or
+                req.flake.value_basis != bound.series.basis):
+                raise ValueError("minfin.summary.profile_mismatch")
+            return summarize(req, bound.metrics)
         except ValueError as exc:
             _wrap_error(exc)
     return run(D.SUMMARIZE, request, work, context=context)

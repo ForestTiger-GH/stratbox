@@ -15,9 +15,9 @@ from .contracts import AcquireRequest, AcquiredAsset, ReadableRequest, ReadableD
 from .discovery import check_asset
 
 
-def acquire_material(req: AcquireRequest, invocation, transport: HttpTransport | None):
+def acquire_material(req: AcquireRequest, invocation, transport: HttpTransport | None, *, identity_profile):
     spec = family(req.asset.family_id)
-    check_asset(req.asset, spec)
+    check_asset(req.asset, spec, identity_profile)
     if type(req.max_bytes) is not int or not 0 < req.max_bytes <= 64 * 1024 * 1024:
         raise ValueError("minfin.acquisition_size_invalid")
     if type(req.deadline_seconds) is not int or not 1 <= req.deadline_seconds <= 600:

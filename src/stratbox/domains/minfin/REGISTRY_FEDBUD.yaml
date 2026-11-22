@@ -1,63 +1,42 @@
 {
-  "schema": "stratbox.minfin.registry.v1",
+  "schema": "stratbox.minfin.registry.v2",
   "family_id": "minfin.fedbud",
   "publisher_id": "minfin",
   "title": "Исполнение федерального бюджета",
-  "landing_url": "https://minfin.gov.ru/ru/statistics/fedbud/execute/",
-  "frequency": "mixed",
-  "formats": [
-    "xlsx",
-    "xls",
-    "xlsm",
-    "csv",
-    "zip",
-    "pdf"
-  ],
-  "default_source_id": "minfin.fedbud.attachments",
-  "variants": [
+  "location": {
+    "kind": "publication_page",
+    "url": "https://minfin.gov.ru/ru/statistics/fedbud/execute/"
+  },
+  "profiles": {
+    "discovery": "minfin.document_cards.v1",
+    "identification": "minfin.fedbud_assets.v1",
+    "table": "minfin.budget_table.v1",
+    "metrics": "minfin.budget_headlines.v1"
+  },
+  "series": [
     {
       "source_id": "minfin.fedbud.annex3.monthly",
-      "asset_id": "annex3_monthly",
-      "title": "Приложение 3, месячная детализация",
-      "prefix": "Prilozhenie_3_dannye_109-111_",
-      "suffix": "_mes.xlsx",
-      "basis_hint": "ytd",
-      "periodicity": "monthly"
+      "slot": "monthly",
+      "title": "Месячное исполнение федерального бюджета",
+      "periodicity": "monthly",
+      "basis": "ytd",
+      "kind": "table"
     },
     {
       "source_id": "minfin.fedbud.annex3.quarterly",
-      "asset_id": "annex3_quarterly",
-      "title": "Приложение 3, квартальная детализация",
-      "prefix": "Prilozhenie_3_dannye_109-111_",
-      "suffix": "_kvartal.xlsx",
-      "basis_hint": "ytd",
-      "periodicity": "quarterly"
+      "slot": "quarterly",
+      "title": "Квартальное исполнение федерального бюджета",
+      "periodicity": "quarterly",
+      "basis": "ytd",
+      "kind": "table"
     },
     {
       "source_id": "minfin.fedbud.annex3.annual",
-      "asset_id": "annex3_annual",
-      "title": "Приложение 3, годовая детализация",
-      "prefix": "Prilozhenie_3_dannye_109-111_",
-      "suffix": "_god.xlsx",
-      "basis_hint": "annual",
-      "periodicity": "annual"
+      "slot": "annual",
+      "title": "Годовое исполнение федерального бюджета",
+      "periodicity": "annual",
+      "basis": "annual",
+      "kind": "table"
     }
-  ],
-  "operations": {
-    "discover": "minfin.discover",
-    "acquire": "minfin.acquire",
-    "extract": "minfin.extract",
-    "compare": "minfin.compare",
-    "render": "minfin.render_csv",
-    "validate": "minfin.validate",
-    "map": "minfin.map_observations",
-    "readable": "minfin.readable",
-    "serialize": "minfin.serialize",
-    "read_extract": "minfin.read_representation",
-    "plan_updates": "minfin.plan_updates",
-    "build_flake": "minfin.build_flake",
-    "render_flake": "minfin.render_flake",
-    "summarize": "minfin.summarize",
-    "prepare_notice": "minfin.prepare_notice"
-  }
+  ]
 }

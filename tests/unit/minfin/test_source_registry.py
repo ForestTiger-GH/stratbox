@@ -73,7 +73,7 @@ def test_four_root_registries_are_distinct_and_versioned():
     for item in all_families:
         assert item.landing_url.startswith('https://minfin.gov.ru/ru/')
         assert dict(item.operations)['discover'] == 'minfin.discover'
-    assert [v.basis_hint for v in family('minfin.fedbud').variants] == ['ytd', 'ytd', 'annual']
+    assert [v.basis for v in family('minfin.fedbud').series] == ['ytd', 'ytd', 'annual']
 
 
 @pytest.mark.parametrize('family_id, expected', [

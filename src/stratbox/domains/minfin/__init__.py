@@ -9,7 +9,8 @@ from .publications.catalog import families, family, all_sources
 from .publications.contracts import (
     DiscoverRequest, AcquireRequest, InspectRequest, ReadableRequest,
     SourceCheckpoint, UpdateRequest, UpdateDecision, UpdatePlan,
-    Asset, PublicationIndex,
+    Asset, PublicationIndex, SourceSeries, SourceProfileRefs,
+    PublicationMarker, MaterialVersion, ProcessingVersion,
 )
 from .publications.updates import checkpoint_for
 from .tables.contracts import (
@@ -32,6 +33,9 @@ _OPERATIONS = frozenset({
 
 
 def __getattr__(name):
+    if name in {"bind_family", "bind_series", "validate_all_profiles"}:
+        from .operations import bindings
+        return getattr(bindings, name)
     if name in _OPERATIONS:
         from importlib import import_module
         return getattr(import_module(".operations.handlers", __name__), name)

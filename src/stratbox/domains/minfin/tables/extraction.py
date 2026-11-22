@@ -12,7 +12,6 @@ from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from .contracts import (Cell, CellChange, CompareRequest, ExtractRequest, Sheet,
                         SheetChange, TableComparison, TableExtract, ValidateRequest, Validation)
-from ..publications.catalog import family
 
 _LIMIT = 64 * 1024 * 1024
 
@@ -153,16 +152,18 @@ def _tables_xls(data: bytes, selected_sheets: tuple[str, ...], max_cells: int) -
         raise ValueError("minfin.workbook_invalid") from None
 
 
-def extract_tables(request: ExtractRequest, invocation=None) -> TableExtract:
-    spec = family(request.family_id)
+def extract_tables(request: ExtractRequest, invocation=None, *,
+                   allowed_sources: frozenset[str], allowed_formats: frozenset[str]) -> TableExtract:
+    """Exact source-cell extraction under an independently admitted source binding."""
     if not isinstance(request.payload, SourcePayload) or not 0 < request.payload.identity.size <= _LIMIT:
         raise ValueError("minfin.payload_invalid")
     if type(request.max_cells) is not int or not 1 <= request.max_cells <= 500_000:
         raise ValueError("minfin.cell_limit_invalid")
-    if request.format not in spec.formats:
+    if request.format not in allowed_formats or request.format not in {"xlsx", "xls", "xlsm", "csv", "zip"}:
         raise ValueError("minfin.format_unsupported")
-    permitted_ids = {spec.default_source_id, *(variant.source_id for variant in spec.variants)}
-    if request.payload.source_id is not None and request.payload.source_id not in permitted_ids:
+    if not isinstance(allowed_sources, frozenset) or not allowed_sources:
+        raise ValueError("minfin.binding_missing")
+    if request.payload.source_id is not None and request.payload.source_id not in allowed_sources:
         raise ValueError("minfin.source_family_mismatch")
     data = request.payload.data
     member = request.member
@@ -198,7 +199,7 @@ def extract_tables(request: ExtractRequest, invocation=None) -> TableExtract:
         raise ValueError("minfin.extract_unsupported_format")
     if invocation is not None:
         invocation.check_cancelled()
-    return TableExtract(request.family_id, request.payload.source_id or spec.default_source_id,
+    return TableExtract(request.family_id, request.payload.source_id or request.family_id + ".attachments",
                         request.payload.identity, request.format, tables, member)
 
 
@@ -231,7 +232,6 @@ def compare_tables(request: CompareRequest) -> TableComparison:
 
 def validate_tables(request: ValidateRequest) -> Validation:
     value = request.extract
-    family(value.family_id)
     coordinates = [(c.sheet, c.row, c.column) for sh in value.sheets for c in sh.cells]
     if len(set(coordinates)) != len(coordinates):
         raise ValueError("minfin.extract_duplicate_cell")
