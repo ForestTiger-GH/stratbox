@@ -101,6 +101,18 @@ Research Result остаётся Research Result до отдельного до�
 
 Результаты этой ветки остаются Research Results / Research Syntheses. Они не являются Scientific Knowledge, Product Decision, Target WHAT или Target HOW и не меняют implementation owners. Последующий Knowledge assembly имеет отдельный контракт и admission boundary.
 
+### 05-data-processing-architecture
+
+`_mw/epochs-001-strategy-box-development/research/05-data-processing-architecture/`
+
+This branch develops the common Strategy Box data processing model: complete
+domain operation surfaces, artifact roles, source updates, integration,
+calculations, products, parallel execution, observability, optional notifications
+and autonomous AI interaction through the desktop MCP boundary.
+It is the research route for finalizing those boundaries and their terminology.
+Its results remain research proposals; implementation and maintained Knowledge
+retain their existing owners and admission boundaries.
+
 ## Work architecture
 
 1. Текущие Product owners остаются вне `_mw/`; Work-история не дублирует их.
