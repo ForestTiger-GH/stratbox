@@ -16,7 +16,18 @@ from .registry import family
 def assess_updates(request: UpdateRequest) -> UpdatePlan:
     spec = family(request.index.family_id)
     eligible = {v.source_id for v in spec.variants}
-    sources = request.selected_sources or tuple(v.source_id for v in spec.variants)
+    # Default processing targets only the statistical table families. Other
+    # officially listed documentary assets remain explicitly selectable for
+    # source inventory checks without being mistaken for XLSX flakes.
+    sources = request.selected_sources or tuple(
+        v.source_id for v in spec.variants
+        if v.periodicity in {"monthly", "quarterly", "annual"}
+    )
+    if request.target == "flake" and any(
+        v.source_id in sources and v.periodicity not in {"monthly", "quarterly", "annual"}
+        for v in spec.variants
+    ):
+        raise ValueError("minfin.update.flake_source_unsupported")
     if len(sources) != len(set(sources)) or any(s not in eligible for s in sources):
         raise ValueError("minfin.update.invalid_source_selection")
     if request.target not in {"probe", "flake"} or not request.method_version:

@@ -168,6 +168,7 @@ class NoticeRequest:
     asset: Asset
     decision: UpdateDecision
     include_initial: bool = False
+    baseline_original_identity: ByteIdentity | None = None
 
 
 __all__ = (

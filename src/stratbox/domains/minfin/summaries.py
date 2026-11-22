@@ -129,6 +129,9 @@ def prepare_notification(request: NoticeRequest) -> tuple[NotificationFacts | No
         decision.asset != asset or decision.source_id != asset.source_id
     ):
         raise ValueError("minfin.notice.source_mismatch")
+    if (request.baseline_original_identity is not None and
+            request.baseline_original_identity == summary.original_identity):
+        return None, "minfin.notice.source_bytes_unchanged"
     if decision.state == "initial" and not request.include_initial:
         return None, "minfin.notice.initial_suppressed"
     if decision.state not in {"revised", "initial"}:

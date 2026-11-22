@@ -192,3 +192,43 @@ def test_invalid_economic_rows_fail_instead_of_guessing():
     result = calculate_headlines(M.SummaryRequest(flake))
     assert result.outcome == "failed"
     assert result.diagnostics[0].code == "minfin.summary.inconsistent_budget_totals"
+
+def test_nwf_default_update_scope_excludes_archived_documents():
+    page = """
+    <div class="document_card" data-href="/ru/perfomance/nationalwealthfund/statistics?id_57=93488-report">
+      <div><span class="date">Опубликовано: 13.11.2026</span><span class="date">Изменено: 13.11.2026</span></div>
+      <a class="file_item" title="Движение средств ФНБ" href="/common/upload/library/2026/11/main/Dannye_20261101.xlsx">XLSX</a>
+    </div>
+    """
+    index = discover(DiscoverRequest("minfin.nwf", SourcePayload(
+        page.encode(), "text/html", "minfin.nwf.index",
+    ))).value
+    plan = plan_updates(M.UpdateRequest(index))
+    assert plan.outcome == "succeeded", plan.diagnostics
+    assert tuple(item.source_id for item in plan.value.decisions) == ("minfin.nwf.flows",)
+    assert plan.value.decisions[0].state == "initial"
+
+
+def test_marker_revision_without_byte_revision_does_not_notify():
+    index = _index()
+    asset, = index.assets
+    original = _extract(asset.source_id, index.family_id, ("окт.25", "окт.26"), (
+        ("1", "Доходы, всего", (100, 110)),
+        ("2", "Расходы, всего", (120, 135)),
+        ("3", "Дефицит (-)/Профицит (+)", (-20, -25)),
+    ))
+    flake = build_source_flake(M.BuildFlakeRequest(original, asset.source_id)).value
+    summary = calculate_headlines(M.SummaryRequest(flake)).value
+    prior = M.SourceCheckpoint(
+        asset.source_id, asset.asset_id, asset.document_id,
+        date(2026, 11, 11), asset.url, flake.original_identity, "minfin.flake.v1",
+    )
+    change = plan_updates(M.UpdateRequest(index, (prior,), (asset.source_id,))).value.decisions[0]
+    assert change.state == "revised" and change.download_required
+    notice = prepare_notice_facts(M.NoticeRequest(
+        summary, asset, change, baseline_original_identity=prior.original_identity,
+    ))
+    assert notice.outcome == "succeeded"
+    assert notice.value.state == "skipped"
+    assert notice.value.reason == "minfin.notice.source_bytes_unchanged"
+    assert notice.value.facts is None
