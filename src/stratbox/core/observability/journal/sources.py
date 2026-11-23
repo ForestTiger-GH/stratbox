@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from stratbox.shared.identity import ByteIdentity
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 
 from stratbox.core.observability.journal.codecs import JournalDecodeError, encode_record
 from stratbox.core.observability.records.contracts import JournalRecord

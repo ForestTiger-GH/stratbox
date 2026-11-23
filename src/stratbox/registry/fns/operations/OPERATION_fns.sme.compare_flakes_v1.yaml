@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.compare_flakes",
+    "contract_version": 1,
+    "method_version": "fns-sme-compare-flakes-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:CompareFlakesRequest",
+    "value_type": "stratbox.domains.fns.tables.comparison:FlakeComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "fns.sme.flake_comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare physical source evidence for the same publication issue, independent of economic interpretation.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:COMPARE_FLAKES",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:compare_flakes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

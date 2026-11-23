@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.processing-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.territorial_offices.flake.v1",
+  "declaration": {
+    "profile_id": "cbr.territorial_offices.flake.v1",
+    "operation_id": "cbr.offices_reg.parse",
+    "formats": [
+      "xlsx"
+    ],
+    "scope": "Explicitly selected territorial blocks with formula, ambiguity and selection evidence.",
+    "contract_version": 3
+  }
+}

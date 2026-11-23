@@ -1,0 +1,15 @@
+{
+  "schema": "stratbox.publication.v1",
+  "owner_id": "fns",
+  "profile_id": "fns.sme.publication.v1",
+  "declaration": {
+    "schema_version": 1,
+    "family_id": "fns.sme",
+    "coverage": "Every supplied JSON object and field at country, federal-district and subject levels.",
+    "projections": [
+      "published_counts",
+      "regional_csv"
+    ],
+    "semantics": "Source ssrf and printed aggregate identities stay in FNS namespaces; changes in counts are net stock changes."
+  }
+}

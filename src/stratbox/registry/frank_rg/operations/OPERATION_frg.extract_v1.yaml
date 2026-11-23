@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.extract",
+    "contract_version": 1,
+    "method_version": "frg.extract.v1",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:ExtractRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookExtract",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "report",
+          "contract": {
+            "schema_id": "frg.report",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "report",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Admit and extract physical workbook evidence with exact source, issue and asset identity.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.pipeline_definitions:EXTRACT",
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:extract",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

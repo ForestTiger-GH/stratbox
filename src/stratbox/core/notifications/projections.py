@@ -9,7 +9,7 @@ from typing import Literal
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.core.execution import ExecutionContext, OperationFailure
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import JournalCursor, JournalHead, JournalRecord
 from stratbox.core.observability.records.contracts import require_utc
 

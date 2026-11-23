@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.publications.extract_members",
+    "contract_version": 1,
+    "method_version": "rosstat-publications-extract_members-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:MembersRequest",
+    "value_type": "builtins:tuple",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "rosstat.regional_archive.inventory",
+            "version": 1,
+            "role": null
+          },
+          "path": "inventory",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "members",
+          "contract": {
+            "schema_id": "rosstat.regional_archive.members",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "names",
+        "limits"
+      ],
+      "summary": "Read explicitly selected archive members and retain container/member evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:EXTRACT_MEMBERS",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_members",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.notifications",
+  "definition": {
+    "operation_id": "notifications.prepare",
+    "contract_version": 3,
+    "method_version": "notification-preparation-3",
+    "request_type": "stratbox.core.notifications.dispatch.preparation_contracts:PrepareRequest",
+    "value_type": "stratbox.core.notifications.dispatch.preparation_contracts:PreparationReport",
+    "required_capabilities": [],
+    "possible_effects": [
+      "notification.state_commit"
+    ],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [
+      {
+        "role": "notification_authority",
+        "phase": "scoped",
+        "owner": "notification_runtime"
+      },
+      {
+        "role": "notification_state",
+        "phase": "scoped",
+        "owner": "notification_runtime"
+      },
+      {
+        "role": "journal_source",
+        "phase": "conditional",
+        "owner": "notification_runtime"
+      }
+    ],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "notifications.prepare.result",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Prepare configured notification intents from qualified journal facts.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.notifications.definitions:PREPARE",
+    "handler_ref": "stratbox.core.notifications.operations:prepare",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

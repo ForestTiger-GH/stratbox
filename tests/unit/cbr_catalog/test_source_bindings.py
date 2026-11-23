@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from stratbox.core.execution.semantics import ProcessingStage, OperationKey, OutputPort
+from stratbox.shared.data.operations import ProcessingStage, OperationKey, OutputPort
 from stratbox.domains.cbr.operations import bindings
 from stratbox.domains.cbr.operations.catalog import DescribeFamilyRequest, DescribeSourceRequest, describe_family, describe_source
 from stratbox.shared.data.processing import DataContract, DataRole

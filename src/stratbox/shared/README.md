@@ -2,9 +2,10 @@
 
 The `stratbox.shared` package defines reusable identities, evidence, statistical data contracts, reference data and calendar semantics. It has no execution, network transport, filesystem effects, user interface or domain-specific source parsing.
 
+- `identifiers.py`: bounded logical identifiers.
 - `identity.py`: immutable byte identity and canonical manifest serialization.
 - `evidence.py`: source materials, acquisition and effect receipts, used-input lineage.
-- `data/`: observation facts, dataset and computation versions, representations, release comparisons and table identities.
+- `data/`: observation facts, processing roles and named ports, dataset and computation versions, representations, release comparisons and table identities.
 - `reference/`: deterministic, offline, integrity-checked editions and named-reference resolution for banks, OKVED2 and geography.
 - `time/`: calendar period anchor generation.
 

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.express",
+  "series_id": "frg.express.issuance_cards",
+  "title": "Credit card issuance",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.express.issuance_cards.route.v1",
+  "family_profile": "frg.express.publication.v1",
+  "position": 4,
+  "publication": {
+    "slot": "issuance_cards",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.read_flake",
+    "contract_version": 1,
+    "method_version": "rosstat-tables-read_flake-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:SnapshotRequest",
+    "value_type": "stratbox.domains.rosstat.tables.contracts:RosstatSourceFlake",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "rosstat.source_flake.snapshot",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Replay a complete selected source flake without the original reader.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:READ_FLAKE",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:read_flake",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,9 +1,9 @@
 # Bank of Russia data operations
 
-One CBR registration aggregates independent operation segments. Twelve root
-`REGISTRY_*.yaml` files declare logical publication families; source access,
-table layouts, semantic integration, calculations and products have separate
-functional owners.
+One CBR operation owner covers independent functional segments. Canonical
+`SOURCE_*.yaml`, `OPERATION_*.yaml` and profile resources live under
+`stratbox/registry/cbr`; source access, table layouts, semantic integration,
+calculations and products have separate Python implementation owners.
 
 - [Publications](publications/): logical series, source discovery, acquisition and collections.
 - [Tables](tables/): source layouts, exact extraction and source flakes.

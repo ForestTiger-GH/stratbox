@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.compare_flakes",
+    "contract_version": 1,
+    "method_version": "rosstat-tables-compare_flakes-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:FlakeComparisonRequest",
+    "value_type": "stratbox.domains.rosstat.tables.comparison:FlakeComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "rosstat.flake.comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare selected source facts with coordinate movement distinguished from values and profile scope changes.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:COMPARE_FLAKES",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_flakes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

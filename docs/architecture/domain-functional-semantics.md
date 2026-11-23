@@ -24,10 +24,10 @@ every publication supports the same analytical route.
 | `fns` | SME-register statistics and legal entities by status, legal form and published geographic unit | Full physical evidence precedes reviewed projections; RF, federal districts and subjects remain distinct, and historical column epochs require explicit mappings |
 
 The exact operation inventory comes from `domain_registration_inventory()`.
-A `_registration.py` declares an actual registration boundary; ordinary package
-nesting does not create one. Each logical operation ID has one registered owner
-across its versions. Handler and definition modules can live in functional
-subpackages without introducing additional registered owners.
+Canonical owner declarations establish registration boundaries; ordinary Python
+package nesting does not create one. Each logical operation ID has one owner
+across its versions. Full operation metadata lives in registry resources, while
+request/result classes and handlers can occupy functional subpackages.
 
 For CBR, operation namespaces such as `cbr.forms`, `cbr.industries.0105a`,
 `cbr.escrow` and `cbr.service_network` are callable groupings under `cbr`.
@@ -36,10 +36,12 @@ classify logical sources. Neither set replaces the root ownership identity.
 
 ## 2. Functional owners across publishers
 
-Each publisher root holds `REGISTRY_*.yaml` declarations for logical publication
-families and one `_registration.py`. Registry declarations identify sources and
-reviewed profile references. Source routes, physical layouts, mappings, models
-and output profiles have distinct implementation owners.
+Each publisher has canonical source, operation and profile declarations under
+`stratbox/registry/<owner>`. `core.registry` validates those records and projects
+publication and operation catalogs. Source routes define allowed stages and
+transitions; operation declarations define independent named input/output roles.
+Typed physical layouts, mappings, models and output profiles have distinct
+domain implementation owners.
 
 | Functional owner under `stratbox.domains.<publisher>` | Responsibility | Boundary kept explicit |
 | --- | --- | --- |
@@ -49,17 +51,17 @@ and output profiles have distinct implementation owners.
 | `integration` | Period, metric, subject and geography alignment; integrated observation datasets and version vectors | Shared identity requires an admitted mapping, and missing interpretation remains qualified |
 | `analytics` | Financial-model input admission, formulas, count changes, shares, APK and SORS methods | Calculation scope and required inputs are independent of presentation selection |
 | `products` | Prepared views, presentation profiles, ordered tables and file renderers | Rendering can start from a retained prepared view without reacquiring or recalculating data |
-| `operations` | Typed definitions, execution handlers, explicit compositions, registrations and source/family catalog bindings | Executable registration remains the sole operation registry; profile bindings qualify existing operations |
+| `operations` | Typed request/result classes, execution handlers, explicit compositions and source/family catalog bindings | Complete operation metadata has one registry authority; profile bindings qualify existing operation contracts |
 
 These boundaries apply to CBR, FNS, Rosstat, Minfin and Frank RG. Each publisher
 retains its reviewed extraction and analytical coverage. Shared physical
 workbook/document codecs, snapshots, observation views and territory editions
 have neutral owners; domain profiles assign source-specific meaning.
 
-The `operations/<segment>/registration.py` modules contribute references to the
-single CBR root registration. They are assembly modules for functional segments,
-not independent domain registrations. Definitions remain inspectable without
-loading their executable handlers or optional analytical engines.
+Functional segments consume the same canonical operation definitions. Metadata
+remains inspectable without loading executable handlers or optional analytical
+engines. A domain publication catalog is a typed projection of source resources,
+not a separately maintained inventory.
 
 ## 3. Publication groups preserve their own meaning
 

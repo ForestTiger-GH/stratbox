@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.render_flakes",
+    "contract_version": 1,
+    "method_version": "cbr-forms-csv-flakes-1",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:RenderFormFlakesRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakeExport",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flakes",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.forms.flake_files",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "files",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection",
+            "version": 1,
+            "role": null
+          },
+          "path": "manifest",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "prefix",
+        "include_member_originals"
+      ],
+      "summary": "Render all decoded physical DBF records to CSV with complete schema and member evidence for neutral packaging.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.reporting_forms.source_definitions:RENDER_FLAKES",
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:render_flakes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,374 @@
+{
+  "schema": "stratbox.route.v1",
+  "owner_id": "minfin",
+  "profile_id": "minfin.nwf.flows.route.v1",
+  "profiles": [
+    "minfin.nwf.publication_page.v1.metadata",
+    "minfin.document_cards.v1.metadata",
+    "minfin.nwf_assets.v1.metadata.minfin.nwf.flows",
+    "minfin.nwf_table.v1.metadata",
+    "minfin.nwf_headlines.v1.metadata"
+  ],
+  "operations": [
+    {
+      "operation_id": "minfin.discover",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.inspect",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.acquire",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.plan_updates",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.capture",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.extract",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.validate",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.compare",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.serialize",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_representation",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.render_csv",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.build_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.render_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.serialize_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.flake_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_flake_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.summarize",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.summary_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_summary",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.prepare_notice",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.prepare_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.view_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.render_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.observation_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.read_observations",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "minfin.integrate",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "Reviewed headline rows are built in; other rows require explicit metric, unit, basis and perimeter bindings.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.save_original",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Preserve supplied original bytes in caller-selected storage.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.read_original",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Read exact retained originals using their confirmed source reference.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.write_snapshot",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Store a complete domain snapshot through the caller's dataset adapter.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.read_snapshot",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Read a pinned complete domain snapshot through the caller's dataset adapter.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.save_artifact",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Wrap a rendered representation as a typed material artifact and select its destination.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.read_artifact",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Replay a retained representation and its semantic descriptor.",
+      "parameters": [],
+      "formats": []
+    }
+  ],
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "render",
+    "validate",
+    "view"
+  ],
+  "transitions": [
+    {
+      "from": "acquire",
+      "to": "discover"
+    },
+    {
+      "from": "acquire",
+      "to": "extract"
+    },
+    {
+      "from": "acquire",
+      "to": "preserve"
+    },
+    {
+      "from": "calculate",
+      "to": "view"
+    },
+    {
+      "from": "discover",
+      "to": "inspect"
+    },
+    {
+      "from": "extract",
+      "to": "calculate"
+    },
+    {
+      "from": "extract",
+      "to": "compare"
+    },
+    {
+      "from": "extract",
+      "to": "extract"
+    },
+    {
+      "from": "extract",
+      "to": "integrate"
+    },
+    {
+      "from": "extract",
+      "to": "render"
+    },
+    {
+      "from": "extract",
+      "to": "validate"
+    },
+    {
+      "from": "ingest",
+      "to": "preserve"
+    },
+    {
+      "from": "preserve",
+      "to": "discover"
+    },
+    {
+      "from": "preserve",
+      "to": "extract"
+    },
+    {
+      "from": "preserve",
+      "to": "ingest"
+    },
+    {
+      "from": "preserve",
+      "to": "preserve"
+    },
+    {
+      "from": "view",
+      "to": "render"
+    }
+  ],
+  "qualifications": [
+    "Publication dates are release evidence; reporting periods come from source columns.",
+    "Monthly and quarterly budget values remain cumulative YTD; NWF units and basis are row-specific."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.funding",
+  "series_id": "cbr.funding.dep_ind",
+  "title": "Household deposits and funds including escrow",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.funding.dep_ind.route.v1",
+  "family_profile": "cbr.funding.publication.v1",
+  "position": 35,
+  "publication": {
+    "acquisition_profile": "cbr.route.dep_ind",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.dep_ind.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

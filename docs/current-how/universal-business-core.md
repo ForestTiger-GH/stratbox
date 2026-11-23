@@ -37,12 +37,12 @@ are relative to `stratbox`; the CBR operation owner is the single root `cbr`.
 | `domains.minfin.operations` | Source, document, flake, integration, calculation, view and replay operations | Thirteen sources preserve release context, exact fiscal periods, per-row units and qualified facts through independent durable stages. |
 | `core.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
-Every operation owner publishes its operations in `_registration.py`. CBR has
-one root manifest, which composes references from functional
-`operations/<segment>/registration.py` modules. Publication families and Python
-implementation packages remain separate from operation ownership. The central
-`stratbox.domains.registry.operation_catalog()` collects these declarations
-and core-owned operations. See the [registry interface](domain-operation-registry.md).
+Every operation has a canonical `OPERATION_*.yaml` declaration under
+`stratbox/registry/<owner>/operations`. Source identities and processing routes
+have separate source/profile resources. `stratbox.core.registry` validates these
+records and assembles domain and neutral-core catalogs. Python handlers consume
+the same definitions. Publication families and implementation packages remain
+separate from operation ownership. See the [registry interface](domain-operation-registry.md).
 
 The root owner's aggregate processing coverage describes its combined operation
 surface. Use `catalog.source_catalog().describe(series_id, operations=catalog)`

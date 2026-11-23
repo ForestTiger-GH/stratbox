@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_view",
+    "contract_version": 1,
+    "method_version": "minfin.read_view.v1",
+    "request_type": "stratbox.domains.minfin.products.contracts:ReadViewRequest",
+    "value_type": "stratbox.shared.data.views:ObservationView",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "input",
+          "contract": {
+            "schema_id": "observations.prepared_view.snapshot",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Restore a prepared view without rebuilding its analytics.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.pipeline_definitions:READ_VIEW",
+    "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:read_view",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

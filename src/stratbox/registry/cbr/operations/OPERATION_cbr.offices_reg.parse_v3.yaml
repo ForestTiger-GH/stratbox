@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.parse",
+    "contract_version": 3,
+    "method_version": "cbr-offices-reg-xlsx-4",
+    "request_type": "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:ParseOfficesRegRequest",
+    "value_type": [
+      "stratbox.shared.data.releases:ParsedRelease",
+      "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:OfficesRegCandidates"
+    ],
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "material.payload",
+            "version": 1,
+            "role": null
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "cbr.offices_reg.original",
+              "version": 1,
+              "role": "originals"
+            },
+            {
+              "schema_id": "source.payload",
+              "version": 1,
+              "role": "originals"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "candidates",
+          "contract": {
+            "schema_id": "cbr.offices_reg.candidates",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices_reg.extract_representation",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "sheet",
+        "national_row",
+        "last_row"
+      ],
+      "summary": "Extract a source-local release while preserving source meaning and evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.definitions:PARSE",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:parse",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

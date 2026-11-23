@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.acquire",
+    "contract_version": 1,
+    "method_version": "cbr-offices-reg-xlsx-4",
+    "request_type": "stratbox.shared.data.releases:ReleaseLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.offices_reg.original",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.offices_reg"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "url"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.definitions:ACQUIRE",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:acquire",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

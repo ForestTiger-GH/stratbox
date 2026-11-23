@@ -1,0 +1,17 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.identification.rbm.v1.metadata",
+  "declaration": {
+    "edition": "1",
+    "formats": [
+      "xls",
+      "xlsb",
+      "xlsm",
+      "xlsx"
+    ],
+    "kind": "identification",
+    "profile_id": "frg.identification.rbm.v1",
+    "scope": ""
+  }
+}

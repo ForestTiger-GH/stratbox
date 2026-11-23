@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.map_observations",
+    "contract_version": 1,
+    "method_version": "minfin-reviewed-mapping-1",
+    "request_type": "stratbox.domains.minfin.tables.contracts:MapRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:MappedObservations",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 67108864,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 67108864,
+      "requests": null,
+      "objects": null,
+      "cells": 500000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "extract",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "observations",
+          "contract": {
+            "schema_id": "minfin.mapped_observations",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "bindings"
+      ],
+      "summary": "Map only explicitly reviewed source-cell coordinates to metric, geography, unit and period IDs.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:MAP",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:map_observations",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,15 +1,14 @@
 """Discover, validate and list bundled source-domain operation owners.
 
-The source layout has one authoritative discovery rule, shared by runtime,
-static architecture checks and distribution checks. Catalog declarations are
-loaded without resolving executable handlers or optional engines.
+Canonical registry resources supply domain owners and contracts. The same
+validated snapshot supplies runtime catalogs and distribution inventories;
+executable handlers and optional engines remain unresolved during discovery.
 """
 
 from __future__ import annotations
 
-from importlib import import_module, resources
 
-from stratbox.core.execution.catalog import (
+from stratbox.core.registry.catalog import (
     OperationCatalog,
     OperationRef,
     OperationRegistration,
@@ -17,87 +16,14 @@ from stratbox.core.execution.catalog import (
     merge_catalogs,
 )
 
-from ._structure import DomainLayoutError, discover_operation_owners
+from stratbox.core.registry.operations import owner_ids, owner_registration
 
 
-def _within(module: str, owner_package: str) -> bool:
-    """Compare module prefixes at Python package segment boundaries."""
-    return module == owner_package or module.startswith(owner_package + ".")
-
-
-def _validated_domain_snapshot() -> tuple[
-    tuple[tuple[str, OperationRegistration], ...], OperationCatalog
-]:
-    """Load and validate exact owners once for both catalog and inventory."""
-    try:
-        owners = discover_operation_owners(resources.files("stratbox.domains"))
-    except (DomainLayoutError, OSError) as exc:
-        raise RegistryError(str(exc)) from exc
-
-    registrations: list[tuple[str, OperationRegistration]] = []
-    for owner in owners:
-        try:
-            declaration = import_module(
-                f"stratbox.domains.{owner}._registration"
-            ).REGISTRATION
-        except (ImportError, AttributeError, SyntaxError) as exc:
-            raise RegistryError(f"registry.invalid_manifest:{owner}") from exc
-        if not isinstance(declaration, OperationRegistration):
-            raise RegistryError(f"registry.invalid_registration:{owner}")
-        if declaration.owner_id != owner:
-            raise RegistryError(
-                f"registry.invalid_owner:{owner}:{declaration.owner_id}"
-            )
-        if not declaration.operations:
-            raise RegistryError(f"registry.empty_owner:{owner}")
-        if declaration.source_catalog_ref is not None and not _within(
-                declaration.source_catalog_ref.split(":", 1)[0], f"stratbox.domains.{owner}"):
-            raise RegistryError(f"registry.source_catalog_ownership:{owner}")
-        registrations.append((owner, declaration))
-
-    owner_packages = {
-        owner: f"stratbox.domains.{owner}" for owner, _ in registrations
-    }
-    refs: list[OperationRef] = []
-    logical_owners: dict[str, str] = {}
-    for owner, declaration in registrations:
-        for ref in declaration.operations:
-            if not isinstance(ref, OperationRef):
-                raise RegistryError(f"registry.invalid_reference:{owner}")
-            for role, link in (
-                ("definition", ref.definition_ref),
-                ("handler", ref.handler_ref),
-                ("codec", ref.wire_codec_ref),
-                ("wire_contract", ref.wire_contract_ref),
-            ):
-                if link is None:
-                    continue
-                module = link.split(":", 1)[0]
-                candidates = (
-                    candidate for candidate, package in owner_packages.items()
-                    if _within(module, package)
-                )
-                nearest = max(
-                    candidates, key=lambda value: len(value.split(".")),
-                    default=None,
-                )
-                if nearest is None:
-                    raise RegistryError(
-                        f"registry.domain_ownership:{owner}:{role}:{module}"
-                    )
-                if nearest != owner:
-                    raise RegistryError(
-                        f"registry.nearest_owner:{owner}:{nearest}:{role}:{module}"
-                    )
-            original_owner = logical_owners.setdefault(ref.operation_id, owner)
-            if original_owner != owner:
-                raise RegistryError(
-                    f"registry.logical_owner:{ref.operation_id}:"
-                    f"{original_owner}:{owner}"
-                )
-            refs.append(ref)
-    return tuple(registrations), OperationCatalog.from_registrations(
-        *(declaration for _, declaration in registrations)
+def _validated_domain_snapshot():
+    from stratbox.core.registry.assembly import assemble_owners
+    return assemble_owners(
+        tuple(owner for owner in owner_ids() if not owner.startswith("core.")),
+        owner_registration,
     )
 
 
@@ -108,9 +34,8 @@ def domain_catalog() -> OperationCatalog:
 
 def operation_catalog() -> OperationCatalog:
     """Merge the independently registered domain and neutral-core operations."""
-    from stratbox.core.registry import core_catalog
-
-    return merge_catalogs(domain_catalog(), core_catalog())
+    from stratbox.core.registry import operation_catalog as build
+    return build()
 
 
 def domain_registration_inventory() -> tuple[tuple[str, str, int], ...]:

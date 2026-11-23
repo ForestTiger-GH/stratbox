@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.make_readable",
+    "contract_version": 1,
+    "method_version": "cbr-form-readable-1",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakes",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "cbr.forms.readable",
+            "version": 1,
+            "role": "readable"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Render all admitted DBF tokens, schemas and deletion flags for reading; uncovered members remain explicit.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.reporting_forms.source_products_definitions:READABLE",
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.source_products:make_readable",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

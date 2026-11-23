@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.readable_document",
+    "contract_version": 1,
+    "method_version": "rosstat-tables-readable_document-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:DocumentRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "document.blocks.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "document",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Render all extracted document blocks and qualified extraction errors.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:READABLE_DOCUMENT",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:readable_document",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

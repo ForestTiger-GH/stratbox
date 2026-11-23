@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.securities",
+  "series_id": "cbr.securities.debt_securities",
+  "title": "Domestic debt securities issued: nominal and market value",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.securities.debt_securities.route.v1",
+  "family_profile": "cbr.securities.publication.v1",
+  "position": 52,
+  "publication": {
+    "acquisition_profile": "cbr.route.debt_securities",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.debt_securities.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

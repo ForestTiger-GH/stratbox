@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Callable, Literal
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 from stratbox.core.notifications.contracts import HandoffLookup, HandoffReceipt, NotificationIntent
 
 @dataclass(frozen=True, slots=True)

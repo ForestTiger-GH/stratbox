@@ -8,9 +8,10 @@ are independently callable and independently retainable.
 
 ## Source and method boundaries
 
-Root `REGISTRY_*.yaml` resources describe four logical report groups and their
-series. They contain source IDs, titles, period-label kinds and profile IDs.
-Directories, URLs, filenames and Python entry points belong to other owners:
+Canonical `SOURCE_*.yaml` resources under `stratbox/registry/frank_rg/sources`
+describe logical report series. Family and route profiles hold shared
+publication attributes and processing bindings. Logical identities stay
+separate from directories, URLs, filenames and Python entry points:
 
 | Owner | Responsibility |
 | --- | --- |

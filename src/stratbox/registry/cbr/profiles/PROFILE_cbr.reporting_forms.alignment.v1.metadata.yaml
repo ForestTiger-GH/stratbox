@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.reporting_forms.alignment.v1.metadata",
+  "declaration": {
+    "edition": "cbr.reporting_forms.alignment.v1",
+    "formats": [
+      "rar",
+      "zip",
+      "dbf"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.reporting_forms.alignment.v1",
+    "scope": "Source identities remain distinct until an explicit reviewed mapping is supplied."
+  }
+}

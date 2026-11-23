@@ -152,7 +152,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
     else:
         instant = require_utc(occurred_at_utc or datetime.now(timezone.utc))
         stamp = observation_id or uuid4().hex
-        from stratbox.core.execution.contracts import safe_token
+        from stratbox.shared.identifiers import safe_token
         safe_token(stamp)
         record_id = _id("result_observation", f"{result.invocation_id}:{stamp}")
         time_basis = "observation"

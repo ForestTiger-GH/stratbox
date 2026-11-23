@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.registry.operations import definition as _registry_definition
+
 from dataclasses import dataclass
 import re
 from typing import Literal
@@ -10,15 +12,8 @@ from stratbox.shared.source_publications import (
     InventoryAbsenceEvidence,
     QualifiedAssetPresenceEvidence,
 )
-from stratbox.core.execution.contracts import OperationDefinition
 
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.core.execution.semantics import (
-    InputPort,
-    OutputPort,
-    OperationSemantics,
-    ProcessingStage,
-)
 
 Change = Literal[
     "first_seen",
@@ -130,34 +125,4 @@ class OriginalVersionComparison:
         return self.state in {"first_seen", "new_release", "new_asset", "revised"}
 
 
-COMPARE = OperationDefinition(
-    "source.compare_original_versions",
-    1,
-    "original-byte-comparison-2",
-    CompareOriginalVersionsRequest,
-    OriginalVersionComparison,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.INSPECT,),
-        summary="Compare confirmed logical source versions with qualified baseline and presence evidence.",
-        inputs=(
-            InputPort(
-                "candidate",
-                DataContract("source.original_version", 1, DataRole.ORIGINALS),
-                path="candidate",
-            ),
-            InputPort(
-                "baseline",
-                DataContract("source.original_version", 1, DataRole.ORIGINALS),
-                path="baseline",
-                required=False,
-            ),
-        ),
-        outputs=(
-            OutputPort(
-                "comparison",
-                DataContract("source.original_version_comparison", 1, None),
-            ),
-        ),
-        parameters=("baseline_state", "absence", "presence"),
-    ),
-)
+COMPARE = _registry_definition('source.compare_original_versions', 1)

@@ -1,0 +1,24 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.project_finance",
+  "series_id": "cbr.project_finance.escrow",
+  "title": "Housing project finance and escrow",
+  "issue_model": "dated",
+  "formats": [
+    "xlsx",
+    "html"
+  ],
+  "route_profile": "cbr.project_finance.escrow.route.v1",
+  "family_profile": "cbr.project_finance.publication.v1",
+  "position": 40,
+  "publication": {
+    "acquisition_profile": "cbr.route.escrow",
+    "extraction_profile": "cbr.escrow.flake.v2",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.escrow.v2",
+    "integration_profile": "cbr.project_finance.alignment.v2",
+    "product_profile": "cbr.project_finance.views.v2"
+  }
+}

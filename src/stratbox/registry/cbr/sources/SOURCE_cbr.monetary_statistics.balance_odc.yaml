@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.monetary_statistics",
+  "series_id": "cbr.monetary_statistics.balance_odc",
+  "title": "Credit institution balance sheet",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.monetary_statistics.balance_odc.route.v1",
+  "family_profile": "cbr.monetary_statistics.publication.v1",
+  "position": 47,
+  "publication": {
+    "acquisition_profile": "cbr.route.balance_odc",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.balance_odc.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

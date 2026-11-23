@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.rbm",
+  "series_id": "frg.rbm.volumes_q",
+  "title": "Loan volumes with Q marker",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.rbm.volumes_q.route.v1",
+  "family_profile": "frg.rbm.publication.v1",
+  "position": 5,
+  "publication": {
+    "slot": "volumes_q",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

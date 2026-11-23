@@ -1,0 +1,9 @@
+{
+  "schema": "stratbox.publication.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.monetary_statistics.publication.v1",
+  "declaration": {
+    "schema_version": 1,
+    "family_id": "cbr.monetary_statistics"
+  }
+}

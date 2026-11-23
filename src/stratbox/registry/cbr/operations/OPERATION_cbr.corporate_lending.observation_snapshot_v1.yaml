@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.corporate_lending.observation_snapshot",
+    "contract_version": 1,
+    "method_version": "cbr-corporate-observation-snapshot-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.source_definitions:CorporateObservationSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.corporate_lending.source_observations",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "value",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.corporate_lending.source_observations.snapshot",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Encode a complete source observation result for independent retention.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.source_definitions:ENCODE",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.source_operations:build_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

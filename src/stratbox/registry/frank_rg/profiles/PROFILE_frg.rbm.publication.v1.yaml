@@ -1,0 +1,17 @@
+{
+  "schema": "stratbox.publication.v1",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.rbm.publication.v1",
+  "declaration": {
+    "schema": "stratbox.frg.registry.v1",
+    "family_id": "frg.rbm",
+    "publisher_id": "frank_rg",
+    "title": "Retail Banking Market reports",
+    "profiles": {
+      "discovery": "frg.directory.v1",
+      "identification": "frg.identification.rbm.v1",
+      "selection": "frg.latest_period.v1",
+      "naming": "frg.canonical.v1"
+    }
+  }
+}

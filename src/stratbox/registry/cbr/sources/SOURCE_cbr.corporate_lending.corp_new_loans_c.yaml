@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.corp_new_loans_c",
+  "title": "Corporate lending by OKVED2 classes",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.corporate_lending.corp_new_loans_c.route.v1",
+  "family_profile": "cbr.corporate_lending.publication.v1",
+  "position": 9,
+  "publication": {
+    "acquisition_profile": "cbr.route.corp_new_loans_c",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.corp_new_loans_c.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

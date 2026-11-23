@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.issuance_0104a.v1.metadata",
+  "declaration": {
+    "edition": "cbr-0104a-workbook-3",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.issuance_0104a.v1",
+    "scope": "Reviewed source-local layout with complete admitted scope and explicit source limitations."
+  }
+}

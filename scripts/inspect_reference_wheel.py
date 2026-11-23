@@ -26,6 +26,7 @@ from stratbox.shared.reference.assets import (  # noqa: E402
 )
 
 DOMAIN_SOURCE = SRC / "stratbox" / "domains"
+REGISTRY_SOURCE = SRC / "stratbox" / "registry"
 DOMAIN_OBSOLETE_DIRS = (
     "cbr_file_collector", "cbr_forms", "cbr_industries",
     "cbr_offices", "cbr_offices_reg", "cbr_sors_restoration",
@@ -50,6 +51,40 @@ def _domain_asset(path: str) -> bool:
 
 def _identity(payload: bytes) -> tuple[int, str]:
     return len(payload), sha256(payload).hexdigest()
+
+
+def _source_registry_inventory() -> dict[str, tuple[int, str]]:
+    """Include every canonical declaration and its package boundary by bytes."""
+    return {
+        file.relative_to(REGISTRY_SOURCE).as_posix(): _identity(file.read_bytes())
+        for file in sorted(REGISTRY_SOURCE.rglob("*"))
+        if file.is_file() and (file.suffix.lower() in {".yaml", ".yml"}
+                               or file.name == "__init__.py")
+        and not any(part.startswith(".") or part == "__pycache__"
+                    for part in file.relative_to(REGISTRY_SOURCE).parts)
+    }
+
+
+def _verify_registry_members(names: set[str], prefix: str, read_bytes) -> dict[str, int]:
+    """Compare source, wheel and sdist declarations without executing archive code."""
+    base = prefix + "stratbox/registry/"
+    expected = _source_registry_inventory()
+    if "__init__.py" not in expected or not any(name.endswith(".yaml") for name in expected):
+        raise ValueError("Canonical registry source declarations are missing")
+    actual = {
+        name[len(base):]
+        for name in names if name.startswith(base)
+        and (name.endswith((".yaml", ".yml")) or name.endswith("/__init__.py"))
+    }
+    missing = sorted(expected.keys() - actual)
+    extra = sorted(actual - expected.keys())
+    changed = sorted(name for name in actual & expected.keys()
+                     if _identity(read_bytes(base + name)) != expected[name])
+    if missing or extra or changed:
+        raise ValueError("Registry distribution mismatch: "
+                         f"missing={missing}, extra={extra}, changed={changed}")
+    return {"declarations": sum(name.endswith((".yaml", ".yml")) for name in actual),
+            "owners": sum(name.endswith("/OWNER.yaml") for name in actual)}
 
 
 def _source_domain_inventory() -> tuple[
@@ -148,6 +183,7 @@ def verify_wheel(path: str) -> dict[str, object]:
             raise ValueError("Wheel contains duplicate ZIP member names")
         members = set(names)
         domain_counts = _verify_domain_members(members, "", archive.read)
+        registry_counts = _verify_registry_members(members, "", archive.read)
         old = sorted(name for name in names if any(name.startswith(prefix) for prefix in OBSOLETE))
         if old:
             raise ValueError("Wheel includes obsolete shared paths: " + str(old))
@@ -192,7 +228,8 @@ def verify_wheel(path: str) -> dict[str, object]:
             if unknown:
                 raise ValueError("Undeclared reference resources in wheel: " + str(unknown))
     return {"wheel": path, "asset_occurrences": counts,
-            "domain_inventory": domain_counts, "result": "verified"}
+            "domain_inventory": domain_counts, "registry_inventory": registry_counts,
+            "result": "verified"}
 
 
 
@@ -221,6 +258,7 @@ def verify_sdist(path: str) -> dict[str, object]:
             with handle:
                 return handle.read()
         domain_counts = _verify_domain_members(directory, root, read_domain_member)
+        registry_counts = _verify_registry_members(directory, root, read_domain_member)
         for name in _REQUIRED_CODE:
             if root + name not in directory:
                 raise ValueError("Required semantic owner missing from sdist: " + name)
@@ -261,7 +299,8 @@ def verify_sdist(path: str) -> dict[str, object]:
             if orphans:
                 raise ValueError("Undeclared resources in source distribution: " + str(orphans))
     return {"sdist": path, "asset_occurrences": counts,
-            "domain_inventory": domain_counts, "result": "verified"}
+            "domain_inventory": domain_counts, "registry_inventory": registry_counts,
+            "result": "verified"}
 
 
 def main() -> int:

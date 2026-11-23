@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.express",
+  "series_id": "frg.express.portfolios",
+  "title": "Loan portfolios",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.express.portfolios.route.v1",
+  "family_profile": "frg.express.publication.v1",
+  "position": 1,
+  "publication": {
+    "slot": "portfolios",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

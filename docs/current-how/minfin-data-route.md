@@ -7,9 +7,10 @@ execution, provider selection, storage, archive creation and data handoff.
 
 ## Source declarations and acquisition
 
-Root `REGISTRY_*.yaml` files use `stratbox.minfin.registry.v3`. They contain
-logical identities, frequency/basis and registered profile IDs. Physical URLs,
-paths and filenames are outside these records. Typed acquisition profiles in
+Canonical `SOURCE_*.yaml` records under `stratbox/registry/minfin/sources`
+contain logical identities and publication attributes. Family and route profile
+resources bind frequency, basis and reviewed profile IDs. Physical URLs, paths
+and filenames remain outside logical source identities. Typed acquisition profiles in
 [publications/profiles.py](../../src/stratbox/domains/minfin/publications/profiles.py) hold convenient official
 landing-page defaults. `DiscoverRequest.page_url` overrides the default;
 `DiscoverRequest.index` supplies already acquired HTML. A supplied input is

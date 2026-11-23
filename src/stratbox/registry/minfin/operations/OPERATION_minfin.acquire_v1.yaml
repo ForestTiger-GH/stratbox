@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.acquire",
+    "contract_version": 1,
+    "method_version": "minfin-original-profile-2",
+    "request_type": "stratbox.domains.minfin.publications.contracts:AcquireRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:AcquiredAsset",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 67108864,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 67108864,
+      "requests": null,
+      "objects": null,
+      "cells": 500000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "minfin.asset",
+            "version": 1,
+            "role": null
+          },
+          "path": "asset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "minfin.publisher_material",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "qualifications": [
+            "source.minfin"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "max_bytes",
+        "deadline_seconds"
+      ],
+      "summary": "Acquire one explicitly selected Minfin asset with publisher URL and file-envelope checks.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:ACQUIRE",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:acquire",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

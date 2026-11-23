@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.restore",
+    "contract_version": 1,
+    "method_version": "cbr-offices-reg-replay-1",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": [
+      "stratbox.shared.data.releases:ParsedRelease",
+      "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:OfficesRegCandidates"
+    ],
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "candidates",
+          "contract": {
+            "schema_id": "cbr.offices_reg.candidates",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Restore a full territorial release or its still-unresolved source block candidates.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.definitions:RESTORE",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.snapshots:restore_release",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

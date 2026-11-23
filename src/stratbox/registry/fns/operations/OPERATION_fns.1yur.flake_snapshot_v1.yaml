@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.flake_snapshot",
+    "contract_version": 1,
+    "method_version": "fns-1yur-flake-snapshot-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flake",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.1yur.workbook_bundle.snapshot",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Encode the complete flake envelope for neutral immutable dataset storage.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.legal_entities.definitions:FLAKE_SNAPSHOT",
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:flake_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

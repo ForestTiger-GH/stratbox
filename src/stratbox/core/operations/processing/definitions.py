@@ -1,8 +1,8 @@
 """Portable metadata for reusable processing stages; optional engines stay lazy."""
+
+from stratbox.core.registry.operations import definition as _registry_definition
 from dataclasses import dataclass
 
-from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import InputPort, OutputPort, OperationSemantics, ProcessingStage as S, ProcessingFunction as F
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.workbooks import WorkbookExtract, WorkbookComparison, WORKBOOK_EXTRACT, WORKBOOK_SNAPSHOT as WORKBOOK_SNAPSHOT_CONTRACT
@@ -73,56 +73,18 @@ class UpdatePlanRequest:
     coverage: SnapshotCoverage | None = None
 
 
-def definition(op, request, value, stages, inputs, output, *, function=F.PROCESS, parameters=(), summary):
-    outputs = (output,)
-    if function is F.ENCODE and value is DatasetSnapshot:
-        outputs += (OutputPort("dataset_snapshot", SNAPSHOT),)
-    return OperationDefinition(op, 1, op.replace(".", "-")+"-1", request, value, limits=LIMITS,
-        processing=OperationSemantics(stages, inputs, outputs, parameters, summary, function=function))
+WORKBOOK = _registry_definition('workbook.extract', 1)
+WORKBOOK_READABLE = _registry_definition('workbook.readable', 1)
+WORKBOOK_SNAPSHOT = _registry_definition('workbook.snapshot', 1)
+WORKBOOK_REPLAY = _registry_definition('workbook.replay', 1)
+WORKBOOK_COMPARE = _registry_definition('workbook.compare', 1)
+DOCUMENT = _registry_definition('document.extract', 1)
+DOCUMENT_READABLE = _registry_definition('document.readable', 1)
+DOCUMENT_SNAPSHOT = _registry_definition('document.snapshot', 1)
+DOCUMENT_REPLAY = _registry_definition('document.replay', 1)
+VIEW = _registry_definition('observations.prepare_view', 1)
+VIEW_SNAPSHOT = _registry_definition('observations.view_snapshot', 1)
+VIEW_REPLAY = _registry_definition('observations.replay_view', 1)
+VIEW_RENDER = _registry_definition('observations.render_view', 1)
 
-
-WORKBOOK = definition("workbook.extract", ExtractRequest, WorkbookExtract, (S.EXTRACT,),
-    (InputPort("source", PAYLOAD, "payload"),), OutputPort("workbook", WORKBOOK_EXTRACT),
-    parameters=("series_id", "issue_id", "asset_id"), summary="Extract all decoder-visible workbook cells with exact format-specific evidence.")
-WORKBOOK_READABLE = definition("workbook.readable", WorkbookRequest, Representation, (S.READABLE,),
-    (InputPort("workbook", WORKBOOK_EXTRACT, "workbook"),), OutputPort("readable", DataContract("workbook.readable.jsonl", role=DataRole.READABLE)),
-    summary="Render physical cell evidence as source-readable JSONL without assigning economic meaning.")
-WORKBOOK_SNAPSHOT = definition("workbook.snapshot", WorkbookRequest, DatasetSnapshot, (),
-    (InputPort("workbook", WORKBOOK_EXTRACT, "workbook"),), OutputPort("snapshot", WORKBOOK_SNAPSHOT_CONTRACT), function=F.ENCODE,
-    summary="Encode a complete workbook extract into independently addressable sheet partitions.")
-WORKBOOK_REPLAY = definition("workbook.replay", SnapshotRequest, WorkbookExtract, (),
-    (InputPort("snapshot", WORKBOOK_SNAPSHOT_CONTRACT, "snapshot"),), OutputPort("workbook", WORKBOOK_EXTRACT), function=F.REPLAY,
-    summary="Restore every physical cell and source context from a verified workbook snapshot.")
-WORKBOOK_COMPARE = definition("workbook.compare", CompareWorkbooksRequest, WorkbookComparison, (S.COMPARE,),
-    (InputPort("before", WORKBOOK_EXTRACT, "before"), InputPort("after", WORKBOOK_EXTRACT, "after")),
-    OutputPort("comparison", DataContract("workbook.cell_comparison")), summary="Compare exact physical cells and geometry without assuming economic comparability.")
-DOCUMENT = definition("document.extract", ExtractRequest, DocumentExtract, (S.EXTRACT,),
-    (InputPort("source", PAYLOAD, "payload"),), OutputPort("document", DOCUMENT_EXTRACT),
-    parameters=("series_id", "issue_id", "asset_id"), summary="Extract ordered text blocks and explicit document extraction qualifications.")
-DOCUMENT_READABLE = definition("document.readable", DocumentRequest, Representation, (S.READABLE,),
-    (InputPort("document", DOCUMENT_EXTRACT, "document"),), OutputPort("readable", DataContract("document.readable.jsonl", role=DataRole.READABLE)),
-    summary="Render ordered document evidence and its source context as JSONL.")
-DOCUMENT_SNAPSHOT = definition("document.snapshot", DocumentRequest, DatasetSnapshot, (),
-    (InputPort("document", DOCUMENT_EXTRACT, "document"),), OutputPort("snapshot", DOCUMENT_SNAPSHOT_CONTRACT), function=F.ENCODE,
-    summary="Encode document blocks and qualifications for independent retention.")
-DOCUMENT_REPLAY = definition("document.replay", SnapshotRequest, DocumentExtract, (),
-    (InputPort("snapshot", DOCUMENT_SNAPSHOT_CONTRACT, "snapshot"),), OutputPort("document", DOCUMENT_EXTRACT), function=F.REPLAY,
-    summary="Restore ordered document evidence without reacquiring the original.")
-VIEW = definition("observations.prepare_view", PrepareViewRequest, ObservationView, (S.VIEW,),
-    (InputPort("batch", BATCH, "batch"),), OutputPort("view", OBSERVATION_VIEW),
-    parameters=("view_id", "metric_ids", "period_kinds", "subject_ids", "coverage", "qualifications"),
-    summary="Prepare an explicit observation selection preserving periods, missing states and provenance.")
-VIEW_SNAPSHOT = definition("observations.view_snapshot", ViewRequest, DatasetSnapshot, (),
-    (InputPort("view", OBSERVATION_VIEW, "view"),), OutputPort("snapshot", OBSERVATION_VIEW_SNAPSHOT), function=F.ENCODE,
-    summary="Encode a prepared observation view for independent replay.")
-VIEW_REPLAY = definition("observations.replay_view", SnapshotRequest, ObservationView, (),
-    (InputPort("snapshot", OBSERVATION_VIEW_SNAPSHOT, "snapshot"),), OutputPort("view", OBSERVATION_VIEW), function=F.REPLAY,
-    summary="Restore a verified prepared observation view with its original selection provenance.")
-VIEW_RENDER = definition("observations.render_view", ViewRequest, Representation, (S.RENDER,),
-    (InputPort("view", OBSERVATION_VIEW, "view"),), OutputPort("product", DataContract("observations.rendered_view", role=DataRole.PRODUCTS)),
-    parameters=("format",), summary="Render a prepared observation view to exact long-form CSV, JSON or JSONL.")
-
-UPDATE = definition("processing.plan_update", UpdatePlanRequest, UpdatePlan, (S.INSPECT,), (),
-    OutputPort("plan", DataContract("processing.update_plan")), function=F.INSPECT,
-    parameters=("targets", "retained", "coverage"),
-    summary="Plan independent source, method, reference-edition and destination updates without performing effects.")
+UPDATE = _registry_definition('processing.plan_update', 1)

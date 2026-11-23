@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.extract_workbook",
+    "contract_version": 1,
+    "method_version": "rosstat-tables-extract_workbook-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:PhysicalRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookExtract",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "series_id",
+        "issue_id",
+        "asset_id",
+        "container_identity",
+        "member"
+      ],
+      "summary": "Capture full workbook physical cells separately from economic selection.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:EXTRACT_WORKBOOK",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_workbook",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

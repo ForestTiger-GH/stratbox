@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.regional",
+  "series_id": "frg.regional.issuance_cards",
+  "title": "Regional credit card issuance",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.regional.issuance_cards.route.v1",
+  "family_profile": "frg.regional.publication.v1",
+  "position": 12,
+  "publication": {
+    "slot": "issuance_cards",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

@@ -17,6 +17,7 @@ from stratbox.domains.minfin import (
     bind_family, bind_series, validate_all_profiles,
 )
 from stratbox.domains.minfin.publications.catalog import _decode
+from stratbox.core.registry.sources import publication_families, source_documents
 from stratbox.domains.minfin.publications.profiles import identification_profile
 from stratbox.domains.minfin.publications.discovery import check_asset
 
@@ -52,25 +53,19 @@ def test_all_root_registry_series_resolve_to_registered_typed_profiles():
 
 
 def test_registry_declares_only_source_identifiers_and_profile_refs():
-    root = resources.files("stratbox.domains.minfin")
-    for path in root.iterdir():
-        if not path.name.startswith("REGISTRY_"):
-            continue
-        content = json.loads(path.read_text(encoding="utf-8"))
+    for content in publication_families("minfin", series_fields=(("source_id", "series_id"), ("title", "title"))):
         assert content["schema"] == "stratbox.minfin.registry.v3"
         assert set(content) == {"schema", "family_id", "publisher_id", "title", "profiles", "series"}
         assert all(set(item) == {"source_id", "slot", "title", "periodicity", "basis", "kind"}
                    for item in content["series"])
-        assert "prefix" not in path.read_text() and "suffix" not in path.read_text()
         assert "operations" not in content and "parser" not in content
-        assert "https://" not in path.read_text()
-        assert "filename" not in path.read_text()
         assert content["profiles"]["acquisition"].startswith("minfin.")
         assert content["profiles"]["identification"].startswith("minfin.")
+    assert all("filename" not in item and "operations" not in item for item in source_documents("minfin"))
 
 
 def test_unknown_profile_and_extra_executable_field_fail():
-    obj = json.loads(resources.files("stratbox.domains.minfin").joinpath("REGISTRY_FEDBUD.yaml").read_text())
+    obj = next(value for value in publication_families("minfin", series_fields=(("source_id", "series_id"), ("title", "title"))) if value["family_id"] == "minfin.fedbud")
     obj["parser"] = "evil.module:run"
     with pytest.raises(ValueError, match="minfin.registry.invalid_shape"):
         _decode(json.dumps(obj).encode())
@@ -150,25 +145,36 @@ def test_profile_based_budget_flake_and_economic_calculation():
 
 
 def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatch, tmp_path):
+    from shutil import copytree
     from stratbox.domains.minfin.publications import catalog
-    root = resources.files("stratbox.domains.minfin")
-    for name in ("FEDBUD", "CONBUD", "SUBBUD", "NWF"):
-        (tmp_path / f"REGISTRY_{name}.yaml").write_bytes(root.joinpath(f"REGISTRY_{name}.yaml").read_bytes())
-    added = json.loads(root.joinpath("REGISTRY_FEDBUD.yaml").read_text())
-    added["family_id"] = "minfin.future"
-    added["title"] = "Another logical family using one already registered profile"
-    for series in added["series"]:
-        series["source_id"] = series["source_id"].replace("minfin.fedbud", "minfin.future")
-    (tmp_path / "REGISTRY_FUTURE.yaml").write_text(json.dumps(added), encoding="utf-8")
-    original = catalog.resources.files
-    monkeypatch.setattr(catalog.resources, "files", lambda p: tmp_path if p == "stratbox.domains.minfin" else original(p))
+    from stratbox.core.registry import resources as registry_resources, sources
+    root = Path(str(registry_resources.registry_root()))
+    copytree(root, tmp_path / "registry")
+    declaration_root = tmp_path / "registry" / "minfin"
+    profile = declaration_root / "profiles" / "PROFILE_minfin.fedbud.publication.v1.yaml"
+    added = json.loads(profile.read_text())
+    added["profile_id"] = "minfin.future.publication.v1"
+    added["declaration"]["family_id"] = "minfin.future"
+    added["declaration"]["title"] = "Another logical family using a registered typed profile"
+    (profile.parent / "PROFILE_minfin.future.publication.v1.yaml").write_text(json.dumps(added))
+    for source in (declaration_root / "sources").glob("SOURCE_minfin.fedbud.*.yaml"):
+        value = json.loads(source.read_text())
+        value["family_id"] = "minfin.future"
+        value["series_id"] = value["series_id"].replace("minfin.fedbud", "minfin.future")
+        value["family_profile"] = added["profile_id"]
+        (source.parent / ("SOURCE_" + value["series_id"] + ".yaml")).write_text(json.dumps(value))
+    monkeypatch.setattr(registry_resources, "registry_root", lambda: tmp_path / "registry")
     catalog.families.cache_clear()
+    sources._sources.cache_clear()
+    sources._profile_documents.cache_clear()
     try:
         discovered = catalog.families()
         assert len(discovered) == 5
         assert {item.family_id for item in discovered} >= {"minfin.fedbud", "minfin.future"}
     finally:
         catalog.families.cache_clear()
+        sources._sources.cache_clear()
+        sources._profile_documents.cache_clear()
 
 
 def test_force_refresh_and_reprocess_are_distinct_decisions():

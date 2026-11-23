@@ -21,13 +21,17 @@ def _tool(name: str):
 
 
 def _domain_materials():
-    """Supply complete current domain owners/data to resource-only archive fixtures."""
+    """Supply complete domain and registry resources to archive fixtures."""
     source = _ROOT / "src/stratbox/domains"
     asset = _tool("inspect_reference_wheel.py")["_domain_asset"]
     for path in sorted(source.rglob("*")):
         relative = path.relative_to(source).as_posix()
         if path.is_file() and (path.name in {"__init__.py", "_registration.py"} or asset(relative)):
             yield "stratbox/domains/" + relative, path.read_bytes()
+    registry = _ROOT / "src/stratbox/registry"
+    for path in sorted(registry.rglob("*")):
+        if path.is_file() and (path.suffix in {".yaml", ".yml"} or path.name == "__init__.py"):
+            yield "stratbox/registry/" + path.relative_to(registry).as_posix(), path.read_bytes()
 
 
 def test_reference_edition_verifier_covers_all_bundled_editions(capsys):

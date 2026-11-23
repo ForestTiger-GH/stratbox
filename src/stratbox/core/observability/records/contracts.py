@@ -11,7 +11,8 @@ from typing import Literal
 from uuid import uuid4
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
-from stratbox.core.execution.contracts import Correlation, safe_token
+from stratbox.shared.identifiers import safe_token
+from stratbox.core.execution.contracts import (Correlation)
 
 RecordType = Literal["execution", "domain_fact", "effect", "diagnostic", "result_summary"]
 WriteState = Literal["confirmed", "failed", "unknown"]

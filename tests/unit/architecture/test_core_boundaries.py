@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import ast
+import json
 import runpy
 from pathlib import Path
 
@@ -97,7 +98,7 @@ def test_core_catalog_preserves_logical_operations():
     "stratbox.core.formats.spreadsheets.workbook_input",
     "stratbox.core.formats.archives.members",
     "stratbox.core.rendering.excel",
-    "stratbox.core.execution.catalog",
+    "stratbox.core.registry.catalog",
     "stratbox.core.observability.journal.file_reader",
     "stratbox.core.observability.analysis.exports",
     "stratbox.core.notifications.dispatch.intents",
@@ -190,6 +191,10 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
             (current / "__init__.py").write_text("", encoding="utf-8")
             current = current.parent
         (directory / "_registration.py").write_text("", encoding="utf-8")
+        declaration = package / "registry" / path.replace("/", ".")
+        declaration.mkdir(parents=True)
+        (declaration / "OWNER.yaml").write_text(json.dumps({"owner_id": path.replace("/", ".")}),
+                                                encoding="utf-8")
         return directory
 
     (package / "domains").mkdir(parents=True)

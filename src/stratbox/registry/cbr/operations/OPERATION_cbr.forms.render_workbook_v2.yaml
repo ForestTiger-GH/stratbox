@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.render_workbook",
+    "contract_version": 2,
+    "method_version": "cbr-forms-xlsx-1",
+    "request_type": "stratbox.domains.cbr.products.reporting_forms.contracts:FormViews",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "views",
+          "contract": {
+            "schema_id": "cbr.forms.views",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.forms.workbook",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Render supplied reporting-form views into workbook bytes.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.reporting_forms.definitions:RENDER",
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.products:render_workbook",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

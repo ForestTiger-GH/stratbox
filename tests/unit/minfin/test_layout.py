@@ -1,4 +1,4 @@
-"""Minfin's source layout has one owner, four registries and four semantic packages.
+"""Minfin's source layout has one owner, canonical resources and four semantic packages.
 
 The test loads *every* registered operation after the old implementation paths
 are removed, so a stale definition or handler reference is caught offline.
@@ -15,10 +15,9 @@ from stratbox.domains.minfin.operations import contracts as composite
 
 def test_root_has_only_canonical_registry_records_and_one_owner():
     root = Path(minfin.__file__).parent
-    assert {p.name for p in root.glob("REGISTRY_*.yaml")} == {
-        "REGISTRY_FEDBUD.yaml", "REGISTRY_CONBUD.yaml",
-        "REGISTRY_SUBBUD.yaml", "REGISTRY_NWF.yaml",
-    }
+    from stratbox.core.registry.sources import source_cards
+    assert not tuple(root.glob("REGISTRY_*.yaml"))
+    assert len(source_cards("minfin")) == 13
     assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py"}
     assert {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")} == {
         "publications", "tables", "analytics", "operations", "integration", "products", "documents",

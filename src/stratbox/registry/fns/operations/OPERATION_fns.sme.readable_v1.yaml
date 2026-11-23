@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.readable",
+    "contract_version": 1,
+    "method_version": "fns-sme-readable-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flake",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "fns.sme.readable",
+            "version": 1,
+            "role": "readable"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation.bytes",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Render source-readable evidence directly from the full retained flake.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:READABLE",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:readable",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

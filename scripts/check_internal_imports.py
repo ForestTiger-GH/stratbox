@@ -19,14 +19,34 @@ PACKAGE = SRC / "stratbox"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.domains._structure import DomainLayoutError, discover_operation_owners  # noqa: E402
+from stratbox.domains._structure import DomainLayoutError  # noqa: E402
+from stratbox.core.registry.resources import read_document, resource_owners  # noqa: E402
 
 def _registered_domains() -> frozenset[str]:
-    """Resolve manifest owners by full relative package path, regardless of depth."""
-    root = PACKAGE / "domains"
+    """Resolve canonical owner declarations and reachable implementation packages."""
+    root = PACKAGE / "registry"
     if not root.is_dir():
         return frozenset()
-    return frozenset(discover_operation_owners(root))
+    owners = set()
+    for owner in resource_owners(root=root):
+        manifest = root / owner / "OWNER.yaml"
+        if not manifest.is_file():
+            raise DomainLayoutError(f"registry.owner_declaration_missing:{owner}")
+        try:
+            document = read_document(manifest)
+        except ValueError as error:
+            raise DomainLayoutError(f"registry.invalid_owner_declaration:{owner}") from error
+        if document.get("owner_id") != owner:
+            raise DomainLayoutError(f"registry.owner_path_mismatch:{owner}")
+        if owner.startswith("core."):
+            continue
+        package = PACKAGE / "domains"
+        for component in owner.split("."):
+            package = package / component
+            if not package.joinpath("__init__.py").is_file():
+                raise DomainLayoutError(f"registry.unreachable_owner:{owner}")
+        owners.add(owner)
+    return frozenset(owners)
 
 
 # These names are invalid even when a stale import would not be resolved at runtime.
@@ -81,9 +101,15 @@ CRITICAL_MODULES = [
     "stratbox.core.formats.archives",
     "stratbox.core.rendering.excel",
     "stratbox.core.execution",
-    "stratbox.core.execution.catalog",
+    "stratbox.core.registry.catalog",
+    "stratbox.core.registry.operations",
+    "stratbox.core.registry.resources",
+    "stratbox.core.registry.sources",
+    "stratbox.core.registry.source_catalog",
+    "stratbox.core.registry.discovery",
     "stratbox.core.execution.machine",
     "stratbox.core.execution.handoff",
+    "stratbox.core.execution.calls",
     "stratbox.core.operations.materials.operations",
     "stratbox.core.operations.materials.archive",
     "stratbox.core.storage.datasets",
@@ -326,9 +352,61 @@ def check_supporting_source_imports() -> list[str]:
     return failures
 
 
+def check_registry_declarations() -> list[str]:
+    """Keep declarative executable links within the same implementation owners."""
+    from stratbox.core.registry.operations import validate_operation_document
+
+    failures = []
+    root = PACKAGE / "registry"
+    if not root.is_dir():
+        return ["canonical registry resource package is missing"]
+    try:
+        owners = _registered_domains()
+    except (DomainLayoutError, OSError, ValueError) as error:
+        return [f"invalid registry hierarchy: {error}"]
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in {".yaml", ".yml"}:
+            continue
+        label = path.relative_to(PACKAGE).as_posix()
+        parts = path.relative_to(root).parts
+        if len(parts) not in {2, 3} or path.suffix != ".yaml":
+            failures.append(f"{label}: invalid registry declaration location")
+            continue
+        owner = parts[0]
+        valid_name = len(parts) == 2 and path.name == "OWNER.yaml" or (
+            len(parts) == 3 and any(
+                parts[1] == directory and path.name.startswith(prefix)
+                for directory, prefix in (("sources", "SOURCE_"), ("operations", "OPERATION_"),
+                                          ("profiles", "PROFILE_"))
+            )
+        )
+        if not valid_name:
+            failures.append(f"{label}: unexpected registry resource")
+            continue
+        try:
+            document = read_document(path)
+            if document.get("owner_id") != owner:
+                raise ValueError("registry.owner_path_mismatch")
+            if len(parts) != 3 or parts[1] != "operations":
+                continue
+            validate_operation_document(document, owner_id=owner)
+            if owner.startswith("core."):
+                continue
+            for role, reference in document["implementation"].items():
+                if reference is None:
+                    continue
+                target = reference.split(":", 1)[0]
+                if _domain(target, owners) != owner:
+                    failures.append(f"{label}: nearest operation owner mismatch for {role}: {target}")
+        except (ValueError, TypeError, KeyError) as error:
+            failures.append(f"{label}: invalid registry declaration: {error}")
+    return failures
+
+
 def main() -> int:
     failures = check_dependency_direction()
     failures.extend(check_supporting_source_imports())
+    failures.extend(check_registry_declarations())
     try:
         domain_names = tuple(
             "stratbox.domains." + owner for owner in sorted(_registered_domains())

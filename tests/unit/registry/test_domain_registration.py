@@ -3,14 +3,13 @@
 from dataclasses import replace
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from stratbox.domains import registry as domain_registry
 from stratbox.domains.registry import domain_catalog, operation_catalog, domain_registration_inventory
 from stratbox.domains._structure import DomainLayoutError, discover_operation_owners
-from stratbox.core.execution.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
+from stratbox.core.registry.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
 from stratbox.core.registry import core_catalog
 
 
@@ -93,16 +92,8 @@ def _synthetic_catalog(monkeypatch, tmp_path, declarations):
     (root / "__init__.py").write_text("", encoding="utf-8")
     for owner in declarations:
         _synthetic_package(root, owner)
-    original_import = domain_registry.import_module
-
-    def importer(name):
-        if name.endswith("._registration"):
-            owner = name[len("stratbox.domains."):-len("._registration")]
-            return SimpleNamespace(REGISTRATION=declarations[owner])
-        return original_import(name)
-
-    monkeypatch.setattr(domain_registry.resources, "files", lambda _: root)
-    monkeypatch.setattr(domain_registry, "import_module", importer)
+    monkeypatch.setattr(domain_registry, "owner_ids", lambda: tuple(sorted(declarations)))
+    monkeypatch.setattr(domain_registry, "owner_registration", lambda owner: declarations[owner])
     return domain_registry.domain_catalog
 
 
@@ -200,16 +191,16 @@ def test_broken_existing_manifest_fails_instead_of_being_skipped(monkeypatch, tm
         {owner: OperationRegistration(owner, (_synthetic_ref(owner, "test.broken"),))},
     )
 
-    def failing_import(name):
-        raise ImportError(name)
+    def failing_registration(name):
+        raise RegistryError("registry.invalid_manifest")
 
-    monkeypatch.setattr(domain_registry, "import_module", failing_import)
+    monkeypatch.setattr(domain_registry, "owner_registration", failing_registration)
     with pytest.raises(RegistryError, match="registry.invalid_manifest"):
         catalog()
 
 
 def test_discovered_owner_contracts_are_complete_and_extensible():
-    owners = discover_operation_owners(domain_registry.resources.files("stratbox.domains"))
+    owners = tuple(owner for owner in domain_registry.owner_ids() if not owner.startswith("core."))
     catalog = domain_catalog()
     rows = domain_registration_inventory()
     assert owners == tuple(sorted(owners))
@@ -237,9 +228,6 @@ def test_invalid_intermediate_package_rejects_manifest(monkeypatch, tmp_path):
     (broken / "_registration.py").write_text("", encoding="utf-8")
     with pytest.raises(DomainLayoutError, match="domain.unreachable_manifest"):
         discover_operation_owners(root)
-    monkeypatch.setattr(domain_registry.resources, "files", lambda _: root)
-    with pytest.raises(RegistryError, match="domain.unreachable_manifest"):
-        domain_registry.domain_catalog()
 
 
 def test_dynamic_new_owner_and_extra_operation_have_no_count_ceiling(monkeypatch, tmp_path):

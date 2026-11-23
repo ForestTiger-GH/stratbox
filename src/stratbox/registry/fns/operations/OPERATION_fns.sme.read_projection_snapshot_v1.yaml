@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.read_projection_snapshot",
+    "contract_version": 1,
+    "method_version": "fns-sme-read-projection-snapshot-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:SnapshotRequest",
+    "value_type": "stratbox.domains.fns.tables.contracts:SourceProjection",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection.snapshot",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Validate and replay a retained projection without the original file or a spreadsheet engine.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:READ_PROJECTION_SNAPSHOT",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:read_projection_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

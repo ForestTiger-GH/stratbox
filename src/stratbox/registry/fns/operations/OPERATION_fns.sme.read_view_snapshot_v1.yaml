@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.read_view_snapshot",
+    "contract_version": 1,
+    "method_version": "fns-sme-read-view-snapshot-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:SnapshotRequest",
+    "value_type": "stratbox.domains.fns.products.views:PreparedView",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.prepared_view.snapshot",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.sme.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Validate and replay a retained view without the original file or a spreadsheet engine.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:READ_VIEW_SNAPSHOT",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:read_view_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

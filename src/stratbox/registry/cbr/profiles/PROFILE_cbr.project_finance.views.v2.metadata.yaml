@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.project_finance.views.v2.metadata",
+  "declaration": {
+    "edition": "cbr.project_finance.views.v2",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "product",
+    "profile_id": "cbr.project_finance.views.v2",
+    "scope": "Prepared selections can be retained and rendered independently of source parsing."
+  }
+}

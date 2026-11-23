@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.calculate_apk",
+    "contract_version": 2,
+    "method_version": "cbr-0105a-derived-apk-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:CalculateApkRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.industry.contracts:IndustryApkCalculationResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "stream",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "cbr.industries.0105a.stream",
+              "version": 1,
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.stream_result",
+              "version": 1,
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.parsed_file",
+              "version": 1,
+              "role": "extracts"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.calculation",
+              "version": 1,
+              "role": "integrated"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.calculation",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "df_stream",
+          "qualifications": [
+            "derived.apk"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Calculate the APK aggregate while retaining its source-series identity.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.definitions:CALCULATE_APK",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:calculate_apk",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

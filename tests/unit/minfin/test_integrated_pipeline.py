@@ -141,7 +141,8 @@ def test_source_catalog_declares_table_and_document_applicability():
     assert len([card for card in cards if any(op.operation_id == "minfin.integrate" for op in card.operations)]) == 10
     document = next(card for card in cards if card.series_id == "minfin.nwf.veb_deposits")
     assert document.formats == ("doc",)
-    assert next(op for op in document.operations if op.operation_id == "minfin.extract_document").state == "conditional"
+    assert all(op.operation_id != "minfin.extract_document" for op in document.operations)
+    assert any(op.operation_id == "source.save_original" for op in document.operations)
 
 
 def test_ratio_mapping_requires_explicit_point_or_interval_periods():

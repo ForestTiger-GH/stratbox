@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.external_debt",
+  "series_id": "cbr.external_debt.debt_new",
+  "title": "External debt",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.external_debt.debt_new.route.v1",
+  "family_profile": "cbr.external_debt.publication.v1",
+  "position": 53,
+  "publication": {
+    "acquisition_profile": "cbr.route.debt_new",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.debt_new.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

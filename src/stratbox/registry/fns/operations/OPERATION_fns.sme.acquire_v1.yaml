@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.acquire",
+    "contract_version": 1,
+    "method_version": "fns-sme-regional-post-1",
+    "request_type": "stratbox.domains.fns.operations.sme.definitions:AcquireSmeRequest",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.sme.original",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.fns.sme"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:ACQUIRE",
+    "handler_ref": "stratbox.domains.fns.operations.sme.operations:acquire",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

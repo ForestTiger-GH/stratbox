@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.inspect",
+    "contract_version": 1,
+    "method_version": "minfin-index-delta-1",
+    "request_type": "stratbox.domains.minfin.publications.contracts:InspectRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:Inspection",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "previous",
+          "contract": {
+            "schema_id": "minfin.publication_index",
+            "version": 1,
+            "role": null
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "current",
+          "contract": {
+            "schema_id": "minfin.publication_index",
+            "version": 1,
+            "role": null
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "minfin.index_change",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare candidate link inventories, without asserting publisher absence or source revision.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:INSPECT",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:inspect",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

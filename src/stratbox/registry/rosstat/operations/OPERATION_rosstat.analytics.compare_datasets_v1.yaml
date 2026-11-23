@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.analytics.compare_datasets",
+    "contract_version": 1,
+    "method_version": "rosstat-analytics-compare_datasets-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:DatasetComparisonRequest",
+    "value_type": "stratbox.domains.rosstat.analytics.indicators:DatasetComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "rosstat.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "rosstat.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "rosstat.dataset.comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare semantic observation revisions under explicit source scopes.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:COMPARE_DATASETS",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_datasets",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

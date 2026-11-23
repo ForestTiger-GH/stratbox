@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.forms.f802.normalization.v1.metadata",
+  "declaration": {
+    "edition": "cbr-forms-source-projection-2",
+    "formats": [
+      "rar",
+      "zip",
+      "dbf"
+    ],
+    "kind": "source_projection",
+    "profile_id": "cbr.forms.f802.normalization.v1",
+    "scope": "Reviewed form 802 physical projection; all-member extraction remains independent of this model input."
+  }
+}

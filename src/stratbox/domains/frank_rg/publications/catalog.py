@@ -6,14 +6,13 @@ callbacks belong to runtime requests and registered profiles respectively.
 from __future__ import annotations
 
 from functools import lru_cache
-from importlib import resources
+from stratbox.core.registry.sources import publication_families
 import json
 import re
 
 from .contracts import ProfileRefs, SourceFamily, SourceSeries
 
 _ID = re.compile(r"[a-z][a-z0-9_.-]{2,127}\Z")
-_REGISTRY = re.compile(r"REGISTRY_[A-Z0-9_]+\.yaml\Z")
 _PROFILE_KEYS = ("discovery", "identification", "selection", "naming")
 
 
@@ -77,12 +76,8 @@ def _decode(data: bytes) -> SourceFamily:
 
 @lru_cache(maxsize=1)
 def families() -> tuple[SourceFamily, ...]:
-    root = resources.files("stratbox.domains.frank_rg")
-    names = sorted(item.name for item in root.iterdir() if item.is_file()
-                   and item.name.startswith("REGISTRY_") and item.name.endswith(".yaml"))
-    if not 1 <= len(names) <= 128 or any(not _REGISTRY.fullmatch(name) for name in names):
-        raise ValueError("frg.registry.invalid_inventory")
-    result = tuple(_decode(root.joinpath(name).read_bytes()) for name in names)
+    declarations = publication_families("frank_rg", series_fields=(("source_id", "series_id"), ("title", "title")))
+    result = tuple(_decode(json.dumps(value).encode("utf-8")) for value in declarations)
     if len({item.family_id for item in result}) != len(result):
         raise ValueError("frg.registry.duplicate_family")
     sources = [item.source_id for family in result for item in family.series]

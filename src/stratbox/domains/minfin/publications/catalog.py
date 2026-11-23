@@ -1,11 +1,11 @@
-"""Canonical, automatically discovered root REGISTRY_*.yaml declarations.
+"""Typed publisher catalog assembled from canonical atomic source declarations.
 
 The format deliberately uses YAML 1.2's JSON subset; Python's stdlib validates
 source identities without importing any handler or optional format provider.
 """
 from __future__ import annotations
 from functools import lru_cache
-from importlib import resources
+from stratbox.core.registry.sources import publication_families
 import json
 import re
 
@@ -63,12 +63,8 @@ def _decode(data: bytes) -> SourceFamily:
 
 @lru_cache(maxsize=1)
 def families() -> tuple[SourceFamily, ...]:
-    root = resources.files("stratbox.domains.minfin")
-    names = sorted(entry.name for entry in root.iterdir() if entry.is_file() and
-                   entry.name.startswith("REGISTRY_") and entry.name.endswith(".yaml"))
-    if not 1 <= len(names) <= 128 or any(not re.fullmatch(r"REGISTRY_[A-Z0-9_]+\.yaml", name) for name in names):
-        raise ValueError("minfin.registry.invalid_inventory")
-    result = tuple(_decode(root.joinpath(name).read_bytes()) for name in names)
+    declarations = publication_families("minfin", series_fields=(("source_id", "series_id"), ("title", "title")))
+    result = tuple(_decode(json.dumps(value).encode("utf-8")) for value in declarations)
     if len({fam.family_id for fam in result}) != len(result):
         raise ValueError("minfin.registry.duplicate_family")
     ids = [v for fam in result for v in (fam.default_source_id, *(s.source_id for s in fam.series))]

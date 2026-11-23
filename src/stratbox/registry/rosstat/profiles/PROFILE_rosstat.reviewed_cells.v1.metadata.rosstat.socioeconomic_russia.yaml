@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "rosstat",
+  "profile_id": "rosstat.reviewed_cells.v1.metadata.rosstat.socioeconomic_russia",
+  "declaration": {
+    "edition": "1",
+    "formats": [
+      "pdf"
+    ],
+    "kind": "mapping",
+    "profile_id": "rosstat.reviewed_cells.v1",
+    "scope": "Caller-supplied coordinates and metric/period/unit/geography meanings pinned to the exact original digest."
+  }
+}

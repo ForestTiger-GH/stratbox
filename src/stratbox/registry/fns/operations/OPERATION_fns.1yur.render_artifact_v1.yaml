@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.render_artifact",
+    "contract_version": 1,
+    "method_version": "fns-1yur-render-artifact-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:RenderRequest",
+    "value_type": "stratbox.shared.materials:MaterialArtifact",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.1yur.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render and package an explicit source-associated artifact for independent material storage.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.legal_entities.definitions:RENDER_ARTIFACT",
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:render_artifact",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

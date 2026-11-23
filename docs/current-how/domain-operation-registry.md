@@ -1,134 +1,178 @@
-# Domain operation registration and machine dispatch
+# Canonical source and operation registry
 
-Stratbox separates source-specific business implementations from the neutral
-operation execution catalog. An exact `_registration.py` file establishes an
-operation owner. Publication families, processing layers and operation modules
-describe different responsibilities. CBR registers its whole operation surface
-under the single root owner `cbr`.
+Stratbox keeps source identities, operation contracts and processing-profile
+bindings in `stratbox.registry`. `core.registry` loads and validates those
+records; `core.execution` binds actual values and invokes the registered handler.
+Publisher-specific recognition, reviewed layouts and algorithms remain Python
+implementations in `stratbox.domains`.
 
-## 1. Discover and resolve operations
+Catalog inspection describes available contracts and their conditions. Execution
+still requires admitted inputs, selected providers, resource budgets and any
+applicable effect authorization.
+
+Contents:
+
+1. Registry responsibilities — separate sources, routes and callable contracts.
+2. Catalog discovery — inspect identities and schemas while handlers stay lazy.
+3. Named calls — bind supplied values and execute one operation.
+4. Source binding — apply source formats, route stages and fixed parameters.
+5. Extending an owner — publish declarations and retain domain implementation ownership.
+6. Machine access — preserve explicit protocol admission and host authority.
+
+## 1. Sources, routes and operations have separate contracts
+
+| Code | Declaration or owner | Responsibility |
+| --- | --- | --- |
+| G01 | `registry/<owner>/sources/SOURCE_*.yaml` | One logical publication series, its formats, publication attributes and profile references. |
+| G02 | `registry/<owner>/operations/OPERATION_*.yaml` | One versioned operation: request/result types, method, named ports, stages, parameters, capabilities, effects, limits, runtime dependencies and implementation references. |
+| G03 | `registry/<owner>/profiles/PROFILE_*.yaml` | Shared publication metadata and source-route bindings, including applicable operations, profile editions and allowed stage transitions. |
+| G04 | `registry/<owner>/OWNER.yaml` | Operation ownership and explicit missing, inapplicable or delegated stage declarations. |
+| G05 | `core.registry` | Resource loading, schema and ownership validation, immutable catalog assembly and discovery projections. |
+| G06 | `core.execution` | Source binding, actual input/output adaptation, lineage propagation, runtime admission and invocation outcomes. |
+| G07 | `shared.data.operations` | Storage-independent processing stages, named port contracts, schema compatibility and coverage identities. |
+| G08 | `domains.<publisher>` | Typed source profiles, validators, publication recognition and economic algorithms. |
+
+The resource files use the JSON subset of YAML, so discovery requires no YAML
+engine. Source records contain no handler selection logic. Route bindings name
+existing logical operation contracts; each operation independently defines its
+request and result. Technical encoding, replay and maintenance remain distinct
+from economic processing stages.
+
+Routes reference separate profile metadata records. Identical metadata has one
+record; source-specific scope or format qualifications have distinct resource
+identities while retaining the logical profile ID and method edition.
+
+Python definition symbols are projections of canonical operation metadata.
+Their lightweight request/result classes remain in their owning implementation
+packages. Changing a handler path therefore does not change the logical
+operation identity; changing a public schema or method requires its own version.
+
+## 2. Discover and resolve catalogs
 
 ```python
-from stratbox.domains.registry import domain_catalog, operation_catalog
+from stratbox.core.registry import domain_catalog, operation_catalog
 
-business = domain_catalog()                  # all installed source-domain operations
-catalog = operation_catalog()                # domain operations and neutral core
+business = domain_catalog()
+catalog = operation_catalog()
 references = catalog.list_refs()
-descriptions = catalog.describe()             # definitions and schemas, no handlers
+descriptions = catalog.describe()
 definition = catalog.get("frg.plan_cleanup", 1)
-definition, handler, codec = catalog.resolve("frg.plan_cleanup", 1)
 ```
 
-The domain catalog rejects missing intermediate `__init__.py` files for
-manifest-bearing directories. The catalog and registration inventory are views
-of the same validated owner snapshot, so a malformed hierarchy never silently
-drops a manifest. A logical operation ID belongs to exactly one owner across
-all of its declared contract versions. Its discovery algorithm is shared with the
-static layout check and the distribution verifier. The source, wheel and
-sdist manifest/data inventories are compared without a fixed owner count.
-All manifest bytes and packaged non-code data assets are checked by size and SHA-256,
-including future asset formats without per-file allowlists.
-The domain catalog traverses installed Python packages under `stratbox.domains`
-in deterministic order using `importlib.resources.files`. It discovers only
-exact files named `_registration.py` and never searches arbitrary underscore
-modules or external directories. Grouping and implementation-only packages
-need no manifest. A broken existing manifest raises `RegistryError`.
+Discovery finds resource owners deterministically and has no fixed publisher or
+operation count. Each logical operation ID has one owner across its contract
+versions. Duplicate contracts, invalid resource schemas, inconsistent identities
+and references outside the admitted owner fail explicitly. Domain reference
+validation uses the nearest declared owner, with Python package segment boundaries.
 
-Each declaration is an `OperationRegistration` with a dotted `owner_id`
-relative to `stratbox.domains`. Its `OperationRef` entries reference an
-`OperationDefinition`, its callable handler and optional machine contract/codec by
-fully qualified Python module and symbol name.
+`catalog.get()` resolves a typed definition; `catalog.resolve()` additionally
+loads its executable handler and any explicitly registered machine codec.
+Metadata listing leaves handlers and optional spreadsheet, document or solver
+engines unloaded. Creating a catalog performs no acquisition, capture or storage.
 
-The registry validates all module references against the **nearest registered
-owner**. The discovery mechanism permits nested owners when a domain explicitly
-declares that boundary; a nested implementation package alone creates no owner.
-It rejects ambiguous
-ownership, mismatched owner IDs and duplicate (operation ID, contract version)
-pairs. Executable definitions, handlers and codecs are still resolved lazily by
-`OperationCatalog`. Creating a catalog performs no source HTTP requests,
-file capture, scheduling or destination effects.
+`domain_registration_inventory()` in `stratbox.domains.registry` exposes the
+same validated domain snapshot as owner/operation/version rows. Distribution
+checks compare canonical resources and registered contracts across source,
+wheel and sdist. Resource metadata and executable implementation have one
+validation route.
 
-## 2. Register a publisher or extend an existing owner
-
-For a new publisher owner, create normal Python packages with `__init__.py`,
-for example `stratbox.domains.example_publisher` and its `operations` package.
-Add `_registration.py` **only** to the package owning operations:
+## 3. Bind named inputs and invoke an independent call
 
 ```python
-from stratbox.core.execution.catalog import OperationRef, OperationRegistration
-
-REGISTRATION = OperationRegistration(
-    owner_id="example_publisher",
-    operations=(
-        OperationRef(
-            "example_publisher.parse", 1,
-            "stratbox.domains.example_publisher.operations.definitions:PARSE",
-            "stratbox.domains.example_publisher.operations.handlers:parse",
-        ),
-    ),
-)
-```
-
-Typed operation definitions stay in lightweight `definitions.py` modules.
-Executable methods import these definitions into their handler modules. A business
-source catalog separately describes publications and processing profiles; it is
-distinct from the operation manifest. Cross-domain discovery requires no central
-publisher or operation allowlist. Each owner can explicitly compose its functional
-segments and maintain its own business registries. Grouping packages remain lightweight.
-Public owner package exports are lazily loaded so metadata listing does not
-require optional spreadsheet or solver engines.
-
-For an existing CBR segment, keep the root owner `cbr`. Add operation definitions
-and handlers under `stratbox.domains.cbr.operations.<segment>`, export their
-`OperationRef` entries from the segment's `registration.py`, and include that
-segment in the root `_registration.py` composition. Keep its lifecycle declarations
-alongside its operation references. Creating a new CBR family or source requires
-the relevant publication, acquisition, layout and semantic bindings; it does not
-require a child `_registration.py`.
-
-CBR separates `publications`, `tables`, `integration`, `analytics`, `products`
-and `operations`. Corporate debt and issuance have separate contracts and
-operations under `operations.corporate_lending.debt` and
-`operations.corporate_lending.issuance`; both belong to root `cbr`. Source parsing
-helpers live in the table layer, shared semantic interpretation in integration,
-calculations in analytics, and prepared views/rendering in products. Reporting
-forms, service-network statistics, project finance and generic statistical
-workbooks follow the same functional boundaries.
-
-Registered domain owners are `cbr`, `minfin`, `frank_rg`, `rosstat` and `fns`.
-Their business catalogs can subdivide sources without multiplying operation
-owners. Use CBR's `describe_source` and `describe_family` operations for
-source-scoped coverage; the root owner's aggregate stages describe its combined
-surface. The shared `catalog.source_catalog()` interface covers all five
-publishers with the same source/profile/operation binding shape. See the
-[CBR route guide](cbr-data-pipeline.md) and
-[independent publisher routes](independent-domain-data-routes.md).
-
-## 3. Restricted read-only machine calls
-
-```python
-from stratbox.domains.registry import operation_catalog
-from stratbox.core.execution.machine import invoke_read_only, wire_schemas
+from stratbox.core.registry import operation_catalog
+from stratbox.core.execution.handoff import prepare_input
 
 catalog = operation_catalog()
+# payload is an admitted SourcePayload; its exact input receipt is retained.
+call = catalog.bind(
+    "workbook.extract", 1,
+    inputs={"source": prepare_input(payload)},
+    parameters={"series_id": "example.series", "issue_id": "2026-08"},
+)
+result = call.invoke()
+```
+
+`catalog.bind()` checks the actual definition, named inputs and declared
+parameters before constructing the typed request. It returns an `OperationCall`;
+`call.invoke(context=..., **options)` resolves the catalog handler and uses the
+same operation runner as the direct Python API. Binding alone has no effects.
+
+An in-memory result uses `project_output(result, name)` before binding. A retained
+result uses `resolve_output(reference, resolver)` with the consumer's explicit
+resolver. Supplied typed values use `prepare_input()` with an explicit
+`DataContract`, except for the narrow built-in payload/artifact defaults. See
+[material flow and value adapters](universal-data-flow.md#3-binding-operation-results).
+
+## 4. Bind a logical source and its processing route
+
+```python
+source = catalog.bind_source("rosstat.short_term_indicators", format="xlsx")
+card = source.source
+route = source.route
+call = source.bind(
+    "rosstat.tables.extract_workbook",
+    inputs={"payload": prepare_input(payload)},
+    parameters={"issue_id": "2026-08", "asset_id": "main"},
+)
+# The source binding supplies and pins series_id.
+```
+
+Use a series ID returned by `catalog.source_catalog().sources` for the desired
+publication. `SourceBinding.bind()` selects one of that source's exact operation
+contracts and returns an independently invocable call. It applies fixed source
+parameters, validates caller selections and checks route stages and supplied
+producer transitions. The optional `from_stage` makes an independent predecessor
+selection explicit. A source format that admits only original preservation does
+not gain a reviewed parser merely because another format has one.
+
+A source route describes admissible processing boundaries. It does not schedule
+all boundaries or require acquisition before an independently supplied extract.
+Named roles still require exact schemas, accepted outcomes, qualifications and
+coverage. Route metadata cannot prove that source bytes or an economic mapping
+are valid; the operation's input validator retains that responsibility.
+
+`catalog.source_catalog().describe(series_id, operations=catalog)` gives the
+shared source/profile/operation view. CBR's `describe_source` and
+`describe_family` additionally expose reviewed tables, original-only formats,
+source-specific handoffs and multi-source method requirements. See the
+[CBR route](cbr-data-pipeline.md) and [independent publisher routes](independent-domain-data-routes.md).
+
+## 5. Extend a publisher or operation owner
+
+Add the publisher's normal Python implementation packages and its canonical
+registry owner resources. Define request/result classes and a handler in the
+appropriate functional package. Publish its full operation declaration and
+reference it from applicable route profiles. Add source records for logical
+series and qualify their formats, profile editions and coverage.
+
+Keep physical recognition and economic rules in typed domain profiles. New
+sources share neutral operations only through an explicit binding. Source
+families, callable namespaces and implementation subpackages do not create new
+operation owners by themselves. Owner discovery and inventory validation need
+no manually maintained central list.
+
+For optional machine access, declare the immutable protocol contract separately
+from its codec. A typed Python operation is not automatically admitted to a
+wire protocol. Preserve lazy imports and verify the packaged resources together
+with relevant source, semantic and replay behavior.
+
+## 6. Machine dispatch preserves host authority
+
+```python
+from stratbox.core.execution.machine import wire_schemas
+
 schema, response_schema = wire_schemas("cbr.offices.parse", 1, catalog=catalog)
 ```
 
-Machine read-only admission remains limited to `cbr.offices.parse` v1,
-`cbr.offices.compare` v2 and `frg.plan_cleanup` v1. Their codecs live with
-their respective owner; immutable schemas live separately in `machine_contracts.py`.
-Machine admission never grants authorization for
-network, storage, deletion or publication side effects.
+Restricted read-only wire admission covers `cbr.offices.parse` v1,
+`cbr.offices.compare` v2 and `frg.plan_cleanup` v1. Their codecs live with their
+owners. This admission grants no network, storage, deletion or publication
+authority.
 
-Hosts that already hold validated typed requests can additionally use
-`invoke_reference` with a host-owned `TypedValueResolver`. This interface applies
-the actual registered definition and explicit effect grants, reserves result
-capacity before execution, and returns typed result/value handles plus a bounded
-preview. It supplies no arbitrary object deserializer or destination authority.
+Hosts holding validated typed requests can use `invoke_reference` with a
+host-owned `TypedValueResolver`, explicit effect grants and reserved result
+capacity. The response contains typed handles and a bounded preview. Durable
+results, authorization and admitted codecs remain consumer responsibilities.
 See [machine access](independent-domain-data-routes.md#7-machine-access).
 
-Logical operation IDs and versions are independent of Python module paths.
-The new module topology is canonical; no historical import aliases are
-provided.
-
-[Processing roles, bounded catalog discovery and qualified stage connections](processing-operation-catalog.md)
+[Processing roles, bounded discovery and qualified connections](processing-operation-catalog.md)

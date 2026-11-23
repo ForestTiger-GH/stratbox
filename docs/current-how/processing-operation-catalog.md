@@ -1,7 +1,9 @@
 # Processing contracts and independent operation discovery
 
 Stratbox exposes processing semantics through the same `OperationDefinition`
-objects used by Python execution. The catalog describes source acquisition,
+objects used by Python execution. Canonical `OPERATION_*.yaml` records supply
+these objects through `core.registry`; source and route declarations have
+separate canonical resources. The catalog describes source acquisition,
 interpretation, calculations and products without importing their handlers.
 This article documents the implemented library interfaces. Domain coverage
 entries distinguish callable implementations from missing or unassessed work.
@@ -18,7 +20,7 @@ Contents:
 4. Qualified connections — inspect semantic links and their conditions.
 5. Domain coverage — distinguish independent operations, delegation and gaps.
 6. Execution boundaries — preserve evidence and incomplete outcomes.
-7. Extending an owner — keep metadata with its typed operation definition.
+7. Extending an owner — publish canonical metadata and its implementation references.
 
 ## 1. Data roles and editioned schemas
 
@@ -49,15 +51,18 @@ actual callable coverage is inspected separately.
 
 ## 2. Definitions, executable handlers and machine schemas
 
-An owner keeps typed definitions in lightweight metadata modules and imports
-those same objects into executable handlers. CBR organizes these modules under
-functional segments of `operations/`; each segment can have several focused
-definition and handler modules. Neutral original operations use
-`original_definitions.py` and `version_definitions.py`.
-The definition holds request/result classes, method identity, capability and
-effect declarations, resource limits and optional `OperationSemantics`.
+An operation resource holds method identity, request/result type references,
+capabilities, effects, resource limits, runtime dependencies and optional
+`OperationSemantics`. Lightweight Python metadata modules expose projections of
+that same resource for direct handlers and public APIs. They retain the typed
+request/result classes needed by the implementation; they do not maintain a
+second contract description.
 
-`OperationRef` separately identifies the definition and handler. For an admitted
+`shared.data.operations` owns stage and port invariants. `core.registry` owns
+loading, catalog assembly and discovery projections. `core.execution` consumes
+those definitions for binding, runtime admission and outcomes.
+
+`OperationRef` projects the declaration's definition and handler references. For an admitted
 read-only machine operation it also identifies a `ReadOnlyWireContract` and a
 `ReadOnlyWireCodec`. The codec binds the immutable schema contract to the
 invocation/projection functions. Schema getters return detached dictionaries;
@@ -333,17 +338,17 @@ Notifications remain a separate optional consumer of qualified facts.
 
 ## 7. Extend an operation owner
 
-Keep the definition, semantics and lightweight request/result types with their
-actual owner. Add meaningful schema identities, logical ports, selection
-parameters and an accurate summary to its `OperationSemantics`. Mark a
-convenience composition explicitly; advertise a partial output only when the
-operation definition admits partial results.
+Keep lightweight request/result classes and handlers with their actual domain
+or neutral-core owner. Publish the full contract and implementation references
+in an atomic operation resource. Add meaningful schema identities, named ports,
+selection parameters and an accurate summary. Mark convenience compositions
+explicitly; advertise a partial output only when the definition admits it.
 
-Register the definition separately from the handler. If machine calls are
-supported, register the immutable machine contract separately from the codec.
-Reuse those admitted definitions for application discovery rather than
-maintaining an independent application-only catalog. Declare genuinely missing
-or inapplicable stages and exact shared bindings where they are known.
+Bind applicable source routes through profile resources and preserve their
+formats, fixed parameters and stage transitions. Reuse the assembled catalog
+for application discovery. An optional wire contract remains separate from its
+codec. Declare genuine coverage gaps and exact neutral-operation delegations
+in owner metadata.
 
 The same approach applies to future publisher domains and their functional
 segments. Choose the registration boundary deliberately: a nested implementation

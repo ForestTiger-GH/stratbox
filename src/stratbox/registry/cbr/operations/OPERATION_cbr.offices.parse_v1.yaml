@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.parse",
+    "contract_version": 1,
+    "method_version": "cbr-offices-html-1",
+    "request_type": "stratbox.domains.cbr.tables.service_network.bank_offices.contracts:ParseOfficesRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "material.payload",
+            "version": 1,
+            "role": null
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "cbr.offices.original",
+              "version": 1,
+              "role": "originals"
+            },
+            {
+              "schema_id": "source.payload",
+              "version": 1,
+              "role": "originals"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices.extract_representation",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "captured_on",
+        "official_as_of"
+      ],
+      "summary": "Extract a source-local release while preserving source meaning and evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.definitions:PARSE",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:parse",
+    "wire_codec_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.machine:PARSE_CODEC",
+    "wire_contract_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.machine_contracts:PARSE_CONTRACT"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.list_sources",
+    "contract_version": 1,
+    "method_version": "cbr-publication-registry-v1",
+    "request_type": "stratbox.domains.cbr.publications.contracts:ListSourcesRequest",
+    "value_type": "builtins:tuple",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.publications.series",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "family_id"
+      ],
+      "summary": "List logical publication families and processing profiles independently of acquisition routes.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.publications.definitions:LIST",
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:list_sources",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

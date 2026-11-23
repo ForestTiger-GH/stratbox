@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.household_lending",
+  "series_id": "cbr.household_lending.mortgage_ihc",
+  "title": "Mortgages for individual housing construction",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.household_lending.mortgage_ihc.route.v1",
+  "family_profile": "cbr.household_lending.publication.v1",
+  "position": 28,
+  "publication": {
+    "acquisition_profile": "cbr.route.mortgage_ihc",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.mortgage_ihc.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

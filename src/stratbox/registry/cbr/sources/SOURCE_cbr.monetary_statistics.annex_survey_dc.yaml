@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.monetary_statistics",
+  "series_id": "cbr.monetary_statistics.annex_survey_dc",
+  "title": "Banking system survey annex",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.monetary_statistics.annex_survey_dc.route.v1",
+  "family_profile": "cbr.monetary_statistics.publication.v1",
+  "position": 50,
+  "publication": {
+    "acquisition_profile": "cbr.route.annex_survey_dc",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.annex_survey_dc.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.make_readable",
+    "contract_version": 1,
+    "method_version": "cbr-office-readable-1",
+    "request_type": "stratbox.domains.cbr.tables.service_network.readable:ReadableOfficesRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "material.payload",
+            "version": 1,
+            "role": null
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "cbr.service_network.readable",
+            "version": 1,
+            "role": "readable"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "family"
+      ],
+      "summary": "Preserve native HTML or transcribe all worksheet cell tokens with formula evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.lifecycle_definitions:READABLE",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:make_readable",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

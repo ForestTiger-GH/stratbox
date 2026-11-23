@@ -100,9 +100,16 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             source_snapshot.write_text(
                 json.dumps(source_inventory, ensure_ascii=False), encoding="utf-8"
             )
+            from stratbox.core.registry.resources import resource_inventory
+            from stratbox.core.registry.sources import validate_source_bindings
             from stratbox.domains.registry import operation_catalog
+            source_registry = root / "source-registry-inventory.json"
+            registry_inventory = [list(item) for item in resource_inventory()]
+            source_registry.write_text(json.dumps(registry_inventory), encoding="utf-8")
             source_cards = root / "source-card-inventory.json"
-            cards = operation_catalog().source_catalog()
+            catalog = operation_catalog()
+            validate_source_bindings(catalog)
+            cards = catalog.source_catalog()
             source_card_inventory = sorted(
                 [card.publisher_id, card.family_id, card.series_id]
                 for card in cards.sources
@@ -118,6 +125,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "owner_count": len({item[0] for item in source_inventory}),
                 "source_count": len(source_card_inventory),
                 "family_count": len(cards.families),
+                "registry_resource_count": len(registry_inventory),
             })
             base_check = (
                 "import importlib.metadata, json, sys; "
@@ -127,6 +135,10 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "actual = [list(item) for item in domain_registration_inventory()]; "
                 "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
                 "assert actual == expected, (actual, expected); "
+                "from stratbox.core.registry.resources import resource_inventory; "
+                "actual_resources = [list(item) for item in resource_inventory()]; "
+                "expected_resources = json.loads(open(sys.argv[3], encoding='utf-8').read()); "
+                "assert actual_resources == expected_resources, 'Registry distribution bytes differ'; "
                 "from stratbox.shared.identity import ByteIdentity; "
                 "from stratbox.shared.evidence import SourcePayload; "
                 "from stratbox.shared.reference.assets import load_reference; "
@@ -138,7 +150,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             )
             _run("isolated_base_imports", [
                 interpreter, "-I", "-S", "-B", "-c", base_check,
-                str(installed), str(source_snapshot),
+                str(installed), str(source_snapshot), str(source_registry),
             ], report, cwd=root)
             full_check = (
                 "import json, sys; "
@@ -154,6 +166,8 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "actual_cards = sorted([c.publisher_id, c.family_id, c.series_id] for c in cards.sources); "
                 "expected_cards = json.loads(open(sys.argv[3], encoding='utf-8').read()); "
                 "assert actual_cards == expected_cards, (actual_cards, expected_cards); "
+                "from stratbox.core.registry.sources import validate_source_bindings; "
+                "assert validate_source_bindings(catalog) == len(cards.sources); "
                 "[cards.describe(c.series_id, operations=catalog) for c in cards.sources]; "
                 "from stratbox.domains.cbr.analytics.reporting_forms.model import load_models; "
                 "from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping "

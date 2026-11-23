@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.datasets",
+  "definition": {
+    "operation_id": "dataset.query_snapshot",
+    "contract_version": 1,
+    "method_version": "dataset-query-1",
+    "request_type": "stratbox.core.storage.datasets.definitions:QuerySnapshotRequest",
+    "value_type": "stratbox.shared.data.query:TablePreview",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": null,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "preview",
+          "contract": {
+            "schema_id": "dataset.table_preview",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "query",
+        "expected_identity"
+      ],
+      "summary": "Filter and preview a pinned typed component with explicit scan and output bounds.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.storage.datasets.definitions:QUERY",
+    "handler_ref": "stratbox.core.storage.datasets.operations:query_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

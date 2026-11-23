@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.subbud",
+  "series_id": "minfin.subbud.quarterly",
+  "title": "Квартальное исполнение бюджетов субъектов РФ",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "minfin.subbud.quarterly.route.v1",
+  "family_profile": "minfin.subbud.publication.v1",
+  "position": 11,
+  "publication": {
+    "slot": "quarterly",
+    "periodicity": "quarterly",
+    "basis": "ytd",
+    "kind": "table"
+  }
+}

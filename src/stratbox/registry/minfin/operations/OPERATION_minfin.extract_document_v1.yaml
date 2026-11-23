@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.extract_document",
+    "contract_version": 1,
+    "method_version": "minfin.document.blocks.v1",
+    "request_type": "stratbox.domains.minfin.documents.contracts:ExtractDocumentRequest",
+    "value_type": "stratbox.domains.minfin.documents.contracts:PublisherDocument",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "minfin.publisher_document",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "family_id",
+        "publication"
+      ],
+      "summary": "Extract ordered PDF or DOCX blocks under explicit publisher release context; document geometry remains qualified.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.document_definitions:EXTRACT_DOCUMENT",
+    "handler_ref": "stratbox.domains.minfin.operations.document_handlers:extract_document",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -12,7 +12,7 @@ import json
 from typing import Literal
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 
 from stratbox.core.observability.journal.contracts import JournalWriteReceipt
 from stratbox.core.observability.records.contracts import require_utc

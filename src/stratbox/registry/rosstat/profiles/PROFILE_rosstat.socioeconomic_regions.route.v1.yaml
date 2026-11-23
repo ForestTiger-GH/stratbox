@@ -1,0 +1,446 @@
+{
+  "schema": "stratbox.route.v1",
+  "owner_id": "rosstat",
+  "profile_id": "rosstat.socioeconomic_regions.route.v1",
+  "profiles": [
+    "socioeconomic_regions.metadata",
+    "rosstat.reviewed_cells.v1.metadata.rosstat.socioeconomic_regions"
+  ],
+  "operations": [
+    {
+      "operation_id": "rosstat.publications.discover",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "Publisher HTML is candidate evidence; complete inventory requires review of the exact acquired page.",
+      "parameters": [
+        [
+          "series_id",
+          "rosstat.socioeconomic_regions"
+        ]
+      ],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.select",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.review_index",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "Requires reviewed exact-index scope evidence.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.plan_updates",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.acquire",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.acquire_to_store",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.extract_workbook",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "Regional archive member and container lineage are required.",
+      "parameters": [
+        [
+          "series_id",
+          "rosstat.socioeconomic_regions"
+        ]
+      ],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.workbook_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.read_workbook",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.readable_workbook",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.compare_workbooks",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.extract_document",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "rosstat.socioeconomic_regions"
+        ]
+      ],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.document_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.read_document",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.readable_document",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.structure_document",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "An exact-original reviewed line/column layout supplies document table structure; PDF page text alone is insufficient.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.inspect_archive",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.publications.extract_members",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.map_reviewed_cells",
+      "contract_version": 1,
+      "state": "conditional",
+      "reason": "Requires an exact-original reviewed profile; population also requires a stock date and geographic code edition.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.flake_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.read_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.readable_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.validate_flake",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.tables.compare_flakes",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.integration.integrate",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.integration.dataset_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.integration.read_dataset",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.analytics.compare_datasets",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.products.prepare_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.products.view_snapshot",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.products.read_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "rosstat.products.render_view",
+      "contract_version": 1,
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.save_original",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Preserve exact original bytes at a caller-selected destination.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.read_original",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Restore confirmed source bytes for offline extraction.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.write_snapshot",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Persist a complete physical/source/integrated/view snapshot through the selected dataset adapter.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.read_snapshot",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Restore a pinned complete snapshot for the corresponding Rosstat replay operation.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.save_artifact",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Preserve rendered bytes together with their MaterialArtifact descriptor and lineage.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.read_artifact",
+      "contract_version": 1,
+      "state": "delegated",
+      "reason": "Replay the complete retained representation and descriptor.",
+      "parameters": [],
+      "formats": []
+    }
+  ],
+  "stages": [
+    "acquire",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "readable",
+    "render",
+    "validate",
+    "view"
+  ],
+  "transitions": [
+    {
+      "from": "acquire",
+      "to": "acquire"
+    },
+    {
+      "from": "acquire",
+      "to": "extract"
+    },
+    {
+      "from": "acquire",
+      "to": "inspect"
+    },
+    {
+      "from": "acquire",
+      "to": "preserve"
+    },
+    {
+      "from": "discover",
+      "to": "compare"
+    },
+    {
+      "from": "discover",
+      "to": "inspect"
+    },
+    {
+      "from": "discover",
+      "to": "validate"
+    },
+    {
+      "from": "extract",
+      "to": "compare"
+    },
+    {
+      "from": "extract",
+      "to": "extract"
+    },
+    {
+      "from": "extract",
+      "to": "integrate"
+    },
+    {
+      "from": "extract",
+      "to": "readable"
+    },
+    {
+      "from": "extract",
+      "to": "validate"
+    },
+    {
+      "from": "ingest",
+      "to": "preserve"
+    },
+    {
+      "from": "inspect",
+      "to": "acquire"
+    },
+    {
+      "from": "integrate",
+      "to": "compare"
+    },
+    {
+      "from": "integrate",
+      "to": "view"
+    },
+    {
+      "from": "preserve",
+      "to": "acquire"
+    },
+    {
+      "from": "preserve",
+      "to": "extract"
+    },
+    {
+      "from": "preserve",
+      "to": "ingest"
+    },
+    {
+      "from": "preserve",
+      "to": "inspect"
+    },
+    {
+      "from": "preserve",
+      "to": "preserve"
+    },
+    {
+      "from": "validate",
+      "to": "compare"
+    },
+    {
+      "from": "validate",
+      "to": "inspect"
+    },
+    {
+      "from": "view",
+      "to": "render"
+    }
+  ],
+  "qualifications": [
+    "Publisher issue dates and statistical observation periods are separate identities.",
+    "Full physical source evidence, selected source flakes, integrated datasets and presentation products are distinct values."
+  ]
+}

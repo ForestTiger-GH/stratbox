@@ -14,7 +14,7 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.network import HttpResponse
 from stratbox.domains.registry import operation_catalog
-from stratbox.core.execution.catalog import OperationCatalog
+from stratbox.core.registry.catalog import OperationCatalog
 from stratbox.core.execution.machine import DirectoryMaterial, WireRequestError
 from stratbox.core.execution.machine import invoke_read_only as _invoke_read_only
 from stratbox.core.execution.machine import wire_schemas as _wire_schemas

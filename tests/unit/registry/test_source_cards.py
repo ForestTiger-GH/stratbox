@@ -2,7 +2,7 @@
 from collections import Counter
 
 from stratbox.domains.registry import operation_catalog
-from stratbox.core.execution.semantics import ProcessingFunction, compatible_ports
+from stratbox.shared.data.operations import ProcessingFunction, compatible_ports
 
 
 def test_all_publisher_cards_resolve_actual_operations_without_duplicate_sources():

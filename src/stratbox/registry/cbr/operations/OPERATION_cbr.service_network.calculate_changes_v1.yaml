@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.calculate_changes",
+    "contract_version": 1,
+    "method_version": "cbr-office-count-changes-1",
+    "request_type": "stratbox.domains.cbr.analytics.service_network.changes:OfficeChangesRequest",
+    "value_type": "stratbox.domains.cbr.analytics.service_network.changes:OfficeChanges",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "baseline",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "baseline",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "candidate",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "candidate",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "changes",
+          "contract": {
+            "schema_id": "cbr.service_network.changes",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "batch",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Calculate count differences on comparable cells and report unmatched coverage; no individual closure inference.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.lifecycle_definitions:CHANGES",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:calculate_changes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

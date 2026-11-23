@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-from stratbox.core.execution.catalog import OperationCatalog, RegistryError
+from stratbox.core.registry.catalog import OperationCatalog, RegistryError
 from stratbox.core.execution.machine import wire_schemas
 from stratbox.domains.registry import operation_catalog
 
@@ -38,7 +38,7 @@ def test_machine_contract_and_codec_must_be_registered_together():
 
 
 def test_read_only_contract_cannot_advertise_effectful_work(monkeypatch):
-    from stratbox.core.execution import catalog as implementation
+    from stratbox.core.registry import catalog as implementation
 
     catalog = operation_catalog()
     parse = catalog.reference("cbr.offices.parse", 1)
@@ -62,7 +62,7 @@ def test_read_only_contract_cannot_advertise_effectful_work(monkeypatch):
 
 
 def test_codec_drift_is_rejected_even_when_its_identity_is_unchanged(monkeypatch):
-    from stratbox.core.execution import catalog as implementation
+    from stratbox.core.registry import catalog as implementation
     from stratbox.core.execution.machine import ReadOnlyWireContract
 
     catalog = operation_catalog()

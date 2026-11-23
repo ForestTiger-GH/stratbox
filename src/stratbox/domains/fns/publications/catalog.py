@@ -1,27 +1,21 @@
 """Validated declarations for the two independent FNS publication families."""
 from functools import lru_cache
-from importlib.resources import files
-import json
+from stratbox.core.registry.sources import publication_families
 
 from .contracts import SourceSeries
 
 
 @lru_cache(maxsize=1)
 def _catalog():
-    root = files("stratbox.domains.fns")
-    index = json.loads(root.joinpath("REGISTRY_FAMILIES.yaml").read_text(encoding="utf-8"))
-    if index["schema_version"] != 1 or index["domain_id"] != "fns":
-        raise ValueError("fns.registry.invalid")
     result = []
-    for family in index["families"]:
-        document = json.loads(root.joinpath(family["registry"]).read_text(encoding="utf-8"))
-        if document["schema_version"] != 1 or document["family_id"] != family["family_id"]:
+    for document in publication_families("fns", series_fields=(("series_id", "series_id"), ("family_id", "family_id"), ("title", "title"), ("formats", "formats"))):
+        if document["schema_version"] != 1:
             raise ValueError("fns.registry.family_mismatch")
         for item in document["series"]:
             value = dict(item)
             value["formats"] = tuple(value["formats"])
             series = SourceSeries(**value)
-            if series.family_id != family["family_id"]:
+            if series.family_id != document["family_id"]:
                 raise ValueError("fns.registry.series_family_mismatch")
             result.append(series)
     if len({item.series_id for item in result}) != len(result):

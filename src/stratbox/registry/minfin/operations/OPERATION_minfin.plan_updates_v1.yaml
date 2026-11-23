@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.plan_updates",
+    "contract_version": 1,
+    "method_version": "minfin.publisher-marker-profile-2",
+    "request_type": "stratbox.domains.minfin.publications.contracts:UpdateRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:UpdatePlan",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "minfin.publication_index",
+            "version": 1,
+            "role": null
+          },
+          "path": "index",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "minfin.update_plan",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "target",
+        "selected_sources",
+        "checkpoints",
+        "retained_sources",
+        "force_reprocess",
+        "force_refresh"
+      ],
+      "summary": "Compare publisher document modification markers to caller-owned confirmed checkpoints without downloading XLSX.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:PLAN_UPDATES",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:plan_updates",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

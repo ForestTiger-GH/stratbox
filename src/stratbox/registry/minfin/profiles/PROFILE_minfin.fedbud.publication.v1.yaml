@@ -1,0 +1,18 @@
+{
+  "schema": "stratbox.publication.v1",
+  "owner_id": "minfin",
+  "profile_id": "minfin.fedbud.publication.v1",
+  "declaration": {
+    "schema": "stratbox.minfin.registry.v3",
+    "family_id": "minfin.fedbud",
+    "publisher_id": "minfin",
+    "title": "Исполнение федерального бюджета",
+    "profiles": {
+      "acquisition": "minfin.fedbud.publication_page.v1",
+      "discovery": "minfin.document_cards.v1",
+      "identification": "minfin.fedbud_assets.v1",
+      "table": "minfin.budget_table.v1",
+      "metrics": "minfin.budget_headlines.v1"
+    }
+  }
+}

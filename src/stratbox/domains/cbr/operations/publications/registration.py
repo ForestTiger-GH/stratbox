@@ -1,9 +1,4 @@
-"""Publisher operations, collected by the sole CBR operation owner."""
-from stratbox.core.execution.catalog import OperationRef
+"""Operation segment projected from the packaged registry."""
+from stratbox.core.registry.operations import operation_references
 
-_BASE = "stratbox.domains.cbr.operations.publications"
-OPERATIONS = tuple(OperationRef("cbr.publications." + name, 1,
-    _BASE + ".definitions:" + definition, _BASE + ".handlers:" + name)
-    for name, definition in (("list_sources", "LIST"), ("discover", "DISCOVER"), ("identify", "IDENTIFY"),
-                            ("select", "SELECT"), ("acquire", "ACQUIRE"), ("assess_updates", "ASSESS_UPDATES")))
-STAGES = ()
+OPERATIONS = operation_references("cbr", definition_module='stratbox.domains.cbr.operations.publications')

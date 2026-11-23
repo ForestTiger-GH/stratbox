@@ -1,6 +1,6 @@
 # Independent domain data routes and portable replay
 
-This guide describes the executable processing architecture in Stratbox 0.20.0.
+This guide describes the executable processing architecture in Stratbox 0.21.0.
 Publisher domains own source identity and economic meaning. Shared contracts
 preserve evidence, and neutral operations handle extraction, storage, bounded
 inspection and machine invocation. Each transformation can be called separately;

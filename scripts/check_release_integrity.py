@@ -9,7 +9,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.domains._structure import DomainLayoutError, discover_operation_owners  # noqa: E402
+from stratbox.core.registry.operations import owner_ids, owner_registration  # noqa: E402
+from stratbox.core.registry import operation_catalog  # noqa: E402
 
 REQUIRED_FILES = [
     # Knowledge consolidation bootstrap and content-preserved legacy sources.
@@ -75,16 +76,12 @@ REQUIRED_FILES = [
     'src/stratbox/domains/cbr/operations/catalog/registration.py',
     'src/stratbox/domains/cbr/operations/statistics/registration.py',
     'src/stratbox/domains/cbr/tables/statistics/profiles.py',
-    'src/stratbox/domains/cbr/REGISTRY_CORPORATE_LENDING.yaml',
-    'src/stratbox/domains/cbr/REGISTRY_REPORTING_FORMS.yaml',
     'src/stratbox/domains/cbr/operations/service_network/__init__.py',
     'src/stratbox/domains/cbr/operations/service_network/registration.py',
     'src/stratbox/domains/cbr/operations/project_finance/registration.py',
     'src/stratbox/domains/fns/__init__.py',
     'src/stratbox/domains/fns/_registration.py',
     'src/stratbox/domains/rosstat/_registration.py',
-    'src/stratbox/domains/fns/REGISTRY_FAMILIES.yaml',
-    'src/stratbox/domains/rosstat/REGISTRY_SHORT_TERM_INDICATORS.yaml',
     'docs/current-how/independent-domain-data-routes.md',
     'docs/current-how/fns-data-pipeline.md',
     'docs/current-how/rosstat-data-route.md',
@@ -93,9 +90,16 @@ REQUIRED_FILES = [
     'src/stratbox/domains/frank_rg/__init__.py',
     'src/stratbox/domains/frank_rg/_registration.py',
     'src/stratbox/domains/registry.py',
-    'src/stratbox/core/execution/catalog.py',
+    'src/stratbox/core/registry/catalog.py',
+    'src/stratbox/core/registry/source_catalog.py',
+    'src/stratbox/core/registry/operations.py',
+    'src/stratbox/core/registry/sources.py',
+    'src/stratbox/core/registry/resources.py',
+    'src/stratbox/core/registry/discovery.py',
+    'src/stratbox/registry/__init__.py',
     'src/stratbox/core/execution/runner.py',
     'src/stratbox/core/execution/contracts.py',
+    'src/stratbox/core/execution/calls.py',
     'src/stratbox/core/execution/effects.py',
     'src/stratbox/core/execution/resolution.py',
     'src/stratbox/core/observability/records/effect_refs.py',
@@ -108,7 +112,7 @@ REQUIRED_FILES = [
     'tests/unit/execution/test_finalization.py',
     'tests/integration/universal_core/test_execution_effect_pipeline.py',
     'src/stratbox/core/__init__.py',
-    'src/stratbox/core/registry.py',
+    'src/stratbox/core/registry/__init__.py',
     'src/stratbox/core/runtime/providers.py',
     'src/stratbox/core/storage/filestore/ports.py',
     'src/stratbox/core/observability/journal/file_reader.py',
@@ -166,6 +170,9 @@ FORBIDDEN_PATHS = [
     'src/stratbox/system',
     'src/stratbox/core/base',
     'src/stratbox/core/ioapi',
+    'src/stratbox/core/registry.py',
+    'src/stratbox/core/execution/catalog.py',
+    'src/stratbox/core/execution/source_catalog.py',
     'src/app',
     'appdock',
     '.tmp',
@@ -183,15 +190,16 @@ def main() -> int:
 
     domains_root = SRC / "stratbox" / "domains"
     try:
-        owners = discover_operation_owners(domains_root)
+        owners = owner_ids()
         if not owners:
-            failures.append("no source-domain operation registrations discovered")
+            failures.append("no canonical operation owners discovered")
         for owner in owners:
-            package = domains_root.joinpath(*owner.split("."))
-            if not (package / "_registration.py").is_file():
-                failures.append(f"discovered owner lacks a manifest: {owner}")
-    except (DomainLayoutError, OSError) as error:
-        failures.append(f"invalid source-domain hierarchy: {error}")
+            owner_registration(owner)
+        sources = operation_catalog().source_catalog()
+        if not sources.sources:
+            failures.append("no canonical source declarations discovered")
+    except (ValueError, OSError) as error:
+        failures.append(f"invalid canonical registry: {error}")
 
     for rel in REQUIRED_FILES:
         if not (ROOT / rel).exists():
@@ -204,6 +212,18 @@ def main() -> int:
             failures.append(f'forbidden path still exists: {rel}')
         else:
             print(f'OK absent {rel}')
+
+    registry_root = SRC / 'stratbox' / 'registry'
+    declarations = tuple(registry_root.rglob('*.yaml'))
+    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_'):
+        if not any(path.name.startswith(prefix) for path in declarations):
+            failures.append(f'canonical registry has no {prefix} declarations')
+    obsolete_registries = tuple(domains_root.rglob('REGISTRY_*.yaml'))
+    if obsolete_registries:
+        failures.append('domain-local source registry declarations remain: ' +
+                        ', '.join(str(path.relative_to(ROOT)) for path in obsolete_registries))
+    else:
+        print('OK canonical registry declarations own all source and operation metadata')
 
     if (ROOT / '.git').exists():
         for rel in CHECK_IGNORE_PATHS:

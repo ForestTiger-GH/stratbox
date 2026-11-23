@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.align",
+    "contract_version": 1,
+    "method_version": "fns-sme-align-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:ProjectionRequest",
+    "value_type": "stratbox.domains.fns.integration.contracts:FnsDataset",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "projection",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Apply the explicit dated identity map while retaining source geography, omitted fields and map identity.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:ALIGN",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:align",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

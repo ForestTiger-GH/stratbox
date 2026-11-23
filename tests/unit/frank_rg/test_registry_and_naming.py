@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from stratbox.core.registry.sources import publication_families
 from stratbox.domains.frank_rg.operations.bindings import bind_family, bind_source, validate_all_profiles
 from stratbox.domains.frank_rg.publications.catalog import _decode, all_sources, families
 from stratbox.domains.frank_rg.publications.contracts import FileEntry, ReportPeriod, SourceIndex
@@ -71,8 +72,7 @@ def test_input_root_changes_evidence_without_changing_source_identity():
 
 
 def test_registry_rejects_physical_configuration_and_callable_references():
-    root = resources.files("stratbox.domains.frank_rg")
-    original = json.loads(root.joinpath("REGISTRY_EXPRESS.yaml").read_text(encoding="utf-8"))
+    original = next(value for value in publication_families("frank_rg", series_fields=(("source_id", "series_id"), ("title", "title"))) if value["family_id"] == "frg.express")
     for field in ("location", "directory", "url", "filename"):
         value = {**original, field: "provided-at-runtime"}
         with pytest.raises(ValueError, match="frg.registry.invalid_shape"):

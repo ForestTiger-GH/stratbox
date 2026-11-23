@@ -1,0 +1,27 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "rosstat",
+  "publisher_id": "rosstat",
+  "family_id": "rosstat.population_municipalities",
+  "series_id": "rosstat.population_municipalities",
+  "title": "Численность населения по муниципальным образованиям",
+  "issue_model": "publisher_issue_and_asset:annual",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "rosstat.population_municipalities.route.v1",
+  "family_profile": null,
+  "position": 3,
+  "publication": {
+    "schema": "stratbox.rosstat.registry.v1",
+    "landing_url": "https://rosstat.gov.ru/compendium/document/13282",
+    "frequency_hint": "annual",
+    "profiles": {
+      "discovery": "population_municipalities",
+      "table": "reviewed_population_cells"
+    },
+    "source_scope": "publisher_issue_and_asset",
+    "integration": "explicit_metric_period_unit_geography",
+    "coverage_policy": "reviewed_selection_with_exact_source_lineage"
+  }
+}

@@ -5,8 +5,9 @@ presenting banking and economic data. Applications pass dates and
 destinations and can choose their own infrastructure providers.
 
 The package organizes neutral execution and infrastructure under `stratbox.core`,
-shared data contracts and reference resources under `stratbox.shared`, and
-independent business packages under `stratbox.domains`.
+shared data contracts and reference resources under `stratbox.shared`,
+independent business packages under `stratbox.domains`, and canonical source,
+operation and profile declarations under `stratbox.registry`.
 
 - [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
@@ -37,5 +38,5 @@ python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):
 # python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.20.0-py3-none-any.whl
+# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.21.0-py3-none-any.whl
 ```

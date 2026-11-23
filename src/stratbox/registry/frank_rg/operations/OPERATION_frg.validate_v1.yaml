@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.validate",
+    "contract_version": 1,
+    "method_version": "frg.validate.v1",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:ValidateExtractRequest",
+    "value_type": "stratbox.domains.frank_rg.tables.contracts:ExtractValidation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "extract",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "frg.extract.validation",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Validate source binding, cell structure and formula-cache availability.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.pipeline_definitions:VALIDATE",
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:validate",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

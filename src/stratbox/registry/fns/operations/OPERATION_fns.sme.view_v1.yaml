@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.view",
+    "contract_version": 1,
+    "method_version": "fns-sme-view-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:ViewRequest",
+    "value_type": "stratbox.domains.fns.products.views:PreparedView",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "dataset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "fns.sme.calculation",
+              "version": 1,
+              "role": "products"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.sme.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "metric_ids",
+        "subject_ids",
+        "period_kinds",
+        "dimensions"
+      ],
+      "summary": "Prepare an exact selection from retained observations without automatic aggregation.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:VIEW",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:view",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

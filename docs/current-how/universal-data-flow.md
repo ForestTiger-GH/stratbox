@@ -1,7 +1,6 @@
 # Universal material flow and operation handoff
 
-Scope: implemented core contracts and the Minfin, Frank RG and grouped CBR routes
-in Stratbox 0.19.0. Original formats include PDF, workbooks, archives, HTML and arbitrary
+Scope: implemented core contracts and independent publisher routes. Original formats include PDF, workbooks, archives, HTML and arbitrary
 admitted byte representations. Logical dataset adapters have a separate typed
 table interface.
 
@@ -15,7 +14,7 @@ Contents:
 
 1. Independent identities and responsibilities — what remains stable across stores.
 2. Reading and retaining materials — exact bytes and complete semantic descriptors.
-3. Binding operation results — typed projection, admission and lineage.
+3. Binding operation results — named inline/result adapters, source routes, admission and lineage.
 4. Selecting adapters — explicit source and destination bindings.
 5. Logical datasets — the common boundary for file and database representations.
 6. Shared archives — exact members and separately identified generated containers.
@@ -124,10 +123,16 @@ bound = bind_request(
 saved = bound.invoke(save_original, store=destination_store)
 ```
 
-`BoundRequest.invoke()` preserves input computation parents through
-`ExecutionContext`. The consumer still identifies the typed input it actually
-uses. Route changes therefore do not change a business computation key, while
-changed typed values, source evidence or methods do.
+`BoundRequest.invoke()` preserves input receipts and computation parents through
+`ExecutionContext`. The runner includes those receipts in the consumer's evidence;
+upstream effects are not replayed as new consumer effects. Route changes do not
+change a business computation key, while changed typed values, source evidence
+or methods do.
+
+The consumer assigns semantic roles to the bytes it interprets. Inherited
+transport receipts for those same bytes remain in result evidence; the
+calculation uses the consumer's declared roles. Additional inherited byte
+dependencies still participate in the calculation identity.
 
 For an encoded result, `artifact_from_output(result, name, series_id=...)`
 constructs its complete artifact. After replay, `project_artifact(result)`
@@ -145,6 +150,61 @@ application. `reference_output()` and `resolve_output()` check the owner,
 operation, invocation, output and expected identity. The core supplies this
 handoff contract, while the consumer owns durable jobs, access control, result
 storage and admitted result codecs.
+
+
+### Supplied values and named collections
+
+`prepare_input(value, contract=...)` creates a `PreparedInput` for an explicitly
+supplied typed value. It carries exact input receipts, optional computation
+lineage and caller-owned qualifications. A `SourcePayload` has the built-in
+`source.payload` contract and its original-byte receipt. A `MaterialArtifact`
+default preserves the complete artifact wrapper under `material.artifact`;
+`artifact_input(artifact)` explicitly exposes its representation under the
+artifact's semantic contract. Domain decoding remains a separate operation.
+Prepared input adapters cannot assert `storage.confirmed`.
+
+`collect_inputs(items, contract=..., element_contract=...)` assembles a named
+tuple of admitted projected or prepared values. Every member must have the
+exact element contract. The collection preserves input receipts and member
+computation parents, intersects qualifications/coverage, and retains a partial
+outcome when any member is partial. Collection assembly supplies no storage
+confirmation or implicit semantic integration. Revision and coverage selection
+remain explicit caller decisions.
+
+`adapt_input(value, output_name=..., resolver=...)` accepts a projected/prepared
+input directly, projects an operation result only with a named output, and
+resolves a retained result only through the supplied resolver. Raw domain values
+require `prepare_input()` and their explicit contract. Binding never guesses a
+schema from a filename or evaluates a serialized Python object.
+
+### Catalog calls and source-route admission
+
+```python
+from stratbox.core.registry import operation_catalog
+from stratbox.core.execution.handoff import prepare_input
+
+catalog = operation_catalog()
+# payload is a supplied SourcePayload.
+call = catalog.bind(
+    "workbook.extract", 1,
+    inputs={"source": prepare_input(payload)},
+    parameters={"series_id": "example.series", "issue_id": "2026-08"},
+)
+result = call.invoke()
+```
+
+`catalog.bind_source(series_id, format=...)` selects a logical source and its
+canonical route. Its `bind(operation_id, ..., inputs=..., parameters=...)`
+checks the bound operation version, formats, fixed source parameters, named
+input schemas and allowed stage transitions. The optional `from_stage` selects
+an explicit predecessor. When an operation supports only a subset of the
+source's formats, a format selection is required.
+
+A retained extract can enter its independent next operation directly. A source
+route does not impose acquisition or intermediate saving as prerequisites.
+Technical encoding, replay and maintenance stay separate from economic stages.
+The resulting `OperationCall.invoke()` resolves the existing handler and retains
+the same execution, budget, provider and finalization rules as its direct API.
 
 ## 4. Selecting adapters
 

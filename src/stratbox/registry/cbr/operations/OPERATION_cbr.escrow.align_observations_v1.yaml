@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.align_observations",
+    "contract_version": 1,
+    "method_version": "cbr-escrow-observations-1",
+    "request_type": "stratbox.domains.cbr.operations.project_finance.contracts:AlignEscrowObservationsRequest",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.escrow.dataset",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": "dataset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "observations",
+          "contract": {
+            "schema_id": "cbr.escrow.observations",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "geography"
+      ],
+      "summary": "Align explicit metric, scale, period and versioned geography identities into shared observations.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.project_finance.definitions:ALIGN",
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:align_observations",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

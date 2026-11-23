@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.restore",
+    "contract_version": 5,
+    "method_version": "sors-multiscope-rounding-dominance-2026.7",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:RestoreSorsRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.sors.results:SorsRestorationResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "bundle",
+          "contract": {
+            "schema_id": "cbr.sors.source_bundle",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": "source",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.sors.restoration",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "config"
+      ],
+      "summary": "Run qualified SORS reconstruction with explicit inference and solver evidence.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:RESTORE",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:restore",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

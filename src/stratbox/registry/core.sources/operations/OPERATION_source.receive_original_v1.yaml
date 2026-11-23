@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.sources",
+  "definition": {
+    "operation_id": "source.receive_original",
+    "contract_version": 1,
+    "method_version": "http-receive-1",
+    "request_type": "stratbox.core.operations.source.original_definitions:ReceiveOriginalRequest",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "request",
+        "source_id",
+        "media_types",
+        "retry",
+        "baseline",
+        "default_media_type"
+      ],
+      "summary": "Receive exact source bytes without requiring parsing or storage.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.operations.source.original_definitions:RECEIVE",
+    "handler_ref": "stratbox.core.operations.source.originals:receive_original",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

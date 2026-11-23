@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.funding",
+  "series_id": "cbr.funding.escrow_accounts",
+  "title": "Escrow account balances",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.funding.escrow_accounts.route.v1",
+  "family_profile": "cbr.funding.publication.v1",
+  "position": 38,
+  "publication": {
+    "acquisition_profile": "cbr.route.escrow_accounts",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.escrow_accounts.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

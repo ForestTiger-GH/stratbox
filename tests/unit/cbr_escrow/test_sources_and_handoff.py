@@ -1,7 +1,7 @@
 """Source format coverage and neutral-storage admission stay explicit."""
 from datetime import datetime, timezone
 
-from stratbox.core.execution.catalog import OperationCatalog
+from stratbox.core.registry.catalog import OperationCatalog
 from stratbox.core.execution.handoff import bind_request, project_output
 from stratbox.core.network import HttpResponse
 from stratbox.core.operations.materials.definitions import ReadLocationRequest
@@ -10,7 +10,7 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr.operations import project_finance as escrow
 from stratbox.domains.cbr.operations.project_finance import definitions
 from stratbox.domains.cbr.operations.project_finance.registration import OPERATIONS
-from stratbox.core.execution.catalog import OperationRegistration
+from stratbox.core.registry.catalog import OperationRegistration
 REGISTRATION = OperationRegistration("cbr", OPERATIONS)
 from stratbox.shared.evidence import SourcePayload
 

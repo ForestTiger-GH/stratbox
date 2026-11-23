@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.project_finance.alignment.v2.metadata",
+  "declaration": {
+    "edition": "cbr.project_finance.alignment.v2",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.project_finance.alignment.v2",
+    "scope": "Source identities remain distinct until an explicit reviewed mapping is supplied."
+  }
+}

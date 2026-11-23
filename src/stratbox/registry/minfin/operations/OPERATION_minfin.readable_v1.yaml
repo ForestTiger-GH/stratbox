@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.readable",
+    "contract_version": 1,
+    "method_version": "minfin-pdf-text-1",
+    "request_type": "stratbox.domains.minfin.publications.contracts:ReadableRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:ReadableDocument",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 67108864,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 67108864,
+      "requests": null,
+      "objects": null,
+      "cells": 500000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "minfin.publisher_material",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "version": 1,
+              "role": "originals"
+            },
+            {
+              "schema_id": "material.payload",
+              "version": 1,
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "contract": {
+            "schema_id": "minfin.document_text",
+            "version": 1,
+            "role": "readable"
+          },
+          "path": "",
+          "qualifications": [
+            "text_only"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "partial"
+          ]
+        }
+      ],
+      "parameters": [
+        "family_id",
+        "max_pages",
+        "format"
+      ],
+      "summary": "Extract PDF text only, with an explicit incomplete-visual-coverage qualification.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:READABLE",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:readable_document",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

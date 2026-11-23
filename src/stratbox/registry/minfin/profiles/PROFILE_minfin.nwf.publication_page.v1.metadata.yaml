@@ -1,0 +1,12 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "minfin",
+  "profile_id": "minfin.nwf.publication_page.v1.metadata",
+  "declaration": {
+    "edition": "1",
+    "formats": [],
+    "kind": "acquisition",
+    "profile_id": "minfin.nwf.publication_page.v1",
+    "scope": "official publisher landing page"
+  }
+}

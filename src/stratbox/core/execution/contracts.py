@@ -10,8 +10,8 @@ from stratbox.core.limits import ExecutionBudget, Resource
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
-from stratbox.core.execution.identifiers import safe_token
-from stratbox.core.execution.semantics import OperationSemantics
+from stratbox.shared.identifiers import safe_token
+from stratbox.shared.data.operations import OperationSemantics
 
 if TYPE_CHECKING:
     from stratbox.core.execution.events import EventSink, IncidentSink
@@ -219,6 +219,7 @@ class ExecutionContext:
     bindings: tuple[ProviderBinding, ...] = ()
     incident_sink: IncidentSink | None = field(default=None, repr=False)
     input_computations: tuple[tuple[str, ComputationReceipt], ...] = ()
+    input_receipts: tuple[UsedInputReceipt, ...] = ()
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:
@@ -234,6 +235,10 @@ class ExecutionContext:
             raise ValueError("Duplicate input computation role")
         for name in names:
             safe_token(name)
+        if not isinstance(self.input_receipts, tuple) or any(
+            not isinstance(item, UsedInputReceipt) for item in self.input_receipts
+        ):
+            raise ValueError("Invalid input receipt evidence")
 
 
 @dataclass(frozen=True, slots=True)

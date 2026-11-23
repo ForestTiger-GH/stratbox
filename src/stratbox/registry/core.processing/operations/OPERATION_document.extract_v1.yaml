@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "document.extract",
+    "contract_version": 1,
+    "method_version": "document-extract-1",
+    "request_type": "stratbox.core.operations.processing.definitions:ExtractRequest",
+    "value_type": "stratbox.shared.data.documents:DocumentExtract",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "document.blocks.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "series_id",
+        "issue_id",
+        "asset_id"
+      ],
+      "summary": "Extract ordered text blocks and explicit document extraction qualifications.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.operations.processing.definitions:DOCUMENT",
+    "handler_ref": "stratbox.core.operations.processing.handlers:extract_document",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

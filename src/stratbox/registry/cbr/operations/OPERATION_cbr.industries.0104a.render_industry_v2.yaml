@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.render_industry",
+    "contract_version": 2,
+    "method_version": "cbr-0104a-xlsx-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:IssuanceWorkbookRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.issuance.contracts:IssuanceWorkbookResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate",
+        "view",
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream_result",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "stream",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.workbook",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "industry_code",
+        "calculate_apk_if_missing",
+        "include_metadata_sheet"
+      ],
+      "summary": "Render one industry workbook from supplied data.",
+      "composition": true,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.definitions:RENDER_INDUSTRY",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:render_industry",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

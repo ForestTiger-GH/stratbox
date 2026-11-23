@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.read_representation",
+    "contract_version": 1,
+    "method_version": "fns-1yur-csv-1",
+    "request_type": "stratbox.shared.data.releases:ReadReleaseRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "fns.1yur.regional_csv",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "fns.1yur.regional_release",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Import an explicitly selected regional CSV product; original-wide source coverage remains qualified.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.legal_entities.definitions:READ",
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:read_representation",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

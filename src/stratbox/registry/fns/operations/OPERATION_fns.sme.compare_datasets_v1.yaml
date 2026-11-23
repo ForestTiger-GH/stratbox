@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.compare_datasets",
+    "contract_version": 1,
+    "method_version": "fns-sme-compare-datasets-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:CompareDatasetsRequest",
+    "value_type": "stratbox.shared.data.calculations:ObservationComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "observations.comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Assess revisions only across matching metrics, editions, periods, perimeters and dimensions.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:COMPARE_DATASETS",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:compare_datasets",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

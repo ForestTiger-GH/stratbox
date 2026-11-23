@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.v1.metadata.cbr.corporate_lending.corp_debt_a",
+  "declaration": {
+    "edition": "cbr.statistics.observations.v1",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.statistics.observations.v1",
+    "scope": "Corporate, SME and individual-entrepreneur perimeters and published activity classifications remain distinct. Source cells retain every period before model selection."
+  }
+}

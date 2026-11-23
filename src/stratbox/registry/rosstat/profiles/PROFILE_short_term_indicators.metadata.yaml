@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "rosstat",
+  "profile_id": "short_term_indicators.metadata",
+  "declaration": {
+    "edition": "rosstat-short-term-indicators-2",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "discovery",
+    "profile_id": "short_term_indicators",
+    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage."
+  }
+}

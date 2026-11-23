@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.escrow.flake.v2.metadata",
+  "declaration": {
+    "edition": "cbr-escrow-xlsx-flake-2",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "extraction",
+    "profile_id": "cbr.escrow.flake.v2",
+    "scope": "Reviewed regional source table; historical HTML is an original-only layout."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.exchange_rates",
+  "series_id": "cbr.exchange_rates.exchange_rate",
+  "title": "Exchange rate indices",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.exchange_rates.exchange_rate.route.v1",
+  "family_profile": "cbr.exchange_rates.publication.v1",
+  "position": 56,
+  "publication": {
+    "acquisition_profile": "cbr.route.exchange_rate",
+    "extraction_profile": "cbr.workbook.flake.v1",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.exchange_rate.v1",
+    "integration_profile": "cbr.statistics.observations.v1",
+    "product_profile": "cbr.statistics.views.v1"
+  }
+}

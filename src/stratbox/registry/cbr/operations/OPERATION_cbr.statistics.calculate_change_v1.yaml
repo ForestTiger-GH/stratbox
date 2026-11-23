@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.statistics.calculate_change",
+    "contract_version": 1,
+    "method_version": "cbr-statistics-calculate_change-1",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:CalculateChangeRequest",
+    "value_type": "stratbox.domains.cbr.integration.statistics.contracts:StatisticsDataset",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 5000000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.statistics.dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "dataset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.statistics.dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "before",
+        "after",
+        "method",
+        "release_ids"
+      ],
+      "summary": "Calculate a selected absolute or percentage change separately from published adjusted growth.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.statistics.definitions:CHANGE",
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:calculate_change",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from stratbox.shared.identity import ByteIdentity
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability.records.contracts import JournalRecord
 
 WriteState = Literal["confirmed", "failed", "unknown"]

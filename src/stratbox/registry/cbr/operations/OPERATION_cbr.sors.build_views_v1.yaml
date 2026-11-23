@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.build_views",
+    "contract_version": 1,
+    "method_version": "sors-prepared-views-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:BuildSorsViewsRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.sors.results:SorsViewPack",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.sors.restoration",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": "result",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "cbr.sors.crosswalk",
+              "version": 2,
+              "role": "integrated"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "views",
+          "contract": {
+            "schema_id": "cbr.sors.views",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "workbook"
+      ],
+      "summary": "Prepare every selected SORS sheet, including pivots and audit tables.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:VIEWS",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:build_views",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

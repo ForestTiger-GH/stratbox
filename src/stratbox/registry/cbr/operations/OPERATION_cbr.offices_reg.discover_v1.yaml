@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.discover",
+    "contract_version": 1,
+    "method_version": "cbr-offices-reg-index-1",
+    "request_type": "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:DiscoverOfficesRegRequest",
+    "value_type": "builtins:tuple",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [
+      "http"
+    ],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "cbr.offices_reg.index_material",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "index",
+          "required": false,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "releases",
+          "contract": {
+            "schema_id": "cbr.offices_reg.index",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Discover source issues with source-specific identity and coverage.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.definitions:DISCOVER",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:discover",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

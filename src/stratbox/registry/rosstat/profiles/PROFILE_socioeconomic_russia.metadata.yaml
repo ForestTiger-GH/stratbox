@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "rosstat",
+  "profile_id": "socioeconomic_russia.metadata",
+  "declaration": {
+    "edition": "rosstat-socioeconomic-russia-2",
+    "formats": [
+      "pdf"
+    ],
+    "kind": "discovery",
+    "profile_id": "socioeconomic_russia",
+    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage."
+  }
+}

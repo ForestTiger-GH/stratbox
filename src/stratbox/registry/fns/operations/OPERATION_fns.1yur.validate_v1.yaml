@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.validate",
+    "contract_version": 1,
+    "method_version": "fns-1yur-validate-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.domains.fns.tables.contracts:ValidationReport",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flake",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report",
+          "contract": {
+            "schema_id": "fns.1yur.validation",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Assess the reviewed source profile and expose errors, omissions and disagreements.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.legal_entities.definitions:VALIDATE",
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:validate",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

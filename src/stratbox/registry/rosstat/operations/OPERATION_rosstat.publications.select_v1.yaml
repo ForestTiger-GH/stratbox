@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.publications.select",
+    "contract_version": 1,
+    "method_version": "rosstat-publications-select-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:SelectRequest",
+    "value_type": "builtins:tuple",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "rosstat.publications.index",
+            "version": 1,
+            "role": null
+          },
+          "path": "index",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "assets",
+          "contract": {
+            "schema_id": "rosstat.publications.assets",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "issue_ids",
+        "asset_roles",
+        "policy",
+        "max_assets"
+      ],
+      "summary": "Select explicit publisher issues and assets from a qualified index.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:SELECT",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:select",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

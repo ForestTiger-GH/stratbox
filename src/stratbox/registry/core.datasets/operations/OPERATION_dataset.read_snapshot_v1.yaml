@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.datasets",
+  "definition": {
+    "operation_id": "dataset.read_snapshot",
+    "contract_version": 1,
+    "method_version": "dataset-read-1",
+    "request_type": "stratbox.core.storage.datasets.definitions:ReadSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [
+      "dataset_reader"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": null,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "reference",
+          "contract": {
+            "schema_id": "dataset.snapshot_reference",
+            "version": 1,
+            "role": null
+          },
+          "path": "reference",
+          "required": true,
+          "qualifications": [
+            "storage.confirmed"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "components",
+        "selection"
+      ],
+      "summary": "Read selected typed components from a pinned logical dataset version.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.storage.datasets.definitions:READ",
+    "handler_ref": "stratbox.core.storage.datasets.operations:read_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

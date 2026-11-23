@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.materials",
+  "definition": {
+    "operation_id": "material.read_artifact",
+    "contract_version": 1,
+    "method_version": "artifact-replay-1",
+    "request_type": "stratbox.core.operations.materials.definitions:ReadArtifactRequest",
+    "value_type": "stratbox.shared.materials:MaterialArtifact",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [
+      "descriptor_filestore"
+    ],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": null,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact_reference",
+            "version": 1,
+            "role": null
+          },
+          "path": "artifact",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "limit"
+      ],
+      "summary": "Restore and verify a retained artifact's contract, representation and full lineage.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.operations.materials.definitions:READ_ARTIFACT",
+    "handler_ref": "stratbox.core.operations.materials.operations:read_artifact",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

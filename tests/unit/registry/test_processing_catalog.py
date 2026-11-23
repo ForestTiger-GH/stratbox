@@ -6,13 +6,13 @@ import json
 import pytest
 
 from stratbox.core.execution import OperationDefinition
-from stratbox.core.execution.catalog import (
+from stratbox.core.registry.catalog import (
     OperationCatalog,
     OperationRef,
     OperationRegistration,
     RegistryError,
 )
-from stratbox.core.execution.semantics import (
+from stratbox.shared.data.operations import (
     InputPort,
     OutputPort,
     OperationKey,
@@ -173,7 +173,7 @@ def test_every_owner_has_consistent_coverage_and_available_delegations():
 
 
 def _catalog(monkeypatch, producer, consumer, *, stages=()):
-    from stratbox.core.execution import catalog as implementation
+    from stratbox.core.registry import catalog as implementation
 
     def location(definition):
         return "test_processing_metadata_" + str(id(definition)) + ":DEFINITION"

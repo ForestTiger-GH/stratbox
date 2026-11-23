@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "workbook.compare",
+    "contract_version": 1,
+    "method_version": "workbook-compare-1",
+    "request_type": "stratbox.core.operations.processing.definitions:CompareWorkbooksRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "workbook.cell_comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare exact physical cells and geometry without assuming economic comparability.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.operations.processing.definitions:WORKBOOK_COMPARE",
+    "handler_ref": "stratbox.core.operations.processing.handlers:compare_workbooks",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,6 +1,6 @@
 # CBR functional architecture and independently resumable data routes
 
-Scope: the CBR implementation in Stratbox 0.19.0. The domain uses the same
+Scope: the implemented CBR publication and processing contracts. The domain uses the same
 functional organization as Minfin and Frank RG: source declarations, source
 tables, semantic integration, calculations, products and operations have separate
 owners. One CBR registration exposes the exact callable contracts. Family and
@@ -8,23 +8,25 @@ source descriptions qualify their actual coverage.
 
 ## 1. Physical owners and registries
 
-| Owner under `stratbox.domains.cbr` | Responsibility |
+| Owner | Responsibility |
 | --- | --- |
-| `REGISTRY_*.yaml` | Twelve logical families, stable series IDs, issue models, format variants and profile references. |
-| `publications/` | Official routes, discovery and selection, release/date conventions, original admission, update assessment and collection manifests. |
-| `tables/<family>/` | Physical layouts, source cells or records, table editions, extraction and flake codecs. |
-| `integration/<family>/` | Versioned subject/metric/period mappings, comparable observations and integrated histories. |
-| `analytics/<family>/` | Calculations, financial models and complete inputs specific to an analytical method. |
-| `products/<family>/` | Prepared tables, display policies, view codecs and file renderers. |
-| `operations/<family>/` | Typed requests, declarations, thin handlers and explicit multi-stage compositions. |
-| `operations/bindings.py` | Source-scoped bindings to the operation catalog: formats, tables, editions, handoffs and missing capabilities. |
-| `_registration.py` | The sole publisher registration, aggregating maintained operation segments. |
+| `stratbox/registry/cbr/{sources,profiles}` | Atomic logical series, shared family attributes, issue models, format variants, processing profiles and allowed route transitions. |
+| `stratbox/registry/cbr/operations` | Complete versioned contracts, named ports, execution policy and implementation references. |
+| `domains.cbr.publications/` | Official routes, discovery and selection, release/date conventions, original admission, update assessment and collection manifests. |
+| `domains.cbr.tables/<family>/` | Physical layouts, source cells or records, table editions, extraction and flake codecs. |
+| `domains.cbr.integration/<family>/` | Versioned subject/metric/period mappings, comparable observations and integrated histories. |
+| `domains.cbr.analytics/<family>/` | Calculations, financial models and complete inputs specific to an analytical method. |
+| `domains.cbr.products/<family>/` | Prepared tables, display policies, view codecs and file renderers. |
+| `domains.cbr.operations/<family>/` | Typed request/result classes, metadata projections, handlers and explicit multi-stage compositions. |
+| `domains.cbr.operations/bindings.py` | Source-scoped bindings to the operation catalog: formats, tables, editions, handoffs and missing capabilities. |
+| `core.registry` | Shared resource loading, validation, indexes and catalog assembly. |
+| `core.execution` | Named value adapters, source binding and independent invocation. |
 
 Dependency direction follows these boundaries. Publication access does not import
 parsers; tables do not import models or products; integration does not import
 analytics. Products consume lower-layer values. Operation compositions connect
-these owners explicitly. The import checker enforces this direction. Historical
-family packages and nested CBR operation registrations have been removed.
+these owners explicitly. The import checker enforces this direction. Source families and functional
+implementation packages retain one declared CBR operation owner.
 
 Logical publication identity is `(series_id, issue_id, asset_id)`. It is separate
 from URL, filename, storage location and exact byte identity. A release may

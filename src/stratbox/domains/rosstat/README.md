@@ -1,8 +1,8 @@
 # Rosstat
 
-One `rosstat` operation owner covers four publisher families. Their declarative
-`REGISTRY_*.yaml` files live at this root; operation metadata stays independent
-of optional document and spreadsheet engines.
+One `rosstat` operation owner covers four publisher families. Canonical source,
+operation and profile resources live under `stratbox/registry/rosstat`; domain
+metadata discovery stays independent of optional document and spreadsheet engines.
 
 | Package | Responsibility |
 | --- | --- |

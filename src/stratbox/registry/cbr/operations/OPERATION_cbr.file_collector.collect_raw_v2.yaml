@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.file_collector.collect_raw",
+    "contract_version": 2,
+    "method_version": "cbr-file-acquisition-1",
+    "request_type": "stratbox.domains.cbr.publications.collection.contracts:CollectFilesRequest",
+    "value_type": "stratbox.domains.cbr.publications.collection.contracts:Collection",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "collection",
+          "contract": {
+            "schema_id": "cbr.file_collector.collection",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.file_collector.collected_files",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "files",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection",
+            "version": 1,
+            "role": null
+          },
+          "path": "manifest",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "archive_members",
+          "contract": {
+            "schema_id": "material.archive_members",
+            "version": 1,
+            "role": null
+          },
+          "path": "archive_members",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "source_ids",
+        "continue_on_error",
+        "try_case_variants",
+        "deadline_per_source_seconds",
+        "max_batch_bytes",
+        "retry"
+      ],
+      "summary": "Acquire independently qualified original files with an explicit remaining-work set.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.collection.definitions:COLLECT",
+    "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:collect_raw",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

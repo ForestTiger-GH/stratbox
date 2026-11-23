@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.capture_full",
+    "contract_version": 1,
+    "method_version": "fns-sme-capture-full-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:CaptureFullRequest",
+    "value_type": "stratbox.domains.fns.operations.contracts:ProcessedRelease",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract",
+        "integrate",
+        "view",
+        "render"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "fns.sme.original",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "original",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "original",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flake",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "projection",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "dataset",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.sme.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation.bytes",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "release",
+        "url",
+        "format"
+      ],
+      "summary": "Acquire the selected publication and return full flakes, projections, datasets, prepared views and rendered bytes.",
+      "composition": true,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:CAPTURE_FULL",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:capture_full",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

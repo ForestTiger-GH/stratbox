@@ -1,8 +1,9 @@
 # Minfin
 
 The domain owns four publisher families and thirteen logical series: ten budget
-and NWF workbook series, plus three historical NWF document series. Root
-`REGISTRY_*.yaml` files declare logical sources; typed profiles own source
+and NWF workbook series, plus three historical NWF document series. Canonical
+source, operation and profile resources live under `stratbox/registry/minfin`;
+typed Python profiles own source
 recognition, table interpretation and reviewed calculations.
 
 | Owner | Responsibility |

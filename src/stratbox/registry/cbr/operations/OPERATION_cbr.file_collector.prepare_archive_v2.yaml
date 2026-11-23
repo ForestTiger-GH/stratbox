@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.file_collector.prepare_archive",
+    "contract_version": 2,
+    "method_version": "cbr-file-manifest-zip-2",
+    "request_type": "stratbox.domains.cbr.publications.collection.contracts:PrepareArchiveRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.file_collector.collected_files",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "files",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "cbr.file_collector.archive",
+            "version": 2,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Render a manifest-bearing archive whose members retain their original role.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.collection.definitions:ARCHIVE",
+    "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:prepare_archive",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

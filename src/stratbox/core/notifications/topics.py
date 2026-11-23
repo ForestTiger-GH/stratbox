@@ -7,7 +7,7 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Literal
 
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
 from stratbox.core.observability.records.event_schemas import (
     MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED,

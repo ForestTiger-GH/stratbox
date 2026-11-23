@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.compare",
+    "contract_version": 1,
+    "method_version": "frg.compare.v1",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:CompareExtractRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookComparison",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "before",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "after",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "workbook.comparison",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Compare physical cell evidence without assigning economic meaning.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.pipeline_definitions:COMPARE",
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:compare",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

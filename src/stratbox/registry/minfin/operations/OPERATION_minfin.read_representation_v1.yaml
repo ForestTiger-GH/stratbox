@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_representation",
+    "contract_version": 1,
+    "method_version": "minfin-extract-json-2",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ReadRepresentationRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:TableExtract",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 67108864,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 67108864,
+      "requests": null,
+      "objects": null,
+      "cells": 500000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "minfin.source_cells.json",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "representation",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Read a retained exact extract representation without re-acquiring source material.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:READ_EXTRACT",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:read_representation",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

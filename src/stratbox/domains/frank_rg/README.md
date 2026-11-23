@@ -1,7 +1,8 @@
 # Frank RG
 
-The domain owns fourteen report series in four source families. Root
-`REGISTRY_*.yaml` files declare logical identities; typed profiles own source
+The domain owns fourteen report series in four source families. Canonical
+source, operation and profile resources live under `stratbox/registry/frank_rg`;
+typed Python profiles own source
 recognition and naming. One `frank_rg` operation owner exposes the `frg.*` route.
 
 | Owner | Responsibility |

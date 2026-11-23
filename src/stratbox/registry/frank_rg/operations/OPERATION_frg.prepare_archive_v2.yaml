@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.prepare_archive",
+    "contract_version": 2,
+    "method_version": "frg-latest-manifest-zip-profile-3",
+    "request_type": "stratbox.domains.frank_rg.publications.cleanup:CleanupPlan",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.cleanup_plan",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "frg.archive",
+            "version": 2,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Package the selected retained original reports without executing cleanup.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.housekeeping_definitions:ARCHIVE",
+    "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:prepare_archive",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

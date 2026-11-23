@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.prepare_notice",
+    "contract_version": 1,
+    "method_version": "minfin.notice-facts.v2",
+    "request_type": "stratbox.domains.minfin.analytics.contracts:NoticeRequest",
+    "value_type": "stratbox.domains.minfin.analytics.contracts:NoticePreparation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "summary",
+          "contract": {
+            "schema_id": "minfin.headlines",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "summary",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "minfin.asset",
+            "version": 1,
+            "role": null
+          },
+          "path": "asset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        },
+        {
+          "name": "decision",
+          "contract": {
+            "schema_id": "minfin.update_decision",
+            "version": 1,
+            "role": null
+          },
+          "path": "decision",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "preparation",
+          "contract": {
+            "schema_id": "minfin.notice_preparation",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "include_initial",
+        "baseline_original_identity"
+      ],
+      "summary": "Prepare a source-qualified, channel-neutral notification candidate; initial loads are quiet by default.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:PREPARE_NOTICE",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:prepare_notice_facts",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.calculation_snapshot",
+    "contract_version": 1,
+    "method_version": "fns-sme-calculation-snapshot-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:CalculationRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "calculation",
+          "contract": {
+            "schema_id": "fns.sme.calculation",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "calculation",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.calculation.snapshot",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Encode the complete calculation envelope for neutral immutable dataset storage.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:CALCULATION_SNAPSHOT",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:calculation_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

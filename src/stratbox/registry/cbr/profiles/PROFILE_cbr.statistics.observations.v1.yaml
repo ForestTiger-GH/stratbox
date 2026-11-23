@@ -1,0 +1,10 @@
+{
+  "schema": "stratbox.processing-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.v1",
+  "declaration": {
+    "alignment_operation": "cbr.statistics.align",
+    "product_profile": "cbr.statistics.views.v1",
+    "view_operation": "cbr.statistics.build_view"
+  }
+}

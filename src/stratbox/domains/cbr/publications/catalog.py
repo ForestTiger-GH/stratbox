@@ -1,25 +1,18 @@
 """Logical publisher declarations, independent of routes and executable code."""
 from functools import lru_cache
-from importlib.resources import files
-import json
+from stratbox.core.registry.sources import publication_families
 
 from .contracts import SourceSeries
 
-_FAMILIES = (
-    "reporting_forms", "corporate_lending", "household_lending", "funding",
-    "project_finance", "service_network", "household_finance", "monetary_statistics",
-    "banking_sector_structure", "securities", "external_debt", "exchange_rates",
-)
+
 
 
 @lru_cache(maxsize=1)
 def _sources():
     result = []
-    for name in _FAMILIES:
-        document = json.loads(files("stratbox.domains.cbr").joinpath(
-            f"REGISTRY_{name.upper()}.yaml").read_text(encoding="utf-8"))
+    for document in publication_families("cbr", series_fields=(("series_id", "series_id"), ("family_id", "family_id"), ("title", "title"), ("formats", "formats"), ("issue_model", "issue_model"))):
         if (set(document) != {"schema_version", "family_id", "series"}
-                or document["schema_version"] != 1 or document["family_id"] != "cbr." + name):
+                or document["schema_version"] != 1 or not document["family_id"].startswith("cbr.")):
             raise ValueError("cbr.registry.family_invalid")
         for declaration in document["series"]:
             value = dict(declaration)
@@ -34,7 +27,7 @@ def _sources():
 
 
 def families():
-    return tuple("cbr." + name for name in _FAMILIES)
+    return tuple(sorted({item.family_id for item in _sources()}))
 
 
 def all_sources(family_id=None):

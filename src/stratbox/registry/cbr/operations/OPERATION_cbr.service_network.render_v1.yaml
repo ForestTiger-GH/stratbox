@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.render",
+    "contract_version": 1,
+    "method_version": "cbr-office-render-1",
+    "request_type": "stratbox.domains.cbr.products.service_network.views:RenderOfficeViewRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "cbr.service_network.view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "dataset.snapshot",
+              "version": 1,
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "product",
+          "contract": {
+            "schema_id": "cbr.service_network.product",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render a retained prepared view to CSV or XLSX without source parsing.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.lifecycle_definitions:RENDER",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:render",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

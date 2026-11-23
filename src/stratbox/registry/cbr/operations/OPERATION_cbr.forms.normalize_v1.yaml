@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.normalize",
+    "contract_version": 1,
+    "method_version": "cbr-forms-source-projection-2",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:NormalizeFormRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flakes",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.forms.snapshot",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "include_deleted"
+      ],
+      "summary": "Select a supported physical form table and apply explicit normalization to decoded flakes.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.reporting_forms.source_definitions:NORMALIZE",
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:normalize_form",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

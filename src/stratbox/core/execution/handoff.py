@@ -15,12 +15,12 @@ from typing import Any, Callable, Literal, Mapping, Protocol, Union, get_args, g
 from stratbox.core.execution.contracts import (
     EffectReceipt, ExecutionContext, OperationDefinition, OperationResult,
 )
-from stratbox.core.execution.identifiers import safe_token
-from stratbox.core.execution.semantics import OperationKey, assess_input
+from stratbox.shared.identifiers import safe_token
+from stratbox.shared.data.operations import OperationKey, assess_input
 from stratbox.shared.data.datasets import ComputationReceipt
-from stratbox.shared.data.processing import DataContract
+from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.snapshots import DatasetAssembly, DatasetSnapshot, SnapshotReference
-from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.materials import MaterialArtifact
 
@@ -75,6 +75,122 @@ class ProjectedOutput:
     effects: tuple[EffectReceipt, ...]
     computation: ComputationReceipt | None
     identity: ByteIdentity | None
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedInput:
+    """An explicitly typed local value, without a fabricated producer.
+
+    Qualifications describe caller-owned preparation. A storage confirmation
+    requires projection from an actual verified operation result. Collections
+    retain member computations separately instead of inventing a computation.
+    """
+
+    contract: DataContract
+    value: object
+    outcome: str = "succeeded"
+    qualifications: frozenset[str] = frozenset()
+    coverage: frozenset[str] = frozenset()
+    used_inputs: tuple[UsedInputReceipt, ...] = ()
+    computation: ComputationReceipt | None = None
+    identity: ByteIdentity | None = None
+    member_computations: tuple[tuple[str, ComputationReceipt], ...] = ()
+
+    def __post_init__(self):
+        if not isinstance(self.contract, DataContract) or self.value is None:
+            raise HandoffError("handoff.prepared_input_invalid")
+        if self.outcome not in {"succeeded", "partial"}:
+            raise HandoffError("processing.outcome_not_accepted")
+        for values in (self.qualifications, self.coverage):
+            if not isinstance(values, frozenset):
+                raise HandoffError("handoff.prepared_input_invalid")
+            for name in values:
+                safe_token(name)
+        if "storage.confirmed" in self.qualifications:
+            raise HandoffError("handoff.storage_confirmation_requires_projection")
+        if not isinstance(self.used_inputs, tuple) or any(
+            not isinstance(item, UsedInputReceipt) for item in self.used_inputs
+        ) or self.computation is not None and not isinstance(self.computation, ComputationReceipt):
+            raise HandoffError("handoff.prepared_evidence_invalid")
+        if self.identity is not None and not isinstance(self.identity, ByteIdentity):
+            raise HandoffError("handoff.prepared_evidence_invalid")
+        if not isinstance(self.member_computations, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2 or not isinstance(item[1], ComputationReceipt)
+            for item in self.member_computations
+        ) or len({item[0] for item in self.member_computations}) != len(self.member_computations):
+            raise HandoffError("handoff.prepared_evidence_invalid")
+        for name, _ in self.member_computations:
+            safe_token(name)
+
+
+def prepare_input(
+    value: object, contract: DataContract | None = None, *,
+    receipts: tuple[UsedInputReceipt, ...] = (),
+    qualifications: frozenset[str] = frozenset(),
+    coverage: frozenset[str] = frozenset(),
+    computation: ComputationReceipt | None = None,
+) -> PreparedInput:
+    """Attach an explicit schema to an inline value without parsing its bytes.
+
+    Only core-owned payload and artifact wrapper contracts have defaults.
+    ``artifact_input`` explicitly unwraps an artifact's encoded representation;
+    domain decoding remains an independent registered operation.
+    """
+    if not isinstance(receipts, tuple) or any(not isinstance(item, UsedInputReceipt) for item in receipts):
+        raise HandoffError("handoff.prepared_evidence_invalid")
+    if isinstance(value, SourcePayload):
+        contract = contract or DataContract("source.payload", role=DataRole.ORIGINALS)
+        receipts = (*receipts, UsedInputReceipt.for_payload(value, "source"))
+    elif isinstance(value, MaterialArtifact):
+        contract = contract or DataContract("material.artifact")
+        receipts = (*receipts, *value.inputs)
+        computation = computation or value.computation
+    if contract is None:
+        raise HandoffError("handoff.explicit_contract_required")
+    return PreparedInput(contract, value, qualifications=qualifications, coverage=coverage,
+        used_inputs=tuple(dict.fromkeys(receipts)), computation=computation, identity=_identity(value, computation))
+
+
+def artifact_input(artifact: MaterialArtifact) -> PreparedInput:
+    """Use a verified artifact's exact representation under its encoded schema."""
+    if not isinstance(artifact, MaterialArtifact):
+        raise HandoffError("handoff.artifact_required")
+    return prepare_input(artifact.representation, artifact.contract,
+        receipts=artifact.inputs, computation=artifact.computation)
+
+
+def collect_inputs(
+    items: tuple[ProjectedOutput | PreparedInput, ...], *,
+    contract: DataContract, element_contract: DataContract,
+) -> PreparedInput:
+    """Assemble explicit homogeneous inputs while retaining member evidence.
+
+    A collection has its own declared schema. Common guarantees are intersected;
+    a partial member keeps the entire supplied collection partial. An aggregate
+    storage confirmation cannot be inferred from stored individual members.
+    """
+    if not isinstance(items, tuple) or not items:
+        raise HandoffError("handoff.collection_empty")
+    if not isinstance(contract, DataContract) or not isinstance(element_contract, DataContract):
+        raise HandoffError("handoff.explicit_contract_required")
+    if any(not isinstance(item, (ProjectedOutput, PreparedInput)) for item in items):
+        raise HandoffError("handoff.projection_required")
+    if any(item.contract != element_contract for item in items):
+        raise HandoffError("processing.schema_mismatch")
+    if any(item.outcome not in {"succeeded", "partial"} for item in items):
+        raise HandoffError("processing.outcome_not_accepted")
+    parents = []
+    for index, item in enumerate(items):
+        if item.computation is not None:
+            parents.append((str(index), item.computation))
+        if isinstance(item, PreparedInput):
+            parents.extend((f"{index}.{name}", receipt) for name, receipt in item.member_computations)
+    return PreparedInput(contract, tuple(item.value for item in items),
+        outcome="partial" if any(item.outcome == "partial" for item in items) else "succeeded",
+        qualifications=frozenset.intersection(*(item.qualifications for item in items)) - {"storage.confirmed"},
+        coverage=frozenset.intersection(*(item.coverage for item in items)),
+        used_inputs=tuple(dict.fromkeys(receipt for item in items for receipt in item.used_inputs)),
+        member_computations=tuple(parents))
 
 
 def project_output(result: OperationResult, output_name: str) -> ProjectedOutput:
@@ -219,6 +335,35 @@ def resolve_output(reference: ResultReference, resolver: ResultResolver) -> Proj
     return projected
 
 
+def adapt_input(
+    value: ProjectedOutput | PreparedInput | OperationResult | ResultReference, *,
+    output_name: str | None = None, resolver: ResultResolver | None = None,
+) -> ProjectedOutput | PreparedInput:
+    """Normalize an explicit live, retained or prepared input without guessing.
+
+    Results require an output name even if their contract has a single output.
+    Retained references require the caller's resolver and their pinned output.
+    Raw values require ``prepare_input`` with an explicit semantic contract.
+    """
+    if isinstance(value, ResultReference):
+        if resolver is None:
+            raise HandoffError("handoff.result_resolver_required")
+        if output_name is not None and output_name != value.output_name:
+            raise HandoffError("handoff.output_mismatch")
+        return resolve_output(value, resolver)
+    if resolver is not None:
+        raise HandoffError("handoff.unexpected_resolver")
+    if isinstance(value, OperationResult):
+        if output_name is None:
+            raise HandoffError("handoff.output_name_required")
+        return project_output(value, output_name)
+    if isinstance(value, (ProjectedOutput, PreparedInput)):
+        if output_name is not None:
+            raise HandoffError("handoff.unexpected_output_name")
+        return value
+    raise HandoffError("handoff.explicit_input_required")
+
+
 def reference_output(projected: ProjectedOutput, *, owner_id: str, result_id: str) -> ResultReference:
     """Describe a result the consumer has retained; this function performs no write."""
     if not isinstance(projected, ProjectedOutput):
@@ -230,7 +375,7 @@ def reference_output(projected: ProjectedOutput, *, owner_id: str, result_id: st
 
 
 def _matches(value: object, annotation: object) -> bool:
-    """Check declared outer types; domain validators still own value semantics."""
+    """Check declared types and tuple members; domains retain value semantics."""
     if annotation is Any:
         return True
     origin = get_origin(annotation)
@@ -242,6 +387,17 @@ def _matches(value: object, annotation: object) -> bool:
         return value is None
     if isinstance(annotation, type):
         return type(value) is annotation if annotation in (bool, int, float, str, bytes) else isinstance(value, annotation)
+    if origin is tuple:
+        if not isinstance(value, tuple):
+            return False
+        arguments = get_args(annotation)
+        if not arguments:
+            return True
+        if len(arguments) == 2 and arguments[1] is Ellipsis:
+            return all(_matches(item, arguments[0]) for item in value)
+        return len(value) == len(arguments) and all(
+            _matches(item, kind) for item, kind in zip(value, arguments)
+        )
     if isinstance(origin, type):
         return isinstance(value, origin)
     # Literal and similar typing constructs are validated by the request owner;
@@ -296,18 +452,29 @@ class BoundRequest:
 
     definition: OperationDefinition
     request: object
-    inputs: tuple[tuple[str, ProjectedOutput], ...]
+    inputs: tuple[tuple[str, ProjectedOutput | PreparedInput], ...]
 
     def execution_context(self, context: ExecutionContext | None = None) -> ExecutionContext:
         context = context if context is not None else ExecutionContext()
         computations = dict(context.input_computations)
+        receipts = list(context.input_receipts)
         for name, projected in self.inputs:
-            if projected.computation is not None:
-                existing = computations.get(name)
-                if existing is not None and existing != projected.computation:
+            incoming = [(name, projected.computation)] if projected.computation is not None else []
+            if isinstance(projected, PreparedInput):
+                incoming.extend((f"{name}.{member}", receipt)
+                    for member, receipt in projected.member_computations)
+            for role, computation in incoming:
+                try:
+                    safe_token(role)
+                except ValueError:
+                    raise HandoffError("handoff.parent_role_invalid") from None
+                existing = computations.get(role)
+                if existing is not None and existing != computation:
                     raise HandoffError("handoff.parent_conflict")
-                computations[name] = projected.computation
-        return replace(context, input_computations=tuple(sorted(computations.items())))
+                computations[role] = computation
+            receipts.extend(projected.used_inputs)
+        return replace(context, input_computations=tuple(sorted(computations.items())),
+            input_receipts=tuple(dict.fromkeys(receipts)))
 
     def invoke(self, operation: Callable, *, context: ExecutionContext | None = None, **options) -> OperationResult:
         """Invoke an explicitly supplied trusted API; no module names are evaluated."""
@@ -319,7 +486,7 @@ class BoundRequest:
 
 def bind_request(
     definition: OperationDefinition,
-    bindings: Mapping[str, ProjectedOutput],
+    bindings: Mapping[str, ProjectedOutput | PreparedInput],
     *, parameters: Mapping[str, object] | None = None,
 ) -> BoundRequest:
     """Admit projected inputs and construct only the declared request dataclass.
@@ -346,7 +513,7 @@ def bind_request(
         if port.name not in bindings:
             continue
         projected = bindings[port.name]
-        if not isinstance(projected, ProjectedOutput):
+        if not isinstance(projected, (ProjectedOutput, PreparedInput)):
             raise HandoffError("handoff.projection_required")
         assessment = assess_input(
             port, projected.contract, outcome=projected.outcome,

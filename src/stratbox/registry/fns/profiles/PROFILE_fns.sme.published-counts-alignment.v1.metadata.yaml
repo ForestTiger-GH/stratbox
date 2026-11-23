@@ -1,0 +1,12 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "fns",
+  "profile_id": "fns.sme.published-counts-alignment.v1.metadata",
+  "declaration": {
+    "edition": "1",
+    "formats": [],
+    "kind": "integration",
+    "profile_id": "fns.sme.published-counts-alignment.v1",
+    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit."
+  }
+}

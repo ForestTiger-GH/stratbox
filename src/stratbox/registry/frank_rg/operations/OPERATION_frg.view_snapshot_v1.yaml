@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.view_snapshot",
+    "contract_version": 1,
+    "method_version": "frg.view_snapshot.v1",
+    "request_type": "stratbox.domains.frank_rg.products.contracts:ViewSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view.snapshot",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Persist every prepared view value, coverage statement and evidence reference.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.pipeline_definitions:VIEW_SNAPSHOT",
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_view_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

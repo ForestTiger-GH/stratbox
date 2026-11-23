@@ -1,7 +1,8 @@
 # CBR publication identity and original access
 
-Logical families are declared in the parent `REGISTRY_*.yaml` files. This owner
-loads those declarations, binds official access profiles, discovers and selects
+Logical series are declared in `stratbox/registry/cbr/sources`; common family
+metadata and route bindings have profile resources. This owner projects the
+validated catalog into publisher contracts, binds official access profiles, discovers and selects
 publication instances, admits originals and assesses observed updates. It also
 owns named collection selections and complete source-disposition manifests.
 

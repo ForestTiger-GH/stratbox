@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.statistics.build_view",
+    "contract_version": 1,
+    "method_version": "cbr-statistics-build_view-1",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:BuildViewRequest",
+    "value_type": "stratbox.domains.cbr.products.statistics.views:StatisticsView",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 5000000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.statistics.dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "dataset",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "cbr.statistics.view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "series_ids",
+        "metric_ids",
+        "release_ids",
+        "title"
+      ],
+      "summary": "Prepare a selected presentation with its complete source-version vector and qualifications.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.statistics.definitions:BUILD_VIEW",
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:build_view",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

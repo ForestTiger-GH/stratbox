@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.read_dataset_snapshot",
+    "contract_version": 1,
+    "method_version": "fns-sme-read-dataset-snapshot-1",
+    "request_type": "stratbox.domains.fns.operations.contracts:SnapshotRequest",
+    "value_type": "stratbox.domains.fns.integration.contracts:FnsDataset",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset.snapshot",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "snapshot",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Validate and replay a retained dataset without the original file or a spreadsheet engine.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:READ_DATASET_SNAPSHOT",
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:read_dataset_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

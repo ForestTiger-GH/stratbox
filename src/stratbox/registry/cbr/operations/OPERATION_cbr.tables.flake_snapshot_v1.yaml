@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.tables.flake_snapshot",
+    "contract_version": 1,
+    "method_version": "cbr-tables-flake_snapshot-1",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 5000000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flake",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Encode a complete flake as portable typed tables; this operation performs no persistence.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.statistics.definitions:FLAKE_SNAPSHOT",
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:build_flake_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

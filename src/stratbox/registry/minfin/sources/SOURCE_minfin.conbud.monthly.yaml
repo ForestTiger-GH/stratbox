@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.source.v1",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.conbud",
+  "series_id": "minfin.conbud.monthly",
+  "title": "Месячное исполнение консолидированного бюджета РФ и государственных внебюджетных фондов",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "minfin.conbud.monthly.route.v1",
+  "family_profile": "minfin.conbud.publication.v1",
+  "position": 0,
+  "publication": {
+    "slot": "monthly",
+    "periodicity": "monthly",
+    "basis": "ytd",
+    "kind": "table"
+  }
+}

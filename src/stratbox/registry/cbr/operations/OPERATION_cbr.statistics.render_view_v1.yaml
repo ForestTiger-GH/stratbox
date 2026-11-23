@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.statistics.render_view",
+    "contract_version": 1,
+    "method_version": "cbr-statistics-render_view-1",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:RenderViewRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 5000000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "cbr.statistics.view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.statistics.product",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render a prepared or restored view to CSV or XLSX without reading or calculating source data.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.statistics.definitions:RENDER_VIEW",
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:render_view",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.prepare_from_flakes",
+    "contract_version": 1,
+    "method_version": "sors-source-flakes-composition-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:PrepareSorsFlakesRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts:SorsSourceBundle",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 80000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract",
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.sors.source_flakes",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "sources",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "bundle",
+          "contract": {
+            "schema_id": "cbr.sors.source_bundle",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "config"
+      ],
+      "summary": "Interpret retained workbook flakes and align source observations for SORS.",
+      "composition": true,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:PREPARE_FROM_FLAKES",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:prepare_from_flakes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

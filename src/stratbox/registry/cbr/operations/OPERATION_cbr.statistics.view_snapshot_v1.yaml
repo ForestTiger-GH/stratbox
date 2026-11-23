@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.statistics.view_snapshot",
+    "contract_version": 1,
+    "method_version": "cbr-statistics-view_snapshot-1",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:ViewRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 268435456,
+      "requests": null,
+      "objects": null,
+      "cells": 5000000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "cbr.statistics.view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "view",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Expose complete prepared view tables for a caller-selected dataset adapter.",
+      "composition": false,
+      "function": "encode"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.statistics.definitions:VIEW_SNAPSHOT",
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:build_view_snapshot",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

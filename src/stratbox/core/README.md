@@ -16,7 +16,8 @@ never import a concrete domain.
 - `network/`: HTTP and peer-qualified transport.
 - `formats/`: format decoders and encoders; `spreadsheets/` and `archives/` are specialized groups.
 - `rendering/`: presentation-oriented Excel styles and readable projections.
-- `execution/`: invocation, typed results, events and operation catalog.
+- `registry/`: canonical metadata loading, validation, owner discovery and catalog assembly.
+- `execution/`: source binding, typed value handoff, invocation, results and events.
 - `operations/`: neutral source and table operations implemented through execution.
 - `observability/`: records, evidence assessment, capture, journals and projections.
 - `notifications/`: subscription intent, state, qualified handoff and reconciliation.

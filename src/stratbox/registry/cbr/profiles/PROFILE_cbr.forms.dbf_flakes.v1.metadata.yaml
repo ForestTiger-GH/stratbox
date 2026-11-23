@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.forms.dbf_flakes.v1.metadata",
+  "declaration": {
+    "edition": "cbr-forms-all-dbf-1",
+    "formats": [
+      "rar",
+      "zip",
+      "dbf"
+    ],
+    "kind": "extraction",
+    "profile_id": "cbr.forms.dbf_flakes.v1",
+    "scope": "All regular archive members retained; reviewed classic DBF fields decoded with raw tokens and deletion flags."
+  }
+}

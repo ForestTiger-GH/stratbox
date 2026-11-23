@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.parse",
+    "contract_version": 3,
+    "method_version": "cbr-0105a-workbook-2-selective",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:ParseIndustryRequest",
+    "value_type": "stratbox.domains.cbr.tables.corporate_lending.debt.contracts:ParsedCbr0105ADebtCorpFile",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.original",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "version": 1,
+              "role": "originals"
+            },
+            {
+              "schema_id": "material.payload",
+              "version": 1,
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "file",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.parsed_file",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "df_stream",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "source_name",
+        "source",
+        "selection"
+      ],
+      "summary": "Extract source-local industry data with selection and validation scope.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.definitions:PARSE",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:parse",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,19 +1,20 @@
 # Rosstat: independent data processing routes
 
-Rosstat has one registered owner, `rosstat`, and four root registries. Functional
-packages separate publisher materials, source tables, integration, calculations
-and products. Operation definitions live under `stratbox.domains.rosstat.operations`;
-source cards bind the applicable operations and their admission requirements to
-each family. Metadata discovery imports no optional spreadsheet or document engine.
+Rosstat has one registered owner, `rosstat`, and four publication families.
+Canonical source, operation and profile records live under
+`stratbox/registry/rosstat`; functional Python packages separate publisher
+materials, source tables, integration, calculations and products. Source cards
+bind applicable operations and admission requirements to each series. Metadata
+discovery imports no optional spreadsheet or document engine.
 
 ## Family routes and admission
 
-| Registry | Original and physical evidence | Selected source flake | Integration |
+| Publication family | Original and physical evidence | Selected source flake | Integration |
 | --- | --- | --- | --- |
-| `REGISTRY_SOCIOECONOMIC_RUSSIA.yaml` | Publisher PDF; all decoded page blocks, including qualified text-extraction errors | A reviewed layout pinned to the exact PDF digest supplies line/column table regions; reviewed cell bindings then supply statistical meanings | Explicit metric, unit, scale, frequency, actual interval, geography and perimeter |
-| `REGISTRY_SOCIOECONOMIC_REGIONS.yaml` | ZIP/RAR inventory, explicitly selected member, member digest and container lineage; workbook cells or document blocks | An exact-member reviewed coordinate profile; document text first requires reviewed structure | Explicit regional subjects, periods, units and statistical perimeters |
-| `REGISTRY_SHORT_TERM_INDICATORS.yaml` | Unchanged XLSX; full admitted worksheet cells, exact sheet names, merges, formats, source tokens and cached formula evidence | Built-in reviewed KEP2 profile for the supplied eleven-indicator notebook; other selections use reviewed coordinate profiles | Published indices keep their percentage-of-baseline meaning; all source frequencies survive |
-| `REGISTRY_POPULATION_MUNICIPALITIES.yaml` | Unchanged XLSX and full physical cell extraction | Exact-original reviewed cell profile with a stock date and geographic code edition | OKTMO/OKATO codes resolve against a supplied dated `TerritoryEdition`; statistical perimeter must match the reviewed territory |
+| `rosstat.socioeconomic_russia` | Publisher PDF; all decoded page blocks, including qualified text-extraction errors | A reviewed layout pinned to the exact PDF digest supplies line/column table regions; reviewed cell bindings then supply statistical meanings | Explicit metric, unit, scale, frequency, actual interval, geography and perimeter |
+| `rosstat.socioeconomic_regions` | ZIP/RAR inventory, explicitly selected member, member digest and container lineage; workbook cells or document blocks | An exact-member reviewed coordinate profile; document text first requires reviewed structure | Explicit regional subjects, periods, units and statistical perimeters |
+| `rosstat.short_term_indicators` | Unchanged XLSX; full admitted worksheet cells, exact sheet names, merges, formats, source tokens and cached formula evidence | Built-in reviewed KEP2 profile for the supplied eleven-indicator notebook; other selections use reviewed coordinate profiles | Published indices keep their percentage-of-baseline meaning; all source frequencies survive |
+| `rosstat.population_municipalities` | Unchanged XLSX and full physical cell extraction | Exact-original reviewed cell profile with a stock date and geographic code edition | OKTMO/OKATO codes resolve against a supplied dated `TerritoryEdition`; statistical perimeter must match the reviewed territory |
 
 “Reviewed profile” is an actual input contract: `ReviewedTableProfile` binds a
 profile ID/version, source digest, review evidence and complete coordinate

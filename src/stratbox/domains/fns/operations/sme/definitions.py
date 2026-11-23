@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.registry.operations import definition as _registry_definition
+
 from dataclasses import dataclass
 from datetime import date
 from stratbox.shared.evidence import AcquiredSource, SourcePayload
@@ -11,16 +13,8 @@ from stratbox.shared.data.releases import (
     ParsedRelease,
     ReadReleaseRequest,
 )
-from stratbox.core.execution.contracts import OperationDefinition
 
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.core.execution.semantics import (
-    InputPort,
-    OutputPort,
-    OperationSemantics,
-    ProcessingStage,
-    ProcessingFunction,
-)
 
 DATASET = "fns.sme"
 
@@ -45,168 +39,44 @@ class ParseSmeRequest:
     as_of: date
 
 
-DISCOVER = OperationDefinition(
-    f"{DATASET}.discover",
-    1,
-    "fns-sme-index-1",
-    DiscoverSmeRequest,
-    tuple,
-    optional_capabilities=frozenset({"http"}),
-    processing=OperationSemantics(
-        stages=(ProcessingStage.DISCOVER,),
-        summary="Discover source issues with source-specific identity and coverage.",
-        inputs=(
-            InputPort(
-                "index",
-                DataContract("fns.sme.index_material", 1, DataRole.ORIGINALS),
-                path="index",
-                required=False,
-            ),
-        ),
-        outputs=(OutputPort("releases", DataContract("fns.sme.index", 1, None)),),
-    ),
-)
+DISCOVER = _registry_definition('fns.sme.discover', 1)
 
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire",
-    1,
-    "fns-sme-regional-post-1",
-    AcquireSmeRequest,
-    AcquiredSource,
-    _HTTP,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.ACQUIRE,),
-        summary="Acquire the selected source material with byte and acquisition evidence.",
-        outputs=(
-            OutputPort(
-                "source",
-                DataContract("fns.sme.original", 1, DataRole.ORIGINALS),
-                path="payload",
-                qualifications=frozenset(("source.fns.sme",)),
-            ),
-            OutputPort(
-                "payload",
-                DataContract("source.payload", 1, DataRole.ORIGINALS),
-                path="payload",
-            ),
-        ),
-        parameters=("as_of",),
-    ),
-)
+ACQUIRE = _registry_definition('fns.sme.acquire', 1)
 
-PARSE = OperationDefinition(
-    f"{DATASET}.parse",
-    1,
-    METHOD,
-    ParseSmeRequest,
-    ParsedRelease,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE, ProcessingStage.VIEW, ProcessingStage.RENDER),
-        composition=True,
-        summary="Compose the explicit reviewed regional CSV product; complete source flakes use the independent extract route.",
-        inputs=(
-            InputPort(
-                "source",
-                DataContract("fns.sme.original", 1, DataRole.ORIGINALS),
-                path="payload",
-                qualifications=frozenset(("source.fns.sme",)),
-            ),
-        ),
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.sme.regional_release", 1, DataRole.PRODUCTS)
-            ),
-            OutputPort(
-                "representation",
-                DataContract("fns.sme.regional_csv", 1, DataRole.PRODUCTS),
-                path="representation",
-            ),
-        ),
-        parameters=("as_of",),
-    ),
-)
+PARSE = _registry_definition('fns.sme.parse', 1)
 
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture",
-    1,
-    METHOD,
-    AcquireSmeRequest,
-    ParsedRelease,
-    _HTTP,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.ACQUIRE, ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE, ProcessingStage.VIEW, ProcessingStage.RENDER),
-        summary="Acquire and compose the reviewed regional CSV subset; capture_full returns every processing boundary.",
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.sme.regional_release", 1, DataRole.PRODUCTS)
-            ),
-            OutputPort(
-                "representation",
-                DataContract("fns.sme.regional_csv", 1, DataRole.PRODUCTS),
-                path="representation",
-            ),
-        ),
-        parameters=("as_of",),
-        composition=True,
-    ),
-)
+CAPTURE = _registry_definition('fns.sme.capture', 1)
 
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "fns-sme-csv-1",
-    ReadReleaseRequest,
-    ParsedRelease,
-    processing=OperationSemantics(
-        stages=(), function=ProcessingFunction.REPLAY,
-        summary="Import an explicitly selected regional CSV product; original-wide source coverage remains qualified.",
-        inputs=(
-            InputPort(
-                "representation",
-                DataContract("fns.sme.regional_csv", 1, DataRole.PRODUCTS),
-                path="payload",
-            ),
-        ),
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.sme.regional_release", 1, DataRole.PRODUCTS)
-            ),
-        ),
-        parameters=("as_of",),
-    ),
-)
+READ = _registry_definition('fns.sme.read_representation', 1)
 
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare",
-    2,
-    "fns-sme-compare-1",
-    CompareReleaseRequest,
-    Comparison,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.INSPECT, ProcessingStage.COMPARE),
-        summary="Compare selected regional product releases with their historical qualifiers intact.",
-        inputs=(
-            InputPort(
-                "candidate",
-                DataContract("fns.sme.regional_release", 1, DataRole.PRODUCTS),
-                path="candidate",
-            ),
-            InputPort(
-                "baseline",
-                DataContract("fns.sme.regional_release", 1, DataRole.PRODUCTS),
-                path="baseline",
-                required=False,
-            ),
-        ),
-        outputs=(
-            OutputPort("comparison", DataContract("fns.sme.comparison", 1, None)),
-        ),
-        parameters=("baseline_state",),
-    ),
-)
+COMPARE = _registry_definition('fns.sme.compare', 2)
 
 
 from ...tables.contracts import JsonFlake
-from ..pipeline_definitions import definitions as _pipeline_definitions
 
-globals().update(_pipeline_definitions(DATASET, JsonFlake))
+
+EXTRACT = _registry_definition('fns.sme.extract', 1)
+READABLE = _registry_definition('fns.sme.readable', 1)
+VALIDATE = _registry_definition('fns.sme.validate', 1)
+COMPARE_FLAKES = _registry_definition('fns.sme.compare_flakes', 1)
+PROJECT = _registry_definition('fns.sme.project', 1)
+ALIGN = _registry_definition('fns.sme.align', 1)
+COMPARE_DATASETS = _registry_definition('fns.sme.compare_datasets', 1)
+CALCULATE_CHANGES = _registry_definition('fns.sme.calculate_changes', 1)
+CALCULATE_SHARES = _registry_definition('fns.sme.calculate_shares', 1)
+VIEW = _registry_definition('fns.sme.view', 1)
+RENDER = _registry_definition('fns.sme.render', 1)
+RENDER_ARTIFACT = _registry_definition('fns.sme.render_artifact', 1)
+READABLE_ARTIFACT = _registry_definition('fns.sme.readable_artifact', 1)
+FLAKE_SNAPSHOT = _registry_definition('fns.sme.flake_snapshot', 1)
+READ_FLAKE_SNAPSHOT = _registry_definition('fns.sme.read_flake_snapshot', 1)
+PROJECTION_SNAPSHOT = _registry_definition('fns.sme.projection_snapshot', 1)
+READ_PROJECTION_SNAPSHOT = _registry_definition('fns.sme.read_projection_snapshot', 1)
+DATASET_SNAPSHOT = _registry_definition('fns.sme.dataset_snapshot', 1)
+READ_DATASET_SNAPSHOT = _registry_definition('fns.sme.read_dataset_snapshot', 1)
+CALCULATION_SNAPSHOT = _registry_definition('fns.sme.calculation_snapshot', 1)
+READ_CALCULATION_SNAPSHOT = _registry_definition('fns.sme.read_calculation_snapshot', 1)
+VIEW_SNAPSHOT = _registry_definition('fns.sme.view_snapshot', 1)
+READ_VIEW_SNAPSHOT = _registry_definition('fns.sme.read_view_snapshot', 1)
+PROCESS = _registry_definition('fns.sme.process', 1)
+CAPTURE_FULL = _registry_definition('fns.sme.capture_full', 1)

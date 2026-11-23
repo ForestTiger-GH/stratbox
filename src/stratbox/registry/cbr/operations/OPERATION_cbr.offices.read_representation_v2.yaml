@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.read_representation",
+    "contract_version": 2,
+    "method_version": "cbr-offices-csv-explicit-period-2",
+    "request_type": "stratbox.domains.cbr.tables.service_network.bank_offices.contracts:ReadOfficesRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices.extract_representation",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "captured_on",
+        "official_as_of",
+        "period_basis"
+      ],
+      "summary": "Read CSV with explicit capture and observation dates; absent observation metadata remains literal-only.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.definitions:READ",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:read_representation",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

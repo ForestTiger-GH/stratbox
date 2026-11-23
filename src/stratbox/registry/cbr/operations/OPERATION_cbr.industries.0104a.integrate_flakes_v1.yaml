@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.integrate_flakes",
+    "contract_version": 1,
+    "method_version": "cbr-industry-integration-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:IntegrateIssuanceFlakesRequest",
+    "value_type": "stratbox.domains.cbr.integration.corporate_lending.issuance.contracts:IssuanceStreamResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.parsed_files",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "flakes",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream_result",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "df_stream",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "expected_report_dates"
+      ],
+      "summary": "Integrate source-local flakes with explicit release selection and a pinned geography profile.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.definitions:INTEGRATE_FLAKES",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.snapshot_operations:integrate_flakes",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

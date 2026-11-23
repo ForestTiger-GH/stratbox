@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.funds_org.v1.metadata",
+  "declaration": {
+    "edition": "published_matrix_v1",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.funds_org.v1",
+    "scope": "All worksheets and physical cells, including notes and unknown variants."
+  }
+}

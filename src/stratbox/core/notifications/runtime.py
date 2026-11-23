@@ -7,7 +7,7 @@ from typing import Literal
 
 from stratbox.core.runtime.capabilities import CapabilityRequirement, select_provider
 from stratbox.core.execution import ExecutionContext, OperationFailure
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import (
     JournalHead, JournalRecord, JournalSource, RequiredJournalGate, SourceProfile, StreamKey,
 )

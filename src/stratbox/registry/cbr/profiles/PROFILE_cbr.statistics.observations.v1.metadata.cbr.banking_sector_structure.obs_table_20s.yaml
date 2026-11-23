@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.v1.metadata.cbr.banking_sector_structure.obs_table_20s",
+  "declaration": {
+    "edition": "cbr.statistics.observations.v1",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.statistics.observations.v1",
+    "scope": "Published balance-sheet hierarchy, valuation currency and loan maturity components are preserved without implicit summation."
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_flake",
+    "contract_version": 1,
+    "method_version": "minfin.flake-json.v2",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ReadFlakeRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:FlakeTable",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 67108864,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 67108864,
+      "requests": null,
+      "objects": null,
+      "cells": 500000,
+      "temporary_bytes": 268435456,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "minfin.flake.json",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "representation",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Restore a complete source-local flake from a verified representation without reacquiring its original.",
+      "composition": false,
+      "function": "replay"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.minfin.operations.definitions:READ_FLAKE",
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:read_source_flake",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

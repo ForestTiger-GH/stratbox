@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.acquire",
+    "contract_version": 1,
+    "method_version": "cbr-0105a-source-1",
+    "request_type": "stratbox.domains.cbr.publications.corporate_lending.contracts:Cbr0105ADebtCorpSourceLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.source",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.original",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.industries.0105a"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [],
+      "summary": "Acquire a selected industry workbook under its own publication contract.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.definitions:ACQUIRE",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:acquire",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

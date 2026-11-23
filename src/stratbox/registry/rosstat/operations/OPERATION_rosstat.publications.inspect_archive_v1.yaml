@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.publications.inspect_archive",
+    "contract_version": 1,
+    "method_version": "rosstat-publications-inspect_archive-1",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:PayloadRequest",
+    "value_type": "stratbox.domains.rosstat.publications.archives:RegionalArchiveInventory",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "wire_bytes": null,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "version": 1,
+            "role": "originals"
+          },
+          "path": "payload",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "rosstat.regional_archive.inventory",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "limits"
+      ],
+      "summary": "Inspect the actual regional archive membership under archive safety limits.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.rosstat.operations.definitions:INSPECT_ARCHIVE",
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:inspect_archive",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

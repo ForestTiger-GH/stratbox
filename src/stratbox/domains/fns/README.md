@@ -2,15 +2,15 @@
 
 FNS has one operation owner, `fns`, and two meaningful publication families:
 
-| Family | Source series | Registry | Reviewed interpretation |
-| --- | --- | --- | --- |
-| SME register | `fns.sme` | `REGISTRY_SME.yaml` | Published country, federal-district and subject counters, including legal-entity and individual-entrepreneur totals |
-| Legal entities | `fns.1yur` | `REGISTRY_LEGAL_ENTITIES.yaml` | Dated Form 1-YUR Part I fields and identity-only historical legal-kind mappings |
+| Family | Source series | Reviewed interpretation |
+| --- | --- | --- |
+| SME register | `fns.sme` | Published country, federal-district and subject counters, including legal-entity and individual-entrepreneur totals |
+| Legal entities | `fns.1yur` | Dated Form 1-YUR Part I fields and identity-only historical legal-kind mappings |
 
-`REGISTRY_FAMILIES.yaml` enumerates the family registries. `publications.catalog`
-validates those declarations; `operations.source_catalog` binds their profiles
-to the executable operation catalog. `_registration.py` is the only operation
-registration in this domain.
+Canonical source, operation and profile resources live under
+`stratbox/registry/fns`. `publications.catalog` projects validated publication
+metadata; `operations.source_catalog` exposes the shared source-card view.
+Domain algorithms and reviewed interpretation remain in the functional packages.
 
 ## Functional ownership
 

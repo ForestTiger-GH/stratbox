@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.capture",
+    "contract_version": 1,
+    "method_version": "fns-sme-regional-json-1",
+    "request_type": "stratbox.domains.fns.operations.sme.definitions:AcquireSmeRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "required_capabilities": [
+      "http"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract",
+        "integrate",
+        "view",
+        "render"
+      ],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "fns.sme.regional_release",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "fns.sme.regional_csv",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Acquire and compose the reviewed regional CSV subset; capture_full returns every processing boundary.",
+      "composition": true,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.fns.operations.sme.definitions:CAPTURE",
+    "handler_ref": "stratbox.domains.fns.operations.sme.operations:capture",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.render_industries",
+    "contract_version": 1,
+    "method_version": "cbr-0105a-industry-batch-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:RenderIndustriesRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.debt.contracts:IndustryWorkbooksResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "calculate",
+        "view",
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream_result",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "stream",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbooks",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.workbooks",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "industry_codes",
+        "include_metadata_sheet"
+      ],
+      "summary": "Render independently qualified industry workbooks from supplied data.",
+      "composition": true,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.definitions:RENDER_INDUSTRIES",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:render_industries",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

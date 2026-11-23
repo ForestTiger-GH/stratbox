@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Literal
 
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 
 MAX_SEQUENCE = 2**53 - 1
 MAX_RANGES = 100_000

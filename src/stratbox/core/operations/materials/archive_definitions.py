@@ -1,7 +1,7 @@
 """Typed declarations for universal archive packaging."""
+
+from stratbox.core.registry.operations import definition as _registry_definition
 from dataclasses import dataclass
-from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingStage
 from stratbox.core.formats.archives.store import ArchiveWriteLimits, PathArchiveReceipt
 from stratbox.core.operations.source.original_definitions import OriginalDestination
 from stratbox.core.runtime.capabilities import ProviderSelection
@@ -36,17 +36,4 @@ class StoredArchive:
     manifest: CollectionManifest
 
 
-ARCHIVE = OperationDefinition(
-    "material.archive", 1, "verified-archive-1", ArchiveRequest, StoredArchive,
-    frozenset({"output_filestore"}), frozenset({"storage.write"}),
-    optional_capabilities=frozenset({"filestore"}), limits=LIMITS,
-    processing=OperationSemantics(stages=(ProcessingStage.PRESERVE,),
-        inputs=(InputPort("members", DataContract("material.archive_members"), "members",
-                          outcomes=frozenset({"succeeded", "partial"})),
-                InputPort("manifest", DataContract("material.collection"), "manifest", required=False,
-                          outcomes=frozenset({"succeeded", "partial"}))),
-        outputs=(OutputPort("archive", DataContract("material.archive_reference"), path="material",
-                            qualifications=frozenset({"storage.confirmed"})),),
-        parameters=("destination", "compression", "manifest_name", "limits"),
-        summary="Package selected exact byte members from independent stores with explicit member lineage."))
-
+ARCHIVE = _registry_definition('material.archive', 1)

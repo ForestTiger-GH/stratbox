@@ -1,9 +1,9 @@
 """Mixed-original collection contracts, independent of acquisition handlers."""
+
+from stratbox.core.registry.operations import definition as _registry_definition
 from dataclasses import dataclass, field
 from stratbox.core.operations.materials.archive_definitions import ArchiveMember
 
-from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import OperationSemantics, OutputPort, ProcessingStage
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.runtime.capabilities import ProviderSelection
 from stratbox.domains.cbr.publications.contracts import IdentifiedOriginal
@@ -48,17 +48,4 @@ class MaterialCollection:
                                                         for item in self.manifest.members))
 
 
-COLLECT_MATERIALS = OperationDefinition("cbr.file_collector.collect_materials", 1,
-    "cbr-mixed-originals-v1", CollectMaterialsRequest, MaterialCollection,
-    optional_capabilities=frozenset({"http", "filestore"}), partial_allowed=True,
-    limits=ExecutionBudget(input_bytes=256 * 1024**2, output_bytes=256 * 1024**2,
-                           temporary_bytes=256 * 1024**2, cells=5_000_000),
-    processing=OperationSemantics((ProcessingStage.ACQUIRE, ProcessingStage.INSPECT),
-        outputs=(OutputPort("collection", DataContract("cbr.material_collection"),
-                            outcomes=frozenset({"succeeded", "partial"})),
-                 OutputPort("manifest", DataContract("material.collection"), "manifest",
-                            outcomes=frozenset({"succeeded", "partial"})),
-                 OutputPort("archive_members", DataContract("material.archive_members"), "archive_members",
-                            outcomes=frozenset({"succeeded", "partial"}))),
-        parameters=("items", "continue_on_error", "max_batch_bytes"), composition=True,
-        summary="Acquire independently supplied original routes and return exact materials with per-item dispositions."))
+COLLECT_MATERIALS = _registry_definition('cbr.file_collector.collect_materials', 1)

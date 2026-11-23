@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.plan_cleanup",
+    "contract_version": 1,
+    "method_version": "frg-cleanup-plan-profile-2",
+    "request_type": "stratbox.domains.frank_rg.publications.cleanup:PlanCleanupRequest",
+    "value_type": "stratbox.domains.frank_rg.publications.cleanup:CleanupPlan",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [],
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.cleanup_plan",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "directory",
+        "delete_others"
+      ],
+      "summary": "Prepare a read-only, revision-bound report cleanup proposal.",
+      "composition": false,
+      "function": "maintain"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.housekeeping_definitions:PLAN",
+    "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:plan_cleanup",
+    "wire_codec_ref": "stratbox.domains.frank_rg.operations.machine:PLAN_CODEC",
+    "wire_contract_ref": "stratbox.domains.frank_rg.operations.machine_contracts:PLAN_CONTRACT"
+  }
+}

@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from stratbox.core.execution import ExecutionContext, InMemorySink
-from stratbox.core.execution.semantics import assess_input
+from stratbox.shared.data.operations import assess_input
 from stratbox.core.operations.source.originals import (
     OriginalDestination,
     ReadOriginalRequest,

@@ -15,17 +15,8 @@ from stratbox.core.limits import BudgetError, BudgetClockError, BudgetExceeded, 
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
 from stratbox.core.runtime.dependencies import MissingExtra
 
-from stratbox.core.execution.contracts import (
-    Diagnostic,
-    EffectReceipt,
-    ExecutionContext,
-    ObservabilitySummary,
-    OperationDefinition,
-    OperationFailure,
-    OperationResult,
-    Outcome,
-    safe_token,
-)
+from stratbox.shared.identifiers import safe_token
+from stratbox.core.execution.contracts import (Diagnostic, EffectReceipt, ExecutionContext, ObservabilitySummary, OperationDefinition, OperationFailure, OperationResult, Outcome)
 from stratbox.core.execution.events import ExecutionEvent, TechnicalIncident
 from stratbox.core.execution.effects import _EffectAccumulator
 from stratbox.core.execution.resolution import _WorkCompletion, _resolve_completion, _terminal_constraint
@@ -75,8 +66,10 @@ class Invocation:
         self._telemetry_last_tick: float | None = self._started
         self._stage: str | None = None
         self._stage_started: float | None = self._started
-        self.used_inputs: list[UsedInputReceipt] = []
-        self._input_index: set[UsedInputReceipt] = set()
+        self.used_inputs: list[UsedInputReceipt] = list(dict.fromkeys(context.input_receipts))
+        self._input_index: set[UsedInputReceipt] = set(self.used_inputs)
+        self._direct_inputs: list[UsedInputReceipt] = []
+        self._direct_input_index: set[UsedInputReceipt] = set()
         self._effects = _EffectAccumulator()
         self._effect_view = self._effects.view()
         self._sealed = False
@@ -273,6 +266,9 @@ class Invocation:
         self._require_open()
         if not isinstance(receipt, UsedInputReceipt):
             raise TypeError("Expected a qualified input receipt")
+        if receipt not in self._direct_input_index:
+            self._direct_input_index.add(receipt)
+            self._direct_inputs.append(receipt)
         if receipt not in self._input_index:
             self._input_index.add(receipt)
             self.used_inputs.append(receipt)
@@ -280,7 +276,17 @@ class Invocation:
     def record(self, identity, *, parameters=None, resources=None, inputs=None):
         self._require_open()
         definition = self.definition
-        receipts = tuple(self.used_inputs) if inputs is None else inputs
+        if inputs is None:
+            # The consumer assigns semantic roles to the bytes it actually
+            # interprets. Transport receipts for those same bytes remain in
+            # result evidence without making a file handoff a new calculation.
+            # Additional inherited dependencies still qualify the computation.
+            direct_identities = {receipt.identity for receipt in self._direct_inputs}
+            receipts = (*self._direct_inputs, *(receipt for receipt in self.context.input_receipts
+                         if receipt.identity not in direct_identities))
+            receipts = tuple(dict.fromkeys(receipts))
+        else:
+            receipts = inputs
         version = build_dataset_version(
             definition.operation_id,
             f"contract-{definition.contract_version}",

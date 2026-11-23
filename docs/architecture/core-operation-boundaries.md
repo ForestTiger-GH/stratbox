@@ -1,9 +1,10 @@
 # Core operation boundaries
 
 Stratbox separates reusable technical operations from domain-specific methods.
-The installed package has three independent semantic owners: `stratbox.core`,
-`stratbox.shared`, and `stratbox.domains`. Applications compose capabilities,
-operation calls and scheduling outside the library.
+The installed package separates `stratbox.core`, `stratbox.shared`,
+`stratbox.domains` and canonical declarative `stratbox.registry` resources.
+Applications compose capabilities, operation calls and scheduling outside the
+library.
 
 | Owner | Responsibility |
 | --- | --- |
@@ -12,27 +13,29 @@ operation calls and scheduling outside the library.
 | `core.network` | Typed requests, response/peer qualification and transport. |
 | `core.formats` | Independent file format parsers, workbook codecs and archive handlers. |
 | `core.rendering` | Presentation-oriented projections and Excel styling. |
-| `core.execution` | Invocation context, runner, cancellation, outcomes, event stream, processing semantics and immutable operation catalog. |
+| `core.execution` | Source binding, typed value handoff, invocation context, runner, cancellation, outcomes and event stream. |
 | `core.operations` | Domain-neutral acquisition, original-byte storage, comparison, validation and table operations. |
 | `core.observability` | Event records, evidence assessment, capture, immutable journals and analysis. |
 | `core.notifications` | Topic/subscription definitions, authorized intents, transaction state and qualified handoff. |
-| `core.registry` | Catalog of built-in neutral operations. |
+| `core.registry` | Canonical source/operation/profile loading, validation, indexing, catalog assembly and discovery projections. |
+| `registry` | Declarative source identities, complete operation contracts, owner coverage and processing-profile bindings. |
+| `shared.identifiers` | Bounded semantic identifiers. |
 | `shared.identity` | Immutable digest/byte size and canonical manifest encoding. |
 | `shared.evidence` | Source materials and acquisition, used-input, storage and publication receipts. |
 | `shared.data` | Observation, dataset version, computation, representation, release comparison and table contracts. |
 | `shared.data.processing` | Storage-independent data roles and editioned semantic schema identities. |
+| `shared.data.operations` | Processing stages, named input/output ports and compatibility invariants. |
 | `shared.reference` | Explicitly versioned packaged assets, bank and OKVED2 references and territorial name resolution. |
 | `shared.time` | Date-only calendar period and anchor generation. |
-| `domains.registry` | Discovers independent domain declarations and joins them with neutral operations. |
+| `domains.registry` | Validated domain view and inventory of canonical registry owners. |
 | `domains.<source>.<family>.<owner>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
 | Consumer | User interface, schedules, destinations, host authorization, publication and downstream effects. |
 
-Local `_registration.py` manifests identify exact operation owners. The registry discovers
-them recursively; the nearest registered ancestor owns a module, rather than an
-entire publisher namespace. Child publication series may reuse their parent
-family's dedicated `common` modules, while direct cross-owner dependencies
-are allowed only for specifically identified source-schema reuse. A grouping
-package never owns an operation without a local `_registration.py`. Publisher-neutral execution remains in core.
+Canonical owner resources identify exact operation owners. Registry discovery
+assembles source, operation and profile declarations; the nearest declared owner
+constrains domain implementation references. Functional Python package nesting
+alone creates no registration boundary. Shared contracts carry no concrete
+domain dependency. Publisher-neutral execution remains in core.
 
 The execution finalizer owns the single-invocation outcome, agrees it with
 effect receipts and validates the result before the terminal event. It does

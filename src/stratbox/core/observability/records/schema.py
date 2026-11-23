@@ -8,7 +8,7 @@ import re
 from types import MappingProxyType
 from typing import Literal
 
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 
 from stratbox.core.observability.records.contracts import JournalRecord
 

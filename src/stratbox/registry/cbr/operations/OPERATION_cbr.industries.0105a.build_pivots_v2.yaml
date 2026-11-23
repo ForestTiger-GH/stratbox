@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.build_pivots",
+    "contract_version": 2,
+    "method_version": "cbr-0105a-pivots-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:PivotInput",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.industry.contracts:IndustryPivotSetResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "stream",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "cbr.industries.0105a.stream",
+              "version": 1,
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.stream_result",
+              "version": 1,
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.parsed_file",
+              "version": 1,
+              "role": "extracts"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.calculation",
+              "version": 1,
+              "role": "integrated"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "pivots",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.pivots",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "pivot",
+        "source",
+        "industry_code"
+      ],
+      "summary": "Construct industry pivots at the requested grain.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.definitions:PIVOT",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:build_pivots",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

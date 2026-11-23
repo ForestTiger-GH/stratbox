@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.v1.metadata.cbr.securities.debt_securities",
+  "declaration": {
+    "edition": "cbr.statistics.observations.v1",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.statistics.observations.v1",
+    "scope": "Debt securities issued on the domestic market, separate nominal and market valuations and monthly/quarterly tables."
+  }
+}

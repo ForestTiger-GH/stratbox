@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.registry.operations import definition as _registry_definition
+
 from dataclasses import dataclass
 from datetime import date
 from stratbox.shared.evidence import AcquiredSource, SourcePayload
@@ -12,16 +14,8 @@ from stratbox.shared.data.releases import (
     ReadReleaseRequest,
     ReleaseLink,
 )
-from stratbox.core.execution.contracts import OperationDefinition
 
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.core.execution.semantics import (
-    InputPort,
-    OutputPort,
-    OperationSemantics,
-    ProcessingStage,
-    ProcessingFunction,
-)
 
 DATASET = "fns.1yur"
 
@@ -49,173 +43,46 @@ class Parse1YurRequest:
     as_of: date
 
 
-DISCOVER = OperationDefinition(
-    f"{DATASET}.discover",
-    1,
-    "fns-1yur-index-1",
-    Discover1YurRequest,
-    ReleaseIndex,
-    optional_capabilities=frozenset({"http"}),
-    processing=OperationSemantics(
-        stages=(ProcessingStage.DISCOVER,),
-        summary="Discover source issues with source-specific identity and coverage.",
-        inputs=(
-            InputPort(
-                "index",
-                DataContract("fns.1yur.index_material", 1, DataRole.ORIGINALS),
-                path="index",
-                required=False,
-            ),
-        ),
-        outputs=(OutputPort("releases", DataContract("fns.1yur.index", 1, None)),),
-        parameters=("year", "index_url"),
-    ),
-)
+DISCOVER = _registry_definition('fns.1yur.discover', 1)
 
-ACQUIRE = OperationDefinition(
-    f"{DATASET}.acquire",
-    1,
-    METHOD,
-    ReleaseLink,
-    AcquiredSource,
-    _HTTP,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.ACQUIRE,),
-        summary="Acquire the selected source material with byte and acquisition evidence.",
-        outputs=(
-            OutputPort(
-                "source",
-                DataContract("fns.1yur.original", 1, DataRole.ORIGINALS),
-                path="payload",
-                qualifications=frozenset(("source.fns.1yur",)),
-            ),
-            OutputPort(
-                "payload",
-                DataContract("source.payload", 1, DataRole.ORIGINALS),
-                path="payload",
-            ),
-        ),
-        parameters=("as_of", "url"),
-    ),
-)
+ACQUIRE = _registry_definition('fns.1yur.acquire', 1)
 
 _RAR = frozenset({"archive_decoder"})
 
-PARSE = OperationDefinition(
-    f"{DATASET}.parse",
-    1,
-    METHOD,
-    Parse1YurRequest,
-    ParsedRelease,
-    optional_capabilities=_RAR,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE, ProcessingStage.VIEW, ProcessingStage.RENDER),
-        composition=True,
-        summary="Compose the explicit reviewed regional CSV product; complete source flakes use the independent extract route.",
-        inputs=(
-            InputPort(
-                "source",
-                DataContract("fns.1yur.original", 1, DataRole.ORIGINALS),
-                path="payload",
-                qualifications=frozenset(("source.fns.1yur",)),
-            ),
-        ),
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.1yur.regional_release", 1, DataRole.PRODUCTS)
-            ),
-            OutputPort(
-                "representation",
-                DataContract("fns.1yur.regional_csv", 1, DataRole.PRODUCTS),
-                path="representation",
-            ),
-        ),
-        parameters=("as_of",),
-    ),
-)
+PARSE = _registry_definition('fns.1yur.parse', 1)
 
-CAPTURE = OperationDefinition(
-    f"{DATASET}.capture",
-    1,
-    METHOD,
-    ReleaseLink,
-    ParsedRelease,
-    _HTTP,
-    optional_capabilities=_RAR,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.ACQUIRE, ProcessingStage.EXTRACT, ProcessingStage.INTEGRATE, ProcessingStage.VIEW, ProcessingStage.RENDER),
-        summary="Acquire and compose the reviewed regional CSV subset; capture_full returns every processing boundary.",
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.1yur.regional_release", 1, DataRole.PRODUCTS)
-            ),
-            OutputPort(
-                "representation",
-                DataContract("fns.1yur.regional_csv", 1, DataRole.PRODUCTS),
-                path="representation",
-            ),
-        ),
-        parameters=("as_of", "url"),
-        composition=True,
-    ),
-)
+CAPTURE = _registry_definition('fns.1yur.capture', 1)
 
-READ = OperationDefinition(
-    f"{DATASET}.read_representation",
-    1,
-    "fns-1yur-csv-1",
-    ReadReleaseRequest,
-    ParsedRelease,
-    processing=OperationSemantics(
-        stages=(), function=ProcessingFunction.REPLAY,
-        summary="Import an explicitly selected regional CSV product; original-wide source coverage remains qualified.",
-        inputs=(
-            InputPort(
-                "representation",
-                DataContract("fns.1yur.regional_csv", 1, DataRole.PRODUCTS),
-                path="payload",
-            ),
-        ),
-        outputs=(
-            OutputPort(
-                "release", DataContract("fns.1yur.regional_release", 1, DataRole.PRODUCTS)
-            ),
-        ),
-        parameters=("as_of",),
-    ),
-)
+READ = _registry_definition('fns.1yur.read_representation', 1)
 
-COMPARE = OperationDefinition(
-    f"{DATASET}.compare",
-    2,
-    "fns-1yur-compare-1",
-    CompareReleaseRequest,
-    Comparison,
-    processing=OperationSemantics(
-        stages=(ProcessingStage.INSPECT, ProcessingStage.COMPARE),
-        summary="Compare selected regional product releases with their historical qualifiers intact.",
-        inputs=(
-            InputPort(
-                "candidate",
-                DataContract("fns.1yur.regional_release", 1, DataRole.PRODUCTS),
-                path="candidate",
-            ),
-            InputPort(
-                "baseline",
-                DataContract("fns.1yur.regional_release", 1, DataRole.PRODUCTS),
-                path="baseline",
-                required=False,
-            ),
-        ),
-        outputs=(
-            OutputPort("comparison", DataContract("fns.1yur.comparison", 1, None)),
-        ),
-        parameters=("baseline_state",),
-    ),
-)
+COMPARE = _registry_definition('fns.1yur.compare', 2)
 
 
 from ...tables.legal_entities.extraction import WorkbookBundle
-from ..pipeline_definitions import definitions as _pipeline_definitions
 
-globals().update(_pipeline_definitions(DATASET, WorkbookBundle))
+
+EXTRACT = _registry_definition('fns.1yur.extract', 1)
+READABLE = _registry_definition('fns.1yur.readable', 1)
+VALIDATE = _registry_definition('fns.1yur.validate', 1)
+COMPARE_FLAKES = _registry_definition('fns.1yur.compare_flakes', 1)
+PROJECT = _registry_definition('fns.1yur.project', 1)
+ALIGN = _registry_definition('fns.1yur.align', 1)
+COMPARE_DATASETS = _registry_definition('fns.1yur.compare_datasets', 1)
+CALCULATE_CHANGES = _registry_definition('fns.1yur.calculate_changes', 1)
+CALCULATE_SHARES = _registry_definition('fns.1yur.calculate_shares', 1)
+VIEW = _registry_definition('fns.1yur.view', 1)
+RENDER = _registry_definition('fns.1yur.render', 1)
+RENDER_ARTIFACT = _registry_definition('fns.1yur.render_artifact', 1)
+READABLE_ARTIFACT = _registry_definition('fns.1yur.readable_artifact', 1)
+FLAKE_SNAPSHOT = _registry_definition('fns.1yur.flake_snapshot', 1)
+READ_FLAKE_SNAPSHOT = _registry_definition('fns.1yur.read_flake_snapshot', 1)
+PROJECTION_SNAPSHOT = _registry_definition('fns.1yur.projection_snapshot', 1)
+READ_PROJECTION_SNAPSHOT = _registry_definition('fns.1yur.read_projection_snapshot', 1)
+DATASET_SNAPSHOT = _registry_definition('fns.1yur.dataset_snapshot', 1)
+READ_DATASET_SNAPSHOT = _registry_definition('fns.1yur.read_dataset_snapshot', 1)
+CALCULATION_SNAPSHOT = _registry_definition('fns.1yur.calculation_snapshot', 1)
+READ_CALCULATION_SNAPSHOT = _registry_definition('fns.1yur.read_calculation_snapshot', 1)
+VIEW_SNAPSHOT = _registry_definition('fns.1yur.view_snapshot', 1)
+READ_VIEW_SNAPSHOT = _registry_definition('fns.1yur.read_view_snapshot', 1)
+PROCESS = _registry_definition('fns.1yur.process', 1)
+CAPTURE_FULL = _registry_definition('fns.1yur.capture_full', 1)

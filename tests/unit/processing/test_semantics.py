@@ -7,7 +7,7 @@ import pytest
 
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.core.execution import OperationDefinition
-from stratbox.core.execution.semantics import (
+from stratbox.shared.data.operations import (
     InputPort,
     OutputPort,
     OperationSemantics,

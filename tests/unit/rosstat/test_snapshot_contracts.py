@@ -1,7 +1,7 @@
 """Snapshot wrapper ports prevent false replay edges while preserving generic storage."""
 import pytest
 
-from stratbox.core.execution.semantics import compatible_ports
+from stratbox.shared.data.operations import compatible_ports
 from stratbox.core.storage.datasets.definitions import WRITE
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.data.workbooks import WORKBOOK_EXTRACT,WORKBOOK_SNAPSHOT

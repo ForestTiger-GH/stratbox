@@ -7,11 +7,12 @@ Publishers are `cbr`, `fns`, `frank_rg`, `minfin`, and `rosstat`. Publications,
 documents, tables, integration, analytics and products have independent
 responsibilities; operation facades compose them explicitly.
 
-An owner publishes exactly one `_registration.py` containing its immutable
-`OperationRegistration`. The owner ID is its full dotted package path relative
-to `stratbox.domains`. Only manifest-bearing packages own operations.
-The `domains.registry` discovers bundled manifests recursively and validates
-that definition, handler and codec belong to the *nearest* owner. Executable entry points live in the publisher's `operations` package.
+Canonical declarations live under `stratbox.registry.<owner>` as source,
+operation and profile resources. `core.registry` discovers their owners and
+assembles immutable catalogs; `domains.registry` exposes the domain view.
+Handlers and lightweight request/result types live in the owning publisher's
+functional packages. Registry admission verifies their ownership and exact
+contract identities. Python package nesting alone creates no operation owner.
 
 [Independent processing and replay](../../../docs/current-how/independent-domain-data-routes.md)
 

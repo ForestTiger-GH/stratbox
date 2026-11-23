@@ -31,7 +31,7 @@ from stratbox.core.limits import (
     BudgetExceeded,
     ExecutionBudget,
 )
-from stratbox.core.execution.semantics import (
+from stratbox.shared.data.operations import (
     InputPort,
     OutputPort,
     OperationSemantics,
@@ -45,10 +45,21 @@ from stratbox.core.execution.handoff import (
     BoundRequest,
     HandoffError,
     ProjectedOutput,
+    PreparedInput,
     ResultReference,
     ResultResolver,
     bind_request,
     project_output,
     reference_output,
     resolve_output,
+    prepare_input,
+    artifact_input,
+    collect_inputs,
+    adapt_input,
+)
+from stratbox.core.execution.calls import (
+    OperationCall,
+    SourceBinding,
+    bind_operation,
+    bind_source,
 )

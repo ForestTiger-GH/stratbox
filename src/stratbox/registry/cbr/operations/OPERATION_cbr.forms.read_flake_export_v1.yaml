@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.read_flake_export",
+    "contract_version": 1,
+    "method_version": "cbr-forms-csv-replay-1",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:ReadFormFlakeExportRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakes",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": true,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection",
+            "version": 1,
+            "role": null
+          },
+          "path": "manifest",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "files"
+      ],
+      "summary": "Validate a complete CSV, descriptor and member-original collection and resume without re-parsing DBF.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.reporting_forms.source_definitions:READ_FLAKE_EXPORT",
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:read_flake_export",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

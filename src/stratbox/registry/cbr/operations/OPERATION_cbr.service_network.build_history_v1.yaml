@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.build_history",
+    "contract_version": 1,
+    "method_version": "cbr-office-history-1",
+    "request_type": "stratbox.domains.cbr.tables.service_network.history:OfficeHistoryRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "releases",
+          "contract": {
+            "schema_id": "cbr.service_network.releases",
+            "version": 1,
+            "role": "extracts"
+          },
+          "path": "releases",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot",
+            "version": 1,
+            "role": null
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Pin selected office captures or source issues without treating history packing as alignment.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.service_network.lifecycle_definitions:HISTORY",
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:build_source_history",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

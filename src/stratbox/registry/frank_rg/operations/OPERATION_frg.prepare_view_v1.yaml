@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.prepare_view",
+    "contract_version": 1,
+    "method_version": "frg.prepare_view.v1",
+    "request_type": "stratbox.domains.frank_rg.products.contracts:PrepareViewRequest",
+    "value_type": "stratbox.shared.data.views:ObservationView",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": null,
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "observations.batch",
+            "version": 1,
+            "role": "integrated"
+          },
+          "path": "batch",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "view_id",
+        "metric_ids",
+        "period_kinds",
+        "subject_ids"
+      ],
+      "summary": "Prepare an explicit selection of qualified observations without aggregation or source reopening.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.frank_rg.operations.pipeline_definitions:PREPARE_VIEW",
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:prepare_view",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "owner_id": "core.materials",
+  "definition": {
+    "operation_id": "material.transfer_artifact",
+    "contract_version": 1,
+    "method_version": "artifact-copy-1",
+    "request_type": "stratbox.core.operations.materials.definitions:TransferArtifactRequest",
+    "value_type": "stratbox.core.operations.materials.definitions:StoredArtifact",
+    "required_capabilities": [
+      "filestore",
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "partial_allowed": false,
+    "optional_capabilities": [
+      "descriptor_filestore"
+    ],
+    "limits": {
+      "seconds": null,
+      "input_bytes": 536870912,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 536870912,
+      "requests": null,
+      "objects": null,
+      "cells": null,
+      "temporary_bytes": 536870912,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact_reference",
+            "version": 1,
+            "role": null
+          },
+          "path": "artifact",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact_reference",
+            "version": 1,
+            "role": null
+          },
+          "path": "artifact",
+          "qualifications": [
+            "storage.confirmed"
+          ],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "destination"
+      ],
+      "summary": "Copy a complete retained value to a different store while preserving its descriptor identity.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.core.operations.materials.definitions:TRANSFER_ARTIFACT",
+    "handler_ref": "stratbox.core.operations.materials.operations:transfer_artifact",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

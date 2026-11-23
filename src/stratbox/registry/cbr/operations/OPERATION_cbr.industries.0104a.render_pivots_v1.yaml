@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.render_pivots",
+    "contract_version": 1,
+    "method_version": "cbr-0104a-prepared-xlsx-1",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:RenderIssuancePivotsRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.issuance.contracts:IssuanceWorkbookResult",
+    "required_capabilities": [],
+    "possible_effects": [],
+    "partial_allowed": false,
+    "optional_capabilities": [],
+    "limits": {
+      "seconds": null,
+      "input_bytes": null,
+      "wire_bytes": null,
+      "decoded_bytes": null,
+      "output_bytes": 134217728,
+      "requests": null,
+      "objects": null,
+      "cells": 50000000,
+      "temporary_bytes": null,
+      "archive_depth": null
+    },
+    "runtime_dependencies": [],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "tables",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.pivots",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "tables",
+          "required": true,
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ],
+          "alternatives": []
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.workbook",
+            "version": 1,
+            "role": "products"
+          },
+          "path": "representation",
+          "qualifications": [],
+          "coverage": [],
+          "outcomes": [
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "industry_code",
+        "industry_name_ru",
+        "reference_periods",
+        "include_metadata_sheet"
+      ],
+      "summary": "Render prepared issuance pivots without calculating or parsing source data.",
+      "composition": false,
+      "function": "process"
+    }
+  },
+  "implementation": {
+    "definition_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.definitions:RENDER_PIVOTS",
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:render_pivots",
+    "wire_codec_ref": null,
+    "wire_contract_ref": null
+  }
+}

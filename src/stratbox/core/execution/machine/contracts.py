@@ -10,7 +10,7 @@ from stratbox.core.storage.filestore import FileStore
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.releases import ParsedRelease
 from stratbox.core.execution import ExecutionContext, OperationResult
-from stratbox.core.execution.contracts import safe_token
+from stratbox.shared.identifiers import safe_token
 
 
 class WireRequestError(ValueError):

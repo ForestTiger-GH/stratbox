@@ -1,7 +1,7 @@
 """Source and family descriptions expose exact scoped processing contracts."""
 from __future__ import annotations
 from dataclasses import dataclass
-from stratbox.core.execution.semantics import InputPort, OutputPort, OperationKey, ProcessingStage
+from stratbox.shared.data.operations import InputPort, OutputPort, OperationKey, ProcessingStage
 from stratbox.shared.data.processing import DataContract
 from stratbox.domains.cbr.publications.contracts import SourceSeries
 from stratbox.domains.cbr.tables.statistics.contracts import SourceTableProfile

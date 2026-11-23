@@ -1,0 +1,10 @@
+{
+  "schema": "stratbox.processing-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.project_finance.alignment.v2",
+  "declaration": {
+    "alignment_operation": "cbr.escrow.integrate_flakes",
+    "product_profile": "cbr.project_finance.views.v2",
+    "view_operation": "cbr.escrow.build_views"
+  }
+}

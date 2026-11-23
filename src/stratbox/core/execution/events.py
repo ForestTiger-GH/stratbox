@@ -6,7 +6,8 @@ import json
 from threading import Lock
 from typing import Literal, Protocol
 
-from stratbox.core.execution.contracts import Correlation, Outcome, safe_token
+from stratbox.shared.identifiers import safe_token
+from stratbox.core.execution.contracts import (Correlation, Outcome)
 
 
 @dataclass(frozen=True, slots=True)

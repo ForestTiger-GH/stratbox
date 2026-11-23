@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile.v1",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.v1.metadata.cbr.household_finance.households_bm",
+  "declaration": {
+    "edition": "cbr.statistics.observations.v1",
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.statistics.observations.v1",
+    "scope": "Balances and transactions remain separate; seasonal adjustment and methodology sheets are preserved. Published transactions are not differences of balances."
+  }
+}
