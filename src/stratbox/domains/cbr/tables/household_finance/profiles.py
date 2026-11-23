@@ -1,7 +1,7 @@
 """Reviewed household finance workbook variants and interpretation boundaries."""
 from stratbox.domains.cbr.tables.statistics.contracts import SourceTableProfile, TableVariant
 
-_DECLARATIONS = (('cbr.tables.households_bm.v1',
+_DECLARATIONS = (('cbr.tables.households_bm',
   'cbr.household_finance.households_bm',
   (('methodology',
     'Методологический\\ комментарий',
@@ -39,7 +39,7 @@ _DECLARATIONS = (('cbr.tables.households_bm.v1',
     'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.',
     'Balances and transactions remain separate; seasonal adjustment and methodology sheets are preserved. '
     'Published transactions are not differences of balances.'))),
- ('cbr.tables.households_om.v1',
+ ('cbr.tables.households_om',
   'cbr.household_finance.households_om',
   (('methodology',
     'Методологический\\ комментарий',

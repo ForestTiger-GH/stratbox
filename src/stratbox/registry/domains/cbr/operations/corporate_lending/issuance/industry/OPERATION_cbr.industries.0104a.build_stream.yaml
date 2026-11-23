@@ -1,0 +1,57 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.build_stream",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:BuildIssuanceStreamRequest",
+    "value_type": "stratbox.domains.cbr.integration.corporate_lending.issuance.contracts:IssuanceStreamResult",
+    "partial_allowed": true,
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "extract",
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.parse_requests",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream",
+            "role": "integrated"
+          },
+          "path": "df_stream"
+        },
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream_result",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "continue_on_error",
+        "selection"
+      ],
+      "summary": "Parse supplied workbooks and combine a source-series stream with coverage evidence.",
+      "composition": true
+    },
+    "method_id": "cbr-0104a-stream"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:build_stream"
+  },
+  "schema": "stratbox.operation"
+}

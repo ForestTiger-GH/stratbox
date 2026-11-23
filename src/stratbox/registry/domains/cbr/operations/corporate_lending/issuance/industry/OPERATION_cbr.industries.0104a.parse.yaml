@@ -1,0 +1,66 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.parse",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:ParseIssuanceRequest",
+    "value_type": "stratbox.domains.cbr.tables.corporate_lending.issuance.contracts:ParsedIssuanceFile",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "role": "originals"
+            },
+            {
+              "schema_id": "material.payload",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "file",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.parsed_file",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream",
+            "role": "extracts"
+          },
+          "path": "df_stream"
+        }
+      ],
+      "parameters": [
+        "source_name",
+        "source",
+        "selection"
+      ],
+      "summary": "Extract source-local industry data with selection and validation scope."
+    },
+    "method_id": "cbr-0104a-workbook"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:parse"
+  },
+  "schema": "stratbox.operation"
+}

@@ -10,6 +10,7 @@ from uuid import uuid4
 from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.evidence import SourcePayload
 from stratbox.core.runtime.capabilities import BindingError, ProviderBinding, ProviderSelection, select_provider
 from stratbox.core.limits import BudgetError, BudgetClockError, BudgetExceeded, BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
@@ -76,6 +77,7 @@ class Invocation:
         self._terminal_emitted = False
         self.parents: list[tuple[str, ComputationReceipt]] = list(context.input_computations)
         self.computation: ComputationReceipt | None = None
+        self._request: object | None = None
 
     @property
     def effects(self) -> Sequence[EffectReceipt]:
@@ -273,34 +275,106 @@ class Invocation:
             self._input_index.add(receipt)
             self.used_inputs.append(receipt)
 
+    @staticmethod
+    def _arguments(definition, request):
+        """Capture exact declared arguments, separate from inherited evidence.
+
+        Reading the admitted request here includes applied dataclass defaults.
+        It also avoids encoding a rejected request before the handler's domain
+        and resource admission checks. Parent invocation IDs and transport
+        history never become part of a logical argument's identity.
+        """
+        from stratbox.core.execution.values import argument_identity, argument_value, plain
+        from stratbox.core.execution.value_context import value_context
+
+        semantics = definition.processing
+        if semantics is None or request is None:
+            return {}, {}
+
+        def selected(path):
+            value = request
+            for name in path.split(".") if path else ():
+                value = getattr(value, name)
+            return value
+
+        def value_metadata(value):
+            # A byte identity commits payload contents. Its interpretation also
+            # depends on these explicitly owned transport/schema qualifiers.
+            if isinstance(value, SourcePayload):
+                return {"media_type": value.media_type, "charset": value.charset,
+                        "source_id": value.source_id}
+            if isinstance(value, Representation):
+                return {"profile_id": value.profile_id, "edition": value.version,
+                        "media_type": value.media_type, "encoding": value.encoding}
+            if isinstance(value, (tuple, list)):
+                return [value_metadata(item) for item in value]
+            return None
+
+        arguments = {}
+        for port in semantics.inputs:
+            value = selected(port.path)
+            arguments[port.name] = {
+                "contract": plain(port.contract),
+                "identity": plain(argument_identity(value)),
+                "context": plain(value_context(value, port.contract)),
+                "metadata": value_metadata(value),
+            }
+        parameters = {name: argument_value(selected(name)) for name in semantics.parameters}
+        return arguments, parameters
+
+    @classmethod
+    def _receipt(cls, definition, request, identity, receipts, parameters, resources, parents):
+        from stratbox.core.execution.values import argument_value
+        arguments, declared_parameters = cls._arguments(definition, request)
+        parameters = {**argument_value(parameters or {}), **declared_parameters}
+        version = build_dataset_version(
+            definition.operation_id, "result", definition.method_id, receipts, identity,
+            parameters=parameters, resources=resources, arguments=arguments,
+        )
+        computation_id = computation_identity(
+            definition.operation_id, definition.method_id, receipts,
+            parameters=parameters, resources=resources, arguments=arguments,
+        )
+        return ComputationReceipt(version, identity, receipts, computation_id, tuple(parents))
+
+    def record_child(self, definition, request, identity, *, inputs, parameters=None,
+                     resources=None, parents=()):
+        """Seal a source-local calculation inside this admitted invocation.
+
+        Atomic and composed calls share argument interpretation and receipt
+        construction. The enclosing call keeps its budget and computation;
+        only the caller-selected child's semantic dependencies enter its key.
+        """
+        self._require_open()
+        if not isinstance(definition, OperationDefinition) or not isinstance(request, definition.request_type):
+            raise TypeError("Expected a declared child operation and its typed request")
+        return self._receipt(definition, request, identity, tuple(inputs), parameters, resources, parents)
+
     def record(self, identity, *, parameters=None, resources=None, inputs=None):
         self._require_open()
-        definition = self.definition
         if inputs is None:
-            # The consumer assigns semantic roles to the bytes it actually
-            # interprets. Transport receipts for those same bytes remain in
-            # result evidence without making a file handoff a new calculation.
-            # Additional inherited dependencies still qualify the computation.
-            direct_identities = {receipt.identity for receipt in self._direct_inputs}
+            # Only an explicit transport relationship permits suppression.
+            # Equal bytes in an independent reference role retain their own
+            # semantic edition and qualification of the computation.
+            transports = set(self.context.input_transports)
+            provenance = set(self.context.input_provenance)
+
+            def replaced_transport(receipt):
+                return receipt in transports and any(
+                    receipt.identity == direct.identity
+                    and receipt.media_type == direct.media_type
+                    and receipt.source_id == direct.source_id
+                    and direct.version is None
+                    for direct in self._direct_inputs
+                )
+
             receipts = (*self._direct_inputs, *(receipt for receipt in self.context.input_receipts
-                         if receipt.identity not in direct_identities))
+                         if receipt not in provenance and not replaced_transport(receipt)))
             receipts = tuple(dict.fromkeys(receipts))
         else:
             receipts = inputs
-        version = build_dataset_version(
-            definition.operation_id,
-            f"contract-{definition.contract_version}",
-            definition.method_version,
-            receipts,
-            identity,
-            parameters=parameters,
-            resources=resources,
-        )
-        computation_id = computation_identity(
-            definition.operation_id, definition.contract_version, definition.method_version,
-            receipts, parameters=parameters, resources=resources,
-        )
-        self.computation = ComputationReceipt(version, identity, receipts, computation_id, tuple(self.parents))
+        self.computation = self._receipt(self.definition, self._request, identity, receipts,
+                                        parameters, resources, self.parents)
         return self.computation
 
     def account_output(
@@ -333,7 +407,7 @@ class Invocation:
         try:
             event = ExecutionEvent(
                 3, kind, self.id, self.definition.operation_id,
-                self.definition.contract_version, self.definition.method_version,
+                self.definition.method_id,
                 self._sequence, timestamp, self.context.correlation,
                 stage=self._stage, stage_elapsed_ms=stage_elapsed, **fields,
             )
@@ -400,6 +474,7 @@ def _execute_work(
         invocation.check_cancelled()
         if not isinstance(request, definition.request_type):
             raise OperationFailure("request.invalid_type")
+        invocation._request = request
         if not isinstance(invocation._provider_selections, Mapping):
             raise BindingError("provider.selection_invalid")
         for role, selection in invocation._provider_selections.items():
@@ -450,14 +525,17 @@ def _admit_returned_output(
         return work_result
     try:
         output = value if isinstance(value, Representation) else getattr(value, "representation", None)
-        if not isinstance(output, Representation):
-            return work_result
         if invocation.computation is None:
-            invocation.record(
-                output.identity,
-                parameters={"profile": output.profile_id, "profile_version": output.version},
-            )
-        invocation.budget.ensure_returned_output(output.identity, completed=True)
+            if isinstance(output, Representation):
+                invocation.record(
+                    output.identity,
+                    parameters={"profile": output.profile_id, "profile_version": output.version},
+                )
+            elif definition.processing is not None:
+                from stratbox.core.execution.values import value_identity
+                invocation.record(value_identity(value))
+        if isinstance(output, Representation):
+            invocation.budget.ensure_returned_output(output.identity, completed=True)
     except BudgetError as error:
         outcome: Outcome = "unknown" if work_result.outcome == "unknown" else "failed"
         return _WorkCompletion(outcome, None, work_result.diagnostics + (Diagnostic(error.code),))

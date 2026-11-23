@@ -1,0 +1,56 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.file_collector.archive_to_store",
+    "request_type": "stratbox.domains.cbr.publications.collection.contracts:StoreArchiveRequest",
+    "value_type": "stratbox.core.formats.archives.store:PathArchiveReceipt",
+    "required_capabilities": [
+      "filestore",
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 269484032,
+      "temporary_bytes": 269484032
+    },
+    "processing": {
+      "stages": [
+        "render",
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.file_collector.stored_files",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "cbr.file_collector.stored_archive",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "destination"
+      ],
+      "summary": "Stream retained original files into a verified archive commit.",
+      "composition": true
+    },
+    "method_id": "cbr-file-stream-manifest-zip"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:archive_to_store"
+  },
+  "schema": "stratbox.operation"
+}

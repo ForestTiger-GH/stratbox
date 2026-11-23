@@ -12,19 +12,19 @@ def test_all_publisher_cards_resolve_actual_operations_without_duplicate_sources
     assert len(sources.families)==26
     for source in sources.sources:
         for binding in source.operations:
-            catalog.get(binding.operation_id,binding.contract_version)
+            catalog.get(binding.operation_id)
         assert sources.describe(source.series_id,operations=catalog)["source"]==source
 
 
 def test_cleanup_and_durable_replay_do_not_claim_economic_processing_stages():
     catalog=operation_catalog()
-    for op,version,function in (
-        ("frg.apply_cleanup",1,ProcessingFunction.MAINTAIN),
-        ("cbr.tables.flake_snapshot",1,ProcessingFunction.ENCODE),
-        ("cbr.escrow.read_view_snapshot",2,ProcessingFunction.REPLAY),
-        ("material.read_artifact",1,ProcessingFunction.REPLAY),
+    for op,function in (
+        ("frg.apply_cleanup",ProcessingFunction.MAINTAIN),
+        ("cbr.tables.flake_snapshot",ProcessingFunction.ENCODE),
+        ("cbr.escrow.read_view_snapshot",ProcessingFunction.REPLAY),
+        ("material.read_artifact",ProcessingFunction.REPLAY),
     ):
-        definition=catalog.get(op,version)
+        definition=catalog.get(op)
         assert definition.processing.function is function
         assert definition.processing.stages==()
 
@@ -33,8 +33,8 @@ def test_common_snapshot_ports_separate_values_codecs_and_storage():
     catalog = operation_catalog()
 
     def connected(producer, consumer):
-        before = catalog.get(producer, 1).processing.outputs
-        after = catalog.get(consumer, 1).processing.inputs
+        before = catalog.get(producer).processing.outputs
+        after = catalog.get(consumer).processing.inputs
         return any(compatible_ports(out, inp) for out in before for inp in after)
 
     for encode, replay in (

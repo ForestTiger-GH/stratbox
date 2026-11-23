@@ -20,7 +20,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from stratbox.domains._structure import DomainLayoutError  # noqa: E402
-from stratbox.core.registry.resources import read_document, resource_owners  # noqa: E402
+from stratbox.core.registry.resources import read_document, owner_directories, iter_resources, resource_inventory  # noqa: E402
 
 def _registered_domains() -> frozenset[str]:
     """Resolve canonical owner declarations and reachable implementation packages."""
@@ -28,8 +28,8 @@ def _registered_domains() -> frozenset[str]:
     if not root.is_dir():
         return frozenset()
     owners = set()
-    for owner in resource_owners(root=root):
-        manifest = root / owner / "OWNER.yaml"
+    for owner, directory in owner_directories(root=root):
+        manifest = directory / "OWNER.yaml"
         if not manifest.is_file():
             raise DomainLayoutError(f"registry.owner_declaration_missing:{owner}")
         try:
@@ -78,9 +78,9 @@ def _literal_module_refs(tree: ast.AST):
             if isinstance(literal, ast.Constant) and isinstance(literal.value, str):
                 yield node.lineno, literal.value
         if operation == "OperationRef":
-            values = (*node.args[2:6], *(
+            values = (*node.args[1:4], *(
                 keyword.value for keyword in node.keywords
-                if keyword.arg in {"definition_ref", "handler_ref", "wire_codec_ref", "wire_contract_ref"}
+                if keyword.arg in {"handler_ref", "wire_codec_ref", "wire_contract_ref"}
             ))
             for value in values:
                 if isinstance(value, ast.Constant) and isinstance(value.value, str):
@@ -364,30 +364,20 @@ def check_registry_declarations() -> list[str]:
         owners = _registered_domains()
     except (DomainLayoutError, OSError, ValueError) as error:
         return [f"invalid registry hierarchy: {error}"]
-    for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.suffix.lower() not in {".yaml", ".yml"}:
-            continue
+    try:
+        resource_inventory(root=root)
+        records = tuple((owner, path) for owner, _ in owner_directories(root=root)
+                        for kind in ("sources", "operations", "profiles", "routes", "families", "groups")
+                        for path in iter_resources(owner, kind, root=root))
+    except (ValueError, OSError) as error:
+        return [f"invalid registry resources: {error}"]
+    for owner, path in records:
         label = path.relative_to(PACKAGE).as_posix()
-        parts = path.relative_to(root).parts
-        if len(parts) not in {2, 3} or path.suffix != ".yaml":
-            failures.append(f"{label}: invalid registry declaration location")
-            continue
-        owner = parts[0]
-        valid_name = len(parts) == 2 and path.name == "OWNER.yaml" or (
-            len(parts) == 3 and any(
-                parts[1] == directory and path.name.startswith(prefix)
-                for directory, prefix in (("sources", "SOURCE_"), ("operations", "OPERATION_"),
-                                          ("profiles", "PROFILE_"))
-            )
-        )
-        if not valid_name:
-            failures.append(f"{label}: unexpected registry resource")
-            continue
         try:
             document = read_document(path)
             if document.get("owner_id") != owner:
-                raise ValueError("registry.owner_path_mismatch")
-            if len(parts) != 3 or parts[1] != "operations":
+                raise ValueError("registry.owner_mismatch")
+            if not path.name.startswith("OPERATION_"):
                 continue
             validate_operation_document(document, owner_id=owner)
             if owner.startswith("core."):

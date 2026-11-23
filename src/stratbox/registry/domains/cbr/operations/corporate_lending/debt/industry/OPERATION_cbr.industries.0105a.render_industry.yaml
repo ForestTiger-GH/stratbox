@@ -1,0 +1,48 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.render_industry",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:RenderIndustryRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.debt.contracts:Cbr0105ADebtCorpIndustryWorkbookResult",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "calculate",
+        "view",
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream_result",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.workbook",
+            "role": "products"
+          },
+          "path": "representation"
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render one industry workbook from supplied data.",
+      "composition": true
+    },
+    "method_id": "cbr-0105a-industry-xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:render_industry"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,37 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_document",
+    "request_type": "stratbox.domains.minfin.documents.contracts:ReadDocumentRequest",
+    "value_type": "stratbox.domains.minfin.documents.contracts:PublisherDocument",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "minfin.document.snapshot",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "minfin.publisher_document",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Replay retained publisher document blocks and release evidence without the document decoder.",
+      "function": "replay"
+    },
+    "method_id": "minfin.document.snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.document_handlers:read_document"
+  },
+  "schema": "stratbox.operation"
+}

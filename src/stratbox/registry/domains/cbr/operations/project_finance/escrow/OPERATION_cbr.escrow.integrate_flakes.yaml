@@ -1,0 +1,47 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.integrate_flakes",
+    "request_type": "stratbox.domains.cbr.operations.project_finance.contracts:IntegrateEscrowRequest",
+    "value_type": "stratbox.domains.cbr.integration.project_finance.contracts:EscrowDataset",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.escrow.flakes",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.escrow.dataset",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "coverage"
+      ],
+      "summary": "Integrate admitted publication flakes with explicit duplicate and edition checks."
+    },
+    "method_id": "cbr-escrow-integration"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.lifecycle:integrate_flakes"
+  },
+  "schema": "stratbox.operation"
+}

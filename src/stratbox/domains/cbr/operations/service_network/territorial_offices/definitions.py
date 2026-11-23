@@ -23,18 +23,18 @@ DATASET = "cbr.offices_reg"
 METHOD = "cbr-offices-reg-xlsx-4"
 
 
-DISCOVER = _registry_definition('cbr.offices_reg.discover', 1)
+DISCOVER = _registry_definition('cbr.offices_reg.discover')
 
-ACQUIRE = _registry_definition('cbr.offices_reg.acquire', 1)
+ACQUIRE = _registry_definition('cbr.offices_reg.acquire')
 
-PARSE = _registry_definition('cbr.offices_reg.parse', 3)
+PARSE = _registry_definition('cbr.offices_reg.parse')
 
-CAPTURE = _registry_definition('cbr.offices_reg.capture', 3)
+CAPTURE = _registry_definition('cbr.offices_reg.capture')
 
-READ = _registry_definition('cbr.offices_reg.read_representation', 2)
+READ = _registry_definition('cbr.offices_reg.read_representation')
 
-COMPARE = _registry_definition('cbr.offices_reg.compare', 2)
+COMPARE = _registry_definition('cbr.offices_reg.compare')
 
-SNAPSHOT = _registry_definition('cbr.offices_reg.snapshot', 1)
+SNAPSHOT = _registry_definition('cbr.offices_reg.snapshot')
 
-RESTORE = _registry_definition('cbr.offices_reg.restore', 1)
+RESTORE = _registry_definition('cbr.offices_reg.restore')

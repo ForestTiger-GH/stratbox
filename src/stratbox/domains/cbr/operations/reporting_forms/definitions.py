@@ -15,14 +15,14 @@ from stratbox.shared.data.processing import DataContract, DataRole
 
 _TABLES = ExecutionBudget(cells=50_000_000, output_bytes=128 * 1024 * 1024)
 
-SELECT = _registry_definition('cbr.forms.select_sources', 1)
+SELECT = _registry_definition('cbr.forms.select_sources')
 
-ACQUIRE = _registry_definition('cbr.forms.acquire', 1)
+ACQUIRE = _registry_definition('cbr.forms.acquire')
 
-PARSE = _registry_definition('cbr.forms.parse', 2)
+PARSE = _registry_definition('cbr.forms.parse')
 
-BUILD = _registry_definition('cbr.forms.build_data', 2)
+BUILD = _registry_definition('cbr.forms.build_data')
 
-VIEWS = _registry_definition('cbr.forms.build_views', 2)
+VIEWS = _registry_definition('cbr.forms.build_views')
 
-RENDER = _registry_definition('cbr.forms.render_workbook', 2)
+RENDER = _registry_definition('cbr.forms.render_workbook')

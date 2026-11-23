@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "rosstat",
+  "profile_id": "socioeconomic_regions",
+  "declaration": {
+    "formats": [
+      "rar",
+      "zip"
+    ],
+    "kind": "discovery",
+    "profile_id": "socioeconomic_regions",
+    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage."
+  }
+}

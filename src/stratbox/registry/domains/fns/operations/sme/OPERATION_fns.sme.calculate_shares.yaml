@@ -1,0 +1,44 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.calculate_shares",
+    "request_type": "stratbox.domains.fns.operations.contracts:SharesRequest",
+    "value_type": "stratbox.domains.fns.analytics.calculations:Calculation",
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "calculation",
+          "contract": {
+            "schema_id": "fns.sme.calculation",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "numerator_metric",
+        "denominator_metric",
+        "numerator_dimensions",
+        "denominator_dimensions"
+      ],
+      "summary": "Calculate explicitly selected same-period stock shares, retaining zero-denominator diagnostics."
+    },
+    "method_id": "fns-sme-calculate-shares"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:calculate_shares"
+  },
+  "schema": "stratbox.operation"
+}

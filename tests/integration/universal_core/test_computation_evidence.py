@@ -46,7 +46,7 @@ def test_closed_incident_and_failed_event_sink_preserve_uncertain_effect():
         invocation.effect(EffectReceipt("storage.write", "unknown", effect_id="logical-key"))
         raise RuntimeError("secret_value")
 
-    definition = OperationDefinition("test.effect", 1, "test-1", str, str,
+    definition = OperationDefinition("test.effect", "test", str, str,
                                      possible_effects=frozenset({"storage.write"}))
     public, private = EventSink(), IncidentSink()
     outcome = run(definition, "value", fail, context=ExecutionContext(sink=public, incident_sink=private))
@@ -65,7 +65,7 @@ def test_closed_incident_and_failed_event_sink_preserve_uncertain_effect():
 
 def test_cancellation_after_known_acceptance_keeps_success():
     token = Event()
-    definition = OperationDefinition("test.effect", 1, "test-1", str, str,
+    definition = OperationDefinition("test.effect", "test", str, str,
                                      possible_effects=frozenset({"storage.write"}))
 
     def completed(value, invocation):

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.regional",
+  "series_id": "frg.regional.issuance",
+  "title": "Regional loan issuance",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.regional.issuance.route",
+  "family_profile": "frg.regional.publication",
+  "position": 8,
+  "publication": {
+    "slot": "issuance",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

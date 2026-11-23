@@ -1,0 +1,62 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.discover",
+    "request_type": "stratbox.domains.minfin.publications.contracts:DiscoverRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:PublicationIndex",
+    "optional_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "minfin.publisher_page",
+            "role": "originals"
+          },
+          "required": false,
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "role": "originals"
+            },
+            {
+              "schema_id": "material.payload",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "minfin.publication_index"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "family_id",
+        "max_links",
+        "page_url"
+      ],
+      "summary": "Inspect one Minfin landing page and return bounded source candidates with unknown inventory coverage."
+    },
+    "method_id": "minfin-index-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:discover"
+  },
+  "schema": "stratbox.operation"
+}

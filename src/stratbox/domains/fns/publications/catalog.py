@@ -9,8 +9,6 @@ from .contracts import SourceSeries
 def _catalog():
     result = []
     for document in publication_families("fns", series_fields=(("series_id", "series_id"), ("family_id", "family_id"), ("title", "title"), ("formats", "formats"))):
-        if document["schema_version"] != 1:
-            raise ValueError("fns.registry.family_mismatch")
         for item in document["series"]:
             value = dict(item)
             value["formats"] = tuple(value["formats"])

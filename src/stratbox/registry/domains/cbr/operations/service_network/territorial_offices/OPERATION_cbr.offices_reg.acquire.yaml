@@ -1,0 +1,46 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.acquire",
+    "request_type": "stratbox.shared.data.releases:ReleaseLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.offices_reg.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.offices_reg"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "url"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence."
+    },
+    "method_id": "cbr-offices-reg-xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:acquire"
+  },
+  "schema": "stratbox.operation"
+}

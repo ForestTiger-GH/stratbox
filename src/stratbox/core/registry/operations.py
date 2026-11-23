@@ -1,19 +1,18 @@
-"""Canonical operation contracts assembled from packaged declarative resources.
+"""Compile compact canonical operation declarations into runtime contracts.
 
-JSON is the supported deterministic YAML subset. Registry discovery validates
-metadata and symbolic references without importing handlers or data engines.
-Python request/value types resolve only when a typed definition is requested.
+The declaration schema explicitly defines required fields and defaults. It is
+independent of runtime dataclass field inventories and never loads handlers.
 """
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import fields
 from functools import lru_cache
 from importlib import import_module
 
 from stratbox.core.execution.contracts import OperationDefinition, RuntimeDependency
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.registry.catalog import OperationRef, OperationRegistration, RegistryError
+from stratbox.core.registry.resources import iter_resources, owner_directory, read_document, resource_owners
 from stratbox.shared.data.operations import (
     InputPort, OutputPort, OperationSemantics, ProcessingFunction,
     ProcessingStage, StageDeclaration, OperationKey,
@@ -22,8 +21,8 @@ from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.identifiers import safe_token
 
 
-def _object(value, names, code="registry.invalid_document"):
-    if not isinstance(value, dict) or set(value) != set(names):
+def _object(value, required=(), optional=(), code="registry.invalid_document"):
+    if not isinstance(value, dict) or not set(required) <= set(value) or set(value) - set(required) - set(optional):
         raise RegistryError(code)
     return value
 
@@ -71,60 +70,81 @@ def _load_type(ref):
 
 
 def _contract(value):
-    value = _object(value, ("schema_id", "version", "role"))
-    return DataContract(value["schema_id"], value["version"],
-                        None if value["role"] is None else DataRole(value["role"]))
+    value = _object(value, ("schema_id",), ("version", "role"))
+    return DataContract(value["schema_id"], value.get("version", 1),
+                        None if value.get("role") is None else DataRole(value["role"]))
 
 
 def _port(value, input):
-    kind = InputPort if input else OutputPort
-    value = _object(value, (item.name for item in fields(kind)))
-    options = dict(value)
-    options["contract"] = _contract(value["contract"])
+    common = ("path", "qualifications", "coverage", "outcomes")
+    value = _object(value, ("name", "contract"), (*common, "required", "alternatives") if input else common)
+    options = {"name": value["name"], "contract": _contract(value["contract"]),
+               "path": value.get("path", value["name"])}
     for name in ("qualifications", "coverage", "outcomes"):
-        options[name] = frozenset(_strings(value[name]))
+        options[name] = frozenset(_strings(value.get(name, ["succeeded"] if name == "outcomes" else [])))
     if input:
-        options["alternatives"] = tuple(_contract(item) for item in _list(value["alternatives"]))
-    return kind(**options)
+        options["required"] = value.get("required", True)
+        options["alternatives"] = tuple(_contract(item) for item in _list(value.get("alternatives", [])))
+    return (InputPort if input else OutputPort)(**options)
 
 
 def _processing(value):
     if value is None:
         return None
-    value = _object(value, (item.name for item in fields(OperationSemantics)))
+    value = _object(value, ("stages", "summary"), ("inputs", "outputs", "parameters", "composition", "function"))
     return OperationSemantics(
         stages=tuple(ProcessingStage(item) for item in _strings(value["stages"])),
-        inputs=tuple(_port(item, True) for item in _list(value["inputs"])),
-        outputs=tuple(_port(item, False) for item in _list(value["outputs"])),
-        parameters=_strings(value["parameters"]), summary=value["summary"],
-        composition=value["composition"], function=ProcessingFunction(value["function"]),
+        inputs=tuple(_port(item, True) for item in _list(value.get("inputs", []))),
+        outputs=tuple(_port(item, False) for item in _list(value.get("outputs", []))),
+        parameters=_strings(value.get("parameters", [])), summary=value["summary"],
+        composition=value.get("composition", False), function=ProcessingFunction(value.get("function", "process")),
     )
 
 
 def _dependency(value):
-    return RuntimeDependency(**_object(value, (item.name for item in fields(RuntimeDependency))))
+    return RuntimeDependency(**_object(value, ("role", "phase", "owner")))
 
 
 def _budget(value):
     if value is None:
         return None
-    return ExecutionBudget(**_object(value, (item.name for item in fields(ExecutionBudget))))
+    value = _object(value, (), ("seconds", "input_bytes", "wire_bytes", "decoded_bytes", "output_bytes",
+                               "requests", "objects", "cells", "temporary_bytes", "archive_depth"))
+    return ExecutionBudget(**value)
+
+
+def _compile(d, *, typed):
+    value_types = d["value_type"]
+    return OperationDefinition(
+        operation_id=d["operation_id"], method_id=d["method_id"],
+        request_type=_load_type(d["request_type"]) if typed else object,
+        value_type=(tuple(_load_type(item) for item in value_types) if isinstance(value_types, list) else _load_type(value_types)) if typed else object,
+        required_capabilities=frozenset(_strings(d.get("required_capabilities", []))),
+        possible_effects=frozenset(_strings(d.get("possible_effects", []))),
+        partial_allowed=d.get("partial_allowed", False),
+        optional_capabilities=frozenset(_strings(d.get("optional_capabilities", []))),
+        limits=_budget(d.get("limits")),
+        runtime_dependencies=tuple(_dependency(item) for item in _list(d.get("runtime_dependencies", []))),
+        processing=_processing(d.get("processing")),
+    )
 
 
 def validate_operation_document(value, *, owner_id=None):
-    """Validate every metadata field without loading a referenced Python module."""
+    """Validate canonical metadata without resolving executable or value types."""
     try:
-        value = _object(value, ("schema_version", "owner_id", "definition", "implementation"))
-        if type(value["schema_version"]) is not int or value["schema_version"] != 1:
-            raise RegistryError("registry.unsupported_schema")
+        value = _object(value, ("schema", "owner_id", "definition", "implementation"), ("source_requirements",))
+        if value["schema"] != "stratbox.operation":
+            raise RegistryError("registry.invalid_schema")
         owner = value["owner_id"]
         safe_token(owner)
         if owner_id is not None and owner != owner_id:
             raise RegistryError("registry.owner_mismatch")
-        d = _object(value["definition"], (item.name for item in fields(OperationDefinition)))
-        i = _object(value["implementation"], ("definition_ref", "handler_ref", "wire_codec_ref", "wire_contract_ref"))
-        for name in ("definition_ref", "handler_ref", "wire_codec_ref", "wire_contract_ref"):
-            if i[name] is not None:
+        d = _object(value["definition"], ("operation_id", "method_id", "request_type", "value_type"),
+                    ("required_capabilities", "possible_effects", "partial_allowed", "optional_capabilities",
+                     "limits", "runtime_dependencies", "processing"))
+        i = _object(value["implementation"], ("handler_ref",), ("wire_codec_ref", "wire_contract_ref"))
+        for name in ("handler_ref", "wire_codec_ref", "wire_contract_ref"):
+            if i.get(name) is not None:
                 _reference(i[name], owner=owner, implementation=True)
         _reference(d["request_type"], owner=owner)
         value_types = d["value_type"] if isinstance(d["value_type"], list) else [d["value_type"]]
@@ -132,20 +152,13 @@ def validate_operation_document(value, *, owner_id=None):
             raise RegistryError("registry.invalid_value_types")
         for item in value_types:
             _reference(item, owner=owner)
-        # Construct the full policy with sentinel types, validating all fields
-        # while leaving optional format/parser implementations unimported.
-        OperationDefinition(
-            operation_id=d["operation_id"], contract_version=d["contract_version"],
-            method_version=d["method_version"], request_type=object, value_type=object,
-            required_capabilities=frozenset(_strings(d["required_capabilities"])),
-            possible_effects=frozenset(_strings(d["possible_effects"])),
-            partial_allowed=d["partial_allowed"],
-            optional_capabilities=frozenset(_strings(d["optional_capabilities"])),
-            limits=_budget(d["limits"]),
-            runtime_dependencies=tuple(_dependency(item) for item in _list(d["runtime_dependencies"])),
-            processing=_processing(d["processing"]),
-        )
-        OperationRef(d["operation_id"], d["contract_version"], **i)
+        _compile(d, typed=False)
+        OperationRef(d["operation_id"], **i)
+        if "source_requirements" in value:
+            from stratbox.core.registry.requirements import decode_requirement
+            requirements = tuple(decode_requirement(item) for item in _list(value["source_requirements"]))
+            if len({item.input_name for item in requirements}) != len(requirements):
+                raise RegistryError("registry.source_requirement_duplicate")
         return value
     except RegistryError:
         raise
@@ -153,52 +166,33 @@ def validate_operation_document(value, *, owner_id=None):
         raise RegistryError("registry.invalid_operation_document") from error
 
 
-def _root():
-    from stratbox.core.registry.resources import registry_root
-    return registry_root()
-
-
-def _read(path):
-    from stratbox.core.registry.resources import read_document
-    return read_document(path)
-
-
 @lru_cache(maxsize=1)
 def owner_ids():
-    """Derive owner identities from packaged OWNER declarations."""
-    from stratbox.core.registry.resources import resource_owners
     return resource_owners()
 
 
 @lru_cache(maxsize=32)
 def _operation_documents(owner_id=None):
-    """Return complete canonical documents in stable owner/identity order."""
     if owner_id is None:
         return tuple(document for owner in owner_ids() for document in _operation_documents(owner))
     if owner_id not in owner_ids():
         raise RegistryError("registry.owner_unknown")
-    directory = _root().joinpath(owner_id, "operations")
-    if not directory.is_dir():
-        raise RegistryError("registry.operations_required")
     documents = []
     keys = set()
-    for path in sorted(directory.iterdir(), key=lambda item: item.name):
-        if not path.is_file() or not path.name.startswith("OPERATION_") or not path.name.endswith(".yaml"):
-            raise RegistryError("registry.unexpected_operation_resource")
-        document = validate_operation_document(_read(path), owner_id=owner_id)
-        d = document["definition"]
-        key = (d["operation_id"], d["contract_version"])
-        if path.name != f"OPERATION_{key[0]}_v{key[1]}.yaml" or key in keys:
+    for path in iter_resources(owner_id, "operations"):
+        document = validate_operation_document(read_document(path), owner_id=owner_id)
+        identity = document["definition"]["operation_id"]
+        if path.name != f"OPERATION_{identity}.yaml" or identity in keys:
             raise RegistryError("registry.operation_identity_mismatch")
-        keys.add(key)
+        keys.add(identity)
         documents.append(document)
     if not documents:
         raise RegistryError("registry.empty_owner")
-    return tuple(documents)
+    return tuple(sorted(documents, key=lambda document: document["definition"]["operation_id"]))
 
 
 def operation_documents(owner_id=None):
-    """Return independent document copies; callers cannot mutate registry authority."""
+    """Isolated copies of the canonical authority, including optional metadata."""
     return deepcopy(_operation_documents(owner_id))
 
 
@@ -206,63 +200,58 @@ def operation_documents(owner_id=None):
 def _definition_index():
     result = {}
     for document in _operation_documents():
-        d = document["definition"]
-        key = (d["operation_id"], d["contract_version"])
-        if key in result:
-            raise RegistryError("registry.duplicate_contract")
-        result[key] = document
+        identity = document["definition"]["operation_id"]
+        if identity in result:
+            raise RegistryError("registry.duplicate_operation")
+        result[identity] = document
     return result
 
 
-@lru_cache(maxsize=4096)
-def definition(operation_id, contract_version=1):
-    """Assemble a typed contract from its single declarative authority."""
-    if not isinstance(operation_id, str) or type(contract_version) is not int or contract_version < 1:
-        raise RegistryError("registry.contract_unavailable")
+def operation_document(operation_id):
+    """Return one isolated declaration without copying the complete catalog."""
     try:
-        d = _definition_index()[(operation_id, contract_version)]["definition"]
+        return deepcopy(_definition_index()[operation_id])
     except (KeyError, TypeError):
-        raise RegistryError("registry.contract_unavailable") from None
-    value_types = d["value_type"]
-    return OperationDefinition(
-        operation_id=d["operation_id"], contract_version=d["contract_version"],
-        method_version=d["method_version"], request_type=_load_type(d["request_type"]),
-        value_type=tuple(_load_type(item) for item in value_types) if isinstance(value_types, list) else _load_type(value_types),
-        required_capabilities=frozenset(d["required_capabilities"]),
-        possible_effects=frozenset(d["possible_effects"]), partial_allowed=d["partial_allowed"],
-        optional_capabilities=frozenset(d["optional_capabilities"]), limits=_budget(d["limits"]),
-        runtime_dependencies=tuple(_dependency(item) for item in d["runtime_dependencies"]),
-        processing=_processing(d["processing"]),
-    )
+        raise RegistryError("registry.operation_unavailable") from None
+
+
+@lru_cache(maxsize=4096)
+def definition(operation_id):
+    """Compile the canonical declaration directly, without a Python backlink."""
+    if not isinstance(operation_id, str):
+        raise RegistryError("registry.operation_unavailable")
+    try:
+        document = _definition_index()[operation_id]
+    except KeyError:
+        raise RegistryError("registry.operation_unavailable") from None
+    return _compile(document["definition"], typed=True)
 
 
 def _stage(value):
-    value = _object(value, (item.name for item in fields(StageDeclaration)))
+    value = _object(value, ("stage", "state", "reason"), ("operations", "binding"))
     return StageDeclaration(
         ProcessingStage(value["stage"]), value["state"], value["reason"],
-        tuple(OperationKey(**_object(item, ("operation_id", "contract_version")))
-              for item in _list(value["operations"])), value["binding"],
+        tuple(OperationKey(**_object(item, ("operation_id",))) for item in _list(value.get("operations", []))),
+        value.get("binding"),
     )
 
 
 @lru_cache(maxsize=32)
 def owner_registration(owner_id):
-    """Derive all references and coverage declarations from an owner resource."""
     if owner_id not in owner_ids():
         raise RegistryError("registry.owner_unknown")
     try:
-        owner = _object(_read(_root().joinpath(owner_id, "OWNER.yaml")),
-                        ("schema_version", "owner_id", "stages"))
-        if type(owner["schema_version"]) is not int or owner["schema_version"] != 1:
-            raise RegistryError("registry.unsupported_schema")
+        owner = _object(read_document(owner_directory(owner_id).joinpath("OWNER.yaml")),
+                        ("owner_id",), ("stages", "value_contexts"))
         if owner["owner_id"] != owner_id:
             raise RegistryError("registry.owner_mismatch")
+        if "value_contexts" in owner:
+            from stratbox.core.execution.value_context import validate_value_contexts
+            validate_value_contexts(owner["value_contexts"])
         return OperationRegistration(
-            owner_id, tuple(OperationRef(document["definition"]["operation_id"],
-                                          document["definition"]["contract_version"],
-                                          **document["implementation"])
+            owner_id, tuple(OperationRef(document["definition"]["operation_id"], **document["implementation"])
                             for document in _operation_documents(owner_id)),
-            tuple(_stage(item) for item in _list(owner["stages"])),
+            tuple(_stage(item) for item in _list(owner.get("stages", []))),
         )
     except RegistryError:
         raise
@@ -270,10 +259,10 @@ def owner_registration(owner_id):
         raise RegistryError("registry.invalid_owner_document") from error
 
 
-def operation_references(owner_id, *, definition_module=None):
-    """Project a module segment without repeating operation identity lists."""
+def operation_references(owner_id, *, handler_module=None):
+    """Project an implementation segment without duplicating operation lists."""
     references = owner_registration(owner_id).operations
-    if definition_module is None:
+    if handler_module is None:
         return references
-    return tuple(ref for ref in references if (module := ref.definition_ref.split(":")[0]) == definition_module
-                 or module.startswith(definition_module + "."))
+    return tuple(ref for ref in references if (module := ref.handler_ref.split(":")[0]) == handler_module
+                 or module.startswith(handler_module + "."))

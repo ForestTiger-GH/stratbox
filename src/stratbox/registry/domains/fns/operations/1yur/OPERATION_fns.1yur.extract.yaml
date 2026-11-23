@@ -1,0 +1,45 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.extract",
+    "request_type": "stratbox.domains.fns.operations.contracts:ExtractRequest",
+    "value_type": "stratbox.domains.fns.tables.legal_entities.extraction:WorkbookBundle",
+    "optional_capabilities": [
+      "archive_decoder"
+    ],
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.1yur.original",
+            "role": "originals"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "release"
+      ],
+      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields."
+    },
+    "method_id": "fns-1yur-extract"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:extract"
+  },
+  "schema": "stratbox.operation"
+}

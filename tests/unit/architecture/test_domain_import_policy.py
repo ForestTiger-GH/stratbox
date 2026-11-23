@@ -65,8 +65,7 @@ def test_legacy_domain_imports_and_dynamic_targets_are_rejected(tmp_path):
         "from stratbox.domains import cbr_offices\n"
         "importlib.import_module('stratbox.domains.cbr_industries.operations')\n"
         "from stratbox.core.registry.catalog import OperationRef\n"
-        "ref = OperationRef('test.x', 1, "
-        "'stratbox.domains.frg.api:SCAN', 'stratbox.domains.frg.api:scan')\n",
+        "ref = OperationRef('test.x', 'stratbox.domains.frg.api:scan')\n",
         encoding="utf-8",
     )
     errors = checker["check_dependency_direction"]()

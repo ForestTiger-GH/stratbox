@@ -1,0 +1,51 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.acquire",
+    "request_type": "stratbox.domains.cbr.publications.project_finance.contracts:EscrowSourceLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.escrow.source"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.escrow.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.escrow"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "summary": "Acquire an official escrow XLSX or historical HTML original."
+    },
+    "method_id": "cbr-escrow-source"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:acquire"
+  },
+  "schema": "stratbox.operation"
+}

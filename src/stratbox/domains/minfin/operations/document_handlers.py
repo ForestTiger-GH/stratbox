@@ -15,7 +15,7 @@ def extract_document(request, *, context=None):
         if series.kind != "document" or req.payload.source_id not in {None, series.source_id}:
             raise ValueError("minfin.document.source_mismatch")
         doc = extract_blocks(req.payload, series_id=series.source_id, issue_id=req.publication.issue_id,
-                             asset_id=req.publication.asset_id, profile_id="minfin.document.blocks.v1",
+                             asset_id=req.publication.asset_id, profile_id="minfin.document.blocks",
                              budget=invocation.budget, checkpoint=invocation.check_cancelled)
         if doc.format not in {"pdf", "docx"}:
             raise ValueError("minfin.document.format_unsupported")

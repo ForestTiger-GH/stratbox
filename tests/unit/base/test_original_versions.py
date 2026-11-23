@@ -157,10 +157,10 @@ def test_cross_asset_compare_rejected_and_keys_stable():
 
 def test_public_source_receive_to_store_handler_and_comparator_registered():
     catalog = operation_catalog()
-    definition, handler, _ = catalog.resolve("source.receive_to_store", 1)
+    definition, handler, _ = catalog.resolve("source.receive_to_store")
     assert definition.operation_id == "source.receive_to_store"
     assert handler.__name__ == "receive_to_store"
-    definition, handler, _ = catalog.resolve("source.compare_original_versions", 1)
+    definition, handler, _ = catalog.resolve("source.compare_original_versions")
     assert handler.__name__ == "compare_original_versions"
 
 

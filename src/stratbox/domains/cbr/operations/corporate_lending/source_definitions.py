@@ -31,8 +31,8 @@ class ReadCorporateObservationSnapshotRequest:
     snapshot: DatasetSnapshot
 
 
-EXTRACT = _registry_definition('cbr.corporate_lending.extract_observations', 1)
+EXTRACT = _registry_definition('cbr.corporate_lending.extract_observations')
 
-ENCODE = _registry_definition('cbr.corporate_lending.observation_snapshot', 1)
+ENCODE = _registry_definition('cbr.corporate_lending.observation_snapshot')
 
-DECODE = _registry_definition('cbr.corporate_lending.read_observation_snapshot', 1)
+DECODE = _registry_definition('cbr.corporate_lending.read_observation_snapshot')

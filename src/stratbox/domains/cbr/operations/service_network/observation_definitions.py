@@ -13,5 +13,5 @@ class SnapshotOfficeObservationsRequest:
     dataset_id: str
     version_id: str
 
-SNAPSHOT = _registry_definition('cbr.service_network.observations_snapshot', 1)
-RESTORE = _registry_definition('cbr.service_network.restore_observations', 1)
+SNAPSHOT = _registry_definition('cbr.service_network.observations_snapshot')
+RESTORE = _registry_definition('cbr.service_network.restore_observations')

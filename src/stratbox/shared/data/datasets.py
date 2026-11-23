@@ -41,6 +41,7 @@ def build_dataset_version(
     *,
     parameters: Mapping[str, object] | None = None,
     resources: Mapping[str, str] | None = None,
+    arguments: Mapping[str, object] | None = None,
 ) -> DatasetVersion:
     manifest = canonical_manifest_bytes(
         {
@@ -50,6 +51,7 @@ def build_dataset_version(
             "method_version": method_version,
             "inputs": _input_manifest(inputs),
             "parameters": parameters or {},
+            "arguments": arguments or {},
             "resources": resources or {},
             "result": {"sha256": result.sha256, "size": result.size},
         }
@@ -60,12 +62,12 @@ def build_dataset_version(
 
 def computation_identity(
     operation_id: str,
-    contract_version: int,
-    method_version: str,
+    method_id: str,
     inputs: tuple[UsedInputReceipt, ...],
     *,
     parameters: Mapping[str, object] | None = None,
     resources: Mapping[str, str] | None = None,
+    arguments: Mapping[str, object] | None = None,
     representation_profile: str | None = None,
     representation_options: Mapping[str, object] | None = None,
 ) -> ByteIdentity:
@@ -73,15 +75,14 @@ def computation_identity(
     if representation_profile is None and representation_options:
         raise ValueError("Representation options require a profile")
     return ByteIdentity.of(canonical_manifest_bytes({
-        "version": 1,
         "operation_id": operation_id,
-        "contract_version": contract_version,
-        "method_version": method_version,
+        "method_id": method_id,
         "inputs": [
             {**entry, "source_id": item.source_id, "media_type": item.media_type}
             for entry, item in zip(_input_manifest(inputs), inputs)
         ],
         "parameters": parameters or {},
+        "arguments": arguments or {},
         "resources": resources or {},
         "representation_profile": representation_profile,
         "representation_options": representation_options or {},

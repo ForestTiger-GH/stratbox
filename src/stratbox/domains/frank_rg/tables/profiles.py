@@ -11,7 +11,7 @@ from ..publications.catalog import all_sources, source
 @dataclass(frozen=True, slots=True)
 class ProfileAvailability:
     source_id: str
-    technical_profile: str = "frg.workbook.cells.v1"
+    technical_profile: str = "frg.workbook.cells"
     semantic_state: str = "supplied_profile_required"
     required_evidence: tuple[str, ...] = (
         "original_identity", "cell_coordinates", "subject", "metric_definition_version",

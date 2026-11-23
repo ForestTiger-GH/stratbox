@@ -1,0 +1,55 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.calculate_changes",
+    "request_type": "stratbox.domains.cbr.analytics.service_network.changes:OfficeChangesRequest",
+    "value_type": "stratbox.domains.cbr.analytics.service_network.changes:OfficeChanges",
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "baseline",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "role": "integrated"
+          }
+        },
+        {
+          "name": "candidate",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "changes",
+          "contract": {
+            "schema_id": "cbr.service_network.changes"
+          },
+          "path": ""
+        },
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "role": "integrated"
+          }
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Calculate count differences on comparable cells and report unmatched coverage; no individual closure inference."
+    },
+    "method_id": "cbr-office-count-changes"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:calculate_changes"
+  },
+  "schema": "stratbox.operation"
+}

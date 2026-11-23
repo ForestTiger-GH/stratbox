@@ -10,7 +10,7 @@ def extract_workbook_value(original: IdentifiedOriginal, *, budget=None) -> Work
     if not isinstance(original, IdentifiedOriginal) or original.format != "xlsx":
         raise ValueError("cbr.workbook.original_required")
     item = source(original.asset.series_id)
-    if "xlsx" not in item.formats or item.extraction_profile != "cbr.workbook.flake.v1":
+    if "xlsx" not in item.formats or item.extraction_profile != "cbr.workbook.flake":
         raise ValueError("cbr.workbook.series_format_mismatch")
     workbook = read_workbook_cells(original.payload.data, budget=budget)
     receipt = UsedInputReceipt("original", workbook.identity, original.payload.media_type, "inline", item.series_id)

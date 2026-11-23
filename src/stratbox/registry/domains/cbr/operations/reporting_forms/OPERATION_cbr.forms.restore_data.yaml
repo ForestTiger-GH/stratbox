@@ -1,0 +1,41 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.restore_data",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": "stratbox.domains.cbr.analytics.reporting_forms.contracts:FormData",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.forms.data",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate and restore the requested form result from a portable dataset snapshot.",
+      "function": "replay"
+    },
+    "method_id": "cbr-forms-restore-data"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:restore_data"
+  },
+  "schema": "stratbox.operation"
+}

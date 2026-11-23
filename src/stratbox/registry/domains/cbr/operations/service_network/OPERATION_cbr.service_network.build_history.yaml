@@ -1,0 +1,41 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.build_history",
+    "request_type": "stratbox.domains.cbr.tables.service_network.history:OfficeHistoryRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "releases",
+          "contract": {
+            "schema_id": "cbr.service_network.releases",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Pin selected office captures or source issues without treating history packing as alignment."
+    },
+    "method_id": "cbr-office-history"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:build_source_history"
+  },
+  "schema": "stratbox.operation"
+}

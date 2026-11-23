@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.conbud",
+  "series_id": "minfin.conbud.quarterly",
+  "title": "Квартальное исполнение консолидированного бюджета РФ и государственных внебюджетных фондов",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "minfin.conbud.quarterly.route",
+  "family_profile": "minfin.conbud.publication",
+  "position": 1,
+  "publication": {
+    "slot": "quarterly",
+    "periodicity": "quarterly",
+    "basis": "ytd",
+    "kind": "table"
+  }
+}

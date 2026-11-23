@@ -1,0 +1,87 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.capture_full",
+    "request_type": "stratbox.domains.fns.operations.contracts:CaptureFullRequest",
+    "value_type": "stratbox.domains.fns.operations.contracts:ProcessedRelease",
+    "required_capabilities": [
+      "http"
+    ],
+    "optional_capabilities": [
+      "archive_decoder"
+    ],
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract",
+        "integrate",
+        "view",
+        "render"
+      ],
+      "outputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "fns.1yur.original",
+            "role": "originals"
+          }
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "original"
+        },
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.1yur.reported_projection",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "fns.1yur.integrated_dataset",
+            "role": "integrated"
+          }
+        },
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.1yur.prepared_view",
+            "role": "products"
+          }
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation.bytes",
+            "role": "products"
+          }
+        }
+      ],
+      "parameters": [
+        "release",
+        "url",
+        "format"
+      ],
+      "summary": "Acquire the selected publication and return full flakes, projections, datasets, prepared views and rendered bytes.",
+      "composition": true
+    },
+    "method_id": "fns-1yur-capture-full"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:capture_full"
+  },
+  "schema": "stratbox.operation"
+}

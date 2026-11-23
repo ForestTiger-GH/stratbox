@@ -39,12 +39,12 @@ The [Windows AppDock manifest](https://github.com/ForestTiger-GH/stratbox-window
 
 ## 4. The smallest transport-neutral contract with enough semantics
 
-A curated operation may need a stable semantic ID and contract version; input and result schemas; source/format applicability; meaningful output types and units; effect class and target scope; expected duration/resource profile; idempotency, cancellation and partial outcomes; provenance/method references; owner, documentation, installed binding and compatibility. **Not every entry needs dozens of persisted fields on day one**, but absent effect data must never silently be interpreted as `read_only`.
+A curated operation uses a stable semantic ID and one canonical contract; input and result schemas; source/format applicability; meaningful output types and units; effect class and target scope; expected duration/resource profile; idempotency, cancellation and partial outcomes; provenance/method references; owner, documentation, installed binding and compatibility. **Not every entry needs dozens of persisted fields on day one**, but absent effect data must never silently be interpreted as `read_only`.
 
 Separate the **semantic definition** from the **execution binding**:
 
 ```text
-OperationDefinition: operation_id, contract_version, semantic IO,
+OperationDefinition: operation_id, method_id, semantic IO,
                      preconditions, effects, evidence, domain owner
 ExecutionBinding:   authorized concrete implementation revision,
                      trusted callable, input/output adapters,
@@ -309,4 +309,4 @@ The frozen Topic 06 consolidation Research, §17 (`#L1489-L1526`) lists **thirty
 
 ## Complete twenty-five machine adapter contract and adverse test intentions
 
-[Twenty-five source-independent machine adapter conformance vectors](../../ldd/capabilities/machine-operation-adapter-conformance.md) now separate direct-core equivalence, curated tool selection, schema validation, source-data missingness, stable contract versions, trusted execution binding, authorization and delegated prompt-injection boundaries, large result references, byte-effect idempotency, artifact staging, interrupted tasks and incompatible protocol editions. Every proposed case is `UNEXECUTED`, while current code facts and future hosted claims remain qualified independently.
+[Twenty-five source-independent machine adapter conformance vectors](../../ldd/capabilities/machine-operation-adapter-conformance.md) now separate direct-core equivalence, curated tool selection, schema validation, source-data missingness, canonical operation contracts, trusted execution binding, authorization and delegated prompt-injection boundaries, large result references, byte-effect idempotency, artifact staging, interrupted tasks and incompatible protocol editions. Every proposed case is `UNEXECUTED`, while current code facts and future hosted claims remain qualified independently.

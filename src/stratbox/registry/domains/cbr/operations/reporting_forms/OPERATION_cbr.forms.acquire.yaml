@@ -1,0 +1,46 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.acquire",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormKey",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.forms.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.forms"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "parameters": [
+        "code",
+        "as_of"
+      ],
+      "summary": "Acquire a selected official reporting form."
+    },
+    "method_id": "cbr-forms-source"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.acquisition:acquire"
+  },
+  "schema": "stratbox.operation"
+}

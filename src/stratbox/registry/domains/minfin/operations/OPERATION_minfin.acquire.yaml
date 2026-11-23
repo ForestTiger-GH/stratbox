@@ -1,0 +1,61 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.acquire",
+    "request_type": "stratbox.domains.minfin.publications.contracts:AcquireRequest",
+    "value_type": "stratbox.domains.minfin.publications.contracts:AcquiredAsset",
+    "required_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "minfin.asset"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "minfin.publisher_material",
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "qualifications": [
+            "source.minfin"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "source.payload"
+        }
+      ],
+      "parameters": [
+        "max_bytes",
+        "deadline_seconds"
+      ],
+      "summary": "Acquire one explicitly selected Minfin asset with publisher URL and file-envelope checks."
+    },
+    "method_id": "minfin-original-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:acquire"
+  },
+  "schema": "stratbox.operation"
+}

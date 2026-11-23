@@ -1,0 +1,43 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.prepare_view",
+    "request_type": "stratbox.domains.minfin.products.contracts:PrepareHeadlineViewRequest",
+    "value_type": "stratbox.shared.data.views:ObservationView",
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "input",
+          "contract": {
+            "schema_id": "minfin.headlines",
+            "role": "products"
+          },
+          "path": "summary"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "view_id",
+        "metric_ids"
+      ],
+      "summary": "Prepare admitted headline metrics and qualified comparisons for display."
+    },
+    "method_id": "minfin.prepare_view"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:prepare_view"
+  },
+  "schema": "stratbox.operation"
+}

@@ -32,12 +32,12 @@ class Consume:
     label: str = "value"
 
 
-PRODUCER = OperationDefinition("test.serialize", 1, "serialize-1", Produce, Representation,
+PRODUCER = OperationDefinition("test.serialize", "serialize-1", Produce, Representation,
     partial_allowed=True, processing=OperationSemantics(
         (ProcessingStage.RENDER,), outputs=(OutputPort("flake", CONTRACT,
             outcomes=frozenset({"succeeded", "partial"}), coverage=frozenset({"all_cells"})),),
         summary="Serialize a typed test extract."))
-CONSUMER = OperationDefinition("test.consume", 1, "consume-1", Consume, str,
+CONSUMER = OperationDefinition("test.consume", "consume-1", Consume, str,
     processing=OperationSemantics((ProcessingStage.CALCULATE,),
         inputs=(InputPort("source", CONTRACT, "representation", coverage=frozenset({"all_cells"})),),
         parameters=("label",), outputs=(OutputPort("text", DataContract("test.text", role=DataRole.PRODUCTS)),),
@@ -165,7 +165,7 @@ def test_request_binding_checks_semantics_before_consumer_execution(case, code):
 def test_storage_qualification_requires_actual_matching_effect():
     identity = ByteIdentity.of(b"original")
     material = MaterialReference("object.xlsx", "store", identity, "application/octet-stream")
-    definition = OperationDefinition("test.save", 1, "save-1", int, MaterialReference,
+    definition = OperationDefinition("test.save", "save-1", int, MaterialReference,
         possible_effects=frozenset({"storage.write"}), processing=OperationSemantics(
             (ProcessingStage.PRESERVE,), outputs=(OutputPort("material",
                 DataContract("source.material_reference", role=DataRole.ORIGINALS),
@@ -199,7 +199,7 @@ def test_paths_project_dataclass_fields_and_never_properties():
         def secret(self):
             pytest.fail("A property was evaluated")
 
-    definition = OperationDefinition("test.project", 1, "v1", int, Value,
+    definition = OperationDefinition("test.project", "v1", int, Value,
         processing=OperationSemantics((ProcessingStage.VIEW,), outputs=(
             OutputPort("value", DataContract("test.value"), "secret"),), summary="Project a value."))
     with pytest.raises(HandoffError, match="path_unavailable"):

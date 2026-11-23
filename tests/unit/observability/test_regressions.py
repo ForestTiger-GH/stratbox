@@ -41,7 +41,7 @@ TIME = datetime(2026, 11, 15, tzinfo=timezone.utc)
 
 
 def event(n, kind, invocation="run", *, code=None):
-    return ExecutionEvent(3, kind, invocation, "test.observed", 1, "method-1", n,
+    return ExecutionEvent(3, kind, invocation, "test.observed", "method-1", n,
                           TIME, Correlation(), diagnostic_code=code, outcome="succeeded" if kind == "operation.finished" else None)
 
 
@@ -55,7 +55,7 @@ def diagnostic(name="d1", payload=None):
 
 
 def run_test(sink=None):
-    definition = OperationDefinition("test.observed", 1, "method-1", str, str)
+    definition = OperationDefinition("test.observed", "method-1", str, str)
     def work(s, invocation):
         invocation.stage("parse")
         invocation.progress(1, 1)
@@ -63,8 +63,18 @@ def run_test(sink=None):
     return run(definition, "hello", work, context=ExecutionContext(sink=sink))
 
 
+def test_operation_records_preserve_method_identity_without_operation_editions():
+    finished = event(1, "operation.finished")
+    encoded = json.loads(finished.to_json())
+    assert encoded["method_id"] == "method-1"
+    assert "contract_version" not in encoded
+    assert "method_version" not in encoded
+    captured = record_from_execution_event(finished)
+    assert decode_records(encode_records((captured,))) == (captured,)
+
+
 def test_mapping_proxy_diagnostics_and_effects():
-    spec = OperationDefinition("test.observed", 1, "method-1", str, str, possible_effects=frozenset({"storage.write"}))
+    spec = OperationDefinition("test.observed", "method-1", str, str, possible_effects=frozenset({"storage.write"}))
     result = OperationResult(spec, "attempt1", "succeeded", "answer",
                              (Diagnostic("http.timeout"),), (),
                              (EffectReceipt("storage.write", "confirmed", effect_id="E1"),),
@@ -492,8 +502,7 @@ def test_corrupt_segment_never_exposes_good_prefix(tmp_path):
 
 def test_causal_alias_and_foreign_invocation_parent():
     parent = record(1, "operation.started", "inv_parent")
-    child_event = ExecutionEvent(3, "operation.started", "inv_child", "test.observed", 1,
-                                 "method-1", 1, TIME, Correlation(cause_event_id="inv_parent.1"))
+    child_event = ExecutionEvent(3, "operation.started", "inv_child", "test.observed", "method-1", 1, TIME, Correlation(cause_event_id="inv_parent.1"))
     child = record_from_execution_event(child_event)
     detail = inspect_causes((parent,child),child.record_id)
     assert {x.record_id for x in detail.roots} == {parent.record_id,child.record_id}
@@ -509,7 +518,7 @@ def test_duplicate_segments_are_deduplicated(tmp_path):
 
 
 def test_capture_comparison_never_reexecutes_business_code():
-    spec=OperationDefinition("test.comparison",1,"method-1",str,Comparison)
+    spec=OperationDefinition("test.comparison","method-1",str,Comparison)
     invocations=[]
     def business(request, invocation):
         invocations.append(request)
@@ -562,7 +571,7 @@ def test_file_event_sink_policy_filter_counts_as_seen_but_not_lost(tmp_path):
     store = LocalFileStore(str(tmp_path))
     writer = FileJournalWriter(store, "sink", writer_id="collector")
     collector = FileEventSink(BufferedFileJournal(writer), CapturePolicy(progress=False))
-    result = run(OperationDefinition("sample.file_sink", 1, "v1", str, str), "ok",
+    result = run(OperationDefinition("sample.file_sink", "v1", str, str), "ok",
                  lambda value, invocation: (invocation.stage("work"), invocation.progress(1, 1), value)[-1],
                  context=ExecutionContext(sink=collector))
     assert result.outcome == "succeeded"
@@ -579,7 +588,7 @@ def test_qualified_diagnostic_selection_preserves_truncated_unknowns():
         QualifiedSelection, select_records_qualified, RecordFilter,
     )
     from stratbox.core.execution import run, Completion
-    op = OperationDefinition("test.many_diagnostics", 1, "method-v1", int, int)
+    op = OperationDefinition("test.many_diagnostics", "method-v1", int, int)
     codes = tuple(f"domain.code_{i}" for i in range(500))
     result = run(op, 1, lambda req, inv: Completion(req, "failed", *codes))
     summary = record_from_result(result, occurred_at_utc=TIME)
@@ -596,7 +605,7 @@ def test_qualified_diagnostic_selection_preserves_truncated_unknowns():
 
 def test_diagnostic_statistics_separately_qualify_result_prefix_coverage():
     from stratbox.core.execution import run, Completion
-    op = OperationDefinition("test.stats_prefix", 1, "method-v1", int, int)
+    op = OperationDefinition("test.stats_prefix", "method-v1", int, int)
     result = run(op, 1, lambda req, inv: Completion(
         req, "failed", *(f"domain.issue_{i}" for i in range(500)),
     ))

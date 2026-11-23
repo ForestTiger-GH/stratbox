@@ -1,0 +1,51 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "observations.prepare_view",
+    "request_type": "stratbox.core.operations.processing.definitions:PrepareViewRequest",
+    "value_type": "stratbox.shared.data.views:ObservationView",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "observations.batch",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "view_id",
+        "metric_ids",
+        "period_kinds",
+        "subject_ids",
+        "coverage",
+        "qualifications"
+      ],
+      "summary": "Prepare an explicit observation selection preserving periods, missing states and provenance."
+    },
+    "method_id": "observations-prepare_view"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:prepare_view"
+  },
+  "schema": "stratbox.operation"
+}

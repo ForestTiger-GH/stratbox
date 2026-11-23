@@ -1,0 +1,45 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_representation",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ReadRepresentationRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:TableExtract",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "minfin.source_cells.json",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Read a retained exact extract representation without re-acquiring source material.",
+      "function": "replay"
+    },
+    "method_id": "minfin-extract-json"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:read_representation"
+  },
+  "schema": "stratbox.operation"
+}

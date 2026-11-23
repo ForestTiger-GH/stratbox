@@ -27,9 +27,9 @@ def test_cbr_is_one_registered_owner_with_functional_operation_references():
 
 def test_independent_series_keep_published_operation_contracts():
     refs = domain_catalog().list_refs()
-    identities = {(r.operation_id, r.contract_version) for r in refs}
-    assert ("cbr.industries.0105a.parse", 3) in identities
-    assert ("cbr.industries.0104a.parse", 3) in identities
+    identities = {r.operation_id for r in refs}
+    assert "cbr.industries.0105a.parse" in identities
+    assert "cbr.industries.0104a.parse" in identities
     assert debt_0105a.PARSE.operation_id == "cbr.industries.0105a.parse"
     assert issuance_0104.PARSE.operation_id == "cbr.industries.0104a.parse"
 

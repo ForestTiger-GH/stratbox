@@ -1,0 +1,43 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.tables.validate",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:FlakeRequest",
+    "value_type": "stratbox.domains.cbr.tables.statistics.contracts:WorkbookValidation",
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "validation",
+          "contract": {
+            "schema_id": "cbr.workbook.validation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate source editions, unknown sheets and missing formula caches with explicit diagnostics."
+    },
+    "method_id": "cbr-tables-validate"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:validate"
+  },
+  "schema": "stratbox.operation"
+}

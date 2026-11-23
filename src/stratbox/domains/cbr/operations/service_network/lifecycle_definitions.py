@@ -12,10 +12,10 @@ from stratbox.domains.cbr.integration.service_network.contracts import AlignOffi
 from stratbox.domains.cbr.analytics.service_network.changes import OfficeChangesRequest, OfficeChanges
 from stratbox.domains.cbr.products.service_network.views import OfficeViewRequest, RenderOfficeViewRequest
 
-READABLE = _registry_definition('cbr.service_network.make_readable', 1)
-HISTORY = _registry_definition('cbr.service_network.build_history', 1)
-RESTORE_HISTORY = _registry_definition('cbr.service_network.restore_history', 1)
-ALIGN = _registry_definition('cbr.service_network.align', 1)
-CHANGES = _registry_definition('cbr.service_network.calculate_changes', 1)
-VIEW = _registry_definition('cbr.service_network.build_view', 1)
-RENDER = _registry_definition('cbr.service_network.render', 1)
+READABLE = _registry_definition('cbr.service_network.make_readable')
+HISTORY = _registry_definition('cbr.service_network.build_history')
+RESTORE_HISTORY = _registry_definition('cbr.service_network.restore_history')
+ALIGN = _registry_definition('cbr.service_network.align')
+CHANGES = _registry_definition('cbr.service_network.calculate_changes')
+VIEW = _registry_definition('cbr.service_network.build_view')
+RENDER = _registry_definition('cbr.service_network.render')

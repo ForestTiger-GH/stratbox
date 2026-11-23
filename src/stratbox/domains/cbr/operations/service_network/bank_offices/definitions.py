@@ -20,16 +20,16 @@ DATASET = "cbr.offices"
 METHOD = "cbr-offices-html-1"
 
 
-PARSE = _registry_definition('cbr.offices.parse', 1)
+PARSE = _registry_definition('cbr.offices.parse')
 
-ACQUIRE = _registry_definition('cbr.offices.acquire', 2)
+ACQUIRE = _registry_definition('cbr.offices.acquire')
 
-CAPTURE = _registry_definition('cbr.offices.capture', 2)
+CAPTURE = _registry_definition('cbr.offices.capture')
 
-READ = _registry_definition('cbr.offices.read_representation', 2)
+READ = _registry_definition('cbr.offices.read_representation')
 
-COMPARE = _registry_definition('cbr.offices.compare', 2)
+COMPARE = _registry_definition('cbr.offices.compare')
 
-SNAPSHOT = _registry_definition('cbr.offices.snapshot', 1)
+SNAPSHOT = _registry_definition('cbr.offices.snapshot')
 
-RESTORE = _registry_definition('cbr.offices.restore', 1)
+RESTORE = _registry_definition('cbr.offices.restore')

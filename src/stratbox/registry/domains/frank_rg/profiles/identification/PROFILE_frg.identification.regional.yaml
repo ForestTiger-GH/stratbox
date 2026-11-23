@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.identification.regional",
+  "declaration": {
+    "formats": [
+      "xls",
+      "xlsb",
+      "xlsm",
+      "xlsx"
+    ],
+    "kind": "identification",
+    "profile_id": "frg.identification.regional",
+    "scope": ""
+  }
+}

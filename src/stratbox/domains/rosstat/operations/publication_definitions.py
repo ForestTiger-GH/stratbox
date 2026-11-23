@@ -24,8 +24,8 @@ _WRITE = frozenset({"storage.write"})
 
 _LIMIT = 256 * 1024 * 1024
 
-DISCOVER = _registry_definition('rosstat.publications.discover', 1)
+DISCOVER = _registry_definition('rosstat.publications.discover')
 
-ACQUIRE = _registry_definition('rosstat.publications.acquire', 1)
+ACQUIRE = _registry_definition('rosstat.publications.acquire')
 
-ACQUIRE_TO_STORE = _registry_definition('rosstat.publications.acquire_to_store', 1)
+ACQUIRE_TO_STORE = _registry_definition('rosstat.publications.acquire_to_store')

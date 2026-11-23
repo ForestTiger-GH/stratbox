@@ -1,0 +1,57 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.discover",
+    "request_type": "stratbox.domains.cbr.publications.contracts:DiscoverRequest",
+    "value_type": "stratbox.domains.cbr.publications.contracts:PublicationInventory",
+    "optional_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "material.payload"
+          },
+          "required": false,
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "role": "originals"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "cbr.publications.inventory"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "series_id",
+        "page_url",
+        "max_links"
+      ],
+      "summary": "Enumerate registered routes or matching publisher links with explicit unknown historical coverage."
+    },
+    "method_id": "cbr-publication-inventory"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:discover"
+  },
+  "schema": "stratbox.operation"
+}

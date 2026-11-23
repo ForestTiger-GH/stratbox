@@ -47,11 +47,11 @@ class QuerySnapshotRequest:
     expected_identity: ByteIdentity | None = None
 
 
-QUERY = _registry_definition('dataset.query_snapshot', 1)
+QUERY = _registry_definition('dataset.query_snapshot')
 
 
-READ = _registry_definition('dataset.read_snapshot', 1)
+READ = _registry_definition('dataset.read_snapshot')
 
-WRITE = _registry_definition('dataset.write_snapshot', 1)
+WRITE = _registry_definition('dataset.write_snapshot')
 
-LIST = _registry_definition('dataset.list_versions', 1)
+LIST = _registry_definition('dataset.list_versions')

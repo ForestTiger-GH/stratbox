@@ -1,0 +1,31 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.list_sources",
+    "request_type": "stratbox.domains.cbr.publications.contracts:ListSourcesRequest",
+    "value_type": "builtins:tuple",
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "outputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.publications.series"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "family_id"
+      ],
+      "summary": "List logical publication families and processing profiles independently of acquisition routes."
+    },
+    "method_id": "cbr-publication-registry"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:list_sources"
+  },
+  "schema": "stratbox.operation"
+}

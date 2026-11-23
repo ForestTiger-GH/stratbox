@@ -14,13 +14,12 @@ def _obj(properties, required):
             "properties": properties, "required": list(required)}
 
 
-def wire_schemas(operation_id: str, contract_version: int, *, catalog):
-    definition = catalog.get(operation_id, contract_version)
-    codec = catalog.wire_contract(operation_id, contract_version)
+def wire_schemas(operation_id: str, *, catalog):
+    definition = catalog.get(operation_id)
+    codec = catalog.wire_contract(operation_id)
     if codec is None:
         raise WireRequestError("operation.wire_unavailable")
-    identity = {"operation_id": {"const": operation_id},
-                "contract_version": {"const": contract_version}}
+    identity = {"operation_id": {"const": operation_id}}
     request = {"$schema": SCHEMA, **_obj(
         {**identity, "input": _obj(codec.input_fields, codec.required_fields)},
         (*identity, "input"),
@@ -29,7 +28,7 @@ def wire_schemas(operation_id: str, contract_version: int, *, catalog):
     nullable_string = {"type": ["string", "null"]}
     fields = {
         **identity,
-        "method_version": {"const": definition.method_version},
+        "method_id": {"const": definition.method_id},
         "outcome": {"enum": ["succeeded", "partial", "failed", "cancelled", "unknown"]},
         "value": {"anyOf": [_obj(codec.output_fields, codec.output_fields), {"type": "null"}]},
         "diagnostics": {"type": "array", "items": _obj(

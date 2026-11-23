@@ -1,0 +1,37 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.readable_artifact",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.materials:MaterialArtifact",
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Package source-readable evidence and lineage for the selected material store."
+    },
+    "method_id": "fns-sme-readable-artifact"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:readable_artifact"
+  },
+  "schema": "stratbox.operation"
+}

@@ -21,8 +21,7 @@ OPERATION_FINISHED = RecordDataSchema("execution", "operation.finished", 1, (
     FieldRule("kind", ValueRule("token", choices=("operation.finished",))),
     FieldRule("invocation_id", TOKEN, classification="restricted"),
     FieldRule("operation_id", TOKEN, classification="public"),
-    FieldRule("contract_version", ValueRule("integer", minimum=1)),
-    FieldRule("method_version", TOKEN),
+    FieldRule("method_id", TOKEN),
     FieldRule("sequence", ValueRule("integer", minimum=1)),
     FieldRule("occurred_at_utc", ValueRule("text", max_length=40)),
     FieldRule("correlation", ValueRule("object", fields=tuple(

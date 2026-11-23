@@ -1,0 +1,48 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.apply_cleanup",
+    "request_type": "stratbox.domains.frank_rg.publications.cleanup:ApplyCleanupRequest",
+    "value_type": "builtins:tuple",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "possible_effects": [
+      "storage.copy",
+      "storage.remove",
+      "storage.rename"
+    ],
+    "partial_allowed": true,
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.cleanup_plan"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "receipts",
+          "contract": {
+            "schema_id": "frg.cleanup_receipts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "authorized_directory",
+        "expected_sha256"
+      ],
+      "summary": "Apply explicitly authorized cleanup effects with per-action receipts.",
+      "function": "maintain"
+    },
+    "method_id": "frg-conditional-cleanup-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:apply_cleanup"
+  },
+  "schema": "stratbox.operation"
+}

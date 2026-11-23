@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.family",
+  "owner_id": "fns",
+  "profile_id": "fns.legal_entities.publication",
+  "declaration": {
+    "family_id": "fns.legal_entities",
+    "coverage": "All admitted workbook members and cells precede the reviewed Part I projection; non-workbook members remain explicit inventory entries.",
+    "projections": [
+      "part_i_reported_fields",
+      "regional_identity_csv"
+    ],
+    "mapping_epochs": [
+      "A",
+      "B",
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "semantics": "Historical aliases copy reported values only. Unmapped categories, incomplete sheets and uncertain flow periods remain explicit qualifications."
+  }
+}

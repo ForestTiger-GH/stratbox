@@ -1,13 +1,10 @@
 """Domain wrappers around independent observation, calculation and view stages."""
-from dataclasses import asdict, is_dataclass
 
-from stratbox.core.execution import OperationFailure, run
+from stratbox.core.execution import OperationFailure, run, values
 from stratbox.shared.data.observations import ObservationBatch
 from stratbox.shared.data.observation_snapshots import observation_snapshot, observations_from_snapshot
 from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.data.views import ObservationView, view_snapshot, view_from_snapshot, render_observation_view
-from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from ..integration.observations import integrate as integrate_rows
 from ..analytics.snapshots import summary_snapshot as encode_summary, summary_from_snapshot
 from ..products.views import prepare_view as prepare_headline_view
@@ -15,26 +12,12 @@ from . import pipeline_definitions as D
 from .lineage import use_flake
 
 
-def _identity(value):
+def _snapshot(value, invocation):
     from ..documents.contracts import PublisherDocument
     if isinstance(value, PublisherDocument):
         from ..documents.snapshots import snapshot_document
-        return snapshot_document(value).identity
-    if isinstance(value, ObservationBatch):
-        return observation_snapshot(value).identity
-    if isinstance(value, ObservationView):
-        return view_snapshot(value).identity
-    if hasattr(value, "identity"):
-        return value.identity
-    return ByteIdentity.of(canonical_manifest_bytes(asdict(value)))
-
-
-def _parameters(value):
-    if is_dataclass(value):
-        return asdict(value)
-    if isinstance(value, tuple):
-        return tuple(_parameters(item) for item in value)
-    return value
+        return snapshot_document(value)
+    return None
 
 
 def _execute(definition, request, build, *, context=None, with_invocation=False):
@@ -43,21 +26,13 @@ def _execute(definition, request, build, *, context=None, with_invocation=False)
             for name in ("snapshot", "batch", "view", "summary", "document", "payload"):
                 if hasattr(req, name):
                     material = getattr(req, name)
-                    identity = _identity(material)
-                    invocation.use(UsedInputReceipt(name, identity, "application/json", "inline"))
-                    size = identity.size + (sum(t.identity.size for _, t in material.tables)
-                                            if isinstance(material, DatasetSnapshot) else 0)
-                    invocation.budget.charge("input_bytes", size)
+                    values.use_value(material, invocation, name, snapshot_factory=_snapshot,
+                                     charge_cells=False)
             if hasattr(req, "flake"):
                 use_flake(invocation, req.flake)
             result = build(req, invocation) if with_invocation else build(req)
-            identity = _identity(result)
-            if isinstance(result, DatasetSnapshot):
-                for name, table in result.tables:
-                    invocation.account_output(table.identity, key="table:" + name)
-            invocation.account_output(identity)
-            invocation.record(identity, parameters={name: _parameters(getattr(req, name))
-                for name in definition.processing.parameters})
+            values.record_value(result, req, definition, invocation, snapshot_factory=_snapshot,
+                                table_prefix="table:", charge_cells=False)
             return result
         except (ValueError, TypeError, KeyError) as error:
             code = str(error)

@@ -1,0 +1,51 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.acquire",
+    "request_type": "stratbox.domains.cbr.publications.corporate_lending.contracts:Cbr0105ADebtCorpSourceLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.source"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.cbr.industries.0105a"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "summary": "Acquire a selected industry workbook under its own publication contract."
+    },
+    "method_id": "cbr-0105a-source"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:acquire"
+  },
+  "schema": "stratbox.operation"
+}

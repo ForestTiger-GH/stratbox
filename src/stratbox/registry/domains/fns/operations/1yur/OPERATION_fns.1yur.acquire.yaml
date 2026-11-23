@@ -1,0 +1,46 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.acquire",
+    "request_type": "stratbox.shared.data.releases:ReleaseLink",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.1yur.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.fns.1yur"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "url"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence."
+    },
+    "method_id": "fns-1yur-part-i"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:acquire"
+  },
+  "schema": "stratbox.operation"
+}

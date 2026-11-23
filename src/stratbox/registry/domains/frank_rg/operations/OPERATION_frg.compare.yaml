@@ -1,0 +1,44 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.compare",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:CompareExtractRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookComparison",
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "workbook.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Compare physical cell evidence without assigning economic meaning."
+    },
+    "method_id": "frg.compare"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:compare"
+  },
+  "schema": "stratbox.operation"
+}

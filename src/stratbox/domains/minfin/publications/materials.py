@@ -58,7 +58,7 @@ def read_document(req: ReadableRequest, invocation):
     document = extract_document(req.payload, series_id=source_id,
         issue_id=publication.issue_id if publication is not None else "unidentified",
         asset_id=publication.asset_id if publication is not None else "supplied",
-        profile_id="minfin.document.blocks.v1", budget=invocation.budget, checkpoint=invocation.check_cancelled,
+        profile_id="minfin.document.blocks", budget=invocation.budget, checkpoint=invocation.check_cancelled,
         max_pages=req.max_pages)
     if document.format != req.format:
         raise ValueError("minfin.document_format_mismatch")

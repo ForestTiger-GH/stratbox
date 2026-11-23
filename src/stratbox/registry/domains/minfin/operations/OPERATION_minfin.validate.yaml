@@ -1,0 +1,44 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.validate",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ValidateRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:Validation",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "validation",
+          "contract": {
+            "schema_id": "minfin.structural_validation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate source-cell geometry and report structural coverage, never economic correctness."
+    },
+    "method_id": "minfin-structure"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:validate"
+  },
+  "schema": "stratbox.operation"
+}

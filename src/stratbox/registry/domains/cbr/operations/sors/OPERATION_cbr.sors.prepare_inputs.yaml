@@ -1,0 +1,401 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.prepare_inputs",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:PrepareSorsRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts:SorsSourceBundle",
+    "limits": {
+      "output_bytes": 268435456,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.sors.source_observations",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "bundle",
+          "contract": {
+            "schema_id": "cbr.sors.source_bundle",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "config"
+      ],
+      "summary": "Align retained source observations and the regional industry flake into a qualified SORS input bundle."
+    },
+    "method_id": "sors-source-bundle"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:prepare_inputs"
+  },
+  "schema": "stratbox.operation",
+  "source_requirements": [
+    {
+      "input_name": "regional_traditional",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.debt_0105a"
+      ],
+      "role": "STRICT_REGIONAL_TOTALS_AND_CROSSWALK_LEGACY",
+      "group_id": "01_05_A",
+      "source_label": "01_05_A",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.industries.0105a.original",
+          "role": "originals"
+        },
+        {
+          "schema_id": "cbr.industries.0105a.parsed_file",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "national_traditional",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.corp_debt_a"
+      ],
+      "role": "STRICT_NATIONAL_TOTAL_AND_CROSSWALK_LEGACY",
+      "group_id": "01_02_A",
+      "source_label": "01_02_A",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "national_okved2",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.corp_debt_c"
+      ],
+      "role": "STRICT_NATIONAL_OKVED2",
+      "group_id": "01_02_C",
+      "source_label": "01_02_C",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "federal_district_okved2",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.fd_okved2"
+      ],
+      "role": "STRICT_FD_OKVED2",
+      "group_id": "01_03_C",
+      "source_label": "01_03_C",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_national_totals",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_debt"
+      ],
+      "role": "STRICT_NATIONAL_SME_TOTALS",
+      "group_id": "01_11",
+      "source_label": "01_11",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_national_okved2",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_debt_activity"
+      ],
+      "role": "STRICT_NATIONAL_OKVED2_SME",
+      "group_id": "01_11_F",
+      "source_label": "01_11_F",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_ie_national_okved2",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_ie_debt_activity"
+      ],
+      "role": "STRICT_NATIONAL_OKVED2_SME_IE",
+      "group_id": "01_11_I",
+      "source_label": "01_11_I",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_federal_district_okved2",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_fd_okved2"
+      ],
+      "role": "STRICT_FD_OKVED2_SME",
+      "group_id": "01_12_A",
+      "source_label": "01_12_A",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_regional_totals",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_debt_subj_f"
+      ],
+      "role": "STRICT_REGIONAL_TOTALS_SME",
+      "group_id": "01_13_F",
+      "source_label": "01_13_F",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "sme_ie_regional_totals",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.sme_debt_subj_i"
+      ],
+      "role": "STRICT_REGIONAL_TOTALS_SME_IE",
+      "group_id": "01_13_I",
+      "source_label": "01_13_I",
+      "required": true,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    },
+    {
+      "input_name": "regional_totals_history",
+      "port": "sources",
+      "source_ids": [
+        "cbr.corporate_lending.corp_debt_subj"
+      ],
+      "role": "OPTIONAL_VALIDATION_AND_HISTORY",
+      "group_id": "01_05_D",
+      "source_label": "01_05_D",
+      "required": false,
+      "minimum": 0,
+      "accepted_contracts": [
+        {
+          "schema_id": "source.payload",
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload"
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "role": "extracts"
+        }
+      ],
+      "compatibility": [
+        "report_date",
+        "publication_step"
+      ]
+    }
+  ]
+}

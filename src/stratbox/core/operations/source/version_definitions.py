@@ -125,4 +125,4 @@ class OriginalVersionComparison:
         return self.state in {"first_seen", "new_release", "new_asset", "revised"}
 
 
-COMPARE = _registry_definition('source.compare_original_versions', 1)
+COMPARE = _registry_definition('source.compare_original_versions')

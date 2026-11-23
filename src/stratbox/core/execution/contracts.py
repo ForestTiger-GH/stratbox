@@ -70,8 +70,7 @@ class RuntimeDependency:
 @dataclass(frozen=True, slots=True)
 class OperationDefinition:
     operation_id: str
-    contract_version: int
-    method_version: str
+    method_id: str
     request_type: type
     value_type: type | tuple[type, ...]
     required_capabilities: frozenset[str] = frozenset()
@@ -124,14 +123,12 @@ class OperationDefinition:
             )
         for token in (
             self.operation_id,
-            self.method_version,
+            self.method_id,
             *self.required_capabilities,
             *self.optional_capabilities,
             *self.possible_effects,
         ):
             safe_token(token)
-        if type(self.contract_version) is not int or self.contract_version < 1:
-            raise ValueError("Invalid operation contract version")
         if self.required_capabilities & self.optional_capabilities:
             raise ValueError("A capability role must be either required or optional")
         if self.processing is not None:
@@ -220,6 +217,8 @@ class ExecutionContext:
     incident_sink: IncidentSink | None = field(default=None, repr=False)
     input_computations: tuple[tuple[str, ComputationReceipt], ...] = ()
     input_receipts: tuple[UsedInputReceipt, ...] = ()
+    input_provenance: tuple[UsedInputReceipt, ...] = ()
+    input_transports: tuple[UsedInputReceipt, ...] = ()
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:
@@ -239,6 +238,17 @@ class ExecutionContext:
             not isinstance(item, UsedInputReceipt) for item in self.input_receipts
         ):
             raise ValueError("Invalid input receipt evidence")
+        if not isinstance(self.input_provenance, tuple) or any(
+            not isinstance(item, UsedInputReceipt) or item not in self.input_receipts
+            for item in self.input_provenance
+        ):
+            raise ValueError("Invalid input provenance evidence")
+        if not isinstance(self.input_transports, tuple) or any(
+            not isinstance(item, UsedInputReceipt) or item not in self.input_receipts
+            or item.version is not None
+            for item in self.input_transports
+        ):
+            raise ValueError("Invalid input transport evidence")
 
 
 @dataclass(frozen=True, slots=True)

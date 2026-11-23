@@ -1,0 +1,52 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.align",
+    "request_type": "stratbox.domains.cbr.integration.service_network.contracts:AlignOfficesRequest",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "role": "extracts"
+          },
+          "alternatives": [
+            {
+              "schema_id": "cbr.offices_reg.release",
+              "role": "extracts"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id",
+        "subjects",
+        "regions",
+        "metrics",
+        "require_geography"
+      ],
+      "summary": "Apply explicit bank, geography and metric mappings while preserving original identities and unresolved geography."
+    },
+    "method_id": "cbr-office-observations"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:align_offices"
+  },
+  "schema": "stratbox.operation"
+}

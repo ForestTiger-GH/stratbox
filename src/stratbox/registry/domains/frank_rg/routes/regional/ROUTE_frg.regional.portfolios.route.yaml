@@ -1,0 +1,20 @@
+{
+  "schema": "stratbox.route",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.regional.portfolios.route",
+  "profiles": [
+    "frg.directory",
+    "frg.identification.regional",
+    "frg.latest_period",
+    "frg.canonical",
+    "frg.workbook.cells"
+  ],
+  "qualifications": [
+    "No reviewed business-layout profile is claimed without retained publisher workbook fixtures.",
+    "Source names, snapshot labels and Q markers do not establish economic periods, units or reporting perimeters.",
+    "Calculations compare exact matching semantic keys; period growth and forecast models are not inferred."
+  ],
+  "groups": [
+    "frg.report_processing"
+  ]
+}

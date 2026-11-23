@@ -1,0 +1,36 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.inspect",
+    "request_type": "stratbox.domains.frank_rg.publications.contracts:InspectionRequest",
+    "value_type": "stratbox.domains.frank_rg.publications.contracts:Inventory",
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "frg.source_index"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "frg.inventory"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Identify report sources and periods using registered naming evidence without opening files."
+    },
+    "method_id": "frg.identification-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.handlers:inspect"
+  },
+  "schema": "stratbox.operation"
+}

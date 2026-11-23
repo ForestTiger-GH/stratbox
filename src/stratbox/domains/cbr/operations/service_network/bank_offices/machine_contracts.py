@@ -26,7 +26,6 @@ COVERAGE = {
 
 PARSE_CONTRACT = ReadOnlyWireContract(
     "cbr.offices.parse",
-    1,
     {"source_ref": REF, "expected_sha256": DIGEST, "capture_date": DAY, "official_as_of": DAY},
     ("source_ref", "capture_date"),
     {
@@ -41,7 +40,6 @@ PARSE_CONTRACT = ReadOnlyWireContract(
 
 COMPARE_CONTRACT = ReadOnlyWireContract(
     "cbr.offices.compare",
-    2,
     {"candidate_ref": REF, "baseline_ref": REF},
     ("candidate_ref",),
     {

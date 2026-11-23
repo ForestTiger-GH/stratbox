@@ -1,0 +1,51 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.restore",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": [
+      "stratbox.shared.data.releases:ParsedRelease",
+      "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:OfficesRegCandidates"
+    ],
+    "partial_allowed": true,
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "candidates",
+          "contract": {
+            "schema_id": "cbr.offices_reg.candidates"
+          },
+          "path": "",
+          "outcomes": [
+            "partial"
+          ]
+        }
+      ],
+      "summary": "Restore a full territorial release or its still-unresolved source block candidates.",
+      "function": "replay"
+    },
+    "method_id": "cbr-offices-reg-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.snapshots:restore_release"
+  },
+  "schema": "stratbox.operation"
+}

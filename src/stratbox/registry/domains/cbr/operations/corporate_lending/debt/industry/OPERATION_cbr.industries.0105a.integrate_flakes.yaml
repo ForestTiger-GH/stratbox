@@ -1,0 +1,54 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.integrate_flakes",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:IntegrateIndustryFlakesRequest",
+    "value_type": "stratbox.domains.cbr.integration.corporate_lending.debt.contracts:Cbr0105ADebtCorpStreamResult",
+    "partial_allowed": true,
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.parsed_files",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream_result",
+            "role": "integrated"
+          },
+          "path": ""
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "role": "integrated"
+          },
+          "path": "df_stream"
+        }
+      ],
+      "parameters": [
+        "expected_report_dates"
+      ],
+      "summary": "Integrate source-local flakes with explicit release selection and a pinned geography profile."
+    },
+    "method_id": "cbr-industry-integration"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.snapshot_operations:integrate_flakes"
+  },
+  "schema": "stratbox.operation"
+}

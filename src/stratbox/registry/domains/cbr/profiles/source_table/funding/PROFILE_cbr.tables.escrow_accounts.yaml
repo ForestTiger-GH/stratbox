@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.escrow_accounts",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.escrow_accounts",
+    "scope": "All worksheets and physical cells, including notes and unknown variants."
+  }
+}

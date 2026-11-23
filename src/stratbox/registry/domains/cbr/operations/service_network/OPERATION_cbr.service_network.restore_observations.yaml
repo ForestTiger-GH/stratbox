@@ -1,0 +1,37 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.service_network.restore_observations",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "cbr.service_network.observations",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Read a retained observation batch without repeating source extraction or semantic mapping.",
+      "function": "replay"
+    },
+    "method_id": "observation-snapshot-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.observation_operations:restore_observations"
+  },
+  "schema": "stratbox.operation"
+}

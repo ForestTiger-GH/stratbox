@@ -1,0 +1,18 @@
+{
+  "schema": "stratbox.route",
+  "owner_id": "minfin",
+  "profile_id": "minfin.nwf.preferred_shares.route",
+  "profiles": [
+    "minfin.nwf.publication_page",
+    "minfin.document_cards",
+    "minfin.nwf_assets.metadata.minfin.nwf.preferred_shares",
+    "minfin.document.blocks"
+  ],
+  "qualifications": [
+    "Historical document branch retains ordered blocks with explicit coverage; no automatic economic table interpretation.",
+    "Legacy DOC decoding is not supplied; exact source bytes remain retainable."
+  ],
+  "groups": [
+    "minfin.document_extract"
+  ]
+}

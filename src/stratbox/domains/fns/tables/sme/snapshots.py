@@ -19,7 +19,7 @@ _FIELDS = TableSchema(DataContract("fns.sme.json.fields", 1), (
 def flake_snapshot(value, *, dataset_id=None, version_id=None):
     if not isinstance(value, JsonFlake) or value.context.series_id != "fns.sme":
         raise ValueError("fns.sme.flake_invalid")
-    if value.profile_id != "fns.sme.full-json.v1":
+    if value.profile_id != "fns.sme.full-json":
         raise ValueError("fns.sme.flake_profile_unknown")
     fields = []
     for ordinal, record in enumerate(value.records):

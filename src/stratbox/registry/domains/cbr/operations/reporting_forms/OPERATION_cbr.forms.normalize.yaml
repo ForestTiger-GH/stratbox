@@ -1,0 +1,45 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.normalize",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:NormalizeFormRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormSnapshot",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.forms.snapshot",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "include_deleted"
+      ],
+      "summary": "Select a supported physical form table and apply explicit normalization to decoded flakes."
+    },
+    "method_id": "cbr-forms-source-projection"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:normalize_form"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,45 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.discover",
+    "request_type": "stratbox.domains.fns.operations.legal_entities.definitions:Discover1YurRequest",
+    "value_type": "stratbox.domains.fns.operations.legal_entities.definitions:ReleaseIndex",
+    "optional_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "fns.1yur.index_material",
+            "role": "originals"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "releases",
+          "contract": {
+            "schema_id": "fns.1yur.index"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "year",
+        "index_url"
+      ],
+      "summary": "Discover source issues with source-specific identity and coverage."
+    },
+    "method_id": "fns-1yur-index"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:discover"
+  },
+  "schema": "stratbox.operation"
+}

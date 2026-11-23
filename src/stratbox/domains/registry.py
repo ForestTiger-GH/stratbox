@@ -38,15 +38,15 @@ def operation_catalog() -> OperationCatalog:
     return build()
 
 
-def domain_registration_inventory() -> tuple[tuple[str, str, int], ...]:
-    """Return full owner/operation/version identities without loading handlers.
+def domain_registration_inventory() -> tuple[tuple[str, str], ...]:
+    """Return owner/operation identities without loading handlers.
 
     This view uses the same validated declarations as runtime discovery.
     It is suitable for source-to-wheel/sdist inventory comparisons.
     """
     registrations, _ = _validated_domain_snapshot()
     return tuple(sorted(
-        (owner, ref.operation_id, ref.contract_version)
+        (owner, ref.operation_id)
         for owner, declaration in registrations
         for ref in declaration.operations
     ))

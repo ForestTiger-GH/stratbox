@@ -21,37 +21,26 @@ def test_published_contracts_remain_discoverable_and_machine_admission_is_explic
     core_refs = set(core.references)
     assert domain_refs.isdisjoint(core_refs)
     assert domain_refs | core_refs == set(all_ops.references)
-    identities = {(ref.operation_id, ref.contract_version) for ref in all_ops.references}
+    identities = {ref.operation_id for ref in all_ops.references}
     assert len(identities) == len(all_ops.references)
-
-    baseline_path = Path(__file__).resolve().parents[2] / "fixtures" / "operation_contracts_0_14.json"
-    baseline = {tuple(item) for item in json.loads(baseline_path.read_text(encoding="utf-8"))}
-    # Contract upgrades publish the current version directly. The registry
-    # must retain discoverable operation responsibilities, not obsolete schemas.
-    current_versions = {}
-    for name, version in identities:
-        current_versions[name] = max(version, current_versions.get(name, 0))
-    # A renamed responsibility starts its own schema version sequence. These
-    # replacements are explicit; arbitrary removal still fails this gate.
+    baseline_path = Path(__file__).resolve().parents[2] / "fixtures" / "operation_ids.json"
+    baseline = set(json.loads(baseline_path.read_text(encoding="utf-8")))
     replacements = {
-        "cbr.sors.load_sources": ("cbr.sors.prepare_from_originals", 1),
-        "cbr.sors.render_workbook": ("cbr.sors.render_views", 1),
+        "cbr.sors.load_sources": "cbr.sors.prepare_from_originals",
+        "cbr.sors.render_workbook": "cbr.sors.render_views",
     }
-    expected = {replacements.get(name, (name, version)) for name, version in baseline}
-    missing = [(name, version) for name, version in expected if current_versions.get(name, 0) < version]
-    assert not missing, f"Operation responsibilities missing or regressed: {sorted(missing)}"
-    assert not set(replacements) & current_versions.keys()
-
-    admitted = {(ref.operation_id, ref.contract_version) for ref in all_ops.references if ref.wire_codec_ref}
-    assert {('cbr.offices.parse', 1), ('cbr.offices.compare', 2), ('frg.plan_cleanup', 1)} <= admitted
+    expected = {replacements.get(name, name) for name in baseline}
+    assert expected <= identities
+    assert not set(replacements) & identities
+    admitted = {ref.operation_id for ref in all_ops.references if ref.wire_codec_ref}
+    assert {'cbr.offices.parse', 'cbr.offices.compare', 'frg.plan_cleanup'} <= admitted
 
 
 def test_all_references_resolve_to_matching_definitions_and_handlers():
     catalog = operation_catalog()
     for ref in catalog.list_refs():
-        definition, handler, codec = catalog.resolve(ref.operation_id, ref.contract_version)
+        definition, handler, codec = catalog.resolve(ref.operation_id)
         assert definition.operation_id == ref.operation_id
-        assert definition.contract_version == ref.contract_version
         assert callable(handler)
         assert (codec is not None) == (ref.wire_codec_ref is not None)
     assert len(catalog.describe()) == len(catalog.references)
@@ -59,16 +48,16 @@ def test_all_references_resolve_to_matching_definitions_and_handlers():
 
 def test_invalid_registrations_fail_explicitly():
     ref = domain_catalog().references[0]
-    with pytest.raises(RegistryError, match='Duplicate operation contract'):
+    with pytest.raises(RegistryError, match='registry.duplicate_operation'):
         OperationCatalog((ref, ref))
-    with pytest.raises(RegistryError, match='registry.duplicate_contract'):
+    with pytest.raises(RegistryError, match='registry.duplicate_operation'):
         OperationRegistration('test', (ref, ref))
     wrong = replace(ref, operation_id='wrong.contract')
-    with pytest.raises(RegistryError, match='registry.contract_mismatch'):
-        OperationCatalog((wrong,)).get(wrong.operation_id, wrong.contract_version)
-    invalid_handler = replace(ref, handler_ref=ref.definition_ref)
+    with pytest.raises(RegistryError, match='registry.operation_unavailable'):
+        OperationCatalog((wrong,)).get(wrong.operation_id)
+    invalid_handler = replace(ref, handler_ref="stratbox.core.registry.resources:_KINDS")
     with pytest.raises(RegistryError, match='registry.invalid_handler'):
-        OperationCatalog((invalid_handler,)).resolve(ref.operation_id, ref.contract_version)
+        OperationCatalog((invalid_handler,)).resolve(ref.operation_id)
 
 
 def _synthetic_package(root: Path, owner: str, *, manifest: bool = True) -> None:
@@ -83,7 +72,7 @@ def _synthetic_package(root: Path, owner: str, *, manifest: bool = True) -> None
 
 def _synthetic_ref(owner: str, name: str) -> OperationRef:
     module = f"stratbox.domains.{owner}.operations"
-    return OperationRef(name, 1, f"{module}:DEFINITION", f"{module}:handle")
+    return OperationRef(name, f"{module}:handle")
 
 
 def _synthetic_catalog(monkeypatch, tmp_path, declarations):
@@ -204,16 +193,14 @@ def test_discovered_owner_contracts_are_complete_and_extensible():
     catalog = domain_catalog()
     rows = domain_registration_inventory()
     assert owners == tuple(sorted(owners))
-    assert set(owners) == {owner for owner, _, _ in rows}
+    assert set(owners) == {owner for owner, _ in rows}
     assert len(rows) == len(catalog.references)
     assert len(rows) == len(set(rows))
-    assert {(operation_id, version) for _, operation_id, version in rows} == {
-        (ref.operation_id, ref.contract_version) for ref in catalog.references
-    }
-    assert ("cbr", "cbr.industries.0105a.parse", 3) in rows
-    assert ("cbr", "cbr.industries.0104a.parse", 3) in rows
+    assert {operation_id for _, operation_id in rows} == {ref.operation_id for ref in catalog.references}
+    assert ("cbr", "cbr.industries.0105a.parse") in rows
+    assert ("cbr", "cbr.industries.0104a.parse") in rows
     assert {owner for owner in owners if owner == "cbr" or owner.startswith("cbr.")} == {"cbr"}
-    assert all(".registration:" not in ref.definition_ref for ref in catalog.references)
+    assert all(not hasattr(ref, "definition_ref") for ref in catalog.references)
 
 
 def test_invalid_intermediate_package_rejects_manifest(monkeypatch, tmp_path):
@@ -252,7 +239,7 @@ def test_empty_manifest_owner_is_rejected_in_favor_of_grouping_packages(monkeypa
         catalog()
 
 
-def test_logical_operation_identity_has_one_owner_across_versions(monkeypatch, tmp_path):
+def test_logical_operation_identity_has_one_owner(monkeypatch, tmp_path):
     first, second = "publisher.series_a", "publisher.series_b"
     catalog = _synthetic_catalog(
         monkeypatch, tmp_path,
@@ -263,7 +250,6 @@ def test_logical_operation_identity_has_one_owner_across_versions(monkeypatch, t
             second: OperationRegistration(
                 second, (replace(
                     _synthetic_ref(second, "example.same_operation"),
-                    contract_version=2,
                 ),)
             ),
         },
@@ -288,5 +274,5 @@ def test_inventory_and_catalog_are_views_of_one_validated_snapshot(monkeypatch, 
     )
     assert catalog().list_refs() == (reference,)
     assert domain_registry.domain_registration_inventory() == (
-        (owner, "example.new_series", 1),
+        (owner, "example.new_series"),
     )

@@ -30,13 +30,13 @@ def _catalog():
 def _key(catalog, operation_id):
     matches = tuple(reference for reference in catalog.references if reference.operation_id == operation_id)
     if len(matches) != 1:
-        raise ValueError("cbr.binding.operation_missing" if not matches else "cbr.binding.operation_edition_ambiguous")
-    return OperationKey(matches[0].operation_id, matches[0].contract_version)
+        raise ValueError("cbr.binding.operation_missing" if not matches else "cbr.binding.operation_ambiguous")
+    return OperationKey(matches[0].operation_id)
 
 
 def _definition(catalog, operation_id, *, stage=None):
     key = _key(catalog, operation_id)
-    value = catalog.get(key.operation_id, key.contract_version)
+    value = catalog.get(key.operation_id)
     if value.processing is None or stage is not None and stage not in value.processing.stages:
         raise ValueError("cbr.binding.operation_stage_mismatch")
     return value
@@ -50,15 +50,13 @@ def processing_profile(profile_id, *, catalog=None):
     except ValueError:
         raise ValueError("cbr.profile.processing_unknown") from None
     selection = document["declaration"]
-    if set(selection) != {"profile_id", "operation_id", "formats", "scope", "contract_version"}:
+    if not {"profile_id", "operation_id", "formats", "scope"} <= set(selection):
         raise ValueError("cbr.profile.processing_unknown")
     operation_id, formats, scope = selection["operation_id"], tuple(selection["formats"]), selection["scope"]
     definition = _definition(catalog, operation_id, stage=ProcessingStage.EXTRACT)
-    if selection["contract_version"] != definition.contract_version:
-        raise ValueError("cbr.binding.processing_profile_version_mismatch")
     if not any(port.contract.role is DataRole.EXTRACTS for port in definition.processing.outputs):
         raise ValueError("cbr.binding.extraction_contract_invalid")
-    return ProcessingProfile(profile_id, operation_id, formats, scope, definition.contract_version)
+    return ProcessingProfile(profile_id, operation_id, formats, scope)
 
 
 def _models():
@@ -71,14 +69,14 @@ def _models():
 
 def _table_profile(item, primary):
     key = item.series_id.rsplit(".", 1)[1]
-    if item.extraction_profile == "cbr.workbook.flake.v1":
+    if item.extraction_profile == "cbr.workbook.flake":
         from stratbox.domains.cbr.tables.statistics.profiles import table_profile
         profile = table_profile(item.table_profile)
         if profile.series_id != item.series_id or profile.version != 1:
             raise ValueError("cbr.binding.table_series_mismatch")
         return profile
     version = 2 if item.family_id == "cbr.project_finance" else 1
-    if item.table_profile != f"cbr.tables.{key}.v{version}":
+    if item.table_profile != f"cbr.tables.{key}":
         raise ValueError("cbr.binding.table_profile_unknown")
     if item.family_id == "cbr.reporting_forms":
         variants = [TableVariant("members", r".*", "physical_members", None, "source_report_date",
@@ -109,7 +107,7 @@ def _table_profile(item, primary):
             "Reviewed 26-industry/96-geography layout with explicit selection; older or structurally different editions require admission.")]
     else:
         raise ValueError("cbr.binding.table_profile_unknown")
-    return SourceTableProfile(item.table_profile, item.series_id, version, primary.method_version, tuple(variants),
+    return SourceTableProfile(item.table_profile, item.series_id, version, primary.method_id, tuple(variants),
         "Reviewed source-local layout with complete admitted scope and explicit source limitations.",
         "Source identities remain distinct until an explicit reviewed mapping is supplied.")
 
@@ -131,21 +129,21 @@ def _operation_ids(item, catalog, *, original_only=False):
 def _bound_operation(catalog, operation_id, qualifications=()):
     op = _definition(catalog, operation_id)
     p = op.processing
-    return BoundOperation(_key(catalog, operation_id), op.method_version, p.stages, p.inputs, p.outputs,
+    return BoundOperation(_key(catalog, operation_id), op.method_id, p.stages, p.inputs, p.outputs,
                           p.parameters, p.summary, p.composition, qualifications)
 
 
 def _validate_semantic_profiles(item, catalog):
     family = item.family_id
     if item.normalization_profile is not None:
-        if family != "cbr.reporting_forms" or item.normalization_profile != item.series_id.replace("cbr.reporting_forms.", "cbr.forms.") + ".normalization.v1":
+        if family != "cbr.reporting_forms" or item.normalization_profile != item.series_id.replace("cbr.reporting_forms.", "cbr.forms.") + ".normalization":
             raise ValueError("cbr.binding.normalization_series_mismatch")
         processing_profile(item.normalization_profile, catalog=catalog)
-    expected = ("cbr.statistics.observations.v1" if item.extraction_profile == "cbr.workbook.flake.v1" else
-        "cbr.project_finance.alignment.v2" if family == "cbr.project_finance" else
-        "cbr.service_network.alignment.v1" if family == "cbr.service_network" else
-        "cbr.corporate_lending.alignment.v1" if family == "cbr.corporate_lending" else
-        "cbr.reporting_forms.alignment.v1" if family == "cbr.reporting_forms" and item.series_id.rsplit(".f", 1)[1] in _models() else None)
+    expected = ("cbr.statistics.observations" if item.extraction_profile == "cbr.workbook.flake" else
+        "cbr.project_finance.alignment" if family == "cbr.project_finance" else
+        "cbr.service_network.alignment" if family == "cbr.service_network" else
+        "cbr.corporate_lending.alignment" if family == "cbr.corporate_lending" else
+        "cbr.reporting_forms.alignment" if family == "cbr.reporting_forms" and item.series_id.rsplit(".f", 1)[1] in _models() else None)
     if item.integration_profile != expected:
         raise ValueError("cbr.binding.integration_scope_mismatch")
     if expected is None:
@@ -188,7 +186,7 @@ def _required_handoffs(item, operations, catalog, *, original_only):
     if original_only:
         return ()
     direct, collections = [], []
-    if item.extraction_profile == "cbr.workbook.flake.v1":
+    if item.extraction_profile == "cbr.workbook.flake":
         direct = [("cbr.publications.identify", "cbr.tables.extract"),
                   ("cbr.publications.acquire", "cbr.tables.extract"),
                   ("cbr.statistics.align", "cbr.statistics.build_view"),
@@ -269,7 +267,7 @@ def _stages(item, operations, *, original_only, catalog):
     result = []
     delegated = {}
     for stage in (ProcessingStage.PRESERVE, ProcessingStage.INGEST):
-        keys = tuple(OperationKey(binding.operation_id, binding.contract_version)
+        keys = tuple(OperationKey(binding.operation_id)
                      for binding in source_route(item.series_id).operations
                      if binding.state == "delegated" and
                      stage in _definition(catalog, binding.operation_id).processing.stages)
@@ -349,27 +347,27 @@ def bind_source(series_id, *, format=None, table_id=None, edition=None, catalog=
 def _profile_descriptions(item, table_profile, operations, catalog):
     primary = processing_profile(item.extraction_profile, catalog=catalog)
     extract_definition = _definition(catalog, primary.operation_id)
-    profiles = [BoundProfile(item.extraction_profile, "extraction", extract_definition.method_version,
+    profiles = [BoundProfile(item.extraction_profile, "extraction",
         (_key(catalog, primary.operation_id),), primary.formats, primary.scope),
-        BoundProfile(item.table_profile, "source_table", table_profile.edition,
+        BoundProfile(item.table_profile, "source_table",
         (_key(catalog, primary.operation_id),), primary.formats, table_profile.extraction_scope)]
     if item.normalization_profile:
         normalized = processing_profile(item.normalization_profile, catalog=catalog)
         definition = _definition(catalog, normalized.operation_id)
-        profiles.append(BoundProfile(normalized.profile_id, "source_projection", definition.method_version,
+        profiles.append(BoundProfile(normalized.profile_id, "source_projection",
             (_key(catalog, normalized.operation_id),), normalized.formats, normalized.scope))
         from stratbox.domains.cbr.analytics.reporting_forms.registry import MODEL_REGISTRY
         from stratbox.domains.cbr.tables.reporting_forms.layouts.registry import LAYOUT_REGISTRY
         code = item.series_id.rsplit(".f", 1)[1]
         model, layout = MODEL_REGISTRY[code], LAYOUT_REGISTRY[code]
-        profiles.append(BoundProfile(model.edition, "financial_model", model.edition,
+        profiles.append(BoundProfile(f"cbr.forms.model.{code}", "financial_model",
             tuple(_key(catalog, name) for name in ("cbr.forms.prepare_model_inputs", "cbr.forms.calculate", "cbr.forms.build_data")), primary.formats,
             f"Form {code} model with reviewed layout {layout.edition}; all admitted subjects or an explicit bank selection."))
     for name, kind, stage in ((item.integration_profile, "integration", ProcessingStage.INTEGRATE),
                               (item.product_profile, "product", ProcessingStage.VIEW)):
         if name:
             selected = tuple(operation.key for operation in operations if stage in operation.stages and not operation.composition)
-            profiles.append(BoundProfile(name, kind, name, selected, primary.formats,
+            profiles.append(BoundProfile(name, kind, selected, primary.formats,
                 table_profile.integration_scope if kind == "integration" else "Prepared selections can be retained and rendered independently of source parsing."))
     return tuple(profiles)
 

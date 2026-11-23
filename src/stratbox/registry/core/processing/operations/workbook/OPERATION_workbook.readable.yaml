@@ -1,0 +1,43 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "workbook.readable",
+    "request_type": "stratbox.core.operations.processing.definitions:WorkbookRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "workbook.readable.jsonl",
+            "role": "readable"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render physical cell evidence as source-readable JSONL without assigning economic meaning."
+    },
+    "method_id": "workbook-readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:readable_workbook"
+  },
+  "schema": "stratbox.operation"
+}

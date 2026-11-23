@@ -109,7 +109,7 @@ def nwf_metrics(flake: FlakeTable, index: int, prior_index: int | None) -> tuple
 def summarize(request: SummaryRequest, profile: HeadlineProfile) -> HeadlineSummary:
     """Profile binding selects a calculation without family-ID switches."""
     flake = request.flake
-    expected_unit = "mixed" if profile.profile_id == "minfin.nwf_headlines.v1" else "billion_rub"
+    expected_unit = "mixed" if profile.profile_id == "minfin.nwf_headlines" else "billion_rub"
     if flake.unit_hint != expected_unit:
         raise ValueError("minfin.summary.unit_mismatch")
     if flake.value_basis not in profile.accepted_basis or flake.frequency not in profile.periods:

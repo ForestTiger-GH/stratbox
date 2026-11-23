@@ -1,0 +1,39 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.select",
+    "request_type": "stratbox.domains.frank_rg.publications.contracts:SelectionRequest",
+    "value_type": "builtins:tuple",
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "frg.inventory"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selections",
+          "contract": {
+            "schema_id": "frg.selections"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "selected_sources"
+      ],
+      "summary": "Select the latest report period per source and expose unresolved competing candidates."
+    },
+    "method_id": "frg.selection-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.handlers:select"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,49 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "workbook.extract",
+    "request_type": "stratbox.core.operations.processing.definitions:ExtractRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookExtract",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "series_id",
+        "issue_id",
+        "asset_id"
+      ],
+      "summary": "Extract all decoder-visible workbook cells with exact format-specific evidence."
+    },
+    "method_id": "workbook-extract"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:extract_workbook"
+  },
+  "schema": "stratbox.operation"
+}

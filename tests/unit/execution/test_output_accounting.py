@@ -10,7 +10,7 @@ from stratbox.shared.identity import ByteIdentity
 
 
 OUTPUT = OperationDefinition(
-    "test.output_accounting", 1, "m-1", bytes, Representation,
+    "test.output_accounting", "m-1", bytes, Representation,
     possible_effects=frozenset({"notification.handoff", "storage.write", "storage.remove"}),
     partial_allowed=True,
 )
@@ -204,7 +204,7 @@ def test_returned_output_supported_wrapper_is_checked_for_failed():
     class Wrapper:
         representation: Representation
     wrapper = Wrapper(Representation("table", 1, "text/csv", b"12345"))
-    operation = OperationDefinition("test.output_wrapper", 1, "method-1", bytes, Wrapper)
+    operation = OperationDefinition("test.output_wrapper", "method-1", bytes, Wrapper)
     result = run(operation, b"", lambda req, inv: Completion(wrapper, "failed", "domain.failed"),
                  context=ExecutionContext(budget=ExecutionBudget(output_bytes=3)))
     assert result.outcome == "failed" and result.value is None

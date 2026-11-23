@@ -114,12 +114,11 @@ def test_definition_must_admit_every_advertised_output_outcome():
     )
     with pytest.raises(ValueError, match="processing.partial_output_undeclared"):
         OperationDefinition(
-            "example.parse", 1, "method-1", str, str, processing=semantics
+            "example.parse", "method-1", str, str, processing=semantics
         )
     assert (
         OperationDefinition(
             "example.parse",
-            1,
             "method-1",
             str,
             str,

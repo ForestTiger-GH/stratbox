@@ -1,0 +1,41 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.plan_updates",
+    "request_type": "stratbox.domains.frank_rg.publications.contracts:UpdateRequest",
+    "value_type": "stratbox.domains.frank_rg.publications.contracts:UpdatePlan",
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "catalog",
+          "contract": {
+            "schema_id": "frg.catalog",
+            "version": 2
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.update_plan"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "checkpoints",
+        "force_refresh"
+      ],
+      "summary": "Plan file acquisition using caller checkpoints while keeping metadata observations distinct from byte identity."
+    },
+    "method_id": "frg.metadata-update-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.handlers:plan_updates"
+  },
+  "schema": "stratbox.operation"
+}

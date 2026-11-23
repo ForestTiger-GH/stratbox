@@ -1,7 +1,7 @@
 """Reviewed banking sector structure workbook variants and interpretation boundaries."""
 from stratbox.domains.cbr.tables.statistics.contracts import SourceTableProfile, TableVariant
 
-_DECLARATIONS = (('cbr.tables.obs_table_20s.v1',
+_DECLARATIONS = (('cbr.tables.obs_table_20s',
   'cbr.banking_sector_structure.obs_table_20s',
   (('table_1',
     'Активы\\ \\-\\ всего',

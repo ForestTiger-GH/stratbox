@@ -1,0 +1,55 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.capture",
+    "request_type": "stratbox.domains.minfin.operations.contracts:CaptureRequest",
+    "value_type": "stratbox.domains.minfin.operations.contracts:CaptureResult",
+    "required_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "minfin.asset"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "extracted"
+        }
+      ],
+      "parameters": [
+        "max_bytes",
+        "max_cells",
+        "member",
+        "selected_sheets"
+      ],
+      "summary": "Acquire and extract one selected table asset, returning both acquisition and extracted evidence.",
+      "composition": true
+    },
+    "method_id": "minfin-capture"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:capture"
+  },
+  "schema": "stratbox.operation"
+}

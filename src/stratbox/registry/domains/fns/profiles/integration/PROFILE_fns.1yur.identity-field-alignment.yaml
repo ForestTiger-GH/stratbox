@@ -1,0 +1,11 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "fns",
+  "profile_id": "fns.1yur.identity-field-alignment",
+  "declaration": {
+    "formats": [],
+    "kind": "integration",
+    "profile_id": "fns.1yur.identity-field-alignment",
+    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit."
+  }
+}

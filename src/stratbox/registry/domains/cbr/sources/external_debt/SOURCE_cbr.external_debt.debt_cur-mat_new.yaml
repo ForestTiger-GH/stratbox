@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.external_debt",
+  "series_id": "cbr.external_debt.debt_cur-mat_new",
+  "title": "External debt by currency and maturity",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.external_debt.debt_cur-mat_new.route",
+  "family_profile": null,
+  "position": 55,
+  "publication": {
+    "acquisition_profile": "cbr.route.debt_cur-mat_new",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.debt_cur-mat_new",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.render_flakes",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:RenderFormFlakesRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakeExport",
+    "partial_allowed": true,
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.forms.flake_files",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "prefix",
+        "include_member_originals"
+      ],
+      "summary": "Render all decoded physical DBF records to CSV with complete schema and member evidence for neutral packaging."
+    },
+    "method_id": "cbr-forms-csv-flakes"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:render_flakes"
+  },
+  "schema": "stratbox.operation"
+}

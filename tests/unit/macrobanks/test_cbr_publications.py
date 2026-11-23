@@ -67,7 +67,7 @@ def test_logical_registry_has_no_locations_and_unifies_collector_sources():
         for profile_id in (series.extraction_profile, series.normalization_profile):
             if profile_id is not None:
                 profile = processing_profile(profile_id)
-                definition, handler, _ = operations.resolve(profile.operation_id, profile.contract_version)
+                definition, handler, _ = operations.resolve(profile.operation_id)
                 assert definition.operation_id == profile.operation_id and callable(handler)
 
 
@@ -170,7 +170,7 @@ def test_fixed_source_binds_complete_workbook_extraction_and_rejects_empty_page_
     payload = SourcePayload(b'<a href="/vfs/statistics/BankSector/Loans_to_corporations/01_02_A_Debt_corp_by_activity.xlsx">file</a>')
     value = good(discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload)))
     assert value.assets[0].recognition == "registered_variant"
-    assert value.assets[0].extraction_profile == "cbr.workbook.flake.v1"
+    assert value.assets[0].extraction_profile == "cbr.workbook.flake"
     invalid = discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload, page_url=""))
     assert invalid.outcome == "failed" and invalid.diagnostics[0].code == "request.source_url_invalid"
 

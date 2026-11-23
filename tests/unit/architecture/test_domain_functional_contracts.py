@@ -8,8 +8,7 @@ from stratbox.domains.registry import domain_registration_inventory
 def test_semantic_namespaces_have_one_publisher_owner():
     operation_namespaces: dict[str, set[str]] = defaultdict(set)
     namespace_owner: dict[str, str] = {}
-    for owner, operation_id, version in domain_registration_inventory():
-        assert version >= 1
+    for owner, operation_id in domain_registration_inventory():
         namespace, separator, verb = operation_id.rpartition(".")
         assert separator and namespace and verb
         operation_namespaces[owner].add(namespace)
@@ -44,6 +43,6 @@ def test_registry_matches_its_physical_semantic_owners():
     from stratbox.domains._structure import discover_operation_owners
     from importlib import resources
 
-    registered = {owner for owner, _, _ in domain_registration_inventory()}
+    registered = {owner for owner, _ in domain_registration_inventory()}
     physical = set(discover_operation_owners(resources.files("stratbox.domains")))
     assert registered == physical

@@ -1,0 +1,18 @@
+{
+  "schema": "stratbox.family",
+  "owner_id": "minfin",
+  "profile_id": "minfin.conbud.publication",
+  "declaration": {
+    "schema": "stratbox.minfin.registry",
+    "family_id": "minfin.conbud",
+    "publisher_id": "minfin",
+    "title": "Исполнение консолидированного бюджета РФ",
+    "profiles": {
+      "acquisition": "minfin.conbud.publication_page",
+      "discovery": "minfin.document_cards",
+      "identification": "minfin.conbud_assets",
+      "table": "minfin.budget_table",
+      "metrics": "minfin.budget_headlines"
+    }
+  }
+}

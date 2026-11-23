@@ -54,7 +54,7 @@ def test_headline_unit_admission_and_durable_result_view_replay():
     replay = ok(minfin.read_summary(minfin.ReadSummaryRequest(retained)))
     assert replay == summary
     assert replay.publication == value.publication
-    assert replay.calculation_profile == "minfin.budget_headlines.v1"
+    assert replay.calculation_profile == "minfin.budget_headlines"
     assert replay.flake_identity is not None
     view = ok(minfin.prepare_view(minfin.PrepareHeadlineViewRequest(replay, "budget-headlines")))
     snapshot = ok(minfin.build_view_snapshot(minfin.ViewSnapshotRequest(view)))

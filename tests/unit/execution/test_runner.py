@@ -16,7 +16,7 @@ class Request:
     sensitive: str
 
 
-OP = OperationDefinition("test.calculate", 1, "test-calculation-1", Request, str)
+OP = OperationDefinition("test.calculate", "test-calculation-1", Request, str)
 
 
 def test_events_have_invocation_correlation_sequences_and_safe_diagnostics():

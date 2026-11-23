@@ -6,7 +6,7 @@ identity and analytical rules. HTTP, file and directory commands, and
 format primitives are reusable across domains.
 
 The table lists representative public operations. The machine catalog supplies
-the complete versioned surface. The [CBR route guide](cbr-data-pipeline.md)
+the complete operation surface. The [CBR route guide](cbr-data-pipeline.md)
 describes the supported persistence and replay boundaries. Python API paths below
 are relative to `stratbox`; the CBR operation owner is the single root `cbr`.
 
@@ -38,7 +38,8 @@ are relative to `stratbox`; the CBR operation owner is the single root `cbr`.
 | `core.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
 Every operation has a canonical `OPERATION_*.yaml` declaration under
-`stratbox/registry/<owner>/operations`. Source identities and processing routes
+`stratbox/registry/core/<area>/operations` or
+`stratbox/registry/domains/<publisher>/operations`. Source identities and processing routes
 have separate source/profile resources. `stratbox.core.registry` validates these
 records and assembles domain and neutral-core catalogs. Python handlers consume
 the same definitions. Publication families and implementation packages remain
@@ -67,7 +68,7 @@ See [shared contracts](shared-semantic-contracts.md),
 
 ## Execution and observations
 
-Operations return `OperationResult` with the definition and versions,
+Operations return `OperationResult` with the definition and method identity,
 invocation ID, outcome, diagnostics, inputs, effects and observability.
 A failed feasibility check can carry a diagnostic result. A partial result
 requires explicit support from the operation. An uncertain effect keeps its
@@ -163,7 +164,7 @@ fail with typed diagnostics; no implicit partial workbook is returned.
 
 For reproducible local timings without network I/O, run
 `python benchmarks/cbr_industries_history.py --debt-dir PATH --issuance-dir PATH`.
-The report includes source hashes, operation versions, timings, RSS and result hashes.
+The report includes source hashes, operation identities, timings, RSS and result hashes.
 
 
 ## SORS reproducibility

@@ -1,0 +1,51 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.capture",
+    "request_type": "stratbox.shared.data.releases:ReleaseLink",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "required_capabilities": [
+      "http"
+    ],
+    "optional_capabilities": [
+      "archive_decoder"
+    ],
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract",
+        "integrate",
+        "view",
+        "render"
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "fns.1yur.regional_release",
+            "role": "products"
+          },
+          "path": ""
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "fns.1yur.regional_csv",
+            "role": "products"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "url"
+      ],
+      "summary": "Acquire and compose the reviewed regional CSV subset; capture_full returns every processing boundary.",
+      "composition": true
+    },
+    "method_id": "fns-1yur-part-i"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:capture"
+  },
+  "schema": "stratbox.operation"
+}

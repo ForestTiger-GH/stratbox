@@ -1,0 +1,54 @@
+{
+  "owner_id": "core.notifications",
+  "definition": {
+    "operation_id": "notifications.deliver",
+    "request_type": "stratbox.core.notifications.dispatch.contracts:DeliverRequest",
+    "value_type": "stratbox.core.notifications.dispatch.contracts:DeliveryResult",
+    "possible_effects": [
+      "notification.handoff",
+      "notification.state_commit"
+    ],
+    "runtime_dependencies": [
+      {
+        "role": "notification_authority",
+        "phase": "scoped",
+        "owner": "notification_runtime"
+      },
+      {
+        "role": "notification_state",
+        "phase": "scoped",
+        "owner": "notification_runtime"
+      },
+      {
+        "role": "journal_source",
+        "phase": "conditional",
+        "owner": "notification_runtime"
+      },
+      {
+        "role": "notification",
+        "phase": "conditional",
+        "owner": "notification_runtime"
+      }
+    ],
+    "processing": {
+      "stages": [
+        "publish"
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "notifications.deliver.result"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Hand off an authorized notification intent and retain uncertain effects."
+    },
+    "method_id": "notification-handoff"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.notifications.operations:deliver"
+  },
+  "schema": "stratbox.operation"
+}

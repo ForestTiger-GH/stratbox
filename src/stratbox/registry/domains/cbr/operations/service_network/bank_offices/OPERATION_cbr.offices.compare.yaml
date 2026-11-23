@@ -1,0 +1,51 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.compare",
+    "request_type": "stratbox.shared.data.releases:CompareReleaseRequest",
+    "value_type": "stratbox.shared.data.comparison:Comparison",
+    "processing": {
+      "stages": [
+        "inspect",
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "candidate",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "baseline",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "role": "extracts"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "cbr.offices.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "baseline_state"
+      ],
+      "summary": "Compare compatible release layers and retain indeterminate assessments."
+    },
+    "method_id": "cbr-offices-compare"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:compare",
+    "wire_codec_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.machine:COMPARE_CODEC",
+    "wire_contract_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.machine_contracts:COMPARE_CONTRACT"
+  },
+  "schema": "stratbox.operation"
+}

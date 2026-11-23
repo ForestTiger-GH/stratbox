@@ -1,0 +1,44 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.tables.extract",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:ExtractWorkbookRequest",
+    "value_type": "stratbox.domains.cbr.tables.statistics.contracts:WorkbookFlake",
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "cbr.publication.original",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Extract every physical cell, formula and source note before statistical or model selection."
+    },
+    "method_id": "cbr-tables-extract"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:extract"
+  },
+  "schema": "stratbox.operation"
+}

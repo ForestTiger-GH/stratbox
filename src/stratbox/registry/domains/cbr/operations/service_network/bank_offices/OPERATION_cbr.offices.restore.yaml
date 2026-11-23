@@ -1,0 +1,37 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.restore",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore a complete qualified office release without assigning a new capture or observation date.",
+      "function": "replay"
+    },
+    "method_id": "cbr-offices-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.snapshots:restore_release"
+  },
+  "schema": "stratbox.operation"
+}

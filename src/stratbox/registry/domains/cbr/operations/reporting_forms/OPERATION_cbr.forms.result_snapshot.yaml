@@ -1,0 +1,55 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.result_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.reporting_forms.contracts:FormResultSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.forms.snapshot",
+            "role": "extracts"
+          },
+          "path": "value",
+          "alternatives": [
+            {
+              "schema_id": "cbr.forms.data",
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.forms.views",
+              "role": "products"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Preserve normalized rows, calculated data or prepared views with exact scalar types and computation lineage.",
+      "function": "encode"
+    },
+    "method_id": "cbr-forms-result-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:snapshot_result"
+  },
+  "schema": "stratbox.operation"
+}

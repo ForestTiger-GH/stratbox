@@ -136,8 +136,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
     if finished_event is not None:
         if (finished_event.kind != "operation.finished" or finished_event.invocation_id != result.invocation_id
                 or finished_event.operation_id != result.operation_id or finished_event.outcome != result.outcome
-                or finished_event.contract_version != result.definition.contract_version
-                or finished_event.method_version != result.definition.method_version
+                or finished_event.method_id != result.definition.method_id
                 or (correlation is not None and correlation != finished_event.correlation)):
             raise ValueError("Finish event does not match result")
         if occurred_at_utc is not None and occurred_at_utc != finished_event.occurred_at_utc:
@@ -166,8 +165,7 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
         if result.computation is not None else None
     )
     metadata = {
-        "contract_version": result.definition.contract_version,
-        "method_version": result.definition.method_version,
+        "method_id": result.definition.method_id,
         "time_basis": time_basis,
         "details_digest": digest,
         "details_digest_profile": "stratbox.result-details.v3",

@@ -256,7 +256,7 @@ def read_representation(
         )
         try:
             return _build(
-                req.as_of, req.payload.data, invocation, method=READ.method_version
+                req.as_of, req.payload.data, invocation, method=READ.method_id
             )
         except (SchemaError, ValueError) as error:
             raise source_failure(error) from None

@@ -1,0 +1,42 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.integrate",
+    "request_type": "stratbox.domains.frank_rg.integration.contracts:IntegrateRequest",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "frg.semantic_flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.batch",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "release_id"
+      ],
+      "summary": "Place admitted source-local observations in an explicitly named integrated dataset."
+    },
+    "method_id": "frg.integrate"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:integrate"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "rosstat",
+  "profile_id": "population_municipalities",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "discovery",
+    "profile_id": "population_municipalities",
+    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage."
+  }
+}

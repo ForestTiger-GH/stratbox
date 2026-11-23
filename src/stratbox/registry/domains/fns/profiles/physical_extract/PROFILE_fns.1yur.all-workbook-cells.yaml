@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "fns",
+  "profile_id": "fns.1yur.all-workbook-cells",
+  "declaration": {
+    "formats": [
+      "xls",
+      "xlsx",
+      "zip",
+      "rar"
+    ],
+    "kind": "physical_extract",
+    "profile_id": "fns.1yur.all-workbook-cells",
+    "scope": "Every JSON record/field or every admitted workbook member/cell precedes semantic projection."
+  }
+}

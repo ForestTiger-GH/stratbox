@@ -1,0 +1,59 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.parse",
+    "request_type": "stratbox.domains.fns.operations.legal_entities.definitions:Parse1YurRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "optional_capabilities": [
+      "archive_decoder"
+    ],
+    "processing": {
+      "stages": [
+        "extract",
+        "integrate",
+        "view",
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.1yur.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.fns.1yur"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "fns.1yur.regional_release",
+            "role": "products"
+          },
+          "path": ""
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "fns.1yur.regional_csv",
+            "role": "products"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Compose the explicit reviewed regional CSV product; complete source flakes use the independent extract route.",
+      "composition": true
+    },
+    "method_id": "fns-1yur-part-i"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:parse"
+  },
+  "schema": "stratbox.operation"
+}

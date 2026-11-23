@@ -1,0 +1,179 @@
+{
+  "owner_id": "frank_rg",
+  "stages": [
+    {
+      "stage": "preserve",
+      "state": "delegated",
+      "reason": "frg.original_storage_shared",
+      "operations": [
+        {
+          "operation_id": "source.save_original"
+        },
+        {
+          "operation_id": "source.read_original"
+        },
+        {
+          "operation_id": "dataset.write_snapshot"
+        },
+        {
+          "operation_id": "dataset.read_snapshot"
+        }
+      ],
+      "binding": "Pass acquired original bytes to neutral original storage; physical, semantic, integrated and view snapshots use the independent dataset adapter."
+    },
+    {
+      "stage": "ingest",
+      "state": "delegated",
+      "reason": "frg.dataset_storage_shared",
+      "operations": [
+        {
+          "operation_id": "dataset.write_snapshot"
+        }
+      ],
+      "binding": "Encode the selected physical, source-local, integrated, historical, calculated or prepared value and ingest its complete snapshot with the selected dataset adapter."
+    },
+    {
+      "stage": "publish",
+      "state": "missing",
+      "reason": "frg.delivery_owned_by_consumer",
+      "operations": [],
+      "binding": null
+    }
+  ],
+  "value_contexts": {
+    "types": {
+      "stratbox.domains.frank_rg.analytics.contracts.CalculateRequest": {
+        "issue": [
+          "release_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.frank_rg.integration.contracts.AlignRequest": {
+        "issue": [
+          "release_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.frank_rg.integration.contracts.HistoryRequest": {
+        "issue": [
+          "release_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.frank_rg.integration.contracts.IntegrateRequest": {
+        "issue": [
+          "release_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.frank_rg.publications.cleanup.CleanupAction": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.AcquiredReport": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.Asset": {
+        "group": [
+          "family_id"
+        ],
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.CaptureRequest": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.Catalog": {
+        "source": [
+          "selections.*.source_id"
+        ],
+        "group": [
+          "inventory.assets.*.family_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.Inventory": {
+        "group": [
+          "assets.*.family_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.MaterialAssessment": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.PreparedFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.Selection": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.SourceCheckpoint": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.SourceFamily": {
+        "group": [
+          "family_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.frank_rg.publications.contracts.SourceSeries": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.publications.contracts.UpdateDecision": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.tables.contracts.ExtractValidation": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.tables.contracts.SemanticFlake": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      },
+      "stratbox.domains.frank_rg.tables.contracts.SemanticProfile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.frank_rg.tables.profiles.ProfileAvailability": {
+        "source": [
+          "source_id"
+        ]
+      }
+    },
+    "tables": {
+      "frg.flake.metadata": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      }
+    }
+  }
+}

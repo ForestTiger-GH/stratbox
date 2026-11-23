@@ -1,0 +1,53 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.read_flake_export",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:ReadFormFlakeExportRequest",
+    "value_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakes",
+    "partial_allowed": true,
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "role": "extracts"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "files"
+      ],
+      "summary": "Validate a complete CSV, descriptor and member-original collection and resume without re-parsing DBF."
+    },
+    "method_id": "cbr-forms-csv-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:read_flake_export"
+  },
+  "schema": "stratbox.operation"
+}

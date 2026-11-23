@@ -155,3 +155,22 @@ def test_composed_history_exports_independent_original_flakes(family, tmp_path):
     assert reintegrated.evidence.parents == composed.evidence.parents
     assert reintegrated.evidence.inputs == tuple(
         item for item in composed.evidence.inputs if item.role.startswith("flake_"))
+
+
+@pytest.mark.parametrize("family", ["debt", "issuance"])
+def test_default_selection_has_the_same_atomic_and_nested_extraction_receipt(family):
+    if family == "debt":
+        domain = debt
+        source = debt.ParseIndustryRequest(SourcePayload(_workbook_bytes(
+            report_date="01.02.2019", kemerovo_name="Кемеровская область")),
+            "01_05_A_Debt_corp_20190201.xlsx")
+        request = debt.BuildIndustryStreamRequest((source,))
+    else:
+        domain = issuance
+        source = issuance.ParseIssuanceRequest(SourcePayload(issuance_workbook(date_text="Январь 2019")),
+            "01_04_A_New_loans_corp_20190201.xlsx")
+        request = issuance.BuildIssuanceStreamRequest((source,))
+    standalone = _ok(domain.parse(source))
+    composed = _ok(domain.build_stream(request))
+    assert composed.parsed_files[0].evidence == standalone.evidence
+    pd.testing.assert_frame_equal(composed.parsed_files[0].df_stream, standalone.df_stream)

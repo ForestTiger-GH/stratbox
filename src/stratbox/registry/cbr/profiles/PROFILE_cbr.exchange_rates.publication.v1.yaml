@@ -1,9 +1,0 @@
-{
-  "schema": "stratbox.publication.v1",
-  "owner_id": "cbr",
-  "profile_id": "cbr.exchange_rates.publication.v1",
-  "declaration": {
-    "schema_version": 1,
-    "family_id": "cbr.exchange_rates"
-  }
-}

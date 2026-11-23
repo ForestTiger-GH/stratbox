@@ -11,12 +11,12 @@ from ..analytics.contracts import HeadlineSummary, SummarySnapshotRequest, ReadS
 from ..products.contracts import PrepareHeadlineViewRequest, ViewSnapshotRequest, ReadViewRequest, RenderViewRequest
 
 
-INTEGRATE = _registry_definition('minfin.integrate', 1)
-OBSERVATION_SNAPSHOT = _registry_definition('minfin.observation_snapshot', 1)
-READ_OBSERVATIONS = _registry_definition('minfin.read_observations', 1)
-SUMMARY_SNAPSHOT = _registry_definition('minfin.summary_snapshot', 1)
-READ_SUMMARY = _registry_definition('minfin.read_summary', 1)
-PREPARE_VIEW = _registry_definition('minfin.prepare_view', 1)
-VIEW_SNAPSHOT = _registry_definition('minfin.view_snapshot', 1)
-READ_VIEW = _registry_definition('minfin.read_view', 1)
-RENDER_VIEW = _registry_definition('minfin.render_view', 1)
+INTEGRATE = _registry_definition('minfin.integrate')
+OBSERVATION_SNAPSHOT = _registry_definition('minfin.observation_snapshot')
+READ_OBSERVATIONS = _registry_definition('minfin.read_observations')
+SUMMARY_SNAPSHOT = _registry_definition('minfin.summary_snapshot')
+READ_SUMMARY = _registry_definition('minfin.read_summary')
+PREPARE_VIEW = _registry_definition('minfin.prepare_view')
+VIEW_SNAPSHOT = _registry_definition('minfin.view_snapshot')
+READ_VIEW = _registry_definition('minfin.read_view')
+RENDER_VIEW = _registry_definition('minfin.render_view')

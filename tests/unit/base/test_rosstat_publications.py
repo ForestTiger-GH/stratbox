@@ -204,7 +204,7 @@ def test_registered_discovery_and_acquisition_handlers():
     for name in ("rosstat.publications.discover",
                  "rosstat.publications.acquire",
                  "rosstat.publications.acquire_to_store"):
-        assert catalog.get(name, 1).operation_id == name
+        assert catalog.get(name).operation_id == name
 
 
 def test_owner_review_of_exact_http_page_can_create_scoped_inventory():

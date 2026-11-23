@@ -1,0 +1,93 @@
+{
+  "owner_id": "core.processing",
+  "stages": [],
+  "value_contexts": {
+    "types": {
+      "stratbox.shared.data.datasets.ComputationReceipt": {},
+      "stratbox.shared.data.datasets.DatasetVersion": {},
+      "stratbox.shared.data.documents.DocumentExtract": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "stratbox.shared.data.observations.ObservationBatch": {
+        "source": [
+          "observations.*.dimensions.@source_series"
+        ],
+        "issue": [
+          "release_id"
+        ]
+      },
+      "stratbox.shared.data.snapshots.SnapshotReference": {},
+      "stratbox.shared.data.workbooks.WorkbookExtract": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "stratbox.shared.evidence.AcquisitionReceipt": {},
+      "stratbox.shared.evidence.MaterialReference": {},
+      "stratbox.shared.evidence.SourcePayload": {},
+      "stratbox.shared.evidence.UsedInputReceipt": {},
+      "stratbox.shared.materials.MaterialArtifact": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "source_asset.issue_id"
+        ]
+      },
+      "stratbox.shared.source_publications.QualifiedAssetPresenceEvidence": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.shared.source_publications.QualifiedInventory": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.shared.source_publications.SourceAssetIdentity": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      }
+    },
+    "tables": {
+      "workbook.extract.metadata": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "document.extract.metadata": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "observations.batch.rows": {
+        "source": [
+          "dimensions.$json.@source_series"
+        ]
+      },
+      "observations.batch.metadata": {
+        "issue": [
+          "release_id"
+        ]
+      }
+    }
+  }
+}

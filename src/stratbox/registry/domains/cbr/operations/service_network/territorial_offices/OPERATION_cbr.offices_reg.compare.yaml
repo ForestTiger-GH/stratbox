@@ -1,0 +1,49 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.compare",
+    "request_type": "stratbox.shared.data.releases:CompareReleaseRequest",
+    "value_type": "stratbox.shared.data.comparison:Comparison",
+    "processing": {
+      "stages": [
+        "inspect",
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "candidate",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "baseline",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "role": "extracts"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "cbr.offices_reg.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "baseline_state"
+      ],
+      "summary": "Compare compatible release layers and retain indeterminate assessments."
+    },
+    "method_id": "cbr-offices-reg-compare"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:compare"
+  },
+  "schema": "stratbox.operation"
+}

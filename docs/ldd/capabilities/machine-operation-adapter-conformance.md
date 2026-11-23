@@ -6,7 +6,7 @@
 
 The analytical Python core owns business formulas and data/operation semantics. A **curated domain operation** differs from a helper import or implementation binding; a **machine catalog projection** differs from both an authorization grant and an executor; a **transport schema** differs from a rich internal typed `Request/Result`; an accepted **Run** differs from a published Artifact, successful external effect and agent Task. The executable binding must be resolved on the trusted side, not injected via handler strings supplied by a model. Remote clients should use stable resource references rather than server-local absolute paths.
 
-The proposed two-level machine discovery model can expose a small permission-filtered search/describe list and bounded callable operations without turning every internal Python function into a tool. A large table is represented by a typed `DatasetRef`, safe summary and authorized pagination, rather than serialized as a whole LLM prompt. Concrete catalog version, host API and transport choice still require Product admission.
+The proposed two-level machine discovery model can expose a small permission-filtered search/describe list and bounded callable operations without turning every internal Python function into a tool. A large table is represented by a typed `DatasetRef`, safe summary and authorized pagination, rather than serialized as a whole LLM prompt. Concrete host API and transport choice still require Product admission. Operation IDs resolve one canonical definition.
 
 ## Complete candidate negative and equivalence vector set
 
@@ -21,9 +21,9 @@ The proposed two-level machine discovery model can expose a small permission-fil
 | MAC-07 | Domain: large result projection | Domain operation returns a large DataFrame | Adapter returns bounded summary and typed DatasetRef, with separately authorized paging | `UNEXECUTED` |
 | MAC-08 | Domain: missingness | One publisher observation is unavailable while another observed value is exactly zero | Separate unavailable/unknown/observed-zero statuses and supporting source identity | `UNEXECUTED` |
 | MAC-09 | Domain: backend unavailable | Optional solver or source provider absent | Explicit binding_unavailable/resource_unavailable; no silent fallback to another method | `UNEXECUTED` |
-| MAC-10 | Catalog/revision: version collision | Same operation ID registered at distinct semantic contract versions | Resolver selects exact allowed revision or rejects; never mixes request/result signatures | `UNEXECUTED` |
+| MAC-10 | Catalog: duplicate identity | Same operation ID registered with conflicting definitions | Reject the duplicate; request/result signatures have one canonical owner | `UNEXECUTED` |
 | MAC-11 | Catalog/revision: principal-specific listing | Two principals have different allowed tool scopes | Deterministic, authorization-filtered catalog projections for each principal | `UNEXECUTED` |
-| MAC-12 | Trust/integration: stale invocation | Previously discovered tool is called after permission or provider state changes | New admission, version and availability checks before binding | `UNEXECUTED` |
+| MAC-12 | Trust/integration: stale invocation | Previously discovered tool is called after permission or provider state changes | New admission, input-contract and availability checks before binding | `UNEXECUTED` |
 | MAC-13 | Execution/effects: external timeout | Timeout after destructive write/delete may have started | Return outcome_unknown and require reconciliation, not automatic duplicate effect | `UNEXECUTED` |
 | MAC-14 | Execution/effects: idempotent replay | Identical invocation identifier with identical request digest is retried | Dedup policy maps to original logical Run/effect evidence when contract supports it | `UNEXECUTED` |
 | MAC-15 | Execution/effects: idempotency collision | Same invocation identifier with altered request payload digest | Explicit conflict, never a hidden second mutation | `UNEXECUTED` |

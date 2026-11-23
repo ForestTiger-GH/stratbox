@@ -1,0 +1,43 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.read_representation",
+    "request_type": "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:ReadOfficesRegRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices_reg.extract_representation",
+            "role": "extracts"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "source_details"
+      ],
+      "summary": "Read literal CSV; complete explicit source metadata is required to restore qualified observations."
+    },
+    "method_id": "cbr-offices-reg-csv-explicit-evidence"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:read_representation"
+  },
+  "schema": "stratbox.operation"
+}

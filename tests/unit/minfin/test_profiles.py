@@ -54,7 +54,7 @@ def test_all_root_registry_series_resolve_to_registered_typed_profiles():
 
 def test_registry_declares_only_source_identifiers_and_profile_refs():
     for content in publication_families("minfin", series_fields=(("source_id", "series_id"), ("title", "title"))):
-        assert content["schema"] == "stratbox.minfin.registry.v3"
+        assert content["schema"] == "stratbox.minfin.registry"
         assert set(content) == {"schema", "family_id", "publisher_id", "title", "profiles", "series"}
         assert all(set(item) == {"source_id", "slot", "title", "periodicity", "basis", "kind"}
                    for item in content["series"])
@@ -150,14 +150,14 @@ def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatc
     from stratbox.core.registry import resources as registry_resources, sources
     root = Path(str(registry_resources.registry_root()))
     copytree(root, tmp_path / "registry")
-    declaration_root = tmp_path / "registry" / "minfin"
-    profile = declaration_root / "profiles" / "PROFILE_minfin.fedbud.publication.v1.yaml"
+    declaration_root = tmp_path / "registry" / "domains" / "minfin"
+    profile = declaration_root / "families" / "fedbud" / "FAMILY_minfin.fedbud.publication.yaml"
     added = json.loads(profile.read_text())
-    added["profile_id"] = "minfin.future.publication.v1"
+    added["profile_id"] = "minfin.future.publication"
     added["declaration"]["family_id"] = "minfin.future"
     added["declaration"]["title"] = "Another logical family using a registered typed profile"
-    (profile.parent / "PROFILE_minfin.future.publication.v1.yaml").write_text(json.dumps(added))
-    for source in (declaration_root / "sources").glob("SOURCE_minfin.fedbud.*.yaml"):
+    (profile.parent / "FAMILY_minfin.future.publication.yaml").write_text(json.dumps(added))
+    for source in (declaration_root / "sources").rglob("SOURCE_minfin.fedbud.*.yaml"):
         value = json.loads(source.read_text())
         value["family_id"] = "minfin.future"
         value["series_id"] = value["series_id"].replace("minfin.fedbud", "minfin.future")

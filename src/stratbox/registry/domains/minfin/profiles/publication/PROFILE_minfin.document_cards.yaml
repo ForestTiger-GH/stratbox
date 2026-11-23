@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.document_cards",
+  "declaration": {
+    "formats": [
+      "html"
+    ],
+    "kind": "publication",
+    "profile_id": "minfin.document_cards",
+    "scope": "publisher document cards"
+  }
+}

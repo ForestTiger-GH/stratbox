@@ -1,0 +1,43 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.assess_updates",
+    "request_type": "stratbox.domains.cbr.publications.contracts:AssessUpdatesRequest",
+    "value_type": "stratbox.domains.cbr.publications.contracts:PublicationUpdatePlan",
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "cbr.publication.original",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "cbr.publications.update_plan"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "processing_signature",
+        "checkpoint",
+        "target",
+        "destinations"
+      ],
+      "summary": "Separate confirmed byte changes, processing changes and destination readiness without executing effects."
+    },
+    "method_id": "cbr-publication-update-plan"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:assess_updates"
+  },
+  "schema": "stratbox.operation"
+}

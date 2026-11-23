@@ -1,0 +1,48 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.map_observations",
+    "request_type": "stratbox.domains.minfin.tables.contracts:MapRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:MappedObservations",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "observations",
+          "contract": {
+            "schema_id": "minfin.mapped_observations",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "bindings"
+      ],
+      "summary": "Map only explicitly reviewed source-cell coordinates to metric, geography, unit and period IDs."
+    },
+    "method_id": "minfin-reviewed-mapping"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:map_observations"
+  },
+  "schema": "stratbox.operation"
+}

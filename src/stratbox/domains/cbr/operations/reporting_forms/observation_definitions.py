@@ -13,5 +13,5 @@ class SnapshotFormObservationsRequest:
     dataset_id: str
     version_id: str
 
-SNAPSHOT = _registry_definition('cbr.forms.observations_snapshot', 1)
-RESTORE = _registry_definition('cbr.forms.restore_observations', 1)
+SNAPSHOT = _registry_definition('cbr.forms.observations_snapshot')
+RESTORE = _registry_definition('cbr.forms.restore_observations')

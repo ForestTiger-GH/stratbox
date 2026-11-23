@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.conbud_assets.metadata.minfin.conbud.annual",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "identification",
+    "profile_id": "minfin.conbud_assets.metadata.minfin.conbud.annual",
+    "scope": "annual"
+  }
+}

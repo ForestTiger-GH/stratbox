@@ -1,0 +1,56 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.flake_snapshot",
+    "request_type": "stratbox.domains.minfin.tables.contracts:FlakeSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "minfin.flake.snapshot",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Encode a complete source-local flake as typed metadata, column and value tables for any logical dataset backend.",
+      "function": "encode"
+    },
+    "method_id": "minfin.flake-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:build_flake_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

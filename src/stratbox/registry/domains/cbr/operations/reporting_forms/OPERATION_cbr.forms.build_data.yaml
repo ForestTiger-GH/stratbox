@@ -1,0 +1,50 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.build_data",
+    "request_type": "stratbox.domains.cbr.analytics.reporting_forms.contracts:BuildFormDataRequest",
+    "value_type": "stratbox.domains.cbr.analytics.reporting_forms.contracts:FormData",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "integrate",
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "snapshots",
+          "contract": {
+            "schema_id": "cbr.forms.snapshots",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "data",
+          "contract": {
+            "schema_id": "cbr.forms.data",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "banks",
+        "model",
+        "selection_profile",
+        "periods"
+      ],
+      "summary": "Compose source-projection alignment, explicit model-input admission and financial-model evaluation.",
+      "composition": true
+    },
+    "method_id": "cbr-forms-source-model-composition"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.calculation:build_form_data"
+  },
+  "schema": "stratbox.operation"
+}

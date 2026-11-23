@@ -52,7 +52,7 @@ def test_retained_original_can_be_read_parsed_and_compared_without_acquisition(
     catalog = operation_catalog()
     compare_input = next(
         port
-        for port in catalog.get("cbr.offices.compare", 2).processing.inputs
+        for port in catalog.get("cbr.offices.compare").processing.inputs
         if port.name == "candidate"
     )
     release_port = next(
@@ -63,5 +63,5 @@ def test_retained_original_can_be_read_parsed_and_compared_without_acquisition(
     ).compatible
     compared = bank_offices.compare(CompareReleaseRequest(parsed.value, parsed.value))
     assert compared.outcome == "succeeded" and compared.value.state == "unchanged"
-    assert catalog.compatible_next("cbr.offices.parse", 1)
+    assert catalog.compatible_next("cbr.offices.parse")
     assert (tmp_path / "scrolls/source.html").read_bytes() == payload.data

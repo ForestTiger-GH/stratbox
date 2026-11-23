@@ -1,8 +1,8 @@
 """Thin operation orchestration over independently usable functional owners."""
-from dataclasses import asdict, is_dataclass, replace
+from dataclasses import replace
 import re
 
-from stratbox.core.execution import OperationFailure, run
+from stratbox.core.execution import OperationFailure, run, values
 from stratbox.core.formats.archives.members import ArchiveError
 from stratbox.core.runtime.dependencies import MissingExtra
 from stratbox.core.operations.source.validation import source_failure, use_payload
@@ -14,7 +14,6 @@ from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.materials import MaterialArtifact
 from stratbox.shared.source_publications import SourceAssetIdentity
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 from ..analytics.calculations import Calculation, calculation_from_snapshot, calculation_snapshot, net_changes, shares
 from ..integration.contracts import FnsDataset
@@ -48,6 +47,20 @@ def _family_modules(series_id):
     raise ValueError("fns.series_unknown")
 
 
+def _snapshot(value, invocation):
+    if isinstance(value, (JsonFlake, WorkbookBundle)):
+        return _family_modules(value.context.series_id)[4](value)
+    if type(value) is SourceProjection:
+        return projection_snapshot(value)
+    if type(value) is Calculation:
+        return calculation_snapshot(value)
+    if type(value) is PreparedView:
+        return view_snapshot(value)
+    if type(value) is FnsDataset:
+        return dataset_snapshot(value)
+    return None
+
+
 def _use(value, invocation, role, series_id):
     if value.context.series_id != series_id:
         raise OperationFailure("fns.source_family_mismatch")
@@ -61,8 +74,7 @@ def _use(value, invocation, role, series_id):
         lineage = value.batch.lineage
         cells = len(value.batch.observations)
     invocation.budget.charge("cells", cells)
-    invocation.use(UsedInputReceipt(role, value.identity, "application/vnd.stratbox.dataset+json",
-        "reference_only", series_id))
+    values.use_value(value, invocation, role, snapshot_factory=_snapshot, charge_cells=False)
     for receipt in lineage:
         invocation.use(receipt)
 
@@ -202,19 +214,7 @@ def execute(definition, series_id, action, request, *, context=None, transport=N
         snapshots = []
 
         def snapshot_for(item):
-            if isinstance(item, DatasetSnapshot):
-                return item
-            if isinstance(item, (JsonFlake, WorkbookBundle)):
-                return _family_modules(series_id)[4](item)
-            if type(item) is SourceProjection:
-                return projection_snapshot(item)
-            if type(item) is Calculation:
-                return calculation_snapshot(item)
-            if type(item) is PreparedView:
-                return view_snapshot(item)
-            if type(item) is FnsDataset:
-                return dataset_snapshot(item)
-            return None
+            return values.snapshot_of(item, invocation, snapshot_factory=_snapshot)
 
         if isinstance(value, ProcessedRelease):
             snapshots = [(name, snapshot_for(getattr(value, name))) for name in ("flake", "projection", "dataset", "view")]
@@ -227,20 +227,19 @@ def execute(definition, series_id, action, request, *, context=None, transport=N
                 snapshots = [("value", snapshot)]
                 identity = snapshot.identity
             else:
-                identity = ByteIdentity.of(canonical_manifest_bytes(asdict(value)))
+                identity = values.value_identity(value)
         parameters = {"series_id": series_id}
         for name in definition.processing.parameters:
             parameter = getattr(req, name)
-            parameters[name] = asdict(parameter) if is_dataclass(parameter) else parameter
+            parameters[name] = values.plain(parameter)
         resources = {name: snapshot.identity.sha256 for name, snapshot in snapshots}
         if isinstance(value, ProcessedRelease) and value.original is not None:
             resources["original"] = value.original.identity.sha256
         computation = invocation.record(identity, parameters=parameters, resources=resources)
         for name, snapshot in snapshots:
-            for component, table in snapshot.tables:
-                invocation.account_output(table.identity, key=name + ":" + component)
-            if snapshot.identity != identity:
-                invocation.account_output(snapshot.identity, key=name + ":manifest")
+            values.account_snapshot(snapshot, invocation, table_prefix=name + ":",
+                                    manifest_key=name + ":manifest" if snapshot.identity != identity else None,
+                                    charge_cells=False)
         invocation.account_output(identity)
         if isinstance(value, ProcessedRelease) and value.original is not None:
             invocation.account_output(value.original.identity, key="original_payload")

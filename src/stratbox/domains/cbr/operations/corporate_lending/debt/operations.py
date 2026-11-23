@@ -179,7 +179,7 @@ def _parse(req, invocation, *, selection: IndustrySelection | None = None):
 
 def _parse_flake(req, invocation, *, selection=None):
     value = _parse(req, invocation, selection=selection)
-    return seal_flake(value, req.payload, PARSE, invocation, parameters={
+    return seal_flake(value, req, PARSE, invocation, parameters={
         "report_date": value.report_date, "unmapped_headers": value.unmapped_headers,
         **selection_parameters(value.selection),
     })
@@ -390,7 +390,7 @@ def render_industry(
         value, derived = _render_one_industry(req.stream, private_stream, req.format, invocation)
         invocation.record(value.representation.identity, parameters={
             "profile": value.representation.profile_id, **asdict(req.format),
-            "derived_method": CALCULATE_APK.method_version if derived else None,
+            "derived_method": CALCULATE_APK.method_id if derived else None,
         })
         return value
 
@@ -432,7 +432,7 @@ def render_industries(
         invocation.record(ByteIdentity.of(canonical_manifest_bytes(manifest)), parameters={
             "industries": req.industry_codes,
             "include_metadata_sheet": req.include_metadata_sheet,
-            "derived_method": CALCULATE_APK.method_version if "apk" in req.industry_codes else None,
+            "derived_method": CALCULATE_APK.method_id if "apk" in req.industry_codes else None,
         })
         return result
 

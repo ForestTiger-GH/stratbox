@@ -1,0 +1,45 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.acquire",
+    "request_type": "stratbox.domains.fns.operations.sme.definitions:AcquireSmeRequest",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.sme.original",
+            "role": "originals"
+          },
+          "path": "payload",
+          "qualifications": [
+            "source.fns.sme"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence."
+    },
+    "method_id": "fns-sme-regional-post"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.operations:acquire"
+  },
+  "schema": "stratbox.operation"
+}

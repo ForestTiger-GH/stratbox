@@ -1,0 +1,44 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.tables.readable",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "cbr.workbook.readable",
+            "role": "readable"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render source-readable JSONL containing every cell without economic interpretation."
+    },
+    "method_id": "cbr-tables-readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:readable"
+  },
+  "schema": "stratbox.operation"
+}

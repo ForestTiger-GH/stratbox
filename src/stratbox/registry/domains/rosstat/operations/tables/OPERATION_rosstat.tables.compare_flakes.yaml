@@ -1,0 +1,61 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.compare_flakes",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:FlakeComparisonRequest",
+    "value_type": "stratbox.domains.rosstat.tables.comparison:FlakeComparison",
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "rosstat.flake.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Compare selected source facts with coordinate movement distinguished from values and profile scope changes."
+    },
+    "method_id": "rosstat-tables-compare_flakes"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_flakes"
+  },
+  "schema": "stratbox.operation"
+}

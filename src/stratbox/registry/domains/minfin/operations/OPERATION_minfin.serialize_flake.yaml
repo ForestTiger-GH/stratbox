@@ -1,0 +1,45 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.serialize_flake",
+    "request_type": "stratbox.domains.minfin.tables.contracts:SerializeFlakeRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "minfin.flake.json",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Serialize the complete source-local flake, including economic axes, units and original evidence.",
+      "function": "encode"
+    },
+    "method_id": "minfin.flake-json"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:serialize_source_flake"
+  },
+  "schema": "stratbox.operation"
+}

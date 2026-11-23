@@ -47,18 +47,11 @@ def _project(value: object, path: str) -> object:
     return value
 
 
-def _identity(value: object, computation: ComputationReceipt | None) -> ByteIdentity | None:
-    # These core-owned immutable values expose a computed identity rather than
-    # a stored dataclass field. Arbitrary output properties are never evaluated.
-    if isinstance(value, (MaterialArtifact, DatasetSnapshot, DatasetAssembly)):
-        return value.identity
-    try:
-        identity = _field(value, "identity")
-    except HandoffError:
-        identity = None
-    if isinstance(identity, ByteIdentity):
-        return identity
-    return computation.output if computation is not None else None
+def _identity(value: object, computation: ComputationReceipt | None) -> ByteIdentity:
+    # Content identity belongs to the exact value. Producer output evidence can
+    # describe a wider result and cannot stand in for a projected member.
+    from stratbox.core.execution.values import value_identity
+    return value_identity(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +183,7 @@ def collect_inputs(
         qualifications=frozenset.intersection(*(item.qualifications for item in items)) - {"storage.confirmed"},
         coverage=frozenset.intersection(*(item.coverage for item in items)),
         used_inputs=tuple(dict.fromkeys(receipt for item in items for receipt in item.used_inputs)),
+        identity=_identity(tuple(item.value for item in items), None),
         member_computations=tuple(parents))
 
 
@@ -232,7 +226,7 @@ def project_output(result: OperationResult, output_name: str) -> ProjectedOutput
         if not written and not read_back:
             raise HandoffError("handoff.storage_confirmation_missing")
     return ProjectedOutput(
-        OperationKey(result.operation_id, result.definition.contract_version),
+        OperationKey(result.operation_id),
         result.invocation_id, port.name, port.contract, result.outcome, value,
         port.qualifications, port.coverage, result.used_inputs, result.effects,
         result.computation, identity,
@@ -269,7 +263,6 @@ class ResultReference:
             "schema": "stratbox.result_reference", "version": 1,
             "owner_id": self.owner_id, "result_id": self.result_id,
             "operation_id": self.producer.operation_id,
-            "contract_version": self.producer.contract_version,
             "invocation_id": self.invocation_id, "output_name": self.output_name,
             "identity": None if self.identity is None else {
                 "sha256": self.identity.sha256, "size": self.identity.size,
@@ -280,7 +273,7 @@ class ResultReference:
     def from_dict(cls, value: Mapping) -> ResultReference:
         required = {
             "schema", "version", "owner_id", "result_id", "operation_id",
-            "contract_version", "invocation_id", "output_name", "identity",
+            "invocation_id", "output_name", "identity",
         }
         try:
             if not isinstance(value, Mapping) or set(value) != required or (
@@ -297,7 +290,7 @@ class ResultReference:
                 identity = ByteIdentity(identity["sha256"], identity["size"])
             return cls(
                 value["owner_id"], value["result_id"],
-                OperationKey(value["operation_id"], value["contract_version"]),
+                OperationKey(value["operation_id"]),
                 value["invocation_id"], value["output_name"], identity,
             )
         except (TypeError, ValueError, KeyError):
@@ -323,7 +316,6 @@ def resolve_output(reference: ResultReference, resolver: ResultResolver) -> Proj
         raise HandoffError("handoff.result_unavailable") from None
     if not isinstance(result, OperationResult) or (
         result.operation_id != reference.producer.operation_id
-        or result.definition.contract_version != reference.producer.contract_version
         or result.invocation_id != reference.invocation_id
     ):
         raise HandoffError("handoff.result_mismatch")
@@ -458,6 +450,8 @@ class BoundRequest:
         context = context if context is not None else ExecutionContext()
         computations = dict(context.input_computations)
         receipts = list(context.input_receipts)
+        transports = list(context.input_transports)
+        provenance = list(context.input_provenance)
         for name, projected in self.inputs:
             incoming = [(name, projected.computation)] if projected.computation is not None else []
             if isinstance(projected, PreparedInput):
@@ -473,8 +467,15 @@ class BoundRequest:
                     raise HandoffError("handoff.parent_conflict")
                 computations[role] = computation
             receipts.extend(projected.used_inputs)
+            provenance.extend(receipt for receipt in projected.used_inputs
+                if receipt not in context.input_receipts)
+            transports.extend(receipt for receipt in projected.used_inputs
+                if projected.identity == receipt.identity and receipt.version is None
+                and receipt not in context.input_receipts)
         return replace(context, input_computations=tuple(sorted(computations.items())),
-            input_receipts=tuple(dict.fromkeys(receipts)))
+            input_receipts=tuple(dict.fromkeys(receipts)),
+            input_transports=tuple(dict.fromkeys(transports)),
+            input_provenance=tuple(dict.fromkeys(provenance)))
 
     def invoke(self, operation: Callable, *, context: ExecutionContext | None = None, **options) -> OperationResult:
         """Invoke an explicitly supplied trusted API; no module names are evaluated."""

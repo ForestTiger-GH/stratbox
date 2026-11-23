@@ -1,0 +1,39 @@
+{
+  "owner_id": "core.sources",
+  "definition": {
+    "operation_id": "source.reconcile_original",
+    "request_type": "stratbox.core.operations.source.original_definitions:ReconcileOriginalRequest",
+    "value_type": "stratbox.shared.evidence:StoredBytesReceipt",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "receipt",
+          "contract": {
+            "schema_id": "source.storage_receipt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "storage",
+          "contract": {
+            "schema_id": "source.storage_receipt"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Reconcile original storage using read-back evidence."
+    },
+    "method_id": "original-read-back"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.source.originals:reconcile_original"
+  },
+  "schema": "stratbox.operation"
+}

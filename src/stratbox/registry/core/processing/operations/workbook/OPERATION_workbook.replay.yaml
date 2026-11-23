@@ -1,0 +1,42 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "workbook.replay",
+    "request_type": "stratbox.core.operations.processing.definitions:SnapshotRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookExtract",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "workbook.cells.snapshot",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore every physical cell and source context from a verified workbook snapshot.",
+      "function": "replay"
+    },
+    "method_id": "workbook-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:replay_workbook"
+  },
+  "schema": "stratbox.operation"
+}

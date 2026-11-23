@@ -1,0 +1,49 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "observations.view_snapshot",
+    "request_type": "stratbox.core.operations.processing.definitions:ViewRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "observations.prepared_view.snapshot",
+            "role": "products"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Encode a prepared observation view for independent replay.",
+      "function": "encode"
+    },
+    "method_id": "observations-view_snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:snapshot_view"
+  },
+  "schema": "stratbox.operation"
+}

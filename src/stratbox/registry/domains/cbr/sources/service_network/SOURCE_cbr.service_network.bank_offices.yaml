@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.service_network",
+  "series_id": "cbr.service_network.bank_offices",
+  "title": "Credit institution offices by bank and territory",
+  "issue_model": "capture",
+  "formats": [
+    "html"
+  ],
+  "route_profile": "cbr.service_network.bank_offices.route",
+  "family_profile": null,
+  "position": 41,
+  "publication": {
+    "acquisition_profile": "cbr.route.bank_offices",
+    "extraction_profile": "cbr.offices.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.bank_offices",
+    "integration_profile": "cbr.service_network.alignment",
+    "product_profile": "cbr.service_network.views"
+  }
+}

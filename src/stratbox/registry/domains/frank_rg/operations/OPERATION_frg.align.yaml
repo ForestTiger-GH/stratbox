@@ -1,0 +1,41 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.align",
+    "request_type": "stratbox.domains.frank_rg.integration.contracts:AlignRequest",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "processing": {
+      "stages": [
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "batches",
+          "contract": {
+            "schema_id": "observations.batch.collection"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.batch",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "release_id"
+      ],
+      "summary": "Align explicitly supplied batches with exact metric contracts; ambiguous duplicates are rejected."
+    },
+    "method_id": "frg.align"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:align"
+  },
+  "schema": "stratbox.operation"
+}

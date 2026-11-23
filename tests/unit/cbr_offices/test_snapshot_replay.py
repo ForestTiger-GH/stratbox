@@ -218,8 +218,7 @@ def test_machine_parse_keeps_both_dates():
             assert reference == "fixture"
             return SourcePayload(FIXTURE.read_bytes())
 
-    data = json.dumps({"operation_id": "cbr.offices.parse", "contract_version": 1,
-        "input": {"source_ref": "fixture", "capture_date": str(CAPTURED), "official_as_of": str(OFFICIAL)}}).encode()
+    data = json.dumps({"operation_id": "cbr.offices.parse", "input": {"source_ref": "fixture", "capture_date": str(CAPTURED), "official_as_of": str(OFFICIAL)}}).encode()
     result = json.loads(invoke_read_only(data, materials=Materials(), catalog=operation_catalog()))
     assert result["outcome"] == "succeeded"
     assert result["value"]["captured_on"] == str(CAPTURED)

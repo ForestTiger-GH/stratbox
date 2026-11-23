@@ -1,0 +1,47 @@
+{
+  "owner_id": "core.sources",
+  "definition": {
+    "operation_id": "source.read_original",
+    "request_type": "stratbox.core.operations.source.original_definitions:ReadOriginalRequest",
+    "value_type": "stratbox.shared.evidence:SourcePayload",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "processing": {
+      "stages": [
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "material",
+          "contract": {
+            "schema_id": "source.material_reference",
+            "role": "originals"
+          },
+          "qualifications": [
+            "storage.confirmed"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "limit"
+      ],
+      "summary": "Read retained original bytes and verify their exact identity."
+    },
+    "method_id": "original-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.source.originals:read_original"
+  },
+  "schema": "stratbox.operation"
+}

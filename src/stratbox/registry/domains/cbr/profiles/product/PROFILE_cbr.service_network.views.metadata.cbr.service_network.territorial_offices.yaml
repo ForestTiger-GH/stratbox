@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.service_network.views.metadata.cbr.service_network.territorial_offices",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "product",
+    "profile_id": "cbr.service_network.views.metadata.cbr.service_network.territorial_offices",
+    "scope": "Prepared selections can be retained and rendered independently of source parsing."
+  }
+}

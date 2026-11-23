@@ -1,0 +1,48 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.prepare_from_originals",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:PrepareSorsOriginalsRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts:SorsSourceBundle",
+    "limits": {
+      "output_bytes": 268435456,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [
+        "extract",
+        "integrate"
+      ],
+      "inputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.sors.source_inputs",
+            "version": 2
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "bundle",
+          "contract": {
+            "schema_id": "cbr.sors.source_bundle",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "config"
+      ],
+      "summary": "Load and align the complete SORS constraint input bundle.",
+      "composition": true
+    },
+    "method_id": "sors-source-bundle"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:prepare_from_originals"
+  },
+  "schema": "stratbox.operation"
+}

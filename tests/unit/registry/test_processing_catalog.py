@@ -60,7 +60,7 @@ def test_stage_role_owner_and_machine_readiness_filters_are_independent():
 
 def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
     catalog = operation_catalog()
-    next_ops = catalog.compatible_next("cbr.offices.acquire", 2)
+    next_ops = catalog.compatible_next("cbr.offices.acquire")
     assert {item.consumer.operation_id for item in next_ops} == {
         "cbr.escrow.discover",
         "cbr.escrow.parse",
@@ -101,14 +101,14 @@ def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
         item for item in next_ops if item.consumer.operation_id == "cbr.offices.parse"
     )
     assert parse.state == "conditional" and "captured_on" in parse.parameters
-    debt_next = catalog.compatible_next("cbr.industries.0105a.parse", 3)
+    debt_next = catalog.compatible_next("cbr.industries.0105a.parse")
     assert debt_next
     assert not any(
         item.consumer.operation_id.startswith("cbr.industries.0104a.")
         for item in debt_next
     )
     with pytest.raises(ValueError, match="processing.output_unavailable"):
-        catalog.compatible_next("cbr.offices.parse", 1, output="unknown")
+        catalog.compatible_next("cbr.offices.parse", output="unknown")
 
 
 def test_all_builtin_processing_parameters_and_port_roots_match_the_python_contract():
@@ -149,7 +149,7 @@ def test_cbr_scoped_stages_and_shared_storage_are_not_invented_tools():
     assert coverage[ProcessingStage.PRESERVE].binding
     assert coverage[ProcessingStage.INTEGRATE].state == "implemented"
     assert coverage[ProcessingStage.INGEST].state == "delegated"
-    assert coverage[ProcessingStage.INGEST].operations == (OperationKey("dataset.write_snapshot", 1),)
+    assert coverage[ProcessingStage.INGEST].operations == (OperationKey("dataset.write_snapshot"),)
     assert coverage[ProcessingStage.PUBLISH].state == "missing"
     assert catalog.page(owner_id=owner, stage="integrate").entries
     from stratbox.domains.cbr.operations.bindings import bind_source
@@ -158,7 +158,7 @@ def test_cbr_scoped_stages_and_shared_storage_are_not_invented_tools():
     stages = {item.stage: item for item in scoped.stages}
     assert stages[ProcessingStage.EXTRACT].state == "supported"
     assert stages[ProcessingStage.CALCULATE].state == "missing"
-    assert catalog.get("cbr.offices.acquire", 2).required_capabilities == frozenset(
+    assert catalog.get("cbr.offices.acquire").required_capabilities == frozenset(
         {"http"}
     )
     with pytest.raises(RegistryError, match="registry.owner_unavailable"):
@@ -175,21 +175,9 @@ def test_every_owner_has_consistent_coverage_and_available_delegations():
 def _catalog(monkeypatch, producer, consumer, *, stages=()):
     from stratbox.core.registry import catalog as implementation
 
-    def location(definition):
-        return "test_processing_metadata_" + str(id(definition)) + ":DEFINITION"
-
     def reference(definition):
-        return OperationRef(
-            definition.operation_id, 1, location(definition), "unavailable.handler:run"
-        )
+        return OperationRef(definition.operation_id, "unavailable.handler:run", definition=definition)
 
-    definitions = {location(item): item for item in (producer, consumer)}
-    original = implementation._load
-    monkeypatch.setattr(
-        implementation,
-        "_load",
-        lambda ref: definitions[ref] if ref in definitions else original(ref),
-    )
     return OperationCatalog.from_registrations(
         OperationRegistration(
             "example", (reference(producer), reference(consumer)), stages=stages
@@ -203,7 +191,6 @@ def test_route_conditions_retain_coverage_qualifications_and_additional_inputs(
     schema = DataContract("test.extract", 1, DataRole.EXTRACTS)
     producer = OperationDefinition(
         "test.producer",
-        1,
         "v1",
         str,
         str,
@@ -215,7 +202,6 @@ def test_route_conditions_retain_coverage_qualifications_and_additional_inputs(
     )
     consumer = OperationDefinition(
         "test.consumer",
-        1,
         "v1",
         str,
         str,
@@ -236,7 +222,7 @@ def test_route_conditions_retain_coverage_qualifications_and_additional_inputs(
     catalog = _catalog(monkeypatch, producer, consumer)
     link = next(
         item
-        for item in catalog.compatible_next("test.producer", 1)
+        for item in catalog.compatible_next("test.producer")
         if item.input == "data"
     )
     assert link.state == "conditional"
@@ -248,7 +234,6 @@ def test_route_conditions_retain_coverage_qualifications_and_additional_inputs(
 def test_unresolvable_delegation_and_conflicting_coverage_fail_explicitly(monkeypatch):
     producer = OperationDefinition(
         "test.producer",
-        1,
         "v1",
         str,
         str,
@@ -261,7 +246,7 @@ def test_unresolvable_delegation_and_conflicting_coverage_fail_explicitly(monkey
         ProcessingStage.RENDER,
         "delegated",
         "test.shared",
-        (OperationKey("test.absent", 1),),
+        (OperationKey("test.absent"),),
         "Bind the existing qualified dataset.",
     )
     catalog = _catalog(monkeypatch, producer, consumer, stages=(declaration,))
@@ -277,7 +262,6 @@ def test_unresolvable_delegation_and_conflicting_coverage_fail_explicitly(monkey
 def test_composition_does_not_claim_an_independently_callable_stage(monkeypatch):
     composite = OperationDefinition(
         "test.producer",
-        1,
         "v1",
         str,
         str,
@@ -287,7 +271,7 @@ def test_composition_does_not_claim_an_independently_callable_stage(monkeypatch)
             summary="Capture data.",
         ),
     )
-    other = OperationDefinition("test.consumer", 1, "v1", str, str)
+    other = OperationDefinition("test.consumer", "v1", str, str)
     coverage = {
         item.stage: item
         for item in _catalog(monkeypatch, composite, other).coverage("example")

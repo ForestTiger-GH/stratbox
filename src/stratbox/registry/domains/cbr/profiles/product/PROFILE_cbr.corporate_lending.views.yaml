@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.corporate_lending.views",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "product",
+    "profile_id": "cbr.corporate_lending.views",
+    "scope": "Prepared selections can be retained and rendered independently of source parsing."
+  }
+}

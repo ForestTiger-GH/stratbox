@@ -1,0 +1,31 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.select_sources",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:SelectFormSourcesRequest",
+    "value_type": "builtins:tuple",
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "outputs": [
+        {
+          "name": "sources",
+          "contract": {
+            "schema_id": "cbr.forms.sources"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "keys"
+      ],
+      "summary": "Resolve reporting-form source keys."
+    },
+    "method_id": "cbr-forms-source-selection"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.acquisition:select_sources"
+  },
+  "schema": "stratbox.operation"
+}

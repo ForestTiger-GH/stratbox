@@ -1,0 +1,11 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.latest_period",
+  "declaration": {
+    "formats": [],
+    "kind": "selection",
+    "profile_id": "frg.latest_period",
+    "scope": ""
+  }
+}

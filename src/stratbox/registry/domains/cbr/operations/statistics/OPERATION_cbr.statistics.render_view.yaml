@@ -1,0 +1,47 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.statistics.render_view",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:RenderViewRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "cbr.statistics.view",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.statistics.product",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render a prepared or restored view to CSV or XLSX without reading or calculating source data."
+    },
+    "method_id": "cbr-statistics-render_view"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:render_view"
+  },
+  "schema": "stratbox.operation"
+}

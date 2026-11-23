@@ -13,7 +13,7 @@ from ..contracts import FnsDataset
 from ..coverage import observation_coverage
 from .mapping import CATEGORY, KINDS, MAP_VERSION, PREFIXES, epoch, mapping
 
-PROFILE = "fns.1yur.identity-field-alignment.v1"
+PROFILE = "fns.1yur.identity-field-alignment"
 MAP_IDENTITY = ByteIdentity.of(canonical_manifest_bytes({"version": MAP_VERSION,
     "categories": CATEGORY, "kinds": KINDS, "prefixes": PREFIXES}))
 

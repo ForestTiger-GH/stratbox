@@ -77,12 +77,12 @@ class StoredOriginal:
     acquisition: AcquisitionReceipt | None = None
 
 
-RECEIVE = _registry_definition('source.receive_original', 1)
+RECEIVE = _registry_definition('source.receive_original')
 
-SAVE = _registry_definition('source.save_original', 1)
+SAVE = _registry_definition('source.save_original')
 
-RECEIVE_TO_STORE = _registry_definition('source.receive_to_store', 1)
+RECEIVE_TO_STORE = _registry_definition('source.receive_to_store')
 
-READ = _registry_definition('source.read_original', 1)
+READ = _registry_definition('source.read_original')
 
-RECONCILE = _registry_definition('source.reconcile_original', 1)
+RECONCILE = _registry_definition('source.reconcile_original')

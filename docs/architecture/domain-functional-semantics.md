@@ -25,8 +25,7 @@ every publication supports the same analytical route.
 
 The exact operation inventory comes from `domain_registration_inventory()`.
 Canonical owner declarations establish registration boundaries; ordinary Python
-package nesting does not create one. Each logical operation ID has one owner
-across its versions. Full operation metadata lives in registry resources, while
+package nesting does not create one. Each logical operation ID has one owner and one canonical definition. Full operation metadata lives in registry resources, while
 request/result classes and handlers can occupy functional subpackages.
 
 For CBR, operation namespaces such as `cbr.forms`, `cbr.industries.0105a`,
@@ -37,9 +36,10 @@ classify logical sources. Neither set replaces the root ownership identity.
 ## 2. Functional owners across publishers
 
 Each publisher has canonical source, operation and profile declarations under
-`stratbox/registry/<owner>`. `core.registry` validates those records and projects
-publication and operation catalogs. Source routes define allowed stages and
-transitions; operation declarations define independent named input/output roles.
+`stratbox/registry/domains/<owner>`. Neutral operations live under
+`stratbox/registry/core/<area>`. `core.registry` validates those records and projects
+publication and operation catalogs. Source routes describe stage coverage and applicability; operation declarations
+define the exact named input/output contracts used to admit value handoffs.
 Typed physical layouts, mappings, models and output profiles have distinct
 domain implementation owners.
 
@@ -67,7 +67,7 @@ not a separately maintained inventory.
 
 | CBR source scope | Implemented route | Material qualification |
 | --- | --- | --- |
-| The 44 series with `cbr.workbook.flake.v1` | Complete worksheet-cell extraction, readable source JSONL, validation/comparison, flake replay, qualified statistical alignment, change/share calculations, prepared views and CSV/XLSX rendering | Source table variants retain period, quantity, dimensions and unit policy; ambiguous periods, units or identities require explicit bindings or diagnostics |
+| The 44 series with `cbr.workbook.flake` | Complete worksheet-cell extraction, readable source JSONL, validation/comparison, flake replay, qualified statistical alignment, change/share calculations, prepared views and CSV/XLSX rendering | Source table variants retain period, quantity, dimensions and unit policy; ambiguous periods, units or identities require explicit bindings or diagnostics |
 | Reporting forms `101`, `102`, `123`, `135`, `802`, `805` | All-member DBF flakes, reviewed source projections, semantic observations, prepared financial-model inputs, calculation, prepared views and workbook products | Model admission checks source namespaces, complete measure channels, exact unit/scale, layout edition, periods and formula axes |
 | Reporting forms `134`, `803` | All-member extraction, source reading/comparison, typed flake replay and CSV collections | Source preservation is implemented; reviewed projection, semantic alignment and financial models remain unavailable |
 | Industry debt `debt_0105a` | Reviewed source flakes, integrated streams, APK calculations, pivots, snapshots and rendering | Stock at the reported date; six reviewed physical sheets |
@@ -112,7 +112,7 @@ Source selection controls materialization while full required-input validation
 remains independent.
 
 SORS is an analytical method under `analytics/corporate_lending/sors`. Its
-versioned dependency contract names required publications, an optional
+dependency contract names required publications, an optional
 validation history and the compatible reporting step. Preparation creates a
 complete model bundle; restoration consumes that bundle, and view rendering
 consumes prepared products. A narrow output request does not narrow the
@@ -127,7 +127,7 @@ separately from ordinary single-publication source routes.
 
 Use `cbr.describe_source` for a selected `series_id`, optional format, table ID
 and edition. A source description exposes table variants, schemas, profile and
-method editions, exact operation keys, parameters, qualifications, stage
+method identities, exact operation keys, parameters, qualifications, stage
 coverage, neutral delegated operations and handoffs. `cbr.describe_family`
 returns per-source descriptions and stage membership sets instead of reducing a
 heterogeneous family to a single success flag.

@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.statistics.observations.metadata.cbr.monetary_statistics.annex_survey_dc",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "integration",
+    "profile_id": "cbr.statistics.observations.metadata.cbr.monetary_statistics.annex_survey_dc",
+    "scope": "Central bank, credit institution and consolidated banking-system perimeters remain separate. Published adjusted growth and transactions differ from computed stock changes."
+  }
+}

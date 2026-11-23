@@ -1,0 +1,47 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.read_flake_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.industry.contracts:ReadIndustrySnapshotRequest",
+    "value_type": "stratbox.domains.cbr.tables.corporate_lending.debt.contracts:ParsedCbr0105ADebtCorpFile",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.flake.snapshot",
+            "role": "extracts"
+          },
+          "alternatives": [
+            {
+              "schema_id": "dataset.snapshot",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.parsed_file",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore a complete flake and validate its original table identities.",
+      "function": "replay"
+    },
+    "method_id": "cbr-industry-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.snapshot_operations:read_flake_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

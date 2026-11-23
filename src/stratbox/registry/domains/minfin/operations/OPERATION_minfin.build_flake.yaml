@@ -1,0 +1,51 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.build_flake",
+    "request_type": "stratbox.domains.minfin.tables.contracts:BuildFlakeRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:FlakeTable",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": "extract"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "source_id",
+        "selected_sheet"
+      ],
+      "summary": "Clean the source-local workbook to one wide flake; strip document decoration and normalize economic period headers."
+    },
+    "method_id": "minfin.profile-flake"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:build_source_flake"
+  },
+  "schema": "stratbox.operation"
+}

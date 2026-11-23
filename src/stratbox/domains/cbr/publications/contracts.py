@@ -62,13 +62,11 @@ class ProcessingProfile:
     operation_id: str
     formats: tuple[str, ...]
     scope: str
-    contract_version: int = 1
 
     def __post_init__(self):
         identifier(self.profile_id)
         identifier(self.operation_id)
-        if (not self.formats or not self.scope
-                or type(self.contract_version) is not int or self.contract_version < 1):
+        if not self.formats or not self.scope:
             raise ValueError("cbr.profile.processing_invalid")
 
 

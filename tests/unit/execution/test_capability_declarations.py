@@ -9,7 +9,7 @@ def test_undeclared_local_provider_is_rejected_before_default_lookup(monkeypatch
     from stratbox.core.execution import runner
     monkeypatch.setattr(runner, "active_providers",
                         lambda: (_ for _ in ()).throw(AssertionError("default providers accessed")))
-    op = OperationDefinition("test.undeclared", 1, "v-1", int, int)
+    op = OperationDefinition("test.undeclared", "v-1", int, int)
     calls = []
 
     def handler(request, invocation):
@@ -27,7 +27,7 @@ def test_undeclared_local_provider_is_rejected_before_default_lookup(monkeypatch
 def test_required_and_optional_are_different_admission_phases(monkeypatch):
     from stratbox.core.execution import runner
     monkeypatch.setattr(runner, "active_providers", lambda: None)
-    op = OperationDefinition("test.optional", 1, "v-1", int, int,
+    op = OperationDefinition("test.optional", "v-1", int, int,
                              optional_capabilities=frozenset({"http"}))
     assert run(op, 1, lambda req, inv: req).outcome == "succeeded"
     result = run(op, 1, lambda req, inv: inv.provider("http") or req)
@@ -36,7 +36,7 @@ def test_required_and_optional_are_different_admission_phases(monkeypatch):
     given = object()
     assert run(op, 1, lambda req, inv: inv.provider("http", given) and req).outcome == "succeeded"
 
-    required = OperationDefinition("test.required", 1, "v-1", int, int,
+    required = OperationDefinition("test.required", "v-1", int, int,
                                    required_capabilities=frozenset({"http"}))
     called = []
     fail = run(required, 1, lambda req, inv: called.append(1) or req)
@@ -46,7 +46,7 @@ def test_required_and_optional_are_different_admission_phases(monkeypatch):
 
 
 def test_undeclared_local_and_managed_bindings_both_rejected():
-    op = OperationDefinition("test.managed_undeclared", 1, "v-1", int, int)
+    op = OperationDefinition("test.managed_undeclared", "v-1", int, int)
     provider = object()
     ctx = ExecutionContext(profile="managed", bindings=(
         ProviderBinding("test", CapabilityRequirement("http"), "ready", provider, "scope"),
@@ -61,7 +61,7 @@ def test_undeclared_local_and_managed_bindings_both_rejected():
 
 
 def test_managed_binding_still_checks_guarantee_and_identity():
-    op = OperationDefinition("test.managed_declared", 1, "v-1", int, int,
+    op = OperationDefinition("test.managed_declared", "v-1", int, int,
                              optional_capabilities=frozenset({"http"}))
     provider = object()
     good = ProviderBinding(
@@ -83,14 +83,14 @@ def test_managed_binding_still_checks_guarantee_and_identity():
 def test_external_runtime_ports_are_descriptors_not_fake_eager_capabilities():
     from stratbox.core.execution import RuntimeDependency
     runtime = (RuntimeDependency("notification_state", "scoped", "notification_runtime"),)
-    op = OperationDefinition("test.runtime", 1, "v-1", int, int,
+    op = OperationDefinition("test.runtime", "v-1", int, int,
                              runtime_dependencies=runtime)
     assert run(op, 1, lambda req, inv: req).outcome == "succeeded"
     assert op.runtime_dependencies == runtime
     with pytest.raises(ValueError):
         op.capability("notification_state")
     with pytest.raises(ValueError):
-        OperationDefinition("test.conflict", 1, "v-1", int, int,
+        OperationDefinition("test.conflict", "v-1", int, int,
             required_capabilities=frozenset({"http"}),
             runtime_dependencies=(RuntimeDependency("http", "conditional", "adapter"),))
 

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.corp_new_loans_a",
+  "title": "Corporate lending by published activity categories",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.corporate_lending.corp_new_loans_a.route",
+  "family_profile": null,
+  "position": 8,
+  "publication": {
+    "acquisition_profile": "cbr.route.corp_new_loans_a",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.corp_new_loans_a",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "owner_id": "core.processing",
+  "definition": {
+    "operation_id": "document.snapshot",
+    "request_type": "stratbox.core.operations.processing.definitions:DocumentRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "document.blocks.extract",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "document.blocks.snapshot",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Encode document blocks and qualifications for independent retention.",
+      "function": "encode"
+    },
+    "method_id": "document-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.processing.handlers:snapshot_document"
+  },
+  "schema": "stratbox.operation"
+}

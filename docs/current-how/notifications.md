@@ -36,7 +36,7 @@ The current output is structured JSON. `record_external_delivery` represents a s
 
 ## Changes in 0.13.0
 
-The Python contracts for preparation, delivery and qualification are version 3, and reconciliation is version 2. Preparation accepts a subscription and checkpoint key. Direct preparation from standalone publication, storage and diagnostic objects is replaced by registration and qualified journal reading. The portable journal record remains v1 and the manifest remains v2. A new finish-linked operation summary uses data schema v2 and a separate record identity. Older summaries remain readable.
+The Python operations for preparation, delivery, qualification and reconciliation use stable operation IDs. Preparation accepts a subscription and checkpoint key. Direct preparation from standalone publication, storage and diagnostic objects is replaced by registration and qualified journal reading. The portable journal record remains v1 and the manifest remains v2. A new finish-linked operation summary uses data schema v2 and a separate record identity. Older summaries remain readable.
 
 Run the example with a recorded fixture.
 

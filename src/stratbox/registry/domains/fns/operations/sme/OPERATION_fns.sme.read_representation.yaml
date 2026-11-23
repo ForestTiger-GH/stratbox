@@ -1,0 +1,41 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.read_representation",
+    "request_type": "stratbox.shared.data.releases:ReadReleaseRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "fns.sme.regional_csv",
+            "role": "products"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "fns.sme.regional_release",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "as_of"
+      ],
+      "summary": "Import an explicitly selected regional CSV product; original-wide source coverage remains qualified.",
+      "function": "replay"
+    },
+    "method_id": "fns-sme-csv"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.operations:read_representation"
+  },
+  "schema": "stratbox.operation"
+}

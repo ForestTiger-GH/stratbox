@@ -21,14 +21,14 @@ class AcquisitionProfile:
 
 
 _ACQUISITIONS = {
-    "minfin.fedbud.publication_page.v1": AcquisitionProfile(
-        "minfin.fedbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/fedbud/execute/"),
-    "minfin.conbud.publication_page.v1": AcquisitionProfile(
-        "minfin.conbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/conbud/execute"),
-    "minfin.subbud.publication_page.v1": AcquisitionProfile(
-        "minfin.subbud.publication_page.v1", "https://minfin.gov.ru/ru/statistics/subbud/execute"),
-    "minfin.nwf.publication_page.v1": AcquisitionProfile(
-        "minfin.nwf.publication_page.v1", "https://minfin.gov.ru/ru/perfomance/nationalwealthfund/statistics/"),
+    "minfin.fedbud.publication_page": AcquisitionProfile(
+        "minfin.fedbud.publication_page", "https://minfin.gov.ru/ru/statistics/fedbud/execute/"),
+    "minfin.conbud.publication_page": AcquisitionProfile(
+        "minfin.conbud.publication_page", "https://minfin.gov.ru/ru/statistics/conbud/execute"),
+    "minfin.subbud.publication_page": AcquisitionProfile(
+        "minfin.subbud.publication_page", "https://minfin.gov.ru/ru/statistics/subbud/execute"),
+    "minfin.nwf.publication_page": AcquisitionProfile(
+        "minfin.nwf.publication_page", "https://minfin.gov.ru/ru/perfomance/nationalwealthfund/statistics/"),
 }
 
 
@@ -112,8 +112,8 @@ def _parse_document_cards(html: str) -> tuple:
 
 
 _PUBLICATIONS = {
-    "minfin.document_cards.v1": PublicationProfile(
-        "minfin.document_cards.v1", "document_cards", _parse_document_cards),
+    "minfin.document_cards": PublicationProfile(
+        "minfin.document_cards", "document_cards", _parse_document_cards),
 }
 
 
@@ -126,16 +126,16 @@ def _budget(profile_id: str, annex: str, doc_ids: tuple[str, str, str], prefix: 
 
 
 _IDENTIFICATIONS = {
-    "minfin.fedbud_assets.v1": _budget(
-        "minfin.fedbud_assets.v1", "annex3", ("id_57:80042", "id_57:80039", "id_57:80041"),
+    "minfin.fedbud_assets": _budget(
+        "minfin.fedbud_assets", "annex3", ("id_57:80042", "id_57:80039", "id_57:80041"),
         "Prilozhenie_3_dannye_109-111_", ("_mes.xlsx", "_kvartal.xlsx", "_god.xlsx")),
-    "minfin.conbud_assets.v1": _budget(
-        "minfin.conbud_assets.v1", "annex8", ("id_57:93447", "id_57:93448", "id_57:93449"),
+    "minfin.conbud_assets": _budget(
+        "minfin.conbud_assets", "annex8", ("id_57:93447", "id_57:93448", "id_57:93449"),
         "Prilozhenie_8_dannye_115-117_", ("_mesyats.xlsx", "_kvartal.xlsx", "_god.xlsx")),
-    "minfin.subbud_assets.v1": _budget(
-        "minfin.subbud_assets.v1", "annex6", ("id_57:88391", "id_57:90142", "id_57:90143"),
+    "minfin.subbud_assets": _budget(
+        "minfin.subbud_assets", "annex6", ("id_57:88391", "id_57:90142", "id_57:90143"),
         "Prilozhenie_6_dannye_112-114_", ("_mes.xlsx", "_Kvartal.xlsx", "_god.xlsx")),
-    "minfin.nwf_assets.v1": IdentificationProfile("minfin.nwf_assets.v1", (
+    "minfin.nwf_assets": IdentificationProfile("minfin.nwf_assets", (
         AssetRule("monthly", "movement_workbook", "Dannye_", ".xlsx", "id_57:93488", "xlsx"),
         AssetRule("veb_deposits", "veb_deposits", "Svedeniya_o_razmeshchenii_sredstv_FNB_na_depozitakh_v_VEB", ".doc", "id_4:117699", "doc"),
         AssetRule("volume_report", "volume_report", "Obem_na_", ".docx", "id_4:27068", "docx"),

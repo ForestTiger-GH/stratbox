@@ -1,0 +1,44 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.calculation_snapshot",
+    "request_type": "stratbox.domains.fns.operations.contracts:CalculationRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "calculation",
+          "contract": {
+            "schema_id": "fns.sme.calculation",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.calculation.snapshot",
+            "role": "products"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Encode the complete calculation envelope for neutral immutable dataset storage.",
+      "function": "encode"
+    },
+    "method_id": "fns-sme-calculation-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:calculation_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

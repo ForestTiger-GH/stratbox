@@ -1,0 +1,52 @@
+{
+  "owner_id": "core.materials",
+  "definition": {
+    "operation_id": "material.save_artifact",
+    "request_type": "stratbox.core.operations.materials.definitions:SaveArtifactRequest",
+    "value_type": "stratbox.core.operations.materials.definitions:StoredArtifact",
+    "required_capabilities": [
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact_reference"
+          },
+          "qualifications": [
+            "storage.confirmed"
+          ]
+        }
+      ],
+      "parameters": [
+        "destination"
+      ],
+      "summary": "Retain exact representation bytes and a complete immutable semantic descriptor."
+    },
+    "method_id": "artifact-publish"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.materials.operations:save_artifact"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "fns",
+  "publisher_id": "fns",
+  "family_id": "fns.sme",
+  "series_id": "fns.sme",
+  "title": "Unified SME register: published statistical snapshots",
+  "issue_model": "Independent issue key, published observation date, optional publication date and timezone-aware capture timestamp.",
+  "formats": [
+    "json"
+  ],
+  "route_profile": "fns.sme.route",
+  "family_profile": "fns.sme.publication",
+  "position": 0,
+  "publication": {
+    "periodicity": "monthly",
+    "acquisition_profile": "fns.sme.statistics-post",
+    "extract_profile": "fns.sme.full-json",
+    "integration_profile": "fns.sme.published-counts-alignment",
+    "observation_basis": "stock_at_published_stat_date"
+  }
+}

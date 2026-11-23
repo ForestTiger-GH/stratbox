@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.banking_sector_structure",
+  "series_id": "cbr.banking_sector_structure.obs_table_20s",
+  "title": "Banking sector balance sheet and loan maturity structure",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.banking_sector_structure.obs_table_20s.route",
+  "family_profile": null,
+  "position": 51,
+  "publication": {
+    "acquisition_profile": "cbr.route.obs_table_20s",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.obs_table_20s",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

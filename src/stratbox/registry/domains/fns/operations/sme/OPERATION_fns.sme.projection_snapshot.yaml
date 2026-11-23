@@ -1,0 +1,44 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.projection_snapshot",
+    "request_type": "stratbox.domains.fns.operations.contracts:ProjectionRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.sme.reported_projection.snapshot",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset_snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Encode the complete projection envelope for neutral immutable dataset storage.",
+      "function": "encode"
+    },
+    "method_id": "fns-sme-projection-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:projection_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

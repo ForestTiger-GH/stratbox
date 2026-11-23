@@ -21,31 +21,31 @@ from ..analytics.contracts import SummaryRequest, HeadlineSummary, NoticeRequest
 from .contracts import CaptureRequest, CaptureResult
 
 
-DISCOVER = _registry_definition('minfin.discover', 1)
-INSPECT = _registry_definition('minfin.inspect', 1)
-ACQUIRE = _registry_definition('minfin.acquire', 1)
-EXTRACT = _registry_definition('minfin.extract', 1)
-CAPTURE = _registry_definition('minfin.capture', 1)
-VALIDATE = _registry_definition('minfin.validate', 1)
-COMPARE = _registry_definition('minfin.compare', 1)
-MAP = _registry_definition('minfin.map_observations', 1)
-RENDER = _registry_definition('minfin.render_csv', 1)
-READABLE = _registry_definition('minfin.readable', 1)
+DISCOVER = _registry_definition('minfin.discover')
+INSPECT = _registry_definition('minfin.inspect')
+ACQUIRE = _registry_definition('minfin.acquire')
+EXTRACT = _registry_definition('minfin.extract')
+CAPTURE = _registry_definition('minfin.capture')
+VALIDATE = _registry_definition('minfin.validate')
+COMPARE = _registry_definition('minfin.compare')
+MAP = _registry_definition('minfin.map_observations')
+RENDER = _registry_definition('minfin.render_csv')
+READABLE = _registry_definition('minfin.readable')
 
-SERIALIZE = _registry_definition('minfin.serialize', 1)
-READ_EXTRACT = _registry_definition('minfin.read_representation', 1)
+SERIALIZE = _registry_definition('minfin.serialize')
+READ_EXTRACT = _registry_definition('minfin.read_representation')
 
 
 # Independently callable update, flake, headline and notice stages.
 
-PLAN_UPDATES = _registry_definition('minfin.plan_updates', 1)
-BUILD_FLAKE = _registry_definition('minfin.build_flake', 1)
-RENDER_FLAKE = _registry_definition('minfin.render_flake', 1)
-SERIALIZE_FLAKE = _registry_definition('minfin.serialize_flake', 1)
-READ_FLAKE = _registry_definition('minfin.read_flake', 1)
-SUMMARIZE = _registry_definition('minfin.summarize', 1)
-PREPARE_NOTICE = _registry_definition('minfin.prepare_notice', 1)
+PLAN_UPDATES = _registry_definition('minfin.plan_updates')
+BUILD_FLAKE = _registry_definition('minfin.build_flake')
+RENDER_FLAKE = _registry_definition('minfin.render_flake')
+SERIALIZE_FLAKE = _registry_definition('minfin.serialize_flake')
+READ_FLAKE = _registry_definition('minfin.read_flake')
+SUMMARIZE = _registry_definition('minfin.summarize')
+PREPARE_NOTICE = _registry_definition('minfin.prepare_notice')
 
 
-FLAKE_SNAPSHOT = _registry_definition('minfin.flake_snapshot', 1)
-READ_FLAKE_SNAPSHOT = _registry_definition('minfin.read_flake_snapshot', 1)
+FLAKE_SNAPSHOT = _registry_definition('minfin.flake_snapshot')
+READ_FLAKE_SNAPSHOT = _registry_definition('minfin.read_flake_snapshot')

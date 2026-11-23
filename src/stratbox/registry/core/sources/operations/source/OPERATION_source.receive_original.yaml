@@ -1,0 +1,40 @@
+{
+  "owner_id": "core.sources",
+  "definition": {
+    "operation_id": "source.receive_original",
+    "request_type": "stratbox.core.operations.source.original_definitions:ReceiveOriginalRequest",
+    "value_type": "stratbox.shared.evidence:AcquiredSource",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "payload"
+        }
+      ],
+      "parameters": [
+        "request",
+        "source_id",
+        "media_types",
+        "retry",
+        "baseline",
+        "default_media_type"
+      ],
+      "summary": "Receive exact source bytes without requiring parsing or storage."
+    },
+    "method_id": "http-receive"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.source.originals:receive_original"
+  },
+  "schema": "stratbox.operation"
+}

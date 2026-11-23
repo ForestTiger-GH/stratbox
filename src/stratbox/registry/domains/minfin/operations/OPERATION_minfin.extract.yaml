@@ -1,0 +1,64 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.extract",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ExtractRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:TableExtract",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "minfin.publisher_material",
+            "role": "originals"
+          },
+          "path": "payload",
+          "alternatives": [
+            {
+              "schema_id": "source.payload",
+              "role": "originals"
+            },
+            {
+              "schema_id": "material.payload",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "family_id",
+        "format",
+        "member",
+        "selected_sheets",
+        "max_cells",
+        "csv_encoding"
+      ],
+      "summary": "Extract explicitly selected workbook or CSV cells without inferring economic axes."
+    },
+    "method_id": "minfin-source-cells"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:extract"
+  },
+  "schema": "stratbox.operation"
+}

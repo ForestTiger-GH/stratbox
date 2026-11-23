@@ -1,4 +1,4 @@
 """Operation segment projected from the packaged registry."""
 from stratbox.core.registry.operations import operation_references
 
-OPERATIONS = operation_references("cbr", definition_module='stratbox.domains.cbr.operations.reporting_forms')
+OPERATIONS = operation_references("cbr", handler_module='stratbox.domains.cbr.operations.reporting_forms')

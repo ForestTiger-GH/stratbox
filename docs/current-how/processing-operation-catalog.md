@@ -39,7 +39,7 @@ source-local extract has the `extracts` role; an archive of exact source files
 retains the `originals` role. Control values such as source indexes, cleanup
 plans and comparisons use `role=None`.
 
-Schema versions, method versions, byte identities and destination revisions
+Data schema editions, method identities, byte identities and destination revisions
 have separate meanings. The schema describes the admitted value; the method
 describes its production; byte and computation evidence identify actual inputs
 and results. Metadata never changes an existing receipt or computation identity.
@@ -62,7 +62,7 @@ second contract description.
 loading, catalog assembly and discovery projections. `core.execution` consumes
 those definitions for binding, runtime admission and outcomes.
 
-`OperationRef` projects the declaration's definition and handler references. For an admitted
+`OperationRef` projects the declaration's operation identity and handler reference. For an admitted
 read-only machine operation it also identifies a `ReadOnlyWireContract` and a
 `ReadOnlyWireCodec`. The codec binds the immutable schema contract to the
 invocation/projection functions. Schema getters return detached dictionaries;
@@ -71,10 +71,10 @@ editing a returned schema never changes the registered contract.
 | Code | Catalog call | What it loads |
 | --- | --- | --- |
 | L01 | `list_refs()` | Registered references. |
-| L02 | `get(id, version)` / `definitions` | Typed definitions. |
+| L02 | `get(id)` / `definitions` | Typed definitions. |
 | L03 | `describe()` / `page(...)` | Definitions and explicitly registered machine schema contracts. |
-| L04 | `wire_schemas(id, version, catalog=...)` | Definition and machine schema contract. |
-| L05 | `resolve(id, version)` | Definition, executable handler and admitted codec. |
+| L04 | `wire_schemas(id, catalog=...)` | Definition and machine schema contract. |
+| L05 | `resolve(id)` | Definition, executable handler and admitted codec. |
 
 An unavailable handler therefore does not prevent inspection of an otherwise
 loadable definition. Executable resolution still reports an explicit registry
@@ -104,8 +104,7 @@ for item in page.entries:
 `page()` returns `CatalogPage(entries, offset, total, next_offset)`. It accepts
 an owner, processing stage, data role, case-insensitive ID/summary query and
 `machine_only=True` filter. The default page contains at most 50 entries; the
-maximum requested page size is 200. Ordering follows operation ID and contract
-version. Offset pagination describes an immutable catalog instance; an adapter
+maximum requested page size is 200. Ordering follows operation ID. Offset pagination describes an immutable catalog instance; an adapter
 should retain that instance while walking its pages.
 
 Descriptions include ownership, Python types, semantic input/output ports,
@@ -141,7 +140,7 @@ source_result = describe_source(DescribeSourceRequest(
 assert source_result.outcome == "succeeded", source_result.diagnostics
 source = source_result.value
 for operation in source.operations:
-    print(operation.key, operation.method_version, operation.parameters)
+    print(operation.key, operation.method_id, operation.parameters)
 for stage in source.stages:
     print(stage.stage.value, stage.state, stage.qualifications)
 
@@ -160,7 +159,7 @@ and editions fail admission instead of inheriting another source's capabilities.
 | --- | --- |
 | `source`, `table_profile`, `tables` | Logical publication, reviewed table variants, physical patterns, schemas, dimensions, period basis and unit policy |
 | `profiles` | Extraction, source projection, financial model, integration and product profiles with editions and applicable operation keys |
-| `operations` | Exact registered versions, method versions, ports, parameters, composition flags and source-specific qualifications |
+| `operations` | Registered operations, method identities, ports, parameters, composition flags and source-specific qualifications |
 | `stages` | Applicability for this source and selection, including conditional interpretation and missing work |
 | `handoffs` | Compatible direct ports, explicit collection assembly and crossings to delegated neutral operations |
 | `delegated_operations` | Actual neutral storage/archive contracts requiring caller-selected infrastructure |
@@ -175,7 +174,7 @@ exposes multi-source method dependency contracts where the family declares them.
 ## 4. Semantic connections retain their conditions
 
 ```python
-links = catalog.compatible_next("cbr.offices.acquire", 2)
+links = catalog.compatible_next("cbr.offices.acquire")
 for link in links:
     print(link.output, link.consumer, link.input, link.state)
     print(link.missing_qualifications, link.missing_coverage)

@@ -1,0 +1,50 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.tables.compare",
+    "request_type": "stratbox.domains.cbr.operations.statistics.contracts:CompareWorkbooksRequest",
+    "value_type": "stratbox.domains.cbr.tables.statistics.contracts:WorkbookComparison",
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "cbr.workbook.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "cbr.workbook.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Compare exact source releases independently of processing and destination state."
+    },
+    "method_id": "cbr-tables-compare"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:compare"
+  },
+  "schema": "stratbox.operation"
+}

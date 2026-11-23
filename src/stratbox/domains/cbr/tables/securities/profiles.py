@@ -1,7 +1,7 @@
 """Reviewed securities workbook variants and interpretation boundaries."""
 from stratbox.domains.cbr.tables.statistics.contracts import SourceTableProfile, TableVariant
 
-_DECLARATIONS = (('cbr.tables.debt_securities.v1',
+_DECLARATIONS = (('cbr.tables.debt_securities',
   'cbr.securities.debt_securities',
   (('table_1',
     'Квартал\\ \\(номинальная\\ стоимость\\)',

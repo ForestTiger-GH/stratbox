@@ -1,0 +1,44 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.readable",
+    "request_type": "stratbox.domains.cbr.tables.project_finance.contracts:ParsedEscrowFile",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "file",
+          "contract": {
+            "schema_id": "cbr.escrow.parsed_file",
+            "version": 3,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "cbr.escrow.readable_cells",
+            "role": "readable"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render every extracted cell, including unresolved tokens, as a readable CSV transcript."
+    },
+    "method_id": "cbr-escrow-readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:readable"
+  },
+  "schema": "stratbox.operation"
+}

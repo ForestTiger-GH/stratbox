@@ -89,7 +89,7 @@ def build_flake(request: BuildFlakeRequest, *, profile: TableProfile, frequency:
         if not indicator:
             continue
         monetary = profile.unit_hint == "billion_rub" or (
-            profile.profile_id == "minfin.nwf_table.v1" and code.rstrip(".") in {"2", "5"})
+            profile.profile_id == "minfin.nwf_table" and code.rstrip(".") in {"2", "5"})
         cleaned.append(FlakeRow(row, code, indicator,
                                  tuple(str(value) if value is not None else None
                                        for value in values),

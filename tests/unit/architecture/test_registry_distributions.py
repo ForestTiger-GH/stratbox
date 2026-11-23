@@ -25,7 +25,7 @@ def test_registry_distribution_includes_every_declaration_and_package_boundary()
     assert result["declarations"] > result["owners"]
 
 
-@pytest.mark.parametrize("kind", ["SOURCE_", "OPERATION_", "PROFILE_", "OWNER.yaml", "__init__.py"])
+@pytest.mark.parametrize("kind", ["SOURCE_", "OPERATION_", "PROFILE_", "ROUTE_", "FAMILY_", "GROUP_", "OWNER.yaml", "__init__.py"])
 def test_omitted_registry_resource_is_rejected(kind):
     verify, members = _fixture()
     victim = next(name for name in members if Path(name).name.startswith(kind))

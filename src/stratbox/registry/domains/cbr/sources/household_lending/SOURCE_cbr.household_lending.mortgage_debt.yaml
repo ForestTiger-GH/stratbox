@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.household_lending",
+  "series_id": "cbr.household_lending.mortgage_debt",
+  "title": "Mortgage debt",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.household_lending.mortgage_debt.route",
+  "family_profile": null,
+  "position": 26,
+  "publication": {
+    "acquisition_profile": "cbr.route.mortgage_debt",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.mortgage_debt",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

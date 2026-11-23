@@ -1,0 +1,55 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.validate_flake",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.domains.rosstat.tables.comparison:FlakeValidation",
+    "partial_allowed": true,
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "validation",
+          "contract": {
+            "schema_id": "rosstat.flake.validation"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "summary": "Validate selected source values, explicit semantic admission and remaining diagnostics before integration."
+    },
+    "method_id": "rosstat-tables-validate_flake"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:validate_flake"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,53 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.crosswalk_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:SorsCrosswalkSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "output_bytes": 268435456,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.sors.crosswalk",
+            "version": 2,
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.sors.crosswalk.snapshot",
+            "role": "integrated"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Encode all SORS data and declared continuation dependencies.",
+      "function": "encode"
+    },
+    "method_id": "sors-replay-context"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.snapshot_operations:build_crosswalk_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

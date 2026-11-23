@@ -1,0 +1,11 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "frank_rg",
+  "profile_id": "frg.directory",
+  "declaration": {
+    "formats": [],
+    "kind": "discovery",
+    "profile_id": "frg.directory",
+    "scope": ""
+  }
+}

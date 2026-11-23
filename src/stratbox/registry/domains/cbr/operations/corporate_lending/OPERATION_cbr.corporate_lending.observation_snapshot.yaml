@@ -1,0 +1,52 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.corporate_lending.observation_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.source_definitions:CorporateObservationSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "limits": {
+      "output_bytes": 268435456,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.corporate_lending.source_observations",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.corporate_lending.source_observations.snapshot",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Encode a complete source observation result for independent retention.",
+      "function": "encode"
+    },
+    "method_id": "cbr-corporate-observation-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.source_operations:build_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

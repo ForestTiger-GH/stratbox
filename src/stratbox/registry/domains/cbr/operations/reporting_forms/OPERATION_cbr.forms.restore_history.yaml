@@ -1,0 +1,41 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.restore_history",
+    "request_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "value_type": "builtins:tuple",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshots",
+          "contract": {
+            "schema_id": "cbr.forms.snapshots",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore normalized release history for subsequent financial model evaluation.",
+      "function": "replay"
+    },
+    "method_id": "cbr-forms-history-replay"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:restore_history"
+  },
+  "schema": "stratbox.operation"
+}

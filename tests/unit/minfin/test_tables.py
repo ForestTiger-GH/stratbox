@@ -114,12 +114,12 @@ def test_csv_source_local_no_unjustified_economic_inference():
 def test_domain_registration_available_without_loading_handlers():
     from stratbox.domains.registry import operation_catalog
     catalog = operation_catalog()
-    ids = {(r.operation_id,r.contract_version) for r in catalog.list_refs()}
-    assert ('minfin.discover',1) in ids
-    assert ('minfin.extract',1) in ids
-    assert ('minfin.read_representation',1) in ids
-    assert ('minfin.readable',1) in ids
-    assert catalog.owner_of('minfin.extract',1) == 'minfin'
+    ids = {r.operation_id for r in catalog.list_refs()}
+    assert 'minfin.discover' in ids
+    assert 'minfin.extract' in ids
+    assert 'minfin.read_representation' in ids
+    assert 'minfin.readable' in ids
+    assert catalog.owner_of('minfin.extract') == 'minfin'
 
 
 def test_docx_source_readable_is_qualified_partial():

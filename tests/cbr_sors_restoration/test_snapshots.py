@@ -41,7 +41,7 @@ def seal(value):
         for receipt in getattr(value, "lineage", ()):
             invocation.use(receipt)
         return _seal_grids(invocation, value)
-    return checked(run(OperationDefinition("test.sors.fixture", 1, "synthetic-1", type(value), type(value)), value, work))
+    return checked(run(OperationDefinition("test.sors.fixture", "synthetic-1", type(value), type(value)), value, work))
 
 
 def source_inputs():

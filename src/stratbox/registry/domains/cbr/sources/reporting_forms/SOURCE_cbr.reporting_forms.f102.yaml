@@ -1,0 +1,25 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.reporting_forms",
+  "series_id": "cbr.reporting_forms.f102",
+  "title": "Credit institution reporting form 102",
+  "issue_model": "dated",
+  "formats": [
+    "rar",
+    "zip",
+    "dbf"
+  ],
+  "route_profile": "cbr.reporting_forms.f102.route",
+  "family_profile": null,
+  "position": 1,
+  "publication": {
+    "acquisition_profile": "cbr.route.form102",
+    "extraction_profile": "cbr.forms.dbf_flakes",
+    "normalization_profile": "cbr.forms.f102.normalization",
+    "table_profile": "cbr.tables.f102",
+    "integration_profile": "cbr.reporting_forms.alignment",
+    "product_profile": "cbr.reporting_forms.views"
+  }
+}

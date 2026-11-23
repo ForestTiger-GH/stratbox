@@ -25,11 +25,11 @@ class StreamArchiveRequest:
     expected_revision: str | None = None
 
 
-STREAM_ARCHIVE = _registry_definition('frg.prepare_archive_to_store', 3)
+STREAM_ARCHIVE = _registry_definition('frg.prepare_archive_to_store')
 
 
-PLAN = _registry_definition('frg.plan_cleanup', 1)
+PLAN = _registry_definition('frg.plan_cleanup')
 
-APPLY = _registry_definition('frg.apply_cleanup', 1)
+APPLY = _registry_definition('frg.apply_cleanup')
 
-ARCHIVE = _registry_definition('frg.prepare_archive', 2)
+ARCHIVE = _registry_definition('frg.prepare_archive')

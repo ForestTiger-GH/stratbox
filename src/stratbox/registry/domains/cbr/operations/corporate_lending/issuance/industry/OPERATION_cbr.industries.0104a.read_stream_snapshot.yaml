@@ -1,0 +1,47 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.read_stream_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.industry.contracts:ReadIndustrySnapshotRequest",
+    "value_type": "stratbox.domains.cbr.integration.corporate_lending.issuance.contracts:IssuanceStreamResult",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream.snapshot",
+            "role": "integrated"
+          },
+          "alternatives": [
+            {
+              "schema_id": "dataset.snapshot",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.stream_result",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore a complete stream and validate its original table identities.",
+      "function": "replay"
+    },
+    "method_id": "cbr-industry-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.snapshot_operations:read_stream_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

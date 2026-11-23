@@ -1,0 +1,59 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices_reg.capture",
+    "request_type": "stratbox.shared.data.releases:ReleaseLink",
+    "value_type": [
+      "stratbox.shared.data.releases:ParsedRelease",
+      "stratbox.domains.cbr.tables.service_network.territorial_offices.contracts:OfficesRegCandidates"
+    ],
+    "required_capabilities": [
+      "http"
+    ],
+    "partial_allowed": true,
+    "processing": {
+      "stages": [
+        "acquire",
+        "extract"
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices_reg.release",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "candidates",
+          "contract": {
+            "schema_id": "cbr.offices_reg.candidates"
+          },
+          "path": "",
+          "outcomes": [
+            "partial"
+          ]
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices_reg.extract_representation",
+            "role": "extracts"
+          }
+        }
+      ],
+      "parameters": [
+        "as_of",
+        "url"
+      ],
+      "summary": "Acquire and extract a release in one invocation.",
+      "composition": true
+    },
+    "method_id": "cbr-offices-reg-xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:capture"
+  },
+  "schema": "stratbox.operation"
+}

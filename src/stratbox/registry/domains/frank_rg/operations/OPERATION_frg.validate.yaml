@@ -1,0 +1,37 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.validate",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:ValidateExtractRequest",
+    "value_type": "stratbox.domains.frank_rg.tables.contracts:ExtractValidation",
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "frg.extract.validation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate source binding, cell structure and formula-cache availability."
+    },
+    "method_id": "frg.validate"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:validate"
+  },
+  "schema": "stratbox.operation"
+}

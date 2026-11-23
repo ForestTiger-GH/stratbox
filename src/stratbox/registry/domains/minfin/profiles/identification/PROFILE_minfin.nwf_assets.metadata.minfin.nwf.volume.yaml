@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.nwf_assets.metadata.minfin.nwf.volume",
+  "declaration": {
+    "formats": [
+      "docx"
+    ],
+    "kind": "identification",
+    "profile_id": "minfin.nwf_assets.metadata.minfin.nwf.volume",
+    "scope": "volume_report"
+  }
+}

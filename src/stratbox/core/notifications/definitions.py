@@ -32,10 +32,10 @@ _CONSUMER_PORT = RuntimeDependency(
     "notification", "conditional", "notification_runtime"
 )
 
-PREPARE = _registry_definition('notifications.prepare', 3)
+PREPARE = _registry_definition('notifications.prepare')
 
-DELIVER = _registry_definition('notifications.deliver', 3)
+DELIVER = _registry_definition('notifications.deliver')
 
-QUALIFY = _registry_definition('notifications.qualify', 3)
+QUALIFY = _registry_definition('notifications.qualify')
 
-RECONCILE = _registry_definition('notifications.reconcile', 2)
+RECONCILE = _registry_definition('notifications.reconcile')

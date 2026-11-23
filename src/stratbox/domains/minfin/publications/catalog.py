@@ -29,7 +29,7 @@ def _decode(data: bytes) -> SourceFamily:
         raise ValueError("minfin.registry.invalid_yaml") from None
     if not isinstance(obj, dict) or set(obj) != {
         "schema", "family_id", "publisher_id", "title", "profiles", "series"
-    } or obj["schema"] != "stratbox.minfin.registry.v3" or obj["publisher_id"] != "minfin":
+    } or obj["schema"] != "stratbox.minfin.registry" or obj["publisher_id"] != "minfin":
         raise ValueError("minfin.registry.invalid_shape")
     refs = obj["profiles"]
     if not isinstance(refs, dict) or set(refs) != {"acquisition", "discovery", "identification", "table", "metrics"}:

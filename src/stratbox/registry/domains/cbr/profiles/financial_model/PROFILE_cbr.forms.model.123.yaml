@@ -1,0 +1,15 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.forms.model.123",
+  "declaration": {
+    "formats": [
+      "rar",
+      "zip",
+      "dbf"
+    ],
+    "kind": "financial_model",
+    "profile_id": "cbr.forms.model.123",
+    "scope": "Form 123 model with reviewed layout cbr.forms.layout.v1; all admitted subjects or an explicit bank selection."
+  }
+}

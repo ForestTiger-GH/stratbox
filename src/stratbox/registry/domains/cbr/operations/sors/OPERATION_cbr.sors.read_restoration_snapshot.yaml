@@ -1,0 +1,48 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.sors.read_restoration_snapshot",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.sors.definitions:ReadSorsSnapshotRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.sors.results:SorsRestorationResult",
+    "limits": {
+      "output_bytes": 268435456,
+      "cells": 80000000
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "cbr.sors.restoration.snapshot",
+            "role": "integrated"
+          },
+          "alternatives": [
+            {
+              "schema_id": "dataset.snapshot",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "cbr.sors.restoration",
+            "version": 2,
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate and reconstruct the complete SORS continuation context.",
+      "function": "replay"
+    },
+    "method_id": "sors-replay-context"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.snapshot_operations:read_restoration_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

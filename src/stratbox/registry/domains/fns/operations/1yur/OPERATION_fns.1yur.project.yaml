@@ -1,0 +1,38 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.project",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.domains.fns.tables.contracts:SourceProjection",
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "projection",
+          "contract": {
+            "schema_id": "fns.1yur.reported_projection",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Select reviewed reported fields from retained source evidence and record every projection qualification."
+    },
+    "method_id": "fns-1yur-project"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:project"
+  },
+  "schema": "stratbox.operation"
+}

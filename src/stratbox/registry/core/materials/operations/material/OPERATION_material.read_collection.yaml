@@ -1,0 +1,42 @@
+{
+  "owner_id": "core.materials",
+  "definition": {
+    "operation_id": "material.read_collection",
+    "request_type": "stratbox.shared.data.representation:Representation",
+    "value_type": "stratbox.shared.material_collections:CollectionManifest",
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection.json"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "collection",
+          "contract": {
+            "schema_id": "material.collection"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore a validated manifest without interpreting a batch as complete publisher history."
+    },
+    "method_id": "material-collection"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.materials.collections:read_collection"
+  },
+  "schema": "stratbox.operation"
+}

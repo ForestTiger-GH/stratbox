@@ -53,11 +53,11 @@ def test_all_minfin_operations_resolve_to_one_owner_and_semantic_handlers():
     assert len(ref) == 34
     assert len({r.operation_id for r in ref}) == 34
     for operation in ref:
-        assert register.owner_of(operation.operation_id, operation.contract_version) == "minfin"
-        assert operation.definition_ref.startswith("stratbox.domains.minfin.operations.")
+        assert register.owner_of(operation.operation_id) == "minfin"
+        assert not hasattr(operation, "definition_ref")
         assert operation.handler_ref.startswith("stratbox.domains.minfin.operations.")
-        definition, handler, wire = register.resolve(operation.operation_id, operation.contract_version)
+        definition, handler, wire = register.resolve(operation.operation_id)
         assert definition.operation_id == operation.operation_id
-        assert definition.contract_version == operation.contract_version
+        assert not hasattr(definition, "contract_version")
         assert callable(handler)
         assert wire is None

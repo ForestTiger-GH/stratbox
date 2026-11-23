@@ -24,8 +24,8 @@ def invoke_read_only(raw, *, materials):
     return _invoke_read_only(raw, catalog=operation_catalog(), materials=materials)
 
 
-def wire_schemas(operation_id, contract_version):
-    return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
+def wire_schemas(operation_id):
+    return _wire_schemas(operation_id, catalog=operation_catalog())
 from stratbox.shared.evidence import SourcePayload
 from stratbox.core.execution import Correlation, ExecutionContext, OperationDefinition, run
 import stratbox.domains.cbr.operations.service_network.bank_offices as cbr_offices
@@ -43,21 +43,22 @@ from stratbox.core.execution import OperationDefinition
 catalog = operation_catalog()
 descriptions = catalog.describe()
 catalog.page(stage='extract', limit=5)
-catalog.compatible_next('cbr.offices.acquire', 2)
+catalog.compatible_next('cbr.offices.acquire')
 catalog.coverage('cbr')
 from stratbox.core.execution.machine import wire_schemas
 for ref in catalog.references:
     if ref.wire_contract_ref:
-        wire_schemas(ref.operation_id, ref.contract_version, catalog=catalog)
-registered = {(d['operation_id'], d['contract_version']) for d in descriptions}
+        wire_schemas(ref.operation_id, catalog=catalog)
+registered = {d['operation_id'] for d in descriptions}
 assert len(registered) >= 60
 modules = [name for name in sys.modules if name.startswith('stratbox.')]
 declared = {
-    (value.operation_id, value.contract_version) for module in modules
+    value.operation_id for module in modules
     for value in vars(importlib.import_module(module)).values()
     if isinstance(value, OperationDefinition)
 }
-assert registered == declared, (registered - declared, declared - registered)
+assert declared <= registered, declared - registered
+assert registered == {ref.operation_id for ref in catalog.references}
 assert not {'requests', 'pandas', 'openpyxl', 'pyxlsb', 'highspy', 'xlrd'} & sys.modules.keys()
 handlers = {ref.handler_ref.split(':')[0] for ref in catalog.references}
 codecs = {ref.wire_codec_ref.split(':')[0] for ref in catalog.references if ref.wire_codec_ref}
@@ -68,12 +69,12 @@ assert not (handlers | codecs) & sys.modules.keys()
     subprocess.run([sys.executable, "-B", "-S", "-c",
                     f"import sys; sys.path.insert(0, {str(package.parent)!r})\n" + check], check=True)
     definition = operation_catalog().references[0]
-    with pytest.raises(ValueError, match="Duplicate operation"):
+    with pytest.raises(ValueError, match="registry.duplicate_operation"):
         OperationCatalog((definition, definition))
 
 
-def _wire(operation_id, data, version=1):
-    return json.dumps({"operation_id": operation_id, "contract_version": version, "input": data}).encode()
+def _wire(operation_id, data):
+    return json.dumps({"operation_id": operation_id, "input": data}).encode()
 
 
 @pytest.mark.parametrize(("raw", "code"), [
@@ -81,7 +82,8 @@ def _wire(operation_id, data, version=1):
     (_wire("cbr.offices.parse", {"source_ref": "fixture", "capture_date": "2026-02-29"}), "request.invalid_date"),
     (_wire("cbr.offices.parse", {"source_ref": "fixture", "capture_date": "2026-11-12", "url": "secret"}), "request.invalid_fields"),
     (_wire("frg.apply_cleanup", {}), "operation.wire_unavailable"),
-    (_wire("cmd.run", {}), "operation.contract_unavailable"),
+    (_wire("cmd.run", {}), "operation.unavailable"),
+    (b'{"operation_id":"frg.plan_cleanup","contract_version":1,"input":{"directory_ref":"fixture"}}', "request.invalid_fields"),
     (b'{"operation_id":"one","operation_id":"two"}', "request.duplicate_field"),
     (b"[" * 2000 + b"]" * 2000, "request.depth_limit"),
 ])
@@ -122,7 +124,7 @@ def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_pat
     assert result["value"]["row_count"] == parsed.value.row_count
     comparison = json.loads(invoke_read_only(_wire("cbr.offices.compare", {
         "candidate_ref": "fixture", "baseline_ref": "fixture",
-    }, version=2), materials=material))
+    }), materials=material))
     assert comparison["value"]["state"] == "unchanged"
     assert comparison["value"]["layers"]["original"] == "same"
     assert comparison["value"]["coverage"]["common_observations"] > 0
@@ -130,10 +132,14 @@ def test_wire_and_python_use_same_bytes_and_project_only_declared_fields(tmp_pat
     projection = json.loads(invoke_read_only(_wire("frg.plan_cleanup", {"directory_ref": "fixture"}), materials=material))
     assert projection["value"]["plan_sha256"] == plan.value.identity.sha256
     assert list(tmp_path.iterdir()) == [tmp_path / "2026-05-01_Экспресс выдачи.xlsx"]
-    schema, response_schema = wire_schemas("frg.plan_cleanup", 1)
+    schema, response_schema = wire_schemas("frg.plan_cleanup")
     assert set(projection) == set(response_schema["required"])
+    assert set(schema["required"]) == {"operation_id", "input"}
+    assert "contract_version" not in response_schema["properties"]
+    assert "method_id" in response_schema["properties"]
+    assert "method_version" not in response_schema["properties"]
     schema["properties"].clear()
-    assert wire_schemas("frg.plan_cleanup", 1)[0]["properties"]
+    assert wire_schemas("frg.plan_cleanup")[0]["properties"]
 
 
 def test_provider_binding_is_explicit_and_readiness_probe_is_optional():
@@ -163,7 +169,7 @@ def test_budget_ceiling_stage_and_optional_sink_failure():
             events.append(event)
             raise ConnectionError("unstructured private detail")
 
-    definition = OperationDefinition("test.budget", 1, "test-1", int, int)
+    definition = OperationDefinition("test.budget", "test-1", int, int)
 
     def work(request, invocation):
         invocation.stage("read")
@@ -250,7 +256,7 @@ def test_computation_identity_keeps_source_method_and_projection_distinct():
 
     def key(inputs=(original,), **options):
         method = options.pop("method", "release-1")
-        return computation_identity("test.qualify", 1, method, inputs, **options)
+        return computation_identity("test.qualify", method, inputs, **options)
 
     keys = {
         key(), key(method="release-2"),

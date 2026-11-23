@@ -1,0 +1,49 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.compare",
+    "request_type": "stratbox.shared.data.releases:CompareReleaseRequest",
+    "value_type": "stratbox.shared.data.comparison:Comparison",
+    "processing": {
+      "stages": [
+        "inspect",
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "candidate",
+          "contract": {
+            "schema_id": "fns.1yur.regional_release",
+            "role": "products"
+          }
+        },
+        {
+          "name": "baseline",
+          "contract": {
+            "schema_id": "fns.1yur.regional_release",
+            "role": "products"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison",
+          "contract": {
+            "schema_id": "fns.1yur.comparison"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "baseline_state"
+      ],
+      "summary": "Compare selected regional product releases with their historical qualifiers intact."
+    },
+    "method_id": "fns-1yur-compare"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:compare"
+  },
+  "schema": "stratbox.operation"
+}

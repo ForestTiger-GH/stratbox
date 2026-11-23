@@ -1,178 +1,165 @@
 # Canonical source and operation registry
 
-Stratbox keeps source identities, operation contracts and processing-profile
-bindings in `stratbox.registry`. `core.registry` loads and validates those
-records; `core.execution` binds actual values and invokes the registered handler.
-Publisher-specific recognition, reviewed layouts and algorithms remain Python
-implementations in `stratbox.domains`.
+Stratbox stores source identities, operations, profiles, routes and meaningful
+publication families in `stratbox.registry`. `core.registry` validates those
+records and builds immutable catalogs. `core.execution` binds actual values and
+executes one selected operation. Publisher recognition and economic algorithms
+remain with their domain implementations.
 
-Catalog inspection describes available contracts and their conditions. Execution
-still requires admitted inputs, selected providers, resource budgets and any
-applicable effect authorization.
+Operation and registry record identities are unversioned. A logical ID resolves
+to one current declaration. Payload schemas, publication revisions, dataset
+versions and reference editions describe data and retain their separate roles.
 
 Contents:
 
-1. Registry responsibilities — separate sources, routes and callable contracts.
-2. Catalog discovery — inspect identities and schemas while handlers stay lazy.
-3. Named calls — bind supplied values and execute one operation.
-4. Source binding — apply source formats, route stages and fixed parameters.
-5. Extending an owner — publish declarations and retain domain implementation ownership.
-6. Machine access — preserve explicit protocol admission and host authority.
+1. Declaration ownership — organize records by responsibility.
+2. Catalog discovery — compile definitions and resolve handlers lazily.
+3. Named calls — bind exact typed inputs and semantic parameters.
+4. Source binding — retain source context through processing and replay.
+5. Requirements and readiness — explain the inputs a call needs.
+6. Extension and delivery — preserve one discovery rule across distributions.
 
-## 1. Sources, routes and operations have separate contracts
+## 1. Declaration ownership follows explicit owners
 
-| Code | Declaration or owner | Responsibility |
+| Code | Location within an owner | Responsibility |
 | --- | --- | --- |
-| G01 | `registry/<owner>/sources/SOURCE_*.yaml` | One logical publication series, its formats, publication attributes and profile references. |
-| G02 | `registry/<owner>/operations/OPERATION_*.yaml` | One versioned operation: request/result types, method, named ports, stages, parameters, capabilities, effects, limits, runtime dependencies and implementation references. |
-| G03 | `registry/<owner>/profiles/PROFILE_*.yaml` | Shared publication metadata and source-route bindings, including applicable operations, profile editions and allowed stage transitions. |
-| G04 | `registry/<owner>/OWNER.yaml` | Operation ownership and explicit missing, inapplicable or delegated stage declarations. |
-| G05 | `core.registry` | Resource loading, schema and ownership validation, immutable catalog assembly and discovery projections. |
-| G06 | `core.execution` | Source binding, actual input/output adaptation, lineage propagation, runtime admission and invocation outcomes. |
-| G07 | `shared.data.operations` | Storage-independent processing stages, named port contracts, schema compatibility and coverage identities. |
-| G08 | `domains.<publisher>` | Typed source profiles, validators, publication recognition and economic algorithms. |
+| G01 | `sources/**/SOURCE_*.yaml` | One logical series, publication attributes and profile references. |
+| G02 | `operations/**/OPERATION_*.yaml` | One operation, its method, request/result types, ports, parameters and runtime policy. |
+| G03 | `profiles/**/PROFILE_*.yaml` | Canonical processing properties and qualified source-specific applications. |
+| G04 | `routes/**/ROUTE_*.yaml` | Source applicability, fixed parameters, formats and processing coverage. |
+| G05 | `families/**/FAMILY_*.yaml` | Shared publication facts with independent substantive meaning. |
+| G06 | `groups/**/GROUP_*.yaml` | Explicit shared transformations, stages and topology referenced by source routes. |
+| G07 | `OWNER.yaml` | Owner identity, coverage exceptions and explicit value-context adapters. |
 
-The resource files use the JSON subset of YAML, so discovery requires no YAML
-engine. Source records contain no handler selection logic. Route bindings name
-existing logical operation contracts; each operation independently defines its
-request and result. Technical encoding, replay and maintenance remain distinct
-from economic processing stages.
+Core owners live under `registry/core/`; publisher owners live under
+`registry/domains/`. Deeper directories group substantive areas such as
+corporate lending, publication acquisition or extraction. `OWNER.yaml` establishes
+ownership. Grouping folders and declaration filenames carry no additional
+identity. Moving a record within the admitted owner structure preserves its ID.
 
-Routes reference separate profile metadata records. Identical metadata has one
-record; source-specific scope or format qualifications have distinct resource
-identities while retaining the logical profile ID and method edition.
+Files use the JSON subset of YAML. The declaration format has explicit required
+and optional fields with defaults, independent of Python dataclass field lists.
+Unknown fields, duplicate identities and unresolved references fail validation.
+Profile cards derive from canonical properties; an application to a particular
+source retains its additional scope and format qualifications. CBR family IDs
+are derived from canonical sources directly.
 
-Python definition symbols are projections of canonical operation metadata.
-Their lightweight request/result classes remain in their owning implementation
-packages. Changing a handler path therefore does not change the logical
-operation identity; changing a public schema or method requires its own version.
+Routes may include shared transformation groups from their own owner. Group
+contents are additive and explicit: nested includes, overrides and conflicting
+operation bindings are rejected. Source-specific profiles, applicability and
+qualifications stay on the source route. Shared groups have unversioned IDs.
 
-## 2. Discover and resolve catalogs
-
-```python
-from stratbox.core.registry import domain_catalog, operation_catalog
-
-business = domain_catalog()
-catalog = operation_catalog()
-references = catalog.list_refs()
-descriptions = catalog.describe()
-definition = catalog.get("frg.plan_cleanup", 1)
-```
-
-Discovery finds resource owners deterministically and has no fixed publisher or
-operation count. Each logical operation ID has one owner across its contract
-versions. Duplicate contracts, invalid resource schemas, inconsistent identities
-and references outside the admitted owner fail explicitly. Domain reference
-validation uses the nearest declared owner, with Python package segment boundaries.
-
-`catalog.get()` resolves a typed definition; `catalog.resolve()` additionally
-loads its executable handler and any explicitly registered machine codec.
-Metadata listing leaves handlers and optional spreadsheet, document or solver
-engines unloaded. Creating a catalog performs no acquisition, capture or storage.
-
-`domain_registration_inventory()` in `stratbox.domains.registry` exposes the
-same validated domain snapshot as owner/operation/version rows. Distribution
-checks compare canonical resources and registered contracts across source,
-wheel and sdist. Resource metadata and executable implementation have one
-validation route.
-
-## 3. Bind named inputs and invoke an independent call
+## 2. Definitions compile directly from declarations
 
 ```python
 from stratbox.core.registry import operation_catalog
-from stratbox.core.execution.handoff import prepare_input
 
 catalog = operation_catalog()
-# payload is an admitted SourcePayload; its exact input receipt is retained.
+references = catalog.list_refs()
+definition = catalog.get("frg.plan_cleanup")
+descriptions = catalog.page(owner_id="cbr", limit=20)
+```
+
+`catalog.get()` compiles the canonical declaration into `OperationDefinition`.
+Python definition constants are convenient projections of the same record.
+`catalog.resolve()` additionally loads the handler and an expressly admitted
+machine codec. No `definition_ref` or round trip through a Python constant is
+required. Each operation has an unversioned `method_id` identifying its method.
+
+Metadata discovery leaves handlers and optional data engines unloaded. Catalog
+creation performs no acquisition, capture or storage. A typed extension can
+supply an explicit definition with its handler reference through `OperationRef`.
+The catalog checks that the definition and operation identity agree.
+
+## 3. Named calls retain exact inputs and parameters
+
+```python
+from stratbox.core.execution.handoff import prepare_input
+
+# payload is an admitted SourcePayload.
 call = catalog.bind(
-    "workbook.extract", 1,
+    "workbook.extract",
     inputs={"source": prepare_input(payload)},
     parameters={"series_id": "example.series", "issue_id": "2026-08"},
 )
 result = call.invoke()
 ```
 
-`catalog.bind()` checks the actual definition, named inputs and declared
-parameters before constructing the typed request. It returns an `OperationCall`;
-`call.invoke(context=..., **options)` resolves the catalog handler and uses the
-same operation runner as the direct Python API. Binding alone has no effects.
+Binding validates named ports, accepted schemas, outcomes, qualifications and
+coverage, then creates the typed request. `call.invoke(context=..., **options)`
+uses the same runner as the direct Python API. Binding alone has no effects.
+`project_output(result, name)` transfers an in-memory output;
+`resolve_output(reference, resolver)` restores an explicitly retained output.
 
-An in-memory result uses `project_output(result, name)` before binding. A retained
-result uses `resolve_output(reference, resolver)` with the consumer's explicit
-resolver. Supplied typed values use `prepare_input()` with an explicit
-`DataContract`, except for the narrow built-in payload/artifact defaults. See
-[material flow and value adapters](universal-data-flow.md#3-binding-operation-results).
+The runner records exact consumed named arguments and applied semantic parameter
+values, including defaults. Collection order and multiplicity remain part of
+this signature. Source lineage and independent semantic dependencies remain
+separate evidence. Equal values supplied directly or restored from a snapshot
+have equal semantic signatures; invocation history and storage placement add no
+artificial differences. Different values sharing the same original retain
+different computation identities.
 
-## 4. Bind a logical source and its processing route
+## 4. Source-bound calls preserve explicit value context
 
 ```python
 source = catalog.bind_source("rosstat.short_term_indicators", format="xlsx")
-card = source.source
-route = source.route
 call = source.bind(
     "rosstat.tables.extract_workbook",
     inputs={"payload": prepare_input(payload)},
     parameters={"issue_id": "2026-08", "asset_id": "main"},
 )
-# The source binding supplies and pins series_id.
 ```
 
-Use a series ID returned by `catalog.source_catalog().sources` for the desired
-publication. `SourceBinding.bind()` selects one of that source's exact operation
-contracts and returns an independently invocable call. It applies fixed source
-parameters, validates caller selections and checks route stages and supplied
-producer transitions. The optional `from_stage` makes an independent predecessor
-selection explicit. A source format that admits only original preservation does
-not gain a reviewed parser merely because another format has one.
+Source binding applies fixed parameters and the explicitly declared identity
+parameter. Value-context adapters declare how source, group, issue and edition
+are represented by a typed value or saved metadata. Inputs and returned values
+are checked against the source binding. Auxiliary source roles require their own
+explicit allowance.
 
-A source route describes admissible processing boundaries. It does not schedule
-all boundaries or require acquisition before an independently supplied extract.
-Named roles still require exact schemas, accepted outcomes, qualifications and
-coverage. Route metadata cannot prove that source bytes or an economic mapping
-are valid; the operation's input validator retains that responsibility.
+Source-scoped retained inputs require a verifiable source context in their
+snapshot metadata or artifact descriptor. Unqualified snapshots use the generic
+catalog directly; a dataset name or transport label supplies no source claim.
+Selected snapshot components retain the metadata needed for source binding.
+Auxiliary sources are admitted per named input role, while the actual output
+preserves the bound primary source alongside any declared supporting sources.
 
-`catalog.source_catalog().describe(series_id, operations=catalog)` gives the
-shared source/profile/operation view. CBR's `describe_source` and
-`describe_family` additionally expose reviewed tables, original-only formats,
-source-specific handoffs and multi-source method requirements. See the
-[CBR route](cbr-data-pipeline.md) and [independent publisher routes](independent-domain-data-routes.md).
+Exact port compatibility governs a producer-to-consumer handoff. Economic
+stages classify operations and describe coverage; their coarse route graph
+cannot reject an otherwise compatible typed handoff. Independently supplied
+values and restored values undergo the same input checks. The optional
+`from_stage` qualifies an explicit stage selection. Selecting a source format
+still limits operations to their reviewed format scope.
 
-## 5. Extend a publisher or operation owner
+## 5. Requirements explain readiness
 
-Add the publisher's normal Python implementation packages and its canonical
-registry owner resources. Define request/result classes and a handler in the
-appropriate functional package. Publish its full operation declaration and
-reference it from applicable route profiles. Add source records for logical
-series and qualify their formats, profile editions and coverage.
-
-Keep physical recognition and economic rules in typed domain profiles. New
-sources share neutral operations only through an explicit binding. Source
-families, callable namespaces and implementation subpackages do not create new
-operation owners by themselves. Owner discovery and inventory validation need
-no manually maintained central list.
-
-For optional machine access, declare the immutable protocol contract separately
-from its codec. A typed Python operation is not automatically admitted to a
-wire protocol. Preserve lazy imports and verify the packaged resources together
-with relevant source, semantic and replay behavior.
-
-## 6. Machine dispatch preserves host authority
+`catalog.source_catalog().describe(series_id, operations=catalog)` exposes
+qualified source coverage, profiles and bound operations. Operation requirements
+identify named roles, allowed sources, groups, cardinality, compatible schemas
+and source compatibility conditions. Readiness explains missing or incompatible
+roles and permits inspection before execution. SORS publishes its mandatory
+source roles and optional history through this common representation; scientific
+validation remains with SORS.
 
 ```python
-from stratbox.core.execution.machine import wire_schemas
-
-schema, response_schema = wire_schemas("cbr.offices.parse", 1, catalog=catalog)
+requirements = catalog.requirements("cbr.sors.prepare_inputs")
+readiness = catalog.readiness("cbr.sors.prepare_inputs", available={})
+assert readiness.required_count == 10
+assert readiness.state == "blocked"
 ```
 
-Restricted read-only wire admission covers `cbr.offices.parse` v1,
-`cbr.offices.compare` v2 and `frg.plan_cleanup` v1. Their codecs live with their
-owners. This admission grants no network, storage, deletion or publication
-authority.
+Readiness and route inspection create no schedules, durable tasks or provider
+authority. Applications continue to own orchestration and storage decisions.
 
-Hosts holding validated typed requests can use `invoke_reference` with a
-host-owned `TypedValueResolver`, explicit effect grants and reserved result
-capacity. The response contains typed handles and a bounded preview. Durable
-results, authorization and admitted codecs remain consumer responsibilities.
-See [machine access](independent-domain-data-routes.md#7-machine-access).
+## 6. Discovery and delivery share one inventory
 
-[Processing roles, bounded discovery and qualified connections](processing-operation-catalog.md)
+Owners and all record kinds are discovered recursively by the same resource
+traversal. Runtime discovery, static validation, wheel and sdist inspection use
+that inventory. Unowned declarations and unexpected record locations are errors.
+`domain_registration_inventory()` exposes owner/operation pairs.
+
+New owners publish their implementation types and canonical declarations under
+the appropriate architectural root. Machine admission requires an explicit wire
+contract and codec; a Python operation alone grants no network, write or
+publication authority. See [processing discovery](processing-operation-catalog.md),
+[value handoff](universal-data-flow.md) and
+[independent publisher routes](independent-domain-data-routes.md).

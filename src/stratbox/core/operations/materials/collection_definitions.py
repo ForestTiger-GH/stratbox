@@ -8,5 +8,5 @@ from .definitions import LIMITS
 
 COLLECTION = DataContract("material.collection")
 ENCODED = DataContract("material.collection.json")
-SERIALIZE = _registry_definition('material.serialize_collection', 1)
-READ = _registry_definition('material.read_collection', 1)
+SERIALIZE = _registry_definition('material.serialize_collection')
+READ = _registry_definition('material.read_collection')

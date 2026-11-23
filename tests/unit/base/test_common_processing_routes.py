@@ -191,15 +191,16 @@ def test_reference_invocation_uses_real_definition_and_refuses_ungranted_effects
     vault=MemoryValueResolver()
     reference=vault.retain(ExtractRequest(workbook(),"example.table","2026"))
     catalog=core_catalog()
-    response=json.loads(invoke_reference(json.dumps({"operation_id":"workbook.extract","contract_version":1,
-        "request_ref":reference,"preview_bytes":256}).encode(),catalog=catalog,values=vault))
+    response=json.loads(invoke_reference(json.dumps({"operation_id":"workbook.extract","request_ref":reference,"preview_bytes":256}).encode(),catalog=catalog,values=vault))
     assert response["outcome"]=="succeeded" and response["value_ref"]
     assert response["preview"]["bounded"]
-    schema,_=reference_schemas("dataset.write_snapshot",1,catalog=catalog)
+    schema,_=reference_schemas("dataset.write_snapshot",catalog=catalog)
     assert "dataset.write" in schema["x-effects-requiring-host-grant"]
+    assert set(schema["required"]) == {"operation_id", "request_ref"}
+    assert "contract_version" not in response
+    assert "method_id" in response
     with pytest.raises(ValueError,match="effects_not_granted"):
-        invoke_reference(json.dumps({"operation_id":"dataset.write_snapshot","contract_version":1,
-            "request_ref":reference}).encode(),catalog=catalog,values=vault)
+        invoke_reference(json.dumps({"operation_id":"dataset.write_snapshot","request_ref":reference}).encode(),catalog=catalog,values=vault)
 
 
 def test_reference_capacity_is_reserved_before_any_handler_and_preview_never_loses_receipt():
@@ -215,8 +216,7 @@ def test_reference_capacity_is_reserved_before_any_handler_and_preview_never_los
             raise AssertionError("No resolution or execution before capacity admission")
     catalog=Catalog()
     with pytest.raises(ValueError,match="capacity_exhausted"):
-        invoke_reference(json.dumps({"operation_id":"workbook.extract","contract_version":1,
-            "request_ref":reference}).encode(),catalog=catalog,values=vault)
+        invoke_reference(json.dumps({"operation_id":"workbook.extract","request_ref":reference}).encode(),catalog=catalog,values=vault)
     assert not catalog.called
     assert preview_value(10**5000,max_bytes=256)["value_omitted"]=="magnitude"
 

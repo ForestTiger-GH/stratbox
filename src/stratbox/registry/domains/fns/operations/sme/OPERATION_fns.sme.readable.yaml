@@ -1,0 +1,46 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.readable",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "fns.sme.readable",
+            "role": "readable"
+          },
+          "path": ""
+        },
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation.bytes",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render source-readable evidence directly from the full retained flake."
+    },
+    "method_id": "fns-sme-readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:readable"
+  },
+  "schema": "stratbox.operation"
+}

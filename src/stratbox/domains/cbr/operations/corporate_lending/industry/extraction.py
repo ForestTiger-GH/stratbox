@@ -2,12 +2,11 @@
 from dataclasses import replace
 
 from stratbox.core.execution import OperationFailure
-from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
 from stratbox.shared.data.tables import TABLE_ENCODING, TABLE_MEDIA_TYPE, table_identity
 from stratbox.shared.evidence import UsedInputReceipt
 
 
-def seal_flake(value, payload, definition, invocation, *, parameters):
+def seal_flake(value, request, definition, invocation, *, parameters):
     """Seal exactly one parsed publication under its extraction contract.
 
     The outer composition retains one budget and one execution envelope. The
@@ -19,16 +18,14 @@ def seal_flake(value, payload, definition, invocation, *, parameters):
         output = table_identity((("stream", value.df_stream),), checkpoint=invocation.check_cancelled)
     except (TypeError, ValueError, UnicodeError, RecursionError):
         raise OperationFailure("input.table_value_unsupported") from None
-    inputs = (UsedInputReceipt.for_payload(payload, "source_workbook"),)
+    request = replace(request, selection=value.selection)
+    inputs = (UsedInputReceipt.for_payload(request.payload, "source_workbook"),)
     parameters = {"encoding": TABLE_ENCODING, **parameters}
     if invocation.definition == definition:
         evidence = invocation.record(output, parameters=parameters, inputs=inputs)
     else:
-        version = build_dataset_version(definition.operation_id, f"contract-{definition.contract_version}",
-            definition.method_version, inputs, output, parameters=parameters)
-        identity = computation_identity(definition.operation_id, definition.contract_version,
-            definition.method_version, inputs, parameters=parameters)
-        evidence = ComputationReceipt(version, output, inputs, identity, tuple(invocation.context.input_computations))
+        evidence = invocation.record_child(definition, request, output, inputs=inputs,
+                                           parameters=parameters)
     return replace(value, evidence=evidence)
 
 

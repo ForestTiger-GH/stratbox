@@ -1,0 +1,65 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.map_reviewed_cells",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:MapCellsRequest",
+    "value_type": "stratbox.domains.rosstat.tables.contracts:RosstatSourceFlake",
+    "partial_allowed": true,
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "physical",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "alternatives": [
+            {
+              "schema_id": "document.blocks.extract",
+              "role": "extracts"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "role": "extracts"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "profile"
+      ],
+      "summary": "Build a source flake through an exact-original reviewed coordinate profile and explicit statistical semantics."
+    },
+    "method_id": "rosstat-tables-map_reviewed_cells"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:map_reviewed_cells"
+  },
+  "schema": "stratbox.operation"
+}

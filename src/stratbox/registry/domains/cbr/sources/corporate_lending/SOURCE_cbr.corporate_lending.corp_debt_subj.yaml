@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.corp_debt_subj",
+  "title": "Corporate debt by region over time",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.corporate_lending.corp_debt_subj.route",
+  "family_profile": null,
+  "position": 16,
+  "publication": {
+    "acquisition_profile": "cbr.route.corp_debt_subj",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.corp_debt_subj",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.funding",
+  "series_id": "cbr.funding.budget_all",
+  "title": "Budget funds",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.funding.budget_all.route",
+  "family_profile": null,
+  "position": 39,
+  "publication": {
+    "acquisition_profile": "cbr.route.budget_all",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.budget_all",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

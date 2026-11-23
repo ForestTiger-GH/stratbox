@@ -36,4 +36,4 @@ class StoredArchive:
     manifest: CollectionManifest
 
 
-ARCHIVE = _registry_definition('material.archive', 1)
+ARCHIVE = _registry_definition('material.archive')

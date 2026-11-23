@@ -1,0 +1,44 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.read_representation",
+    "request_type": "stratbox.domains.cbr.tables.service_network.bank_offices.contracts:ReadOfficesRequest",
+    "value_type": "stratbox.shared.data.releases:ParsedRelease",
+    "processing": {
+      "stages": [
+        "read_extract"
+      ],
+      "inputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "cbr.offices.extract_representation",
+            "role": "extracts"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "release",
+          "contract": {
+            "schema_id": "cbr.offices.release",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "captured_on",
+        "official_as_of",
+        "period_basis"
+      ],
+      "summary": "Read CSV with explicit capture and observation dates; absent observation metadata remains literal-only."
+    },
+    "method_id": "cbr-offices-csv-explicit-period"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:read_representation"
+  },
+  "schema": "stratbox.operation"
+}

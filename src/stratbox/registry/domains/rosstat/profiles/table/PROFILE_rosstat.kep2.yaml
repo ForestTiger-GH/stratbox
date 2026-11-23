@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "rosstat",
+  "profile_id": "rosstat.kep2",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "table",
+    "profile_id": "rosstat.kep2",
+    "scope": "Eleven notebook indicators; reviewed A:R period layout, source units, full annual/quarter/month selection; KEP2 2026-08 validated."
+  }
+}

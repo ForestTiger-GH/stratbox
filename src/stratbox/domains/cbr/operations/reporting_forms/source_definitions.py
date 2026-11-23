@@ -13,27 +13,27 @@ from stratbox.domains.cbr.products.reporting_forms.contracts import FormViews
 from stratbox.domains.cbr.operations.reporting_forms.definitions import _TABLES
 
 
-DISCOVER = _registry_definition('cbr.forms.discover_sources', 1)
+DISCOVER = _registry_definition('cbr.forms.discover_sources')
 
-EXTRACT = _registry_definition('cbr.forms.extract', 1)
+EXTRACT = _registry_definition('cbr.forms.extract')
 
-NORMALIZE = _registry_definition('cbr.forms.normalize', 1)
+NORMALIZE = _registry_definition('cbr.forms.normalize')
 
-FLAKE_SNAPSHOT = _registry_definition('cbr.forms.flake_snapshot', 1)
+FLAKE_SNAPSHOT = _registry_definition('cbr.forms.flake_snapshot')
 
-RESTORE_FLAKES = _registry_definition('cbr.forms.restore_flakes', 1)
+RESTORE_FLAKES = _registry_definition('cbr.forms.restore_flakes')
 
-RESULT_SNAPSHOT = _registry_definition('cbr.forms.result_snapshot', 1)
+RESULT_SNAPSHOT = _registry_definition('cbr.forms.result_snapshot')
 
 
-RESTORE_NORMALIZED = _registry_definition('cbr.forms.restore_normalized', 1)
-RESTORE_DATA = _registry_definition('cbr.forms.restore_data', 1)
-RESTORE_VIEWS = _registry_definition('cbr.forms.restore_views', 1)
+RESTORE_NORMALIZED = _registry_definition('cbr.forms.restore_normalized')
+RESTORE_DATA = _registry_definition('cbr.forms.restore_data')
+RESTORE_VIEWS = _registry_definition('cbr.forms.restore_views')
 
-HISTORY = _registry_definition('cbr.forms.build_history', 1)
+HISTORY = _registry_definition('cbr.forms.build_history')
 
-RESTORE_HISTORY = _registry_definition('cbr.forms.restore_history', 1)
+RESTORE_HISTORY = _registry_definition('cbr.forms.restore_history')
 
-RENDER_FLAKES = _registry_definition('cbr.forms.render_flakes', 1)
+RENDER_FLAKES = _registry_definition('cbr.forms.render_flakes')
 
-READ_FLAKE_EXPORT = _registry_definition('cbr.forms.read_flake_export', 1)
+READ_FLAKE_EXPORT = _registry_definition('cbr.forms.read_flake_export')

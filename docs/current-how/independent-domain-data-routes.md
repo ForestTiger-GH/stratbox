@@ -1,6 +1,6 @@
 # Independent domain data routes and portable replay
 
-This guide describes the executable processing architecture in Stratbox 0.21.0.
+This guide describes the executable processing architecture in Stratbox 0.22.0.
 Publisher domains own source identity and economic meaning. Shared contracts
 preserve evidence, and neutral operations handle extraction, storage, bounded
 inspection and machine invocation. Each transformation can be called separately;
@@ -184,11 +184,11 @@ discarded duplicate candidates.
 `operation_catalog().source_catalog()` projects publisher adapters to
 `SourceCard`, `SourceProfile` and `SourceOperation`. Cards describe family,
 issue model, formats, profiles, qualifications and applicable bindings. Each
-binding resolves an exact ID/version in the existing executable operation
+binding resolves an exact operation ID in the existing executable operation
 catalog; there is no second handler registry.
 
 `sources.describe(series_id, operations=catalog)` exposes actual ports,
-requirements, effects and method versions with source-scoped conditions.
+requirements, effects and method identities with source-scoped conditions.
 Unbound stages remain undeclared. A physical reader does not imply a reviewed
 economic schema for every layout. Frank RG semantics and unreviewed Rosstat
 table/document layouts require explicit profiles bound to source bytes and
@@ -199,7 +199,7 @@ declared meanings.
 The existing admitted inline read-only codecs remain available. The generic
 typed-reference interface lets a host construct or restore a typed request,
 retain it in its own scope and invoke `invoke_reference`. The real definition
-remains authoritative for request type, version, capabilities and effects.
+remains authoritative for request type, method identity, capabilities and effects.
 
 Effectful calls require an explicit host grant covering declared effects.
 Opaque references confer no credentials or destination authority. The bounded

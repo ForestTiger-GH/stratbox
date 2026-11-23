@@ -6,7 +6,7 @@ from stratbox.shared.data.representation import Representation
 from ..documents.contracts import ExtractDocumentRequest, PublisherDocument, DocumentSnapshotRequest, ReadDocumentRequest, RenderDocumentRequest
 from ..documents.snapshots import DOCUMENT_SNAPSHOT
 
-EXTRACT_DOCUMENT = _registry_definition('minfin.extract_document', 1)
-DOCUMENT_SNAPSHOT_DEF = _registry_definition('minfin.document_snapshot', 1)
-READ_DOCUMENT = _registry_definition('minfin.read_document', 1)
-RENDER_DOCUMENT = _registry_definition('minfin.render_document', 1)
+EXTRACT_DOCUMENT = _registry_definition('minfin.extract_document')
+DOCUMENT_SNAPSHOT_DEF = _registry_definition('minfin.document_snapshot')
+READ_DOCUMENT = _registry_definition('minfin.read_document')
+RENDER_DOCUMENT = _registry_definition('minfin.render_document')

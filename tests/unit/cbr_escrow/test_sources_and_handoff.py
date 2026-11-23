@@ -62,10 +62,11 @@ def test_neutral_byte_read_and_complete_snapshot_handoff(tmp_path):
     checked(rendered)
 
 
-def test_all_escrow_registrations_resolve_to_the_declared_versions():
+def test_all_escrow_registrations_resolve_to_the_declared_operations():
     catalog = OperationCatalog.from_registrations(REGISTRATION)
     assert len(catalog.references) == 17
     for reference in catalog.references:
-        definition, handler, codec = catalog.resolve(reference.operation_id, reference.contract_version)
-        assert definition.contract_version == reference.contract_version
+        definition, handler, codec = catalog.resolve(reference.operation_id)
+        assert definition.operation_id == reference.operation_id
+        assert definition == catalog.get(reference.operation_id)
         assert callable(handler)

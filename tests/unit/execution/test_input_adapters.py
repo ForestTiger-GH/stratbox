@@ -26,7 +26,7 @@ class ValuesRequest:
     values: tuple[str, ...]
 
 
-CONSUMER = OperationDefinition("adapters.consume", 1, "v1", ValuesRequest, str,
+CONSUMER = OperationDefinition("adapters.consume", "v1", ValuesRequest, str,
     processing=OperationSemantics((ProcessingStage.CALCULATE,),
         inputs=(InputPort("items", VALUES, "values"),),
         outputs=(OutputPort("joined", DataContract("adapters.joined")),),
@@ -34,7 +34,7 @@ CONSUMER = OperationDefinition("adapters.consume", 1, "v1", ValuesRequest, str,
 
 
 def produce(text):
-    definition = OperationDefinition("adapters.produce", 1, "v1", str, str,
+    definition = OperationDefinition("adapters.produce", "v1", str, str,
         processing=OperationSemantics((ProcessingStage.EXTRACT,),
             outputs=(OutputPort("value", VALUE),), summary="Prepare a value."))
 
@@ -88,9 +88,11 @@ def test_collection_preserves_member_evidence_and_named_computation_parents():
     result = bound.invoke(consume)
     assert result.value == "first|second"
     assert result.used_inputs == (*first.used_inputs, *second.used_inputs)
-    # The consumer itself never registers its source inputs; handoff retains them.
-    assert result.computation.inputs == result.used_inputs
+    # Parent evidence remains available without becoming a different set of
+    # directly consumed arguments for an otherwise identical computation.
+    assert result.computation.inputs == ()
     assert result.computation.parents == (("items.0", first.computation), ("items.1", second.computation))
+    assert result.computation.computation_id == consume(bound.request).computation.computation_id
     assert result.effects == ()
     assert bound.request == ValuesRequest(("first", "second"))
 
@@ -141,13 +143,15 @@ def test_transport_evidence_does_not_change_direct_byte_computation_identity():
 
     direct = run(CONSUMER, ValuesRequest(("value",)), work)
     handed_off = run(CONSUMER, ValuesRequest(("value",)), work,
-        context=ExecutionContext(input_receipts=(inherited_receipt,)))
+        context=ExecutionContext(input_receipts=(inherited_receipt,),
+                                 input_transports=(inherited_receipt,)))
     assert handed_off.computation.computation_id == direct.computation.computation_id
     assert handed_off.computation.inputs == (direct_receipt,)
     assert set(handed_off.used_inputs) == {inherited_receipt, direct_receipt}
     extra = UsedInputReceipt.for_payload(SourcePayload(b"reference"), "reference")
     qualified = run(CONSUMER, ValuesRequest(("value",)), work,
-        context=ExecutionContext(input_receipts=(inherited_receipt, extra)))
+        context=ExecutionContext(input_receipts=(inherited_receipt, extra),
+                                 input_transports=(inherited_receipt,)))
     assert qualified.computation.inputs == (direct_receipt, extra)
     assert qualified.computation.computation_id != direct.computation.computation_id
 

@@ -221,7 +221,7 @@ def test_operation_boundaries_pin_complete_values_parameters_and_budgets(physica
     from stratbox.core.limits import ExecutionBudget
     from stratbox.domains.rosstat.operations import handlers as H
     from stratbox.domains.rosstat.operations.contracts import SnapshotRequest,FlakeRequest
-    from stratbox.domains.rosstat.operations.evidence import snapshot_size
+    from stratbox.core.execution.values import snapshot_size
     request=Kep2Request(physical)
     result=H.extract_kep2(request)
     assert result.outcome=="succeeded",result.diagnostics

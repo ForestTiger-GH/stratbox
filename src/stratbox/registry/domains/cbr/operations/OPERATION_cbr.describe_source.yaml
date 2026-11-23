@@ -1,0 +1,34 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.describe_source",
+    "request_type": "stratbox.domains.cbr.operations.catalog.contracts:DescribeSourceRequest",
+    "value_type": "stratbox.domains.cbr.operations.catalog.contracts:SourceDescription",
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.catalog.source"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "series_id",
+        "format",
+        "table_id",
+        "edition"
+      ],
+      "summary": "Describe reviewed source tables, editions, exact operation contracts and source-specific gaps."
+    },
+    "method_id": "cbr-scoped-source-catalog"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.catalog.handlers:describe_source"
+  },
+  "schema": "stratbox.operation"
+}

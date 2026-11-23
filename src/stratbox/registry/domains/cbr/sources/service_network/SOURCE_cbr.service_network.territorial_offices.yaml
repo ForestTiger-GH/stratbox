@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.service_network",
+  "series_id": "cbr.service_network.territorial_offices",
+  "title": "Credit institution offices by territory",
+  "issue_model": "dated",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.service_network.territorial_offices.route",
+  "family_profile": null,
+  "position": 42,
+  "publication": {
+    "acquisition_profile": "cbr.route.territorial_offices",
+    "extraction_profile": "cbr.territorial_offices.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.territorial_offices",
+    "integration_profile": "cbr.service_network.alignment",
+    "product_profile": "cbr.service_network.views"
+  }
+}

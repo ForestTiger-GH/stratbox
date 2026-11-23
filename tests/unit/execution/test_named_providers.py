@@ -9,7 +9,7 @@ from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBi
 
 
 TRANSFER = OperationDefinition(
-    "test.transfer", 1, "transfer-1", int, tuple,
+    "test.transfer", "transfer-1", int, tuple,
     required_capabilities=frozenset({"filestore", "output_filestore"}),
 )
 
@@ -98,7 +98,7 @@ def test_named_missing_local_binding_does_not_use_default(monkeypatch):
 
 
 def test_selection_is_admitted_for_optional_ports_and_unknown_roles_are_rejected():
-    definition = OperationDefinition("test.optional", 1, "v1", int, object,
+    definition = OperationDefinition("test.optional", "v1", int, object,
         optional_capabilities=frozenset({"filestore"}))
     provider = object()
     binding = ProviderBinding("files", CapabilityRequirement("filestore"), "ready", provider, "one")
@@ -129,7 +129,7 @@ def test_empty_selection_is_not_an_implicit_default():
 
 def test_binding_evidence_uses_selected_scope_when_one_adapter_has_two_scopes():
     provider = object()
-    definition = OperationDefinition("test.scope", 1, "v1", int, tuple,
+    definition = OperationDefinition("test.scope", "v1", int, tuple,
         required_capabilities=frozenset({"http"}))
     bindings = tuple(
         ProviderBinding("http", CapabilityRequirement("http"), "ready", provider, scope)

@@ -154,7 +154,7 @@ def read_representation(
         return build_release(
             DATASET,
             PROFILE,
-            READ.method_version,
+            READ.method_id,
             req.captured_on,
             req.payload.data,
             count,

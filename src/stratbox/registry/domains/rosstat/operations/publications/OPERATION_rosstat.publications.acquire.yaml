@@ -1,0 +1,61 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.publications.acquire",
+    "request_type": "stratbox.domains.rosstat.publications.contracts:AcquireRosstatRequest",
+    "value_type": "stratbox.domains.rosstat.publications.contracts:AcquiredRosstatAsset",
+    "required_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "rosstat.publications.asset"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "rosstat.publications.original",
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "qualifications": [
+            "source.rosstat.publications"
+          ]
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "source.payload"
+        }
+      ],
+      "parameters": [
+        "max_bytes",
+        "deadline_seconds",
+        "retry"
+      ],
+      "summary": "Acquire a selected publisher asset and qualify its file envelope."
+    },
+    "method_id": "rosstat-original-envelope"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.publications:acquire"
+  },
+  "schema": "stratbox.operation"
+}

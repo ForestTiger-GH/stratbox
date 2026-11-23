@@ -1,0 +1,64 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.publications.acquire_to_store",
+    "request_type": "stratbox.domains.rosstat.publications.contracts:AcquireRosstatToStoreRequest",
+    "value_type": "stratbox.domains.rosstat.publications.contracts:StoredRosstatAsset",
+    "required_capabilities": [
+      "http",
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "optional_capabilities": [
+      "filestore"
+    ],
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire",
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "rosstat.publications.asset"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "material",
+          "contract": {
+            "schema_id": "source.material_reference",
+            "role": "originals"
+          },
+          "path": "source.material",
+          "qualifications": [
+            "storage.confirmed"
+          ]
+        }
+      ],
+      "parameters": [
+        "destination",
+        "max_bytes",
+        "deadline_seconds",
+        "retry",
+        "baseline"
+      ],
+      "summary": "Stream a publisher asset to storage and retain confirmed original evidence.",
+      "composition": true
+    },
+    "method_id": "rosstat-original-stream"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.publications:acquire_to_store"
+  },
+  "schema": "stratbox.operation"
+}

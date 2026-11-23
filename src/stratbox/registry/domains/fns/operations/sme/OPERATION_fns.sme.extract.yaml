@@ -1,0 +1,42 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.extract",
+    "request_type": "stratbox.domains.fns.operations.contracts:ExtractRequest",
+    "value_type": "stratbox.domains.fns.tables.contracts:JsonFlake",
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "fns.sme.original",
+            "role": "originals"
+          },
+          "path": "payload"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.sme.flake",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "release"
+      ],
+      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields."
+    },
+    "method_id": "fns-sme-extract"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:extract"
+  },
+  "schema": "stratbox.operation"
+}

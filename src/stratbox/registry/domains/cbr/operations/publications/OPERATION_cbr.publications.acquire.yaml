@@ -1,0 +1,64 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.acquire",
+    "request_type": "stratbox.domains.cbr.publications.contracts:AcquirePublicationRequest",
+    "value_type": "stratbox.domains.cbr.publications.contracts:IdentifiedOriginal",
+    "required_capabilities": [
+      "http"
+    ],
+    "limits": {
+      "input_bytes": 268435456,
+      "output_bytes": 268435456,
+      "cells": 5000000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire",
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "cbr.publications.asset"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "original",
+          "contract": {
+            "schema_id": "cbr.publication.original",
+            "role": "originals"
+          },
+          "path": ""
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        },
+        {
+          "name": "artifact",
+          "contract": {
+            "schema_id": "material.artifact"
+          }
+        }
+      ],
+      "parameters": [
+        "issue_id"
+      ],
+      "summary": "Acquire and admit one selected original with explicit issue or capture context.",
+      "composition": true
+    },
+    "method_id": "cbr-publication-acquisition"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:acquire"
+  },
+  "schema": "stratbox.operation"
+}

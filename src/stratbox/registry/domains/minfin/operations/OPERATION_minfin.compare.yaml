@@ -1,0 +1,55 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.compare",
+    "request_type": "stratbox.domains.minfin.tables.contracts:CompareRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:TableComparison",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          }
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "changes",
+          "contract": {
+            "schema_id": "minfin.source_cell_delta"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "max_changes"
+      ],
+      "summary": "Report cell-level revisions between source-compatible extracts without claiming semantic equality."
+    },
+    "method_id": "minfin-cell-delta"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:compare"
+  },
+  "schema": "stratbox.operation"
+}

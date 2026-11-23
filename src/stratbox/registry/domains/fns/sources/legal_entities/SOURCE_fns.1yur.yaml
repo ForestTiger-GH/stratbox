@@ -1,0 +1,25 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "fns",
+  "publisher_id": "fns",
+  "family_id": "fns.legal_entities",
+  "series_id": "fns.1yur",
+  "title": "Form 1-YUR: legal entities and registration statistics",
+  "issue_model": "Independent issue key, published observation date, optional publication date and timezone-aware capture timestamp.",
+  "formats": [
+    "xls",
+    "xlsx",
+    "zip",
+    "rar"
+  ],
+  "route_profile": "fns.1yur.route",
+  "family_profile": "fns.legal_entities.publication",
+  "position": 1,
+  "publication": {
+    "periodicity": "monthly",
+    "acquisition_profile": "fns.1yur.dated-links",
+    "extract_profile": "fns.1yur.all-workbook-cells",
+    "integration_profile": "fns.1yur.identity-field-alignment",
+    "observation_basis": "published_reporting_date_with_metric_specific_basis"
+  }
+}

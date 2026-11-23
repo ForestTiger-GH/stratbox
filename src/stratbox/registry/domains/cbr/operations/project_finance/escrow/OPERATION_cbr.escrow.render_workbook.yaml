@@ -1,0 +1,45 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.render_workbook",
+    "request_type": "stratbox.domains.cbr.products.project_finance.contracts:EscrowPivotPack",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "views",
+          "contract": {
+            "schema_id": "cbr.escrow.views",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.escrow.workbook",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render supplied escrow pivots into workbook bytes."
+    },
+    "method_id": "cbr-escrow-xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:render_workbook"
+  },
+  "schema": "stratbox.operation"
+}

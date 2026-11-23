@@ -31,7 +31,7 @@ def artifact(*, computation=False):
     representation = Representation("sample.flake", 1, "application/json", b'{"value":5}', "utf-8")
     receipt = None
     if computation:
-        definition = OperationDefinition("sample.serialize", 1, "serialize-1", int, Representation)
+        definition = OperationDefinition("sample.serialize", "serialize-1", int, Representation)
         receipt = run(definition, 1, lambda req, inv: representation).computation
     return MaterialArtifact(DataContract("sample.flake.json", role=DataRole.EXTRACTS), representation,
         (UsedInputReceipt.for_payload(original, "original"),), "sample.series", computation=receipt)

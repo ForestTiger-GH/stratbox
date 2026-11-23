@@ -7,5 +7,5 @@ from stratbox.shared.data.representation import Representation
 from stratbox.domains.cbr.tables.reporting_forms.contracts import FormFlakes
 from stratbox.domains.cbr.tables.reporting_forms.comparison import CompareFormFlakesRequest
 
-COMPARE = _registry_definition('cbr.forms.compare', 1)
-READABLE = _registry_definition('cbr.forms.make_readable', 1)
+COMPARE = _registry_definition('cbr.forms.compare')
+READABLE = _registry_definition('cbr.forms.make_readable')

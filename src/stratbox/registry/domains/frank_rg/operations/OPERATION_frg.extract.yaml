@@ -1,0 +1,38 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.extract",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:ExtractRequest",
+    "value_type": "stratbox.shared.data.workbooks:WorkbookExtract",
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "report",
+          "contract": {
+            "schema_id": "frg.report",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Admit and extract physical workbook evidence with exact source, issue and asset identity."
+    },
+    "method_id": "frg.extract"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:extract"
+  },
+  "schema": "stratbox.operation"
+}

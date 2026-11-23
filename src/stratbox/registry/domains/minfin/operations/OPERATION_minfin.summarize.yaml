@@ -1,0 +1,48 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.summarize",
+    "request_type": "stratbox.domains.minfin.analytics.contracts:SummaryRequest",
+    "value_type": "stratbox.domains.minfin.analytics.contracts:HeadlineSummary",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "summary",
+          "contract": {
+            "schema_id": "minfin.headlines",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "period_id"
+      ],
+      "summary": "Calculate three budget headlines or NWF total/liquid stocks and same-period prior-year percentages."
+    },
+    "method_id": "minfin.profile-headlines"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:calculate_headlines"
+  },
+  "schema": "stratbox.operation"
+}

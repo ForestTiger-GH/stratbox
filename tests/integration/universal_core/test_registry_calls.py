@@ -23,18 +23,18 @@ def _payload():
 def test_catalog_named_calls_extract_retain_replay_and_render_with_lineage():
     catalog = operation_catalog()
     payload = _payload()
-    call = catalog.bind("workbook.extract", 1,
+    call = catalog.bind("workbook.extract",
         inputs={"source": prepare_input(payload)},
         parameters={"series_id": "example.loans", "issue_id": "2026-10"})
     extracted = call.invoke()
     assert extracted.outcome == "succeeded", extracted.diagnostics
-    encoded = catalog.bind("workbook.snapshot", 1,
+    encoded = catalog.bind("workbook.snapshot",
         inputs={"workbook": project_output(extracted, "workbook")}).invoke()
     assert encoded.outcome == "succeeded", encoded.diagnostics
-    replayed = catalog.bind("workbook.replay", 1,
+    replayed = catalog.bind("workbook.replay",
         inputs={"snapshot": project_output(encoded, "snapshot")}).invoke()
     assert replayed.outcome == "succeeded", replayed.diagnostics
-    rendered = catalog.bind("workbook.readable", 1,
+    rendered = catalog.bind("workbook.readable",
         inputs={"workbook": project_output(replayed, "workbook")}).invoke()
     assert rendered.outcome == "succeeded", rendered.diagnostics
     assert replayed.value == extracted.value
@@ -45,9 +45,9 @@ def test_catalog_named_calls_extract_retain_replay_and_render_with_lineage():
 def test_catalog_binding_rejects_unknown_roles_and_wrong_schema_before_execution():
     catalog = operation_catalog()
     with pytest.raises(HandoffError, match="handoff.input_unknown"):
-        catalog.bind("workbook.extract", 1, inputs={"typo": prepare_input(_payload())})
+        catalog.bind("workbook.extract", inputs={"typo": prepare_input(_payload())})
     with pytest.raises(HandoffError, match="processing.schema_mismatch"):
-        catalog.bind("workbook.extract", 1,
+        catalog.bind("workbook.extract",
             inputs={"source": prepare_input("wrong", DataContract("wrong.schema", role=DataRole.ORIGINALS))},
             parameters={"series_id": "example.loans", "issue_id": "2026-10"})
 
@@ -55,7 +55,7 @@ def test_catalog_binding_rejects_unknown_roles_and_wrong_schema_before_execution
 def test_catalog_binding_admits_only_declared_parameters():
     catalog = operation_catalog()
     with pytest.raises(HandoffError, match="handoff.parameter_unknown"):
-        catalog.bind("workbook.extract", 1, inputs={"source": prepare_input(_payload())},
+        catalog.bind("workbook.extract", inputs={"source": prepare_input(_payload())},
             parameters={"series_id": "example.loans", "issue_id": "2026-10", "hidden": True})
 
 
@@ -78,9 +78,10 @@ def test_source_bound_discovery_and_selection_use_the_canonical_route_offline():
     with pytest.raises(HandoffError, match="source.input_series_mismatch"):
         foreign.bind("rosstat.publications.acquire", inputs={
             "asset": prepare_input(selected.value[0], DataContract("rosstat.publications.asset"))})
-    with pytest.raises(HandoffError, match="source.transition_unavailable"):
-        source.bind("rosstat.publications.select", from_stage="calculate",
-            inputs={"index": project_output(discovered, "index")})
+    # Stage hints classify a route; the exact input port decides admission.
+    hinted = source.bind("rosstat.publications.select", from_stage="calculate",
+        inputs={"index": project_output(discovered, "index")})
+    assert hinted.request.index == discovered.value
 
 
 def test_source_binding_rejects_foreign_operations_formats_and_overridden_identity():

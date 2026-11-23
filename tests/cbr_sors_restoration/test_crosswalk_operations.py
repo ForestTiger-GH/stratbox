@@ -222,7 +222,7 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
 
     strict = _strict_with_bundle()
     snapshot = run(
-        OperationDefinition("test.sors.snapshot", 1, "test-1", SorsSourceBundle, SorsSourceBundle),
+        OperationDefinition("test.sors.snapshot", "test-1", SorsSourceBundle, SorsSourceBundle),
         strict.source_bundle,
         lambda value, invocation: _seal_grids(invocation, value),
     )

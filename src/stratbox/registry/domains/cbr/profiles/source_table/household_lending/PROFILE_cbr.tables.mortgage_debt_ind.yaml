@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.mortgage_debt_ind",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.mortgage_debt_ind",
+    "scope": "All worksheets and physical cells, including notes and unknown variants."
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0105a.calculate_apk",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.debt.contracts:CalculateApkRequest",
+    "value_type": "stratbox.domains.cbr.analytics.corporate_lending.industry.contracts:IndustryApkCalculationResult",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "role": "extracts"
+          },
+          "alternatives": [
+            {
+              "schema_id": "cbr.industries.0105a.stream",
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.stream_result",
+              "role": "integrated"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.parsed_file",
+              "role": "extracts"
+            },
+            {
+              "schema_id": "cbr.industries.0105a.calculation",
+              "role": "integrated"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.calculation",
+            "role": "integrated"
+          },
+          "path": ""
+        },
+        {
+          "name": "stream",
+          "contract": {
+            "schema_id": "cbr.industries.0105a.stream",
+            "role": "extracts"
+          },
+          "path": "df_stream",
+          "qualifications": [
+            "derived.apk"
+          ]
+        }
+      ],
+      "summary": "Calculate the APK aggregate while retaining its source-series identity."
+    },
+    "method_id": "cbr-0105a-derived-apk"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:calculate_apk"
+  },
+  "schema": "stratbox.operation"
+}

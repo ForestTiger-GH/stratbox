@@ -35,7 +35,7 @@ the runner produces a classified fallback with preserved receipts and without
 repeating the handler or external effects.
 
 A successful `operation.finished` collection matches the result's operation,
-invocation, versions and outcome. This event is *an observation*: its presence
+invocation, method identity and outcome. This event is *an observation*: its presence
 does not independently certify a stored file, external authorization or
 physical durability. A sink may accept an event and then fail to acknowledge
 it. The runner records degraded telemetry, **never retries that emission**,

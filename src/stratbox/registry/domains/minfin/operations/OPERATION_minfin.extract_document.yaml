@@ -1,0 +1,42 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.extract_document",
+    "request_type": "stratbox.domains.minfin.documents.contracts:ExtractDocumentRequest",
+    "value_type": "stratbox.domains.minfin.documents.contracts:PublisherDocument",
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "minfin.publisher_document",
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "family_id",
+        "publication"
+      ],
+      "summary": "Extract ordered PDF or DOCX blocks under explicit publisher release context; document geometry remains qualified."
+    },
+    "method_id": "minfin.document.blocks"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.document_handlers:extract_document"
+  },
+  "schema": "stratbox.operation"
+}

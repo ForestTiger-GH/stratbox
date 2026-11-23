@@ -1,0 +1,21 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.subbud",
+  "series_id": "minfin.subbud.monthly",
+  "title": "Месячное исполнение бюджетов субъектов РФ",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "minfin.subbud.monthly.route",
+  "family_profile": "minfin.subbud.publication",
+  "position": 10,
+  "publication": {
+    "slot": "monthly",
+    "periodicity": "monthly",
+    "basis": "ytd",
+    "kind": "table"
+  }
+}

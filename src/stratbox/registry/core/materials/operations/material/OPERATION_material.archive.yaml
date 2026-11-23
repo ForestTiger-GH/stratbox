@@ -1,0 +1,74 @@
+{
+  "owner_id": "core.materials",
+  "definition": {
+    "operation_id": "material.archive",
+    "request_type": "stratbox.core.operations.materials.archive_definitions:ArchiveRequest",
+    "value_type": "stratbox.core.operations.materials.archive_definitions:StoredArchive",
+    "required_capabilities": [
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "optional_capabilities": [
+      "filestore"
+    ],
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "contract": {
+            "schema_id": "material.archive_members"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        },
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection"
+          },
+          "required": false,
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "material.archive_reference"
+          },
+          "path": "material",
+          "qualifications": [
+            "storage.confirmed"
+          ]
+        }
+      ],
+      "parameters": [
+        "destination",
+        "compression",
+        "manifest_name",
+        "limits"
+      ],
+      "summary": "Package selected exact byte members from independent stores with explicit member lineage."
+    },
+    "method_id": "verified-archive"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.operations.materials.archive:archive_materials"
+  },
+  "schema": "stratbox.operation"
+}

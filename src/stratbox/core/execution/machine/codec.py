@@ -43,12 +43,12 @@ def decode_request(raw: bytes, catalog):
         raise
     except (UnicodeError, ValueError, RecursionError):
         raise WireRequestError("request.invalid_json") from None
-    fields = ("operation_id", "contract_version", "input")
+    fields = ("operation_id", "input")
     _shape(body, fields, fields)
-    operation_id, version = body["operation_id"], body["contract_version"]
-    if not isinstance(operation_id, str) or type(version) is not int:
+    operation_id = body["operation_id"]
+    if not isinstance(operation_id, str):
         raise WireRequestError("request.invalid_type")
-    _, _, allowed = catalog.resolve(operation_id, version)
+    _, _, allowed = catalog.resolve(operation_id)
     if allowed is None:
         raise WireRequestError("operation.wire_unavailable")
     data = body["input"]

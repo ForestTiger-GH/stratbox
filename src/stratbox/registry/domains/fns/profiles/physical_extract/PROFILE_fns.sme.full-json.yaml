@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "fns",
+  "profile_id": "fns.sme.full-json",
+  "declaration": {
+    "formats": [
+      "json"
+    ],
+    "kind": "physical_extract",
+    "profile_id": "fns.sme.full-json",
+    "scope": "Every JSON record/field or every admitted workbook member/cell precedes semantic projection."
+  }
+}

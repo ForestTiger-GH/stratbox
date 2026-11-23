@@ -79,16 +79,16 @@ def test_core_catalog_preserves_logical_operations():
     core = core_catalog()
     all_ops = operation_catalog()
     assert set(core.references).issubset(set(all_ops.references))
-    assert {(ref.operation_id, ref.contract_version) for ref in core.references} >= {
-        ("source.receive_original", 1),
-        ("source.save_original", 1),
-        ("source.receive_to_store", 1),
-        ("source.read_original", 1),
-        ("source.reconcile_original", 1),
-        ("notifications.prepare", 3),
-        ("notifications.deliver", 3),
-        ("notifications.qualify", 3),
-        ("notifications.reconcile", 2),
+    assert {ref.operation_id for ref in core.references} >= {
+        "source.receive_original",
+        "source.save_original",
+        "source.receive_to_store",
+        "source.read_original",
+        "source.reconcile_original",
+        "notifications.prepare",
+        "notifications.deliver",
+        "notifications.qualify",
+        "notifications.reconcile",
     }
 
 

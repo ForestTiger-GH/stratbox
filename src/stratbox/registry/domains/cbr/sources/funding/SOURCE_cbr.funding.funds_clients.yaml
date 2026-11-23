@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.funding",
+  "series_id": "cbr.funding.funds_clients",
+  "title": "Client funds",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.funding.funds_clients.route",
+  "family_profile": null,
+  "position": 32,
+  "publication": {
+    "acquisition_profile": "cbr.route.funds_clients",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.funds_clients",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

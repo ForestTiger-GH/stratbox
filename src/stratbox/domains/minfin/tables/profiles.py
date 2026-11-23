@@ -27,9 +27,9 @@ class TableProfile:
 
 
 _TABLES = {
-    "minfin.budget_table.v1": TableProfile("minfin.budget_table.v1", 1, 2, 3, 12, 2,
+    "minfin.budget_table": TableProfile("minfin.budget_table", 1, 2, 3, 12, 2,
         200_000, frozenset({"xlsx", "xls", "xlsm"}), "minfin.flake.budget.v2", "billion_rub"),
-    "minfin.nwf_table.v1": TableProfile("minfin.nwf_table.v1", 1, 2, 3, 12, 2,
+    "minfin.nwf_table": TableProfile("minfin.nwf_table", 1, 2, 3, 12, 2,
         200_000, frozenset({"xlsx", "xls", "xlsm"}), "minfin.flake.nwf.v2", "mixed"),
 }
 

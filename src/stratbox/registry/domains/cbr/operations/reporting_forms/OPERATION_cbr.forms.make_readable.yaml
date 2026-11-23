@@ -1,0 +1,48 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.forms.make_readable",
+    "request_type": "stratbox.domains.cbr.tables.reporting_forms.contracts:FormFlakes",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "partial_allowed": true,
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "flakes",
+          "contract": {
+            "schema_id": "cbr.forms.flakes",
+            "role": "extracts"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "readable",
+          "contract": {
+            "schema_id": "cbr.forms.readable",
+            "role": "readable"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "summary": "Render all admitted DBF tokens, schemas and deletion flags for reading; uncovered members remain explicit."
+    },
+    "method_id": "cbr-form-readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.source_products:make_readable"
+  },
+  "schema": "stratbox.operation"
+}

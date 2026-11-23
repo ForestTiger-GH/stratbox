@@ -37,7 +37,7 @@ class JsonFlake:
     source_identity: ByteIdentity
     records: tuple[JsonRecord, ...]
     lineage: tuple[UsedInputReceipt, ...]
-    profile_id: str = "fns.sme.full-json.v1"
+    profile_id: str = "fns.sme.full-json"
     coverage: SnapshotCoverage = SnapshotCoverage("complete", "All records and all fields of the supplied JSON asset.")
 
     @property

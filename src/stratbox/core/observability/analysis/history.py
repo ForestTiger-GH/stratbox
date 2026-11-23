@@ -92,8 +92,7 @@ def build_operation_history(records: Iterable[JournalRecord], invocation_id: str
             record for record in summaries if record.payload.get("time_basis") == "producer_finished_event"
             and record.outcome == finished.outcome and record.operation_id == finished.operation_id
             and record.occurred_at_utc == finished.occurred_at_utc
-            and record.payload.get("contract_version") == finished.payload.get("contract_version")
-            and record.payload.get("method_version") == finished.payload.get("method_version")
+            and record.payload.get("method_id") == finished.payload.get("method_id")
             and (record.payload.get("data_version", 1) == 1 or finished.record_id in record.cause_record_ids)
         ]
         if finished_summaries:

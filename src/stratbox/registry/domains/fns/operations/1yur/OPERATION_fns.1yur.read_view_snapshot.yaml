@@ -1,0 +1,37 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.read_view_snapshot",
+    "request_type": "stratbox.domains.fns.operations.contracts:SnapshotRequest",
+    "value_type": "stratbox.domains.fns.products.views:PreparedView",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "fns.1yur.prepared_view.snapshot",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.1yur.prepared_view",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Validate and replay a retained view without the original file or a spreadsheet engine.",
+      "function": "replay"
+    },
+    "method_id": "fns-1yur-read-view-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:read_view_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

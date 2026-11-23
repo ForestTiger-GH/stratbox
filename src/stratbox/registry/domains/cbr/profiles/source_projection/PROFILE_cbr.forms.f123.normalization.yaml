@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.processing-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.forms.f123.normalization",
+  "declaration": {
+    "formats": [
+      "rar",
+      "zip",
+      "dbf"
+    ],
+    "kind": "source_projection",
+    "profile_id": "cbr.forms.f123.normalization",
+    "scope": "Reviewed form 123 physical projection; all-member extraction remains independent of this model input.",
+    "operation_id": "cbr.forms.normalize"
+  }
+}

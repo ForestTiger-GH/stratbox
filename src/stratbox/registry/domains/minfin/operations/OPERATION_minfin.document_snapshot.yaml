@@ -1,0 +1,48 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.document_snapshot",
+    "request_type": "stratbox.domains.minfin.documents.contracts:DocumentSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "minfin.publisher_document",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "minfin.document.snapshot",
+            "role": "extracts"
+          },
+          "path": ""
+        },
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Retain ordered document evidence and complete publisher context in a portable dataset.",
+      "function": "encode"
+    },
+    "method_id": "minfin.document.snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.document_handlers:build_document_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

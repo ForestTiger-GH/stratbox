@@ -1,0 +1,62 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.extract_kep2",
+    "request_type": "stratbox.domains.rosstat.tables.contracts:Kep2Request",
+    "value_type": "stratbox.domains.rosstat.tables.contracts:RosstatSourceFlake",
+    "partial_allowed": true,
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "extract"
+      ],
+      "inputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "rosstat.source_flake",
+            "role": "extracts"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "parameters": [
+        "duplicate_year_policy",
+        "required_indicators",
+        "title_aliases",
+        "unit_overrides"
+      ],
+      "summary": "Extract the reviewed eleven-indicator KEP2 selection with all periods, footnotes and source row decisions."
+    },
+    "method_id": "rosstat-tables-extract_kep2"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_kep2"
+  },
+  "schema": "stratbox.operation"
+}

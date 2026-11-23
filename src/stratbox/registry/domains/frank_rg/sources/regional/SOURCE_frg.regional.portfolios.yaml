@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.regional",
+  "series_id": "frg.regional.portfolios",
+  "title": "Regional loan portfolios",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.regional.portfolios.route",
+  "family_profile": "frg.regional.publication",
+  "position": 9,
+  "publication": {
+    "slot": "portfolios",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

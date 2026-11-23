@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "fns",
+  "profile_id": "fns.sme.statistics-post",
+  "declaration": {
+    "formats": [
+      "json"
+    ],
+    "kind": "acquisition",
+    "profile_id": "fns.sme.statistics-post",
+    "scope": "Publisher-owned index or dated official link."
+  }
+}

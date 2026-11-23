@@ -1,0 +1,305 @@
+{
+  "owner_id": "cbr",
+  "stages": [
+    {
+      "stage": "preserve",
+      "state": "delegated",
+      "reason": "cbr.storage.caller_selected",
+      "operations": [
+        {
+          "operation_id": "source.save_original"
+        },
+        {
+          "operation_id": "source.read_original"
+        },
+        {
+          "operation_id": "dataset.write_snapshot"
+        },
+        {
+          "operation_id": "dataset.read_snapshot"
+        },
+        {
+          "operation_id": "material.save_artifact"
+        }
+      ],
+      "binding": "Choose storage for exact originals, complete logical datasets and rendered products; source-scoped availability is described by cbr.describe_source."
+    },
+    {
+      "stage": "ingest",
+      "state": "delegated",
+      "reason": "cbr.datasets.caller_selected",
+      "operations": [
+        {
+          "operation_id": "dataset.write_snapshot"
+        }
+      ],
+      "binding": "Encode an admitted source, integrated or product snapshot and ingest it through the selected dataset adapter."
+    },
+    {
+      "stage": "publish",
+      "state": "missing",
+      "reason": "cbr.publication.consumer_owned",
+      "operations": [],
+      "binding": null
+    }
+  ],
+  "value_contexts": {
+    "types": {
+      "stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies.SorsDependency": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.integration.project_finance.contracts.EscrowRelease": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.integration.reporting_forms.contracts.FormSubjectMapping": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.integration.service_network.contracts.OfficeMetricMapping": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.integration.statistics.contracts.ColumnPeriodBinding": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.integration.statistics.contracts.InputVersion": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      },
+      "stratbox.domains.cbr.integration.statistics.contracts.RowBinding": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.operations.catalog.contracts.DescribeFamilyRequest": {
+        "group": [
+          "family_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.cbr.operations.catalog.contracts.DescribeSourceRequest": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.operations.catalog.contracts.FamilyDescription": {
+        "group": [
+          "family_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.cbr.operations.catalog.contracts.MethodDependency": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.operations.collection.material_definitions.CollectMaterial": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.collection.contracts.CbrFileRegistryItem": {
+        "source": [
+          "source_id",
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.collection.contracts.CollectFailure": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.collection.contracts.CollectedFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.collection.contracts.StoredCollectedFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.contracts.AcquirePublicationRequest": {
+        "issue": [
+          "issue_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.cbr.publications.contracts.DiscoverRequest": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.contracts.IdentifyRequest": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.contracts.ListSourcesRequest": {
+        "group": [
+          "family_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.cbr.publications.contracts.PublicationAsset": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.contracts.PublicationInventory": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.contracts.SelectPublicationRequest": {
+        "issue": [
+          "issue_id"
+        ],
+        "traverse": true
+      },
+      "stratbox.domains.cbr.publications.contracts.SourceSeries": {
+        "source": [
+          "series_id"
+        ],
+        "group": [
+          "family_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.corporate_lending.contracts.Cbr0105ADebtCorpSourceLink": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.corporate_lending.contracts.IssuanceSourceLink": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.publications.project_finance.contracts.EscrowSourceLink": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.debt.contracts.Cbr0105ADebtCorpSourceFailure": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.debt.contracts.ParsedCbr0105ADebtCorpFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.issuance.contracts.IssuanceSourceFailure": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.issuance.contracts.ParsedIssuanceFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.observations.CorporateObservationProfile": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.corporate_lending.observations.CorporateSourceDataset": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      },
+      "stratbox.domains.cbr.tables.project_finance.contracts.ParsedEscrowFile": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.reporting_forms.contracts.FormFlakes": {
+        "source": [
+          "source_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.statistics.contracts.SourceTableProfile": {
+        "source": [
+          "series_id"
+        ]
+      },
+      "stratbox.domains.cbr.tables.statistics.contracts.WorkbookComparison": {
+        "source": [
+          "series_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      },
+      "stratbox.domains.cbr.tables.statistics.contracts.WorkbookFlake": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      },
+      "stratbox.domains.cbr.tables.statistics.contracts.WorkbookValidation": {
+        "source": [
+          "series_id"
+        ],
+        "edition": [
+          "profile_version"
+        ]
+      }
+    },
+    "tables": {
+      "cbr.workbook.metadata": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      },
+      "cbr.statistics.input_versions": {
+        "source": [
+          "series_id"
+        ],
+        "issue": [
+          "issue_id"
+        ]
+      }
+    }
+  }
+}

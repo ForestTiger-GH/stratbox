@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.processing-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.escrow.flake",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "extraction",
+    "profile_id": "cbr.escrow.flake",
+    "scope": "Reviewed regional source table; historical HTML is an original-only layout.",
+    "operation_id": "cbr.escrow.parse"
+  }
+}

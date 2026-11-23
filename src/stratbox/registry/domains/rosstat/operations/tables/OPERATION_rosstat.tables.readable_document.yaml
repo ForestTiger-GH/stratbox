@@ -1,0 +1,50 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.tables.readable_document",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:DocumentRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "document.blocks.extract",
+            "role": "extracts"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render all extracted document blocks and qualified extraction errors."
+    },
+    "method_id": "rosstat-tables-readable_document"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:readable_document"
+  },
+  "schema": "stratbox.operation"
+}

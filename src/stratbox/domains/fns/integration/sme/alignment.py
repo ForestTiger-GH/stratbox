@@ -11,7 +11,7 @@ from ...tables.sme.projection import PROFILE as SOURCE_PROFILE
 from ..contracts import FnsDataset
 from ..coverage import observation_coverage
 
-PROFILE = "fns.sme.published-counts-alignment.v1"
+PROFILE = "fns.sme.published-counts-alignment"
 METRICS = {"cnt_total": "total", "cnt_ul_total": "ul_total", "cnt_ip_total": "ip_total",
     "cnt_ul_micro": "ul_micro", "cnt_ul_mini": "ul_small", "cnt_ul_normal": "ul_medium",
     "cnt_ip_micro": "ip_micro", "cnt_ip_mini": "ip_small", "cnt_ip_normal": "ip_medium"}

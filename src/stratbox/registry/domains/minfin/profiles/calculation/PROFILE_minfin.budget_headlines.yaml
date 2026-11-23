@@ -1,0 +1,11 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.budget_headlines",
+  "declaration": {
+    "formats": [],
+    "kind": "calculation",
+    "profile_id": "minfin.budget_headlines",
+    "scope": "reviewed headline rows"
+  }
+}

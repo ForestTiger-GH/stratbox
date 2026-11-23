@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.mortgage_scpa_debt",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.mortgage_scpa_debt",
+    "scope": "All worksheets and physical cells, including notes and unknown variants."
+  }
+}

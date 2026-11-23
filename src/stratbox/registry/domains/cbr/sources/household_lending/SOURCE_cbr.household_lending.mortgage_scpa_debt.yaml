@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.household_lending",
+  "series_id": "cbr.household_lending.mortgage_scpa_debt",
+  "title": "Mortgage debt under shared construction agreements",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.household_lending.mortgage_scpa_debt.route",
+  "family_profile": null,
+  "position": 27,
+  "publication": {
+    "acquisition_profile": "cbr.route.mortgage_scpa_debt",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.mortgage_scpa_debt",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

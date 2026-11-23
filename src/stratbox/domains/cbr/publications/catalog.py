@@ -1,6 +1,6 @@
 """Logical publisher declarations, independent of routes and executable code."""
 from functools import lru_cache
-from stratbox.core.registry.sources import publication_families
+from stratbox.core.registry.sources import source_documents
 
 from .contracts import SourceSeries
 
@@ -10,17 +10,15 @@ from .contracts import SourceSeries
 @lru_cache(maxsize=1)
 def _sources():
     result = []
-    for document in publication_families("cbr", series_fields=(("series_id", "series_id"), ("family_id", "family_id"), ("title", "title"), ("formats", "formats"), ("issue_model", "issue_model"))):
-        if (set(document) != {"schema_version", "family_id", "series"}
-                or document["schema_version"] != 1 or not document["family_id"].startswith("cbr.")):
-            raise ValueError("cbr.registry.family_invalid")
-        for declaration in document["series"]:
-            value = dict(declaration)
-            value["formats"] = tuple(value["formats"])
-            item = SourceSeries(**value)
-            if item.family_id != document["family_id"] or not item.series_id.startswith(item.family_id + "."):
-                raise ValueError("cbr.registry.series_family_mismatch")
-            result.append(item)
+    for document in source_documents("cbr"):
+        value = dict(document["publication"])
+        for field in ("series_id", "family_id", "title", "formats", "issue_model"):
+            value[field] = document[field]
+        value["formats"] = tuple(value["formats"])
+        item = SourceSeries(**value)
+        if not item.family_id.startswith("cbr.") or not item.series_id.startswith(item.family_id + "."):
+            raise ValueError("cbr.registry.series_family_mismatch")
+        result.append(item)
     if len({item.series_id for item in result}) != len(result):
         raise ValueError("cbr.registry.duplicate_series")
     return tuple(result)

@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.processing-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.offices.flake",
+  "declaration": {
+    "formats": [
+      "html"
+    ],
+    "kind": "extraction",
+    "profile_id": "cbr.offices.flake",
+    "scope": "Credit institution office counts by bank and territory; capture and official reference dates remain distinct.",
+    "operation_id": "cbr.offices.parse"
+  }
+}

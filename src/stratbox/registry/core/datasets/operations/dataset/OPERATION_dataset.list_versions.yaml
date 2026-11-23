@@ -1,0 +1,40 @@
+{
+  "owner_id": "core.datasets",
+  "definition": {
+    "operation_id": "dataset.list_versions",
+    "request_type": "stratbox.core.storage.datasets.definitions:ListVersionsRequest",
+    "value_type": "stratbox.core.storage.datasets.definitions:DatasetVersions",
+    "required_capabilities": [
+      "dataset_catalog"
+    ],
+    "limits": {
+      "input_bytes": 536870912,
+      "output_bytes": 536870912,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "outputs": [
+        {
+          "name": "versions",
+          "contract": {
+            "schema_id": "dataset.version_catalog"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "selection"
+      ],
+      "summary": "List explicit immutable versions within one selected dataset scope."
+    },
+    "method_id": "dataset-catalog"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.core.storage.datasets.operations:list_versions"
+  },
+  "schema": "stratbox.operation"
+}

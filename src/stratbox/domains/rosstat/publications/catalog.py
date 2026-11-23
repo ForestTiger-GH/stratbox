@@ -1,4 +1,4 @@
-"""Editioned family registries; no executable parser or engine imports."""
+"""Canonical Rosstat source declarations independent of parser implementations."""
 from functools import lru_cache
 from stratbox.core.registry.sources import source_documents
 from .contracts import RosstatSourceSpec
@@ -8,7 +8,7 @@ def list_rosstat_sources() -> tuple[RosstatSourceSpec, ...]:
     values = []
     for source in source_documents("rosstat"):
         record = source["publication"]
-        if record["schema"] != "stratbox.rosstat.registry.v1" or source["publisher_id"] != "rosstat":
+        if record["schema"] != "stratbox.rosstat.registry" or source["publisher_id"] != "rosstat":
             raise ValueError("rosstat.registry_invalid")
         values.append(RosstatSourceSpec(
             source["series_id"], source["title"], record["landing_url"],

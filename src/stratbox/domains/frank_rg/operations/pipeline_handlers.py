@@ -1,9 +1,6 @@
 """Runtime admission and independent operations for every report processing layer."""
-from dataclasses import asdict, is_dataclass
-from datetime import date, datetime, time, timedelta
-from decimal import Decimal
 
-from stratbox.core.execution import OperationFailure, run
+from stratbox.core.execution import OperationFailure, run, values
 from stratbox.core.formats.spreadsheets.extracts import extract_workbook
 from stratbox.core.operations.source.validation import use_payload
 from stratbox.shared.data.observations import ObservationBatch
@@ -11,9 +8,7 @@ from stratbox.shared.data.observation_snapshots import observation_snapshot, obs
 from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.data.workbooks import WorkbookExtract, workbook_snapshot, workbook_from_snapshot, readable_workbook, compare_workbooks
 from stratbox.shared.data.views import ObservationView, prepare_observation_view, view_snapshot, view_from_snapshot, render_observation_view
-from stratbox.shared.data.scalars import encode_scalar
 from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from ..publications.catalog import source
 from ..tables.contracts import ExtractValidation, SemanticFlake
 from ..tables.flakes import build_flake as interpret_flake, profile_identity
@@ -24,26 +19,10 @@ from .handlers import _report
 from . import pipeline_definitions as D
 
 
-def _document(value):
-    if is_dataclass(value):
-        return _document(asdict(value))
-    if isinstance(value, dict):
-        return {key: _document(item) for key, item in value.items()}
-    if isinstance(value, (tuple, list)):
-        return [_document(item) for item in value]
-    if type(value) in {Decimal, date, datetime, time, timedelta}:
-        return encode_scalar(value)
-    return value
-
-
-def _identity(value):
-    if isinstance(value, ObservationBatch):
-        return observation_snapshot(value).identity
+def _snapshot(value, invocation):
     if isinstance(value, SemanticFlake):
-        return flake_snapshot(value).identity
-    if hasattr(value, "identity"):
-        return value.identity
-    return ByteIdentity.of(canonical_manifest_bytes(_document(value)))
+        return flake_snapshot(value)
+    return None
 
 
 def _execute(definition, request, build, *, context=None):
@@ -52,27 +31,18 @@ def _execute(definition, request, build, *, context=None):
             for name in ("extract", "flake", "snapshot", "batch", "view", "before", "after"):
                 if hasattr(req, name):
                     material = getattr(req, name)
-                    identity = _identity(material)
-                    invocation.use(UsedInputReceipt(name, identity, "application/json", "inline"))
-                    size = identity.size + (sum(t.identity.size for _, t in material.tables)
-                                            if isinstance(material, DatasetSnapshot) else 0)
-                    invocation.budget.charge("input_bytes", size)
-            for batch in getattr(req, "batches", ()):
-                identity = _identity(batch)
-                invocation.use(UsedInputReceipt("integrated_release", identity, "application/json", "inline", batch.dataset_id))
-                invocation.budget.charge("input_bytes", identity.size)
+                    values.use_value(material, invocation, name, snapshot_factory=_snapshot,
+                                     charge_cells=False)
+            for index, batch in enumerate(getattr(req, "batches", ())):
+                values.use_value(batch, invocation, f"integrated_release.{index}",
+                                 snapshot_factory=_snapshot, charge_cells=False)
             if hasattr(req, "profile"):
                 identity = profile_identity(req.profile)
                 invocation.use(UsedInputReceipt("semantic_profile", identity, "application/json", "inline", req.profile.profile_id))
                 invocation.budget.charge("input_bytes", identity.size)
             result = build(req, invocation)
-            identity = _identity(result)
-            if isinstance(result, DatasetSnapshot):
-                for name, table in result.tables:
-                    invocation.account_output(table.identity, key="table:" + name)
-            invocation.account_output(identity)
-            invocation.record(identity, parameters={name: _document(getattr(req, name))
-                for name in definition.processing.parameters})
+            values.record_value(result, req, definition, invocation, snapshot_factory=_snapshot,
+                                table_prefix="table:", charge_cells=False)
             return result
         except (ValueError, TypeError, KeyError) as error:
             code = str(error)
@@ -87,7 +57,7 @@ def _extract(req, invocation):
     _report(req.report)
     use_payload(req.report.payload, invocation, role="original", limit=64 * 1024 * 1024)
     value = extract_workbook(req.report.payload, series_id=req.report.source_id, issue_id=req.report.period.issue_id,
-        profile_id="frg.workbook.cells.v1", profile_version=1, budget=invocation.budget, checkpoint=invocation.check_cancelled)
+        profile_id="frg.workbook.cells", profile_version=1, budget=invocation.budget, checkpoint=invocation.check_cancelled)
     if value.format != req.report.format:
         raise ValueError("frg.extract.format_mismatch")
     return value

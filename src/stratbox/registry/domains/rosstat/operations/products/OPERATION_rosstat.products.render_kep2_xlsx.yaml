@@ -1,0 +1,50 @@
+{
+  "owner_id": "rosstat",
+  "definition": {
+    "operation_id": "rosstat.products.render_kep2_xlsx",
+    "request_type": "stratbox.domains.rosstat.operations.contracts:ViewRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "seconds": 600,
+      "input_bytes": 268435456,
+      "decoded_bytes": 536870912,
+      "output_bytes": 536870912,
+      "objects": 2000000,
+      "cells": 20000000,
+      "temporary_bytes": 536870912
+    },
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render the monthly eleven-indicator workbook and a separate exact-value evidence sheet."
+    },
+    "method_id": "rosstat-products-render_kep2_xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.rosstat.operations.handlers:render_kep2_xlsx"
+  },
+  "schema": "stratbox.operation"
+}

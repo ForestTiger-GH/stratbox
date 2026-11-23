@@ -1,12 +1,12 @@
 # Core operation construction
 
 **Scope and status.** The execution, data and provider interfaces below
-describe the implemented Stratbox 0.9 library boundary. Application queues,
+describe the implemented Stratbox library boundary. Application queues,
 RPC and durable outboxes remain consumer design concerns.
 
 ```python
 PARSE = OperationDefinition(
-    "cbr.offices.parse", 1, "cbr-offices-html-1",
+    "cbr.offices.parse", "cbr-offices-html",
     ParseOfficesRequest, ParsedRelease,
 )
 
@@ -18,7 +18,8 @@ The method receives an `Invocation`. At the consuming boundary it registers
 the SHA-256, byte length and role of the actual source. It returns a
 domain value or raises a typed `OperationFailure`. For partial or uncertain
 results it returns `Completion` with a diagnostic. The runner supplies
-identity, safe events and outcome checks.
+identity, safe events and outcome checks. Operation IDs and method IDs are stable,
+unversioned identities; data schema editions remain part of input/output contracts.
 
 A provider-dependent operation declares the required capability and passes
 the explicitly supplied provider to `run`. An effectful operation declares

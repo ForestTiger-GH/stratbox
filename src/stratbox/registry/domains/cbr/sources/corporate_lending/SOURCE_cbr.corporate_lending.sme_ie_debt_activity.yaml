@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.sme_ie_debt_activity",
+  "title": "SME individual entrepreneur debt by OKVED2 classes",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.corporate_lending.sme_ie_debt_activity.route",
+  "family_profile": null,
+  "position": 20,
+  "publication": {
+    "acquisition_profile": "cbr.route.sme_ie_debt_activity",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.sme_ie_debt_activity",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

@@ -38,5 +38,5 @@ python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):
 # python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.21.0-py3-none-any.whl
+# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.22.0-py3-none-any.whl
 ```

@@ -89,8 +89,10 @@ def _validate_computation_record(value):
         names.add(pair[0])
     manifest = _json(v["manifest"].encode("utf-8"))
     if not isinstance(manifest, dict) or set(manifest) != {
-        "manifest_version", "dataset_id", "release_id", "method_version", "inputs", "parameters", "resources", "result"
+        "manifest_version", "dataset_id", "release_id", "method_version", "inputs", "parameters", "arguments", "resources", "result"
     } or any(manifest[key] != v[key] for key in ("manifest_version", "dataset_id", "release_id", "method_version")):
+        raise ValueError("material.lineage_manifest_mismatch")
+    if any(not isinstance(manifest[key], dict) for key in ("parameters", "arguments", "resources")):
         raise ValueError("material.lineage_manifest_mismatch")
     if manifest["result"] != value["output"]:
         raise ValueError("material.lineage_manifest_mismatch")

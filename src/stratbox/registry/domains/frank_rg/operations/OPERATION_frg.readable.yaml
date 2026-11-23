@@ -1,0 +1,38 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.readable",
+    "request_type": "stratbox.domains.frank_rg.tables.contracts:ReadableRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "workbook.cells.extract",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "workbook.readable.jsonl",
+            "role": "readable"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render every extracted sheet and cell as source-faithful readable JSONL."
+    },
+    "method_id": "frg.readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:readable"
+  },
+  "schema": "stratbox.operation"
+}

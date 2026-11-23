@@ -152,12 +152,9 @@ class OperationSemantics:
 @dataclass(frozen=True, slots=True)
 class OperationKey:
     operation_id: str
-    contract_version: int
 
     def __post_init__(self) -> None:
         safe_token(self.operation_id)
-        if type(self.contract_version) is not int or self.contract_version < 1:
-            raise ValueError("processing.invalid_operation_version")
 
 
 @dataclass(frozen=True, slots=True)

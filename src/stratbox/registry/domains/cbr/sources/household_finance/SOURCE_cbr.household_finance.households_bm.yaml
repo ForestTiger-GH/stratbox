@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.household_finance",
+  "series_id": "cbr.household_finance.households_bm",
+  "title": "Household financial assets and liabilities: balances",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.household_finance.households_bm.route",
+  "family_profile": null,
+  "position": 43,
+  "publication": {
+    "acquisition_profile": "cbr.route.households_bm",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.households_bm",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

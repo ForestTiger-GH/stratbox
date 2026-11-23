@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.special",
+  "series_id": "frg.special.mortgage_refinancing",
+  "title": "Mortgage refinancing",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.special.mortgage_refinancing.route",
+  "family_profile": "frg.special.publication",
+  "position": 13,
+  "publication": {
+    "slot": "mortgage_refinancing",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

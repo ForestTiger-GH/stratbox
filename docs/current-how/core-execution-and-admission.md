@@ -1,6 +1,6 @@
 # Execution, admission and recovery
 
-Stratbox exposes versioned Python operations and an optional read-only
+Stratbox exposes named Python operations and an optional read-only
 JSON interface. Domain modules own release selection, labels, interpretation
 and calculations. General-purpose HTTP, file, archive and format commands
 live in `stratbox.core.storage`, `stratbox.core.network`, and `stratbox.core.formats`. Callers choose periods, repetition and destinations.
@@ -15,7 +15,7 @@ for the canonical matrix, effect identities, diagnostic precedence and limits.
 ## Discover and bind
 
 Use `stratbox.domains.registry.operation_catalog().describe()` to obtain operation IDs,
-request and result types, versions, declared eager/optional capability roles,
+request and result types, method identities, declared eager/optional capability roles,
 scoped runtime dependencies, effect descriptions and limits. The domain registry discovers local declarations from built-in packages.
 Import `wire_schemas` and `invoke_read_only` from
 `stratbox.core.execution.machine` and pass `catalog=operation_catalog()`
@@ -23,18 +23,30 @@ explicitly. The generic executor has no direct imports of concrete domains.
 
 | Read-only JSON operation | References resolved by the caller | Returned data |
 | --- | --- | --- |
-| `cbr.offices.parse` v1 | Source bytes, optional expected SHA-256 | Date, row count and result digests |
-| `cbr.offices.compare` v2 | Candidate and optional baseline | Change state, reason, count, evidence layers and coverage |
-| `frg.plan_cleanup` v1 | Scoped directory reference | Plan digest and action count |
+| `cbr.offices.parse` | Source bytes, optional expected SHA-256 | Date, row count and result digests |
+| `cbr.offices.compare` | Candidate and optional baseline | Change state, reason, count, evidence layers and coverage |
+| `frg.plan_cleanup` | Scoped directory reference | Plan digest and action count |
 
 `invoke_read_only(raw, catalog=..., materials=...)` accepts UTF-8 JSON bytes. The envelope contains
-`operation_id`, `contract_version` and `input`. An application-supplied
+`operation_id` and `input`. An application-supplied
 `MaterialResolver` resolves each opaque reference under its current read
 permissions. The codecs reject extra fields, duplicate keys, excess
 nesting, incorrect types and unknown operations before material access.
-The result projection contains bounded diagnostics and excludes input
-material, paths and URLs. Python operations remain available by direct
+The result projection carries `method_id`, outcome, declared value fields and bounded diagnostics.
+Input material, paths and URLs stay outside the projection. Python operations remain available by direct
 import, including the operations that write or send.
+
+```python
+request_schema, response_schema = wire_schemas("cbr.offices.parse", catalog=catalog)
+raw = b'{"operation_id":"cbr.offices.parse","input":{"source_ref":"selected","capture_date":"2026-11-23"}}'
+result = invoke_read_only(raw, catalog=catalog, materials=materials)
+```
+
+For richer typed requests, `reference_schemas(operation_id, catalog=catalog)`
+and `invoke_reference` use `operation_id` and `request_ref`, with optional
+preview limits. The host retains the full typed result and its effect receipts.
+Both interfaces select the canonical operation by ID. Implementation builds,
+payload schema editions and publisher revisions retain their separate identities.
 
 The default local context is for trusted Python with the selected adapters.
 When a call omits its HTTP or storage adapter and the role has no explicit
@@ -122,7 +134,7 @@ Selecting a cell range is a research operation. Known domain operations
 apply their own published-series rules.
 
 Monthly CBR office parsing records the actual sheet, coordinates and date
-basis. Its v3 parse and capture can return `OfficesRegCandidates` as a
+basis. Parse and capture can return `OfficesRegCandidates` as a
 partial result with the source identity and candidate coordinates. Supply
 `sheet` and, when needed, `national_row` to select the block. Set `last_row`
 to qualify an explicitly bounded fragment. A missing formula cache stays

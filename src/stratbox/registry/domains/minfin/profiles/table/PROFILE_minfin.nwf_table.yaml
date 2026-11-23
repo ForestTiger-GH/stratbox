@@ -1,0 +1,15 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.nwf_table",
+  "declaration": {
+    "formats": [
+      "xls",
+      "xlsm",
+      "xlsx"
+    ],
+    "kind": "table",
+    "profile_id": "minfin.nwf_table",
+    "scope": "source-local periods and per-row units"
+  }
+}

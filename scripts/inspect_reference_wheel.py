@@ -55,14 +55,10 @@ def _identity(payload: bytes) -> tuple[int, str]:
 
 def _source_registry_inventory() -> dict[str, tuple[int, str]]:
     """Include every canonical declaration and its package boundary by bytes."""
-    return {
-        file.relative_to(REGISTRY_SOURCE).as_posix(): _identity(file.read_bytes())
-        for file in sorted(REGISTRY_SOURCE.rglob("*"))
-        if file.is_file() and (file.suffix.lower() in {".yaml", ".yml"}
-                               or file.name == "__init__.py")
-        and not any(part.startswith(".") or part == "__pycache__"
-                    for part in file.relative_to(REGISTRY_SOURCE).parts)
-    }
+    from stratbox.core.registry.resources import resource_inventory
+    result = {name: (size, digest) for name, size, digest in resource_inventory()}
+    result["__init__.py"] = _identity((REGISTRY_SOURCE / "__init__.py").read_bytes())
+    return result
 
 
 def _verify_registry_members(names: set[str], prefix: str, read_bytes) -> dict[str, int]:

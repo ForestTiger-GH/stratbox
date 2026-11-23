@@ -18,9 +18,9 @@ class HeadlineProfile:
 
 
 _METRICS = {
-    "minfin.budget_headlines.v1": HeadlineProfile("minfin.budget_headlines.v1",
+    "minfin.budget_headlines": HeadlineProfile("minfin.budget_headlines",
         frozenset({"ytd", "annual"}), frozenset({"monthly", "quarterly", "annual"}), budget_metrics),
-    "minfin.nwf_headlines.v1": HeadlineProfile("minfin.nwf_headlines.v1",
+    "minfin.nwf_headlines": HeadlineProfile("minfin.nwf_headlines",
         frozenset({"stock"}), frozenset({"monthly"}), nwf_metrics),
 }
 

@@ -19,7 +19,7 @@ DECL = frozenset({"storage.write", "storage.remove", "notification.handoff"})
 
 def operation(*, partial_allowed=True, effects=DECL):
     return OperationDefinition(
-        "test.execution_finalization", 1, "test-1", str, str,
+        "test.execution_finalization", "test-1", str, str,
         possible_effects=effects, partial_allowed=partial_allowed,
     )
 
@@ -354,7 +354,7 @@ def test_observability_bridge_accepts_actual_terminal_event(state):
 
 def test_operation_descriptor_lists_only_registrable_effects():
     op = OperationDefinition(
-        "test.http_source", 1, "m-1", str, str,
+        "test.http_source", "m-1", str, str,
         required_capabilities=frozenset({"http"}),
     )
     assert not op.effects
@@ -371,7 +371,7 @@ def test_operation_descriptor_lists_only_registrable_effects():
     {"partial_allowed": 1},
 ])
 def test_invalid_operation_definition_is_rejected(params):
-    kwargs = dict(operation_id="test.invalid", contract_version=1, method_version="m-1",
+    kwargs = dict(operation_id="test.invalid", method_id="method",
                   request_type=str, value_type=str)
     kwargs.update(params)
     with pytest.raises(ValueError):
@@ -462,7 +462,7 @@ def test_representation_accounting_and_computation_receipt_is_independent_of_eff
     from stratbox.shared.data.representation import Representation
     from stratbox.core.limits import ExecutionBudget
 
-    op = OperationDefinition("test.render", 1, "render-v1", bytes, Representation,
+    op = OperationDefinition("test.render", "render-v1", bytes, Representation,
                              possible_effects=frozenset({"storage.write"}))
     payload = Representation("sample.csv", 1, "text/csv", b"x,y\\n1,2\\n")
     purely_computed = run(op, b"seed", lambda req, inv: payload)
@@ -614,7 +614,7 @@ def test_computation_is_preserved_when_returned_output_exceeds_budget():
     from stratbox.shared.data.representation import Representation
     blob = Representation("report", 1, "text/csv", b"long-output-data")
     definition = OperationDefinition(
-        "test.compute_before_output_admission", 1, "method-1",
+        "test.compute_before_output_admission", "method-1",
         bytes, Representation,
     )
     result = run(definition, b"", lambda request, invocation: blob,
@@ -666,7 +666,7 @@ def test_effect_key_is_kind_qualified_and_validates_public_result_snapshot():
     assert a.key == EffectKey("storage.write", "shared")
     assert b.key == EffectKey("notification.handoff", "shared")
     assert a.key != b.key
-    op = OperationDefinition("test.keyed", 1, "m-v1", str, str,
+    op = OperationDefinition("test.keyed", "m-v1", str, str,
         possible_effects=frozenset({"storage.write", "notification.handoff"}))
     with pytest.raises(ValueError, match="Duplicate identified effect"):
         OperationResult(op, "invocation", "unknown", "ok", (Diagnostic("effect.outcome_unknown"),),

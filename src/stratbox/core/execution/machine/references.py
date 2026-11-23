@@ -146,23 +146,23 @@ def preview_value(value, *, max_rows=20, max_bytes=32_768):
     return projected
 
 
-def reference_schemas(operation_id, contract_version, *, catalog):
-    op = catalog.get(operation_id, contract_version)
-    fields_in = {"operation_id": {"const": op.operation_id}, "contract_version": {"const": op.contract_version},
+def reference_schemas(operation_id, *, catalog):
+    op = catalog.get(operation_id)
+    fields_in = {"operation_id": {"const": op.operation_id},
         "request_ref": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"},
         "preview_rows": {"type": "integer", "minimum": 1, "maximum": 100},
         "preview_bytes": {"type": "integer", "minimum": 256, "maximum": 131072}}
     request = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
         "additionalProperties": False, "properties": fields_in,
-        "required": ["operation_id", "contract_version", "request_ref"],
+        "required": ["operation_id", "request_ref"],
         "x-request-type": op.request_type.__module__+"."+op.request_type.__qualname__,
         "x-effects-requiring-host-grant": sorted(op.possible_effects)}
     response = {"type": "object", "properties": {
-        "operation_id": {"const": op.operation_id}, "contract_version": {"const": op.contract_version},
-        "method_version": {"const": op.method_version}, "outcome": {"type": "string"},
+        "operation_id": {"const": op.operation_id},
+        "method_id": {"const": op.method_id}, "outcome": {"type": "string"},
         "result_ref": {"type": "string"}, "value_ref": {"type": ["string", "null"]},
         "preview": {}, "diagnostics": {"type": "array"}, "effects": {"type": "array"}},
-        "required": ["operation_id", "contract_version", "method_version", "outcome", "result_ref", "value_ref",
+        "required": ["operation_id", "method_id", "outcome", "result_ref", "value_ref",
                      "preview", "diagnostics", "effects"], "additionalProperties": False}
     return request, response
 
@@ -184,29 +184,29 @@ def invoke_reference(raw: bytes, *, catalog, values: TypedValueResolver, context
         request = json.loads(raw, object_pairs_hook=_object)
     except (ValueError, UnicodeError, RecursionError):
         raise WireRequestError("reference.invalid_json") from None
-    required = {"operation_id", "contract_version", "request_ref"}
+    required = {"operation_id", "request_ref"}
     if not isinstance(request, dict) or not required <= set(request) or set(request) - required - {"preview_rows", "preview_bytes"}:
         raise WireRequestError("reference.request_shape_invalid")
-    if type(request["operation_id"]) is not str or type(request["contract_version"]) is not int:
+    if type(request["operation_id"]) is not str:
         raise WireRequestError("reference.operation_invalid")
     if type(request["request_ref"]) is not str or not _REF.fullmatch(request["request_ref"]):
         raise WireRequestError("reference.invalid")
     max_rows, max_bytes = request.get("preview_rows", 20), request.get("preview_bytes", 32768)
     preview_value(None, max_rows=max_rows, max_bytes=max_bytes)
-    definition = catalog.get(request["operation_id"], request["contract_version"])
+    definition = catalog.get(request["operation_id"])
     if not isinstance(authorized_effects, frozenset) or not definition.possible_effects <= authorized_effects:
         raise WireRequestError("reference.effects_not_granted")
     typed = values.resolve(request["request_ref"], definition.request_type)
     if not isinstance(typed, definition.request_type):
         raise WireRequestError("reference.request_type_mismatch")
     with values.reserve_result() as reservation:
-        _, handler, _ = catalog.resolve(definition.operation_id, definition.contract_version)
+        _, handler, _ = catalog.resolve(definition.operation_id)
         result = handler(typed, context=context)
         if not isinstance(result, OperationResult) or result.definition != definition:
             raise WireRequestError("reference.result_mismatch")
         result_ref, value_ref = reservation.commit(result)
-    response = {"operation_id": definition.operation_id, "contract_version": definition.contract_version,
-        "method_version": definition.method_version, "outcome": result.outcome,
+    response = {"operation_id": definition.operation_id,
+        "method_id": definition.method_id, "outcome": result.outcome,
         "result_ref": result_ref, "value_ref": value_ref,
         "preview": preview_value(result.value, max_rows=max_rows, max_bytes=max_bytes),
         "diagnostics": [{"code": d.code, "stage": d.stage, "retry_disposition": d.retry_disposition} for d in result.diagnostics[:128]],

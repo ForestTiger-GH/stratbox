@@ -1,0 +1,44 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.assess_material",
+    "request_type": "stratbox.domains.frank_rg.publications.contracts:AssessMaterialRequest",
+    "value_type": "stratbox.domains.frank_rg.publications.contracts:MaterialAssessment",
+    "processing": {
+      "stages": [
+        "compare"
+      ],
+      "inputs": [
+        {
+          "name": "report",
+          "contract": {
+            "schema_id": "frg.report",
+            "role": "originals"
+          }
+        },
+        {
+          "name": "checkpoint",
+          "contract": {
+            "schema_id": "frg.checkpoint"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "assessment",
+          "contract": {
+            "schema_id": "frg.material_assessment"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Compare confirmed original identities and report periods without interpreting workbook contents."
+    },
+    "method_id": "frg.material-comparison"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.handlers:assess_material"
+  },
+  "schema": "stratbox.operation"
+}

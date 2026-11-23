@@ -126,12 +126,12 @@ class NamingProfile:
 
 
 _REGIONAL_START = date(2026, 4, 1)
-_DISCOVERY = DiscoveryProfile("frg.directory.v1", _discover_directory)
-_SELECTION = SelectionProfile("frg.latest_period.v1", _select_latest)
-_NAMING = NamingProfile("frg.canonical.v1", _build_name)
+_DISCOVERY = DiscoveryProfile("frg.directory", _discover_directory)
+_SELECTION = SelectionProfile("frg.latest_period", _select_latest)
+_NAMING = NamingProfile("frg.canonical", _build_name)
 
 _IDENTIFICATION = (
-    IdentificationProfile("frg.identification.express.v1", (
+    IdentificationProfile("frg.identification.express", (
         RecognitionRule("issuance_weekly", "Экспресс выдачи — Weekly", "month_week", 60,
                         ("экспресс-мониторинг рынка", "выдачи"), tokens_none=("кредитные карты", "региональные данные")),
         RecognitionRule("passives", "Экспресс — Пассивы", "snapshot", 70,
@@ -143,7 +143,7 @@ _IDENTIFICATION = (
         RecognitionRule("portfolios", "Экспресс портфели", "snapshot", 100,
                         ("экспресс-мониторинг рынка", "портфели"), tokens_none=("региональные данные",)),
     )),
-    IdentificationProfile("frg.identification.regional.v1", (
+    IdentificationProfile("frg.identification.regional", (
         RecognitionRule("issuance_mortgage", "Региональные выдачи — Ипотека", "snapshot", 10,
                         ("региональные данные", "выдачи", "ипотека"), tokens_none=("кредитные карты",), min_period_date=_REGIONAL_START),
         RecognitionRule("portfolios_mortgage", "Региональные портфели — Ипотека", "snapshot", 20,
@@ -155,7 +155,7 @@ _IDENTIFICATION = (
         RecognitionRule("portfolios", "Региональные портфели", "snapshot", 50,
                         ("региональные данные", "портфели"), tokens_none=("ипотека", "кредитные карты"), min_period_date=_REGIONAL_START),
     )),
-    IdentificationProfile("frg.identification.rbm.v1", (
+    IdentificationProfile("frg.identification.rbm", (
         RecognitionRule("volumes_q", "Выдачи — Q", "snapshot", 110,
                         ("retail banking market", "volumes"), tokens_none=("cards volumes",), requires_q_marker=True),
         RecognitionRule("portfolios_q", "Портфели — Q", "snapshot", 120,
@@ -163,7 +163,7 @@ _IDENTIFICATION = (
         RecognitionRule("volumes_cards_q", "Выдачи — Карты — Q", "snapshot", 130,
                         ("cards volumes",), requires_q_marker=True),
     )),
-    IdentificationProfile("frg.identification.special.v1", (
+    IdentificationProfile("frg.identification.special", (
         RecognitionRule("mortgage_refinancing", "Рефинансирование ипотеки", "snapshot", 140,
                         ("рефинансирование ипотеки",)),
     )),

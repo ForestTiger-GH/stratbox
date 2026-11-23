@@ -21,7 +21,7 @@ TIME = datetime(2026, 11, 19, tzinfo=timezone.utc)
 KEY_WRITE = EffectKey("storage.write", "shared")
 KEY_HANDOFF = EffectKey("notification.handoff", "shared")
 DEFINITION = OperationDefinition(
-    "test.qualified_effects", 1, "m1", str, str,
+    "test.qualified_effects", "m1", str, str,
     possible_effects=frozenset({"storage.write", "notification.handoff"}),
 )
 

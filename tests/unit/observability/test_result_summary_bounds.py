@@ -15,7 +15,7 @@ from stratbox.shared.evidence import UsedInputReceipt
 
 
 OP = OperationDefinition(
-    "test.large_execution_evidence", 1, "v1", int, int,
+    "test.large_execution_evidence", "v1", int, int,
     possible_effects=frozenset({"storage.write"}),
 )
 

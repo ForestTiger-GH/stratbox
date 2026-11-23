@@ -23,7 +23,7 @@ class DescribeFamilyRequest:
 @dataclass(frozen=True, slots=True)
 class BoundOperation:
     key: OperationKey
-    method_version: str
+    method_id: str
     stages: tuple[ProcessingStage, ...]
     inputs: tuple[InputPort, ...]
     outputs: tuple[OutputPort, ...]
@@ -74,7 +74,6 @@ class ScopedHandoff:
 class BoundProfile:
     profile_id: str
     kind: str
-    edition: str
     operations: tuple[OperationKey, ...]
     formats: tuple[str, ...]
     scope: str

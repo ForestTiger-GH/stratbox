@@ -1,0 +1,13 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.tables.territorial_offices",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "source_table",
+    "profile_id": "cbr.tables.territorial_offices",
+    "scope": "Reviewed source-local layout with complete admitted scope and explicit source limitations."
+  }
+}

@@ -53,7 +53,7 @@ def build_view(dataset, *, series_ids=(), metric_ids=(), release_ids=(), title="
     parent = dataset.identity
     lineage = (*dataset.lineage, UsedInputReceipt("integrated_statistics", parent,
         "application/vnd.stratbox.dataset+json", "inline", version=parent))
-    tables = (("metadata", TypedTable(_META, ((title, "cbr.statistics.views.v1", dataset.mapping_version, dataset.method),))),
+    tables = (("metadata", TypedTable(_META, ((title, "cbr.statistics.views", dataset.mapping_version, dataset.method),))),
               ("observations", TypedTable(_ROWS, tuple(rows))), ("inputs", input_table(dataset.inputs)),
               ("diagnostics", diagnostic_table(dataset.diagnostics)))
     snapshot = DatasetSnapshot.build("cbr.statistics.view", "content", VIEW, tables,

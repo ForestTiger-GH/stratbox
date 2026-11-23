@@ -63,7 +63,7 @@ def test_real_original_save_stored_receipt_and_complete_generation(tmp_path):
 
 
 def test_real_computation_receipt_is_logged_without_raw_output():
-    definition = OperationDefinition("test.compute_snapshot", 1, "small-math-v1", bytes, bytes)
+    definition = OperationDefinition("test.compute_snapshot", "small-math-v1", bytes, bytes)
     source = b"123"
     def work(request, invocation):
         invocation.stage("sum_values")
@@ -82,7 +82,7 @@ def test_real_computation_receipt_is_logged_without_raw_output():
     assert summary.payload["computation"]["output"]["sha256"] == ByteIdentity.of(b"6").sha256
     assert summary.payload["inputs"][0]["identity"]["sha256"] == ByteIdentity.of(source).sha256
     assert set(summary.payload) == {
-        "contract_version", "method_version", "time_basis", "diagnostics", "inputs",
+        "method_id", "time_basis", "diagnostics", "inputs",
         "effects", "computation", "observability", "resources_used",
         "details_coverage", "details_counts", "details_included", "details_digest",
         "details_digest_profile", "privacy_qualification",
@@ -99,7 +99,7 @@ def test_same_raw_id_different_effect_kinds_persist_without_false_reconciliation
     from stratbox.core.execution import EffectReceipt
     from stratbox.core.observability import encode_records, decode_records
     definition = OperationDefinition(
-        "test.mixed_effects_roundtrip", 1, "v1", int, int,
+        "test.mixed_effects_roundtrip", "v1", int, int,
         possible_effects=frozenset({"storage.write", "notification.handoff"}),
     )
     def handler(value, invocation):

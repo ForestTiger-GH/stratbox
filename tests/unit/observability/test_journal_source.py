@@ -62,7 +62,7 @@ def test_cursor_epoch_retention_and_pinned_snapshot(tmp_path):
 
 def test_finished_summary_is_linked_and_snapshot_remains_volatile():
     sink = RecordMemorySink()
-    definition = OperationDefinition("fixture.compute", 1, "arithmetic", int, int)
+    definition = OperationDefinition("fixture.compute", "arithmetic", int, int)
     context = ExecutionContext(sink=sink, correlation=Correlation("run"))
     result = run(definition, 4, lambda request, invocation: request + 2, context=context)
     capture_operation_result(result, sink)

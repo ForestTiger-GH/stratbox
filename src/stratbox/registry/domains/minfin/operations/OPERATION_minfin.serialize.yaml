@@ -1,0 +1,45 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.serialize",
+    "request_type": "stratbox.domains.minfin.tables.contracts:SerializeRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "extract",
+          "contract": {
+            "schema_id": "minfin.source_cells",
+            "version": 2,
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "minfin.source_cells.json",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Serialize complete source-cell extracts including blank-sheet geometry to a repeatable JSON representation.",
+      "function": "encode"
+    },
+    "method_id": "minfin-extract-json"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:serialize_extract"
+  },
+  "schema": "stratbox.operation"
+}

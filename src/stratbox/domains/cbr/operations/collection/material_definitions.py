@@ -48,4 +48,4 @@ class MaterialCollection:
                                                         for item in self.manifest.members))
 
 
-COLLECT_MATERIALS = _registry_definition('cbr.file_collector.collect_materials', 1)
+COLLECT_MATERIALS = _registry_definition('cbr.file_collector.collect_materials')

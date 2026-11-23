@@ -53,8 +53,8 @@ def _port(port) -> dict:
 
 
 def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict:
-    op = catalog.get(ref.operation_id, ref.contract_version)
-    codec = catalog.wire_contract(ref.operation_id, ref.contract_version)
+    op = catalog.get(ref.operation_id)
+    codec = catalog.wire_contract(ref.operation_id)
     required, optional = (
         sorted(op.required_capabilities),
         sorted(op.optional_capabilities),
@@ -64,11 +64,12 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
         return f"{kind.__module__}.{kind.__qualname__}"
 
     processing = op.processing
+    from stratbox.core.registry.requirements import describe_source_requirements
     return {
         "operation_id": op.operation_id,
-        "contract_version": op.contract_version,
-        "owner_id": catalog.owner_of(op.operation_id, op.contract_version),
-        "method_version": op.method_version,
+        "source_requirements": describe_source_requirements(catalog, op.operation_id),
+        "owner_id": catalog.owner_of(op.operation_id),
+        "method_id": op.method_id,
         "purpose": processing.summary
         if processing
         else op.operation_id.rsplit(".", 1)[-1].replace("_", " "),
@@ -142,12 +143,12 @@ def catalog_page(
     for ref in catalog.list_refs():
         if (
             owner_id is not None
-            and catalog.owner_of(ref.operation_id, ref.contract_version) != owner_id
+            and catalog.owner_of(ref.operation_id) != owner_id
         ):
             continue
         if machine_only and ref.wire_contract_ref is None:
             continue
-        processing = catalog.get(ref.operation_id, ref.contract_version).processing
+        processing = catalog.get(ref.operation_id).processing
         if stage is not None and (processing is None or stage not in processing.stages):
             continue
         if role is not None and (
@@ -181,11 +182,10 @@ def catalog_page(
 def compatible_next(
     catalog: "OperationCatalog",
     operation_id: str,
-    contract_version: int,
     *,
     output: str | None = None,
 ) -> tuple[OperationConnection, ...]:
-    producer = catalog.get(operation_id, contract_version)
+    producer = catalog.get(operation_id)
     if producer.processing is None:
         return ()
     outputs = producer.processing.outputs
@@ -195,9 +195,9 @@ def compatible_next(
             raise ValueError("processing.output_unavailable")
     result = []
     for ref in catalog.list_refs():
-        if (ref.operation_id, ref.contract_version) == (operation_id, contract_version):
+        if ref.operation_id == operation_id:
             continue
-        consumer = catalog.get(ref.operation_id, ref.contract_version)
+        consumer = catalog.get(ref.operation_id)
         if consumer.processing is None:
             continue
         for produced in outputs:
@@ -205,9 +205,9 @@ def compatible_next(
                 if compatible_ports(produced, accepted):
                     result.append(
                         OperationConnection(
-                            OperationKey(operation_id, contract_version),
+                            OperationKey(operation_id),
                             produced.name,
-                            OperationKey(ref.operation_id, ref.contract_version),
+                            OperationKey(ref.operation_id),
                             accepted.name,
                             tuple(sorted(produced.outcomes & accepted.outcomes)),
                             tuple(
@@ -242,17 +242,17 @@ def stage_coverage(
     for stage in ProcessingStage:
         direct, composites = [], []
         for ref in registration.operations:
-            op = catalog.get(ref.operation_id, ref.contract_version)
+            op = catalog.get(ref.operation_id)
             if op.processing and stage in op.processing.stages:
                 target = composites if op.processing.composition else direct
-                target.append(OperationKey(ref.operation_id, ref.contract_version))
+                target.append(OperationKey(ref.operation_id))
         declaration = declarations.get(stage)
         if declaration is not None:
             if direct:
                 raise RegistryError("registry.coverage_conflict")
             for key in declaration.operations:
                 try:
-                    target = catalog.get(key.operation_id, key.contract_version)
+                    target = catalog.get(key.operation_id)
                 except ValueError as exc:
                     raise RegistryError("registry.delegation_unavailable") from exc
                 if target.processing is None or stage not in target.processing.stages:

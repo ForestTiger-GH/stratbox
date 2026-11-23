@@ -7,5 +7,5 @@ from stratbox.domains.cbr.analytics.reporting_forms.contracts import (
 )
 from .definitions import _TABLES
 
-PREPARE = _registry_definition('cbr.forms.prepare_model_inputs', 1)
-CALCULATE = _registry_definition('cbr.forms.calculate', 1)
+PREPARE = _registry_definition('cbr.forms.prepare_model_inputs')
+CALCULATE = _registry_definition('cbr.forms.calculate')

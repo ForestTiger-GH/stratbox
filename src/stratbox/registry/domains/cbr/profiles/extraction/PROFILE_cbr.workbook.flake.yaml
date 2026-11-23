@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.processing-profile",
+  "owner_id": "cbr",
+  "profile_id": "cbr.workbook.flake",
+  "declaration": {
+    "formats": [
+      "xlsx"
+    ],
+    "kind": "extraction",
+    "profile_id": "cbr.workbook.flake",
+    "scope": "All physical worksheets, cells, formulas and source metadata.",
+    "operation_id": "cbr.tables.extract"
+  }
+}

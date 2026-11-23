@@ -1,0 +1,48 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.view_snapshot",
+    "request_type": "stratbox.domains.frank_rg.products.contracts:ViewSnapshotRequest",
+    "value_type": "stratbox.shared.data.snapshots:DatasetSnapshot",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view.snapshot",
+            "role": "products"
+          },
+          "path": ""
+        },
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "dataset.snapshot"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "dataset_id",
+        "version_id"
+      ],
+      "summary": "Persist every prepared view value, coverage statement and evidence reference.",
+      "function": "encode"
+    },
+    "method_id": "frg.view_snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_view_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

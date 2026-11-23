@@ -2,39 +2,16 @@
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from enum import Enum
 import json
 
-from stratbox.core.execution import OperationFailure, run
+from stratbox.core.execution import OperationFailure, run, values
 from stratbox.shared.data import workbooks as W, documents as D, views as V
 from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.data.observations import ObservationBatch
 from stratbox.shared.data import observation_snapshots as O
 from stratbox.shared.data.observation_snapshots import observation_snapshot
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from . import definitions as C
-
-
-def _control_value(value):
-    """Canonical control/output metadata without fixed-point scalar expansion."""
-    if isinstance(value, Enum):
-        return value.value
-    if value is None or type(value) in {bool, int, str}:
-        return value
-    if isinstance(value, Decimal):
-        return {"decimal": str(value)}
-    if type(value) in {date, datetime, time}:
-        return {type(value).__name__: value.isoformat()}
-    if isinstance(value, timedelta):
-        return {"microseconds": (value.days * 86400 + value.seconds) * 1_000_000 + value.microseconds}
-    if isinstance(value, ByteIdentity):
-        return {"sha256": value.sha256, "size": value.size}
-    if isinstance(value, (tuple, list)):
-        return [_control_value(v) for v in value]
-    if is_dataclass(value):
-        return {f.name: _control_value(getattr(value, f.name)) for f in fields(value)}
-    raise ValueError("processing.control_value_unsupported")
 
 
 def _snapshot(value):
@@ -134,16 +111,7 @@ def _pin_inputs(request, invocation):
         snapshot = _snapshot(value)
         if snapshot is None:
             continue
-        invocation.use(UsedInputReceipt("input_"+field.name, snapshot.identity,
-            "application/vnd.stratbox.dataset+json", "inline", snapshot.manifest.dataset_id,
-            version=snapshot.identity))
-        for receipt in snapshot.manifest.inputs:
-            invocation.use(receipt)
-        invocation.budget.charge("input_bytes", snapshot.identity.size)
-        for _, table in snapshot.tables:
-            invocation.check_cancelled()
-            invocation.budget.charge("input_bytes", table.identity.size)
-            invocation.budget.charge("cells", len(table.rows) * max(1, len(table.schema.columns)))
+        values.use_value(snapshot, invocation, "input_" + field.name, include_lineage=True)
 
 
 def _run(definition, request, work, context):
@@ -151,7 +119,6 @@ def _run(definition, request, work, context):
         invocation.stage("process")
         try:
             _pin_inputs(req, invocation)
-            parameters = {name: _control_value(getattr(req, name)) for name in definition.processing.parameters}
             value = work(req, invocation)
         except (ValueError, TypeError, KeyError) as error:
             code = str(error)
@@ -161,16 +128,11 @@ def _run(definition, request, work, context):
         if isinstance(value, DatasetSnapshot):
             for receipt in value.manifest.inputs:
                 invocation.use(receipt)
-            for name, table in value.tables:
-                invocation.account_output(table.identity, key=name)
         else:
             for receipt in getattr(value, "lineage", ()):
                 invocation.use(receipt)
-        identity = getattr(value, "identity", None)
-        if identity is None:
-            identity = ByteIdentity.of(canonical_manifest_bytes(_control_value(value)))
-        invocation.account_output(identity, key="result")
-        invocation.record(identity, parameters=parameters)
+        values.record_value(value, req, definition, invocation, table_prefix="",
+                            manifest_key="result", key="result", charge_cells=False)
         return value
     return run(definition, request, execute, context=context)
 

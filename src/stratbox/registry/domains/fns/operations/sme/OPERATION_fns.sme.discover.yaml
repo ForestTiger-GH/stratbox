@@ -1,0 +1,41 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.discover",
+    "request_type": "stratbox.domains.fns.operations.sme.definitions:DiscoverSmeRequest",
+    "value_type": "builtins:tuple",
+    "optional_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "inputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "fns.sme.index_material",
+            "role": "originals"
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "releases",
+          "contract": {
+            "schema_id": "fns.sme.index"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Discover source issues with source-specific identity and coverage."
+    },
+    "method_id": "fns-sme-index"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.operations:discover"
+  },
+  "schema": "stratbox.operation"
+}

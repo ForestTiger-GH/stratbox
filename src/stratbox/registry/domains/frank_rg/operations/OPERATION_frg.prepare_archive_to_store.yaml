@@ -1,0 +1,54 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.prepare_archive_to_store",
+    "request_type": "stratbox.domains.frank_rg.operations.housekeeping_definitions:StreamArchiveRequest",
+    "value_type": "stratbox.core.formats.archives.store:PathArchiveReceipt",
+    "required_capabilities": [
+      "filestore",
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "processing": {
+      "stages": [
+        "render",
+        "preserve"
+      ],
+      "inputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.cleanup_plan"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "frg.stored_archive",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "destination",
+        "report_json",
+        "compression",
+        "mode",
+        "expected_revision"
+      ],
+      "summary": "Stream selected original reports into a verified archive commit.",
+      "composition": true
+    },
+    "method_id": "frg-verified-streaming-manifest-zip-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:prepare_archive_to_store"
+  },
+  "schema": "stratbox.operation"
+}

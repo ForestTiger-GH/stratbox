@@ -38,7 +38,6 @@ class ReadOnlyWireContract:
     """Immutable schemas that can be inspected without importing a codec."""
 
     operation_id: str
-    contract_version: int
     required_fields: tuple[str, ...]
     _input_json: str
     _output_json: str
@@ -46,14 +45,11 @@ class ReadOnlyWireContract:
     def __init__(
         self,
         operation_id: str,
-        contract_version: int,
         input_fields: Mapping[str, dict],
         required_fields: tuple[str, ...],
         output_fields: Mapping[str, dict],
     ):
         safe_token(operation_id)
-        if type(contract_version) is not int or contract_version < 1:
-            raise ValueError("Invalid machine contract version")
         if not isinstance(input_fields, Mapping) or not isinstance(
             output_fields, Mapping
         ):
@@ -81,7 +77,6 @@ class ReadOnlyWireContract:
                 raise ValueError("Machine schema size limit")
             object.__setattr__(self, name, encoded)
         object.__setattr__(self, "operation_id", operation_id)
-        object.__setattr__(self, "contract_version", contract_version)
         object.__setattr__(self, "required_fields", required_fields)
 
     @property
@@ -112,10 +107,6 @@ class ReadOnlyWireCodec:
     @property
     def operation_id(self):
         return self.contract.operation_id
-
-    @property
-    def contract_version(self):
-        return self.contract.contract_version
 
     @property
     def input_fields(self):

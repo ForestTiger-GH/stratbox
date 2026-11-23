@@ -61,11 +61,11 @@ def test_registry_has_two_meaningful_families_and_complete_real_bindings():
     assert families() == ("fns.sme", "fns.legal_entities")
     assert {value.series_id for value in all_sources()} == {"fns.sme", "fns.1yur"}
     assert REGISTRATION.owner_id == "fns"
-    references = {(item.operation_id, item.contract_version) for item in REGISTRATION.operations}
+    references = {item.operation_id for item in REGISTRATION.operations}
     for card in source_cards():
         for operation in card.operations:
             if operation.state != "delegated":
-                assert (operation.operation_id, operation.contract_version) in references
+                assert operation.operation_id in references
     assert not sme.FLAKE_SNAPSHOT.processing.stages
     assert sme.FLAKE_SNAPSHOT.processing.function.value == "encode"
     assert sme.READ_FLAKE_SNAPSHOT.processing.function.value == "replay"

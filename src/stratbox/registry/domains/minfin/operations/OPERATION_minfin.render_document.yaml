@@ -1,0 +1,38 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.render_document",
+    "request_type": "stratbox.domains.minfin.documents.contracts:RenderDocumentRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "processing": {
+      "stages": [
+        "readable"
+      ],
+      "inputs": [
+        {
+          "name": "document",
+          "contract": {
+            "schema_id": "minfin.publisher_document",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "document.readable.jsonl",
+            "role": "readable"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Render retained ordered document blocks as source-qualified JSONL for downstream reading."
+    },
+    "method_id": "minfin.document.readable"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.document_handlers:render_document"
+  },
+  "schema": "stratbox.operation"
+}

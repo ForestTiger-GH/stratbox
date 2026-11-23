@@ -1,0 +1,36 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.discover",
+    "request_type": "stratbox.domains.frank_rg.publications.contracts:DiscoveryRequest",
+    "value_type": "stratbox.domains.frank_rg.publications.contracts:SourceIndex",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "processing": {
+      "stages": [
+        "discover"
+      ],
+      "outputs": [
+        {
+          "name": "index",
+          "contract": {
+            "schema_id": "frg.source_index"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "directory",
+        "recursive",
+        "family_ids"
+      ],
+      "summary": "Enumerate bounded caller-provided storage through the registered discovery profile."
+    },
+    "method_id": "frg.directory-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.handlers:discover"
+  },
+  "schema": "stratbox.operation"
+}

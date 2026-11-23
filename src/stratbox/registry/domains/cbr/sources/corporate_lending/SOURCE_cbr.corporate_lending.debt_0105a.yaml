@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.debt_0105a",
+  "title": "Regional corporate debt by activity",
+  "issue_model": "dated",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.corporate_lending.debt_0105a.route",
+  "family_profile": null,
+  "position": 21,
+  "publication": {
+    "acquisition_profile": "cbr.route.debt_0105a",
+    "extraction_profile": "cbr.industries.debt.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.debt_0105a",
+    "integration_profile": "cbr.corporate_lending.alignment",
+    "product_profile": "cbr.corporate_lending.views"
+  }
+}

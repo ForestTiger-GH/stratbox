@@ -16,10 +16,8 @@ def invoke_read_only(
     codec, data = decode_request(raw, catalog)
     try:
         result = codec.resolve_and_invoke(data, materials, context)
-        if not isinstance(result, OperationResult) or (
-            result.operation_id != codec.operation_id
-            or result.definition.contract_version != codec.contract_version
-        ):
+        if (not isinstance(result, OperationResult)
+                or result.definition != catalog.get(codec.operation_id)):
             raise WireRequestError("operation.result_mismatch")
         value = codec.project(result)
         if value is not None and set(value) != set(codec.output_fields):
@@ -30,8 +28,7 @@ def invoke_read_only(
         raise WireRequestError("material.unavailable") from None
     return json.dumps({
         "operation_id": codec.operation_id,
-        "contract_version": codec.contract_version,
-        "method_version": result.definition.method_version,
+        "method_id": result.definition.method_id,
         "outcome": result.outcome,
         "value": value,
         "diagnostics": [

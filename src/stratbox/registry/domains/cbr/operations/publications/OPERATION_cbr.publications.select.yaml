@@ -1,0 +1,42 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.publications.select",
+    "request_type": "stratbox.domains.cbr.publications.contracts:SelectPublicationRequest",
+    "value_type": "stratbox.domains.cbr.publications.contracts:PublicationAsset",
+    "processing": {
+      "stages": [
+        "inspect"
+      ],
+      "inputs": [
+        {
+          "name": "inventory",
+          "contract": {
+            "schema_id": "cbr.publications.inventory"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "asset",
+          "contract": {
+            "schema_id": "cbr.publications.asset"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "issue_id",
+        "format",
+        "asset_id",
+        "url"
+      ],
+      "summary": "Select one publication and one physical route; ambiguous candidates require an explicit selection."
+    },
+    "method_id": "cbr-publication-selection"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:select"
+  },
+  "schema": "stratbox.operation"
+}

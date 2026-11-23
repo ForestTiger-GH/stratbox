@@ -1,0 +1,571 @@
+{
+  "schema": "stratbox.route",
+  "owner_id": "cbr",
+  "profile_id": "cbr.reporting_forms.f135.route",
+  "profiles": [
+    "cbr.forms.dbf_flakes",
+    "cbr.tables.f135",
+    "cbr.forms.f135.normalization",
+    "cbr.forms.model.135",
+    "cbr.reporting_forms.alignment",
+    "cbr.reporting_forms.views"
+  ],
+  "operations": [
+    {
+      "operation_id": "cbr.file_collector.collect_materials",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.align",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.build_data",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.build_history",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.build_views",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.calculate",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.compare",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.discover_sources",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.extract",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.make_readable",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.normalize",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.observations_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.parse",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.prepare_model_inputs",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.read_flake_export",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.render_flakes",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.render_workbook",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_data",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_flakes",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_history",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_normalized",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_observations",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.restore_views",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.result_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.forms.select_sources",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.assess_updates",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.reporting_forms.f135"
+        ]
+      ],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ],
+      "identity_parameter": "series_id"
+    },
+    {
+      "operation_id": "cbr.publications.identify",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.reporting_forms.f135"
+        ]
+      ],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ],
+      "identity_parameter": "series_id"
+    },
+    {
+      "operation_id": "cbr.publications.list_sources",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ],
+      "context_scope": "catalog"
+    },
+    {
+      "operation_id": "cbr.publications.select",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ]
+    },
+    {
+      "operation_id": "source.save_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.read_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.write_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.read_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.save_artifact",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.archive",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    }
+  ],
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "read_extract",
+    "readable",
+    "render",
+    "view"
+  ],
+  "transitions": [
+    {
+      "from": "acquire",
+      "to": "discover"
+    },
+    {
+      "from": "acquire",
+      "to": "extract"
+    },
+    {
+      "from": "acquire",
+      "to": "inspect"
+    },
+    {
+      "from": "acquire",
+      "to": "preserve"
+    },
+    {
+      "from": "calculate",
+      "to": "calculate"
+    },
+    {
+      "from": "calculate",
+      "to": "view"
+    },
+    {
+      "from": "discover",
+      "to": "inspect"
+    },
+    {
+      "from": "extract",
+      "to": "extract"
+    },
+    {
+      "from": "extract",
+      "to": "ingest"
+    },
+    {
+      "from": "extract",
+      "to": "inspect"
+    },
+    {
+      "from": "extract",
+      "to": "readable"
+    },
+    {
+      "from": "extract",
+      "to": "render"
+    },
+    {
+      "from": "ingest",
+      "to": "preserve"
+    },
+    {
+      "from": "inspect",
+      "to": "compare"
+    },
+    {
+      "from": "inspect",
+      "to": "discover"
+    },
+    {
+      "from": "inspect",
+      "to": "extract"
+    },
+    {
+      "from": "inspect",
+      "to": "preserve"
+    },
+    {
+      "from": "integrate",
+      "to": "calculate"
+    },
+    {
+      "from": "preserve",
+      "to": "discover"
+    },
+    {
+      "from": "preserve",
+      "to": "extract"
+    },
+    {
+      "from": "preserve",
+      "to": "ingest"
+    },
+    {
+      "from": "preserve",
+      "to": "inspect"
+    },
+    {
+      "from": "preserve",
+      "to": "preserve"
+    },
+    {
+      "from": "read_extract",
+      "to": "extract"
+    },
+    {
+      "from": "read_extract",
+      "to": "inspect"
+    },
+    {
+      "from": "read_extract",
+      "to": "readable"
+    },
+    {
+      "from": "read_extract",
+      "to": "render"
+    },
+    {
+      "from": "render",
+      "to": "preserve"
+    },
+    {
+      "from": "view",
+      "to": "render"
+    }
+  ],
+  "qualifications": [
+    "Historical publisher inventory is qualified independently of successful processing of selected materials.",
+    "Cross-source geography, subject and metric equivalence require explicit versioned mappings.",
+    "REGN and REGN_GKO identify credit institutions and banking groups separately; form 102 flow intervals require explicit period bindings."
+  ]
+}

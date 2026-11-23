@@ -1,0 +1,48 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.industries.0104a.render_pivots",
+    "request_type": "stratbox.domains.cbr.operations.corporate_lending.issuance.contracts:RenderIssuancePivotsRequest",
+    "value_type": "stratbox.domains.cbr.products.corporate_lending.issuance.contracts:IssuanceWorkbookResult",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "tables",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.pivots",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "workbook",
+          "contract": {
+            "schema_id": "cbr.industries.0104a.workbook",
+            "role": "products"
+          },
+          "path": "representation"
+        }
+      ],
+      "parameters": [
+        "industry_code",
+        "industry_name_ru",
+        "reference_periods",
+        "include_metadata_sheet"
+      ],
+      "summary": "Render prepared issuance pivots without calculating or parsing source data."
+    },
+    "method_id": "cbr-0104a-prepared-xlsx"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:render_pivots"
+  },
+  "schema": "stratbox.operation"
+}

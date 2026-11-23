@@ -9,7 +9,6 @@ from datetime import date
 from math import isfinite
 
 from stratbox.domains.cbr.publications.catalog import source
-from stratbox.domains.cbr.publications.selection import CATALOG_SERIES
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
@@ -30,22 +29,15 @@ class SorsDependency:
     compatibility_rule: str = "same_report_date_and_publication_step"
 
 
-DEPENDENCIES = (
-    SorsDependency("regional_traditional", "01_05_A", "cbr.corporate_lending.debt_0105a", "STRICT_REGIONAL_TOTALS_AND_CROSSWALK_LEGACY",
-        accepted_contracts=(DataContract("source.payload", 1, DataRole.ORIGINALS), DataContract("material.payload", 1),
-                            DataContract("cbr.industries.0105a.original", 1, DataRole.ORIGINALS),
-                            DataContract("cbr.industries.0105a.parsed_file", 1, DataRole.EXTRACTS))),
-    SorsDependency("national_traditional", "01_02_A", CATALOG_SERIES["corp_debt_a"], "STRICT_NATIONAL_TOTAL_AND_CROSSWALK_LEGACY"),
-    SorsDependency("national_okved2", "01_02_C", CATALOG_SERIES["corp_debt_c"], "STRICT_NATIONAL_OKVED2"),
-    SorsDependency("federal_district_okved2", "01_03_C", "cbr.corporate_lending.fd_okved2", "STRICT_FD_OKVED2"),
-    SorsDependency("sme_national_totals", "01_11", CATALOG_SERIES["sme_debt"], "STRICT_NATIONAL_SME_TOTALS"),
-    SorsDependency("sme_national_okved2", "01_11_F", CATALOG_SERIES["sme_debt_activity"], "STRICT_NATIONAL_OKVED2_SME"),
-    SorsDependency("sme_ie_national_okved2", "01_11_I", CATALOG_SERIES["sme_ie_debt_activity"], "STRICT_NATIONAL_OKVED2_SME_IE"),
-    SorsDependency("sme_federal_district_okved2", "01_12_A", "cbr.corporate_lending.sme_fd_okved2", "STRICT_FD_OKVED2_SME"),
-    SorsDependency("sme_regional_totals", "01_13_F", CATALOG_SERIES["sme_debt_subj_f"], "STRICT_REGIONAL_TOTALS_SME"),
-    SorsDependency("sme_ie_regional_totals", "01_13_I", CATALOG_SERIES["sme_debt_subj_i"], "STRICT_REGIONAL_TOTALS_SME_IE"),
-    SorsDependency("regional_totals_history", "01_05_D", CATALOG_SERIES["corp_debt_subj"], "OPTIONAL_VALIDATION_AND_HISTORY", False),
-)
+def _declared_dependencies():
+    from stratbox.core.registry.requirements import declared_requirements
+    return tuple(SorsDependency(
+        item.input_name, item.source_label, item.source_ids[0], item.role,
+        required=item.required, accepted_contracts=item.accepted_contracts,
+    ) for item in declared_requirements("cbr.sors.prepare_inputs"))
+
+
+DEPENDENCIES = _declared_dependencies()
 
 
 def dependencies():

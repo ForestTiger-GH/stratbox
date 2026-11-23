@@ -133,7 +133,7 @@ def test_resolved_public_stream_source_handler_is_executable(tmp_path):
         })),
         OriginalDestination("source_original.xlsx"),
     )
-    _, handler, _ = operation_catalog().resolve("source.receive_to_store", 1)
+    _, handler, _ = operation_catalog().resolve("source.receive_to_store")
     saved = handler(core_request, transport=Publisher(body), store=LocalFileStore(str(tmp_path)))
     assert saved.outcome == "succeeded", saved.diagnostics
     assert (tmp_path / "source_original.xlsx").read_bytes() == body

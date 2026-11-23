@@ -70,7 +70,7 @@ class RecordFieldSchema:
 
 SCHEMAS = {
     ("result_summary", "operation.result"): RecordFieldSchema("result_summary", "operation.result", (
-        AllowedField("contract_version", "integer"), AllowedField("method_version", "string"),
+        AllowedField("method_id", "string"),
         AllowedField("time_basis", "string"), AllowedField("diagnostics", "sequence", "restricted"),
         AllowedField("effects", "sequence", "restricted"), AllowedField("inputs", "sequence", "restricted"),
         AllowedField("computation", "optional", "operational"),
@@ -120,8 +120,7 @@ SCHEMAS[("domain_fact", "dataset.comparison_completed")] = _schema("dataset.comp
 for _kind in ("operation.started", "operation.stage", "operation.progress", "operation.finished"):
     SCHEMAS[("execution", _kind)] = _schema(_kind, (
         ("version", "integer"), ("kind", "string"), ("invocation_id", "string"),
-        ("operation_id", "string"), ("contract_version", "integer"),
-        ("method_version", "string"), ("sequence", "integer"),
+        ("operation_id", "string"), ("method_id", "string"), ("sequence", "integer"),
         ("occurred_at_utc", "string"), ("correlation", "mapping"),
         ("stage", "optional"), ("outcome", "optional"),
         ("diagnostic_code", "optional"), ("duration_ms", "optional"),
@@ -142,7 +141,7 @@ def _validate_summary_v3(record: JournalRecord) -> None:
         "details_digest", "details_digest_profile",
         "details_counts", "details_included", "details_coverage",
         "privacy_qualification", "diagnostics", "inputs", "effects",
-        "contract_version", "method_version", "time_basis",
+        "method_id", "time_basis",
         "observability", "resources_used", "computation",
     }
     if not required.issubset(fields):

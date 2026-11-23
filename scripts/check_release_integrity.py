@@ -215,7 +215,7 @@ def main() -> int:
 
     registry_root = SRC / 'stratbox' / 'registry'
     declarations = tuple(registry_root.rglob('*.yaml'))
-    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_'):
+    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_', 'ROUTE_', 'FAMILY_', 'GROUP_'):
         if not any(path.name.startswith(prefix) for path in declarations):
             failures.append(f'canonical registry has no {prefix} declarations')
     obsolete_registries = tuple(domains_root.rglob('REGISTRY_*.yaml'))

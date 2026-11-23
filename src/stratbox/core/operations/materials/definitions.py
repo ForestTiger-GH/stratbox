@@ -72,12 +72,12 @@ class StoredArtifact:
     storage: tuple[StoredBytesReceipt, ...]
 
 
-READ_LOCATION = _registry_definition('material.read_location', 2)
+READ_LOCATION = _registry_definition('material.read_location')
 
-TRANSFER = _registry_definition('material.transfer', 2)
+TRANSFER = _registry_definition('material.transfer')
 
-SAVE_ARTIFACT = _registry_definition('material.save_artifact', 1)
+SAVE_ARTIFACT = _registry_definition('material.save_artifact')
 
-READ_ARTIFACT = _registry_definition('material.read_artifact', 1)
+READ_ARTIFACT = _registry_definition('material.read_artifact')
 
-TRANSFER_ARTIFACT = _registry_definition('material.transfer_artifact', 1)
+TRANSFER_ARTIFACT = _registry_definition('material.transfer_artifact')

@@ -73,7 +73,7 @@ def test_four_root_registries_are_distinct_and_versioned():
     for item in all_families:
         assert bind_family(item.family_id).acquisition.landing_url.startswith('https://minfin.gov.ru/ru/')
         assert not hasattr(item, 'landing_url')
-        assert item.profiles.discovery == 'minfin.document_cards.v1'
+        assert item.profiles.discovery == 'minfin.document_cards'
         assert item.profiles.identification.startswith('minfin.')
         assert item.series and all(series.source_id.startswith(item.family_id + '.')
                                    for series in item.series)

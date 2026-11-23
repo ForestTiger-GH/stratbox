@@ -55,8 +55,8 @@ def test_dataset_and_computation_identity_are_resource_sensitive():
     changed = build_dataset_version("example.dataset", "2026-11-18", "method.v1",
                                     used, ByteIdentity.of(b"output"), resources={"dictionary": "B"})
     assert version.identity != changed.identity
-    assert computation_identity("example.read", 1, "v1", used, resources={"reference": "A"}) != (
-        computation_identity("example.read", 1, "v1", used, resources={"reference": "B"})
+    assert computation_identity("example.read", "v1", used, resources={"reference": "A"}) != (
+        computation_identity("example.read", "v1", used, resources={"reference": "B"})
     )
 
 
@@ -127,8 +127,8 @@ def test_dataset_content_projection_and_computation_origin_are_distinct():
     a = build_dataset_version("fixture", "2026-11-18", "method-1", (left,), result)
     b = build_dataset_version("fixture", "2026-11-18", "method-1", (right,), result)
     assert a.identity == b.identity  # Dataset projection is byte/method-oriented.
-    assert computation_identity("fixture.parse", 1, "method-1", (left,)) != (
-        computation_identity("fixture.parse", 1, "method-1", (right,))
+    assert computation_identity("fixture.parse", "method-1", (left,)) != (
+        computation_identity("fixture.parse", "method-1", (right,))
     )  # Execution identity includes source_id.
 
 

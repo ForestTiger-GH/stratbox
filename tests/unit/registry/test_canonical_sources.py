@@ -14,14 +14,14 @@ from stratbox.core.registry.sources import (
 from stratbox.domains.registry import operation_catalog
 
 
-def test_complete_source_routes_validate_operation_versions_and_parameter_names():
+def test_complete_source_routes_validate_operation_identities_and_parameter_names():
     catalog = operation_catalog()
     assert validate_source_bindings(catalog) == 90
     for card in catalog.source_catalog().sources:
         route = source_route(card.series_id)
         assert route.operations == card.operations
         for binding in route.operations:
-            definition = catalog.get(binding.operation_id, binding.contract_version)
+            definition = catalog.get(binding.operation_id)
             names = definition.processing.parameters if definition.processing else ()
             assert set(dict(binding.parameters)) <= set(names)
 
@@ -29,11 +29,11 @@ def test_complete_source_routes_validate_operation_versions_and_parameter_names(
 def test_format_qualifications_keep_historical_originals_outside_reviewed_parsers():
     route = source_route("cbr.project_finance.escrow")
     parse = next(binding for binding in route.operations if binding.operation_id == "cbr.escrow.parse")
-    assert route.binding(parse.operation_id, parse.contract_version, format="xlsx") == parse
+    assert route.binding(parse.operation_id, format="xlsx") == parse
     with pytest.raises(ValueError, match="registry.source_operation_format_unavailable"):
-        route.binding(parse.operation_id, parse.contract_version, format="html")
+        route.binding(parse.operation_id, format="html")
     acquire = next(binding for binding in route.operations if binding.operation_id == "cbr.publications.acquire")
-    assert route.binding(acquire.operation_id, acquire.contract_version, format="html") == acquire
+    assert route.binding(acquire.operation_id, format="html") == acquire
     legacy = next(card for card in source_cards("minfin") if card.formats == ("doc",))
     assert not any(binding.operation_id == "minfin.extract_document" for binding in legacy.operations)
 
@@ -47,7 +47,7 @@ def test_route_graph_preserves_processing_order_and_replay_is_explicit():
     assert not route.allows("render", "extract")
     assert not route.allows("arbitrary", "extract")
     with pytest.raises(ValueError, match="registry.source_operation_unbound"):
-        route.binding("cbr.escrow.parse", 4)
+        route.binding("cbr.escrow.parse")
 
 
 @pytest.mark.parametrize("mutate", [
@@ -60,7 +60,7 @@ def test_route_graph_preserves_processing_order_and_replay_is_explicit():
     lambda d: d.update(schema="stratbox.route.v999"),
 ])
 def test_malformed_routes_are_rejected_before_handler_resolution(mutate):
-    document = profile_document("fns", "fns.sme.route.v1")
+    document = profile_document("fns", "fns.sme.route")
     mutate(document)
     with pytest.raises(ValueError):
         decode_route(document, owner="fns")
@@ -79,15 +79,15 @@ def test_returned_declaration_copies_cannot_mutate_future_catalog_reads():
     document = source_documents("fns")[0]
     document["publication"].clear()
     assert source_documents("fns")[0]["publication"]
-    profile = profile_document("fns", "fns.sme.route.v1")
+    profile = profile_document("fns", "fns.sme.route")
     profile["operations"].clear()
     assert source_route("fns.sme").operations
 
 
 def test_route_profile_references_require_metadata_schema_and_exact_identity():
-    route = profile_document("fns", "fns.sme.route.v1")
+    route = profile_document("fns", "fns.sme.route")
     for reference, code in (("fns.missing.metadata", "registry.profile_unknown"),
-                            ("fns.sme.publication.v1", "registry.route_profile_schema_invalid")):
+                            ("fns.sme.publication", "registry.route_profile_schema_invalid")):
         mutated = deepcopy(route)
         mutated["profiles"] = [reference]
         with pytest.raises(ValueError, match=code):
@@ -99,7 +99,7 @@ def test_profile_metadata_has_one_canonical_record_per_exact_context():
     identities = []
     for owner in resource_owners():
         for declaration in iter_documents(owner, "profiles"):
-            if declaration["schema"] == "stratbox.source-profile.v1":
+            if declaration["schema"] == "stratbox.source-profile":
                 identities.append((owner, json.dumps(declaration["declaration"], sort_keys=True)))
     assert len(identities) == len(set(identities))
 

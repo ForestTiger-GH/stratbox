@@ -149,7 +149,7 @@ def read_representation(
         except FnsError as error:
             raise source_failure(error) from None
         return _release(
-            req.as_of, rows, req.payload.data, invocation, method=READ.method_version
+            req.as_of, rows, req.payload.data, invocation, method=READ.method_id
         )
 
     return run(READ, request, work, context=context)

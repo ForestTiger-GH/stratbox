@@ -10,7 +10,7 @@ from stratbox.core.execution import (
 )
 
 
-OP = OperationDefinition("test.terminal", 1, "m-1", str, str,
+OP = OperationDefinition("test.terminal", "m-1", str, str,
     possible_effects=frozenset({"storage.write"}), partial_allowed=True,
 )
 
@@ -178,7 +178,7 @@ def test_resolver_fault_returns_conservative_result_with_receipts(monkeypatch):
 
 
 def test_failed_and_unknown_progress_is_validated_before_telemetry():
-    op = OperationDefinition("test.progress", 1, "m-1", int, int)
+    op = OperationDefinition("test.progress", "m-1", int, int)
     for completed, total in ((1.0, 2.0), (True, True), (1, False), (2, 1), (-1, 2)):
         sink = InMemorySink()
         def work(req, inv):
@@ -246,7 +246,7 @@ def test_invalid_progress_args_are_rejected_before_deadline_clock_use():
         def now(self):
             return datetime(2026, 11, 19, tzinfo=timezone.utc)
     clock = BrokenOnProgressClock()
-    op = OperationDefinition("test.invalid_progress_early", 1, "m-1", int, int)
+    op = OperationDefinition("test.invalid_progress_early", "m-1", int, int)
     def work(request, invocation):
         invocation.progress(True, True)
         return request
@@ -432,7 +432,7 @@ def test_batch_keeps_clock_diagnostic_instead_of_internal_error():
     ticks = iter((100, 100, 99, 100))
     clock.monotonic = lambda: next(ticks)
     definition = OperationDefinition(
-        "test.batch_budget_clock", 1, "v1", str, tuple, partial_allowed=True,
+        "test.batch_budget_clock", "v1", str, tuple, partial_allowed=True,
     )
     def worker(value, invocation):
         batch = attempt_batch((1, 2), lambda item: item, invocation, continue_on_error=True)
@@ -527,7 +527,7 @@ def test_strict_initial_clock_fault_is_a_qualified_result_without_handler(bad):
 
 def test_invalid_definition_is_not_reclassified_as_clock_fault():
     with pytest.raises(ValueError):
-        OperationDefinition("invalid definition with spaces", 1, "v1", int, int)
+        OperationDefinition("invalid definition with spaces", "v1", int, int)
 
 
 def test_no_deadline_and_no_sink_work_without_monotonic_attribute():

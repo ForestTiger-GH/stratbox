@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "rosstat",
+  "profile_id": "rosstat.reviewed_cells.metadata.rosstat.socioeconomic_regions",
+  "declaration": {
+    "formats": [
+      "rar",
+      "zip"
+    ],
+    "kind": "mapping",
+    "profile_id": "rosstat.reviewed_cells.metadata.rosstat.socioeconomic_regions",
+    "scope": "Caller-supplied coordinates and metric/period/unit/geography meanings pinned to the exact original digest."
+  }
+}

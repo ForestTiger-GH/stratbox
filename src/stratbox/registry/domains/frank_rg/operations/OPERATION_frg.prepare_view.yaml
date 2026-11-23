@@ -1,0 +1,44 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.prepare_view",
+    "request_type": "stratbox.domains.frank_rg.products.contracts:PrepareViewRequest",
+    "value_type": "stratbox.shared.data.views:ObservationView",
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "batch",
+          "contract": {
+            "schema_id": "observations.batch",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.prepared_view",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "view_id",
+        "metric_ids",
+        "period_kinds",
+        "subject_ids"
+      ],
+      "summary": "Prepare an explicit selection of qualified observations without aggregation or source reopening."
+    },
+    "method_id": "frg.prepare_view"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:prepare_view"
+  },
+  "schema": "stratbox.operation"
+}

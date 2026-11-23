@@ -10,7 +10,6 @@ DIGEST = {"type": "string", "pattern": r"^[0-9a-f]{64}$"}
 
 PLAN_CONTRACT = ReadOnlyWireContract(
     "frg.plan_cleanup",
-    1,
     {"directory_ref": REF, "delete_others": {"type": "boolean"}},
     ("directory_ref",),
     {"plan_sha256": DIGEST, "action_count": INTEGER},

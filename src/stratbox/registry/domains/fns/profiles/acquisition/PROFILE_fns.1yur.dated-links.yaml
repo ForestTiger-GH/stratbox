@@ -1,0 +1,16 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "fns",
+  "profile_id": "fns.1yur.dated-links",
+  "declaration": {
+    "formats": [
+      "xls",
+      "xlsx",
+      "zip",
+      "rar"
+    ],
+    "kind": "acquisition",
+    "profile_id": "fns.1yur.dated-links",
+    "scope": "Publisher-owned index or dated official link."
+  }
+}

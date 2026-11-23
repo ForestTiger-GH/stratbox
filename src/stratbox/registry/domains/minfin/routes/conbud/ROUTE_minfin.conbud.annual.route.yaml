@@ -1,0 +1,19 @@
+{
+  "schema": "stratbox.route",
+  "owner_id": "minfin",
+  "profile_id": "minfin.conbud.annual.route",
+  "profiles": [
+    "minfin.conbud.publication_page",
+    "minfin.document_cards",
+    "minfin.conbud_assets.metadata.minfin.conbud.annual",
+    "minfin.budget_table",
+    "minfin.budget_headlines"
+  ],
+  "qualifications": [
+    "Publication dates are release evidence; reporting periods come from source columns.",
+    "Monthly and quarterly budget values remain cumulative YTD; NWF units and basis are row-specific."
+  ],
+  "groups": [
+    "minfin.fiscal_processing"
+  ]
+}

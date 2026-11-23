@@ -1,0 +1,37 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.validate",
+    "request_type": "stratbox.domains.fns.operations.contracts:FlakeRequest",
+    "value_type": "stratbox.domains.fns.tables.contracts:ValidationReport",
+    "processing": {
+      "stages": [
+        "validate"
+      ],
+      "inputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "fns.1yur.flake",
+            "role": "extracts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report",
+          "contract": {
+            "schema_id": "fns.1yur.validation"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Assess the reviewed source profile and expose errors, omissions and disagreements."
+    },
+    "method_id": "fns-1yur-validate"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:validate"
+  },
+  "schema": "stratbox.operation"
+}

@@ -1,0 +1,48 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.sme.calculate_changes",
+    "request_type": "stratbox.domains.fns.operations.contracts:ChangesRequest",
+    "value_type": "stratbox.domains.fns.analytics.calculations:Calculation",
+    "processing": {
+      "stages": [
+        "calculate"
+      ],
+      "inputs": [
+        {
+          "name": "before",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "role": "integrated"
+          }
+        },
+        {
+          "name": "after",
+          "contract": {
+            "schema_id": "fns.sme.integrated_dataset",
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "calculation",
+          "contract": {
+            "schema_id": "fns.sme.calculation",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "metric_ids"
+      ],
+      "summary": "Calculate matched net stock changes with both source vintages; these are not births, entries or exits."
+    },
+    "method_id": "fns-sme-calculate-changes"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:calculate_changes"
+  },
+  "schema": "stratbox.operation"
+}

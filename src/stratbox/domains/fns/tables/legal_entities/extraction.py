@@ -14,7 +14,7 @@ from .archive import _CONTAINER_LIMITS, _WORKBOOK_LIMITS
 from .history import HistoryError
 from .parser import OLE
 
-PROFILE = "fns.1yur.all-workbook-cells.v1"
+PROFILE = "fns.1yur.all-workbook-cells"
 
 
 def _is_workbook_package(data):

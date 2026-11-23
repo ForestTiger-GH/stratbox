@@ -46,7 +46,7 @@ def _decode(data: bytes) -> SourceFamily:
         raise ValueError("frg.registry.invalid_yaml") from None
     if not isinstance(value, dict) or set(value) != {
         "schema", "family_id", "publisher_id", "title", "profiles", "series"
-    } or value["schema"] != "stratbox.frg.registry.v1" or value["publisher_id"] != "frank_rg":
+    } or value["schema"] != "stratbox.frg.registry" or value["publisher_id"] != "frank_rg":
         raise ValueError("frg.registry.invalid_shape")
     family_id = _identity(value["family_id"])
     if not family_id.startswith("frg."):

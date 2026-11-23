@@ -138,7 +138,7 @@ def _parse(req: ParseIssuanceRequest, invocation, *, selection: IndustrySelectio
 
 def _parse_flake(req, invocation, *, selection=None):
     parsed = _parse(req, invocation, selection=selection)
-    return seal_flake(parsed, req.payload, PARSE, invocation, parameters={
+    return seal_flake(parsed, req, PARSE, invocation, parameters={
         "report_date": parsed.report_date, "reference_period": parsed.reference_period,
         "unmapped_headers": parsed.unmapped_headers,
         **selection_parameters(parsed.selection),
@@ -323,7 +323,7 @@ def render_industry(request: IssuanceWorkbookRequest, *, context: ExecutionConte
         invocation.record(value.representation.identity, parameters={
             "profile": value.representation.profile_id, "industry": req.industry_code,
             "metadata_sheet": req.include_metadata_sheet, "reference_periods": periods,
-            "derived_method": CALCULATE_APK.method_version if derived else None,
+            "derived_method": CALCULATE_APK.method_id if derived else None,
         })
         return value
     return run(RENDER_INDUSTRY, request, work, context=context)
@@ -362,7 +362,7 @@ def render_industries(
         invocation.record(ByteIdentity.of(canonical_manifest_bytes(manifest)), parameters={
             "industries": req.industry_codes, "reference_periods": periods,
             "include_metadata_sheet": req.include_metadata_sheet,
-            "derived_method": CALCULATE_APK.method_version if "apk" in req.industry_codes else None,
+            "derived_method": CALCULATE_APK.method_id if "apk" in req.industry_codes else None,
         })
         return result
     return run(RENDER_INDUSTRIES, request, work, context=context)

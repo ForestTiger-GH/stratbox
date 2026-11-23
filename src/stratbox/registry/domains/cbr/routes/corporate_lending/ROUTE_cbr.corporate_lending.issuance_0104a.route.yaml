@@ -1,0 +1,400 @@
+{
+  "schema": "stratbox.route",
+  "owner_id": "cbr",
+  "profile_id": "cbr.corporate_lending.issuance_0104a.route",
+  "profiles": [
+    "cbr.industries.issuance.flake",
+    "cbr.tables.issuance_0104a",
+    "cbr.corporate_lending.alignment",
+    "cbr.corporate_lending.views"
+  ],
+  "operations": [
+    {
+      "operation_id": "cbr.file_collector.collect_materials",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.build_pivots",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.build_stream",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.calculate_apk",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.integrate_flakes",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.parse",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.read_calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.read_flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.read_stream_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.read_view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.render_industries",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.render_industry",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.render_pivots",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.stream_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.industries.0104a.view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.assess_updates",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "cbr.publications.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.corporate_lending.issuance_0104a"
+        ]
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "identity_parameter": "series_id"
+    },
+    {
+      "operation_id": "cbr.publications.identify",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.corporate_lending.issuance_0104a"
+        ]
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "identity_parameter": "series_id"
+    },
+    {
+      "operation_id": "cbr.publications.list_sources",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ],
+      "context_scope": "catalog"
+    },
+    {
+      "operation_id": "cbr.publications.select",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    {
+      "operation_id": "source.save_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "source.read_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.write_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "dataset.read_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.save_artifact",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    {
+      "operation_id": "material.archive",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    }
+  ],
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "render",
+    "view"
+  ],
+  "transitions": [
+    {
+      "from": "acquire",
+      "to": "discover"
+    },
+    {
+      "from": "acquire",
+      "to": "extract"
+    },
+    {
+      "from": "acquire",
+      "to": "inspect"
+    },
+    {
+      "from": "acquire",
+      "to": "preserve"
+    },
+    {
+      "from": "calculate",
+      "to": "view"
+    },
+    {
+      "from": "discover",
+      "to": "inspect"
+    },
+    {
+      "from": "extract",
+      "to": "calculate"
+    },
+    {
+      "from": "extract",
+      "to": "integrate"
+    },
+    {
+      "from": "extract",
+      "to": "view"
+    },
+    {
+      "from": "ingest",
+      "to": "preserve"
+    },
+    {
+      "from": "inspect",
+      "to": "compare"
+    },
+    {
+      "from": "inspect",
+      "to": "discover"
+    },
+    {
+      "from": "inspect",
+      "to": "extract"
+    },
+    {
+      "from": "inspect",
+      "to": "preserve"
+    },
+    {
+      "from": "integrate",
+      "to": "calculate"
+    },
+    {
+      "from": "integrate",
+      "to": "view"
+    },
+    {
+      "from": "preserve",
+      "to": "discover"
+    },
+    {
+      "from": "preserve",
+      "to": "extract"
+    },
+    {
+      "from": "preserve",
+      "to": "ingest"
+    },
+    {
+      "from": "preserve",
+      "to": "inspect"
+    },
+    {
+      "from": "preserve",
+      "to": "preserve"
+    },
+    {
+      "from": "view",
+      "to": "render"
+    }
+  ],
+  "qualifications": [
+    "Historical publisher inventory is qualified independently of successful processing of selected materials.",
+    "Cross-source geography, subject and metric equivalence require explicit versioned mappings."
+  ]
+}

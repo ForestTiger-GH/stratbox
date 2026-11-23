@@ -21,8 +21,7 @@ class ExecutionEvent:
     ]
     invocation_id: str
     operation_id: str
-    contract_version: int
-    method_version: str
+    method_id: str
     sequence: int
     occurred_at_utc: datetime
     correlation: Correlation
@@ -49,9 +48,8 @@ class ExecutionEvent:
             or self.occurred_at_utc.utcoffset().total_seconds() != 0
         ):
             raise ValueError("Execution events require UTC timestamps")
-        for value in (self.sequence, self.contract_version):
-            if type(value) is not int or not 0 < value <= 2**53 - 1:
-                raise ValueError("Invalid event sequence or contract version")
+        if type(self.sequence) is not int or not 0 < self.sequence <= 2**53 - 1:
+            raise ValueError("Invalid event sequence")
         for value in (self.duration_ms, self.completed, self.total, self.stage_elapsed_ms):
             if value is not None and (
                 type(value) is not int or not 0 <= value <= 2**53 - 1
@@ -76,7 +74,7 @@ class ExecutionEvent:
         for token in (
             self.invocation_id,
             self.operation_id,
-            self.method_version,
+            self.method_id,
             self.stage,
             self.diagnostic_code,
             self.reason_class,

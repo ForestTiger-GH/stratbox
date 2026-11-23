@@ -1,0 +1,51 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_flake_snapshot",
+    "request_type": "stratbox.domains.minfin.tables.contracts:ReadFlakeSnapshotRequest",
+    "value_type": "stratbox.domains.minfin.tables.contracts:FlakeTable",
+    "limits": {
+      "input_bytes": 67108864,
+      "output_bytes": 67108864,
+      "cells": 500000,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "snapshot",
+          "contract": {
+            "schema_id": "minfin.flake.snapshot",
+            "version": 2,
+            "role": "extracts"
+          },
+          "alternatives": [
+            {
+              "schema_id": "dataset.snapshot",
+              "role": null
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "flake",
+          "contract": {
+            "schema_id": "minfin.flake",
+            "version": 2,
+            "role": "extracts"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore a source-local flake from a complete pinned logical dataset after verifying every component schema.",
+      "function": "replay"
+    },
+    "method_id": "minfin.flake-snapshot"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.handlers:read_flake_snapshot"
+  },
+  "schema": "stratbox.operation"
+}

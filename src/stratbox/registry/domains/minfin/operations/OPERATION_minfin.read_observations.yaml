@@ -1,0 +1,37 @@
+{
+  "owner_id": "minfin",
+  "definition": {
+    "operation_id": "minfin.read_observations",
+    "request_type": "stratbox.domains.minfin.integration.contracts:ReadObservationsRequest",
+    "value_type": "stratbox.shared.data.observations:ObservationBatch",
+    "processing": {
+      "stages": [],
+      "inputs": [
+        {
+          "name": "input",
+          "contract": {
+            "schema_id": "observations.batch.snapshot"
+          },
+          "path": "snapshot"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "value",
+          "contract": {
+            "schema_id": "observations.batch",
+            "role": "integrated"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Restore every qualified observation from a pinned complete dataset.",
+      "function": "replay"
+    },
+    "method_id": "minfin.read_observations"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:read_observations"
+  },
+  "schema": "stratbox.operation"
+}

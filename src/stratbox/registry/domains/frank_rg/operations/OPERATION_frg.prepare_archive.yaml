@@ -1,0 +1,42 @@
+{
+  "owner_id": "frank_rg",
+  "definition": {
+    "operation_id": "frg.prepare_archive",
+    "request_type": "stratbox.domains.frank_rg.publications.cleanup:CleanupPlan",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "required_capabilities": [
+      "filestore"
+    ],
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "plan",
+          "contract": {
+            "schema_id": "frg.cleanup_plan"
+          },
+          "path": ""
+        }
+      ],
+      "outputs": [
+        {
+          "name": "archive",
+          "contract": {
+            "schema_id": "frg.archive",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "summary": "Package the selected retained original reports without executing cleanup."
+    },
+    "method_id": "frg-latest-manifest-zip-profile"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:prepare_archive"
+  },
+  "schema": "stratbox.operation"
+}

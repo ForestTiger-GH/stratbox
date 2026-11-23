@@ -25,7 +25,7 @@ KEP2_INDICATORS = (
     KepIndicator("paid_services", "Платные услуги", ("Объем платных услуг населению",)),
     KepIndicator("agriculture", "Сельское хозяйство", ("Индекс производства продукции сельского хозяйства в хозяйствах всех категорий",), absolute=False, quantity_kind="index"),
 )
-KEP2_PROFILE_ID = "rosstat.kep2.v1"
+KEP2_PROFILE_ID = "rosstat.kep2"
 KEP2_MEASURES = (
     ("absolute", "Абсолютные значения", None),
     ("year_on_year_index", "% г/г", "в % к соответствующему периоду предыдущего года"),

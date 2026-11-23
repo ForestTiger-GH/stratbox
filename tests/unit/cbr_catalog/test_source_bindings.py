@@ -26,8 +26,8 @@ def test_all_57_publications_bind_to_exact_registered_contracts():
     for item in values:
         assert item.tables and item.source.series_id == item.table_profile.series_id
         for operation in (*item.operations, *item.delegated_operations):
-            current = catalog.get(operation.key.operation_id, operation.key.contract_version)
-            assert operation.method_version == current.method_version
+            current = catalog.get(operation.key.operation_id)
+            assert operation.method_id == current.method_id
             assert operation.inputs == current.processing.inputs
             assert operation.outputs == current.processing.outputs
         for table in item.tables:
@@ -60,7 +60,7 @@ def test_escrow_html_cannot_inherit_xlsx_extraction_coverage():
     assert stage(value, ProcessingStage.INGEST).state == "missing"
     assert not any(operation.key.operation_id == "cbr.escrow.parse" for operation in value.operations)
     xlsx = checked(describe_source(DescribeSourceRequest("cbr.project_finance.escrow", format="xlsx")))
-    assert OperationKey("cbr.escrow.parse", 4) in stage(xlsx, ProcessingStage.EXTRACT).operations
+    assert OperationKey("cbr.escrow.parse") in stage(xlsx, ProcessingStage.EXTRACT).operations
     assert any(link.assembly == "explicit_collection" for link in xlsx.handoffs)
     historical = next(table for table in value.tables if table.variant_id == "historical_html")
     assert historical.schema_contracts == ()
@@ -99,9 +99,9 @@ def test_binding_validation_rejects_profile_scope_format_and_table_series_mismat
     original = bindings.source
     for mutated, expected in (
         (replace(item, formats=("html",)), "profile_format_mismatch"),
-        (replace(item, table_profile="cbr.tables.funds_clients.v1"), "table_series_mismatch"),
-        (replace(item, integration_profile="cbr.service_network.alignment.v1"), "integration_scope_mismatch"),
-        (replace(item, product_profile="cbr.project_finance.views.v2"), "product_scope_mismatch"),
+        (replace(item, table_profile="cbr.tables.funds_clients"), "table_series_mismatch"),
+        (replace(item, integration_profile="cbr.service_network.alignment"), "integration_scope_mismatch"),
+        (replace(item, product_profile="cbr.project_finance.views"), "product_scope_mismatch"),
         (replace(item, extraction_profile="cbr.invented.profile"), "processing_unknown"),
     ):
         monkeypatch.setattr(bindings, "source", lambda key, value=mutated: value)
@@ -114,8 +114,8 @@ def test_binding_validation_detects_a_broken_declared_handoff():
     actual = bindings._catalog()
     class ChangedCatalog:
         references = actual.references
-        def get(self, operation_id, contract_version):
-            result = actual.get(operation_id, contract_version)
+        def get(self, operation_id):
+            result = actual.get(operation_id)
             if operation_id == "cbr.statistics.align":
                 return replace(result, processing=replace(result.processing,
                     outputs=(OutputPort("wrong", DataContract("different.dataset", 1, DataRole.INTEGRATED)),)))
@@ -130,7 +130,7 @@ def test_descriptions_load_metadata_without_resolving_or_executing_handlers(monk
         raise AssertionError("Description must not resolve executable handlers")
     monkeypatch.setattr(type(catalog), "resolve", forbidden)
     value = bindings.bind_source("cbr.reporting_forms.f101", catalog=catalog)
-    assert any(profile.kind == "financial_model" and profile.edition == "cbr.forms.model.101.v1" for profile in value.profiles)
+    assert any(profile.kind == "financial_model" and profile.profile_id == "cbr.forms.model.101" for profile in value.profiles)
 
 
 def test_publication_lifecycle_and_neutral_archive_receive_exact_scoped_ports():
@@ -143,7 +143,7 @@ def test_publication_lifecycle_and_neutral_archive_receive_exact_scoped_ports():
     assert ("cbr.publications.acquire", "original", "cbr.tables.extract", "original") in edges
     assert ("cbr.file_collector.collect_materials", "archive_members", "material.archive", "members") in edges
     assert ("cbr.file_collector.collect_materials", "manifest", "material.archive", "manifest") in edges
-    assert OperationKey("material.archive", 1) in {operation.key for operation in value.delegated_operations}
+    assert OperationKey("material.archive") in {operation.key for operation in value.delegated_operations}
     assert {table.unit_anchor for table in value.tables if table.variant_id in {"table_2", "table_3", "table_4"}} == {"A2"}
 
 
@@ -154,7 +154,7 @@ def test_reviewed_form_models_offer_a_standalone_route_from_retained_observation
     assert ("cbr.forms.prepare_model_inputs", "cbr.forms.calculate") in edges
     assert ("cbr.forms.calculate", "cbr.forms.build_views") in edges
     model = next(profile for profile in value.profiles if profile.kind == "financial_model")
-    assert OperationKey("cbr.forms.calculate", 1) in model.operations
+    assert OperationKey("cbr.forms.calculate") in model.operations
     for code in ("134", "803"):
         unsupported = bindings.bind_source("cbr.reporting_forms.f" + code)
         assert {"cbr.forms.prepare_model_inputs", "cbr.forms.calculate"}.isdisjoint(

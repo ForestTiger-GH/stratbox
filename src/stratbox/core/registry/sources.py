@@ -1,7 +1,7 @@
-"""Canonical logical sources, publisher declarations and qualified route profiles.
+"""Canonical sources, route applicability and independently owned profiles.
 
-Routes describe admissible processing stages and exact source-specific operation
-bindings. They are metadata, not a scheduler or evidence of runtime admission.
+Stages describe processing classes. Exact port contracts decide value handoff;
+source bindings retain publisher-specific applicability and qualifications.
 """
 from __future__ import annotations
 
@@ -16,13 +16,15 @@ from stratbox.core.registry.resources import iter_resources, read_document, reso
 from stratbox.core.registry.source_catalog import SourceCard, SourceProfile, SourceOperation
 
 _SOURCE_KEYS = {"schema", "owner_id", "publisher_id", "family_id", "series_id", "title", "issue_model", "formats", "route_profile", "family_profile", "position", "publication"}
-_ROUTE_KEYS = {"schema", "owner_id", "profile_id", "profiles", "operations", "stages", "transitions", "qualifications"}
-_OPERATION_KEYS = {"operation_id", "contract_version", "state", "reason", "parameters", "formats"}
-_PROFILE_KEYS = {"profile_id", "kind", "edition", "formats", "scope"}
+_ROUTE_KEYS = {"schema", "owner_id", "profile_id", "profiles", "qualifications"}
+_ROUTE_OPTIONAL = {"operations", "stages", "transitions", "groups"}
+_OPERATION_REQUIRED = {"operation_id"}
+_OPERATION_OPTIONAL = {"state", "reason", "parameters", "formats", "identity_parameter", "auxiliary_sources", "context_scope"}
+_PROFILE_KEYS = {"profile_id", "kind", "formats", "scope"}
 
 
-def _shape(value, keys, code):
-    if not isinstance(value, dict) or set(value) != keys:
+def _shape(value, keys, code, *, optional=()):
+    if not isinstance(value, dict) or not set(keys) <= set(value) or set(value) - set(keys) - set(optional):
         raise ValueError(code)
 
 
@@ -32,38 +34,50 @@ def _strings(value, *, empty=True):
     return tuple(value)
 
 
+def _source_profile(declaration):
+    if not isinstance(declaration, dict) or not _PROFILE_KEYS <= set(declaration):
+        raise ValueError("registry.source_profile_invalid")
+    return SourceProfile(declaration["profile_id"], declaration["kind"],
+                         _strings(declaration["formats"]), declaration["scope"])
+
+
 @lru_cache(maxsize=64)
 def _profile_documents(owner):
     result = {}
-    for resource in iter_resources(owner, "profiles"):
-        value = read_document(resource)
-        schema = value.get("schema")
-        if schema == "stratbox.route.v1":
-            _shape(value, _ROUTE_KEYS, "registry.route_invalid")
-        elif schema in {"stratbox.publication.v1", "stratbox.processing-profile.v1", "stratbox.source-profile.v1"}:
-            _shape(value, {"schema", "owner_id", "profile_id", "declaration"}, "registry.profile_invalid")
-            if not isinstance(value["declaration"], dict):
-                raise ValueError("registry.profile_invalid")
-        else:
-            raise ValueError("registry.profile_schema_unknown")
-        if value["owner_id"] != owner:
-            raise ValueError("registry.profile_owner_mismatch")
-        if schema == "stratbox.source-profile.v1":
-            declaration = value["declaration"]
-            _shape(declaration, _PROFILE_KEYS, "registry.source_profile_invalid")
-            SourceProfile(declaration["profile_id"], declaration["kind"], declaration["edition"],
-                          _strings(declaration["formats"]), declaration["scope"])
-        safe_token(value["profile_id"])
-        if resource.name != "PROFILE_" + value["profile_id"] + ".yaml":
-            raise ValueError("registry.profile_filename_mismatch")
-        if value["profile_id"] in result:
-            raise ValueError("registry.profile_duplicate")
-        result[value["profile_id"]] = value
+    for kind, prefix, schemas in (
+        ("routes", "ROUTE_", {"stratbox.route"}),
+        ("profiles", "PROFILE_", {"stratbox.processing-profile", "stratbox.source-profile"}),
+        ("families", "FAMILY_", {"stratbox.family"}),
+    ):
+        for resource in iter_resources(owner, kind):
+            value = read_document(resource)
+            schema = value.get("schema")
+            if schema not in schemas:
+                raise ValueError("registry.profile_schema_unknown")
+            if schema == "stratbox.route":
+                _shape(value, _ROUTE_KEYS, "registry.route_invalid", optional=_ROUTE_OPTIONAL)
+            else:
+                _shape(value, {"schema", "owner_id", "profile_id", "declaration"}, "registry.profile_invalid")
+                if not isinstance(value["declaration"], dict):
+                    raise ValueError("registry.profile_invalid")
+            if value["owner_id"] != owner:
+                raise ValueError("registry.profile_owner_mismatch")
+            if schema == "stratbox.source-profile":
+                _shape(value["declaration"], _PROFILE_KEYS, "registry.source_profile_invalid")
+                _source_profile(value["declaration"])
+            if schema == "stratbox.processing-profile":
+                _source_profile(value["declaration"])
+            safe_token(value["profile_id"])
+            if resource.name != prefix + value["profile_id"] + ".yaml":
+                raise ValueError("registry.profile_filename_mismatch")
+            if value["profile_id"] in result:
+                raise ValueError("registry.profile_duplicate")
+            result[value["profile_id"]] = value
     return result
 
 
 def profile_document(owner, profile_id):
-    """Return an isolated metadata copy; callers cannot mutate the catalog cache."""
+    """Return an isolated canonical profile, family or route declaration."""
     try:
         return copy.deepcopy(_profile_documents(owner)[profile_id])
     except KeyError:
@@ -87,8 +101,8 @@ class SourceRoute:
             return False
         return edge in self.transitions
 
-    def binding(self, operation_id, contract_version=1, *, format=None):
-        result = next((item for item in self.operations if (item.operation_id, item.contract_version) == (operation_id, contract_version)), None)
+    def binding(self, operation_id, *, format=None):
+        result = next((item for item in self.operations if item.operation_id == operation_id), None)
         if result is None:
             raise ValueError("registry.source_operation_unbound")
         if format is not None and result.formats and format not in result.formats:
@@ -96,13 +110,61 @@ class SourceRoute:
         return result
 
 
+@lru_cache(maxsize=64)
+def _group_documents(owner):
+    result = {}
+    for resource in iter_resources(owner, "groups"):
+        value = read_document(resource)
+        _shape(value, {"schema", "owner_id", "group_id", "operations", "stages", "transitions"}, "registry.group_invalid")
+        if value["schema"] != "stratbox.processing-group" or value["owner_id"] != owner:
+            raise ValueError("registry.group_owner_mismatch")
+        safe_token(value["group_id"])
+        if resource.name != "GROUP_" + value["group_id"] + ".yaml":
+            raise ValueError("registry.group_filename_mismatch")
+        if value["group_id"] in result:
+            raise ValueError("registry.group_duplicate")
+        body = {"schema": "stratbox.route", "owner_id": owner, "profile_id": value["group_id"],
+                "profiles": [], "qualifications": [], **{name: value[name] for name in ("operations", "stages", "transitions")}}
+        decode_route(body, owner=owner)
+        result[value["group_id"]] = value
+    return result
+
+
+def group_document(owner, group_id):
+    """Return an isolated shared transformation group; nested groups are absent."""
+    try:
+        return copy.deepcopy(_group_documents(owner)[group_id])
+    except KeyError:
+        raise ValueError("registry.group_unknown") from None
+
+
+def _expanded_route(value, *, owner):
+    _shape(value, _ROUTE_KEYS, "registry.route_invalid", optional=_ROUTE_OPTIONAL)
+    groups = _strings(value.get("groups", []))
+    body = copy.deepcopy(value)
+    body.pop("groups", None)
+    bodies = [group_document(owner, identity) for identity in groups] + [value]
+    for name in ("operations", "stages", "transitions"):
+        parts = []
+        for part in bodies:
+            items = part.get(name, [])
+            if not isinstance(items, list):
+                raise ValueError("registry.route_invalid")
+            if name == "stages":
+                items = _strings(items)
+                parts.extend(item for item in items if item not in parts)
+            else:
+                parts.extend(copy.deepcopy(items))
+        body[name] = parts
+    return body
+
+
 def decode_route(value, *, owner) -> SourceRoute:
-    _shape(value, _ROUTE_KEYS, "registry.route_invalid")
-    if value["schema"] != "stratbox.route.v1" or value["owner_id"] != owner:
+    value = _expanded_route(value, owner=owner)
+    if value["schema"] != "stratbox.route" or value["owner_id"] != owner:
         raise ValueError("registry.route_invalid")
     safe_token(value["profile_id"])
-    stage_names = _strings(value["stages"])
-    stages = tuple(ProcessingStage(s) for s in stage_names)
+    stages = tuple(ProcessingStage(s) for s in _strings(value["stages"]))
     transitions = []
     if not isinstance(value["transitions"], list):
         raise ValueError("registry.route_transitions_invalid")
@@ -115,23 +177,26 @@ def decode_route(value, *, owner) -> SourceRoute:
     profiles = []
     for reference in _strings(value["profiles"]):
         metadata = profile_document(owner, reference)
-        if metadata["schema"] != "stratbox.source-profile.v1":
+        if metadata["schema"] not in {"stratbox.source-profile", "stratbox.processing-profile"}:
             raise ValueError("registry.route_profile_schema_invalid")
-        profile = metadata["declaration"]
-        _shape(profile, _PROFILE_KEYS, "registry.route_profiles_invalid")
-        profiles.append(SourceProfile(profile["profile_id"], profile["kind"], profile["edition"], _strings(profile["formats"]), profile["scope"]))
+        profiles.append(_source_profile(metadata["declaration"]))
     if len({p.profile_id for p in profiles}) != len(profiles):
         raise ValueError("registry.route_profiles_invalid")
     operations = []
     if not isinstance(value["operations"], list):
         raise ValueError("registry.source_bindings_invalid")
     for binding in value["operations"]:
-        _shape(binding, _OPERATION_KEYS, "registry.source_bindings_invalid")
-        pairs = binding["parameters"]
-        if not isinstance(pairs, list) or any(not isinstance(pair, list) for pair in pairs):
+        _shape(binding, _OPERATION_REQUIRED, "registry.source_bindings_invalid", optional=_OPERATION_OPTIONAL)
+        pairs = binding.get("parameters", [])
+        auxiliaries = binding.get("auxiliary_sources", {})
+        if (not isinstance(pairs, list) or any(not isinstance(pair, list) for pair in pairs)
+                or not isinstance(auxiliaries, dict)):
             raise ValueError("registry.source_bindings_invalid")
-        operations.append(SourceOperation(binding["operation_id"], binding["contract_version"], binding["state"], binding["reason"], tuple(tuple(pair) for pair in pairs), _strings(binding["formats"])))
-    if len({(o.operation_id, o.contract_version) for o in operations}) != len(operations):
+        operations.append(SourceOperation(binding["operation_id"], binding.get("state", "supported"),
+            binding.get("reason", ""), tuple(tuple(pair) for pair in pairs), _strings(binding.get("formats", [])),
+            binding.get("identity_parameter"), tuple((port, _strings(identities, empty=False)) for port, identities in auxiliaries.items()),
+            binding.get("context_scope", "source")))
+    if len({o.operation_id for o in operations}) != len(operations):
         raise ValueError("registry.source_bindings_invalid")
     return SourceRoute(value["profile_id"], owner, stages, tuple(transitions), tuple(profiles), tuple(operations), _strings(value["qualifications"]))
 
@@ -143,7 +208,7 @@ def _sources(owner):
     for resource in iter_resources(owner, "sources"):
         value = read_document(resource)
         _shape(value, _SOURCE_KEYS, "registry.source_invalid")
-        if value["schema"] != "stratbox.source.v1" or value["owner_id"] != owner:
+        if value["schema"] != "stratbox.source" or value["owner_id"] != owner:
             raise ValueError("registry.source_invalid")
         for key in ("publisher_id", "family_id", "series_id", "route_profile"):
             safe_token(value[key])
@@ -163,7 +228,7 @@ def _sources(owner):
         if family is not None:
             safe_token(family)
             document = profile_document(owner, family)
-            if document["schema"] != "stratbox.publication.v1" or document["declaration"].get("family_id") != value["family_id"]:
+            if document["schema"] != "stratbox.family" or document["declaration"].get("family_id") != value["family_id"]:
                 raise ValueError("registry.source_family_profile_invalid")
         card = SourceCard(value["publisher_id"], value["family_id"], value["series_id"], value["title"], value["issue_model"], formats, route.profiles, route.operations, route.qualifications)
         values.append((value, card, route))
@@ -197,7 +262,7 @@ def source_route(series_id) -> SourceRoute:
 
 
 def publication_families(owner, *, series_fields=()) -> tuple[dict, ...]:
-    """Assemble publisher-specific typed catalog inputs from atomic declarations."""
+    """Project substantive publisher families from canonical atomic sources."""
     grouped = {}
     for value, _, _ in sorted(_sources(owner), key=lambda item: item[0]["position"]):
         profile = value["family_profile"]
@@ -216,31 +281,43 @@ def publication_families(owner, *, series_fields=()) -> tuple[dict, ...]:
 
 
 def validate_source_bindings(operation_catalog):
-    """Validate source refs and stage declarations against canonical operations."""
+    """Validate declared source applicability against exact operation facts."""
     seen = set()
     count = 0
     owners = {r.owner_id for r in operation_catalog.registrations}
     for owner in resource_owners():
         if owner not in owners:
             raise ValueError("registry.source_owner_unregistered")
+        for group in _group_documents(owner).values():
+            for binding in group["operations"]:
+                definition = operation_catalog.get(binding["operation_id"])
+                parameters = set(definition.processing.parameters if definition.processing else ())
+                if not {key for key, _ in binding.get("parameters", [])} <= parameters:
+                    raise ValueError("registry.source_parameter_unavailable")
+                if binding.get("identity_parameter") is not None and binding["identity_parameter"] not in parameters:
+                    raise ValueError("registry.source_identity_parameter_unavailable")
+                if definition.processing is not None and not set(definition.processing.stages) <= {ProcessingStage(stage) for stage in group["stages"]}:
+                    raise ValueError("registry.group_stage_unavailable")
         for profile in _profile_documents(owner).values():
-            if profile["schema"] != "stratbox.processing-profile.v1":
+            if profile["schema"] != "stratbox.processing-profile":
                 continue
             declaration = profile["declaration"]
             if "operation_id" in declaration:
-                operation_catalog.reference(declaration["operation_id"], declaration.get("contract_version"))
+                operation_catalog.reference(declaration["operation_id"])
             for field in ("alignment_operation", "view_operation"):
                 identity = declaration.get(field)
-                if identity is not None and len([ref for ref in operation_catalog.references if ref.operation_id == identity]) != 1:
-                    raise ValueError("registry.profile_operation_unavailable")
+                if identity is not None:
+                    operation_catalog.reference(identity)
         for _, card, route in _sources(owner):
             if card.series_id in seen:
                 raise ValueError("registry.source_duplicate")
             seen.add(card.series_id)
             for binding in route.operations:
-                definition = operation_catalog.get(binding.operation_id, binding.contract_version)
+                definition = operation_catalog.get(binding.operation_id)
                 if not {key for key, _ in binding.parameters} <= set(definition.processing.parameters if definition.processing else ()):
                     raise ValueError("registry.source_parameter_unavailable")
+                if binding.identity_parameter is not None and binding.identity_parameter not in set(definition.processing.parameters if definition.processing else ()):
+                    raise ValueError("registry.source_identity_parameter_unavailable")
                 if definition.processing is not None and not set(definition.processing.stages) <= set(route.stages):
                     raise ValueError("registry.source_stage_unavailable")
             count += 1

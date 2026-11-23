@@ -32,7 +32,6 @@ def assemble_owners(owners, load_registration):
             if not isinstance(ref, OperationRef):
                 raise RegistryError(f"registry.invalid_reference:{owner}")
             for role, link in (
-                ("definition", ref.definition_ref),
                 ("handler", ref.handler_ref),
                 ("codec", ref.wire_codec_ref),
                 ("wire_contract", ref.wire_contract_ref),

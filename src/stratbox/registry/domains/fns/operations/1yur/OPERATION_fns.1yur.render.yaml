@@ -1,0 +1,41 @@
+{
+  "owner_id": "fns",
+  "definition": {
+    "operation_id": "fns.1yur.render",
+    "request_type": "stratbox.domains.fns.operations.contracts:RenderRequest",
+    "value_type": "stratbox.shared.data.representation:Representation",
+    "processing": {
+      "stages": [
+        "render"
+      ],
+      "inputs": [
+        {
+          "name": "view",
+          "contract": {
+            "schema_id": "fns.1yur.prepared_view",
+            "role": "products"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "representation",
+          "contract": {
+            "schema_id": "representation.bytes",
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "format"
+      ],
+      "summary": "Render a prepared view as CSV, JSON, JSONL or XLSX independently of source parsing."
+    },
+    "method_id": "fns-1yur-render"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:render"
+  },
+  "schema": "stratbox.operation"
+}

@@ -124,15 +124,21 @@ saved = bound.invoke(save_original, store=destination_store)
 ```
 
 `BoundRequest.invoke()` preserves input receipts and computation parents through
-`ExecutionContext`. The runner includes those receipts in the consumer's evidence;
-upstream effects are not replayed as new consumer effects. Route changes do not
-change a business computation key, while changed typed values, source evidence
-or methods do.
+`ExecutionContext`. Producer receipts are explicitly marked as provenance and
+remain in result evidence. Upstream effects stay attached to their producer.
 
-The consumer assigns semantic roles to the bytes it interprets. Inherited
-transport receipts for those same bytes remain in result evidence; the
-calculation uses the consumer's declared roles. Additional inherited byte
-dependencies still participate in the calculation identity.
+The runner captures exact named inputs, collection order and multiplicity, and
+actual semantic parameter values including defaults. These determine the
+computation together with the operation, method and independent semantic
+dependencies. Inherited producer history is separate from this signature.
+Equal values supplied directly or restored from retention therefore retain the
+same computation key. Explicitly supplied independent dependency receipts keep
+their editions even when their bytes match another input.
+
+`core.execution.values` supplies common value descriptors, exact identities,
+snapshot adapters, input receipts and byte/cell accounting. Domains provide
+interpretation and admission rules for their own types. Source context has its
+own explicit adapters, so transport labels cannot become logical source claims.
 
 For an encoded result, `artifact_from_output(result, name, series_id=...)`
 constructs its complete artifact. After replay, `project_artifact(result)`
@@ -186,7 +192,7 @@ from stratbox.core.execution.handoff import prepare_input
 catalog = operation_catalog()
 # payload is a supplied SourcePayload.
 call = catalog.bind(
-    "workbook.extract", 1,
+    "workbook.extract",
     inputs={"source": prepare_input(payload)},
     parameters={"series_id": "example.series", "issue_id": "2026-08"},
 )
@@ -195,8 +201,8 @@ result = call.invoke()
 
 `catalog.bind_source(series_id, format=...)` selects a logical source and its
 canonical route. Its `bind(operation_id, ..., inputs=..., parameters=...)`
-checks the bound operation version, formats, fixed source parameters, named
-input schemas and allowed stage transitions. The optional `from_stage` selects
+checks operation applicability, formats, fixed source parameters and exact
+named input contracts. Stage graphs describe coverage; port compatibility governs handoffs. The optional `from_stage` selects
 an explicit predecessor. When an operation supports only a subset of the
 source's formats, a format selection is required.
 
@@ -349,7 +355,7 @@ implemented scope.
 ### 8.3. CBR
 
 A common registry separates 57 logical source series from acquisition defaults
-and versioned processing profiles. The mixed-input collector accepts supplied
+and canonical processing profiles. The mixed-input collector accepts supplied
 bytes, references from individually selected stores and explicit HTTP sources.
 It preserves exact original identity and an ordered per-item outcome ledger.
 

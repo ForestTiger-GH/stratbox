@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.funding",
+  "series_id": "cbr.funding.dep_entrepreneur",
+  "title": "Individual entrepreneur funds",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "route_profile": "cbr.funding.dep_entrepreneur.route",
+  "family_profile": null,
+  "position": 37,
+  "publication": {
+    "acquisition_profile": "cbr.route.dep_entrepreneur",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.dep_entrepreneur",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  }
+}

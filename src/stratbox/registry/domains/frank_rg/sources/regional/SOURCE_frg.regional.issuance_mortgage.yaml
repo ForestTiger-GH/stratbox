@@ -1,0 +1,23 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.regional",
+  "series_id": "frg.regional.issuance_mortgage",
+  "title": "Regional mortgage issuance",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "route_profile": "frg.regional.issuance_mortgage.route",
+  "family_profile": "frg.regional.publication",
+  "position": 10,
+  "publication": {
+    "slot": "issuance_mortgage",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  }
+}

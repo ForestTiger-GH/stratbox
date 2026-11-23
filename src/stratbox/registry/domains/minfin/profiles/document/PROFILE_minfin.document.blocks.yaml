@@ -1,0 +1,14 @@
+{
+  "schema": "stratbox.source-profile",
+  "owner_id": "minfin",
+  "profile_id": "minfin.document.blocks",
+  "declaration": {
+    "formats": [
+      "pdf",
+      "docx"
+    ],
+    "kind": "document",
+    "profile_id": "minfin.document.blocks",
+    "scope": "ordered text and table blocks"
+  }
+}

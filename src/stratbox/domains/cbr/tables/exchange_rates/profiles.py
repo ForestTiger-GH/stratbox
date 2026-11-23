@@ -1,7 +1,7 @@
 """Reviewed exchange rates workbook variants and interpretation boundaries."""
 from stratbox.domains.cbr.tables.statistics.contracts import SourceTableProfile, TableVariant
 
-_DECLARATIONS = (('cbr.tables.exchange_rate.v1',
+_DECLARATIONS = (('cbr.tables.exchange_rate',
   'cbr.exchange_rates.exchange_rate',
   (('table_1',
     'Ежемесячные',

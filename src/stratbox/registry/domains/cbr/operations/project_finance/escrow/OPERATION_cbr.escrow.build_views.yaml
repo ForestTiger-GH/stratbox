@@ -1,0 +1,47 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.escrow.build_views",
+    "request_type": "stratbox.domains.cbr.operations.project_finance.contracts:BuildEscrowViewsRequest",
+    "value_type": "stratbox.domains.cbr.products.project_finance.contracts:EscrowPivotPack",
+    "limits": {
+      "output_bytes": 134217728,
+      "cells": 50000000
+    },
+    "processing": {
+      "stages": [
+        "view"
+      ],
+      "inputs": [
+        {
+          "name": "dataset",
+          "contract": {
+            "schema_id": "cbr.escrow.dataset",
+            "version": 2,
+            "role": "integrated"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "views",
+          "contract": {
+            "schema_id": "cbr.escrow.views",
+            "version": 2,
+            "role": "products"
+          },
+          "path": ""
+        }
+      ],
+      "parameters": [
+        "view"
+      ],
+      "summary": "Construct presentation views from a supplied integrated escrow dataset."
+    },
+    "method_id": "cbr-escrow-views"
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:build_views"
+  },
+  "schema": "stratbox.operation"
+}
