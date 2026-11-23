@@ -35,7 +35,8 @@
           "path": "source.payload",
           "qualifications": [
             "source.minfin"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
@@ -43,7 +44,8 @@
             "schema_id": "source.payload",
             "role": "originals"
           },
-          "path": "source.payload"
+          "path": "source.payload",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -52,7 +54,12 @@
       ],
       "summary": "Acquire one explicitly selected Minfin asset with publisher URL and file-envelope checks."
     },
-    "method_id": "minfin-original-profile"
+    "method_id": "minfin-original-profile",
+    "request_fields": {
+      "asset": "input",
+      "deadline_seconds": "runtime",
+      "max_bytes": "runtime"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:acquire"

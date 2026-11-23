@@ -11,6 +11,8 @@
     ],
     "kind": "acquisition",
     "profile_id": "fns.1yur.dated-links",
-    "scope": "Publisher-owned index or dated official link."
+    "scope": "Publisher-owned index or dated official link.",
+    "admission_ref": "stratbox.domains.fns.operations.legal_entities.family:admit",
+    "implementation_ref": "stratbox.domains.fns.operations.legal_entities.family:_acquire"
   }
 }

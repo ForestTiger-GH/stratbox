@@ -7,6 +7,7 @@ import json
 from stratbox.core.execution import ExecutionContext, OperationResult
 from stratbox.core.execution.machine.codec import decode_request
 from stratbox.core.execution.machine.contracts import MaterialResolver, WireRequestError
+from stratbox.core.execution.machine.projections import computation_projection, diagnostic_projection
 
 
 def invoke_read_only(
@@ -31,9 +32,6 @@ def invoke_read_only(
         "method_id": result.definition.method_id,
         "outcome": result.outcome,
         "value": value,
-        "diagnostics": [
-            {"code": item.code, "stage": item.stage, "component": item.component,
-             "retry_disposition": item.retry_disposition}
-            for item in result.diagnostics
-        ],
+        "computation": computation_projection(result),
+        "diagnostics": [diagnostic_projection(item) for item in result.diagnostics[:128]],
     }, separators=(",", ":"), ensure_ascii=True, allow_nan=False).encode("utf-8")

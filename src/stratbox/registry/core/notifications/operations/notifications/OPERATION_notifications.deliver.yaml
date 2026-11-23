@@ -40,12 +40,27 @@
           "contract": {
             "schema_id": "notifications.deliver.result"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
-      "summary": "Hand off an authorized notification intent and retain uncertain effects."
+      "summary": "Hand off an authorized notification intent and retain uncertain effects.",
+      "parameters": [
+        "scope_id",
+        "dispatch_id",
+        "expected_version"
+      ],
+      "required_parameters": [
+        "scope_id",
+        "dispatch_id"
+      ]
     },
-    "method_id": "notification-handoff"
+    "method_id": "notification-handoff",
+    "request_fields": {
+      "dispatch_id": "effect",
+      "expected_version": "effect",
+      "scope_id": "effect"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.notifications.operations:deliver"

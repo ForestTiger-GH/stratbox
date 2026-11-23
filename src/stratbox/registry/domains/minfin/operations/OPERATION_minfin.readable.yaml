@@ -48,17 +48,32 @@
           ],
           "outcomes": [
             "partial"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "family_id",
         "max_pages",
-        "format"
+        "format",
+        "publication"
       ],
-      "summary": "Extract PDF text only, with an explicit incomplete-visual-coverage qualification."
+      "summary": "Extract PDF text only, with an explicit incomplete-visual-coverage qualification.",
+      "required_parameters": [
+        "family_id"
+      ]
     },
-    "method_id": "minfin-pdf-text"
+    "method_id": "minfin-pdf-text",
+    "request_fields": {
+      "family_id": "parameter",
+      "format": "parameter",
+      "max_pages": {
+        "role": "runtime",
+        "reason": "Rejects PDFs exceeding the page ceiling before extracting any page."
+      },
+      "payload": "input",
+      "publication": "dependency"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:readable_document"

@@ -45,12 +45,17 @@
           "contract": {
             "schema_id": "rosstat.publications.delta"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Compare scoped publication inventories without asserting absence from unverified pages."
     },
-    "method_id": "rosstat-publications-plan_updates"
+    "method_id": "rosstat-publications-plan_updates",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:plan_updates"

@@ -6,6 +6,11 @@
     "formats": [],
     "kind": "naming",
     "profile_id": "frg.canonical",
-    "scope": ""
+    "scope": "",
+    "admission_ref": "stratbox.domains.frank_rg.profiles:admit",
+    "implementation_ref": "stratbox.domains.frank_rg.publications.profiles:naming_profile",
+    "implementation_parameters": {
+      "profile_id": "frg.canonical"
+    }
   }
 }

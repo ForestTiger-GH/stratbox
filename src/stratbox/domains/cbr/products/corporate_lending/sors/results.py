@@ -5,6 +5,7 @@ from stratbox.shared.identity import ByteIdentity
 from dataclasses import dataclass
 
 from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.source_context import SourceUse
 
 from stratbox.shared.data.representation import Representation
 
@@ -26,6 +27,7 @@ class SorsPivotResult:
     identified_cells: int
     unidentified_cells: int
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,3 +44,4 @@ class SorsViewPack:
     source_identity: ByteIdentity | None = None
     profile_id: str = "cbr.sors.views.v1"
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()

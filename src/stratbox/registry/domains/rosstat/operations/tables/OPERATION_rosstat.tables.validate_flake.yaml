@@ -41,12 +41,16 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Validate selected source values, explicit semantic admission and remaining diagnostics before integration."
     },
-    "method_id": "rosstat-tables-validate_flake"
+    "method_id": "rosstat-tables-validate_flake",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:validate_flake"

@@ -11,7 +11,9 @@ from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.identifiers import safe_token
-from stratbox.shared.data.operations import OperationSemantics
+from stratbox.shared.data.operations import OperationSemantics, RequestField
+from stratbox.shared.data.source_context import ValueContext
+from stratbox.core.execution.admission import ResultAdmission
 
 if TYPE_CHECKING:
     from stratbox.core.execution.events import EventSink, IncidentSink
@@ -80,8 +82,22 @@ class OperationDefinition:
     limits: ExecutionBudget | None = None
     runtime_dependencies: tuple[RuntimeDependency, ...] = ()
     processing: OperationSemantics | None = None
+    request_fields: tuple[RequestField, ...] = ()
+    method_refs: tuple[str, ...] = ()
+    method_resources: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        if (not isinstance(self.request_fields, tuple)
+                or any(not isinstance(item, RequestField) for item in self.request_fields)
+                or len({item.path for item in self.request_fields}) != len(self.request_fields)):
+            raise ValueError("processing.invalid_request_fields")
+        paths = [item.path for item in self.request_fields]
+        if any(left != right and (not left or right.startswith(left + ".")) for left in paths for right in paths):
+            raise ValueError("processing.overlapping_request_fields")
+        for references in (self.method_refs, self.method_resources):
+            if (not isinstance(references, tuple) or any(not isinstance(item, str) or item.count(":") != 1 for item in references)
+                    or len(set(references)) != len(references)):
+                raise ValueError("processing.invalid_method_references")
         if not isinstance(self.request_type, type):
             raise ValueError("Invalid request type")
         value_types = (
@@ -219,10 +235,32 @@ class ExecutionContext:
     input_receipts: tuple[UsedInputReceipt, ...] = ()
     input_provenance: tuple[UsedInputReceipt, ...] = ()
     input_transports: tuple[UsedInputReceipt, ...] = ()
+    input_source_contexts: tuple[tuple[str, ValueContext], ...] = ()
+    input_source_operation: str | None = None
+    result_admissions: tuple[ResultAdmission, ...] = field(default=(), repr=False)
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:
             raise ValueError("Invalid execution profile")
+        if (not isinstance(self.result_admissions, tuple)
+                or len(self.result_admissions) > 32
+                or any(not isinstance(item, ResultAdmission) for item in self.result_admissions)):
+            raise ValueError("result.admission_policy_invalid")
+        for policy in self.result_admissions:
+            try:
+                safe_token(policy.policy_id)
+            except (AttributeError, TypeError, ValueError):
+                raise ValueError("result.admission_policy_invalid") from None
+        if (not isinstance(self.input_source_contexts, tuple)
+                or any(not isinstance(item, tuple) or len(item) != 2
+                       or not isinstance(item[0], str) or not isinstance(item[1], ValueContext)
+                       for item in self.input_source_contexts)
+                or len({item[0] for item in self.input_source_contexts}) != len(self.input_source_contexts)):
+            raise ValueError("source.context_binding_invalid")
+        for name, _ in self.input_source_contexts:
+            safe_token(name)
+        if self.input_source_operation is not None:
+            safe_token(self.input_source_operation)
         if not isinstance(self.input_computations, tuple) or any(
             not isinstance(item, tuple) or len(item) != 2
             or not isinstance(item[1], ComputationReceipt)

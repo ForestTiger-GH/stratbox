@@ -17,7 +17,8 @@
           "contract": {
             "schema_id": "frg.source_index"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -25,9 +26,17 @@
         "recursive",
         "family_ids"
       ],
-      "summary": "Enumerate bounded caller-provided storage through the registered discovery profile."
+      "summary": "Enumerate bounded caller-provided storage through the registered discovery profile.",
+      "required_parameters": [
+        "directory"
+      ]
     },
-    "method_id": "frg.directory-profile"
+    "method_id": "frg.directory-profile",
+    "request_fields": {
+      "directory": "parameter",
+      "family_ids": "parameter",
+      "recursive": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:discover"

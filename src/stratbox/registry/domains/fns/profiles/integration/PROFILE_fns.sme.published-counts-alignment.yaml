@@ -6,6 +6,8 @@
     "formats": [],
     "kind": "integration",
     "profile_id": "fns.sme.published-counts-alignment",
-    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit."
+    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit.",
+    "admission_ref": "stratbox.domains.fns.operations.sme.family:admit",
+    "implementation_ref": "stratbox.domains.fns.integration.sme.alignment:align"
   }
 }

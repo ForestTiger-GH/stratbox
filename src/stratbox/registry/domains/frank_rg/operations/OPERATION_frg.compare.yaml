@@ -30,12 +30,17 @@
           "contract": {
             "schema_id": "workbook.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Compare physical cell evidence without assigning economic meaning."
     },
-    "method_id": "frg.compare"
+    "method_id": "frg.compare",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:compare"

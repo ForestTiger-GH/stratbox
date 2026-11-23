@@ -23,16 +23,24 @@
             "schema_id": "fns.sme.regional_release",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "as_of"
       ],
       "summary": "Import an explicitly selected regional CSV product; original-wide source coverage remains qualified.",
-      "function": "replay"
+      "function": "replay",
+      "required_parameters": [
+        "as_of"
+      ]
     },
-    "method_id": "fns-sme-csv"
+    "method_id": "fns-sme-csv",
+    "request_fields": {
+      "as_of": "parameter",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.operations:read_representation"

@@ -35,7 +35,9 @@
           "contract": {
             "schema_id": "rosstat.publications.assets"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -46,7 +48,17 @@
       ],
       "summary": "Select explicit publisher issues and assets from a qualified index."
     },
-    "method_id": "rosstat-publications-select"
+    "method_id": "rosstat-publications-select",
+    "request_fields": {
+      "asset_roles": "parameter",
+      "index": "input",
+      "issue_ids": "parameter",
+      "max_assets": {
+        "role": "runtime",
+        "reason": "Rejects oversized selections; accepted assets are never truncated."
+      },
+      "policy": "method"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:select"

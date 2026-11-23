@@ -14,15 +14,22 @@
           "contract": {
             "schema_id": "cbr.catalog.family"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "family_id"
       ],
-      "summary": "Describe each publication's processing scope and multi-source methods without flattening coverage."
+      "summary": "Describe each publication's processing scope and multi-source methods without flattening coverage.",
+      "required_parameters": [
+        "family_id"
+      ]
     },
-    "method_id": "cbr-scoped-family-catalog"
+    "method_id": "cbr-scoped-family-catalog",
+    "request_fields": {
+      "family_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.catalog.handlers:describe_family"

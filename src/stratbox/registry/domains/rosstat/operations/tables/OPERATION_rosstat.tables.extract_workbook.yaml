@@ -37,7 +37,8 @@
             "schema_id": "workbook.cells.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -47,9 +48,22 @@
         "container_identity",
         "member"
       ],
-      "summary": "Capture full workbook physical cells separately from economic selection."
+      "summary": "Capture full workbook physical cells separately from economic selection.",
+      "required_parameters": [
+        "series_id",
+        "issue_id",
+        "asset_id"
+      ]
     },
-    "method_id": "rosstat-tables-extract_workbook"
+    "method_id": "rosstat-tables-extract_workbook",
+    "request_fields": {
+      "asset_id": "parameter",
+      "container_identity": "parameter",
+      "issue_id": "parameter",
+      "member": "parameter",
+      "payload": "input",
+      "series_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_workbook"

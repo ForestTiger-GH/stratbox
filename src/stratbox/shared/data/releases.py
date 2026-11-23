@@ -82,12 +82,13 @@ def build_release(
     excluded_fields: tuple[str, ...] = (),
     scope: str | None = None,
     facts_method: str | None = None,
+    source_uses=(),
 ) -> ParsedRelease:
     representation = Representation(profile, 1, CSV, data, "utf-8")
     release_id = as_of.isoformat()
     lineage = tuple(inputs)
     batch = (
-        ObservationBatch(dataset_id, 1, release_id, observations, lineage)
+        ObservationBatch(dataset_id, 1, release_id, observations, lineage, source_uses)
         if observations is not None
         else None
     )

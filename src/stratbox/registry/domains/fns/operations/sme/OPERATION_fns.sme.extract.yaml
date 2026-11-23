@@ -25,15 +25,23 @@
             "schema_id": "fns.sme.flake",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "release"
       ],
-      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields."
+      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields.",
+      "required_parameters": [
+        "release"
+      ]
     },
-    "method_id": "fns-sme-extract"
+    "method_id": "fns-sme-extract",
+    "request_fields": {
+      "payload": "input",
+      "release": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:extract"

@@ -40,16 +40,25 @@
             "version": 3,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "source_name",
         "as_of"
       ],
-      "summary": "Extract an escrow workbook with source-local dimensions and evidence."
+      "summary": "Extract an escrow workbook with source-local dimensions and evidence.",
+      "required_parameters": [
+        "source_name"
+      ]
     },
-    "method_id": "cbr-escrow-xlsx-flake"
+    "method_id": "cbr-escrow-xlsx-flake",
+    "request_fields": {
+      "as_of": "parameter",
+      "payload": "input",
+      "source_name": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:parse"

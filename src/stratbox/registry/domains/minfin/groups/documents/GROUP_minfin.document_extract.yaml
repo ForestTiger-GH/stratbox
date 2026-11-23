@@ -8,7 +8,8 @@
       "operation_id": "minfin.discover",
       "parameters": [],
       "reason": "",
-      "state": "supported"
+      "state": "supported",
+      "context_scope": "family"
     },
     {
       "formats": [],
@@ -108,6 +109,11 @@
       "parameters": [],
       "reason": "Replay a retained representation and its semantic descriptor.",
       "state": "delegated"
+    },
+    {
+      "operation_id": "minfin.map_observations",
+      "state": "conditional",
+      "reason": "Requires a retained typed source-cell extract and caller-reviewed metric, period, geography and unit bindings."
     }
   ],
   "stages": [
@@ -118,55 +124,5 @@
     "inspect",
     "preserve",
     "readable"
-  ],
-  "transitions": [
-    {
-      "from": "acquire",
-      "to": "discover"
-    },
-    {
-      "from": "acquire",
-      "to": "extract"
-    },
-    {
-      "from": "acquire",
-      "to": "preserve"
-    },
-    {
-      "from": "acquire",
-      "to": "readable"
-    },
-    {
-      "from": "discover",
-      "to": "inspect"
-    },
-    {
-      "from": "extract",
-      "to": "readable"
-    },
-    {
-      "from": "ingest",
-      "to": "preserve"
-    },
-    {
-      "from": "preserve",
-      "to": "discover"
-    },
-    {
-      "from": "preserve",
-      "to": "extract"
-    },
-    {
-      "from": "preserve",
-      "to": "ingest"
-    },
-    {
-      "from": "preserve",
-      "to": "preserve"
-    },
-    {
-      "from": "preserve",
-      "to": "readable"
-    }
   ]
 }

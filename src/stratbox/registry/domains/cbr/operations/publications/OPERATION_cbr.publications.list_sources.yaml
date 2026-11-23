@@ -14,7 +14,9 @@
           "contract": {
             "schema_id": "cbr.publications.series"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -22,7 +24,10 @@
       ],
       "summary": "List logical publication families and processing profiles independently of acquisition routes."
     },
-    "method_id": "cbr-publication-registry"
+    "method_id": "cbr-publication-registry",
+    "request_fields": {
+      "family_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:list_sources"

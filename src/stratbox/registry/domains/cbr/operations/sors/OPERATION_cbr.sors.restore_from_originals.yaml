@@ -31,16 +31,24 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
         "config"
       ],
       "summary": "Explicitly extract originals, prepare a complete input bundle and restore SORS data.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "config"
+      ]
     },
-    "method_id": "sors-originals-composition"
+    "method_id": "sors-originals-composition",
+    "request_fields": {
+      "config": "method",
+      "sources": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:restore_from_originals"

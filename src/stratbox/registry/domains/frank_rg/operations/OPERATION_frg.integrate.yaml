@@ -24,16 +24,26 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "release_id"
       ],
-      "summary": "Place admitted source-local observations in an explicitly named integrated dataset."
+      "summary": "Place admitted source-local observations in an explicitly named integrated dataset.",
+      "required_parameters": [
+        "dataset_id",
+        "release_id"
+      ]
     },
-    "method_id": "frg.integrate"
+    "method_id": "frg.integrate",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "flake": "input",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:integrate"

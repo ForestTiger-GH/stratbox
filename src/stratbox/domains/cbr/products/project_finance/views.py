@@ -3,6 +3,7 @@ from stratbox.core.execution import OperationFailure
 from stratbox.domains.cbr.integration.project_finance.evidence import use_dataset
 from stratbox.domains.cbr.integration.project_finance.snapshots import dataset_snapshot, _release_input
 from .contracts import EscrowPivotPack
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 
 def prepare_dataset_view(dataset, options, invocation):
     import pandas as pd
@@ -40,4 +41,7 @@ def prepare_dataset_view(dataset, options, invocation):
                             source_dataset=dataset_snapshot(dataset).identity, coverage=dataset.coverage,
                             missing_display=options.missing_display, row_metadata=tuple(row_lookup[region] for region in regions),
                             product_profile_id=options.profile.profile_id, product_profile_version=options.profile.version,
-                            input_versions=tuple(_release_input(release) for release in dataset.releases))
+                            input_versions=tuple(_release_input(release) for release in dataset.releases),
+                            source_uses=tuple(SourceUse(SourceCoordinate("cbr.project_finance.escrow", "cbr.project_finance",
+                                "project_finance_statistics", release.period, material_identity=release.original_identity),
+                                "releases", "domain_validated") for release in dataset.releases))

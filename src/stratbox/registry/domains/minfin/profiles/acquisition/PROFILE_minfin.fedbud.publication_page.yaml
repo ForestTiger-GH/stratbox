@@ -6,6 +6,11 @@
     "formats": [],
     "kind": "acquisition",
     "profile_id": "minfin.fedbud.publication_page",
-    "scope": "official publisher landing page"
+    "scope": "official publisher landing page",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit",
+    "implementation_ref": "stratbox.domains.minfin.publications.profiles:acquisition_profile",
+    "implementation_parameters": {
+      "profile_id": "minfin.fedbud.publication_page"
+    }
   }
 }

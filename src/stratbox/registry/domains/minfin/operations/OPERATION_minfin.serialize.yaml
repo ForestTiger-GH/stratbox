@@ -30,13 +30,17 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Serialize complete source-cell extracts including blank-sheet geometry to a repeatable JSON representation.",
       "function": "encode"
     },
-    "method_id": "minfin-extract-json"
+    "method_id": "minfin-extract-json",
+    "request_fields": {
+      "extract": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:serialize_extract"

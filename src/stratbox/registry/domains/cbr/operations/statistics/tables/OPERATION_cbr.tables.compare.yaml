@@ -36,12 +36,17 @@
           "contract": {
             "schema_id": "cbr.workbook.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Compare exact source releases independently of processing and destination state."
     },
-    "method_id": "cbr-tables-compare"
+    "method_id": "cbr-tables-compare",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:compare"

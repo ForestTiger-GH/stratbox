@@ -23,12 +23,16 @@
           "contract": {
             "schema_id": "material.artifact"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Package source-readable evidence and lineage for the selected material store."
     },
-    "method_id": "fns-sme-readable-artifact"
+    "method_id": "fns-sme-readable-artifact",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:readable_artifact"

@@ -36,12 +36,16 @@
           "contract": {
             "schema_id": "representation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render full physical workbook evidence as structured readable records."
     },
-    "method_id": "rosstat-tables-readable_workbook"
+    "method_id": "rosstat-tables-readable_workbook",
+    "request_fields": {
+      "workbook": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:readable_workbook"

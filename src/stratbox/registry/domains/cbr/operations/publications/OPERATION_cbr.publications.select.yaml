@@ -22,7 +22,8 @@
           "contract": {
             "schema_id": "cbr.publications.asset"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -33,7 +34,14 @@
       ],
       "summary": "Select one publication and one physical route; ambiguous candidates require an explicit selection."
     },
-    "method_id": "cbr-publication-selection"
+    "method_id": "cbr-publication-selection",
+    "request_fields": {
+      "asset_id": "parameter",
+      "format": "parameter",
+      "inventory": "input",
+      "issue_id": "parameter",
+      "url": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:select"

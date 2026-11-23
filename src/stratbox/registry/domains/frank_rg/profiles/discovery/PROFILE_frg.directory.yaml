@@ -6,6 +6,11 @@
     "formats": [],
     "kind": "discovery",
     "profile_id": "frg.directory",
-    "scope": ""
+    "scope": "",
+    "admission_ref": "stratbox.domains.frank_rg.profiles:admit",
+    "implementation_ref": "stratbox.domains.frank_rg.publications.profiles:discovery_profile",
+    "implementation_parameters": {
+      "profile_id": "frg.directory"
+    }
   }
 }

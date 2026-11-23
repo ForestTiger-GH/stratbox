@@ -36,12 +36,16 @@
           "contract": {
             "schema_id": "representation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render selected source values with actual periods, units and source coordinates."
     },
-    "method_id": "rosstat-tables-readable_flake"
+    "method_id": "rosstat-tables-readable_flake",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:readable_flake"

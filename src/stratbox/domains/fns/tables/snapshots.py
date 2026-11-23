@@ -93,9 +93,9 @@ def read_layer(snapshot, contract):
         raise ValueError("fns.observation_layer_snapshot_invalid")
     context, identity, profile, qualifications, dispositions, details = read_context(snapshot.table("context"))
     metadata = snapshot.table("batch_metadata")
-    if len(metadata.rows) != 1 or len(metadata.rows[0]) != 3:
+    if len(metadata.rows) != 1 or len(metadata.rows[0]) != 4:
         raise ValueError("fns.batch_metadata_invalid")
-    dataset_id, _, release_id = metadata.rows[0]
+    dataset_id, _, release_id = metadata.rows[0][:3]
     batch_snapshot = DatasetSnapshot.build(dataset_id, release_id, OBSERVATION_SNAPSHOT,
         (("metadata", snapshot.table("batch_metadata")), ("observations", snapshot.table("observations"))),
         coverage=SnapshotCoverage("unknown", "Exactly the supplied observation batch; source-wide coverage is not inferred."),

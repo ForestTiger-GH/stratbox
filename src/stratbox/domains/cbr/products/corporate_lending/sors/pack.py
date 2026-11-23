@@ -7,6 +7,7 @@ from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRe
 from .contracts import SorsWorkbookRequest
 from .results import SorsViewPack
 from .views import build_sors_pivot
+from stratbox.domains.cbr.analytics.corporate_lending.sors.identity import source_uses
 
 _PRIMARY_COLUMNS = (
     'as_of_date', 'region_code', 'class_code', 'metric',
@@ -183,4 +184,5 @@ def build_sors_views(result: SorsRestorationResult | SorsCrosswalkResult,
     if budget is not None:
         budget.check("cells", sum((len(frame) + 1) * len(frame.columns) for _, frame in frames))
     return SorsViewPack(tuple((name, frame.copy(deep=True)) for name, frame in frames),
-                        result.evidence.output if result.evidence is not None else None)
+                        result.evidence.output if result.evidence is not None else None,
+                        source_uses=source_uses(result))

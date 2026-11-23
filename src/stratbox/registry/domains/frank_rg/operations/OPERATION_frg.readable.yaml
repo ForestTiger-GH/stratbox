@@ -24,12 +24,16 @@
             "schema_id": "workbook.readable.jsonl",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render every extracted sheet and cell as source-faithful readable JSONL."
     },
-    "method_id": "frg.readable"
+    "method_id": "frg.readable",
+    "request_fields": {
+      "extract": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:readable"

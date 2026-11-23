@@ -26,7 +26,8 @@
             "schema_id": "cbr.offices_reg.release",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "candidates",
@@ -36,13 +37,17 @@
           "path": "",
           "outcomes": [
             "partial"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Restore a full territorial release or its still-unresolved source block candidates.",
       "function": "replay"
     },
-    "method_id": "cbr-offices-reg-replay"
+    "method_id": "cbr-offices-reg-replay",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.snapshots:restore_release"

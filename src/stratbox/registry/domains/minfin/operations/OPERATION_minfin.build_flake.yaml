@@ -33,16 +33,25 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "source_id",
         "selected_sheet"
       ],
-      "summary": "Clean the source-local workbook to one wide flake; strip document decoration and normalize economic period headers."
+      "summary": "Clean the source-local workbook to one wide flake; strip document decoration and normalize economic period headers.",
+      "required_parameters": [
+        "source_id"
+      ]
     },
-    "method_id": "minfin.profile-flake"
+    "method_id": "minfin.profile-flake",
+    "request_fields": {
+      "extract": "input",
+      "selected_sheet": "parameter",
+      "source_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:build_source_flake"

@@ -29,12 +29,16 @@
             "schema_id": "cbr.forms.workbook",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render supplied reporting-form views into workbook bytes."
     },
-    "method_id": "cbr-forms-xlsx"
+    "method_id": "cbr-forms-xlsx",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.products:render_workbook"

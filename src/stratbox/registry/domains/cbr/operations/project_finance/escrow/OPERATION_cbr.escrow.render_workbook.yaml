@@ -31,12 +31,16 @@
             "version": 2,
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render supplied escrow pivots into workbook bytes."
     },
-    "method_id": "cbr-escrow-xlsx"
+    "method_id": "cbr-escrow-xlsx",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:render_workbook"

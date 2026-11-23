@@ -14,7 +14,8 @@
       "state": "supported",
       "reason": "",
       "parameters": [],
-      "formats": []
+      "formats": [],
+      "context_scope": "family"
     },
     {
       "operation_id": "minfin.inspect",
@@ -79,6 +80,11 @@
       "reason": "Replay a retained representation and its semantic descriptor.",
       "parameters": [],
       "formats": []
+    },
+    {
+      "operation_id": "minfin.map_observations",
+      "state": "conditional",
+      "reason": "Requires a retained typed source-cell extract and caller-reviewed metric, period, geography and unit bindings."
     }
   ],
   "stages": [
@@ -86,37 +92,8 @@
     "discover",
     "ingest",
     "inspect",
-    "preserve"
-  ],
-  "transitions": [
-    {
-      "from": "acquire",
-      "to": "discover"
-    },
-    {
-      "from": "acquire",
-      "to": "preserve"
-    },
-    {
-      "from": "discover",
-      "to": "inspect"
-    },
-    {
-      "from": "ingest",
-      "to": "preserve"
-    },
-    {
-      "from": "preserve",
-      "to": "discover"
-    },
-    {
-      "from": "preserve",
-      "to": "ingest"
-    },
-    {
-      "from": "preserve",
-      "to": "preserve"
-    }
+    "preserve",
+    "extract"
   ],
   "qualifications": [
     "Historical document branch retains ordered blocks with explicit coverage; no automatic economic table interpretation.",

@@ -36,7 +36,8 @@
             "schema_id": "cbr.sors.views",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
@@ -44,7 +45,11 @@
       ],
       "summary": "Prepare every selected SORS sheet, including pivots and audit tables."
     },
-    "method_id": "sors-prepared-views"
+    "method_id": "sors-prepared-views",
+    "request_fields": {
+      "result": "input",
+      "workbook": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:build_views"

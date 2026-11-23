@@ -30,16 +30,24 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
         "config"
       ],
       "summary": "Load and align the complete SORS constraint input bundle.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "config"
+      ]
     },
-    "method_id": "sors-source-bundle"
+    "method_id": "sors-source-bundle",
+    "request_fields": {
+      "config": "method",
+      "sources": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:prepare_from_originals"

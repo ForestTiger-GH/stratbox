@@ -9,6 +9,7 @@
     "kind": "extraction",
     "profile_id": "cbr.industries.debt.flake",
     "scope": "Reviewed six-sheet regional debt layout, 26 published industries and 96 published geography rows.",
-    "operation_id": "cbr.industries.0105a.parse"
+    "operation_id": "cbr.industries.0105a.parse",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

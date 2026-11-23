@@ -35,15 +35,23 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "destination"
       ],
-      "summary": "Retain exact representation bytes and a complete immutable semantic descriptor."
+      "summary": "Retain exact representation bytes and a complete immutable semantic descriptor.",
+      "required_parameters": [
+        "destination"
+      ]
     },
-    "method_id": "artifact-publish"
+    "method_id": "artifact-publish",
+    "request_fields": {
+      "artifact": "input",
+      "destination": "effect"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.operations:save_artifact"

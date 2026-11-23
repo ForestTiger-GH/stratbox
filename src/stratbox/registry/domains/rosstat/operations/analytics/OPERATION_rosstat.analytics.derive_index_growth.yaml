@@ -37,15 +37,23 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "release_id"
       ],
-      "summary": "Explicitly derive percentage changes as published percent-of-baseline indices minus 100."
+      "summary": "Explicitly derive percentage changes as published percent-of-baseline indices minus 100.",
+      "required_parameters": [
+        "release_id"
+      ]
     },
-    "method_id": "rosstat-analytics-derive_index_growth"
+    "method_id": "rosstat-analytics-derive_index_growth",
+    "request_fields": {
+      "dataset": "input",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:derive_index_growth"

@@ -46,31 +46,43 @@
   "value_contexts": {
     "types": {
       "stratbox.domains.fns.publications.contracts.ReleaseContext": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id"
+          }
         ]
       },
       "stratbox.domains.fns.publications.contracts.SourceSeries": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "family": "family_id"
+          }
         ]
       }
     },
-    "tables": {
-      "fns.release_context": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+    "tables": [
+      {
+        "contract": {
+          "schema_id": "fns.release_context",
+          "version": 1,
+          "role": null
+        },
+        "schema_ref": "stratbox.domains.fns.tables.snapshots:CONTEXT",
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "material": {
+              "sha256": "source_sha256",
+              "size": "source_size"
+            },
+            "asset": "asset_id"
+          }
         ]
       }
-    }
+    ]
   }
 }

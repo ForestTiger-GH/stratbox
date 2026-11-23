@@ -28,19 +28,24 @@
             "schema_id": "frg.prepared_file",
             "role": "originals"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Prepare the registered canonical filename while preserving the report's exact original bytes."
     },
-    "method_id": "frg.canonical-name-profile"
+    "method_id": "frg.canonical-name-profile",
+    "request_fields": {
+      "report": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:prepare_file"

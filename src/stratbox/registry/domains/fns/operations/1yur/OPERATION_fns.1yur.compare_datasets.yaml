@@ -30,12 +30,17 @@
           "contract": {
             "schema_id": "observations.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Assess revisions only across matching metrics, editions, periods, perimeters and dimensions."
     },
-    "method_id": "fns-1yur-compare-datasets"
+    "method_id": "fns-1yur-compare-datasets",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:compare_datasets"

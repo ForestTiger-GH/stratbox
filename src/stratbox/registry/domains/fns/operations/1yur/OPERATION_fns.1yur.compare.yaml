@@ -32,7 +32,8 @@
           "contract": {
             "schema_id": "fns.1yur.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -40,7 +41,12 @@
       ],
       "summary": "Compare selected regional product releases with their historical qualifiers intact."
     },
-    "method_id": "fns-1yur-compare"
+    "method_id": "fns-1yur-compare",
+    "request_fields": {
+      "baseline": "input",
+      "baseline_state": "parameter",
+      "candidate": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:compare"

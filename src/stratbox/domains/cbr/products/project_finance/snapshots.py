@@ -1,10 +1,11 @@
 """Standalone prepared-view snapshots retain style and exact input versions."""
 from __future__ import annotations
 from datetime import date
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from decimal import Decimal
 import json
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import source_use_value, source_use_from
 from stratbox.shared.data.snapshots import TypedTable
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
@@ -16,7 +17,8 @@ VIEW = DataContract("cbr.escrow.view.snapshot", 2, DataRole.PRODUCTS)
 PRESENTATION = _schema("view.presentation", (("indicator_code", T, False), ("specification", T, False)), role=DataRole.PRODUCTS, key=("indicator_code",))
 INPUTS = _schema("view.input_versions", (("sha256", T, False), ("size", I, False), ("source_id", T, True)), role=DataRole.PRODUCTS)
 
-VIEW_META = _schema("view.metadata", (("source_sha256", T, True), ("source_size", I, True), ("missing_display", T, False), ("profile_id", T, False), ("profile_version", I, False)), role=DataRole.PRODUCTS)
+VIEW_META = replace(_schema("view.metadata", (("source_sha256", T, True), ("source_size", I, True), ("missing_display", T, False), ("profile_id", T, False), ("profile_version", I, False), ("source_uses", T, False)), role=DataRole.PRODUCTS),
+                    contract=DataContract("cbr.escrow.view.metadata", 2, DataRole.PRODUCTS))
 VIEW_ROWS = _schema("view.rows", (("region", T, False), ("row_kind", T, False), ("federal_district_name", T, True)), role=DataRole.PRODUCTS, key=("region",))
 VIEW_DATES = _schema("view.dates", (("period", T, False),), role=DataRole.PRODUCTS, key=("period",))
 VIEW_VALUES = _schema("view.values", (("indicator_code", T, False), ("region", T, False), ("period", T, False),
@@ -71,7 +73,8 @@ def view_tables(view):
                 values.append((code, region, period, number, token))
     EscrowProductProfile(view.product_profile_id, view.product_profile_version, view.indicator_specs)
     identity = view.source_dataset
-    return (("metadata", TypedTable(VIEW_META, ((identity.sha256 if identity else None, identity.size if identity else None, view.missing_display, view.product_profile_id, view.product_profile_version),))),
+    return (("metadata", TypedTable(VIEW_META, ((identity.sha256 if identity else None, identity.size if identity else None, view.missing_display, view.product_profile_id, view.product_profile_version,
+                _json([source_use_value(use) for use in view.source_uses])),))),
             ("indicators", _specs(view.indicator_specs)), ("rows", TypedTable(VIEW_ROWS, row_metadata)),
             ("periods", TypedTable(VIEW_DATES, tuple((period,) for period in view.date_order))),
             ("values", TypedTable(VIEW_VALUES, tuple(values))), ("input_versions", _inputs(view)))
@@ -88,7 +91,7 @@ def view_from_snapshot(snapshot):
     _check(snapshot, VIEW, components)
     if len(snapshot.table("metadata").rows) != 1:
         raise ValueError("escrow.snapshot_metadata_invalid")
-    sha, size, missing, profile_id, profile_version = snapshot.table("metadata").rows[0]
+    sha, size, missing, profile_id, profile_version, source_uses = snapshot.table("metadata").rows[0]
     if (sha is None) != (size is None):
         raise ValueError("escrow.snapshot_identity_invalid")
     specs = _read_specs(snapshot.table("indicators"))
@@ -108,7 +111,8 @@ def view_from_snapshot(snapshot):
                             coverage=snapshot.manifest.coverage, missing_display=missing, row_metadata=rows, product_profile_id=profile_id, product_profile_version=profile_version,
                             input_versions=tuple(UsedInputReceipt("source_workbook", ByteIdentity(sha, size),
                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "reference_only", source_id)
-                                for sha, size, source_id in snapshot.table("input_versions").rows))
+                                for sha, size, source_id in snapshot.table("input_versions").rows),
+                            source_uses=tuple(source_use_from(use) for use in json.loads(source_uses)))
     view_tables(value)
     _check_lineage(snapshot, _lineage(value))
     return value

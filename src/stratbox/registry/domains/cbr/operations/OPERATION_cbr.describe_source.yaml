@@ -14,7 +14,8 @@
           "contract": {
             "schema_id": "cbr.catalog.source"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -23,9 +24,18 @@
         "table_id",
         "edition"
       ],
-      "summary": "Describe reviewed source tables, editions, exact operation contracts and source-specific gaps."
+      "summary": "Describe reviewed source tables, editions, exact operation contracts and source-specific gaps.",
+      "required_parameters": [
+        "series_id"
+      ]
     },
-    "method_id": "cbr-scoped-source-catalog"
+    "method_id": "cbr-scoped-source-catalog",
+    "request_fields": {
+      "edition": "method",
+      "format": "parameter",
+      "series_id": "parameter",
+      "table_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.catalog.handlers:describe_source"

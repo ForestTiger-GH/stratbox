@@ -46,6 +46,9 @@ def test_alignment_keeps_banks_and_groups_distinct_and_retains_physical_record_e
     assert "record:1/field:VSEGO" in by_form["802"].evidence_ref
     assert by_form["802"].raw_token=="000001.2300"
     assert by_form["101"].perimeter=="credit_institution"
+    assert {(use.coordinate.source_id, use.coordinate.source_group_id, use.coordinate.issue_id) for use in batch.source_uses} == {
+        ("cbr.reporting_forms.f101", "reported_records", DAY.isoformat()),
+        ("cbr.reporting_forms.f802", "reported_records", DAY.isoformat())}
 
 
 def test_flow_alignment_requires_an_explicit_interval():
@@ -99,3 +102,16 @@ def test_integrated_observations_can_continue_after_their_own_snapshot():
     encoded=ok(forms.snapshot_observations(forms.SnapshotFormObservationsRequest(aligned,"stored.forms","version-1")))
     restored=ok(forms.restore_observations(encoded))
     assert restored==aligned
+
+
+def test_normalized_calculated_and_prepared_forms_retain_source_coordinates():
+    normalized = parse("802", ("REGN_GKO", "STR", "VSEGO"), (("1000", "14", "1.23"),))
+    data = ok(forms.build_form_data(forms.BuildFormDataRequest((normalized,))))
+    views = ok(forms.build_form_views(data))
+    assert normalized.source_uses and data.source_uses == normalized.source_uses == views.source_uses
+    for value, restore in ((normalized, forms.restore_normalized), (data, forms.restore_data), (views, forms.restore_views)):
+        snapshot = ok(forms.snapshot_result(forms.FormResultSnapshotRequest(value, "caller.dataset", "caller.release")))
+        replayed = ok(restore(snapshot))
+        assert replayed.source_uses == value.source_uses
+        assert {(use.coordinate.source_id, use.coordinate.issue_id) for use in replayed.source_uses} == {
+            ("cbr.reporting_forms.f802", DAY.isoformat())}

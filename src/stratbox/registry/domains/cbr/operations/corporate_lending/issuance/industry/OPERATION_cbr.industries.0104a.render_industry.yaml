@@ -30,7 +30,8 @@
             "schema_id": "cbr.industries.0104a.workbook",
             "role": "products"
           },
-          "path": "representation"
+          "path": "representation",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -41,7 +42,13 @@
       "summary": "Render one industry workbook from supplied data.",
       "composition": true
     },
-    "method_id": "cbr-0104a-xlsx"
+    "method_id": "cbr-0104a-xlsx",
+    "request_fields": {
+      "calculate_apk_if_missing": "parameter",
+      "include_metadata_sheet": "parameter",
+      "industry_code": "parameter",
+      "stream": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:render_industry"

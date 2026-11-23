@@ -5,6 +5,8 @@ from stratbox.core.execution import OperationFailure
 from stratbox.core.runtime.dependencies import require_extra
 from stratbox.core.operations.tables import record_tables
 from .contracts import FormSnapshot
+from .context import normalized_metadata
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from .flakes import validate_flakes
 from .layouts.registry import LAYOUT_REGISTRY
 
@@ -64,8 +66,11 @@ def normalize_value(req, invocation):
         frame = normalize_direct_snapshot(frame, spec)
     if frame.empty:
         raise OperationFailure("source.dbf_no_observations")
+    source_uses = (SourceUse(SourceCoordinate("cbr.reporting_forms.f" + value.key.code, "cbr.reporting_forms",
+        "reported_records", value.key.as_of.isoformat(), material_identity=value.original_identity,
+        layout_edition=LAYOUT_REGISTRY[value.key.code].edition), "flake", "domain_validated"),)
     evidence = record_tables(invocation, (("dbf_rows", frame),),
-        metadata={"form": value.key.code, "as_of": value.key.as_of, "fields": dict(fields)},
+        metadata=normalized_metadata(value.key, fields, source_uses),
         parameters={"member": member.name, "include_deleted": req.include_deleted,
                     "flake_method": value.method_version})
-    return FormSnapshot(value.key, MappingProxyType(fields), frame, tuple(invocation.used_inputs), evidence)
+    return FormSnapshot(value.key, MappingProxyType(fields), frame, tuple(invocation.used_inputs), evidence, source_uses)

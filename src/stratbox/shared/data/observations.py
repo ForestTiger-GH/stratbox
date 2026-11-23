@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Literal
 
 from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.data.source_context import SourceUse
 
 _VALUE_STATUSES = frozenset({
     "reported", "blank", "dash", "missing", "not_applicable",
@@ -118,3 +119,8 @@ class ObservationBatch:
     release_id: str
     observations: tuple[Observation, ...]
     lineage: tuple[UsedInputReceipt, ...]
+    source_uses: tuple[SourceUse, ...] = ()
+
+    def __post_init__(self):
+        if not isinstance(self.source_uses, tuple) or any(not isinstance(use, SourceUse) for use in self.source_uses):
+            raise ValueError("observations.source_uses_invalid")

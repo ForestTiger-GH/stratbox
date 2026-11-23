@@ -34,14 +34,16 @@
             "schema_id": "frg.report",
             "role": "originals"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -49,9 +51,20 @@
         "period",
         "format"
       ],
-      "summary": "Admit exact bytes supplied by a specialized method with an explicit logical source and period."
+      "summary": "Admit exact bytes supplied by a specialized method with an explicit logical source and period.",
+      "required_parameters": [
+        "source_id",
+        "period",
+        "format"
+      ]
     },
-    "method_id": "frg.supplied-material-profile"
+    "method_id": "frg.supplied-material-profile",
+    "request_fields": {
+      "format": "parameter",
+      "payload": "input",
+      "period": "parameter",
+      "source_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:capture"

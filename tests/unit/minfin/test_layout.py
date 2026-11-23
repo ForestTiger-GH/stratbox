@@ -18,7 +18,7 @@ def test_root_has_only_canonical_registry_records_and_one_owner():
     from stratbox.core.registry.sources import source_cards
     assert not tuple(root.glob("REGISTRY_*.yaml"))
     assert len(source_cards("minfin")) == 13
-    assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py"}
+    assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py", "profiles.py"}
     assert {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")} == {
         "publications", "tables", "analytics", "operations", "integration", "products", "documents",
     }

@@ -38,7 +38,8 @@
           "contract": {
             "schema_id": "minfin.source_cell_delta"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -46,7 +47,12 @@
       ],
       "summary": "Report cell-level revisions between source-compatible extracts without claiming semantic equality."
     },
-    "method_id": "minfin-cell-delta"
+    "method_id": "minfin-cell-delta",
+    "request_fields": {
+      "after": "input",
+      "before": "input",
+      "max_changes": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:compare"

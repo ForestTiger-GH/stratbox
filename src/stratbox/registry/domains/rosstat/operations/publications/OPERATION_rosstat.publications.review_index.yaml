@@ -35,15 +35,23 @@
           "contract": {
             "schema_id": "rosstat.publications.index"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "evidence"
       ],
-      "summary": "Apply explicit reviewed scope evidence to one exact publisher index."
+      "summary": "Apply explicit reviewed scope evidence to one exact publisher index.",
+      "required_parameters": [
+        "evidence"
+      ]
     },
-    "method_id": "rosstat-publications-review_index"
+    "method_id": "rosstat-publications-review_index",
+    "request_fields": {
+      "evidence": "parameter",
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:review_index"

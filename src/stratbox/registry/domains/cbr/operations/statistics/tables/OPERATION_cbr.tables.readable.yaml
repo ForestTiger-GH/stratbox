@@ -30,12 +30,16 @@
             "schema_id": "cbr.workbook.readable",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render source-readable JSONL containing every cell without economic interpretation."
     },
-    "method_id": "cbr-tables-readable"
+    "method_id": "cbr-tables-readable",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:readable"

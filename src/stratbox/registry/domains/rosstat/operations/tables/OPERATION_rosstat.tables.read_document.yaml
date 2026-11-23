@@ -40,13 +40,17 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore ordered physical document evidence from a stored snapshot.",
       "function": "replay"
     },
-    "method_id": "rosstat-tables-read_document"
+    "method_id": "rosstat-tables-read_document",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:read_document"

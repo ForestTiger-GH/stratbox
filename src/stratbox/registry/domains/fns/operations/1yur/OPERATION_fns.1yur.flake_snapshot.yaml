@@ -22,20 +22,25 @@
             "schema_id": "fns.1yur.workbook_bundle.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Encode the complete flake envelope for neutral immutable dataset storage.",
       "function": "encode"
     },
-    "method_id": "fns-1yur-flake-snapshot"
+    "method_id": "fns-1yur-flake-snapshot",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:flake_snapshot"

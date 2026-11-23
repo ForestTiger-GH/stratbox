@@ -27,13 +27,17 @@
             "schema_id": "cbr.statistics.dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore exact integrated observations without original files or parsing dependencies.",
       "function": "replay"
     },
-    "method_id": "cbr-statistics-read_dataset_snapshot"
+    "method_id": "cbr-statistics-read_dataset_snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:read_dataset_snapshot"

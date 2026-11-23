@@ -35,7 +35,8 @@
           "contract": {
             "schema_id": "minfin.notice_preparation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -44,7 +45,14 @@
       ],
       "summary": "Prepare a source-qualified, channel-neutral notification candidate; initial loads are quiet by default."
     },
-    "method_id": "minfin.notice-facts"
+    "method_id": "minfin.notice-facts",
+    "request_fields": {
+      "asset": "input",
+      "baseline_original_identity": "parameter",
+      "decision": "input",
+      "include_initial": "parameter",
+      "summary": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:prepare_notice_facts"

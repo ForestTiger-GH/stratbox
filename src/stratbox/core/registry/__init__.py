@@ -11,7 +11,9 @@ from stratbox.core.registry.source_catalog import (
 def _catalog(include):
     from stratbox.core.registry.operations import owner_ids, owner_registration
     from stratbox.core.registry.assembly import assemble_owners
-    return assemble_owners(tuple(owner for owner in owner_ids() if include(owner)), owner_registration)[1]
+    catalog = assemble_owners(tuple(owner for owner in owner_ids() if include(owner)), owner_registration)[1]
+    catalog.admit(level="metadata")
+    return catalog
 
 
 def core_catalog() -> OperationCatalog:
@@ -24,3 +26,8 @@ def domain_catalog() -> OperationCatalog:
 
 def operation_catalog() -> OperationCatalog:
     return _catalog(lambda owner: True)
+
+
+from stratbox.core.registry.admission import (
+    AdmissionCheck, CatalogAdmission, admit_registry_snapshot, validate_catalog,
+)

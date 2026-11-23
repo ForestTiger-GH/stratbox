@@ -24,7 +24,8 @@
             "schema_id": "fns.1yur.readable",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "representation",
@@ -32,12 +33,16 @@
             "schema_id": "representation.bytes",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render source-readable evidence directly from the full retained flake."
     },
-    "method_id": "fns-1yur-readable"
+    "method_id": "fns-1yur-readable",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:readable"

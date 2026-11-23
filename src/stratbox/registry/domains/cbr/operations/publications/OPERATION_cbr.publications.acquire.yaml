@@ -33,20 +33,23 @@
             "schema_id": "cbr.publication.original",
             "role": "originals"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "artifact",
           "contract": {
             "schema_id": "material.artifact"
-          }
+          },
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -55,7 +58,11 @@
       "summary": "Acquire and admit one selected original with explicit issue or capture context.",
       "composition": true
     },
-    "method_id": "cbr-publication-acquisition"
+    "method_id": "cbr-publication-acquisition",
+    "request_fields": {
+      "asset": "input",
+      "issue_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:acquire"

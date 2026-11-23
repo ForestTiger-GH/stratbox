@@ -19,26 +19,31 @@
             "schema_id": "frg.catalog",
             "version": 2
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         },
         {
           "name": "index",
           "contract": {
             "schema_id": "frg.source_index"
           },
-          "path": "inventory.index"
+          "path": "inventory.index",
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "inventory",
           "contract": {
             "schema_id": "frg.inventory"
-          }
+          },
+          "source_policy": "source_optional"
         },
         {
           "name": "selections",
           "contract": {
             "schema_id": "frg.selections"
-          }
+          },
+          "collection": true,
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -47,9 +52,17 @@
         "family_ids"
       ],
       "summary": "Compose discovery, identification and period selection into a read-only report catalog.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "directory"
+      ]
     },
-    "method_id": "frg.catalog-profile"
+    "method_id": "frg.catalog-profile",
+    "request_fields": {
+      "directory": "parameter",
+      "family_ids": "parameter",
+      "recursive": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:scan"

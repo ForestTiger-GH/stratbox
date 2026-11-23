@@ -29,12 +29,16 @@
             "schema_id": "cbr.forms.views",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Construct reporting-form presentation views from evaluated data."
     },
-    "method_id": "cbr-forms-views"
+    "method_id": "cbr-forms-views",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.products:build_form_views"

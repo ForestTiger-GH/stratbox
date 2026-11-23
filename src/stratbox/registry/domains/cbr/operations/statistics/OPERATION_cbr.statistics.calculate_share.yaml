@@ -30,7 +30,8 @@
             "schema_id": "cbr.statistics.dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,9 +39,19 @@
         "denominator_metric",
         "release_ids"
       ],
-      "summary": "Calculate an explicitly selected share only when subject, period, units and perimeter agree."
+      "summary": "Calculate an explicitly selected share only when subject, period, units and perimeter agree.",
+      "required_parameters": [
+        "numerator_metric",
+        "denominator_metric"
+      ]
     },
-    "method_id": "cbr-statistics-calculate_share"
+    "method_id": "cbr-statistics-calculate_share",
+    "request_fields": {
+      "dataset": "input",
+      "denominator_metric": "parameter",
+      "numerator_metric": "parameter",
+      "release_ids": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:calculate_share"

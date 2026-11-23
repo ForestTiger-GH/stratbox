@@ -161,7 +161,11 @@ def record_from_result(result: OperationResult, *, occurred_at_utc: datetime | N
          "output": _byte(result.computation.output),
          "dataset_id": result.computation.version.dataset_id,
          "release_id": result.computation.version.release_id,
-         "method_version": result.computation.version.method_version}
+         "method_version": result.computation.version.method_version,
+         "method_fingerprint": _byte(result.computation.method_fingerprint),
+         "argument_coverage": ("unqualified" if "signature_complete" not in result.computation.qualifications else
+             "declared" if result.definition.request_fields else "whole_request"),
+         "qualifications": sorted(result.computation.qualifications)}
         if result.computation is not None else None
     )
     metadata = {

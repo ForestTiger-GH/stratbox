@@ -30,12 +30,16 @@
             "schema_id": "cbr.escrow.readable_cells",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render every extracted cell, including unresolved tokens, as a readable CSV transcript."
     },
-    "method_id": "cbr-escrow-readable"
+    "method_id": "cbr-escrow-readable",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:readable"

@@ -31,7 +31,8 @@
           "contract": {
             "schema_id": "source.original_version_comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -39,9 +40,19 @@
         "absence",
         "presence"
       ],
-      "summary": "Compare confirmed logical source versions with qualified baseline and presence evidence."
+      "summary": "Compare confirmed logical source versions with qualified baseline and presence evidence.",
+      "required_parameters": [
+        "baseline_state"
+      ]
     },
-    "method_id": "original-byte-comparison"
+    "method_id": "original-byte-comparison",
+    "request_fields": {
+      "absence": "parameter",
+      "baseline": "input",
+      "baseline_state": "parameter",
+      "candidate": "input",
+      "presence": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.source.version_comparison:compare_original_versions"

@@ -11,6 +11,7 @@
     ],
     "kind": "physical_workbook",
     "profile_id": "frg.workbook.cells",
-    "scope": "source-faithful cells; OOXML exact lexemes and qualified decoded binary values"
+    "scope": "source-faithful cells; OOXML exact lexemes and qualified decoded binary values",
+    "admission_ref": "stratbox.domains.frank_rg.profiles:admit"
   }
 }

@@ -42,6 +42,8 @@ def build_dataset_version(
     parameters: Mapping[str, object] | None = None,
     resources: Mapping[str, str] | None = None,
     arguments: Mapping[str, object] | None = None,
+    method_fingerprint: ByteIdentity | None = None,
+    qualifications: frozenset[str] = frozenset(),
 ) -> DatasetVersion:
     manifest = canonical_manifest_bytes(
         {
@@ -49,6 +51,9 @@ def build_dataset_version(
             "dataset_id": dataset_id,
             "release_id": release_id,
             "method_version": method_version,
+            "method_fingerprint": None if method_fingerprint is None else {
+                "sha256": method_fingerprint.sha256, "size": method_fingerprint.size},
+            "qualifications": sorted(qualifications),
             "inputs": _input_manifest(inputs),
             "parameters": parameters or {},
             "arguments": arguments or {},
@@ -70,6 +75,7 @@ def computation_identity(
     arguments: Mapping[str, object] | None = None,
     representation_profile: str | None = None,
     representation_options: Mapping[str, object] | None = None,
+    method_fingerprint: ByteIdentity | None = None,
 ) -> ByteIdentity:
     """Identify an immutable computation. A cache owner separately checks access."""
     if representation_profile is None and representation_options:
@@ -77,6 +83,8 @@ def computation_identity(
     return ByteIdentity.of(canonical_manifest_bytes({
         "operation_id": operation_id,
         "method_id": method_id,
+        "method_fingerprint": None if method_fingerprint is None else {
+            "sha256": method_fingerprint.sha256, "size": method_fingerprint.size},
         "inputs": [
             {**entry, "source_id": item.source_id, "media_type": item.media_type}
             for entry, item in zip(_input_manifest(inputs), inputs)
@@ -95,5 +103,7 @@ class ComputationReceipt:
     inputs: tuple[UsedInputReceipt, ...]
     computation_id: ByteIdentity
     parents: tuple[tuple[str, ComputationReceipt], ...] = ()
+    method_fingerprint: ByteIdentity | None = None
+    qualifications: frozenset[str] = frozenset()
 
 

@@ -59,7 +59,8 @@ def _finish(dataset, observations, method, parameters):
         "input": identity.sha256, "parameters": parameters}))
     lineage = (*dataset.lineage, UsedInputReceipt("integrated_statistics", identity,
         "application/vnd.stratbox.dataset+json", "inline", version=identity))
-    batch = ObservationBatch("cbr.statistics.derived", 1, computation.sha256, tuple(observations), lineage)
+    batch = ObservationBatch("cbr.statistics.derived", 1, computation.sha256, tuple(observations), lineage,
+        tuple(use for source in dataset.batches for use in source.source_uses))
     return StatisticsDataset((batch,), dataset.inputs, dataset.mapping_version, dataset.diagnostics, method)
 
 

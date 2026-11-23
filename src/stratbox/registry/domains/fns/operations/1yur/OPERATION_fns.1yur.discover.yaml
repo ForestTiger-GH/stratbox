@@ -27,16 +27,25 @@
           "contract": {
             "schema_id": "fns.1yur.index"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "year",
         "index_url"
       ],
-      "summary": "Discover source issues with source-specific identity and coverage."
+      "summary": "Discover source issues with source-specific identity and coverage.",
+      "required_parameters": [
+        "year"
+      ]
     },
-    "method_id": "fns-1yur-index"
+    "method_id": "fns-1yur-index",
+    "request_fields": {
+      "index": "input",
+      "index_url": "parameter",
+      "year": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.operations:discover"

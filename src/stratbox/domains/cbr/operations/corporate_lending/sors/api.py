@@ -110,6 +110,24 @@ def _load(sources, config, invocation):
         raise OperationFailure("source.sors_bundle_invalid") from None
     for receipt in bundle.lineage:
         invocation.use(receipt)
+    supplied = dict(invocation.context.input_source_contexts).get("sources")
+    if supplied is not None:
+        uses = []
+        for use in bundle.source_uses:
+            matches = [item for item in supplied.uses if item.coordinate.source_id == use.coordinate.source_id
+                       and item.coordinate.material_identity == use.coordinate.material_identity
+                       and item.input_role in {use.input_role, "sources." + use.input_role}]
+            if len(matches) > 1:
+                raise OperationFailure("sors.source_context_ambiguous")
+            if matches:
+                supplied_use = matches[0]
+                coordinate = replace(use.coordinate,
+                    issue_id=supplied_use.coordinate.issue_id or use.coordinate.issue_id,
+                    asset_id=supplied_use.coordinate.asset_id or use.coordinate.asset_id)
+                uses.append(replace(use, coordinate=coordinate, qualification=supplied_use.qualification))
+            else:
+                uses.append(use)
+        bundle = replace(bundle, source_uses=tuple(uses))
     return bundle
 
 

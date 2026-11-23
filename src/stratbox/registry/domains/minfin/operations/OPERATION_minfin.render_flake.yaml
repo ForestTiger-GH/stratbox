@@ -31,12 +31,16 @@
             "schema_id": "minfin.flake.csv",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Export source-local flake values as CSV; use the JSON codec for complete replay."
     },
-    "method_id": "minfin.flake-csv"
+    "method_id": "minfin.flake-csv",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:render_source_flake"

@@ -12,6 +12,7 @@ from stratbox.shared.data.datasets import DatasetVersion, build_dataset_version
 from stratbox.shared.data.lineage import input_from, input_value
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import source_use_value, source_use_from
 from stratbox.shared.data.releases import ParsedRelease, ReleaseQualification, build_release
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
@@ -19,13 +20,14 @@ from stratbox.shared.evidence import AcquisitionReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 _T, _I, _D, _N, _B = ScalarType.TEXT, ScalarType.INTEGER, ScalarType.DATE, ScalarType.DECIMAL, ScalarType.BINARY
-_META = TableSchema(DataContract("cbr.service_network.release.metadata", 1, DataRole.EXTRACTS), tuple(ColumnSchema(*spec) for spec in (
+_META = TableSchema(DataContract("cbr.service_network.release.metadata", 2, DataRole.EXTRACTS), tuple(ColumnSchema(*spec) for spec in (
     ("as_of", _D), ("row_count", _I), ("profile", _T), ("profile_version", _I), ("media_type", _T),
     ("encoding", _T, True), ("representation", _B), ("dataset", _T), ("release", _T), ("method", _T),
     ("manifest_version", _I), ("manifest", _B), ("acquisition", _T, True), ("source_details", _T, True),
     ("qualification", _T, True), ("facts_sha256", _T, True), ("facts_size", _I, True),
     ("facts_method", _T, True), ("batch_dataset", _T, True), ("batch_version", _I, True),
     ("batch_release", _T, True), ("batch_inputs", _T, True),
+    ("batch_source_uses", _T, True),
 )))
 _OBS = TableSchema(DataContract("cbr.service_network.release.observations", 1, DataRole.EXTRACTS), tuple(ColumnSchema(*spec) for spec in (
     ("ordinal", _I), ("subject_namespace", _T), ("subject_id", _T), ("metric", _T), ("unit", _T),
@@ -151,7 +153,8 @@ def release_snapshot(value, *, dataset, profile, dataset_id, version_id, checkpo
         _json(asdict(value.qualification)) if value.qualification is not None else None,
         facts.sha256 if facts else None, facts.size if facts else None, value.facts_method,
         batch.dataset_id if batch else None, batch.schema_version if batch else None, batch.release_id if batch else None,
-        _json([input_value(item) for item in batch.lineage]) if batch else None),))
+        _json([input_value(item) for item in batch.lineage]) if batch else None,
+        _json([source_use_value(use) for use in batch.source_uses]) if batch else None),))
     observations = []
     for index, item in enumerate(batch.observations if batch else ()):
         if checkpoint is not None and index % 256 == 0:
@@ -181,7 +184,7 @@ def release_from_snapshot(snapshot, *, dataset, profile, checkpoint=None):
         raise ValueError("cbr.offices.snapshot_schema_invalid")
     (as_of, count, profile_id, profile_version, media, encoding, data, dataset_name, release, method,
      manifest_version, manifest, acquisition, details, qualification, fact_sha, fact_size, facts_method,
-     batch_dataset, batch_version, batch_release, batch_inputs) = meta.rows[0]
+     batch_dataset, batch_version, batch_release, batch_inputs, batch_source_uses) = meta.rows[0]
     observations = []
     for index, row in enumerate(obs.rows):
         if checkpoint is not None and index % 256 == 0:
@@ -201,12 +204,13 @@ def release_from_snapshot(snapshot, *, dataset, profile, checkpoint=None):
             PeriodRef(period_kind, period_as_of, period_start, period_end), tuple(tuple(x) for x in dimensions),
             perimeter, value, status, evidence, token))
     if batch_dataset is None:
-        if observations or any(x is not None for x in (batch_version, batch_release, batch_inputs)):
+        if observations or any(x is not None for x in (batch_version, batch_release, batch_inputs, batch_source_uses)):
             raise ValueError("cbr.offices.batch_invalid")
         batch = None
     else:
         batch = ObservationBatch(batch_dataset, batch_version, batch_release, tuple(observations),
-            tuple(input_from(item) for item in loads(batch_inputs.encode("utf-8"))))
+            tuple(input_from(item) for item in loads(batch_inputs.encode("utf-8"))),
+            tuple(source_use_from(item) for item in loads(batch_source_uses.encode("utf-8"))))
     q = None
     if qualification is not None:
         q = loads(qualification.encode("utf-8"))

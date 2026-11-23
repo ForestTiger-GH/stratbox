@@ -36,13 +36,17 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a source-local flake from a complete pinned logical dataset after verifying every component schema.",
       "function": "replay"
     },
-    "method_id": "minfin.flake-snapshot"
+    "method_id": "minfin.flake-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:read_flake_snapshot"

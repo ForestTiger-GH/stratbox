@@ -47,16 +47,27 @@
             "schema_id": "rosstat.regional_archive.members",
             "role": "originals"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "names",
         "limits"
       ],
-      "summary": "Read explicitly selected archive members and retain container/member evidence."
+      "summary": "Read explicitly selected archive members and retain container/member evidence.",
+      "required_parameters": [
+        "names"
+      ]
     },
-    "method_id": "rosstat-publications-extract_members"
+    "method_id": "rosstat-publications-extract_members",
+    "request_fields": {
+      "inventory": "input",
+      "limits": "runtime",
+      "names": "parameter",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_members"

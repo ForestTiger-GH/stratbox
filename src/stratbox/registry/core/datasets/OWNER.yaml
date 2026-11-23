@@ -1,4 +1,12 @@
 {
   "owner_id": "core.datasets",
-  "stages": []
+  "stages": [],
+  "value_contexts": {
+    "types": {
+      "stratbox.shared.data.query.TablePreview": {
+        "context": "source_uses"
+      }
+    },
+    "tables": []
+  }
 }

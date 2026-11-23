@@ -15,7 +15,7 @@ class ReleaseContext:
 
     def __post_init__(self):
         SourceAssetIdentity(self.series_id, self.issue_id, self.asset_id)
-        if self.series_id not in {"fns.sme", "fns.1yur"}:
+        if not self.series_id.startswith("fns."):
             raise ValueError("fns.series_unknown")
         if (not self.issue_id or not self.asset_id or type(self.observation_date) is not date
                 or self.published_on is not None and type(self.published_on) is not date):

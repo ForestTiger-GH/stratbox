@@ -46,119 +46,156 @@
   "value_contexts": {
     "types": {
       "stratbox.domains.rosstat.integration.datasets.DatasetSource": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
-        ],
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "layout_edition": "profile_version",
+            "asset": "asset_id",
+            "material": "source_identity"
+          }
         ]
       },
       "stratbox.domains.rosstat.operations.contracts.GrowthRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.rosstat.operations.contracts.IntegrateRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.rosstat.operations.contracts.PhysicalRequest": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.contracts.DiscoverRosstatRequest": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.contracts.DiscoveredAsset": {
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "layout_edition": "profile_version",
+            "material": "index_identity"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.rosstat.publications.contracts.DiscoveryAssessment": {
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "layout_edition": "profile_version"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.rosstat.publications.contracts.IndexScope": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.contracts.IssueKey": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.contracts.RosstatPublicationIndex": {
-        "source": [
-          "series_id"
-        ],
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "source": "series_id",
+            "layout_edition": "profile_version",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.contracts.RosstatSourceSpec": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.discovery.approval.ReviewedIndexScope": {
-        "source": [
-          "series_id"
-        ],
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "source": "series_id",
+            "layout_edition": "profile_version",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.domains.rosstat.publications.discovery.families.rules.FamilyRule": {
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "layout_edition": "profile_version"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.rosstat.tables.contracts.ReviewedTableProfile": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "material": "source_identity"
+          }
         ]
       },
       "stratbox.domains.rosstat.tables.contracts.RosstatSourceFlake": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
-        ],
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id",
+            "material": "source_identity",
+            "semantic_profile_edition": {
+              "join": [
+                "profile_id",
+                "profile_version"
+              ],
+              "separator": ":"
+            }
+          }
         ]
       }
     },
-    "tables": {
-      "rosstat.source_flake.metadata": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+    "tables": [
+      {
+        "contract": {
+          "schema_id": "rosstat.source_flake.metadata",
+          "version": 1,
+          "role": "extracts"
+        },
+        "schema_ref": "stratbox.domains.rosstat.tables.snapshots:_METADATA",
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "material": {
+              "sha256": "source_sha256",
+              "size": "source_size"
+            },
+            "semantic_profile_edition": {
+              "join": [
+                "profile_id",
+                "profile_version"
+              ],
+              "separator": ":"
+            },
+            "asset": "asset_id"
+          }
         ]
       }
-    }
+    ]
   }
 }

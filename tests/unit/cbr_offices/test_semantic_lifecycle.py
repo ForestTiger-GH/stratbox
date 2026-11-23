@@ -138,5 +138,8 @@ def test_aligned_observations_have_a_retained_boundary_independent_of_source_rel
     encoded=ok(network.snapshot_observations(network.SnapshotOfficeObservationsRequest(batch,"stored.offices","version-1")))
     restored=ok(network.restore_observations(roundtrip(tmp_path,encoded)))
     assert restored==batch
+    use, = restored.source_uses
+    assert (use.coordinate.source_id, use.coordinate.source_group_id, use.coordinate.issue_id) == (
+        "cbr.service_network.bank_offices", "office_counts", release().as_of.isoformat())
     view=ok(network.build_view(network.OfficeViewRequest(restored,"office.view","version-1")))
     assert ok(network.render(network.RenderOfficeViewRequest(view,"csv"))).data

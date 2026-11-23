@@ -28,12 +28,16 @@
             "version": 2,
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Package the selected retained original reports without executing cleanup."
     },
-    "method_id": "frg-latest-manifest-zip-profile"
+    "method_id": "frg-latest-manifest-zip-profile",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:prepare_archive"

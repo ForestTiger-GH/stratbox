@@ -38,7 +38,8 @@
             "schema_id": "cbr.offices_reg.release",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "candidates",
@@ -48,14 +49,16 @@
           "path": "",
           "outcomes": [
             "partial"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "representation",
           "contract": {
             "schema_id": "cbr.offices_reg.extract_representation",
             "role": "extracts"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -64,9 +67,19 @@
         "national_row",
         "last_row"
       ],
-      "summary": "Extract a source-local release while preserving source meaning and evidence."
+      "summary": "Extract a source-local release while preserving source meaning and evidence.",
+      "required_parameters": [
+        "as_of"
+      ]
     },
-    "method_id": "cbr-offices-reg-xlsx"
+    "method_id": "cbr-offices-reg-xlsx",
+    "request_fields": {
+      "as_of": "parameter",
+      "last_row": "parameter",
+      "national_row": "parameter",
+      "payload": "input",
+      "sheet": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:parse"

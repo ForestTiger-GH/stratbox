@@ -30,12 +30,17 @@
           "contract": {
             "schema_id": "frg.material_assessment"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Compare confirmed original identities and report periods without interpreting workbook contents."
     },
-    "method_id": "frg.material-comparison"
+    "method_id": "frg.material-comparison",
+    "request_fields": {
+      "checkpoint": "input",
+      "report": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:assess_material"

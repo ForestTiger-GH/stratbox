@@ -8,6 +8,7 @@ from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import DEPENDENCIES
 from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import dependency_manifest
 from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import original_input
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import source_uses
 
 from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
 from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceInputs
@@ -204,4 +205,4 @@ def parse_source_inputs(
         dependency_manifest_grid=dependency_grid,
     )
     validation = validate_source_bundle(bundle, raise_on_error=True)
-    return replace(bundle, validation_grid=validation)
+    return replace(bundle, validation_grid=validation, source_uses=source_uses(files))

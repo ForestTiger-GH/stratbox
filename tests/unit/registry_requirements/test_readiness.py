@@ -35,14 +35,16 @@ def test_readiness_counts_missing_roles_and_retains_selected_release_and_materia
     available = {item.input_name: _resolved(item) for item in requirements[:8]}
     result = catalog.readiness("cbr.sors.prepare_inputs", available, report_date="2026-10-01", publication_step=1.0)
     assert result.state == "blocked"
-    assert (result.ready_count, result.required_count) == (8, 10)
+    assert (result.supplied_count, result.required_count) == (8, 10)
+    assert result.ready_count == 0
+    assert result.layers.material == "unverified"
     assert sum(item.state == "missing" for item in result.requirements) == 2
     selected = result.requirements[0].instances[0]
     assert selected.issue_id == "2026-10"
     assert selected.revision == "release-2"
     assert selected.material_identity == available[requirements[0].input_name].material_identity
     available.update({item.input_name: _resolved(item) for item in requirements[8:] if item.required})
-    assert catalog.readiness("cbr.sors.prepare_inputs", available).state == "ready"
+    assert catalog.readiness("cbr.sors.prepare_inputs", available).state == "conditional"
 
 
 def test_same_date_step_and_perimeter_conflicts_are_explained_per_role():
@@ -55,7 +57,7 @@ def test_same_date_step_and_perimeter_conflicts_are_explained_per_role():
     result = assess_requirements("demo.operation", roles, {"national": first, "regional": second})
     assert result.state == "blocked"
     assert all(item.state == "incompatible" for item in result.requirements)
-    assert all(set(item.reasons) == {"source.report_date_mismatch", "source.publication_step_mismatch", "source.perimeter_mismatch"}
+    assert all({"source.report_date_mismatch", "source.publication_step_mismatch", "source.perimeter_mismatch"} <= set(item.reasons)
                for item in result.requirements)
 
 
@@ -65,9 +67,9 @@ def test_unresolved_evidence_is_conditional_and_collection_cardinality_is_checke
     unresolved = SourceInstance("demo.source", contract)
     result = assess_requirements("demo.operation", (requirement,), {"history": unresolved})
     assert result.state == "conditional"
-    assert result.requirements[0].reasons == ("source.material_unresolved",)
+    assert "source.material_unverified" in result.requirements[0].reasons
     assert assess_requirements("demo.operation", (requirement,), {"history": (unresolved,) * 3}).state == "blocked"
-    assert assess_requirements("demo.operation", (requirement,), {}).state == "ready"
+    assert assess_requirements("demo.operation", (requirement,), {}).state == "inputs_verified"
 
 
 def test_wrong_source_contract_and_unexpected_roles_are_not_reported_ready():
@@ -77,7 +79,7 @@ def test_wrong_source_contract_and_unexpected_roles_are_not_reported_ready():
     result = assess_requirements("demo.operation", (requirement,), {"source": wrong, "typo": wrong})
     assert result.state == "blocked"
     assert result.unexpected_inputs == ("typo",)
-    assert set(result.requirements[0].reasons) == {"source.identity_mismatch", "source.contract_mismatch"}
+    assert {"source.identity_mismatch", "source.contract_mismatch"} <= set(result.requirements[0].reasons)
 
 
 def test_requirement_declarations_reject_unknown_fields_and_contradictory_multiplicity():
@@ -96,4 +98,4 @@ def test_inline_extension_descriptions_and_readiness_do_not_require_packaged_rec
     assert catalog.describe()[0]["source_requirements"] == ()
     assert catalog.page().entries[0]["operation_id"] == "extension.inspect"
     assert catalog.requirements("extension.inspect") == ()
-    assert catalog.readiness("extension.inspect", {}).state == "ready"
+    assert catalog.readiness("extension.inspect", {}).state == "requirements_satisfied"

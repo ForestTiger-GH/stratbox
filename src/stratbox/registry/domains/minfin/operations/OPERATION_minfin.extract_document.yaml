@@ -24,16 +24,26 @@
             "schema_id": "minfin.publisher_document",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "family_id",
         "publication"
       ],
-      "summary": "Extract ordered PDF or DOCX blocks under explicit publisher release context; document geometry remains qualified."
+      "summary": "Extract ordered PDF or DOCX blocks under explicit publisher release context; document geometry remains qualified.",
+      "required_parameters": [
+        "family_id",
+        "publication"
+      ]
     },
-    "method_id": "minfin.document.blocks"
+    "method_id": "minfin.document.blocks",
+    "request_fields": {
+      "family_id": "parameter",
+      "payload": "input",
+      "publication": "dependency"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.document_handlers:extract_document"

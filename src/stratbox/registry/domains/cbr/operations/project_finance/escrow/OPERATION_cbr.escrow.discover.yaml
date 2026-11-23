@@ -37,12 +37,17 @@
           "contract": {
             "schema_id": "cbr.escrow.index"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Discover escrow source links from a supplied or acquired index."
     },
-    "method_id": "cbr-escrow-index"
+    "method_id": "cbr-escrow-index",
+    "request_fields": {
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:discover"

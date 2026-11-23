@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from decimal import Decimal, InvalidOperation
 import re
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.identity import canonical_manifest_bytes, ByteIdentity
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
@@ -9,6 +10,7 @@ from stratbox.core.execution import OperationFailure
 from stratbox.core.operations.tables import use_tables
 from stratbox.domains.cbr.tables.reporting_forms.layouts.registry import LAYOUT_REGISTRY
 from stratbox.domains.cbr.tables.reporting_forms.layouts.schema import DirectDatasetSpec
+from stratbox.domains.cbr.tables.reporting_forms.context import normalized_metadata
 
 
 def align(request, invocation):
@@ -27,15 +29,18 @@ def align(request, invocation):
     if set(periods) - flow_dates:
         raise OperationFailure("request.form_flow_period_unmatched")
     invocation.stage("align")
-    observations, seen = [], set()
+    observations, source_uses, seen = [], [], set()
     for snapshot in sorted(request.snapshots, key=lambda s: (s.key.code, s.key.as_of)):
         code = snapshot.key.code
         if code not in LAYOUT_REGISTRY:
             raise OperationFailure("source.form_layout_unsupported")
         spec = LAYOUT_REGISTRY[code].spec
+        source_uses.extend(snapshot.source_uses or (SourceUse(SourceCoordinate(f"cbr.reporting_forms.f{code}", "cbr.reporting_forms",
+            "reported_records", snapshot.key.as_of.isoformat(), layout_edition=LAYOUT_REGISTRY[code].edition,
+            material_identity=snapshot.evidence.output if snapshot.evidence is not None else None),
+            "snapshots", "domain_validated"),))
         frame, = use_tables(invocation, (("dbf_rows", snapshot.rows),), receipt=snapshot.evidence,
-            role="form_source_projection", metadata={"form": code, "as_of": snapshot.key.as_of,
-                                                      "fields": dict(snapshot.physical_fields)})
+            role="form_source_projection", metadata=normalized_metadata(snapshot.key, snapshot.physical_fields, snapshot.source_uses))
         for receipt in snapshot.lineage:
             invocation.use(receipt)
         period = periods.get(snapshot.key.as_of)
@@ -101,7 +106,7 @@ def align(request, invocation):
                     value, status, f"form:{code}/{snapshot.key.as_of.isoformat()}/{member}/record:{ordinal}/field:{snapshot.physical_fields.get(channel, channel)}", token))
     mapping_bytes = canonical_manifest_bytes({"periods": [(day, asdict(period)) for day, period in request.periods], "subjects": [asdict(item) for item in request.subjects]})
     invocation.use(UsedInputReceipt.for_payload(SourcePayload(mapping_bytes, "application/json"), "form_alignment_rules"))
-    result = ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), tuple(invocation.used_inputs))
+    result = ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), tuple(invocation.used_inputs), tuple(source_uses))
     invocation.budget.charge("objects", len(observations))
     invocation.record(ByteIdentity.of(canonical_manifest_bytes(asdict(result))))
     return result

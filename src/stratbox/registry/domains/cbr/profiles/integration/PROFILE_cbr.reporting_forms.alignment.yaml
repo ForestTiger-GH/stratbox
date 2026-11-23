@@ -13,6 +13,7 @@
     "scope": "Source identities remain distinct until an explicit reviewed mapping is supplied.",
     "alignment_operation": "cbr.forms.align",
     "product_profile": "cbr.reporting_forms.views",
-    "view_operation": "cbr.forms.build_views"
+    "view_operation": "cbr.forms.build_views",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

@@ -9,6 +9,8 @@ from stratbox.core.formats.dataframes import frame_from_table, frame_to_table
 from stratbox.core.storage.datasets.codec import loads
 from stratbox.shared.data.lineage import computation_from, computation_value, input_from, input_value
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import source_use_from
+from stratbox.domains.cbr.tables.reporting_forms.context import normalized_metadata, data_metadata, views_metadata
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
 from stratbox.shared.data.tables import TABLE_ENCODING, table_identity
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
@@ -21,20 +23,18 @@ from stratbox.domains.cbr.tables.reporting_forms.layouts.registry import LAYOUT_
 
 RESULT_SNAPSHOT = DataContract("cbr.forms.result.snapshot", 1)
 HISTORY = DataContract("cbr.forms.history", 1, DataRole.EXTRACTS)
-_METADATA = TableSchema(DataContract("cbr.forms.result.metadata", 1), (
+_METADATA = TableSchema(DataContract("cbr.forms.result.metadata", 2), (
     ColumnSchema("ordinal", ScalarType.INTEGER), ColumnSchema("descriptor", ScalarType.TEXT)), ("ordinal",))
 
 
 def _spec(value):
     if isinstance(value, FormSnapshot):
         validate_key(value.key)
-        return "normalized", (("dbf_rows", value.rows),), {
-            "form": value.key.code, "as_of": value.key.as_of, "fields": dict(value.physical_fields)}
+        return "normalized", (("dbf_rows", value.rows),), normalized_metadata(value.key, value.physical_fields, value.source_uses)
     if isinstance(value, FormData):
-        return "data", (("long", value.long), ("banks", value.banks), ("model", value.model)), {
-            "form": value.form, "indicator_order": dict(value.indicator_order)}
+        return "data", (("long", value.long), ("banks", value.banks), ("model", value.model)), data_metadata(value.form, value.indicator_order, value.source_uses)
     if isinstance(value, FormViews):
-        return "views", tuple(value.sheets.items()), {"form": value.form, "profile": value.profile}
+        return "views", tuple(value.sheets.items()), views_metadata(value.form, value.profile, value.source_uses)
     raise ValueError("cbr.forms.result_type_unsupported")
 
 
@@ -85,19 +85,22 @@ def _decode(descriptor, tables):
         frames.append(frame_from_table(table, item["frame"]))
     lineage = tuple(input_from(item) for item in descriptor["lineage"])
     evidence = computation_from(descriptor["evidence"])
+    if not isinstance(meta.get("source_uses"), list):
+        raise ValueError("cbr.forms.result_descriptor_invalid")
+    source_uses = tuple(source_use_from(item) for item in meta["source_uses"])
     if kind == "normalized":
-        if set(meta) != {"form", "as_of", "fields"} or names != ["dbf_rows"]:
+        if set(meta) != {"form", "as_of", "fields", "source_uses"} or names != ["dbf_rows"]:
             raise ValueError("cbr.forms.result_descriptor_invalid")
         value = FormSnapshot(FormKey(meta["form"], date.fromisoformat(meta["as_of"])),
-            MappingProxyType(meta["fields"]), frames[0], lineage, evidence)
+            MappingProxyType(meta["fields"]), frames[0], lineage, evidence, source_uses)
     elif kind == "data":
-        if set(meta) != {"form", "indicator_order"} or names != ["long", "banks", "model"]:
+        if set(meta) != {"form", "indicator_order", "source_uses"} or names != ["long", "banks", "model"]:
             raise ValueError("cbr.forms.result_descriptor_invalid")
-        value = FormData(meta["form"], *frames, MappingProxyType(meta["indicator_order"]), lineage, evidence)
+        value = FormData(meta["form"], *frames, MappingProxyType(meta["indicator_order"]), lineage, evidence, source_uses)
     else:
-        if set(meta) != {"form", "profile"}:
+        if set(meta) != {"form", "profile", "source_uses"}:
             raise ValueError("cbr.forms.result_descriptor_invalid")
-        value = FormViews(meta["form"], meta["profile"], MappingProxyType(dict(zip(names, frames))), lineage, evidence)
+        value = FormViews(meta["form"], meta["profile"], MappingProxyType(dict(zip(names, frames))), lineage, evidence, source_uses)
     validate_result(value)
     return value
 

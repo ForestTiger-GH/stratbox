@@ -30,14 +30,16 @@
             "schema_id": "frg.report",
             "role": "originals"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -46,7 +48,12 @@
       ],
       "summary": "Acquire one recognized file and verify its observed revision and exact bytes around the read."
     },
-    "method_id": "frg.file-acquisition-profile"
+    "method_id": "frg.file-acquisition-profile",
+    "request_fields": {
+      "asset": "input",
+      "expected_identity": "parameter",
+      "max_bytes": "runtime"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:acquire"

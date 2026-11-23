@@ -43,7 +43,8 @@
           "contract": {
             "schema_id": "minfin.publication_index"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -51,9 +52,21 @@
         "max_links",
         "page_url"
       ],
-      "summary": "Inspect one Minfin landing page and return bounded source candidates with unknown inventory coverage."
+      "summary": "Inspect one Minfin landing page and return bounded source candidates with unknown inventory coverage.",
+      "required_parameters": [
+        "family_id"
+      ]
     },
-    "method_id": "minfin-index-profile"
+    "method_id": "minfin-index-profile",
+    "request_fields": {
+      "family_id": "parameter",
+      "index": "input",
+      "max_links": {
+        "role": "runtime",
+        "reason": "Parser overflow rejects the index; bounded prefixes are never returned."
+      },
+      "page_url": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:discover"

@@ -21,23 +21,33 @@
           "path": "payload",
           "qualifications": [
             "source.cbr.forms"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "code",
         "as_of"
       ],
-      "summary": "Acquire a selected official reporting form."
+      "summary": "Acquire a selected official reporting form.",
+      "required_parameters": [
+        "code",
+        "as_of"
+      ]
     },
-    "method_id": "cbr-forms-source"
+    "method_id": "cbr-forms-source",
+    "request_fields": {
+      "as_of": "parameter",
+      "code": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.acquisition:acquire"

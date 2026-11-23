@@ -24,12 +24,16 @@
             "schema_id": "workbook.cells.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Admit and extract physical workbook evidence with exact source, issue and asset identity."
     },
-    "method_id": "frg.extract"
+    "method_id": "frg.extract",
+    "request_fields": {
+      "report": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:extract"

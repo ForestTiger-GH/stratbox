@@ -14,7 +14,8 @@
           "contract": {
             "schema_id": "cbr.service_network.releases",
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -23,16 +24,26 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "version_id"
       ],
-      "summary": "Pin selected office captures or source issues without treating history packing as alignment."
+      "summary": "Pin selected office captures or source issues without treating history packing as alignment.",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-office-history"
+    "method_id": "cbr-office-history",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "releases": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:build_source_history"

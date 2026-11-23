@@ -30,7 +30,8 @@
             "schema_id": "cbr.industries.0105a.workbook",
             "role": "products"
           },
-          "path": "representation"
+          "path": "representation",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -39,7 +40,11 @@
       "summary": "Render one industry workbook from supplied data.",
       "composition": true
     },
-    "method_id": "cbr-0105a-industry-xlsx"
+    "method_id": "cbr-0105a-industry-xlsx",
+    "request_fields": {
+      "format": "parameter",
+      "stream": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:render_industry"

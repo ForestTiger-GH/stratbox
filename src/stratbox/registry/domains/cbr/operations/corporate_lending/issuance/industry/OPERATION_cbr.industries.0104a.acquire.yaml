@@ -30,19 +30,24 @@
           "path": "payload",
           "qualifications": [
             "source.cbr.industries.0104a"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Acquire a selected industry workbook under its own publication contract."
     },
-    "method_id": "cbr-0104a-source"
+    "method_id": "cbr-0104a-source",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:acquire"

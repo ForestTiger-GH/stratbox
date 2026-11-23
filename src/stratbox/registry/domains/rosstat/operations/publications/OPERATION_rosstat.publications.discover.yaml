@@ -27,15 +27,23 @@
           "contract": {
             "schema_id": "rosstat.publications.index"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "series_id"
       ],
-      "summary": "Discover publisher assets with explicit index coverage and issue qualification."
+      "summary": "Discover publisher assets with explicit index coverage and issue qualification.",
+      "required_parameters": [
+        "series_id"
+      ]
     },
-    "method_id": "rosstat-source-links"
+    "method_id": "rosstat-source-links",
+    "request_fields": {
+      "index": "input",
+      "series_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.publications:discover"

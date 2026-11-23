@@ -8,6 +8,11 @@
     ],
     "kind": "source_table",
     "profile_id": "cbr.tables.corp_new_loans_a",
-    "scope": "All worksheets and physical cells, including notes and unknown variants."
+    "scope": "All worksheets and physical cells, including notes and unknown variants.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.tables.statistics.profiles:table_profile",
+    "implementation_parameters": {
+      "profile_id": "cbr.tables.corp_new_loans_a"
+    }
   }
 }

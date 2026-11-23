@@ -8,6 +8,7 @@
     ],
     "kind": "product",
     "profile_id": "cbr.statistics.views",
-    "scope": "Prepared selections can be retained and rendered independently of source parsing."
+    "scope": "Prepared selections can be retained and rendered independently of source parsing.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

@@ -1,12 +1,13 @@
 """Uniform source metadata and qualified operation support projections."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Mapping
 
 from stratbox.shared.identifiers import safe_token
 from stratbox.shared.data.operations import ProcessingStage
+from stratbox.shared.data.sources import SourceGroup
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +73,7 @@ class SourceCard:
     profiles: tuple[SourceProfile, ...] = ()
     operations: tuple[SourceOperation, ...] = ()
     qualifications: tuple[str, ...] = ()
+    source_groups: tuple[SourceGroup, ...] = ()
 
     def __post_init__(self):
         for value in (self.publisher_id, self.family_id, self.series_id):
@@ -83,13 +85,40 @@ class SourceCard:
                 or not isinstance(self.profiles, tuple) or any(not isinstance(p, SourceProfile) for p in self.profiles)
                 or not isinstance(self.operations, tuple) or any(not isinstance(p, SourceOperation) for p in self.operations)
                 or len({o.operation_id for o in self.operations}) != len(self.operations)
+                or not isinstance(self.source_groups, tuple) or any(not isinstance(group, SourceGroup) for group in self.source_groups)
+                or len({group.group_id for group in self.source_groups}) != len(self.source_groups)
                 or not isinstance(self.qualifications, tuple) or any(type(q) is not str for q in self.qualifications)):
             raise ValueError("catalog.source_card_invalid")
 
 
 @dataclass(frozen=True, slots=True)
+class SourceBindingAssessment:
+    binding: SourceOperation
+    state: str
+    reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SourceSelection:
+    source: SourceCard
+    groups: tuple[SourceGroup, ...]
+    assessments: tuple[SourceBindingAssessment, ...]
+    state: str
+    reasons: tuple[str, ...] = ()
+    format: str | None = None
+    group_id: str | None = None
+    edition: str | None = None
+
+    @property
+    def bindings(self):
+        return tuple(replace(item.binding, state=item.state, reason=item.binding.reason or "; ".join(item.reasons))
+                     for item in self.assessments if item.state != "inapplicable")
+
+
+@dataclass(frozen=True, slots=True)
 class SourceCatalog:
     sources: tuple[SourceCard, ...]
+    _operation_catalog: object | None = field(default=None, repr=False, compare=False)
     _index: Mapping[str, SourceCard] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
@@ -110,52 +139,99 @@ class SourceCatalog:
     def families(self):
         return tuple(sorted({s.family_id for s in self.sources}))
 
-    def describe(self, series_id, *, operations):
+    def selection(self, series_id, *, format=None, group_id=None, edition=None):
         source = self.source(series_id)
         if source is None:
             raise ValueError("catalog.source_unknown")
+        selected = tuple(group for group in source.source_groups if group_id is None or group.group_id == group_id)
+        reasons = []
+        if group_id is not None and not selected:
+            reasons.append("source.group_unavailable")
+        if format is not None and (format not in source.formats or selected and not any(not group.formats or format in group.formats for group in selected)):
+            reasons.append("source.format_unavailable")
+        edition_known = any(edition in (*group.layout_editions, *group.semantic_profile_editions) for group in selected) if edition else True
+        edition_declared = any(group.layout_editions or group.semantic_profile_editions for group in selected)
+        if edition is not None and not edition_known and edition_declared:
+            reasons.append("source.edition_unavailable")
+        assessments = []
+        for binding in source.operations:
+            binding_reasons = list(reasons)
+            state = binding.state
+            if format is not None and binding.formats and format not in binding.formats:
+                binding_reasons.append("source.operation_format_unavailable")
+            if binding_reasons:
+                state = "inapplicable"
+            elif edition is not None and not edition_known:
+                state = "conditional"
+                binding_reasons.append("source.edition_unreviewed")
+            policy = self._operation_catalog.metadata(binding.operation_id) if self._operation_catalog is not None else None
+            stages = tuple(stage.value for stage in policy.processing.stages) if policy is not None and policy.processing else ()
+            if state != "inapplicable" and any(stage in {"integrate", "calculate"} for stage in stages) and selected and any(group.qualification != "supported" for group in selected):
+                state = "conditional"
+                binding_reasons.append("source.semantic_profile_admission_required")
+            if binding.reason:
+                binding_reasons.append(binding.reason)
+            assessments.append(SourceBindingAssessment(binding, state, tuple(dict.fromkeys(binding_reasons))))
+        return SourceSelection(source, selected, tuple(assessments),
+            "inapplicable" if reasons else "conditional" if edition and not edition_known else "declared", tuple(reasons), format, group_id, edition)
+
+    def bindings(self, series_id, *, format=None, group_id=None, edition=None):
+        return self.selection(series_id, format=format, group_id=group_id, edition=edition).bindings
+
+    def describe(self, series_id, *, operations, format=None, group_id=None, edition=None):
+        """Explain the same selected applicability used by binding and planning."""
         from stratbox.core.registry.discovery import describe_operation
         from stratbox.core.registry.sources import source_route
+        from stratbox.core.registry.routes import stage_transitions
+        selection = self.selection(series_id, format=format, group_id=group_id, edition=edition)
+        source, selected, selection_reasons = selection.source, selection.groups, selection.reasons
         descriptions = []
         stage_map = {stage.value: [] for stage in ProcessingStage}
-        for binding in source.operations:
+        for assessment in selection.assessments:
+            binding, state, reasons = assessment.binding, assessment.state, assessment.reasons
             value = describe_operation(operations, operations.reference(binding.operation_id))
-            value["source_binding"] = {"state": binding.state, "reason": binding.reason,
-                                       "parameters": dict(binding.parameters), "formats": binding.formats,
-                                       "identity_parameter": binding.identity_parameter,
-                                       "auxiliary_sources": dict(binding.auxiliary_sources),
-                                       "context_scope": binding.context_scope}
+            stages = value["processing"]["stages"] if value["processing"] else ()
+            projection = {"operation_id": binding.operation_id, "state": state, "declared_state": binding.state,
+                          "reason": binding.reason, "reasons": tuple(dict.fromkeys(reasons)), "formats": binding.formats,
+                          "parameters": dict(binding.parameters), "identity_parameter": binding.identity_parameter,
+                          "auxiliary_sources": dict(binding.auxiliary_sources), "context_scope": binding.context_scope}
+            value["source_binding"] = projection
             descriptions.append(value)
-            for stage in value["processing"]["stages"] if value["processing"] else ():
-                stage_map[stage].append(binding)
+            for stage in stages:
+                stage_map[stage].append(projection)
         route = source_route(series_id)
         coverage = {item.stage.value: item for item in operations.coverage(route.owner_id)}
         stages = []
         for stage, bindings in stage_map.items():
             declared = coverage.get(stage)
-            states = {binding.state for binding in bindings}
-            if not bindings:
+            states = {binding["state"] for binding in bindings}
+            if selection_reasons:
+                state = "inapplicable"
+            elif not bindings:
                 state = declared.state if declared is not None and declared.state in {"missing", "inapplicable", "unassessed"} else "undeclared"
             elif "supported" in states:
                 state = "supported"
             elif states == {"delegated"}:
                 state = "delegated"
+            elif states == {"inapplicable"}:
+                state = "inapplicable"
             else:
                 state = "conditional"
-            reasons = tuple(dict.fromkeys(binding.reason for binding in bindings if binding.reason))
+            reasons = tuple(dict.fromkeys(reason for binding in bindings for reason in binding["reasons"])) or tuple(selection_reasons)
             if not bindings and declared is not None and declared.reason:
                 reasons += (declared.reason,)
-            stages.append({"stage": stage, "operations": tuple(binding.operation_id for binding in bindings),
-                           "state": state, "reasons": reasons,
-                           "bindings": tuple({"operation_id": binding.operation_id, "state": binding.state,
-                                              "reason": binding.reason, "formats": binding.formats} for binding in bindings),
-                           "qualification": "Declared source support requires compatible values and runtime admission."})
+            stages.append({"stage": stage, "operations": tuple(binding["operation_id"] for binding in bindings if binding["state"] != "inapplicable"),
+                           "state": state, "reasons": reasons, "bindings": tuple(bindings),
+                           "qualification": "Declared applicability requires actual value, domain and environment admission."})
+        transitions = stage_transitions(operations, replace(route, operations=selection.bindings), format=format, group_id=group_id, edition=edition) if not selection_reasons else ()
         return {"source": source, "operations": tuple(descriptions),
+                "selection": {"format": format, "group_id": group_id, "edition": edition,
+                              "groups": selected, "state": selection.state,
+                              "reasons": tuple(selection_reasons)},
                 "route": {"profile_id": route.profile_id,
                           "stages": tuple(stage.value for stage in route.stages),
-                          "transitions": tuple({"from": before.value, "to": after.value}
-                                               for before, after in route.transitions),
-                          "qualification": "Stages classify processing; exact port contracts determine value handoff."},
+                          "transitions": tuple({"from": before.value, "to": after.value} for before, after in transitions),
+                          "qualification": "Stage transitions derive from exact compatible operation ports."},
                 "stages": tuple(stages)}
 
 
@@ -168,4 +244,4 @@ def source_catalog(operation_catalog) -> SourceCatalog:
             for binding in card.operations:
                 operation_catalog.reference(binding.operation_id)
         cards.extend(supplied)
-    return SourceCatalog(tuple(sorted(cards, key=lambda c: c.series_id)))
+    return SourceCatalog(tuple(sorted(cards, key=lambda c: c.series_id)), operation_catalog)

@@ -36,12 +36,17 @@
           "contract": {
             "schema_id": "cbr.escrow.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Distinguish issue, bytes, facts, layout and interpretation changes between source flakes."
     },
-    "method_id": "cbr-escrow-comparison"
+    "method_id": "cbr-escrow-comparison",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:compare"

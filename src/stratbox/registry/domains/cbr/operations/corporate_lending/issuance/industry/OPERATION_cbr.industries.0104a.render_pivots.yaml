@@ -25,10 +25,11 @@
         {
           "name": "workbook",
           "contract": {
-            "schema_id": "cbr.industries.0104a.workbook",
+            "schema_id": "cbr.industries.rendered_workbook",
             "role": "products"
           },
-          "path": "representation"
+          "path": "representation",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -37,9 +38,21 @@
         "reference_periods",
         "include_metadata_sheet"
       ],
-      "summary": "Render prepared issuance pivots without calculating or parsing source data."
+      "summary": "Render prepared issuance pivots without calculating or parsing source data.",
+      "required_parameters": [
+        "industry_code",
+        "industry_name_ru",
+        "reference_periods"
+      ]
     },
-    "method_id": "cbr-0104a-prepared-xlsx"
+    "method_id": "cbr-0104a-prepared-xlsx",
+    "request_fields": {
+      "include_metadata_sheet": "parameter",
+      "industry_code": "parameter",
+      "industry_name_ru": "parameter",
+      "reference_periods": "parameter",
+      "tables": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:render_pivots"

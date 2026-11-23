@@ -36,15 +36,23 @@
             "schema_id": "cbr.sors.pivot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
         "pivot"
       ],
-      "summary": "Construct a selected SORS presentation cut without narrowing its computational scope."
+      "summary": "Construct a selected SORS presentation cut without narrowing its computational scope.",
+      "required_parameters": [
+        "pivot"
+      ]
     },
-    "method_id": "sors-pivot"
+    "method_id": "sors-pivot",
+    "request_fields": {
+      "pivot": "parameter",
+      "result": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:build_pivot"

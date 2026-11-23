@@ -22,20 +22,25 @@
             "schema_id": "fns.sme.prepared_view.snapshot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Encode the complete view envelope for neutral immutable dataset storage.",
       "function": "encode"
     },
-    "method_id": "fns-sme-view-snapshot"
+    "method_id": "fns-sme-view-snapshot",
+    "request_fields": {
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:view_snapshot"

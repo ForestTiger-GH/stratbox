@@ -23,5 +23,48 @@
     "source_scope": "publisher_issue_and_asset",
     "integration": "explicit_metric_period_unit_geography",
     "coverage_policy": "reviewed_selection_with_exact_source_lineage"
+  },
+  "source_groups": [
+    {
+      "group_id": "population_counts",
+      "title": "Численность населения по муниципальным образованиям",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "workbook.cells.extract",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "population_municipalities",
+        "rosstat.reviewed_cells.metadata.rosstat.population_municipalities"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "territory",
+        "reference_date",
+        "population_category"
+      ],
+      "period_model": "annual_population_reference_date",
+      "qualification": "conditional"
+    }
+  ],
+  "external_profiles": {
+    "reviewed_population_cells": {
+      "kind": "table",
+      "reason": "A caller-supplied reviewed mapping is required for economic interpretation."
+    }
   }
 }

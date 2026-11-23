@@ -78,10 +78,10 @@ def test_source_bound_discovery_and_selection_use_the_canonical_route_offline():
     with pytest.raises(HandoffError, match="source.input_series_mismatch"):
         foreign.bind("rosstat.publications.acquire", inputs={
             "asset": prepare_input(selected.value[0], DataContract("rosstat.publications.asset"))})
-    # Stage hints classify a route; the exact input port decides admission.
-    hinted = source.bind("rosstat.publications.select", from_stage="calculate",
+    # Stages belong to route discovery; the exact input port decides admission.
+    bound = source.bind("rosstat.publications.select",
         inputs={"index": project_output(discovered, "index")})
-    assert hinted.request.index == discovered.value
+    assert bound.request.index == discovered.value
 
 
 def test_source_binding_rejects_foreign_operations_formats_and_overridden_identity():

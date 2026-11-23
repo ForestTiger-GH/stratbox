@@ -22,13 +22,17 @@
             "schema_id": "workbook.cells.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Replay a complete retained physical workbook extract.",
       "function": "replay"
     },
-    "method_id": "frg.read_extract"
+    "method_id": "frg.read_extract",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:read_extract"

@@ -21,5 +21,62 @@
     "table_profile": "cbr.tables.f135",
     "integration_profile": "cbr.reporting_forms.alignment",
     "product_profile": "cbr.reporting_forms.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "reported_records",
+      "title": "Credit institution reporting form 135",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.forms.flakes",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "cbr.forms.dbf_flakes",
+        "cbr.tables.f135",
+        "cbr.forms.f135.normalization",
+        "cbr.forms.model.135",
+        "cbr.reporting_forms.alignment",
+        "cbr.reporting_forms.views"
+      ],
+      "formats": [
+        "rar",
+        "zip",
+        "dbf"
+      ],
+      "grain": [
+        "report_date",
+        "credit_institution",
+        "form",
+        "record",
+        "field"
+      ],
+      "period_model": "reporting_period",
+      "qualification": "conditional",
+      "layout_editions": [
+        "cbr.forms.layout.v1"
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.form135": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.form135"
+      }
+    }
   }
 }

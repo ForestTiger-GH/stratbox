@@ -31,7 +31,8 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,9 +40,18 @@
         "version_id"
       ],
       "summary": "Preserve complete territorial releases or unresolved block candidates, with selection and formula evidence.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-offices-reg-snapshot"
+    "method_id": "cbr-offices-reg-snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "release": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.snapshots:snapshot_release"

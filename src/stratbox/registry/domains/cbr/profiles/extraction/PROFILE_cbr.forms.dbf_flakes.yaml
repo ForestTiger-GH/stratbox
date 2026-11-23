@@ -11,6 +11,7 @@
     "kind": "extraction",
     "profile_id": "cbr.forms.dbf_flakes",
     "scope": "All regular archive members retained; reviewed classic DBF fields decoded with raw tokens and deletion flags.",
-    "operation_id": "cbr.forms.extract"
+    "operation_id": "cbr.forms.extract",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

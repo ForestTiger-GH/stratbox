@@ -33,6 +33,7 @@ MAX_PREPARED_BYTES = 4 * 1024**2
 from stratbox.core.notifications.dispatch.intents import _intent, _metadata, _projection, dispatch_key
 
 from .preparation_contracts import PrepareRequest, InspectRequest, PreparationReport, Inspection
+from .evidence import PageEvidence, depend, scope_dependencies, topic_value
 
 def read_page(source: SourceBinding, after: JournalCursor, head: JournalHead, limits: JournalReadLimits) -> JournalPage:
     try:
@@ -57,6 +58,7 @@ def _disposition(
     runtime: NotificationReadRuntime, sub: Subscription, topic: NotificationTopic,
     profile: Projection, entry: JournalEntry, head: JournalHead, at: datetime,
     action: str, known: dict[str, ByteIdentity], batch: dict[str, ByteIdentity],
+    evidence: PageEvidence | None = None,
 ) -> _Decision:
     record = entry.record
     if record is None:
@@ -65,6 +67,8 @@ def _disposition(
     existing = known.get(record.record_id)
     if existing is None:
         existing = runtime.state.get_record_identity(head.stream.scope_id, head.source_authority_id, record.record_id)
+        if evidence is not None:
+            evidence.add("record_identity", {"record_id": record.record_id, "known_identity": existing})
     if existing is not None and existing != entry.identity:
         raise ValueError("journal.record_identity_conflict")
     known[record.record_id] = entry.identity
@@ -72,11 +76,15 @@ def _disposition(
         return _Decision(entry.offset, "notification.not_matched", proof)
     grant = access(runtime, action, sub.spec, at, stream=head.stream, record=record,
                    authority_id=head.source_authority_id)
+    if evidence is not None:
+        evidence.add("authority_decision", {"offset": entry.offset, "grant": grant})
     if grant.state == "unknown":
         raise ValueError("notification.authority_unavailable")
     if grant.state == "denied" or any(condition.field not in grant.fields for condition in sub.spec.filters):
         return _Decision(entry.offset, "notification.access_denied", proof)
     schema = runtime.catalog.input_schema(topic, record)
+    if evidence is not None:
+        evidence.add("input_schema", schema)
     data = schema.validate(record)
     if ((topic.eligible is not None and not topic.eligible(record, data))
             or not topic.permits_mode(data, sub.spec.filters) or not match_conditions(sub.spec.filters, data)):
@@ -89,6 +97,9 @@ def _disposition(
         "payload": {name: data[name] for name in topic.semantic_fields if name in data},
     }))
     previous = runtime.state.get_dispatch(sub.spec.scope_id, dispatch_id)
+    if evidence is not None:
+        evidence.add("dispatch_state", {"dispatch_id": dispatch_id,
+            "semantic_identity": previous.intent.semantic_identity if previous is not None else None})
     previous_identity = previous.intent.semantic_identity if previous is not None else batch.get(dispatch_id)
     if previous_identity is not None:
         if previous_identity != semantic:
@@ -114,7 +125,7 @@ class _Scope:
 
 def _load_scope(
     request: PrepareRequest | InspectRequest, runtime: NotificationReadRuntime,
-    context: ExecutionContext, *, preview: bool,
+    context: ExecutionContext, *, preview: bool, invocation: Invocation | None = None,
 ) -> _Scope:
     key = request.key
     source = runtime.source_for(key.stream)
@@ -123,8 +134,10 @@ def _load_scope(
     if sub is None or key.stream not in sub.spec.streams:
         raise OperationFailure("subscription.not_found")
     action = "inspect" if preview else "prepare"
-    need_access(access(runtime, action, sub.spec, context.clock.now(), stream=key.stream,
-                       authority_id=source.source_authority_id))
+    grant = access(runtime, action, sub.spec, context.clock.now(), stream=key.stream,
+                   authority_id=source.source_authority_id)
+    depend(invocation, "notification.scope_grant", grant, source=source.source_authority_id)
+    need_access(grant)
     if not preview and sub.status != "active":
         raise OperationFailure("subscription.not_active")
     if not preview and source.profile == "resumable" and runtime.state.durable is not True:
@@ -150,7 +163,9 @@ def _load_scope(
         raise OperationFailure(error.code) from None
     if cursor.last_offset > target:
         raise OperationFailure("journal.cursor_ahead")
-    return _Scope(sub, source, head, cursor, target)
+    scope = _Scope(sub, source, head, cursor, target)
+    scope_dependencies(invocation, scope)
+    return scope
 
 
 def _plan(
@@ -158,6 +173,9 @@ def _plan(
     preview: bool, invocation: Invocation | None = None,
 ) -> tuple[JournalPage, list[_Decision], str | None]:
     topic, profile = runtime.catalog.resolve(scope.subscription.spec)
+    if invocation is not None:
+        depend(invocation, "notification.topic_projection", topic_value(topic, profile),
+            source=scope.source.source_authority_id)
     if not topic.in_scope(scope.source.source_authority_id):
         raise OperationFailure("notification.source_not_allowed")
     remaining = scope.target - scope.cursor.last_offset
@@ -169,23 +187,29 @@ def _plan(
     known: dict[str, ByteIdentity] = {}
     batch: dict[str, ByteIdentity] = {}
     prepared_bytes = 0
-    for entry in page.entries:
-        if invocation is not None:
-            invocation.check_cancelled()
-        try:
-            item = _disposition(runtime, scope.subscription, topic, profile, entry, page.head,
-                                context.clock.now(), "inspect" if preview else "prepare", known, batch)
-            if item.intent is not None:
-                prepared_bytes += item.intent.payload_identity.size
-                if prepared_bytes > MAX_PREPARED_BYTES:
-                    return page, planned, None
-            planned.append(item)
-        except ValueError as error:
-            code = str(error)
-            if not code.startswith(("journal.", "notification.")):
-                code = "notification.projection_invalid"
-            return page, planned, code
-    return page, planned, page.problem.code if page.problem is not None else None
+    with PageEvidence(invocation, scope.source.source_authority_id) as evidence:
+        evidence.add("page", {"head": page.head, "after": page.after,
+            "problem": page.problem, "storage_coverage": page.storage_coverage,
+            "capture_coverage": page.capture_coverage, "domain_coverage": page.domain_coverage})
+        for entry in page.entries:
+            evidence.add("entry", {"offset": entry.offset, "identity": entry.identity,
+                "evidence_ref": entry.evidence_ref, "disposition": entry.disposition})
+            if invocation is not None:
+                invocation.check_cancelled()
+            try:
+                item = _disposition(runtime, scope.subscription, topic, profile, entry, page.head,
+                    context.clock.now(), "inspect" if preview else "prepare", known, batch, evidence)
+                if item.intent is not None:
+                    prepared_bytes += item.intent.payload_identity.size
+                    if prepared_bytes > MAX_PREPARED_BYTES:
+                        return page, planned, None
+                planned.append(item)
+            except ValueError as error:
+                code = str(error)
+                if not code.startswith(("journal.", "notification.")):
+                    code = "notification.projection_invalid"
+                return page, planned, code
+        return page, planned, page.problem.code if page.problem is not None else None
 
 
 def _report(
@@ -258,6 +282,11 @@ def prepare_page(
     while planned or issue is not None:
         report = _report(scope, page, planned, issue)
         receipt = commit_and_lookup(runtime.state, _mutation(request.key, scope, report, planned, invocation.context))
+        if receipt.state != "conflict":
+            depend(invocation, "notification.commit_admission", {
+                "state": receipt.state, "reason_code": receipt.reason_code,
+                "checkpoint": report.checkpoint, "examined": report.examined, "prepared": report.prepared,
+            })
         if receipt.state != "rejected" or receipt.reason_code != "notification.queue_capacity" or len(planned) <= 1:
             return report, receipt
         planned = planned[:max(1, len(planned) // 2)]

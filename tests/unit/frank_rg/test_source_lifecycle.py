@@ -269,3 +269,17 @@ def test_source_file_lifecycle_runs_without_table_decoding_packages(tmp_path, mo
     prepared = value(frg.prepare_file(PrepareFileRequest(report)))
     assert prepared.filename == NAME and prepared.payload.data == ORIGINAL
     assert value(captured()).payload.identity == prepared.payload.identity
+
+
+def test_force_refresh_changes_plan_computation_for_the_same_file_evidence(tmp_path):
+    (tmp_path / NAME).write_bytes(ORIGINAL)
+    current = catalog(LocalFileStore(root=str(tmp_path)))
+    asset = selected(current)
+    baseline = SourceCheckpoint(SOURCE, PERIOD, ByteIdentity.of(ORIGINAL), asset.entry)
+    normal = frg.plan_updates(UpdateRequest(current, (baseline,)))
+    forced = frg.plan_updates(UpdateRequest(current, (baseline,), force_refresh=True))
+    assert normal.outcome == forced.outcome == "succeeded"
+    a = next(item for item in normal.value.decisions if item.source_id == SOURCE)
+    b = next(item for item in forced.value.decisions if item.source_id == SOURCE)
+    assert a.acquisition_required is False and b.acquisition_required is True
+    assert normal.computation.computation_id != forced.computation.computation_id

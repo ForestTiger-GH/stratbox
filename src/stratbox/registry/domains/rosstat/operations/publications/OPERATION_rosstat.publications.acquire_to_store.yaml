@@ -42,7 +42,8 @@
           "path": "source.material",
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -53,9 +54,20 @@
         "baseline"
       ],
       "summary": "Stream a publisher asset to storage and retain confirmed original evidence.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "destination"
+      ]
     },
-    "method_id": "rosstat-original-stream"
+    "method_id": "rosstat-original-stream",
+    "request_fields": {
+      "asset": "input",
+      "baseline": "parameter",
+      "deadline_seconds": "runtime",
+      "destination": "effect",
+      "max_bytes": "runtime",
+      "retry": "runtime"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.publications:acquire_to_store"

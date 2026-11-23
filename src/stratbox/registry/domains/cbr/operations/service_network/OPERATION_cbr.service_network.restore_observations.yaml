@@ -22,13 +22,17 @@
             "schema_id": "cbr.service_network.observations",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Read a retained observation batch without repeating source extraction or semantic mapping.",
       "function": "replay"
     },
-    "method_id": "observation-snapshot-replay"
+    "method_id": "observation-snapshot-replay",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.observation_operations:restore_observations"

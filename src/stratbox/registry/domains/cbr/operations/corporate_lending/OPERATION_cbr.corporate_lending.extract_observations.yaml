@@ -28,7 +28,8 @@
             "schema_id": "cbr.corporate_lending.source_observations",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -36,7 +37,11 @@
       ],
       "summary": "Extract every selected source period with exact values, missingness and cell evidence."
     },
-    "method_id": "cbr-corporate-source-observations"
+    "method_id": "cbr-corporate-source-observations",
+    "request_fields": {
+      "flake": "input",
+      "periods": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.source_operations:extract"

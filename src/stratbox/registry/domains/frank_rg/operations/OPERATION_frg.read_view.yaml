@@ -22,13 +22,17 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a prepared observation view independently of analytics and source readers.",
       "function": "replay"
     },
-    "method_id": "frg.read_view"
+    "method_id": "frg.read_view",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:read_view"

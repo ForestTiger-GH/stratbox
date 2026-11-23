@@ -26,13 +26,17 @@
             "schema_id": "cbr.forms.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate and restore the requested form result from a portable dataset snapshot.",
       "function": "replay"
     },
-    "method_id": "cbr-forms-restore-normalized"
+    "method_id": "cbr-forms-restore-normalized",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:restore_normalized"

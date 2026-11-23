@@ -22,12 +22,16 @@
           "contract": {
             "schema_id": "frg.inventory"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Identify report sources and periods using registered naming evidence without opening files."
     },
-    "method_id": "frg.identification-profile"
+    "method_id": "frg.identification-profile",
+    "request_fields": {
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:inspect"

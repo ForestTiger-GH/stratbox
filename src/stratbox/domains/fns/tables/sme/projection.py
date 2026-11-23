@@ -1,5 +1,6 @@
 """Reviewed published counters; RF, federal districts and subjects remain separate."""
 from decimal import Decimal
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.data.snapshots import CoverageDimension, SnapshotCoverage
 
@@ -92,6 +93,8 @@ def project_counts(flake):
                 output=levels, missing=tuple(level for level in ("0", "1", "2") if level not in levels)),
         ))
     batch = ObservationBatch("fns.sme.reported", 1, "source-" + flake.source_identity.sha256,
-                             tuple(observations), flake.lineage)
+                             tuple(observations), flake.lineage, (SourceUse(SourceCoordinate(flake.context.series_id,
+            source_group_id="population_records", issue_id=flake.context.issue_id, asset_id=flake.context.asset_id,
+            material_identity=flake.source_identity, semantic_profile_edition=PROFILE), "flake", "domain_validated"),))
     return SourceProjection(flake.context, flake.identity, batch, PROFILE, coverage,
                             qualifications, tuple(dispositions))

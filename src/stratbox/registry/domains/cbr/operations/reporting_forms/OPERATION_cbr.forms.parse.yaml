@@ -41,16 +41,24 @@
             "schema_id": "cbr.forms.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "key"
       ],
       "summary": "Compose all-member DBF extraction and supported form normalization.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "key"
+      ]
     },
-    "method_id": "cbr-forms-source-projection"
+    "method_id": "cbr-forms-source-projection",
+    "request_fields": {
+      "key": "parameter",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:parse_form"

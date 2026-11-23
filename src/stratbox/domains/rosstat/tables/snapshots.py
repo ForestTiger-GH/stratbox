@@ -63,13 +63,18 @@ def _row(value, json_fields):
     return tuple(_json(getattr(value,f.name)) if f.name in json_fields else getattr(value,f.name) for f in fields(value))
 
 
-def flake_snapshot(value: RosstatSourceFlake, *, dataset_id=None, version_id=None) -> DatasetSnapshot:
+def flake_snapshot(value: RosstatSourceFlake, *, dataset_id=None, version_id=None, checkpoint=None) -> DatasetSnapshot:
+    def rows(items, json_fields):
+        for index, item in enumerate(items):
+            if checkpoint is not None and index % 256 == 0:
+                checkpoint()
+            yield (index, *_row(item, json_fields))
     metadata=(value.series_id,value.issue_id,value.asset_id,value.source_identity.sha256,value.source_identity.size,
         value.physical_identity.sha256,value.physical_identity.size,value.profile_id,value.profile_version,_json(value.diagnostics))
     tables=(("metadata",TypedTable(_METADATA,(metadata,))),
-        ("values",TypedTable(_VALUES,tuple((i,*_row(row,_JSON_FIELDS)) for i,row in enumerate(value.values)))),
-        ("sections",TypedTable(_SECTIONS,tuple((i,*_row(row,{"headers","notes"})) for i,row in enumerate(value.sections)))),
-        ("row_decisions",TypedTable(_DECISIONS,tuple((i,*_row(row,set())) for i,row in enumerate(value.row_decisions)))))
+        ("values",TypedTable(_VALUES,tuple(rows(value.values,_JSON_FIELDS)))),
+        ("sections",TypedTable(_SECTIONS,tuple(rows(value.sections,{"headers","notes"})))),
+        ("row_decisions",TypedTable(_DECISIONS,tuple(rows(value.row_decisions,set())))))
     return DatasetSnapshot.build(dataset_id or value.series_id + ".flake",
         version_id or value.issue_id + "." + value.source_identity.sha256[:16],FLAKE_CONTRACT,tables,
         coverage=value.coverage,inputs=value.lineage,parents=(value.physical_identity,))

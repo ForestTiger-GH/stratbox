@@ -26,13 +26,18 @@
             "schema_id": "cbr.forms.snapshots",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Restore normalized release history for subsequent financial model evaluation.",
       "function": "replay"
     },
-    "method_id": "cbr-forms-history-replay"
+    "method_id": "cbr-forms-history-replay",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:restore_history"

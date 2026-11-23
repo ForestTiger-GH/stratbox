@@ -29,7 +29,8 @@
             "schema_id": "observations.rendered_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -37,7 +38,11 @@
       ],
       "summary": "Render a prepared observation view to exact long-form CSV, JSON or JSONL."
     },
-    "method_id": "observations-render_view"
+    "method_id": "observations-render_view",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:render_view"

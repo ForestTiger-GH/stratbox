@@ -19,5 +19,63 @@
     "table_profile": "cbr.tables.structure_by_benchmark_interest_rate_type",
     "integration_profile": "cbr.statistics.observations",
     "product_profile": "cbr.statistics.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "published_statistics",
+      "title": "Corporate debt by benchmark interest rate type",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "cbr.workbook.flake",
+        "cbr.tables.structure_by_benchmark_interest_rate_type",
+        "cbr.statistics.observations.metadata.cbr.corporate_lending.corp_debt_a",
+        "cbr.statistics.views"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "report_date",
+        "territory",
+        "activity",
+        "currency",
+        "measure"
+      ],
+      "period_model": "credit_debt_stock",
+      "qualification": "conditional",
+      "layout_editions": [
+        "published_matrix_v1"
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.structure_by_benchmark_interest_rate_type": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.structure_by_benchmark_interest_rate_type"
+      }
+    }
   }
 }

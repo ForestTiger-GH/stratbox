@@ -11,6 +11,7 @@
     "scope": "Source identities remain distinct until an explicit reviewed mapping is supplied.",
     "alignment_operation": null,
     "product_profile": "cbr.corporate_lending.views",
-    "view_operation": null
+    "view_operation": null,
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

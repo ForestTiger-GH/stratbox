@@ -17,5 +17,52 @@
     "periodicity": "monthly",
     "basis": "ytd",
     "kind": "table"
-  }
+  },
+  "source_groups": [
+    {
+      "group_id": "fiscal_statistics",
+      "title": "Месячное исполнение федерального бюджета",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "minfin.source_cells",
+          "version": 2,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "minfin.flake",
+          "version": 2,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "minfin.fedbud.publication_page",
+        "minfin.document_cards",
+        "minfin.fedbud_assets.metadata.minfin.fedbud.annex3.monthly",
+        "minfin.budget_table",
+        "minfin.budget_headlines"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "budget_or_fund",
+        "indicator",
+        "period",
+        "basis",
+        "unit"
+      ],
+      "period_model": "metric_specific_ytd_annual_or_stock",
+      "qualification": "conditional"
+    }
+  ]
 }

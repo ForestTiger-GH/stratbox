@@ -29,7 +29,8 @@
             "schema_id": "cbr.escrow.observations",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -37,7 +38,11 @@
       ],
       "summary": "Align explicit metric, scale, period and versioned geography identities into shared observations."
     },
-    "method_id": "cbr-escrow-observations"
+    "method_id": "cbr-escrow-observations",
+    "request_fields": {
+      "dataset": "input",
+      "geography": "dependency"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:align_observations"

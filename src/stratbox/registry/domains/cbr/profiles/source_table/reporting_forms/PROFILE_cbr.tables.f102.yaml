@@ -10,6 +10,11 @@
     ],
     "kind": "source_table",
     "profile_id": "cbr.tables.f102",
-    "scope": "Reviewed source-local layout with complete admitted scope and explicit source limitations."
+    "scope": "Reviewed source-local layout with complete admitted scope and explicit source limitations.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.profiles:form_layout",
+    "implementation_parameters": {
+      "profile_id": "cbr.tables.f102"
+    }
   }
 }

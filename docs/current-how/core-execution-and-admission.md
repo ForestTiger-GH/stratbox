@@ -47,6 +47,10 @@ and `invoke_reference` use `operation_id` and `request_ref`, with optional
 preview limits. The host retains the full typed result and its effect receipts.
 Both interfaces select the canonical operation by ID. Implementation builds,
 payload schema editions and publisher revisions retain their separate identities.
+Their bounded computation projection carries the actual method fingerprint and
+signature qualifications. Classified diagnostics include the decision stage,
+reason class and reconciliation owner; full typed results and private receipt
+locations stay in the retained result channel.
 
 The default local context is for trusted Python with the selected adapters.
 When a call omits its HTTP or storage adapter and the role has no explicit
@@ -84,6 +88,25 @@ returns; failed output admission suppresses the bytes but retains diagnostics
 and physical receipts. Use `EffectKey(kind, effect_id)` to select an
 external effect, and inspect `EffectState.evidence_coverage` rather than
 treating a missing receipt in a summarized journal as a negative fact.
+
+For an effectful call, signature preflight checks that the admitted request can
+be described before work begins. The consuming boundary records actual inputs
+again; preflight does not claim that a result or external effect exists.
+`Invocation.use` or `Invocation.depend` marks an actually consumed dependency.
+Unconsumed inherited receipts remain provenance rather than cache-key inputs.
+Canonical request fields explicitly distinguish data, semantic parameters,
+method/dependency selections, effect destinations, runtime and observability.
+Direct extensions without that classification conservatively sign the complete
+request. A content-addressed method descriptor binds the computational contract,
+substantive algorithms and resources while retaining a stable logical method ID.
+Successful capture qualifies a receipt as `signature_complete` and
+`method_resolved`; a manually supplied receipt carries no such implicit proof.
+
+A source binding installs trusted `ResultAdmission` policies in the execution
+context. They run before the terminal outcome. A rejected result is returned
+as an ordinary failed or unknown `OperationResult`, with its receipts and
+classified reasons. `Invocation.admit_prepared` additionally checks prepared
+data before supported commits; dataset publication uses it before storage.
 Without a strict deadline, execution is independent of a missing monotonic
 clock unless optional telemetry was requested; strict clock admission
 produces a qualified `budget.clock_unavailable` result before the handler. Long in-process

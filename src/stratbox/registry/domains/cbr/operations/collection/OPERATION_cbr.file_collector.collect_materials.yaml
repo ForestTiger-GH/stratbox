@@ -30,7 +30,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "manifest",
@@ -40,7 +41,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "archive_members",
@@ -50,7 +52,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -59,9 +63,17 @@
         "max_batch_bytes"
       ],
       "summary": "Acquire independently supplied original routes and return exact materials with per-item dispositions.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "items"
+      ]
     },
-    "method_id": "cbr-mixed-originals"
+    "method_id": "cbr-mixed-originals",
+    "request_fields": {
+      "continue_on_error": "parameter",
+      "items": "parameter",
+      "max_batch_bytes": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.collection.materials:collect_materials"

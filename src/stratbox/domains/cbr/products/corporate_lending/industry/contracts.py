@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.source_context import SourceUse
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ class IndustryPivotTable:
     rows: int
     data_columns: int
     missing_values: int
+    source_uses: tuple[SourceUse, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,7 @@ class IndustryPivotSetResult:
     table_count: int
     is_partial: bool
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()
 
     @property
     def ok(self) -> bool:

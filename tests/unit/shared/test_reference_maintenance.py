@@ -22,15 +22,19 @@ def _tool(name: str):
 
 def _domain_materials():
     """Supply complete domain and registry resources to archive fixtures."""
+    package = _ROOT / "src/stratbox"
+    for path in sorted(package.rglob("*")):
+        if path.is_file() and (path.suffix in {".py", ".pyi"} or path.name == "py.typed"):
+            yield "stratbox/" + path.relative_to(package).as_posix(), path.read_bytes()
     source = _ROOT / "src/stratbox/domains"
     asset = _tool("inspect_reference_wheel.py")["_domain_asset"]
     for path in sorted(source.rglob("*")):
         relative = path.relative_to(source).as_posix()
-        if path.is_file() and (path.name in {"__init__.py", "_registration.py"} or asset(relative)):
+        if path.is_file() and asset(relative):
             yield "stratbox/domains/" + relative, path.read_bytes()
     registry = _ROOT / "src/stratbox/registry"
     for path in sorted(registry.rglob("*")):
-        if path.is_file() and (path.suffix in {".yaml", ".yml"} or path.name == "__init__.py"):
+        if path.is_file() and path.suffix in {".yaml", ".yml"}:
             yield "stratbox/registry/" + path.relative_to(registry).as_posix(), path.read_bytes()
 
 
@@ -85,10 +89,6 @@ def test_zip_validator_checks_bytes_and_rejects_missing_assets(tmp_path):
     with ZipFile(wheel, "w") as archive:
         for name, raw in _domain_materials():
             archive.writestr(name, raw)
-        for name in ("identity.py", "evidence.py"):
-            archive.writestr(f"stratbox/shared/{name}", b"# fixture")
-        archive.writestr("stratbox/shared/data/datasets.py", b"# fixture")
-        archive.writestr("stratbox/shared/reference/assets.py", b"# fixture")
         for family in families:
             package = f"stratbox.shared.reference.{family}"
             bundled = resources.files(package).joinpath("_resources")
@@ -183,11 +183,6 @@ def test_sdist_validator_checks_all_declared_resource_materials(tmp_path):
             archive.addfile(entry, io.BytesIO(raw))
         for name, raw in _domain_materials():
             add(name, raw)
-        for name in (
-            "stratbox/shared/identity.py", "stratbox/shared/evidence.py",
-            "stratbox/shared/data/datasets.py", "stratbox/shared/reference/assets.py",
-        ):
-            add(name, b"# source distribution fixture\n")
         for family in ("banks", "okved2", "geography"):
             package = "stratbox.shared.reference." + family
             source = resources.files(package).joinpath("_resources")

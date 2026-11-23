@@ -23,7 +23,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "files",
@@ -34,7 +35,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "manifest",
@@ -44,7 +47,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "archive_members",
@@ -54,7 +58,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -65,9 +71,20 @@
         "max_batch_bytes",
         "retry"
       ],
-      "summary": "Acquire independently qualified original files with an explicit remaining-work set."
+      "summary": "Acquire independently qualified original files with an explicit remaining-work set.",
+      "required_parameters": [
+        "source_ids"
+      ]
     },
-    "method_id": "cbr-file-acquisition"
+    "method_id": "cbr-file-acquisition",
+    "request_fields": {
+      "continue_on_error": "parameter",
+      "deadline_per_source_seconds": "runtime",
+      "max_batch_bytes": "parameter",
+      "retry": "runtime",
+      "source_ids": "parameter",
+      "try_case_variants": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:collect_raw"

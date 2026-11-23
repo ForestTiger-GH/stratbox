@@ -28,7 +28,8 @@
             "schema_id": "cbr.forms.data",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,7 +39,13 @@
       ],
       "summary": "Evaluate a financial model only from admitted semantic model inputs, retaining canonical subjects and periods."
     },
-    "method_id": "cbr-forms-prepared-model"
+    "method_id": "cbr-forms-prepared-model",
+    "request_fields": {
+      "banks": "parameter",
+      "inputs": "input",
+      "model": "method",
+      "selection_profile": "method"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.calculation:calculate"

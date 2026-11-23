@@ -10,6 +10,7 @@ from dataclasses import dataclass, asdict
 from datetime import date
 from decimal import Decimal
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
@@ -83,4 +84,6 @@ def align_values(dataset, rules=()):
     return ObservationBatch("cbr.project_finance.observations", 1, snapshot.manifest.version_id,
         tuple(observations), tuple(_release_input(item) for item in dataset.releases) + (
             UsedInputReceipt("integrated_dataset", snapshot.identity, "application/json", "reference_only"), mapping_input,
-        ))
+        ), tuple(SourceUse(SourceCoordinate("cbr.project_finance.escrow", "cbr.project_finance", "project_finance_statistics",
+            issue_id=release.period, material_identity=release.original_identity), "releases", "domain_validated")
+            for release in dataset.releases))

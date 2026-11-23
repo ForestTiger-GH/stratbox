@@ -42,7 +42,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -53,7 +54,14 @@
       ],
       "summary": "Extract the reviewed eleven-indicator KEP2 selection with all periods, footnotes and source row decisions."
     },
-    "method_id": "rosstat-tables-extract_kep2"
+    "method_id": "rosstat-tables-extract_kep2",
+    "request_fields": {
+      "duplicate_year_policy": "parameter",
+      "required_indicators": "parameter",
+      "title_aliases": "parameter",
+      "unit_overrides": "parameter",
+      "workbook": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_kep2"

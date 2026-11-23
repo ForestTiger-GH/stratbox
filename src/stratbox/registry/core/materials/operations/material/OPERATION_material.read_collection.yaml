@@ -28,12 +28,16 @@
           "contract": {
             "schema_id": "material.collection"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Restore a validated manifest without interpreting a batch as complete publisher history."
     },
-    "method_id": "material-collection"
+    "method_id": "material-collection",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.collections:read_collection"

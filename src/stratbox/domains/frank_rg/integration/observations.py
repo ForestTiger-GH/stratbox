@@ -15,8 +15,8 @@ def _key(item):
     return item.subject, item.metric, item.period, tuple(sorted(item.dimensions)), item.perimeter
 
 
-def _batch(dataset_id, release_id, rows, lineage):
-    value = ObservationBatch(dataset_id, 1, release_id, tuple(rows), tuple(dict.fromkeys(lineage)))
+def _batch(dataset_id, release_id, rows, lineage, source_uses):
+    value = ObservationBatch(dataset_id, 1, release_id, tuple(rows), tuple(dict.fromkeys(lineage)), source_uses)
     observation_snapshot(value)
     return value
 
@@ -26,7 +26,7 @@ def integrate(request):
     flake = request.flake
     return _batch(request.dataset_id, request.release_id, flake.batch.observations,
         (*flake.batch.lineage, UsedInputReceipt("semantic_flake", flake_snapshot(flake).identity,
-            "application/vnd.stratbox.dataset+json", "inline", flake.series_id)))
+            "application/vnd.stratbox.dataset+json", "inline", flake.series_id)), flake.batch.source_uses)
 
 
 def align(request):
@@ -44,7 +44,8 @@ def align(request):
                 raise ValueError("frg.integration.duplicate_semantic_key")
             keys.add(key)
             rows.append(item)
-    return _batch(request.dataset_id, request.release_id, rows, lineage)
+    return _batch(request.dataset_id, request.release_id, rows, lineage,
+        tuple(use for batch in request.batches for use in batch.source_uses))
 
 
 def history(request):
@@ -62,4 +63,5 @@ def history(request):
                 raise ValueError("frg.history.already_versioned")
             rows.append(replace(item, dimensions=(*item.dimensions,
                 ("publication_dataset", batch.dataset_id), ("publication_release", batch.release_id))))
-    return _batch(request.dataset_id, request.release_id, rows, lineage)
+    return _batch(request.dataset_id, request.release_id, rows, lineage,
+        tuple(use for batch in request.batches for use in batch.source_uses))

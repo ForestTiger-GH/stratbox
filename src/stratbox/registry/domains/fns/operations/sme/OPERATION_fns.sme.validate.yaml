@@ -23,12 +23,16 @@
           "contract": {
             "schema_id": "fns.sme.validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Assess the reviewed source profile and expose errors, omissions and disagreements."
     },
-    "method_id": "fns-sme-validate"
+    "method_id": "fns-sme-validate",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:validate"

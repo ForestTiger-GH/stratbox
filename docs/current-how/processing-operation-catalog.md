@@ -193,7 +193,8 @@ Connections require an exact schema ID, edition and role match, or an explicitly
 listed input alternative. Output and accepted-input outcome sets must overlap.
 The result lists missing qualifications, required coverage, other required
 inputs and declared parameters. Parameters include selection settings and
-defaulted options; their Python request contracts establish which are required.
+defaulted options; typed admission verifies canonical required-parameter and
+collection facts against the Python request contract.
 
 `compatible` means the declared port metadata matches without extra declared
 conditions. `conditional` retains those conditions. Both require actual value,
@@ -344,7 +345,8 @@ selection parameters and an accurate summary. Mark convenience compositions
 explicitly; advertise a partial output only when the definition admits it.
 
 Bind applicable source routes through profile resources and preserve their
-formats, fixed parameters and stage transitions. Reuse the assembled catalog
+formats, fixed parameters and qualifications. Stage transitions are derived
+from exact ports. Reuse the assembled catalog
 for application discovery. An optional wire contract remains separate from its
 codec. Declare genuine coverage gaps and exact neutral-operation delegations
 in owner metadata.
@@ -357,3 +359,23 @@ packaging validation impose no fixed owner or operation count.
 See [functional domain boundaries](../architecture/domain-functional-semantics.md)
 and the maintained [CBR processing route](cbr-data-pipeline.md) for source-specific
 ownership and the independent continuation contracts.
+
+
+## 8. Admit and explain the same immutable declarations
+
+`catalog.admit(level="metadata" | "typed" | "executable")` separates structural
+links, actual Python types and handler delivery. Metadata pages and source
+selection remain available without importing optional scientific engines.
+Request fields are exhaustively classified, and method fingerprints commit
+computational meaning and substantive dependencies without versioning IDs.
+
+`catalog.connections(...)` provides bounded pages of exact, source-scoped
+connections. Collection assembly/cardinality, missing inputs, semantic
+qualification and source format restrictions remain explicit conditions.
+`catalog.explain_route(goal, available=..., max_nodes=...)` explains a bounded
+AND dependency plan without invoking work or granting authority. Declared
+paths and verified runtime readiness remain separate assertions.
+
+[Canonical processing contracts and admission](domain-operation-registry.md)
+describes source-content groups, relational source uses, role assembly and the
+runner's precommit/result policies.

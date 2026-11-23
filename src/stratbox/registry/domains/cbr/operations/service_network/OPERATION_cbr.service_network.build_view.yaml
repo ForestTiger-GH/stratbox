@@ -24,14 +24,16 @@
             "schema_id": "cbr.service_network.view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -40,9 +42,20 @@
         "subjects",
         "metrics"
       ],
-      "summary": "Prepare selected office counts and qualifications as a reusable typed view."
+      "summary": "Prepare selected office counts and qualifications as a reusable typed view.",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-office-view"
+    "method_id": "cbr-office-view",
+    "request_fields": {
+      "batch": "input",
+      "dataset_id": "parameter",
+      "metrics": "parameter",
+      "subjects": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:build_view"

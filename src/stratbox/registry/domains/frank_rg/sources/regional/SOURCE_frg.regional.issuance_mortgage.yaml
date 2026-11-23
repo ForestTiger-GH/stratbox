@@ -19,5 +19,54 @@
     "slot": "issuance_mortgage",
     "periodicity": "snapshot",
     "kind": "workbook"
-  }
+  },
+  "source_groups": [
+    {
+      "group_id": "reported_metrics",
+      "title": "Regional mortgage issuance",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "workbook.cells.extract",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "frg.semantic_flake",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "frg.directory",
+        "frg.identification.regional",
+        "frg.latest_period",
+        "frg.canonical",
+        "frg.workbook.cells"
+      ],
+      "formats": [
+        "xls",
+        "xlsb",
+        "xlsm",
+        "xlsx"
+      ],
+      "grain": [
+        "reporting_period",
+        "territory",
+        "product",
+        "metric"
+      ],
+      "period_model": "profile_declared_statistical_period",
+      "qualification": "conditional"
+    }
+  ]
 }

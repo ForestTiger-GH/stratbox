@@ -6,6 +6,7 @@ from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.snapshots import SnapshotCoverage
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.shared.data.source_context import SourceUse
 from .profiles import EscrowProductIndicator, EscrowProductProfile, DEFAULT_PRODUCT_PROFILE
 if TYPE_CHECKING:
     import pandas as pd
@@ -38,3 +39,4 @@ class EscrowPivotPack:
     product_profile_id: str = "cbr-escrow-regional-history"
     product_profile_version: int = 1
     input_versions: tuple[UsedInputReceipt, ...] = ()
+    source_uses: tuple[SourceUse, ...] = ()

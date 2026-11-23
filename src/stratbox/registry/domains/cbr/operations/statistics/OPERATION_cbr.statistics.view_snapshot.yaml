@@ -27,13 +27,17 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Expose complete prepared view tables for a caller-selected dataset adapter.",
       "function": "encode"
     },
-    "method_id": "cbr-statistics-view_snapshot"
+    "method_id": "cbr-statistics-view_snapshot",
+    "request_fields": {
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:build_view_snapshot"

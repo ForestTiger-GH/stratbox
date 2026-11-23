@@ -36,12 +36,16 @@
           "contract": {
             "schema_id": "representation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render all extracted document blocks and qualified extraction errors."
     },
-    "method_id": "rosstat-tables-readable_document"
+    "method_id": "rosstat-tables-readable_document",
+    "request_fields": {
+      "document": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:readable_document"

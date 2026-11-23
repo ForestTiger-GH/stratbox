@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.funding.budget_all",
-    "scope": "Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit."
+    "scope": "Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

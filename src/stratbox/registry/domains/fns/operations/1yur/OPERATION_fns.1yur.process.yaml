@@ -30,7 +30,8 @@
           "contract": {
             "schema_id": "fns.1yur.original",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
@@ -38,42 +39,48 @@
             "schema_id": "source.payload",
             "role": "originals"
           },
-          "path": "original"
+          "path": "original",
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "flake",
           "contract": {
             "schema_id": "fns.1yur.flake",
             "role": "extracts"
-          }
+          },
+          "source_policy": "primary_source_required"
         },
         {
           "name": "projection",
           "contract": {
             "schema_id": "fns.1yur.reported_projection",
             "role": "extracts"
-          }
+          },
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "fns.1yur.integrated_dataset",
             "role": "integrated"
-          }
+          },
+          "source_policy": "primary_source_required"
         },
         {
           "name": "view",
           "contract": {
             "schema_id": "fns.1yur.prepared_view",
             "role": "products"
-          }
+          },
+          "source_policy": "primary_source_required"
         },
         {
           "name": "representation",
           "contract": {
             "schema_id": "representation.bytes",
             "role": "products"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -81,9 +88,17 @@
         "format"
       ],
       "summary": "Compose extraction, projection, identity alignment and rendering while returning every retained boundary.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "release"
+      ]
     },
-    "method_id": "fns-1yur-process"
+    "method_id": "fns-1yur-process",
+    "request_fields": {
+      "format": "parameter",
+      "payload": "input",
+      "release": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:process"

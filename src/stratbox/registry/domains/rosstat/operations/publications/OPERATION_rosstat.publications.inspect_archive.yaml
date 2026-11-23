@@ -36,7 +36,8 @@
           "contract": {
             "schema_id": "rosstat.regional_archive.inventory"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -44,7 +45,11 @@
       ],
       "summary": "Inspect the actual regional archive membership under archive safety limits."
     },
-    "method_id": "rosstat-publications-inspect_archive"
+    "method_id": "rosstat-publications-inspect_archive",
+    "request_fields": {
+      "limits": "runtime",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:inspect_archive"

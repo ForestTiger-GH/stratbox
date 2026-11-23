@@ -22,14 +22,16 @@
           "contract": {
             "schema_id": "observations.batch.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +41,12 @@
       "summary": "Encode integrated observations for caller-selected logical storage.",
       "function": "encode"
     },
-    "method_id": "minfin.observation_snapshot"
+    "method_id": "minfin.observation_snapshot",
+    "request_fields": {
+      "batch": "input",
+      "dataset_id": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:build_observation_snapshot"

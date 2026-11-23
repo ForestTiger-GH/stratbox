@@ -30,7 +30,8 @@
             "schema_id": "cbr.industries.0105a.workbooks",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,9 +39,17 @@
         "include_metadata_sheet"
       ],
       "summary": "Render independently qualified industry workbooks from supplied data.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "industry_codes"
+      ]
     },
-    "method_id": "cbr-0105a-industry-batch"
+    "method_id": "cbr-0105a-industry-batch",
+    "request_fields": {
+      "include_metadata_sheet": "parameter",
+      "industry_codes": "parameter",
+      "stream": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:render_industries"

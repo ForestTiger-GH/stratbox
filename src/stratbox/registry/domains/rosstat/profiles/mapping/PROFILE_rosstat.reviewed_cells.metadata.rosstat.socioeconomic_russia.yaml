@@ -8,6 +8,7 @@
     ],
     "kind": "mapping",
     "profile_id": "rosstat.reviewed_cells.metadata.rosstat.socioeconomic_russia",
-    "scope": "Caller-supplied coordinates and metric/period/unit/geography meanings pinned to the exact original digest."
+    "scope": "Caller-supplied coordinates and metric/period/unit/geography meanings pinned to the exact original digest.",
+    "admission_ref": "stratbox.domains.rosstat.profiles:admit"
   }
 }

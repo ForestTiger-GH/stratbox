@@ -111,3 +111,23 @@ def test_align_history_revision_calculation_and_missing_status_are_independent()
     assert result.observations[1].value_status == "not_applicable"
     saved = ok(frg.build_observation_snapshot(frg.ObservationSnapshotRequest(result)))
     assert ok(frg.read_observations(frg.ReadObservationsRequest(saved))) == result
+
+
+def test_domain_admission_requires_real_byte_bound_profile_and_preserves_coordinates():
+    from stratbox.domains.frank_rg.profiles import admit
+    from stratbox.shared.data.sources import SourceInstance
+    from stratbox.shared.data.processing import DataContract
+    extracted = ok(frg.extract(frg.ExtractRequest(report("frg.express.issuance"))))
+    instance = SourceInstance(extracted.series_id, DataContract("frg.semantic_flake"),
+        group_id="reported_metrics", issue_id=extracted.issue_id, material_identity=extracted.source_identity)
+    assert admit(None, instance, extracted).state == "conditional"
+    flake = ok(frg.build_flake(frg.BuildFlakeRequest(extracted, profile(extracted))))
+    assert admit(None, instance, flake).state == "admitted"
+    assert admit(None, replace(instance, material_identity=SourcePayload(b"other").identity), flake).state == "rejected"
+    batch = ok(frg.integrate(frg.IntegrateRequest(flake, "caller.dataset", "caller.version")))
+    coordinate = batch.source_uses[0].coordinate
+    assert (coordinate.source_id, coordinate.issue_id, coordinate.source_group_id) == (
+        extracted.series_id, extracted.issue_id, "reported_metrics")
+    restored = ok(frg.read_observations(frg.ReadObservationsRequest(
+        ok(frg.build_observation_snapshot(frg.ObservationSnapshotRequest(batch))))))
+    assert restored.source_uses == batch.source_uses

@@ -6,28 +6,33 @@
       "stratbox.shared.data.datasets.ComputationReceipt": {},
       "stratbox.shared.data.datasets.DatasetVersion": {},
       "stratbox.shared.data.documents.DocumentExtract": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id",
+            "material": "source_identity"
+          }
         ]
       },
       "stratbox.shared.data.observations.ObservationBatch": {
-        "source": [
-          "observations.*.dimensions.@source_series"
-        ],
-        "issue": [
-          "release_id"
+        "context": "source_uses",
+        "uses": [
+          {
+            "at": "observations.*",
+            "source": "dimensions.@source_series"
+          }
         ]
       },
       "stratbox.shared.data.snapshots.SnapshotReference": {},
       "stratbox.shared.data.workbooks.WorkbookExtract": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id",
+            "material": "source_identity"
+          }
         ]
       },
       "stratbox.shared.evidence.AcquisitionReceipt": {},
@@ -35,59 +40,121 @@
       "stratbox.shared.evidence.SourcePayload": {},
       "stratbox.shared.evidence.UsedInputReceipt": {},
       "stratbox.shared.materials.MaterialArtifact": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "source_asset.issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "source_asset.issue_id",
+            "asset": "source_asset.asset_id",
+            "material": "representation.identity"
+          }
         ]
       },
       "stratbox.shared.source_publications.QualifiedAssetPresenceEvidence": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.shared.source_publications.QualifiedInventory": {
-        "source": [
-          "series_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.shared.source_publications.SourceAssetIdentity": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id"
+          }
+        ]
+      },
+      "stratbox.core.operations.processing.definitions.ExtractRequest": {
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id"
+          }
         ]
       }
     },
-    "tables": {
-      "workbook.extract.metadata": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+    "tables": [
+      {
+        "contract": {
+          "schema_id": "workbook.extract.metadata",
+          "version": 1,
+          "role": null
+        },
+        "schema_ref": "stratbox.shared.data.workbooks:_META",
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "material": {
+              "sha256": "sha256",
+              "size": "size"
+            },
+            "asset": "asset_id"
+          }
         ]
       },
-      "document.extract.metadata": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+      {
+        "contract": {
+          "schema_id": "document.extract.metadata",
+          "version": 1,
+          "role": null
+        },
+        "schema_ref": "stratbox.shared.data.documents:_META",
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "material": {
+              "sha256": "sha256",
+              "size": "size"
+            },
+            "asset": "asset_id"
+          }
         ]
       },
-      "observations.batch.rows": {
-        "source": [
-          "dimensions.$json.@source_series"
+      {
+        "contract": {
+          "schema_id": "observations.batch.rows",
+          "version": 1,
+          "role": null
+        },
+        "schema_ref": "stratbox.shared.data.observation_snapshots:_OBSERVATIONS",
+        "uses": [
+          {
+            "source": "dimensions.$json.@source_series"
+          }
         ]
       },
-      "observations.batch.metadata": {
-        "issue": [
-          "release_id"
+      {
+        "contract": {
+          "schema_id": "observations.batch.metadata",
+          "version": 2,
+          "role": null
+        },
+        "schema_ref": "stratbox.shared.data.observation_snapshots:_METADATA",
+        "context": "source_uses.$json.uses",
+        "applies_to": [
+          {
+            "component": "observations",
+            "contract": {
+              "schema_id": "observations.batch.rows",
+              "version": 1,
+              "role": null
+            }
+          }
         ]
       }
-    }
+    ]
   }
 }

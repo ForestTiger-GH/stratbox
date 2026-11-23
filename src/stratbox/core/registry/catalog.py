@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from importlib import import_module
 from types import MappingProxyType
@@ -84,7 +84,18 @@ def _definition(ref: OperationRef):
     if ref.definition is not None:
         return ref.definition
     from stratbox.core.registry.operations import definition
-    return definition(ref.operation_id)
+    value = definition(ref.operation_id)
+    if value.method_refs and value.method_refs[0] != ref.handler_ref:
+        value = replace(value, method_refs=(ref.handler_ref, *value.method_refs[1:]))
+    return value
+
+
+@lru_cache(maxsize=4096)
+def _typed_definition(ref: OperationRef):
+    from stratbox.core.registry.operations import validate_request_contract
+    definition = _definition(ref)
+    validate_request_contract(definition, require_classification=ref.definition is None)
+    return definition
 
 
 @lru_cache(maxsize=4096)
@@ -108,7 +119,7 @@ def _wire_contract(ref: OperationRef):
 @lru_cache(maxsize=4096)
 def _resolved(ref: OperationRef):
     try:
-        definition = _definition(ref)
+        definition = _typed_definition(ref)
         handler = _load(ref.handler_ref)
         if not callable(handler):
             raise RegistryError("registry.invalid_handler")
@@ -130,6 +141,7 @@ class OperationCatalog:
     registrations: tuple[OperationRegistration, ...] = ()
     _index: Mapping[str, OperationRef] = field(init=False, repr=False, compare=False)
     _owners: Mapping[str, str] = field(init=False, repr=False, compare=False)
+    _metadata_admitted: bool = field(default=False, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.references, tuple) or any(not isinstance(ref, OperationRef) for ref in self.references):
@@ -170,10 +182,32 @@ class OperationCatalog:
         return self._index[operation_id]
 
     def resolve(self, operation_id: str):
-        return _resolved(self.reference(operation_id))
+        reference = self.reference(operation_id)
+        if reference.definition is None and not self._metadata_admitted:
+            self.admit(level="metadata")
+        return _resolved(reference)
+
+    def metadata(self, operation_id: str) -> OperationDefinition:
+        """Read complete policies without importing request types or handlers."""
+        ref = self.reference(operation_id)
+        if ref.definition is not None:
+            return ref.definition
+        from stratbox.core.registry.operations import metadata_definition
+        value = metadata_definition(operation_id)
+        if value.method_refs and value.method_refs[0] != ref.handler_ref:
+            value = replace(value, method_refs=(ref.handler_ref, *value.method_refs[1:]))
+        return value
+
+    def document(self, operation_id: str):
+        self.reference(operation_id)
+        from stratbox.core.registry.operations import operation_document
+        return operation_document(operation_id)
 
     def get(self, operation_id: str) -> OperationDefinition:
-        return _definition(self.reference(operation_id))
+        reference = self.reference(operation_id)
+        if reference.definition is None and not self._metadata_admitted:
+            self.admit(level="metadata")
+        return _typed_definition(reference)
 
     def wire_contract(self, operation_id: str):
         return _wire_contract(self.reference(operation_id))
@@ -182,18 +216,19 @@ class OperationCatalog:
         from stratbox.core.registry.source_catalog import source_catalog
         return source_catalog(self)
 
-    def bind(self, operation_id: str, *, inputs=None, parameters=None):
+    def bind(self, operation_id: str, *, inputs=None, parameters=None, source_resolver=None, domain_admitter=None):
         """Build a named, typed call without loading or invoking its handler."""
         from stratbox.core.execution.calls import bind_operation
-        return bind_operation(self, operation_id, inputs=inputs, parameters=parameters)
+        return bind_operation(self, operation_id, inputs=inputs, parameters=parameters,
+                              source_resolver=source_resolver, domain_admitter=domain_admitter)
 
-    def bind_source(self, series_id: str, *, format: str | None = None):
+    def bind_source(self, series_id: str, *, format: str | None = None, group_id=None, edition=None):
         from stratbox.core.execution.calls import bind_source
-        return bind_source(self, series_id, format=format)
+        return bind_source(self, series_id, format=format, group_id=group_id, edition=edition)
 
     @property
     def definitions(self) -> tuple[OperationDefinition, ...]:
-        return tuple(_definition(ref) for ref in self.list_refs())
+        return tuple(self.get(ref.operation_id) for ref in self.list_refs())
 
     def describe(self) -> tuple[dict, ...]:
         from stratbox.core.registry.discovery import describe_operation
@@ -212,12 +247,24 @@ class OperationCatalog:
         from stratbox.core.registry.requirements import operation_requirements
         return operation_requirements(self, operation_id)
 
-    def readiness(self, operation_id: str, available, *, report_date=None,
-                  publication_step=None, perimeter=None):
-        """Assess supplied source instances without running the operation."""
+    def readiness(self, operation_id: str, available, **options):
+        """Keep claims, materials, domain, runtime and effect admission distinct."""
         from stratbox.core.registry.requirements import operation_readiness
-        return operation_readiness(self, operation_id, available, report_date=report_date,
-                                   publication_step=publication_step, perimeter=perimeter)
+        return operation_readiness(self, operation_id, available, **options)
+
+    def connections(self, **filters):
+        from stratbox.core.registry.routes import connections
+        return connections(self, **filters)
+
+    def explain_route(self, goal, **options):
+        from stratbox.core.registry.routes import explain_route
+        return explain_route(self, goal, **options)
+
+    def admit(self, *, level="metadata", refresh=False):
+        from stratbox.core.registry.admission import admit_registry_snapshot
+        report = admit_registry_snapshot(self, level=level, refresh=refresh)
+        object.__setattr__(self, "_metadata_admitted", True)
+        return report
 
     def coverage(self, owner_id: str):
         from stratbox.core.registry.discovery import stage_coverage

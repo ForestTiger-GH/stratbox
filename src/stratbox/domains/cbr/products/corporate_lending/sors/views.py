@@ -5,6 +5,7 @@ import pandas as pd
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsPivotRequest
 from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsCrosswalkResult
 from stratbox.domains.cbr.products.corporate_lending.sors.results import SorsPivotResult
+from stratbox.domains.cbr.analytics.corporate_lending.sors.identity import source_uses
 from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
 
 
@@ -108,4 +109,5 @@ def build_sors_pivot(
         output_rows=len(table),
         identified_cells=identified_cells,
         unidentified_cells=unidentified_cells,
+        source_uses=source_uses(result),
     )

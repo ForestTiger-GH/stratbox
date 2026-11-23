@@ -31,16 +31,27 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "release_id"
       ],
-      "summary": "Calculate exact same-period revision deltas; missing, added, removed or incompatible values remain explicitly qualified."
+      "summary": "Calculate exact same-period revision deltas; missing, added, removed or incompatible values remain explicitly qualified.",
+      "required_parameters": [
+        "dataset_id",
+        "release_id"
+      ]
     },
-    "method_id": "frg.calculate"
+    "method_id": "frg.calculate",
+    "request_fields": {
+      "after": "input",
+      "before": "input",
+      "dataset_id": "parameter",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:calculate"

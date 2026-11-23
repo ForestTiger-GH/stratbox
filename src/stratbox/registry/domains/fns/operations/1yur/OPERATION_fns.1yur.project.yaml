@@ -24,12 +24,16 @@
             "schema_id": "fns.1yur.reported_projection",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Select reviewed reported fields from retained source evidence and record every projection qualification."
     },
-    "method_id": "fns-1yur-project"
+    "method_id": "fns-1yur-project",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:project"

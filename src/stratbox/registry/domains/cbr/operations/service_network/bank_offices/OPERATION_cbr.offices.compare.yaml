@@ -32,7 +32,8 @@
           "contract": {
             "schema_id": "cbr.offices.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -40,7 +41,12 @@
       ],
       "summary": "Compare compatible release layers and retain indeterminate assessments."
     },
-    "method_id": "cbr-offices-compare"
+    "method_id": "cbr-offices-compare",
+    "request_fields": {
+      "baseline": "input",
+      "baseline_state": "parameter",
+      "candidate": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:compare",

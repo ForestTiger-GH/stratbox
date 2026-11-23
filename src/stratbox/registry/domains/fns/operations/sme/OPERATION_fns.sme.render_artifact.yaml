@@ -23,7 +23,8 @@
           "contract": {
             "schema_id": "material.artifact"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -31,7 +32,11 @@
       ],
       "summary": "Render and package an explicit source-associated artifact for independent material storage."
     },
-    "method_id": "fns-sme-render-artifact"
+    "method_id": "fns-sme-render-artifact",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:render_artifact"

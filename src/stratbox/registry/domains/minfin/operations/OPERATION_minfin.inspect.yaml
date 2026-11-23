@@ -30,12 +30,17 @@
           "contract": {
             "schema_id": "minfin.index_change"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Compare candidate link inventories, without asserting publisher absence or source revision."
     },
-    "method_id": "minfin-index-delta"
+    "method_id": "minfin-index-delta",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:inspect"

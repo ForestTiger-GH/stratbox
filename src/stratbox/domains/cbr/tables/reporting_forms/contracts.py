@@ -12,6 +12,7 @@ from stratbox.shared.identity import ByteIdentity
 from stratbox.core.formats.dbf_lossless import DBFTable
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.material_collections import CollectionManifest
+from stratbox.shared.data.source_context import SourceUse
 
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -120,6 +121,7 @@ class FormSnapshot:
     rows: DataFrame
     lineage: tuple[UsedInputReceipt, ...]
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

@@ -29,12 +29,16 @@
             "schema_id": "document.readable.jsonl",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render ordered document evidence and its source context as JSONL."
     },
-    "method_id": "document-readable"
+    "method_id": "document-readable",
+    "request_fields": {
+      "document": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:readable_document"

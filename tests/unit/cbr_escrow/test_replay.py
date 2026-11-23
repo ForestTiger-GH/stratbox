@@ -161,3 +161,16 @@ def test_coverage_and_average_rate_have_distinct_semantic_identity():
     different = replace(dataset, coverage=SnapshotCoverage("partial", "Caller selected one issue from a larger inventory."))
     assert dataset_snapshot(dataset).identity != dataset_snapshot(different).identity
     assert dataset_snapshot(dataset).manifest.version_id != dataset_snapshot(different).manifest.version_id
+
+
+def test_prepared_escrow_views_retain_each_actual_publication_coordinate():
+    first = checked(escrow.parse(publication()))
+    second = checked(escrow.parse(publication(period="01072026")))
+    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((first, second))))
+    view = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset)))
+    assert len(view.source_uses) == 2
+    assert {use.coordinate.source_id for use in view.source_uses} == {"cbr.project_finance.escrow"}
+    assert {use.coordinate.issue_id for use in view.source_uses} == {"2026-06-01", "2026-07-01"}
+    saved = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(view)))
+    restored = checked(escrow.read_view_snapshot(escrow.ReadEscrowSnapshotRequest(saved)))
+    assert restored.source_uses == view.source_uses

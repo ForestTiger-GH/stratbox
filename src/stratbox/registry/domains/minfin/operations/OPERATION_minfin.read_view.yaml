@@ -23,13 +23,17 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a prepared view without rebuilding its analytics.",
       "function": "replay"
     },
-    "method_id": "minfin.read_view"
+    "method_id": "minfin.read_view",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:read_view"

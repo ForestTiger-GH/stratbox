@@ -47,12 +47,17 @@
           "contract": {
             "schema_id": "rosstat.flake.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Compare selected source facts with coordinate movement distinguished from values and profile scope changes."
     },
-    "method_id": "rosstat-tables-compare_flakes"
+    "method_id": "rosstat-tables-compare_flakes",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_flakes"

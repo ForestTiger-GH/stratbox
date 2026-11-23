@@ -47,12 +47,17 @@
           "contract": {
             "schema_id": "rosstat.dataset.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Compare semantic observation revisions under explicit source scopes."
     },
-    "method_id": "rosstat-analytics-compare_datasets"
+    "method_id": "rosstat-analytics-compare_datasets",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_datasets"

@@ -35,20 +35,25 @@
             "schema_id": "rosstat.source_flake.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "storage_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Encode complete selected source-flake values, units, notes and row decisions.",
       "function": "encode"
     },
-    "method_id": "rosstat-tables-flake_snapshot"
+    "method_id": "rosstat-tables-flake_snapshot",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:flake_snapshot"

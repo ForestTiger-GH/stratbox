@@ -29,12 +29,16 @@
           "contract": {
             "schema_id": "cbr.escrow.validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Validate complete source cells, source coordinates and indicator assignments."
     },
-    "method_id": "cbr-escrow-validation"
+    "method_id": "cbr-escrow-validation",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.inspection:validate"

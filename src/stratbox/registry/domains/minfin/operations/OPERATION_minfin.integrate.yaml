@@ -26,7 +26,8 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -34,9 +35,19 @@
         "release_id",
         "bindings"
       ],
-      "summary": "Map reviewed or explicitly bound source rows to qualified observations with exact periods, units and lineage."
+      "summary": "Map reviewed or explicitly bound source rows to qualified observations with exact periods, units and lineage.",
+      "required_parameters": [
+        "dataset_id",
+        "release_id"
+      ]
     },
-    "method_id": "minfin.integrate"
+    "method_id": "minfin.integrate",
+    "request_fields": {
+      "bindings": "parameter",
+      "dataset_id": "parameter",
+      "flake": "input",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:integrate"

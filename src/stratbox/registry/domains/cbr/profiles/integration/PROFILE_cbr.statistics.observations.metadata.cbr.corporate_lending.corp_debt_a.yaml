@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.corporate_lending.corp_debt_a",
-    "scope": "Corporate, SME and individual-entrepreneur perimeters and published activity classifications remain distinct. Source cells retain every period before model selection."
+    "scope": "Corporate, SME and individual-entrepreneur perimeters and published activity classifications remain distinct. Source cells retain every period before model selection.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

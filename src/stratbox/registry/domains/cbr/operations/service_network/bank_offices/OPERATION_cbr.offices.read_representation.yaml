@@ -25,7 +25,8 @@
             "schema_id": "cbr.offices.release",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -33,9 +34,18 @@
         "official_as_of",
         "period_basis"
       ],
-      "summary": "Read CSV with explicit capture and observation dates; absent observation metadata remains literal-only."
+      "summary": "Read CSV with explicit capture and observation dates; absent observation metadata remains literal-only.",
+      "required_parameters": [
+        "captured_on"
+      ]
     },
-    "method_id": "cbr-offices-csv-explicit-period"
+    "method_id": "cbr-offices-csv-explicit-period",
+    "request_fields": {
+      "captured_on": "parameter",
+      "official_as_of": "parameter",
+      "payload": "input",
+      "period_basis": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:read_representation"

@@ -9,6 +9,9 @@ result. Physical storage and durable job ownership remain with that caller.
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, is_dataclass, replace
+from functools import lru_cache
+from importlib import import_module, util as import_util
+import ast
 from types import UnionType
 from typing import Any, Callable, Literal, Mapping, Protocol, Union, get_args, get_origin, get_type_hints
 
@@ -19,6 +22,7 @@ from stratbox.shared.identifiers import safe_token
 from stratbox.shared.data.operations import OperationKey, assess_input
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import ValueContext
 from stratbox.shared.data.snapshots import DatasetAssembly, DatasetSnapshot, SnapshotReference
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
@@ -29,6 +33,48 @@ class HandoffError(ValueError):
     @property
     def code(self) -> str:
         return self.args[0]
+
+
+@lru_cache(maxsize=256)
+def _annotation_imports(module_name):
+    """Resolve only imports explicitly declared by a trusted request module."""
+    module = import_module(module_name)
+    loader = getattr(module, "__loader__", None)
+    source = loader.get_source(module_name) if loader is not None and hasattr(loader, "get_source") else None
+    if source is None:
+        return {}
+    result = {}
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                result[alias.asname or alias.name.split(".")[0]] = (
+                    alias.name if alias.asname else alias.name.split(".")[0], None)
+        elif isinstance(node, ast.ImportFrom):
+            name = "." * node.level + (node.module or "")
+            target = import_util.resolve_name(name, module.__package__) if node.level else name
+            for alias in node.names:
+                if alias.name != "*":
+                    result[alias.asname or alias.name] = (target, alias.name)
+    return result
+
+
+def request_type_hints(kind):
+    """Load optional annotation owners only when an actual request is bound."""
+    namespace = dict(vars(import_module(kind.__module__)))
+    for _ in range(32):
+        try:
+            return get_type_hints(kind, namespace)
+        except NameError as error:
+            reference = _annotation_imports(kind.__module__).get(error.name)
+            if reference is None or error.name in namespace:
+                raise HandoffError("handoff.request_type_unresolved") from None
+            module_name, symbol = reference
+            try:
+                module = import_module(module_name)
+                namespace[error.name] = getattr(module, symbol) if symbol else module
+            except (ImportError, AttributeError):
+                raise HandoffError("handoff.request_type_unavailable") from None
+    raise HandoffError("handoff.request_type_unresolved")
 
 
 def _field(value: object, name: str) -> object:
@@ -68,6 +114,7 @@ class ProjectedOutput:
     effects: tuple[EffectReceipt, ...]
     computation: ComputationReceipt | None
     identity: ByteIdentity | None
+    source_context: ValueContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,8 +135,11 @@ class PreparedInput:
     computation: ComputationReceipt | None = None
     identity: ByteIdentity | None = None
     member_computations: tuple[tuple[str, ComputationReceipt], ...] = ()
+    source_context: ValueContext | None = None
 
     def __post_init__(self):
+        if self.source_context is not None and not isinstance(self.source_context, ValueContext):
+            raise HandoffError("source.context_invalid")
         if not isinstance(self.contract, DataContract) or self.value is None:
             raise HandoffError("handoff.prepared_input_invalid")
         if self.outcome not in {"succeeded", "partial"}:
@@ -122,6 +172,7 @@ def prepare_input(
     qualifications: frozenset[str] = frozenset(),
     coverage: frozenset[str] = frozenset(),
     computation: ComputationReceipt | None = None,
+    source_context: ValueContext | None = None,
 ) -> PreparedInput:
     """Attach an explicit schema to an inline value without parsing its bytes.
 
@@ -141,7 +192,8 @@ def prepare_input(
     if contract is None:
         raise HandoffError("handoff.explicit_contract_required")
     return PreparedInput(contract, value, qualifications=qualifications, coverage=coverage,
-        used_inputs=tuple(dict.fromkeys(receipts)), computation=computation, identity=_identity(value, computation))
+        used_inputs=tuple(dict.fromkeys(receipts)), computation=computation, identity=_identity(value, computation),
+        source_context=source_context)
 
 
 def artifact_input(artifact: MaterialArtifact) -> PreparedInput:
@@ -173,18 +225,26 @@ def collect_inputs(
     if any(item.outcome not in {"succeeded", "partial"} for item in items):
         raise HandoffError("processing.outcome_not_accepted")
     parents = []
+    contexts = []
+    from stratbox.core.execution.value_context import value_context
     for index, item in enumerate(items):
+        intrinsic = value_context(item.value, item.contract)
+        if item.source_context is not None and item.source_context != intrinsic:
+            contexts.extend(item.source_context.uses)
         if item.computation is not None:
             parents.append((str(index), item.computation))
         if isinstance(item, PreparedInput):
             parents.extend((f"{index}.{name}", receipt) for name, receipt in item.member_computations)
-    return PreparedInput(contract, tuple(item.value for item in items),
+    values = tuple(item.value for item in items)
+    contexts = [*value_context(values, contract).uses, *contexts]
+    return PreparedInput(contract, values,
         outcome="partial" if any(item.outcome == "partial" for item in items) else "succeeded",
         qualifications=frozenset.intersection(*(item.qualifications for item in items)) - {"storage.confirmed"},
         coverage=frozenset.intersection(*(item.coverage for item in items)),
         used_inputs=tuple(dict.fromkeys(receipt for item in items for receipt in item.used_inputs)),
         identity=_identity(tuple(item.value for item in items), None),
-        member_computations=tuple(parents))
+        member_computations=tuple(parents),
+        source_context=ValueContext(tuple(contexts)) if contexts else None)
 
 
 def project_output(result: OperationResult, output_name: str) -> ProjectedOutput:
@@ -225,11 +285,15 @@ def project_output(result: OperationResult, output_name: str) -> ProjectedOutput
         )
         if not written and not read_back:
             raise HandoffError("handoff.storage_confirmation_missing")
+    from stratbox.core.execution.value_context import value_context
+    carrier = (_project(result.value, port.source_context_path)
+        if port.source_context_path is not None else value)
     return ProjectedOutput(
         OperationKey(result.operation_id),
         result.invocation_id, port.name, port.contract, result.outcome, value,
         port.qualifications, port.coverage, result.used_inputs, result.effects,
         result.computation, identity,
+        value_context(carrier, port.contract if port.source_context_path is None else None),
     )
 
 
@@ -403,7 +467,7 @@ def _construct(kind: type, values: dict[str, object]) -> object:
     declared = {item.name: item for item in fields(kind) if item.init}
     if not set(values) <= set(declared):
         raise HandoffError("handoff.request_field_unknown")
-    annotations = get_type_hints(kind)
+    annotations = request_type_hints(kind)
     for name, value in tuple(values.items()):
         annotation = annotations.get(name, Any)
         if isinstance(value, _Nested):
@@ -452,7 +516,14 @@ class BoundRequest:
         receipts = list(context.input_receipts)
         transports = list(context.input_transports)
         provenance = list(context.input_provenance)
+        source_contexts = (dict(context.input_source_contexts)
+            if context.input_source_operation in {None, self.definition.operation_id} else {})
         for name, projected in self.inputs:
+            if projected.source_context is not None and projected.source_context.uses:
+                existing_context = source_contexts.get(name)
+                if existing_context is not None and existing_context != projected.source_context:
+                    raise HandoffError("source.context_conflict")
+                source_contexts[name] = projected.source_context
             incoming = [(name, projected.computation)] if projected.computation is not None else []
             if isinstance(projected, PreparedInput):
                 incoming.extend((f"{name}.{member}", receipt)
@@ -475,7 +546,9 @@ class BoundRequest:
         return replace(context, input_computations=tuple(sorted(computations.items())),
             input_receipts=tuple(dict.fromkeys(receipts)),
             input_transports=tuple(dict.fromkeys(transports)),
-            input_provenance=tuple(dict.fromkeys(provenance)))
+            input_provenance=tuple(dict.fromkeys(provenance)),
+            input_source_contexts=tuple(sorted(source_contexts.items())),
+            input_source_operation=self.definition.operation_id if source_contexts else None)
 
     def invoke(self, operation: Callable, *, context: ExecutionContext | None = None, **options) -> OperationResult:
         """Invoke an explicitly supplied trusted API; no module names are evaluated."""

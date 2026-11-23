@@ -32,13 +32,17 @@
             "schema_id": "cbr.corporate_lending.source_observations",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore qualified source observations without reading a workbook or running a model.",
       "function": "replay"
     },
-    "method_id": "cbr-corporate-observation-snapshot"
+    "method_id": "cbr-corporate-observation-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.source_operations:read_snapshot"

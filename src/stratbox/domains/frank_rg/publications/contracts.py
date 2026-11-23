@@ -1,7 +1,7 @@
 """Transport-independent report identities and caller-owned delivery inputs."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from math import isfinite
 from typing import Literal
@@ -54,6 +54,7 @@ class ReportPeriod:
     """A supplier snapshot date or a numbered week within a calendar month."""
     snapshot_date: date
     week_no: int | None = None
+    issue_id: str = field(init=False)
 
     def __post_init__(self):
         if type(self.snapshot_date) is not date:
@@ -63,16 +64,14 @@ class ReportPeriod:
             or self.snapshot_date.day != 1
         ):
             raise ValueError("frg.period.invalid_month_week")
+        object.__setattr__(self, "issue_id", self.snapshot_date.isoformat() if self.week_no is None
+                           else f"{self.snapshot_date:%Y-%m}-week-{self.week_no}")
 
     @property
     def text(self) -> str:
         if self.week_no is None:
             return self.snapshot_date.isoformat()
         return f"{self.snapshot_date:%Y-%m} week {self.week_no}"
-
-    @property
-    def issue_id(self) -> str:
-        return self.snapshot_date.isoformat() if self.week_no is None else f"{self.snapshot_date:%Y-%m}-week-{self.week_no}"
 
     @property
     def rank(self) -> tuple[date, int]:

@@ -9,6 +9,7 @@ from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import Ind
 from stratbox.domains.cbr.tables.corporate_lending.industry.streams import STREAM_COLUMNS
 from stratbox.domains.cbr.tables.corporate_lending.industry.streams import concat_industry_streams
 from stratbox.domains.cbr.tables.corporate_lending.industry.streams import optimize_industry_stream_dtypes
+from stratbox.domains.cbr.tables.corporate_lending.industry.sources import industry_source_uses
 
 
 CBR_0105A_DEBT_CORP_APK_INDUSTRY_SPEC = Cbr0105ADebtCorpIndustrySpec(
@@ -75,7 +76,7 @@ def _object_frame(df_stream: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataF
 
 
 def calculate_cbr_0105a_debt_corp_apk_industry(
-    df_stream: pd.DataFrame, *, budget=None,
+    df_stream: pd.DataFrame, *, budget=None, source_uses=(),
 ) -> Cbr0105ADebtCorpApkCalculationResult:
     """Добавляет в поток расчетную отрасль ``АПК``.
 
@@ -258,6 +259,7 @@ def calculate_cbr_0105a_debt_corp_apk_industry(
         source_rows_used=int(len(components)),
         groups_calculated=int(len(df_apk)),
         rows_added=int(len(df_apk)),
+        source_uses=industry_source_uses(df_stream, source_uses=source_uses),
     )
 
 

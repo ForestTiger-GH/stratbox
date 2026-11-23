@@ -24,15 +24,23 @@
             "schema_id": "cbr.service_network.readable",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "family"
       ],
-      "summary": "Preserve native HTML or transcribe all worksheet cell tokens with formula evidence."
+      "summary": "Preserve native HTML or transcribe all worksheet cell tokens with formula evidence.",
+      "required_parameters": [
+        "family"
+      ]
     },
-    "method_id": "cbr-office-readable"
+    "method_id": "cbr-office-readable",
+    "request_fields": {
+      "family": "parameter",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:make_readable"

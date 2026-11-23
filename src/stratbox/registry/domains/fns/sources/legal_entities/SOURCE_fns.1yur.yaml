@@ -21,5 +21,132 @@
     "extract_profile": "fns.1yur.all-workbook-cells",
     "integration_profile": "fns.1yur.identity-field-alignment",
     "observation_basis": "published_reporting_date_with_metric_specific_basis"
-  }
+  },
+  "source_groups": [
+    {
+      "group_id": "registration_statistics",
+      "title": "Form 1-YUR: legal entities and registration statistics",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "fns.1yur.flake",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "fns.1yur.index",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "fns.1yur.original",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "fns.1yur.reported_projection",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "fns.1yur.integrated_dataset",
+          "version": 1,
+          "role": "integrated"
+        },
+        {
+          "schema_id": "fns.1yur.prepared_view",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.calculation",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.regional_release",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.regional_csv",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.integrated_dataset.snapshot",
+          "version": 1,
+          "role": "integrated"
+        },
+        {
+          "schema_id": "fns.1yur.validation",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "fns.1yur.readable",
+          "version": 1,
+          "role": "readable"
+        },
+        {
+          "schema_id": "fns.1yur.comparison",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "fns.1yur.workbook_bundle.snapshot",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "fns.1yur.calculation.snapshot",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.reported_projection.snapshot",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "fns.1yur.prepared_view.snapshot",
+          "version": 1,
+          "role": "products"
+        },
+        {
+          "schema_id": "fns.1yur.flake_comparison",
+          "version": 1,
+          "role": null
+        }
+      ],
+      "profile_ids": [
+        "fns.1yur.dated-links",
+        "fns.1yur.all-workbook-cells",
+        "fns.1yur.identity-field-alignment"
+      ],
+      "formats": [
+        "xls",
+        "xlsx",
+        "zip",
+        "rar"
+      ],
+      "grain": [
+        "reporting_date",
+        "worksheet",
+        "row",
+        "column"
+      ],
+      "period_model": "metric_specific_stock_flow_cumulative",
+      "qualification": "supported"
+    }
+  ]
 }

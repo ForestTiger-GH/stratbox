@@ -22,13 +22,17 @@
             "schema_id": "fns.1yur.reported_projection",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate and replay a retained projection without the original file or a spreadsheet engine.",
       "function": "replay"
     },
-    "method_id": "fns-1yur-read-projection-snapshot"
+    "method_id": "fns-1yur-read-projection-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:read_projection_snapshot"

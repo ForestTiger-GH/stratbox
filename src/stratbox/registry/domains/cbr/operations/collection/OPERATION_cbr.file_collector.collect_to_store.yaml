@@ -32,7 +32,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "files",
@@ -44,7 +45,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "manifest",
@@ -54,7 +57,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         },
         {
           "name": "archive_members",
@@ -64,7 +68,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -72,9 +78,22 @@
         "destinations"
       ],
       "summary": "Acquire and preserve selected originals with per-file outcomes.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "selection",
+        "destinations"
+      ]
     },
-    "method_id": "cbr-file-stream"
+    "method_id": "cbr-file-stream",
+    "request_fields": {
+      "destinations": "effect",
+      "selection.continue_on_error": "parameter",
+      "selection.deadline_per_source_seconds": "runtime",
+      "selection.max_batch_bytes": "parameter",
+      "selection.retry": "runtime",
+      "selection.source_ids": "input",
+      "selection.try_case_variants": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:collect_to_store"

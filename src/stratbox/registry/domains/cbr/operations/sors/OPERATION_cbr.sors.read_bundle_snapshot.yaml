@@ -33,13 +33,17 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "summary": "Validate and reconstruct the complete SORS continuation context.",
       "function": "replay"
     },
-    "method_id": "sors-replay-context"
+    "method_id": "sors-replay-context",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.snapshot_operations:read_bundle_snapshot"

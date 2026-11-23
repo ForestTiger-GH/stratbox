@@ -30,7 +30,8 @@
             "schema_id": "fns.1yur.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -41,7 +42,14 @@
       ],
       "summary": "Prepare an exact selection from retained observations without automatic aggregation."
     },
-    "method_id": "fns-1yur-view"
+    "method_id": "fns-1yur-view",
+    "request_fields": {
+      "dataset": "input",
+      "dimensions": "parameter",
+      "metric_ids": "parameter",
+      "period_kinds": "parameter",
+      "subject_ids": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:view"

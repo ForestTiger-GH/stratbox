@@ -33,13 +33,15 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "storage",
           "contract": {
             "schema_id": "source.storage_receipt"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -48,9 +50,18 @@
         "baseline"
       ],
       "summary": "Stream an original into a caller-selected store with a confirmed commit boundary.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "source",
+        "destination"
+      ]
     },
-    "method_id": "original-stream"
+    "method_id": "original-stream",
+    "request_fields": {
+      "baseline": "parameter",
+      "destination": "effect",
+      "source": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.source.originals:receive_to_store"

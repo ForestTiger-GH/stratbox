@@ -27,20 +27,25 @@
             "schema_id": "workbook.cells.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         },
         {
           "name": "dataset_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Encode a complete workbook extract into independently addressable sheet partitions.",
       "function": "encode"
     },
-    "method_id": "workbook-snapshot"
+    "method_id": "workbook-snapshot",
+    "request_fields": {
+      "workbook": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:snapshot_workbook"

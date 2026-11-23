@@ -13,6 +13,7 @@ from stratbox.domains.cbr.products.corporate_lending.industry.contracts import I
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotSetResult as Cbr0105ADebtCorpPivotSetResult
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotTable as Cbr0105ADebtCorpPivotTable
 from stratbox.domains.cbr.integration.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
+from stratbox.domains.cbr.tables.corporate_lending.industry.sources import industry_source_uses, merge_source_uses
 
 
 CBR_0105A_DEBT_CORP_PIVOT_DIMENSIONS: tuple[Cbr0105ADebtCorpPivotDimension, ...] = (
@@ -401,6 +402,7 @@ def build_cbr_0105a_debt_corp_pivot_set(
     *,
     stream_result: Cbr0105ADebtCorpStreamResult | None = None,
     budget=None,
+    source_uses=(),
 ) -> Cbr0105ADebtCorpPivotSetResult:
     """Строит набор таблиц из уже отфильтрованного потокового DataFrame.
 
@@ -467,6 +469,7 @@ def build_cbr_0105a_debt_corp_pivot_set(
                 rows=int(len(table)),
                 data_columns=int(len(matrix.columns)),
                 missing_values=int(matrix.isna().sum().sum()),
+                source_uses=industry_source_uses(group, carriers=(stream_result,), source_uses=source_uses),
             )
         )
 
@@ -480,6 +483,7 @@ def build_cbr_0105a_debt_corp_pivot_set(
         source_rows=int(len(df_stream)),
         table_count=len(tables),
         is_partial=is_partial,
+        source_uses=merge_source_uses(*(table.source_uses for table in tables)),
     )
 
 

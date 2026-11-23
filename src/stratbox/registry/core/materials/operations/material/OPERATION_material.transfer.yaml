@@ -42,15 +42,23 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "destination"
       ],
-      "summary": "Stream an exact material between independently selected stores without deleting its source."
+      "summary": "Stream an exact material between independently selected stores without deleting its source.",
+      "required_parameters": [
+        "destination"
+      ]
     },
-    "method_id": "verified-neutral-stream-copy"
+    "method_id": "verified-neutral-stream-copy",
+    "request_fields": {
+      "destination": "effect",
+      "material": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.operations:transfer_material"

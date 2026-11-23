@@ -29,12 +29,16 @@
             "schema_id": "workbook.readable.jsonl",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render physical cell evidence as source-readable JSONL without assigning economic meaning."
     },
-    "method_id": "workbook-readable"
+    "method_id": "workbook-readable",
+    "request_fields": {
+      "workbook": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:readable_workbook"

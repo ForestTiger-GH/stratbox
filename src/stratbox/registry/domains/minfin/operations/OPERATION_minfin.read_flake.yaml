@@ -30,13 +30,17 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a complete source-local flake from a verified representation without reacquiring its original.",
       "function": "replay"
     },
-    "method_id": "minfin.flake-json"
+    "method_id": "minfin.flake-json",
+    "request_fields": {
+      "representation": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:read_source_flake"

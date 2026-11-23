@@ -30,7 +30,8 @@
             "schema_id": "cbr.service_network.product",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -38,7 +39,11 @@
       ],
       "summary": "Render a retained prepared view to CSV or XLSX without source parsing."
     },
-    "method_id": "cbr-office-render"
+    "method_id": "cbr-office-render",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:render"

@@ -19,5 +19,56 @@
     "table_profile": "cbr.tables.mortgage_scpa_full",
     "integration_profile": "cbr.statistics.observations",
     "product_profile": "cbr.statistics.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "published_statistics",
+      "title": "Mortgages under shared construction agreements",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "cbr.workbook.flake",
+        "cbr.tables.mortgage_scpa_full",
+        "cbr.statistics.observations.metadata.cbr.household_lending.mortgage_debt",
+        "cbr.statistics.views"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "publication",
+        "record",
+        "field"
+      ],
+      "period_model": "publisher_defined",
+      "qualification": "conditional",
+      "layout_editions": [
+        "published_matrix_v1"
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.mortgage_scpa_full": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.mortgage_scpa_full"
+      }
+    }
   }
 }

@@ -43,7 +43,7 @@ def align(projection):
             dimensions += (("time_basis", "published_reporting_date_unspecified_accumulation"),)
         observations.append(replace(item, metric=MetricRef(measure, "count", quantity, MAP_VERSION, Decimal(1)), dimensions=dimensions))
     lineage = (*projection.batch.lineage, UsedInputReceipt("field_map", MAP_IDENTITY, "application/json", "reference_only", MAP_VERSION))
-    batch = ObservationBatch("fns.1yur.integrated", 1, projection.batch.release_id, tuple(observations), lineage)
+    batch = ObservationBatch("fns.1yur.integrated", 1, projection.batch.release_id, tuple(observations), lineage, projection.batch.source_uses)
     details = json.loads(projection.details_json)
     details.update({"mapping_profile": PROFILE, "mapping_version": MAP_VERSION,
         "mapping_sha256": MAP_IDENTITY.sha256, "epoch": epoch(projection.context.observation_date),

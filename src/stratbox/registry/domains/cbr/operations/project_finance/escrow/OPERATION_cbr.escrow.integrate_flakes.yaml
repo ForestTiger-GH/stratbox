@@ -19,7 +19,8 @@
             "schema_id": "cbr.escrow.flakes",
             "version": 2,
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -30,7 +31,8 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,7 +40,11 @@
       ],
       "summary": "Integrate admitted publication flakes with explicit duplicate and edition checks."
     },
-    "method_id": "cbr-escrow-integration"
+    "method_id": "cbr-escrow-integration",
+    "request_fields": {
+      "coverage": "parameter",
+      "flakes": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.lifecycle:integrate_flakes"

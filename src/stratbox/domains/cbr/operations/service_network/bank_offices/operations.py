@@ -5,6 +5,7 @@ from datetime import date, tzinfo
 from stratbox.core.network import HttpRequest, HttpTransport, HttpsEndpoint, RetryPolicy
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.domains.cbr.tables.service_network.context import source_uses
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
     ParsedRelease,
@@ -103,6 +104,7 @@ def _parse(request, invocation, acquisition=None):
         count,
         invocation.used_inputs,
         observations=_observations(rows, request.captured_on, request.official_as_of),
+        source_uses=source_uses(DATASET, request.payload, request.captured_on, METHOD),
         parameters={"official_as_of": request.official_as_of},
         acquisition=acquisition,
         source_details={
@@ -161,6 +163,7 @@ def read_representation(
             invocation.used_inputs,
             facts_method=METHOD,
             observations=_observations(rows, req.captured_on, req.official_as_of) if basis != "unknown" else None,
+            source_uses=source_uses(DATASET, req.payload, req.captured_on, METHOD),
             parameters={"official_as_of": req.official_as_of, "period_basis": basis},
             source_details={"captured_on": req.captured_on, "official_as_of": req.official_as_of,
                             "period_basis": basis},

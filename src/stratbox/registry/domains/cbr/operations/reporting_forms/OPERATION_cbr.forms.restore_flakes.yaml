@@ -31,13 +31,17 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a complete form flake snapshot without parsing original DBF bytes again.",
       "function": "replay"
     },
-    "method_id": "cbr-forms-flake-replay"
+    "method_id": "cbr-forms-flake-replay",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:restore_flakes"

@@ -30,6 +30,14 @@ Register a `RecordDataSchema` extension and a `NotificationTopic` to expose an a
 
 An in-process caller can use `MemoryNotificationState`. For a resumable runtime provide a `NotificationStateStore` with an atomic comparison of subscription, checkpoint and dispatch revisions and a read-back for exact commands. `encode_state_mutation` and `decode_state_mutation` expose a bounded v1 representation for provider-managed persistence. Source and state consistency remain claims of the bound providers. A durable inbox must compare the current grant and subscription revision, the route revision, fence, attempt and payload digest at its accepting boundary. It must leave enough evidence to resolve the exact attempt after process loss.
 
+Preparation records the subscription, pinned journal head, starting cursor and
+actually consumed page dependencies in its computation receipt. A bounded
+streaming page digest commits verified record byte identities, their positions,
+selected schemas/projection, actual authority decisions and observed deduplication
+state. Different journal content therefore changes the computation key even
+when a provider supplies the same head label. Unused runtime sources, consumers
+and provider configuration remain outside that key.
+
 For retention, keep origins needed by pending dispatches alongside live checkpoints and active replay ranges. `oldest_pending_source_positions` in `notification_health` reports the first still-needed offset per epoch among the rows covered by the current page and its inspection grant. Compute retention from a coordinated inventory of all relevant subscriptions, checkpoints and replay ranges at the host. The health view is useful for inspection, since permission filtering, pagination and concurrent preparation can limit its coverage. Resolve source gaps at the source. When the competent owner approves a new cut, call `amend_checkpoint` with the expected cursor, snapshot reference, reason and evidence reference.
 
 The current output is structured JSON. `record_external_delivery` represents a separate owner-qualified channel receipt. `project_downstream` shows independent stage and attempt outcomes from those registered observations. A recipient can format, route and store its own downstream effects.

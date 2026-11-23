@@ -27,13 +27,17 @@
             "schema_id": "document.blocks.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Restore ordered document evidence without reacquiring the original.",
       "function": "replay"
     },
-    "method_id": "document-replay"
+    "method_id": "document-replay",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:replay_document"

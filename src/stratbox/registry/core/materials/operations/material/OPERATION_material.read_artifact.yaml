@@ -31,7 +31,8 @@
           "contract": {
             "schema_id": "material.artifact"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -40,7 +41,11 @@
       "summary": "Restore and verify a retained artifact's contract, representation and full lineage.",
       "function": "replay"
     },
-    "method_id": "artifact-replay"
+    "method_id": "artifact-replay",
+    "request_fields": {
+      "artifact": "input",
+      "limit": "runtime"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.operations:read_artifact"

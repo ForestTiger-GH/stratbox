@@ -33,7 +33,8 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -42,7 +43,12 @@
       ],
       "summary": "Read selected typed components from a pinned logical dataset version."
     },
-    "method_id": "dataset-read"
+    "method_id": "dataset-read",
+    "request_fields": {
+      "components": "parameter",
+      "reference": "input",
+      "selection": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.storage.datasets.operations:read_snapshot"

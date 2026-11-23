@@ -30,7 +30,8 @@
             "schema_id": "workbook.cells.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -38,9 +39,19 @@
         "issue_id",
         "asset_id"
       ],
-      "summary": "Extract all decoder-visible workbook cells with exact format-specific evidence."
+      "summary": "Extract all decoder-visible workbook cells with exact format-specific evidence.",
+      "required_parameters": [
+        "series_id",
+        "issue_id"
+      ]
     },
-    "method_id": "workbook-extract"
+    "method_id": "workbook-extract",
+    "request_fields": {
+      "asset_id": "parameter",
+      "issue_id": "parameter",
+      "payload": "input",
+      "series_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:extract_workbook"

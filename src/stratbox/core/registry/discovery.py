@@ -34,6 +34,8 @@ def _port(port) -> dict:
         "qualifications": sorted(port.qualifications),
         "coverage": sorted(port.coverage),
         "outcomes": sorted(port.outcomes),
+        "collection": port.collection,
+        **({"source_policy": port.source_policy, "source_context_path": port.source_context_path} if hasattr(port, "source_policy") else {}),
         **(
             {
                 "required": port.required,
@@ -53,8 +55,12 @@ def _port(port) -> dict:
 
 
 def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict:
-    op = catalog.get(ref.operation_id)
-    codec = catalog.wire_contract(ref.operation_id)
+    op = catalog.metadata(ref.operation_id)
+    machine = ref.wire_contract_ref is not None
+    if machine and op.possible_effects:
+        from stratbox.core.registry.catalog import RegistryError
+        raise RegistryError("registry.read_only_effects")
+    document = None if ref.definition is not None else catalog.document(ref.operation_id)
     required, optional = (
         sorted(op.required_capabilities),
         sorted(op.optional_capabilities),
@@ -62,6 +68,13 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
 
     def name(kind):
         return f"{kind.__module__}.{kind.__qualname__}"
+
+    def declared_name(field):
+        if document is not None:
+            value = document["definition"][field]
+            return " | ".join(item.replace(":", ".") for item in value) if isinstance(value, list) else value.replace(":", ".")
+        value = getattr(op, field)
+        return " | ".join(name(kind) for kind in value) if isinstance(value, tuple) else name(value)
 
     processing = op.processing
     from stratbox.core.registry.requirements import describe_source_requirements
@@ -73,10 +86,11 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
         "purpose": processing.summary
         if processing
         else op.operation_id.rsplit(".", 1)[-1].replace("_", " "),
-        "python_request": name(op.request_type),
-        "python_result": " | ".join(name(kind) for kind in op.value_type)
-        if isinstance(op.value_type, tuple)
-        else name(op.value_type),
+        "python_request": declared_name("request_type"),
+        "python_result": declared_name("value_type"),
+        "request_fields": [asdict(field) for field in op.request_fields],
+        "method_references": list(op.method_refs),
+        "method_resources": list(op.method_resources),
         "processing": None
         if processing is None
         else {
@@ -85,11 +99,14 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
             "inputs": [_port(port) for port in processing.inputs],
             "outputs": [_port(port) for port in processing.outputs],
             "parameters": list(processing.parameters),
+            "required_parameters": list(processing.required_parameters),
             "composition": processing.composition,
             "routing": "requires_value_and_runtime_admission",
         },
-        "machine_input_roles": sorted(codec.input_fields) if codec else [],
-        "machine_result_fields": sorted(codec.output_fields) if codec else [],
+        "machine_input_roles": [],
+        "machine_result_fields": [],
+        "machine_contract_ref": ref.wire_contract_ref,
+        "machine_schema_admission": "typed_contract_required" if machine else "inapplicable",
         "capabilities": [
             {
                 "role": role,
@@ -107,7 +124,7 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
         "partial_allowed": op.partial_allowed,
         "cancellation": "cooperative_at_checkpoints",
         "diagnostic_envelope": 3,
-        "machine_read_only": codec is not None,
+        "machine_read_only": machine,
         "machine_typed_references": True,
     }
 
@@ -148,7 +165,7 @@ def catalog_page(
             continue
         if machine_only and ref.wire_contract_ref is None:
             continue
-        processing = catalog.get(ref.operation_id).processing
+        processing = catalog.metadata(ref.operation_id).processing
         if stage is not None and (processing is None or stage not in processing.stages):
             continue
         if role is not None and (
@@ -185,7 +202,7 @@ def compatible_next(
     *,
     output: str | None = None,
 ) -> tuple[OperationConnection, ...]:
-    producer = catalog.get(operation_id)
+    producer = catalog.metadata(operation_id)
     if producer.processing is None:
         return ()
     outputs = producer.processing.outputs
@@ -197,7 +214,7 @@ def compatible_next(
     for ref in catalog.list_refs():
         if ref.operation_id == operation_id:
             continue
-        consumer = catalog.get(ref.operation_id)
+        consumer = catalog.metadata(ref.operation_id)
         if consumer.processing is None:
             continue
         for produced in outputs:
@@ -242,7 +259,7 @@ def stage_coverage(
     for stage in ProcessingStage:
         direct, composites = [], []
         for ref in registration.operations:
-            op = catalog.get(ref.operation_id)
+            op = catalog.metadata(ref.operation_id)
             if op.processing and stage in op.processing.stages:
                 target = composites if op.processing.composition else direct
                 target.append(OperationKey(ref.operation_id))
@@ -252,7 +269,7 @@ def stage_coverage(
                 raise RegistryError("registry.coverage_conflict")
             for key in declaration.operations:
                 try:
-                    target = catalog.get(key.operation_id)
+                    target = catalog.metadata(key.operation_id)
                 except ValueError as exc:
                     raise RegistryError("registry.delegation_unavailable") from exc
                 if target.processing is None or stage not in target.processing.stages:

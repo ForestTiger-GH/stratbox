@@ -129,11 +129,12 @@ remain in result evidence. Upstream effects stay attached to their producer.
 
 The runner captures exact named inputs, collection order and multiplicity, and
 actual semantic parameter values including defaults. These determine the
-computation together with the operation, method and independent semantic
-dependencies. Inherited producer history is separate from this signature.
+computation together with the operation, content-addressed method fingerprint
+and actually consumed semantic dependencies. Inherited producer history is separate from this signature.
 Equal values supplied directly or restored from retention therefore retain the
-same computation key. Explicitly supplied independent dependency receipts keep
-their editions even when their bytes match another input.
+same computation key. `Invocation.use` and `Invocation.depend` establish actual dependencies; merely
+supplying an unused receipt adds provenance. Consumed dependency editions remain
+significant even when their bytes match another input.
 
 `core.execution.values` supplies common value descriptors, exact identities,
 snapshot adapters, input receipts and byte/cell accounting. Domains provide
@@ -202,8 +203,8 @@ result = call.invoke()
 `catalog.bind_source(series_id, format=...)` selects a logical source and its
 canonical route. Its `bind(operation_id, ..., inputs=..., parameters=...)`
 checks operation applicability, formats, fixed source parameters and exact
-named input contracts. Stage graphs describe coverage; port compatibility governs handoffs. The optional `from_stage` selects
-an explicit predecessor. When an operation supports only a subset of the
+named input contracts. Exact producer/output and consumer/input contracts govern
+handoff. Stages describe a derived overview. When an operation supports only a subset of the
 source's formats, a format selection is required.
 
 A retained extract can enter its independent next operation directly. A source

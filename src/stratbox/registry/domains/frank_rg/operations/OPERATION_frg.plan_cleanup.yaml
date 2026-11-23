@@ -15,7 +15,8 @@
           "contract": {
             "schema_id": "frg.cleanup_plan"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -23,9 +24,16 @@
         "delete_others"
       ],
       "summary": "Prepare a read-only, revision-bound report cleanup proposal.",
-      "function": "maintain"
+      "function": "maintain",
+      "required_parameters": [
+        "directory"
+      ]
     },
-    "method_id": "frg-cleanup-plan-profile"
+    "method_id": "frg-cleanup-plan-profile",
+    "request_fields": {
+      "delete_others": "parameter",
+      "directory": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:plan_cleanup",

@@ -37,21 +37,30 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "storage",
           "contract": {
             "schema_id": "source.storage_receipt"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "destination"
       ],
-      "summary": "Preserve exact original bytes and return separately qualified storage evidence."
+      "summary": "Preserve exact original bytes and return separately qualified storage evidence.",
+      "required_parameters": [
+        "destination"
+      ]
     },
-    "method_id": "original-storage"
+    "method_id": "original-storage",
+    "request_fields": {
+      "destination": "effect",
+      "source": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.source.originals:save_original"

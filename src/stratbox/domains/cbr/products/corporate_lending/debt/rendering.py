@@ -177,6 +177,7 @@ def render_cbr_0105a_debt_corp_pivot_workbook(
         representation=Representation("cbr.industries.pivot-xlsx", 1, XLSX, content),
         sheet_names=sheet_names,
         sheet_count=len(sheet_names),
+        source_uses=pivot_set.source_uses,
     )
 
 
@@ -349,6 +350,7 @@ def render_cbr_0105a_debt_corp_industry_workbook(
         sheet_count=len(sheet_names) - (1 if request.include_metadata_sheet else 0),
         dates=dates,
         rows_per_sheet=rows_per_sheet,
+        source_uses=pivot_set.source_uses,
     )
 
 

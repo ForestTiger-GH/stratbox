@@ -8,14 +8,16 @@
       "operation_id": "frg.discover",
       "parameters": [],
       "reason": "",
-      "state": "supported"
+      "state": "supported",
+      "context_scope": "catalog"
     },
     {
       "formats": [],
       "operation_id": "frg.inspect",
       "parameters": [],
       "reason": "",
-      "state": "supported"
+      "state": "supported",
+      "context_scope": "catalog"
     },
     {
       "formats": [],
@@ -30,7 +32,8 @@
       "operation_id": "frg.scan",
       "parameters": [],
       "reason": "",
-      "state": "supported"
+      "state": "supported",
+      "context_scope": "catalog"
     },
     {
       "formats": [],
@@ -258,91 +261,5 @@
     "render",
     "validate",
     "view"
-  ],
-  "transitions": [
-    {
-      "from": "acquire",
-      "to": "acquire"
-    },
-    {
-      "from": "acquire",
-      "to": "compare"
-    },
-    {
-      "from": "acquire",
-      "to": "extract"
-    },
-    {
-      "from": "acquire",
-      "to": "preserve"
-    },
-    {
-      "from": "acquire",
-      "to": "render"
-    },
-    {
-      "from": "calculate",
-      "to": "view"
-    },
-    {
-      "from": "discover",
-      "to": "inspect"
-    },
-    {
-      "from": "extract",
-      "to": "compare"
-    },
-    {
-      "from": "extract",
-      "to": "extract"
-    },
-    {
-      "from": "extract",
-      "to": "integrate"
-    },
-    {
-      "from": "extract",
-      "to": "readable"
-    },
-    {
-      "from": "extract",
-      "to": "validate"
-    },
-    {
-      "from": "ingest",
-      "to": "preserve"
-    },
-    {
-      "from": "inspect",
-      "to": "inspect"
-    },
-    {
-      "from": "integrate",
-      "to": "calculate"
-    },
-    {
-      "from": "integrate",
-      "to": "view"
-    },
-    {
-      "from": "preserve",
-      "to": "acquire"
-    },
-    {
-      "from": "preserve",
-      "to": "ingest"
-    },
-    {
-      "from": "preserve",
-      "to": "preserve"
-    },
-    {
-      "from": "render",
-      "to": "preserve"
-    },
-    {
-      "from": "view",
-      "to": "render"
-    }
   ]
 }

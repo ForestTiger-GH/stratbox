@@ -42,15 +42,23 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "layout"
       ],
-      "summary": "Apply an exact-original reviewed text layout to document table regions, retaining original blocks."
+      "summary": "Apply an exact-original reviewed text layout to document table regions, retaining original blocks.",
+      "required_parameters": [
+        "layout"
+      ]
     },
-    "method_id": "rosstat-tables-structure_document"
+    "method_id": "rosstat-tables-structure_document",
+    "request_fields": {
+      "document": "input",
+      "layout": "method"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:structure_document"

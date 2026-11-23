@@ -34,12 +34,16 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render all admitted DBF tokens, schemas and deletion flags for reading; uncovered members remain explicit."
     },
-    "method_id": "cbr-form-readable"
+    "method_id": "cbr-form-readable",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.source_products:make_readable"

@@ -14,6 +14,7 @@ from math import isfinite
 from stratbox.core.formats.dataframes import frame_from_table, frame_to_table
 from stratbox.shared.data.lineage import computation_from, computation_value, input_from, input_value
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import source_use_value, source_use_from
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable, coverage_from
 from stratbox.shared.data.tables import TABLE_ENCODING, table_identity
 from stratbox.shared.evidence import UsedInputReceipt
@@ -211,7 +212,8 @@ def _context(value):
     common = {"kind": _KINDS[type(value)], "evidence": computation_value(value.evidence)}
     if isinstance(value, SorsSourceBundle):
         return {**common, "as_of_date": value.as_of_date, "publication_step": value.publication_step,
-                "lineage": [input_value(item) for item in value.lineage], "coverage": asdict(value.coverage), "method_version": value.method_version}
+                "lineage": [input_value(item) for item in value.lineage], "coverage": asdict(value.coverage), "method_version": value.method_version,
+                "source_uses": [source_use_value(use) for use in value.source_uses]}
     if isinstance(value, SorsRestorationResult):
         return {**common, "summary": asdict(value.summary), "run_config": asdict(value.run_config)}
     return {**common, "crosswalk_run_id": value.crosswalk_run_id, "status": value.status, "crosswalk_config": asdict(value.crosswalk_config)}
@@ -285,14 +287,15 @@ def from_snapshot(value, *, expected_kind=None, checkpoint=None):
         metadata = context["owners"][name]
         cls = _TYPES[name]
         grids = {grid: frames[f"{name}.{grid}"] for grid in _grid_names(cls)}
-        expected = {"kind", "evidence"} | ({"as_of_date", "publication_step", "lineage", "coverage", "method_version"} if name == "bundle"
+        expected = {"kind", "evidence"} | ({"as_of_date", "publication_step", "lineage", "coverage", "method_version", "source_uses"} if name == "bundle"
                     else {"summary", "run_config"} if name == "restoration" else {"crosswalk_run_id", "status", "crosswalk_config"})
         if not isinstance(metadata, dict) or set(metadata) != expected or metadata["kind"] != name:
             raise ValueError("sors.snapshot_context_invalid")
         evidence = computation_from(metadata["evidence"])
         if name == "bundle":
             restored[name] = SorsSourceBundle(**grids, evidence=evidence, as_of_date=metadata["as_of_date"], publication_step=metadata["publication_step"],
-                lineage=tuple(input_from(item) for item in metadata["lineage"]), coverage=coverage_from(metadata["coverage"]), method_version=metadata["method_version"])
+                lineage=tuple(input_from(item) for item in metadata["lineage"]), coverage=coverage_from(metadata["coverage"]), method_version=metadata["method_version"],
+                source_uses=tuple(source_use_from(item) for item in metadata["source_uses"]))
         elif name == "restoration":
             restored[name] = SorsRestorationResult(**grids, evidence=evidence, summary=_summary(metadata["summary"]),
                                                    source_bundle=restored["bundle"], run_config=run_config_from(metadata["run_config"]))

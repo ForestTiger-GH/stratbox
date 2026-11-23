@@ -21,13 +21,17 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore complete qualified observations with all source and profile lineage.",
       "function": "replay"
     },
-    "method_id": "frg.read_observations"
+    "method_id": "frg.read_observations",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:read_observations"

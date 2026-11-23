@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.household_lending.mortgage_debt",
-    "scope": "Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation."
+    "scope": "Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

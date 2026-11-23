@@ -29,12 +29,16 @@
           "contract": {
             "schema_id": "cbr.workbook.validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate source editions, unknown sheets and missing formula caches with explicit diagnostics."
     },
-    "method_id": "cbr-tables-validate"
+    "method_id": "cbr-tables-validate",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:validate"

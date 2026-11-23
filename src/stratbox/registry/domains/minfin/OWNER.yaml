@@ -43,189 +43,275 @@
   "value_contexts": {
     "types": {
       "stratbox.domains.minfin.analytics.contracts.HeadlineSummary": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "material": "original_identity",
+            "issue": "publication.issue_id",
+            "asset": "publication.asset_id"
+          }
         ]
       },
       "stratbox.domains.minfin.analytics.contracts.NotificationFacts": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id"
+          }
         ]
       },
       "stratbox.domains.minfin.documents.contracts.ExtractDocumentRequest": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.documents.contracts.PublisherDocument": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.integration.contracts.IntegrateRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.context.PublicationContext": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "asset": "asset_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.Asset": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "asset": "asset_id",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.DiscoverRequest": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.contracts.Inspection": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.contracts.MaterialVersion": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.ProcessingVersion": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.PublicationIndex": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          },
+          {
+            "at": "assets.*",
+            "source": "source_id",
+            "family": "family_id",
+            "asset": "asset_id",
+            "material": "index_identity"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.PublicationMarker": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "asset": "asset_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.ReadableDocument": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id",
+            "material": "source_identity"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.contracts.ReadableRequest": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.contracts.SourceCheckpoint": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "asset": "asset_id",
+            "material": "original_identity"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.SourceFamily": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.publications.contracts.SourceSeries": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.UpdateDecision": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.minfin.publications.contracts.UpdatePlan": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.tables.contracts.BuildFlakeRequest": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.minfin.tables.contracts.ExtractRequest": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.tables.contracts.FlakeTable": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "material": "original_identity",
+            "issue": "publication.issue_id",
+            "asset": "publication.asset_id"
+          }
         ]
       },
       "stratbox.domains.minfin.tables.contracts.MappedObservations": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id",
+            "material": "source_identity"
+          }
         ],
-        "traverse": true
+        "traverse": true,
+        "context": "source_uses"
       },
       "stratbox.domains.minfin.tables.contracts.TableComparison": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.minfin.tables.contracts.TableExtract": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "material": "source_identity",
+            "issue": "publication.issue_id",
+            "asset": "publication.asset_id"
+          }
         ]
       },
       "stratbox.domains.minfin.tables.contracts.Validation": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       }
     },
-    "tables": {
-      "minfin.flake.metadata": {
-        "source": [
-          "source_id"
-        ],
-        "group": [
-          "family_id"
+    "tables": [
+      {
+        "contract": {
+          "schema_id": "minfin.flake.metadata",
+          "version": 2,
+          "role": "extracts"
+        },
+        "schema_ref": "stratbox.domains.minfin.tables.snapshots:_METADATA",
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "material": {
+              "sha256": "original_sha256",
+              "size": "original_size"
+            },
+            "issue": "publication.$json.issue_id",
+            "asset": "publication.$json.asset_id"
+          }
         ]
       },
-      "minfin.headlines.metadata": {
-        "source": [
-          "source_id"
-        ],
-        "group": [
-          "family_id"
+      {
+        "contract": {
+          "schema_id": "minfin.headlines.metadata",
+          "version": 1,
+          "role": "products"
+        },
+        "schema_ref": "stratbox.domains.minfin.analytics.snapshots:_META",
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "material": {
+              "sha256": "original_sha256",
+              "size": "original_size"
+            },
+            "issue": "publication.$json.issue_id",
+            "asset": "publication.$json.asset_id"
+          }
         ]
       }
-    }
+    ]
   }
 }

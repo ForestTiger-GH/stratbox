@@ -123,3 +123,25 @@ def resource_inventory(*, root=None) -> tuple[tuple[str, int, str], ...]:
     """Exact packaged bytes using the same owner/kind traversal as runtime."""
     return tuple((name, len(data := item.read_bytes()), sha256(data).hexdigest())
                  for name, item in _discover(registry_root() if root is None else root)[2])
+
+
+@lru_cache(maxsize=1)
+def _package_root():
+    return files("stratbox")
+
+
+def installed_resource_inventory():
+    """Identify delivered code and resources independently of semantic methods."""
+    result = []
+    def visit(directory, prefix=""):
+        for item in sorted(directory.iterdir(), key=lambda child: child.name):
+            if item.name.startswith(".") or item.name == "__pycache__":
+                continue
+            name = prefix + item.name
+            if item.is_dir():
+                visit(item, name + "/")
+            elif not item.name.endswith((".pyc", ".pyo")):
+                data = item.read_bytes()
+                result.append((name, len(data), sha256(data).hexdigest()))
+    visit(_package_root())
+    return tuple(result)

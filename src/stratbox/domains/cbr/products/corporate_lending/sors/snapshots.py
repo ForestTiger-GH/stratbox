@@ -8,13 +8,14 @@ import re
 from stratbox.core.formats.dataframes import frame_from_table, frame_to_table
 from stratbox.shared.data.lineage import computation_from, computation_value
 from stratbox.shared.data.processing import DataContract, DataRole
+from stratbox.shared.data.source_context import source_use_value, source_use_from
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
 from stratbox.shared.data.tables import TABLE_ENCODING, table_identity
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from .results import SorsViewPack
 
 CONTRACT = DataContract("cbr.sors.views.snapshot", 1, DataRole.PRODUCTS)
-_CONTEXT = TableSchema(DataContract("cbr.sors.views.context", 1, DataRole.PRODUCTS),
+_CONTEXT = TableSchema(DataContract("cbr.sors.views.context", 2, DataRole.PRODUCTS),
                        (ColumnSchema("context", ScalarType.TEXT),))
 _FRAME = DataContract("cbr.sors.views.frame", 1, DataRole.PRODUCTS)
 _MAX_CONTEXT = 16 * 1024 * 1024
@@ -22,7 +23,8 @@ _MAX_CONTEXT = 16 * 1024 * 1024
 
 def view_metadata(value):
     return {"profile": value.profile_id,
-            "source": asdict(value.source_identity) if value.source_identity else None}
+            "source": asdict(value.source_identity) if value.source_identity else None,
+            "source_uses": [source_use_value(use) for use in value.source_uses]}
 
 
 def view_identity(value):
@@ -75,7 +77,7 @@ def view_from_snapshot(snapshot, *, checkpoint=None):
     if len(raw) > _MAX_CONTEXT:
         raise ValueError("sors.views_metadata_limit")
     data = json.loads(raw)
-    if (canonical_manifest_bytes(data) != raw or set(data) != {"profile", "source", "sheets", "evidence"}
+    if (canonical_manifest_bytes(data) != raw or set(data) != {"profile", "source", "sheets", "evidence", "source_uses"}
             or not isinstance(data["sheets"], list)):
         raise ValueError("sors.views_snapshot_context_invalid")
     frames = []
@@ -89,6 +91,7 @@ def view_from_snapshot(snapshot, *, checkpoint=None):
     if tuple(name for name, _ in snapshot.tables) != ("context", *(f"sheet_{i}" for i in range(len(frames)))):
         raise ValueError("sors.views_snapshot_members_invalid")
     source = ByteIdentity(**data["source"]) if data["source"] is not None else None
-    value = SorsViewPack(tuple(frames), source, data["profile"], computation_from(data["evidence"]))
+    value = SorsViewPack(tuple(frames), source, data["profile"], computation_from(data["evidence"]),
+        tuple(source_use_from(use) for use in data["source_uses"]))
     validate_view_pack(value, require_seal=True)
     return value

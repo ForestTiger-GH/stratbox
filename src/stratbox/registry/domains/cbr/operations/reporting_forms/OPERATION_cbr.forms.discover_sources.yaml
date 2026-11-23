@@ -37,7 +37,8 @@
           "contract": {
             "schema_id": "cbr.forms.inventory"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
@@ -47,7 +48,13 @@
       ],
       "summary": "Select published reporting-form archives from a supplied or acquired official index."
     },
-    "method_id": "cbr-forms-index"
+    "method_id": "cbr-forms-index",
+    "request_fields": {
+      "date_from": "parameter",
+      "date_to": "parameter",
+      "form_codes": "parameter",
+      "payload": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:discover_sources"

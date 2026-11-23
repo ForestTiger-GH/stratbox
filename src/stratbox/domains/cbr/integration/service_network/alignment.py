@@ -67,7 +67,7 @@ def align(request, invocation):
             raise OperationFailure("source.office_duplicate_observation")
         seen.add(key)
         observations.append(observation)
-    batch = ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), tuple(invocation.used_inputs))
+    batch = ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), tuple(invocation.used_inputs), value.batch.source_uses)
     invocation.budget.charge("objects", len(observations))
     invocation.record(ByteIdentity.of(canonical_manifest_bytes(asdict(batch))))
     return batch

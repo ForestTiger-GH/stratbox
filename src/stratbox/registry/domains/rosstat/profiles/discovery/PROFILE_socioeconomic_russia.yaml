@@ -8,6 +8,11 @@
     ],
     "kind": "discovery",
     "profile_id": "socioeconomic_russia",
-    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage."
+    "scope": "Provisional recognition; exact issue/asset identity and independently reviewed coverage.",
+    "admission_ref": "stratbox.domains.rosstat.profiles:admit",
+    "implementation_ref": "stratbox.domains.rosstat.publications.discovery.profiles:profile_for",
+    "implementation_parameters": {
+      "series_id": "rosstat.socioeconomic_russia"
+    }
   }
 }

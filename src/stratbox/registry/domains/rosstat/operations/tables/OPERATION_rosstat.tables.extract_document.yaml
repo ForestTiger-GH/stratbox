@@ -42,7 +42,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -52,9 +53,22 @@
         "container_identity",
         "member"
       ],
-      "summary": "Capture ordered document text and explicit structured tables without inferring PDF cells."
+      "summary": "Capture ordered document text and explicit structured tables without inferring PDF cells.",
+      "required_parameters": [
+        "series_id",
+        "issue_id",
+        "asset_id"
+      ]
     },
-    "method_id": "rosstat-tables-extract_document"
+    "method_id": "rosstat-tables-extract_document",
+    "request_fields": {
+      "asset_id": "parameter",
+      "container_identity": "parameter",
+      "issue_id": "parameter",
+      "member": "parameter",
+      "payload": "input",
+      "series_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:extract_document"

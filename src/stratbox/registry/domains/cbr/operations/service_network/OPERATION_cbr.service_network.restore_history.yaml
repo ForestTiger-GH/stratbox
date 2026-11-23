@@ -22,13 +22,18 @@
             "schema_id": "cbr.service_network.releases",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Restore complete source releases and their period, formula and selection evidence.",
       "function": "replay"
     },
-    "method_id": "cbr-office-history-replay"
+    "method_id": "cbr-office-history-replay",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:restore_history"

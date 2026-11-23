@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 from io import StringIO
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.data.snapshots import CoverageDimension, SnapshotCoverage
 from stratbox.shared.identity import canonical_manifest_bytes
@@ -133,7 +134,9 @@ def project_reported(flake, *, checkpoint=None):
         qualifications.append("source.overlapping_territory_codes")
     facts["selected_member"] = member
     batch = ObservationBatch("fns.1yur.reported", 1, "source-" + flake.source_identity.sha256,
-        tuple(observations), flake.lineage)
+        tuple(observations), flake.lineage, (SourceUse(SourceCoordinate(flake.context.series_id,
+            source_group_id="registration_statistics", issue_id=flake.context.issue_id, asset_id=flake.context.asset_id,
+            material_identity=flake.source_identity, semantic_profile_edition=PROFILE), "flake", "domain_validated"),))
     requested_kinds = tuple(sorted(set(facts["kind_codes"]) | set(facts["excluded_incomplete_kind_sheets"])))
     missing_kinds = tuple(sorted(facts["excluded_incomplete_kind_sheets"]))
     return SourceProjection(flake.context, flake.identity, batch, PROFILE,

@@ -23,13 +23,17 @@
             "schema_id": "minfin.headlines",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Replay retained headlines independently of current source data or calculator implementation.",
       "function": "replay"
     },
-    "method_id": "minfin.read_summary"
+    "method_id": "minfin.read_summary",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:read_summary"

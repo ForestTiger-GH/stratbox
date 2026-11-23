@@ -22,7 +22,8 @@
           "contract": {
             "schema_id": "material.payload"
           },
-          "path": "payload"
+          "path": "payload",
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "material",
@@ -31,7 +32,8 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -43,9 +45,21 @@
         "limit",
         "charset"
       ],
-      "summary": "Read an explicitly supplied store location and establish exact byte identity."
+      "summary": "Read an explicitly supplied store location and establish exact byte identity.",
+      "required_parameters": [
+        "locator"
+      ]
     },
-    "method_id": "bounded-neutral-file-read"
+    "method_id": "bounded-neutral-file-read",
+    "request_fields": {
+      "charset": "parameter",
+      "expected_identity": "parameter",
+      "expected_revision": "runtime",
+      "limit": "runtime",
+      "locator": "parameter",
+      "media_type": "parameter",
+      "source_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.operations:read_location"

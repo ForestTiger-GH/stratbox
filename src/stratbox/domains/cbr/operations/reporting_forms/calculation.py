@@ -23,8 +23,7 @@ from .definitions import BUILD
 from .model_definitions import PREPARE, CALCULATE
 
 
-def _data_metadata(form, indicator_order):
-    return {"form": form, "indicator_order": dict(indicator_order)}
+from stratbox.domains.cbr.tables.reporting_forms.context import data_metadata
 
 
 def _prepare(batch, invocation):
@@ -148,10 +147,10 @@ def _calculate(req, invocation):
     long["PeriodEnd"] = long["Дата"].map(lambda value: date_periods[value].end)
     evidence = record_tables(
         invocation, (("long", long), ("banks", banks), ("model", model_df)),
-        metadata=_data_metadata(code, order), parameters={"form": code, "dates": tuple(x[0] for x in snapshots)},
+        metadata=data_metadata(code, order, req.inputs.batch.source_uses), parameters={"form": code, "dates": tuple(x[0] for x in snapshots)},
     )
     return FormData(code, long, banks, model_df, MappingProxyType(dict(order)),
-                    tuple(invocation.used_inputs), evidence)
+                    tuple(invocation.used_inputs), evidence, req.inputs.batch.source_uses)
 
 
 def calculate(request: CalculateFormRequest, *, context: ExecutionContext | None = None) -> OperationResult[FormData]:

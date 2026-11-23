@@ -6,6 +6,7 @@ from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import DatasetSnapshot
+from stratbox.shared.data.source_context import SourceUse
 from ..publications.context import PublicationContext
 
 
@@ -146,6 +147,11 @@ class MappedObservations:
     family_id: str
     source_identity: ByteIdentity
     observations: tuple[MetricObservation, ...]
+    source_uses: tuple[SourceUse, ...] = ()
+
+    def __post_init__(self):
+        if not isinstance(self.source_uses, tuple) or any(not isinstance(use, SourceUse) for use in self.source_uses):
+            raise ValueError("minfin.mapped_source_context_invalid")
 
 
 @dataclass(frozen=True, slots=True)

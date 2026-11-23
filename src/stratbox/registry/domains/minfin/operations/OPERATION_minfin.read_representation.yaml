@@ -30,13 +30,17 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Read a retained exact extract representation without re-acquiring source material.",
       "function": "replay"
     },
-    "method_id": "minfin-extract-json"
+    "method_id": "minfin-extract-json",
+    "request_fields": {
+      "representation": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:read_representation"

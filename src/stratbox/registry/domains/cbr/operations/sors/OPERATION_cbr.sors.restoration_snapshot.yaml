@@ -27,14 +27,16 @@
             "schema_id": "cbr.sors.restoration.snapshot",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
@@ -44,7 +46,12 @@
       "summary": "Encode all SORS data and declared continuation dependencies.",
       "function": "encode"
     },
-    "method_id": "sors-replay-context"
+    "method_id": "sors-replay-context",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "value": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.snapshot_operations:build_restoration_snapshot"

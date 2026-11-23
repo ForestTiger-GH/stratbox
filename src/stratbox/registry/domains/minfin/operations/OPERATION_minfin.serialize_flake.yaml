@@ -30,13 +30,17 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Serialize the complete source-local flake, including economic axes, units and original evidence.",
       "function": "encode"
     },
-    "method_id": "minfin.flake-json"
+    "method_id": "minfin.flake-json",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:serialize_source_flake"

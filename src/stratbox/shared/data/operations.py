@@ -63,6 +63,28 @@ def _port(name: str, contract: DataContract, path: str) -> None:
                 raise ValueError("processing.invalid_path")
 
 
+REQUEST_FIELD_ROLES = frozenset({"input", "parameter", "method", "dependency", "effect", "runtime", "observability"})
+COMPUTATIONAL_FIELD_ROLES = frozenset({"input", "parameter", "method", "dependency"})
+SOURCE_POLICIES = frozenset({"primary_source_required", "source_collection", "source_optional", "source_inapplicable"})
+
+
+@dataclass(frozen=True, slots=True)
+class RequestField:
+    """An exhaustive request coordinate and its responsibility in execution."""
+    path: str
+    role: str
+    reason: str = ""
+
+    def __post_init__(self):
+        if not isinstance(self.path, str) or self.role not in REQUEST_FIELD_ROLES:
+            raise ValueError("processing.invalid_request_field")
+        for segment in self.path.split(".") if self.path else ():
+            if not segment.isidentifier() or segment.startswith("_"):
+                raise ValueError("processing.invalid_request_path")
+        if not isinstance(self.reason, str) or len(self.reason) > 1024:
+            raise ValueError("processing.invalid_request_reason")
+
+
 @dataclass(frozen=True, slots=True)
 class InputPort:
     name: str
@@ -73,10 +95,11 @@ class InputPort:
     coverage: frozenset[str] = frozenset()
     outcomes: frozenset[str] = frozenset({"succeeded"})
     alternatives: tuple[DataContract, ...] = ()
+    collection: bool = False
 
     def __post_init__(self) -> None:
         _port(self.name, self.contract, self.path)
-        if type(self.required) is not bool:
+        if type(self.required) is not bool or type(self.collection) is not bool:
             raise ValueError("processing.invalid_required")
         for group in (self.qualifications, self.coverage, self.outcomes):
             _tokens(group)
@@ -99,8 +122,16 @@ class OutputPort:
     coverage: frozenset[str] = frozenset()
     outcomes: frozenset[str] = frozenset({"succeeded"})
 
+    source_policy: str = "source_optional"
+    collection: bool = False
+    source_context_path: str | None = None
+
     def __post_init__(self) -> None:
+        if self.source_policy not in SOURCE_POLICIES or type(self.collection) is not bool:
+            raise ValueError("processing.invalid_source_policy")
         _port(self.name, self.contract, self.path)
+        if self.source_context_path is not None:
+            _port(self.name, self.contract, self.source_context_path)
         for group in (self.qualifications, self.coverage, self.outcomes):
             _tokens(group)
         if not self.outcomes or not self.outcomes <= {"succeeded", "partial"}:
@@ -116,6 +147,7 @@ class OperationSemantics:
     summary: str = ""
     composition: bool = False
     function: ProcessingFunction = ProcessingFunction.PROCESS
+    required_parameters: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if (
@@ -138,6 +170,9 @@ class OperationSemantics:
             self.parameters
         ):
             raise ValueError("processing.invalid_parameters")
+        if (not isinstance(self.required_parameters, tuple) or len(set(self.required_parameters)) != len(self.required_parameters)
+                or not set(self.required_parameters) <= set(self.parameters)):
+            raise ValueError("processing.invalid_required_parameters")
         for name in self.parameters:
             safe_token(name)
         if (

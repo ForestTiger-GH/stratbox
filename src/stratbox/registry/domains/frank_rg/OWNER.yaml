@@ -43,137 +43,176 @@
   "value_contexts": {
     "types": {
       "stratbox.domains.frank_rg.analytics.contracts.CalculateRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.frank_rg.integration.contracts.AlignRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.frank_rg.integration.contracts.HistoryRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.frank_rg.integration.contracts.IntegrateRequest": {
-        "issue": [
-          "release_id"
-        ],
         "traverse": true
       },
       "stratbox.domains.frank_rg.publications.cleanup.CleanupAction": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.AcquiredReport": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "issue": "period.issue_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.Asset": {
-        "group": [
-          "family_id"
-        ],
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "family": "family_id",
+            "issue": "period.issue_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.CaptureRequest": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "issue": "period.issue_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.Catalog": {
-        "source": [
-          "selections.*.source_id"
-        ],
-        "group": [
-          "inventory.assets.*.family_id"
+        "uses": [
+          {
+            "at": "selections.*",
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.Inventory": {
-        "group": [
-          "assets.*.family_id"
+        "uses": [
+          {
+            "at": "assets.*",
+            "source": "source_id",
+            "family": "family_id",
+            "qualification": "recognition"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.MaterialAssessment": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "material": "original_identity"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.PreparedFile": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.Selection": {
-        "source": [
-          "source_id"
-        ]
+        "uses": [
+          {
+            "source": "source_id",
+            "issue": "asset.period.issue_id"
+          }
+        ],
+        "traverse": true
       },
       "stratbox.domains.frank_rg.publications.contracts.SourceCheckpoint": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "material": "original_identity",
+            "issue": "period.issue_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.SourceFamily": {
-        "group": [
-          "family_id"
+        "uses": [
+          {
+            "family": "family_id"
+          }
         ],
         "traverse": true
       },
       "stratbox.domains.frank_rg.publications.contracts.SourceSeries": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.publications.contracts.UpdateDecision": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.tables.contracts.ExtractValidation": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       },
       "stratbox.domains.frank_rg.tables.contracts.SemanticFlake": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
-        ],
-        "edition": [
-          "profile_version"
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "layout_edition": "profile_version",
+            "asset": "asset_id",
+            "material": "original_identity"
+          }
         ]
       },
       "stratbox.domains.frank_rg.tables.contracts.SemanticProfile": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id",
+            "material": "original_identity"
+          }
         ]
       },
       "stratbox.domains.frank_rg.tables.profiles.ProfileAvailability": {
-        "source": [
-          "source_id"
+        "uses": [
+          {
+            "source": "source_id"
+          }
         ]
       }
     },
-    "tables": {
-      "frg.flake.metadata": {
-        "source": [
-          "series_id"
-        ],
-        "issue": [
-          "issue_id"
+    "tables": [
+      {
+        "contract": {
+          "schema_id": "frg.flake.metadata",
+          "version": 1,
+          "role": "extracts"
+        },
+        "schema_ref": "stratbox.domains.frank_rg.tables.snapshots:_META",
+        "uses": [
+          {
+            "source": "series_id",
+            "issue": "issue_id",
+            "material": {
+              "sha256": "original_sha256",
+              "size": "original_size"
+            },
+            "asset": "asset_id"
+          }
         ]
       }
-    }
+    ]
   }
 }

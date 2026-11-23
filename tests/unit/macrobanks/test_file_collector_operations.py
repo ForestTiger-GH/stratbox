@@ -63,3 +63,40 @@ def test_collection_partial_receipt_and_repeatable_archive():
         assert manifest.complete and manifest.coverage.status == "unknown"
         assert all(member.contract.role is DataRole.ORIGINALS for member in manifest.members)
         assert all(packed.read(member.name) == bytes_received for member in manifest.members)
+
+
+def test_failure_continuation_controls_the_retained_partial_scope_and_identity():
+    workbook = Workbook()
+    workbook.active["A1"] = "Source"
+    buffer = BytesIO()
+    workbook.save(buffer)
+    body = buffer.getvalue()
+    sources = tuple(entry.source_id for entry in collector.discover(collector.DiscoverFilesRequest()).value[:3])
+    stopped = collector.collect_raw(collector.CollectFilesRequest(sources,
+        continue_on_error=False, try_case_variants=False), transport=ArchiveTransport(body))
+    continued = collector.collect_raw(collector.CollectFilesRequest(sources,
+        continue_on_error=True, try_case_variants=False), transport=ArchiveTransport(body))
+    assert stopped.outcome == continued.outcome == "partial"
+    assert tuple(item.source.payload.identity for item in stopped.value.completed) == \
+        tuple(item.source.payload.identity for item in continued.value.completed)
+    assert len(stopped.value.failed) == 1 and len(continued.value.failed) == 2
+    assert stopped.value.not_attempted == sources[2:]
+    assert continued.value.not_attempted == ()
+    assert stopped.computation.computation_id != continued.computation.computation_id
+
+
+def test_batch_byte_scope_changes_partitions_even_for_byte_identical_materials():
+    from stratbox.domains.cbr.operations.collection.materials import (
+        CollectMaterial, CollectMaterialsRequest, collect_materials,
+    )
+    from stratbox.shared.evidence import SourcePayload
+    payload = SourcePayload(b"<html>same original</html>", "text/html", "cbr.service_network.bank_offices")
+    items = tuple(CollectMaterial(key, "cbr.service_network.bank_offices", issue, "html", payload=payload)
+                  for key, issue in (("first", "2026-11-01"), ("second", "2026-11-02")))
+    limited = collect_materials(CollectMaterialsRequest(items, max_batch_bytes=payload.identity.size))
+    full = collect_materials(CollectMaterialsRequest(items, max_batch_bytes=2 * payload.identity.size))
+    assert limited.outcome == "partial", limited.diagnostics
+    assert full.outcome == "succeeded", full.diagnostics
+    assert len(limited.value.manifest.members) == 1
+    assert len(full.value.manifest.members) == 2
+    assert limited.computation.computation_id != full.computation.computation_id

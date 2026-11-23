@@ -159,3 +159,19 @@ def test_ratio_mapping_requires_explicit_point_or_interval_periods():
                                         ("2026-10", PeriodRef("as_of", as_of=date(2026, 10, 31)))))
     result = ok(minfin.integrate(minfin.IntegrateRequest(value, "minfin.explicit", "release", (binding,))))
     assert all(item.period.kind == "as_of" for item in result.observations)
+
+
+def test_domain_profile_admission_keeps_period_basis_and_source_release_pairs():
+    from stratbox.domains.minfin.profiles import admit
+    from stratbox.shared.data.sources import SourceInstance
+    from stratbox.shared.data.processing import DataContract
+    value = flake()
+    instance = SourceInstance(value.source_id, DataContract("minfin.flake", 2),
+        group_id="fiscal_statistics", issue_id=value.publication.issue_id)
+    assert admit(None, instance, value).state == "admitted"
+    assert admit(None, instance, replace(value, frequency="annual")).state == "rejected"
+    batch = ok(minfin.integrate(minfin.IntegrateRequest(value, "caller.dataset", "caller.version")))
+    use, = batch.source_uses
+    assert (use.coordinate.source_id, use.coordinate.issue_id, use.coordinate.asset_id) == (
+        value.source_id, "issue-42", "annex-3")
+    assert use.coordinate.source_group_id == "fiscal_statistics"

@@ -34,13 +34,17 @@
             "version": 3,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate complete escrow snapshot components and restore the domain value.",
       "function": "replay"
     },
-    "method_id": "cbr-escrow-snapshot"
+    "method_id": "cbr-escrow-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.lifecycle:read_flake_snapshot"

@@ -31,7 +31,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true
         },
         {
           "name": "manifest",
@@ -54,7 +55,8 @@
           "path": "material",
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -63,9 +65,20 @@
         "manifest_name",
         "limits"
       ],
-      "summary": "Package selected exact byte members from independent stores with explicit member lineage."
+      "summary": "Package selected exact byte members from independent stores with explicit member lineage.",
+      "required_parameters": [
+        "destination"
+      ]
     },
-    "method_id": "verified-archive"
+    "method_id": "verified-archive",
+    "request_fields": {
+      "compression": "parameter",
+      "destination": "effect",
+      "limits": "runtime",
+      "manifest": "input",
+      "manifest_name": "effect",
+      "members": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.archive:archive_materials"

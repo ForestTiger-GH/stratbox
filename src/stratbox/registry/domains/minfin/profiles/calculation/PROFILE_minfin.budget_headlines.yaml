@@ -6,6 +6,7 @@
     "formats": [],
     "kind": "calculation",
     "profile_id": "minfin.budget_headlines",
-    "scope": "reviewed headline rows"
+    "scope": "reviewed headline rows",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit"
   }
 }

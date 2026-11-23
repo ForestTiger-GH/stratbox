@@ -30,7 +30,8 @@
             "schema_id": "cbr.statistics.product",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -38,7 +39,11 @@
       ],
       "summary": "Render a prepared or restored view to CSV or XLSX without reading or calculating source data."
     },
-    "method_id": "cbr-statistics-render_view"
+    "method_id": "cbr-statistics-render_view",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:render_view"

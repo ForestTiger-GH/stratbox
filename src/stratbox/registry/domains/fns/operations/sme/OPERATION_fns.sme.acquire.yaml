@@ -21,22 +21,30 @@
           "path": "payload",
           "qualifications": [
             "source.fns.sme"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "as_of"
       ],
-      "summary": "Acquire the selected source material with byte and acquisition evidence."
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "required_parameters": [
+        "as_of"
+      ]
     },
-    "method_id": "fns-sme-regional-post"
+    "method_id": "fns-sme-regional-post",
+    "request_fields": {
+      "as_of": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.operations:acquire"

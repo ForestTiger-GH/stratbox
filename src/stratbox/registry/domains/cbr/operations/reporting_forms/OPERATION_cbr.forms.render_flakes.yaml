@@ -36,7 +36,9 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "manifest",
@@ -46,7 +48,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
@@ -55,7 +58,12 @@
       ],
       "summary": "Render all decoded physical DBF records to CSV with complete schema and member evidence for neutral packaging."
     },
-    "method_id": "cbr-forms-csv-flakes"
+    "method_id": "cbr-forms-csv-flakes",
+    "request_fields": {
+      "flakes": "input",
+      "include_member_originals": "parameter",
+      "prefix": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:render_flakes"

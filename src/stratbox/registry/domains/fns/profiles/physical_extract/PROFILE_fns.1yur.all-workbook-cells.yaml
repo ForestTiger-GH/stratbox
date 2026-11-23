@@ -11,6 +11,8 @@
     ],
     "kind": "physical_extract",
     "profile_id": "fns.1yur.all-workbook-cells",
-    "scope": "Every JSON record/field or every admitted workbook member/cell precedes semantic projection."
+    "scope": "Every JSON record/field or every admitted workbook member/cell precedes semantic projection.",
+    "admission_ref": "stratbox.domains.fns.operations.legal_entities.family:admit",
+    "implementation_ref": "stratbox.domains.fns.operations.legal_entities.family:_extract"
   }
 }

@@ -1,6 +1,7 @@
 """Prepare already-calculated values without reopening source workbooks."""
 from decimal import Decimal
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, SubjectRef
 from stratbox.shared.data.snapshots import SnapshotCoverage
 from stratbox.shared.data.views import prepare_observation_view
@@ -41,7 +42,11 @@ def prepare_view(request):
                                 "derived" if item.yoy_pct is not None else "not_applicable", evidence))
     batch = ObservationBatch(summary.source_id + ".headlines", 1, summary.period_id, tuple(rows),
         (UsedInputReceipt("calculation_result", retained.identity, "application/vnd.stratbox.dataset+json", "inline", summary.source_id),
-         *retained.manifest.inputs))
+         *retained.manifest.inputs), (SourceUse(SourceCoordinate(summary.source_id, summary.family_id,
+            "fiscal_statistics", issue_id=summary.publication.issue_id if summary.publication else None,
+            asset_id=summary.publication.asset_id if summary.publication else None,
+            material_identity=retained.identity, semantic_profile_edition=str(summary.calculation_version)),
+            "summary", "domain_validated"),))
     return prepare_observation_view(batch, view_id=request.view_id,
         coverage=SnapshotCoverage("complete", "All requested metrics, prior values and growth qualifications."),
         qualifications=("source_headlines", "prior_comparison_status_retained"))

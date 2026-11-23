@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from stratbox.shared.data.datasets import ComputationReceipt
+from stratbox.shared.data.source_context import SourceUse
 
 from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySpec
 
@@ -26,6 +27,7 @@ class IndustryApkCalculationResult:
     groups_calculated: int
     rows_added: int
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()
 
     @property
     def ok(self) -> bool:

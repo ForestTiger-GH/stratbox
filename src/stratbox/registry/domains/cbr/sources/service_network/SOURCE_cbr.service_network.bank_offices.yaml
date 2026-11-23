@@ -19,5 +19,68 @@
     "table_profile": "cbr.tables.bank_offices",
     "integration_profile": "cbr.service_network.alignment",
     "product_profile": "cbr.service_network.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "office_counts",
+      "title": "Credit institution offices by bank and territory",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.offices.release",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.offices.comparison",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.offices.extract_representation",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.offices.original",
+          "version": 1,
+          "role": "originals"
+        }
+      ],
+      "profile_ids": [
+        "cbr.offices.flake",
+        "cbr.tables.bank_offices",
+        "cbr.service_network.alignment.metadata.cbr.service_network.bank_offices",
+        "cbr.service_network.views.metadata.cbr.service_network.bank_offices"
+      ],
+      "formats": [
+        "html"
+      ],
+      "grain": [
+        "capture_date",
+        "territory",
+        "office_type"
+      ],
+      "period_model": "qualified_official_date_or_capture",
+      "qualification": "conditional"
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.bank_offices": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.bank_offices"
+      }
+    }
   }
 }

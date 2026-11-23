@@ -30,14 +30,16 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -45,9 +47,18 @@
         "version_id"
       ],
       "summary": "Encode a complete source-local flake as typed metadata, column and value tables for any logical dataset backend.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "minfin.flake-snapshot"
+    "method_id": "minfin.flake-snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "flake": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:build_flake_snapshot"

@@ -46,7 +46,8 @@
             "schema_id": "cbr.industries.0104a.pivots",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -54,9 +55,18 @@
         "source",
         "industry_code"
       ],
-      "summary": "Construct industry pivots at the requested grain."
+      "summary": "Construct industry pivots at the requested grain.",
+      "required_parameters": [
+        "pivot"
+      ]
     },
-    "method_id": "cbr-industry-pivot"
+    "method_id": "cbr-industry-pivot",
+    "request_fields": {
+      "industry_code": "parameter",
+      "pivot": "parameter",
+      "source": "parameter",
+      "stream": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:build_pivots"

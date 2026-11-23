@@ -27,16 +27,26 @@
           "contract": {
             "schema_id": "dataset.table_preview"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional",
+          "source_context_path": "source_uses"
         }
       ],
       "parameters": [
         "query",
         "expected_identity"
       ],
-      "summary": "Filter and preview a pinned typed component with explicit scan and output bounds."
+      "summary": "Filter and preview a pinned typed component with explicit scan and output bounds.",
+      "required_parameters": [
+        "query"
+      ]
     },
-    "method_id": "dataset-query"
+    "method_id": "dataset-query",
+    "request_fields": {
+      "expected_identity": "parameter",
+      "query": "parameter",
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.storage.datasets.operations:query_snapshot"

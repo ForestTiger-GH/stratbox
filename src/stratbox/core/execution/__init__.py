@@ -24,6 +24,7 @@ from stratbox.core.execution.events import (
     InMemorySink,
     TechnicalIncident,
 )
+from stratbox.core.execution.admission import AdmissionPhase, ResultAdmission
 from stratbox.core.execution.runner import Completion, Invocation, run
 from stratbox.core.limits import (
     BudgetError,

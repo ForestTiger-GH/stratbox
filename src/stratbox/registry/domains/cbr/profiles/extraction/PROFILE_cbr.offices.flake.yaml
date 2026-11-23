@@ -9,6 +9,8 @@
     "kind": "extraction",
     "profile_id": "cbr.offices.flake",
     "scope": "Credit institution office counts by bank and territory; capture and official reference dates remain distinct.",
-    "operation_id": "cbr.offices.parse"
+    "operation_id": "cbr.offices.parse",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.tables.service_network.bank_offices.parser:extract_records"
   }
 }

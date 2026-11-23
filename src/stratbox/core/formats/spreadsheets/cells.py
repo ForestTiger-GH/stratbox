@@ -26,9 +26,9 @@ from stratbox.shared.data.workbook_cells import WorkbookCell, SheetCells, Workbo
 from stratbox.shared.data.workbook_cells import validate_sheet_cells as _validate_sheet_cells
 
 
-def validate_sheet_cells(sheet):
+def validate_sheet_cells(sheet, *, checkpoint=None):
     try:
-        _validate_sheet_cells(sheet)
+        _validate_sheet_cells(sheet, checkpoint=checkpoint)
     except ValueError as exc:
         raise WorkbookError(str(exc)) from None
 

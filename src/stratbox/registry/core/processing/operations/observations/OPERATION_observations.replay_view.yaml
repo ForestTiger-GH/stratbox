@@ -27,13 +27,17 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Restore a verified prepared observation view with its original selection provenance.",
       "function": "replay"
     },
-    "method_id": "observations-replay_view"
+    "method_id": "observations-replay_view",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:replay_view"

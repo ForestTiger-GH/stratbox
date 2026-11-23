@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from urllib.parse import quote
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.evidence import UsedInputReceipt
 from ..tables.flake_codec import serialize_flake, validate_flake
@@ -135,4 +136,9 @@ def integrate(request: IntegrateRequest) -> ObservationBatch:
     representation = serialize_flake(SerializeFlakeRequest(flake))
     lineage = (UsedInputReceipt("flake", representation.identity, representation.media_type, "inline", flake.source_id),
                UsedInputReceipt("original", flake.original_identity, "application/octet-stream", "reference_only", flake.source_id))
-    return ObservationBatch(request.dataset_id, 1, request.release_id, tuple(observations), lineage)
+    return ObservationBatch(request.dataset_id, 1, request.release_id, tuple(observations), lineage,
+        (SourceUse(SourceCoordinate(flake.source_id, flake.family_id, "fiscal_statistics",
+            issue_id=flake.publication.issue_id if flake.publication else None,
+            asset_id=flake.publication.asset_id if flake.publication else None,
+            material_identity=flake.original_identity, semantic_profile_edition=flake.method_version),
+            "flake", "domain_validated"),))

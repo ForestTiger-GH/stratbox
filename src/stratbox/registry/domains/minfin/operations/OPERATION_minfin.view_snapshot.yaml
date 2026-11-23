@@ -23,14 +23,16 @@
             "schema_id": "observations.prepared_view.snapshot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -40,7 +42,12 @@
       "summary": "Encode the prepared view for independent storage and replay.",
       "function": "encode"
     },
-    "method_id": "minfin.view_snapshot"
+    "method_id": "minfin.view_snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "version_id": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:build_view_snapshot"

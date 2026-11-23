@@ -22,14 +22,16 @@
             "schema_id": "frg.flake.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +41,12 @@
       "summary": "Retain the semantic flake with source identity, profile identity and complete qualified observations.",
       "function": "encode"
     },
-    "method_id": "frg.flake_snapshot"
+    "method_id": "frg.flake_snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "flake": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_flake_snapshot"

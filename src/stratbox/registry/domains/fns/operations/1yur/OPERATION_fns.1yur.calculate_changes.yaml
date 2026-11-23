@@ -31,7 +31,8 @@
             "schema_id": "fns.1yur.calculation",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +40,12 @@
       ],
       "summary": "Calculate matched net stock changes with both source vintages; these are not births, entries or exits."
     },
-    "method_id": "fns-1yur-calculate-changes"
+    "method_id": "fns-1yur-calculate-changes",
+    "request_fields": {
+      "after": "input",
+      "before": "input",
+      "metric_ids": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:calculate_changes"

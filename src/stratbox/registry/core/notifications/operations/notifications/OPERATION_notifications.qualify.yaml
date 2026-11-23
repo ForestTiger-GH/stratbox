@@ -14,12 +14,25 @@
           "contract": {
             "schema_id": "notifications.qualify.result"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
-      "summary": "Qualify a notification handoff receipt independently of final delivery."
+      "summary": "Qualify a notification handoff receipt independently of final delivery.",
+      "parameters": [
+        "lookup",
+        "receipt"
+      ],
+      "required_parameters": [
+        "lookup",
+        "receipt"
+      ]
     },
-    "method_id": "notification-handoff-receipt"
+    "method_id": "notification-handoff-receipt",
+    "request_fields": {
+      "lookup": "input",
+      "receipt": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.notifications.operations:qualify"

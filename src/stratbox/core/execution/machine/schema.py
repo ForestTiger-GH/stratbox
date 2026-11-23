@@ -26,15 +26,25 @@ def wire_schemas(operation_id: str, *, catalog):
     )}
     string = {"type": "string"}
     nullable_string = {"type": ["string", "null"]}
+    digest = _obj({"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                   "size": {"type": "integer", "minimum": 0}}, ("sha256", "size"))
     fields = {
         **identity,
         "method_id": {"const": definition.method_id},
         "outcome": {"enum": ["succeeded", "partial", "failed", "cancelled", "unknown"]},
         "value": {"anyOf": [_obj(codec.output_fields, codec.output_fields), {"type": "null"}]},
+        "computation": {"anyOf": [_obj({
+            "id": digest, "output": digest,
+            "method_fingerprint": {"anyOf": [digest, {"type": "null"}]},
+            "argument_coverage": {"enum": ["declared", "whole_request", "unqualified"]},
+            "qualifications": {"type": "array", "items": {"type": "string"}},
+        }, ("id", "output", "method_fingerprint", "argument_coverage", "qualifications")), {"type": "null"}]},
         "diagnostics": {"type": "array", "items": _obj(
             {"code": string, "stage": nullable_string, "component": nullable_string,
-             "retry_disposition": string},
-            ("code", "stage", "component", "retry_disposition"),
+             "reason_class": nullable_string, "retry_disposition": string,
+             "evidence_ref": nullable_string, "reconciliation_owner": nullable_string},
+            ("code", "stage", "component", "reason_class", "retry_disposition",
+             "evidence_ref", "reconciliation_owner"),
         )},
     }
     return deepcopy((request, {"$schema": SCHEMA, **_obj(fields, fields)}))

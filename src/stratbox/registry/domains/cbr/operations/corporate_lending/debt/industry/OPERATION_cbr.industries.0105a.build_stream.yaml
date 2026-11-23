@@ -20,7 +20,8 @@
           "contract": {
             "schema_id": "cbr.industries.0105a.parse_requests",
             "role": "originals"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -30,7 +31,9 @@
             "schema_id": "cbr.industries.0105a.stream",
             "role": "integrated"
           },
-          "path": "df_stream"
+          "path": "df_stream",
+          "source_policy": "primary_source_required",
+          "source_context_path": ""
         },
         {
           "name": "result",
@@ -38,7 +41,8 @@
             "schema_id": "cbr.industries.0105a.stream_result",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -48,7 +52,12 @@
       "summary": "Parse supplied workbooks and combine a source-series stream with coverage evidence.",
       "composition": true
     },
-    "method_id": "cbr-0105a-stream"
+    "method_id": "cbr-0105a-stream",
+    "request_fields": {
+      "continue_on_error": "parameter",
+      "selection": "parameter",
+      "sources": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.operations:build_stream"

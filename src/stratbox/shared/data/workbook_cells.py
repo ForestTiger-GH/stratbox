@@ -55,7 +55,7 @@ class WorkbookCells:
     identity: ByteIdentity
 
 
-def validate_sheet_cells(sheet: SheetCells) -> None:
+def validate_sheet_cells(sheet: SheetCells, *, checkpoint=None) -> None:
     """Validate retained cell evidence independently of an Excel decoder."""
     if (not isinstance(sheet, SheetCells) or not sheet.name or len(sheet.name) > 255
             or type(sheet.index) is not int or sheet.index < 0 or type(sheet.rows) is not int
@@ -75,7 +75,9 @@ def validate_sheet_cells(sheet: SheetCells) -> None:
         return row, column
     seen = set()
     previous = (0, 0)
-    for cell in sheet.cells:
+    for index, cell in enumerate(sheet.cells):
+        if checkpoint is not None and index % 256 == 0:
+            checkpoint()
         if (not isinstance(cell, WorkbookCell) or cell.kind not in {"n", "s", "str", "inlineStr", "b", "d", "e"}
                 or type(cell.indent) is not int or not 0 <= cell.indent <= 250
                 or not isinstance(cell.number_format, str) or len(cell.number_format) > 4096

@@ -135,9 +135,12 @@ def test_transport_evidence_does_not_change_direct_byte_computation_identity():
     payload = SourcePayload(b"same bytes", "text/plain", "example.source")
     direct_receipt = UsedInputReceipt.for_payload(payload, "semantic_input")
     inherited_receipt = UsedInputReceipt.for_payload(payload, "transport")
+    dependency = None
 
     def work(request, invocation):
         invocation.use(direct_receipt)
+        if dependency is not None:
+            invocation.depend(dependency)
         invocation.record(ByteIdentity.of(b"result"))
         return "result"
 
@@ -152,8 +155,15 @@ def test_transport_evidence_does_not_change_direct_byte_computation_identity():
     qualified = run(CONSUMER, ValuesRequest(("value",)), work,
         context=ExecutionContext(input_receipts=(inherited_receipt, extra),
                                  input_transports=(inherited_receipt,)))
-    assert qualified.computation.inputs == (direct_receipt, extra)
-    assert qualified.computation.computation_id != direct.computation.computation_id
+    assert qualified.computation.inputs == (direct_receipt,)
+    assert qualified.computation.computation_id == direct.computation.computation_id
+    assert extra in qualified.used_inputs
+    dependency = extra
+    consumed = run(CONSUMER, ValuesRequest(("value",)), work,
+        context=ExecutionContext(input_receipts=(inherited_receipt, extra),
+                                 input_transports=(inherited_receipt,)))
+    assert consumed.computation.inputs == (direct_receipt, extra)
+    assert consumed.computation.computation_id != direct.computation.computation_id
 
 
 def test_result_adapter_requires_explicit_output_and_pinned_reference_resolver():

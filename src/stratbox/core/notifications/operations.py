@@ -52,12 +52,12 @@ def prepare(request: PrepareRequest, *, runtime: NotificationRuntime, context: E
         if runtime.paused:
             raise OperationFailure("notification.processing_paused")
         invocation.stage("load_checkpoint")
-        initial = _load_scope(req, runtime, invocation.context, preview=False)
+        initial = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
         report = None
         for _ in range(req.max_pages):
             invocation.check_cancelled()
             for _ in range(3):
-                current = _load_scope(req, runtime, invocation.context, preview=False)
+                current = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
                 try:
                     initial.head.check(current.cursor)
                 except JournalDecodeError as error:

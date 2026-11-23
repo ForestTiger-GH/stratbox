@@ -24,7 +24,8 @@
             "schema_id": "fns.sme.calculation",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -33,9 +34,20 @@
         "numerator_dimensions",
         "denominator_dimensions"
       ],
-      "summary": "Calculate explicitly selected same-period stock shares, retaining zero-denominator diagnostics."
+      "summary": "Calculate explicitly selected same-period stock shares, retaining zero-denominator diagnostics.",
+      "required_parameters": [
+        "numerator_metric",
+        "denominator_metric"
+      ]
     },
-    "method_id": "fns-sme-calculate-shares"
+    "method_id": "fns-sme-calculate-shares",
+    "request_fields": {
+      "dataset": "input",
+      "denominator_dimensions": "parameter",
+      "denominator_metric": "parameter",
+      "numerator_dimensions": "parameter",
+      "numerator_metric": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:calculate_shares"

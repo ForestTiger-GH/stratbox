@@ -22,13 +22,17 @@
             "schema_id": "fns.1yur.flake",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate and replay a retained flake without the original file or a spreadsheet engine.",
       "function": "replay"
     },
-    "method_id": "fns-1yur-read-flake-snapshot"
+    "method_id": "fns-1yur-read-flake-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:read_flake_snapshot"

@@ -65,6 +65,9 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
         _run("release_paths", [interpreter, "-B", "scripts/check_release_integrity.py"], report)
         _run("readme_links", [interpreter, "-B", "scripts/check_readme_links.py"], report)
         _run("owner_imports", [interpreter, "-B", "scripts/check_internal_imports.py"], report)
+        _run("registry_executable_admission", [
+            interpreter, "-B", "scripts/admit_registry.py", "--level", "executable",
+        ], report)
         _run("reference_editions", [
             interpreter, "-B", "scripts/reference_editions.py", "verify",
             "--reference", "all",
@@ -78,9 +81,11 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
         with tempfile.TemporaryDirectory(prefix="stratbox-release-") as temporary:
             root = Path(temporary)
             dist = root / "dist"
+            # The default frontend builds the wheel from its fresh sdist.
+            # Independent --wheel builds can copy deleted files from build/lib.
             _run("build_distributions", [
                 interpreter, "-B", "-m", "build", "--no-isolation",
-                "--sdist", "--wheel", "--outdir", str(dist),
+                "--outdir", str(dist),
             ], report)
             wheels = list(dist.glob("stratbox-*.whl"))
             source_dist = list(dist.glob("stratbox-*.tar.gz"))
@@ -146,11 +151,20 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "assert stratbox.__version__ == importlib.metadata.version('stratbox'); "
                 "assert RegionNameResolver().resolve('Москва').subject.id == 'RU-MOW'; "
                 "[load_reference('stratbox.shared.reference.' + family).validate_all() "
-                "for family in ('banks', 'okved2', 'geography')]"
+                "for family in ('banks', 'okved2', 'geography')]; "
+                "from stratbox.core.registry import operation_catalog; "
+                "catalog = operation_catalog(); "
+                "assert catalog.admit(level='metadata').admitted; "
+                "assert set(item[1] for item in expected) <= {ref.operation_id for ref in catalog.list_refs()}; "
+                "assert catalog.connections(limit=1).entries"
             )
             _run("isolated_base_imports", [
                 interpreter, "-I", "-S", "-B", "-c", base_check,
                 str(installed), str(source_snapshot), str(source_registry),
+            ], report, cwd=root)
+            _run("zip_import_metadata", [
+                interpreter, "-I", "-S", "-B", "-c", base_check,
+                str(wheels[0]), str(source_snapshot), str(source_registry),
             ], report, cwd=root)
             full_check = (
                 "import json, sys; "
@@ -160,7 +174,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
                 "assert actual == expected, (actual, expected); "
                 "catalog = operation_catalog(); "
-                "[catalog.resolve(ref.operation_id, ref.contract_version) "
+                "[catalog.resolve(ref.operation_id) "
                 "for ref in catalog.list_refs()]; "
                 "cards = catalog.source_catalog(); "
                 "actual_cards = sorted([c.publisher_id, c.family_id, c.series_id] for c in cards.sources); "

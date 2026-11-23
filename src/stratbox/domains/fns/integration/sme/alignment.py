@@ -29,7 +29,7 @@ def align(projection):
             dimensions=(*item.dimensions, ("source_field", item.metric.id))))
     lineage = (*projection.batch.lineage, UsedInputReceipt("field_map", MAP_IDENTITY, "application/json",
         "reference_only", PROFILE))
-    batch = ObservationBatch("fns.sme.integrated", 1, projection.batch.release_id, tuple(observations), lineage)
+    batch = ObservationBatch("fns.sme.integrated", 1, projection.batch.release_id, tuple(observations), lineage, projection.batch.source_uses)
     dispositions = (*projection.dispositions, *(FieldDisposition(key, value, "reported_value_alias")
         for key, value in METRICS.items()))
     parent = projection.identity

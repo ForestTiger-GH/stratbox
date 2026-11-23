@@ -42,6 +42,7 @@ from stratbox.domains.cbr.operations.corporate_lending.industry.operation_helper
 from stratbox.domains.cbr.operations.corporate_lending.industry.operation_helpers import _stream_metadata
 from stratbox.domains.cbr.operations.corporate_lending.industry.extraction import record_flakes
 from stratbox.domains.cbr.operations.corporate_lending.industry.extraction import seal_flake
+from stratbox.domains.cbr.tables.corporate_lending.industry.sources import industry_source_uses
 from stratbox.domains.cbr.integration.corporate_lending.industry.integration import assemble_flakes
 from stratbox.domains.cbr.publications.corporate_lending.issuance import CBR_SORS_INDEX_URL
 from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import SERIES_CODE
@@ -212,11 +213,11 @@ def build_stream(request: BuildIssuanceStreamRequest, *, context: ExecutionConte
     return run(BUILD_STREAM, request, work, context=context)
 
 
-def _apk(stream, *, budget):
+def _apk(stream, *, budget, source_uses=()):
     from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import Cbr0105ADebtCorpDerivedIndustryError
     from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
     try:
-        result = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=budget)
+        result = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=budget, source_uses=source_uses)
     except Cbr0105ADebtCorpDerivedIndustryError as exc:
         raise OperationFailure(f"derived.{exc.code.lower()}") from None
     # The shared formula keeps the 01_05 stream schema; restore the issuance
@@ -246,7 +247,8 @@ def calculate_apk(request: CalculateIssuanceApkRequest, *, context: ExecutionCon
         ):
             raise OperationFailure("source.validation_failed")
         stream = use_stream(invocation, req.stream)
-        result = _apk(stream, budget=invocation.budget)
+        result = _apk(stream, budget=invocation.budget,
+            source_uses=industry_source_uses(req.stream, frame=stream))
         return seal_stream(invocation, result, parameters={
             "components": result.source_industry_codes, "apk": result.apk_formula_ru, "lpk": result.lpk_formula_ru,
         })
@@ -264,6 +266,7 @@ def build_pivots(request: PivotIssuanceRequest, *, context: ExecutionContext | N
         try:
             result = build_cbr_0105a_debt_corp_pivot_set(
                 stream, req.pivot, stream_result=_stream_metadata(req), budget=invocation.budget,
+                source_uses=industry_source_uses(req.stream, frame=stream),
             )
         except Cbr0105ADebtCorpPivotError as exc:
             raise OperationFailure(f"pivot.{exc.code.lower()}") from None

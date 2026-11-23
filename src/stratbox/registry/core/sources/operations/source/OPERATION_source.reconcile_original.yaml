@@ -25,12 +25,16 @@
           "contract": {
             "schema_id": "source.storage_receipt"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Reconcile original storage using read-back evidence."
     },
-    "method_id": "original-read-back"
+    "method_id": "original-read-back",
+    "request_fields": {
+      "receipt": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.source.originals:reconcile_original"

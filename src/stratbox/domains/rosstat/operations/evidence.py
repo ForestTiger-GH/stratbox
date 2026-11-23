@@ -25,7 +25,7 @@ def _snapshot(value,invocation):
         snapshot=document_snapshot(value)
     elif isinstance(value,RosstatSourceFlake):
         invocation.budget.check("cells",len(value.values))
-        snapshot=flake_snapshot(value)
+        snapshot=flake_snapshot(value, checkpoint=invocation.check_cancelled)
     elif isinstance(value,RosstatDataset):
         invocation.budget.check("cells",len(value.batch.observations))
         snapshot=dataset_snapshot(value)

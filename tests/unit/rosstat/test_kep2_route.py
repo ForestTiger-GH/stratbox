@@ -248,3 +248,32 @@ def test_operation_boundaries_pin_complete_values_parameters_and_budgets(physica
         failed=H.read_flake(SnapshotRequest(saved),context=ExecutionContext(budget=ExecutionBudget(**{resource:1})))
         assert failed.outcome=="failed" and failed.value is None
         assert any(d.code=="budget."+resource for d in failed.diagnostics)
+
+
+def test_reviewed_kep2_admission_and_derived_growth_keep_exact_source_scope(physical):
+    from stratbox.domains.rosstat.profiles import admit
+    from stratbox.shared.data.sources import SourceInstance
+    from stratbox.shared.data.processing import DataContract
+    value = extract_kep2(Kep2Request(physical))
+    instance = SourceInstance(value.series_id, DataContract("rosstat.source_flake"),
+        group_id="kep2_indicators", issue_id=value.issue_id)
+    assert admit(None, instance, physical).state == "conditional"
+    assert admit(None, instance, value).state == "admitted"
+    assert admit(None, instance, replace(value, profile_version=2)).state == "conditional"
+    dataset = integrate_flakes((value,), dataset_id="caller.dataset", release_id="caller.release")
+    use, = dataset.batch.source_uses
+    assert (use.coordinate.source_id, use.coordinate.issue_id, use.coordinate.source_group_id) == (
+        physical.series_id, physical.issue_id, "kep2_indicators")
+    replayed = dataset_from_snapshot(dataset_snapshot(dataset))
+    assert replayed.batch.source_uses == dataset.batch.source_uses
+    growth = derive_index_growth(replayed, release_id="derived")
+    assert growth.source_uses == dataset.batch.source_uses
+
+
+def test_kep2_flake_snapshot_observes_cancellation_before_row_encoding(physical):
+    from stratbox.core.execution import OperationFailure
+    value = extract_kep2(Kep2Request(physical))
+    def checkpoint():
+        raise OperationFailure("operation.cancelled", outcome="cancelled")
+    with pytest.raises(OperationFailure, match="operation.cancelled"):
+        flake_snapshot(value, checkpoint=checkpoint)

@@ -30,7 +30,8 @@
             "version": 2,
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,7 +39,11 @@
       ],
       "summary": "Construct presentation views from a supplied integrated escrow dataset."
     },
-    "method_id": "cbr-escrow-views"
+    "method_id": "cbr-escrow-views",
+    "request_fields": {
+      "dataset": "input",
+      "view": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:build_views"

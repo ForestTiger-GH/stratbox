@@ -35,12 +35,17 @@
           "contract": {
             "schema_id": "workbook.cell_comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Compare exact physical cells and geometry without assuming economic comparability."
     },
-    "method_id": "workbook-compare"
+    "method_id": "workbook-compare",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:compare_workbooks"

@@ -30,12 +30,17 @@
           "contract": {
             "schema_id": "fns.sme.flake_comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Compare physical source evidence for the same publication issue, independent of economic interpretation."
     },
-    "method_id": "fns-sme-compare-flakes"
+    "method_id": "fns-sme-compare-flakes",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:compare_flakes"

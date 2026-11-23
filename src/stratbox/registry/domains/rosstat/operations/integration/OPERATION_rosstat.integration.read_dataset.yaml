@@ -35,13 +35,17 @@
             "schema_id": "rosstat.integrated_dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Replay integrated data and source context independently of extraction.",
       "function": "replay"
     },
-    "method_id": "rosstat-integration-read_dataset"
+    "method_id": "rosstat-integration-read_dataset",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:read_dataset"

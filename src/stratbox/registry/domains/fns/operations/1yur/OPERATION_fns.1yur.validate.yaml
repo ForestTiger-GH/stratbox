@@ -23,12 +23,16 @@
           "contract": {
             "schema_id": "fns.1yur.validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Assess the reviewed source profile and expose errors, omissions and disagreements."
     },
-    "method_id": "fns-1yur-validate"
+    "method_id": "fns-1yur-validate",
+    "request_fields": {
+      "flake": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:validate"

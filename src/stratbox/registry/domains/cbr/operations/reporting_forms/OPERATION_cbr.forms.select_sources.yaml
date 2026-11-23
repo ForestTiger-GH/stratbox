@@ -14,15 +14,23 @@
           "contract": {
             "schema_id": "cbr.forms.sources"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "keys"
       ],
-      "summary": "Resolve reporting-form source keys."
+      "summary": "Resolve reporting-form source keys.",
+      "required_parameters": [
+        "keys"
+      ]
     },
-    "method_id": "cbr-forms-source-selection"
+    "method_id": "cbr-forms-source-selection",
+    "request_fields": {
+      "keys": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.acquisition:select_sources"

@@ -30,19 +30,24 @@
           "path": "payload",
           "qualifications": [
             "source.cbr.escrow"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Acquire an official escrow XLSX or historical HTML original."
     },
-    "method_id": "cbr-escrow-source"
+    "method_id": "cbr-escrow-source",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:acquire"

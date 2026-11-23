@@ -18,7 +18,7 @@ def test_grouped_route_matches_the_same_explicit_processing_facts(owner, route_i
     group = sources.group_document(owner, group_id)
     explicit = deepcopy(grouped)
     explicit.pop("groups")
-    for name in ("operations", "stages", "transitions"):
+    for name in ("operations", "stages"):
         explicit[name] = deepcopy(group[name]) + explicit.get(name, [])
     assert sources.decode_route(grouped, owner=owner) == sources.decode_route(explicit, owner=owner)
 
@@ -35,10 +35,9 @@ def test_local_route_facts_add_without_overriding_shared_bindings():
     value = sources.profile_document("frank_rg", "frg.regional.issuance.route")
     value["operations"] = [{"operation_id": "example.local_extension"}]
     value["stages"] = ["publish"]
-    value["transitions"] = [{"from": "render", "to": "publish"}]
     route = sources.decode_route(value, owner="frank_rg")
     assert route.operations[-1].operation_id == "example.local_extension"
-    assert route.allows("render", "publish")
+    assert any(stage.value == "publish" for stage in route.stages)
     assert route.binding("frg.capture").identity_parameter == "source_id"
 
 
@@ -63,7 +62,7 @@ def test_processing_groups_are_scoped_to_their_explicit_owner():
     lambda value: value.update(groups=["another.group"]),
     lambda value: value.update(owner_id="frank_rg"),
     lambda value: value["operations"].append(deepcopy(value["operations"][0])),
-    lambda value: value["transitions"].append(deepcopy(value["transitions"][0])),
+    lambda value: value["stages"].append(value["stages"][0]),
 ])
 def test_group_records_reject_nested_includes_wrong_owner_and_duplicate_facts(monkeypatch, tmp_path, change):
     value = sources.group_document("minfin", "minfin.fiscal_processing")

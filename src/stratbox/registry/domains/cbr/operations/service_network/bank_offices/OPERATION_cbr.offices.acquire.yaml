@@ -21,7 +21,8 @@
           "path": "source.payload",
           "qualifications": [
             "source.cbr.offices"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
@@ -29,16 +30,24 @@
             "schema_id": "source.payload",
             "role": "originals"
           },
-          "path": "source.payload"
+          "path": "source.payload",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "capture_zone",
         "baseline"
       ],
-      "summary": "Acquire the selected source material with byte and acquisition evidence."
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "required_parameters": [
+        "capture_zone"
+      ]
     },
-    "method_id": "cbr-offices-http"
+    "method_id": "cbr-offices-http",
+    "request_fields": {
+      "baseline": "parameter",
+      "capture_zone": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:acquire"

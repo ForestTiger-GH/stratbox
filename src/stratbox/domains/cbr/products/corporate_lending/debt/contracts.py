@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.source_context import SourceUse
+from stratbox.domains.cbr.tables.corporate_lending.industry.sources import merge_source_uses
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +25,7 @@ class Cbr0105ADebtCorpPivotWorkbookResult:
     representation: Representation
     sheet_names: tuple[str, ...]
     sheet_count: int
+    source_uses: tuple[SourceUse, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -49,6 +52,7 @@ class Cbr0105ADebtCorpIndustryWorkbookResult:
     sheet_count: int
     dates: tuple[str, ...]
     rows_per_sheet: int
+    source_uses: tuple[SourceUse, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -62,6 +66,13 @@ class Cbr0105ADebtCorpIndustryWorkbookResult:
 @dataclass(frozen=True)
 class IndustryWorkbooksResult:
     items: tuple[Cbr0105ADebtCorpIndustryWorkbookResult, ...]
+    source_uses: tuple[SourceUse, ...] = ()
+
+    def __post_init__(self):
+        actual = merge_source_uses(*(item.source_uses for item in self.items))
+        if self.source_uses and self.source_uses != actual:
+            raise ValueError("industry.workbook_sources_invalid")
+        object.__setattr__(self, "source_uses", actual)
 
     @property
     def ok(self) -> bool:

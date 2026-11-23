@@ -22,13 +22,17 @@
             "schema_id": "fns.1yur.integrated_dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate and replay a retained dataset without the original file or a spreadsheet engine.",
       "function": "replay"
     },
-    "method_id": "fns-1yur-read-dataset-snapshot"
+    "method_id": "fns-1yur-read-dataset-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:read_dataset_snapshot"

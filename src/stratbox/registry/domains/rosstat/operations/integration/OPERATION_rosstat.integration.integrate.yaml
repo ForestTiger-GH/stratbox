@@ -27,7 +27,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "collection": true
         }
       ],
       "outputs": [
@@ -37,16 +38,26 @@
             "schema_id": "rosstat.integrated_dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "release_id"
       ],
-      "summary": "Integrate explicitly resolved source-flake observations; reject collisions and unresolved semantics."
+      "summary": "Integrate explicitly resolved source-flake observations; reject collisions and unresolved semantics.",
+      "required_parameters": [
+        "dataset_id",
+        "release_id"
+      ]
     },
-    "method_id": "rosstat-integration-integrate"
+    "method_id": "rosstat-integration-integrate",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "flakes": "input",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:integrate"

@@ -17,6 +17,7 @@ from stratbox.shared.data.lineage import computation_from, computation_value
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
 from stratbox.shared.identity import canonical_manifest_bytes
+from stratbox.shared.data.source_context import SourceUse, source_use_value, source_use_from
 
 
 _ROLES = {"flake": DataRole.EXTRACTS, "stream": DataRole.INTEGRATED,
@@ -28,6 +29,22 @@ def snapshot_contract(family, kind):
     if family not in {"0105a", "0104a"} or kind not in _ROLES:
         raise ValueError("industry.snapshot_profile_unsupported")
     return DataContract(f"cbr.industries.{family}.{kind}.snapshot", 1, _ROLES[kind])
+
+
+def metadata_schema(family, kind):
+    contract = snapshot_contract(family, kind)
+    return TableSchema(DataContract(f"{contract.schema_id}.metadata", 1, contract.role),
+                       (ColumnSchema("descriptor", ScalarType.TEXT),))
+
+
+METADATA_0105A_FLAKE = metadata_schema("0105a", "flake")
+METADATA_0105A_STREAM = metadata_schema("0105a", "stream")
+METADATA_0105A_CALCULATION = metadata_schema("0105a", "calculation")
+METADATA_0105A_VIEW = metadata_schema("0105a", "view")
+METADATA_0104A_FLAKE = metadata_schema("0104a", "flake")
+METADATA_0104A_STREAM = metadata_schema("0104a", "stream")
+METADATA_0104A_CALCULATION = metadata_schema("0104a", "calculation")
+METADATA_0104A_VIEW = metadata_schema("0104a", "view")
 
 
 def value_snapshot(value, *, family, kind, dataset_id, version_id, inputs=(), types, checkpoint=None):
@@ -52,6 +69,8 @@ def value_snapshot(value, *, family, kind, dataset_id, version_id, inputs=(), ty
             return {"node": "frame", "name": name, "metadata": metadata}
         if isinstance(item, ComputationReceipt):
             return {"node": "computation", "value": computation_value(item)}
+        if isinstance(item, SourceUse):
+            return {"node": "source_use", "value": source_use_value(item)}
         if type(item) in names:
             return {"node": names[type(item)], "fields": {field.name: encode(getattr(item, field.name), depth + 1)
                                                           for field in fields(item)}}
@@ -71,8 +90,7 @@ def value_snapshot(value, *, family, kind, dataset_id, version_id, inputs=(), ty
         "unit": "million_rubles", "value": encode(value)})
     if len(body) > _METADATA_LIMIT:
         raise ValueError("industry.snapshot_metadata_limit")
-    schema = TableSchema(DataContract(f"{contract.schema_id}.metadata", 1, contract.role),
-                         (ColumnSchema("descriptor", ScalarType.TEXT),))
+    schema = metadata_schema(family, kind)
     partial = bool(getattr(value, "is_partial", False) or getattr(getattr(value, "selection", None), "industry_codes", None))
     return DatasetSnapshot.build(dataset_id, version_id, contract,
         (("metadata", TypedTable(schema, ((body.decode("utf-8"),),))), *tables),
@@ -86,8 +104,7 @@ def value_from_snapshot(snapshot, *, family, kind, types, checkpoint=None):
     if not isinstance(snapshot, DatasetSnapshot) or not snapshot.complete or snapshot.manifest.contract != contract:
         raise ValueError("industry.snapshot_contract_mismatch")
     metadata = snapshot.table("metadata")
-    schema = TableSchema(DataContract(f"{contract.schema_id}.metadata", 1, contract.role),
-                         (ColumnSchema("descriptor", ScalarType.TEXT),))
+    schema = metadata_schema(family, kind)
     if metadata.schema != schema or len(metadata.rows) != 1:
         raise ValueError("industry.snapshot_metadata_invalid")
     encoded = metadata.rows[0][0].encode("utf-8")
@@ -119,6 +136,8 @@ def value_from_snapshot(snapshot, *, family, kind, types, checkpoint=None):
             return frame_from_table(table, item["metadata"], checkpoint=checkpoint)
         if node == "computation" and set(item) == {"node", "value"}:
             return computation_from(item["value"])
+        if node == "source_use" and set(item) == {"node", "value"}:
+            return source_use_from(item["value"])
         if node in types and set(item) == {"node", "fields"}:
             cls = types[node]
             if not isinstance(item["fields"], dict) or set(item["fields"]) != {field.name for field in fields(cls)}:

@@ -30,7 +30,8 @@
             "schema_id": "cbr.service_network.observations",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -41,9 +42,22 @@
         "metrics",
         "require_geography"
       ],
-      "summary": "Apply explicit bank, geography and metric mappings while preserving original identities and unresolved geography."
+      "summary": "Apply explicit bank, geography and metric mappings while preserving original identities and unresolved geography.",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-office-observations"
+    "method_id": "cbr-office-observations",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "metrics": "parameter",
+      "regions": "parameter",
+      "release": "input",
+      "require_geography": "parameter",
+      "subjects": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.lifecycle:align_offices"

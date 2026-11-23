@@ -19,7 +19,8 @@
           "contract": {
             "schema_id": "cbr.forms.snapshots",
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -29,7 +30,8 @@
             "schema_id": "cbr.forms.data",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -41,7 +43,14 @@
       "summary": "Compose source-projection alignment, explicit model-input admission and financial-model evaluation.",
       "composition": true
     },
-    "method_id": "cbr-forms-source-model-composition"
+    "method_id": "cbr-forms-source-model-composition",
+    "request_fields": {
+      "banks": "parameter",
+      "model": "method",
+      "periods": "parameter",
+      "selection_profile": "method",
+      "snapshots": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.calculation:build_form_data"

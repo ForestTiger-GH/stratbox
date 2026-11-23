@@ -36,15 +36,23 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "files"
       ],
-      "summary": "Validate a complete CSV, descriptor and member-original collection and resume without re-parsing DBF."
+      "summary": "Validate a complete CSV, descriptor and member-original collection and resume without re-parsing DBF.",
+      "required_parameters": [
+        "files"
+      ]
     },
-    "method_id": "cbr-forms-csv-replay"
+    "method_id": "cbr-forms-csv-replay",
+    "request_fields": {
+      "files": "parameter",
+      "manifest": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.flake_export:read_flake_export"

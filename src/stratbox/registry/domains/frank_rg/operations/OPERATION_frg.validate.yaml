@@ -23,12 +23,16 @@
           "contract": {
             "schema_id": "frg.extract.validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Validate source binding, cell structure and formula-cache availability."
     },
-    "method_id": "frg.validate"
+    "method_id": "frg.validate",
+    "request_fields": {
+      "extract": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:validate"

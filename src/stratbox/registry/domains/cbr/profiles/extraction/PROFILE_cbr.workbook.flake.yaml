@@ -9,6 +9,7 @@
     "kind": "extraction",
     "profile_id": "cbr.workbook.flake",
     "scope": "All physical worksheets, cells, formulas and source metadata.",
-    "operation_id": "cbr.tables.extract"
+    "operation_id": "cbr.tables.extract",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

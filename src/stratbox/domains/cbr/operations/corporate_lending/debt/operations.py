@@ -22,6 +22,7 @@ from stratbox.domains.cbr.operations.corporate_lending.industry.operation_helper
 from stratbox.domains.cbr.operations.corporate_lending.industry.operation_helpers import _seal_pivots
 from stratbox.domains.cbr.operations.corporate_lending.industry.extraction import record_flakes
 from stratbox.domains.cbr.operations.corporate_lending.industry.extraction import seal_flake
+from stratbox.domains.cbr.tables.corporate_lending.industry.sources import industry_source_uses
 from stratbox.domains.cbr.integration.corporate_lending.industry.integration import assemble_flakes
 from stratbox.domains.cbr.publications.access import (
     HTML_TYPES,
@@ -280,7 +281,8 @@ def calculate_apk(
             raise OperationFailure("source.validation_failed")
         stream = use_stream(invocation, req.stream)
         try:
-            value = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=invocation.budget)
+            value = calculate_cbr_0105a_debt_corp_apk_industry(stream, budget=invocation.budget,
+                source_uses=industry_source_uses(req.stream, frame=stream))
         except Cbr0105ADebtCorpDerivedIndustryError as error:
             raise OperationFailure(f"derived.{error.code.lower()}") from None
         return seal_stream(invocation, value, parameters={
@@ -304,6 +306,7 @@ def build_pivots(
         try:
             result = build_cbr_0105a_debt_corp_pivot_set(
                 stream, req.pivot, stream_result=_stream_metadata(req), budget=invocation.budget,
+                source_uses=industry_source_uses(req.stream, frame=stream),
             )
         except Cbr0105ADebtCorpPivotError as error:
             raise OperationFailure(f"pivot.{error.code.lower()}") from None

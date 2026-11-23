@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.monetary_statistics.annex_survey_dc",
-    "scope": "Central bank, credit institution and consolidated banking-system perimeters remain separate. Published adjusted growth and transactions differ from computed stock changes."
+    "scope": "Central bank, credit institution and consolidated banking-system perimeters remain separate. Published adjusted growth and transactions differ from computed stock changes.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

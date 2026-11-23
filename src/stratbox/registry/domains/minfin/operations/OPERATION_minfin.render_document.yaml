@@ -24,12 +24,16 @@
             "schema_id": "document.readable.jsonl",
             "role": "readable"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render retained ordered document blocks as source-qualified JSONL for downstream reading."
     },
-    "method_id": "minfin.document.readable"
+    "method_id": "minfin.document.readable",
+    "request_fields": {
+      "document": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.document_handlers:render_document"

@@ -35,13 +35,17 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a prepared view from its complete stored snapshot.",
       "function": "replay"
     },
-    "method_id": "rosstat-products-read_view"
+    "method_id": "rosstat-products-read_view",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:read_view"

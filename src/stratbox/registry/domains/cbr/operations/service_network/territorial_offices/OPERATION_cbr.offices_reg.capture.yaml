@@ -23,7 +23,8 @@
             "schema_id": "cbr.offices_reg.release",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "candidates",
@@ -33,14 +34,16 @@
           "path": "",
           "outcomes": [
             "partial"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "representation",
           "contract": {
             "schema_id": "cbr.offices_reg.extract_representation",
             "role": "extracts"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -48,9 +51,17 @@
         "url"
       ],
       "summary": "Acquire and extract a release in one invocation.",
-      "composition": true
+      "composition": true,
+      "required_parameters": [
+        "as_of",
+        "url"
+      ]
     },
-    "method_id": "cbr-offices-reg-xlsx"
+    "method_id": "cbr-offices-reg-xlsx",
+    "request_fields": {
+      "as_of": "parameter",
+      "url": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:capture"

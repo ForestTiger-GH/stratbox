@@ -22,16 +22,24 @@
           "contract": {
             "schema_id": "dataset.version_catalog"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "dataset_id",
         "selection"
       ],
-      "summary": "List explicit immutable versions within one selected dataset scope."
+      "summary": "List explicit immutable versions within one selected dataset scope.",
+      "required_parameters": [
+        "dataset_id"
+      ]
     },
-    "method_id": "dataset-catalog"
+    "method_id": "dataset-catalog",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "selection": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.storage.datasets.operations:list_versions"

@@ -28,15 +28,23 @@
             "schema_id": "fns.1yur.flake",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "release"
       ],
-      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields."
+      "summary": "Extract all supplied source records or admitted workbook cells before selecting economic fields.",
+      "required_parameters": [
+        "release"
+      ]
     },
-    "method_id": "fns-1yur-extract"
+    "method_id": "fns-1yur-extract",
+    "request_fields": {
+      "payload": "input",
+      "release": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.legal_entities.pipeline:extract"

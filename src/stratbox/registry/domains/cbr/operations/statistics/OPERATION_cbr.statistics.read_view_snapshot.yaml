@@ -27,13 +27,17 @@
             "schema_id": "cbr.statistics.view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a prepared view with its exact inputs and rendering profile.",
       "function": "replay"
     },
-    "method_id": "cbr-statistics-read_view_snapshot"
+    "method_id": "cbr-statistics-read_view_snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:read_view_snapshot"

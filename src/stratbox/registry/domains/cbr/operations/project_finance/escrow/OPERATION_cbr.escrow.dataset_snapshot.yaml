@@ -28,14 +28,16 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -45,7 +47,12 @@
       "summary": "Encode a complete escrow value for any logical dataset adapter.",
       "function": "encode"
     },
-    "method_id": "cbr-escrow-snapshot"
+    "method_id": "cbr-escrow-snapshot",
+    "request_fields": {
+      "dataset": "input",
+      "dataset_id": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.lifecycle:build_dataset_snapshot"

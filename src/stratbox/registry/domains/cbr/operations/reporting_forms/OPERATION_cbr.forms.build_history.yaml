@@ -18,7 +18,8 @@
           "contract": {
             "schema_id": "cbr.forms.snapshots",
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -27,16 +28,26 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "version_id"
       ],
-      "summary": "Pin a unique selected history of normalized form releases; duplicate releases require explicit resolution."
+      "summary": "Pin a unique selected history of normalized form releases; duplicate releases require explicit resolution.",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-forms-source-history"
+    "method_id": "cbr-forms-source-history",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "snapshots": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:build_source_history"

@@ -37,7 +37,8 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -46,7 +47,12 @@
       ],
       "summary": "Prepare a portable observation view from an integrated Rosstat dataset."
     },
-    "method_id": "rosstat-products-prepare_view"
+    "method_id": "rosstat-products-prepare_view",
+    "request_fields": {
+      "dataset": "input",
+      "metric_ids": "parameter",
+      "view_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:prepare_view"

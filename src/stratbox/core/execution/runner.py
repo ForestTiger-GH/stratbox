@@ -10,9 +10,8 @@ from uuid import uuid4
 from stratbox.shared.data.datasets import ComputationReceipt, build_dataset_version, computation_identity
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.shared.evidence import SourcePayload
 from stratbox.core.runtime.capabilities import BindingError, ProviderBinding, ProviderSelection, select_provider
-from stratbox.core.limits import BudgetError, BudgetClockError, BudgetExceeded, BudgetMeter, ExecutionBudget
+from stratbox.core.limits import BudgetError, BudgetClockError, BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.providers import RuntimeProviderError, active_providers
 from stratbox.core.runtime.dependencies import MissingExtra
 
@@ -78,6 +77,10 @@ class Invocation:
         self.parents: list[tuple[str, ComputationReceipt]] = list(context.input_computations)
         self.computation: ComputationReceipt | None = None
         self._request: object | None = None
+        self._signature_cache = {}
+        self._work = None
+        self._work_completed = False
+        self._method_descriptor = None
 
     @property
     def effects(self) -> Sequence[EffectReceipt]:
@@ -275,67 +278,59 @@ class Invocation:
             self._input_index.add(receipt)
             self.used_inputs.append(receipt)
 
-    @staticmethod
-    def _arguments(definition, request):
-        """Capture exact declared arguments, separate from inherited evidence.
+    def depend(self, receipt: UsedInputReceipt) -> None:
+        """Declare an independently consumed semantic dependency.
 
-        Reading the admitted request here includes applied dataclass defaults.
-        It also avoids encoding a rejected request before the handler's domain
-        and resource admission checks. Parent invocation IDs and transport
-        history never become part of a logical argument's identity.
+        Inherited evidence remains traceable but does not prove that this
+        operation used a particular reference or its interpretation.
         """
-        from stratbox.core.execution.values import argument_identity, argument_value, plain
-        from stratbox.core.execution.value_context import value_context
+        self.use(receipt)
 
-        semantics = definition.processing
-        if semantics is None or request is None:
-            return {}, {}
+    @staticmethod
+    def _arguments(definition, request, *, checkpoint=None, budget=None, cache=None, source_contexts=None):
+        """Capture exhaustive computational fields with bounded signature work."""
+        from stratbox.core.execution.arguments import capture_arguments
+        if definition.request_fields:
+            from stratbox.core.registry.operations import validate_request_contract
+            validate_request_contract(definition)
+        return capture_arguments(definition, request,
+            checkpoint=checkpoint, budget=budget, cache=cache, source_contexts=source_contexts)
 
-        def selected(path):
-            value = request
-            for name in path.split(".") if path else ():
-                value = getattr(value, name)
-            return value
+    def _source_contexts(self, definition):
+        if self.context.input_source_operation not in {None, definition.operation_id}:
+            return {}
+        return dict(self.context.input_source_contexts)
 
-        def value_metadata(value):
-            # A byte identity commits payload contents. Its interpretation also
-            # depends on these explicitly owned transport/schema qualifiers.
-            if isinstance(value, SourcePayload):
-                return {"media_type": value.media_type, "charset": value.charset,
-                        "source_id": value.source_id}
-            if isinstance(value, Representation):
-                return {"profile_id": value.profile_id, "edition": value.version,
-                        "media_type": value.media_type, "encoding": value.encoding}
-            if isinstance(value, (tuple, list)):
-                return [value_metadata(item) for item in value]
-            return None
-
-        arguments = {}
-        for port in semantics.inputs:
-            value = selected(port.path)
-            arguments[port.name] = {
-                "contract": plain(port.contract),
-                "identity": plain(argument_identity(value)),
-                "context": plain(value_context(value, port.contract)),
-                "metadata": value_metadata(value),
-            }
-        parameters = {name: argument_value(selected(name)) for name in semantics.parameters}
-        return arguments, parameters
+    def _method(self):
+        if self._method_descriptor is None:
+            from stratbox.core.execution.methods import method_descriptor
+            self._method_descriptor = method_descriptor(self.definition, work=self._work)
+        return self._method_descriptor
 
     @classmethod
-    def _receipt(cls, definition, request, identity, receipts, parameters, resources, parents):
-        from stratbox.core.execution.values import argument_value
-        arguments, declared_parameters = cls._arguments(definition, request)
-        parameters = {**argument_value(parameters or {}), **declared_parameters}
+    def _receipt(cls, definition, request, identity, receipts, parameters, resources, parents,
+                 *, checkpoint=None, budget=None, cache=None, method=None, source_contexts=None):
+        from stratbox.core.execution.arguments import filter_parameters
+        from stratbox.core.execution.methods import method_descriptor
+        arguments, declared_parameters = cls._arguments(definition, request,
+            checkpoint=checkpoint, budget=budget, cache=cache, source_contexts=source_contexts)
+        parameters = {**filter_parameters(definition, parameters or {}), **declared_parameters}
+        method = method if method is not None else method_descriptor(definition)
+        fingerprint = method.identity
+        qualifications = frozenset({"signature_complete", "method_resolved"})
         version = build_dataset_version(
             definition.operation_id, "result", definition.method_id, receipts, identity,
             parameters=parameters, resources=resources, arguments=arguments,
+            method_fingerprint=fingerprint,
+            qualifications=qualifications,
         )
         computation_id = computation_identity(
             definition.operation_id, definition.method_id, receipts,
             parameters=parameters, resources=resources, arguments=arguments,
+            method_fingerprint=fingerprint,
         )
-        return ComputationReceipt(version, identity, receipts, computation_id, tuple(parents))
+        return ComputationReceipt(version, identity, receipts, computation_id,
+            tuple(parents), fingerprint, qualifications)
 
     def record_child(self, definition, request, identity, *, inputs, parameters=None,
                      resources=None, parents=()):
@@ -348,34 +343,74 @@ class Invocation:
         self._require_open()
         if not isinstance(definition, OperationDefinition) or not isinstance(request, definition.request_type):
             raise TypeError("Expected a declared child operation and its typed request")
-        return self._receipt(definition, request, identity, tuple(inputs), parameters, resources, parents)
+        return self._receipt(definition, request, identity, tuple(inputs), parameters, resources, parents,
+            checkpoint=self.check_cancelled, budget=self.budget, cache=self._signature_cache,
+            source_contexts=self._source_contexts(definition))
 
     def record(self, identity, *, parameters=None, resources=None, inputs=None):
         self._require_open()
         if inputs is None:
-            # Only an explicit transport relationship permits suppression.
-            # Equal bytes in an independent reference role retain their own
-            # semantic edition and qualification of the computation.
-            transports = set(self.context.input_transports)
-            provenance = set(self.context.input_provenance)
-
-            def replaced_transport(receipt):
-                return receipt in transports and any(
-                    receipt.identity == direct.identity
-                    and receipt.media_type == direct.media_type
-                    and receipt.source_id == direct.source_id
-                    and direct.version is None
-                    for direct in self._direct_inputs
-                )
-
-            receipts = (*self._direct_inputs, *(receipt for receipt in self.context.input_receipts
-                         if receipt not in provenance and not replaced_transport(receipt)))
-            receipts = tuple(dict.fromkeys(receipts))
+            # A supplied receipt is provenance until the consuming handler
+            # explicitly calls use/depend. Independent semantic roles remain
+            # distinct, including references with the same payload bytes.
+            receipts = tuple(self._direct_inputs)
         else:
             receipts = inputs
         self.computation = self._receipt(self.definition, self._request, identity, receipts,
-                                        parameters, resources, self.parents)
+            parameters, resources, self.parents,
+            checkpoint=self.budget.checkpoint if self._work_completed else self.check_cancelled,
+            budget=self.budget, cache=self._signature_cache, method=self._method(),
+            source_contexts=self._source_contexts(self.definition))
         return self.computation
+
+    def preflight(self) -> None:
+        """Check signature support before beginning an effectful operation.
+
+        Actual consumed values are recorded again at the consuming boundary.
+        Preflight neither creates a reusable result nor substitutes for result
+        admission, resource checks or the accepting provider's commit policy.
+        """
+        self._require_open()
+        previous_stage = self._stage
+        self._stage = "preflight"
+        self.check_cancelled()
+        try:
+            self._method()
+        except (ValueError, TypeError, OSError, ImportError, AttributeError):
+            raise OperationFailure(Diagnostic(
+                "processing.method_unavailable", stage="preflight",
+                component="processing", reason_class="method",
+            )) from None
+        try:
+            self._arguments(self.definition, self._request, checkpoint=self.check_cancelled,
+                budget=self.budget, cache=self._signature_cache,
+                source_contexts=self._source_contexts(self.definition))
+        except (BudgetError, OperationFailure):
+            raise
+        except (ValueError, TypeError, AttributeError, KeyError):
+            raise OperationFailure(Diagnostic(
+                "processing.signature_unavailable", stage="preflight",
+                component="processing", reason_class="signature",
+            )) from None
+        self._stage = previous_stage
+
+    def admit_prepared(self, value) -> None:
+        """Admit prepared data before an irreversible provider commit."""
+        self._require_open()
+        self.check_cancelled()
+        from stratbox.core.execution.admission import assess_result
+
+        try:
+            diagnostics = assess_result(self.definition, value,
+                self.context.result_admissions, phase="precommit", outcome=None)
+        except OperationFailure:
+            raise
+        except Exception as error:
+            diagnostic = self.incident(error)
+            raise OperationFailure(replace(diagnostic,
+                code="result.admission_invalid", stage="precommit_admission")) from None
+        if diagnostics:
+            raise OperationFailure(replace(diagnostics[0], stage="precommit_admission"))
 
     def account_output(
         self, identity, *, key: str = "returned", covered_by: str | None = None,
@@ -475,6 +510,7 @@ def _execute_work(
         if not isinstance(request, definition.request_type):
             raise OperationFailure("request.invalid_type")
         invocation._request = request
+        invocation._work = work
         if not isinstance(invocation._provider_selections, Mapping):
             raise BindingError("provider.selection_invalid")
         for role, selection in invocation._provider_selections.items():
@@ -492,6 +528,8 @@ def _execute_work(
         invocation._provider_selections = selections
         for role in sorted(definition.required_capabilities):
             invocation.provider(role, available.get(role))
+        if definition.possible_effects:
+            invocation.preflight()
         completed = work(request, invocation)
         if isinstance(completed, Completion):
             outcome, value, diagnostics = completed.outcome, completed.value, completed.diagnostics
@@ -545,6 +583,34 @@ def _admit_returned_output(
             outcome, None, work_result.diagnostics + (invocation.incident(error),),
         )
     return work_result
+
+
+def _admit_result(
+    definition: OperationDefinition, invocation: Invocation, work_result: _WorkCompletion,
+) -> _WorkCompletion:
+    """Apply bound result conditions before outcome/effect finalization."""
+    value = work_result.value
+    if (value is None or work_result.outcome == "cancelled"
+            or not isinstance(value, definition.value_type)
+            or not invocation.context.result_admissions):
+        return work_result
+    from stratbox.core.execution.admission import assess_result
+
+    try:
+        diagnostics = assess_result(definition, value,
+            invocation.context.result_admissions, phase="result", outcome=work_result.outcome)
+    except OperationFailure as error:
+        diagnostics = (error.diagnostic,)
+    except Exception as error:
+        incident = invocation.incident(error)
+        diagnostics = (replace(incident, code="result.admission_invalid"),)
+    if not diagnostics:
+        return work_result
+    diagnostics = tuple(replace(item, stage=item.stage or "result_admission") for item in diagnostics)
+    outcome = "unknown" if work_result.outcome == "unknown" else "failed"
+    # Rejected values stay unavailable; known external effects remain in the
+    # invocation accumulator and retain their final authority over uncertainty.
+    return _WorkCompletion(outcome, None, work_result.diagnostics + diagnostics)
 
 
 def _terminal_budget(invocation: Invocation, work_result: _WorkCompletion) -> _WorkCompletion:
@@ -658,6 +724,8 @@ def run(
         )
     invocation._emit("operation.started")
     completed = _execute_work(definition, request, work, invocation, providers)
+    invocation._work_completed = True
+    completed = _admit_result(definition, invocation, completed)
     completed = _admit_returned_output(definition, invocation, completed)
     completed = _terminal_budget(invocation, completed)
     try:

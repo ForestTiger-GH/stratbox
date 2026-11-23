@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage, TableSchema, TypedTable, scalar_value
 from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.source_context import SourceUse
+from stratbox.shared.data.processing import DataContract
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +52,15 @@ class TablePreview:
     has_more: bool
     next_offset: int | None
     coverage: SnapshotCoverage
+    source_uses: tuple[SourceUse, ...] = ()
+    source_context_qualification: str = "unqualified"
+    source_contract: DataContract | None = None
+
+    def __post_init__(self):
+        if (self.source_contract is not None and not isinstance(self.source_contract, DataContract)
+                or not isinstance(self.source_uses, tuple) or any(not isinstance(use, SourceUse) for use in self.source_uses)
+                or self.source_context_qualification not in {"unqualified", "selected_rows", "snapshot_single_coordinate", "snapshot_scope_ambiguous"}):
+            raise ValueError("query.source_context_invalid")
 
 
 def query_snapshot(snapshot: DatasetSnapshot, query: TableQuery, *, expected_identity=None, checkpoint=None):
@@ -110,7 +121,8 @@ def query_snapshot(snapshot: DatasetSnapshot, query: TableQuery, *, expected_ide
         position += 1
     more = position < len(table.rows)
     primary = table.schema.primary_key if set(table.schema.primary_key) <= set(selected) else ()
-    result = TypedTable(TableSchema(table.schema.contract, columns, primary), tuple(rows))
+    contract = table.schema.contract if selected == names else DataContract("dataset.table_projection", role=table.schema.contract.role)
+    result = TypedTable(TableSchema(contract, columns, primary), tuple(rows))
     return TablePreview(snapshot.identity, query.component, result, tuple(positions), scanned, more,
         position if more else None, SnapshotCoverage("partial" if more or query.offset else "complete",
-            "Bounded filtered component selection; source-wide completeness is not implied."))
+            "Bounded filtered component selection; source-wide completeness is not implied."), source_contract=table.schema.contract)

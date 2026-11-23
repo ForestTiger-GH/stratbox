@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.securities.debt_securities",
-    "scope": "Debt securities issued on the domestic market, separate nominal and market valuations and monthly/quarterly tables."
+    "scope": "Debt securities issued on the domestic market, separate nominal and market valuations and monthly/quarterly tables.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

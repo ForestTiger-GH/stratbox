@@ -11,6 +11,11 @@
     "kind": "source_projection",
     "profile_id": "cbr.forms.f802.normalization",
     "scope": "Reviewed form 802 physical projection; all-member extraction remains independent of this model input.",
-    "operation_id": "cbr.forms.normalize"
+    "operation_id": "cbr.forms.normalize",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.profiles:form_layout",
+    "implementation_parameters": {
+      "profile_id": "cbr.forms.f802.normalization"
+    }
   }
 }

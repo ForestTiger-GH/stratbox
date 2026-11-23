@@ -10,6 +10,11 @@
     ],
     "kind": "table",
     "profile_id": "minfin.budget_table",
-    "scope": "source-local periods and per-row units"
+    "scope": "source-local periods and per-row units",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit",
+    "implementation_ref": "stratbox.domains.minfin.tables.profiles:table_profile",
+    "implementation_parameters": {
+      "profile_id": "minfin.budget_table"
+    }
   }
 }

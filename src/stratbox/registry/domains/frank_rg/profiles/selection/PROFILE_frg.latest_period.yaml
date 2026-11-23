@@ -6,6 +6,11 @@
     "formats": [],
     "kind": "selection",
     "profile_id": "frg.latest_period",
-    "scope": ""
+    "scope": "",
+    "admission_ref": "stratbox.domains.frank_rg.profiles:admit",
+    "implementation_ref": "stratbox.domains.frank_rg.publications.profiles:selection_profile",
+    "implementation_parameters": {
+      "profile_id": "frg.latest_period"
+    }
   }
 }

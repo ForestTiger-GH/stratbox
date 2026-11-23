@@ -28,12 +28,16 @@
           "contract": {
             "schema_id": "material.collection.json"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Encode logical members, selection outcomes and coverage independently of store bindings."
     },
-    "method_id": "material-collection"
+    "method_id": "material-collection",
+    "request_fields": {
+      "": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.materials.collections:serialize_collection"

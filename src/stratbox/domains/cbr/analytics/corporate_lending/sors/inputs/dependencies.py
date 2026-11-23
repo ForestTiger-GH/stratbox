@@ -46,6 +46,33 @@ def dependencies():
     return DEPENDENCIES
 
 
+def source_uses(inputs):
+    """Coordinates of source roles after the SORS loaders admit their content."""
+    from stratbox.core.registry.requirements import declared_requirements
+    from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
+    from stratbox.domains.cbr.tables.statistics.profiles import table_profile
+    requirements = {item.input_name: item for item in declared_requirements("cbr.sors.prepare_inputs")}
+    uses = []
+    for dependency in DEPENDENCIES:
+        value = getattr(inputs, dependency.input_name)
+        if value is None:
+            continue
+        receipt = original_input(value, dependency.source_series)
+        layout_edition = None
+        if hasattr(value, "profile_version"):
+            profile = table_profile(source(dependency.series_id).table_profile)
+            if value.profile_version == profile.version:
+                layout_edition = profile.edition
+        coordinate = SourceCoordinate(dependency.series_id,
+            source_group_id=requirements[dependency.input_name].group_id,
+            issue_id=getattr(value, "issue_id", None), asset_id=getattr(value, "asset_id", None),
+            material_identity=receipt.identity,
+            layout_edition=layout_edition,
+            semantic_profile_edition=dependency.method_version)
+        uses.append(SourceUse(coordinate, dependency.input_name, "domain_validated", "sha256:" + receipt.identity.sha256))
+    return tuple(uses)
+
+
 def contract_coordinates(dependency):
     return tuple((item.schema_id, item.version, item.role.value if item.role else None)
                  for item in dependency.accepted_contracts)

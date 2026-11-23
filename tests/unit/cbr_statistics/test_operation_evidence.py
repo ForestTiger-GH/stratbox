@@ -162,3 +162,12 @@ def test_renderer_reads_only_prepared_view_and_enforces_output_budget(materials,
         budget=ExecutionBudget(output_bytes=len(rendered.value.data) - 1)))
     assert limited.outcome == "failed"
     assert limited.diagnostics[0].code == "budget.output_bytes"
+
+
+def test_source_flake_snapshot_checks_cancellation_before_encoding_cells(materials):
+    from stratbox.core.execution import OperationFailure
+    _, value, _, _, _ = materials
+    def checkpoint():
+        raise OperationFailure("operation.cancelled", outcome="cancelled")
+    with pytest.raises(OperationFailure, match="operation.cancelled"):
+        flake_snapshot(value, checkpoint=checkpoint)

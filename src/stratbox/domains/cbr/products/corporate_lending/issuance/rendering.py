@@ -82,4 +82,5 @@ def render_issuance_workbook(pivots, *, industry_code: str, industry_name_ru: st
         Representation("cbr.industries.0104a.industry-xlsx", 1, XLSX, data),
         industry_code, industry_name_ru, names, dates, actual_periods,
         pivots.tables[0].rows,
+        source_uses=pivots.source_uses,
     )

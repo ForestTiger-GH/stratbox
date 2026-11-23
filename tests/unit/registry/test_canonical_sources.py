@@ -38,22 +38,19 @@ def test_format_qualifications_keep_historical_originals_outside_reviewed_parser
     assert not any(binding.operation_id == "minfin.extract_document" for binding in legacy.operations)
 
 
-def test_route_graph_preserves_processing_order_and_replay_is_explicit():
+def test_source_route_declares_applicability_without_a_second_stage_graph():
     route = source_route("fns.sme")
-    assert route.allows("acquire", "extract")
-    assert route.allows("integrate", "calculate")
-    assert route.allows("calculate", "view")
-    assert not route.allows("render", "calculate")
-    assert not route.allows("render", "extract")
-    assert not route.allows("arbitrary", "extract")
+    assert route.binding("fns.sme.extract")
+    assert not hasattr(route, "transitions")
+    assert "transitions" not in profile_document("fns", "fns.sme.route")
     with pytest.raises(ValueError, match="registry.source_operation_unbound"):
         route.binding("cbr.escrow.parse")
 
 
 @pytest.mark.parametrize("mutate", [
     lambda d: d.update(unknown="ignored metadata"),
-    lambda d: d["transitions"].append({"from": "publish", "to": "extract"}),
-    lambda d: d["transitions"].append(deepcopy(d["transitions"][0])),
+    lambda d: d.update(transitions=[{"from": "publish", "to": "extract"}]),
+    lambda d: d["stages"].append(d["stages"][0]),
     lambda d: d["operations"].append(deepcopy(d["operations"][0])),
     lambda d: d["operations"][0].update(formats="json"),
     lambda d: d.update(owner_id="other"),

@@ -77,7 +77,7 @@ def view_from_snapshot(snapshot: DatasetSnapshot):
             or snapshot.table("view").schema != _SCHEMA or len(snapshot.table("view").rows) != 1):
         raise ValueError("view.snapshot_invalid")
     from stratbox.shared.data.observation_snapshots import OBSERVATION_SNAPSHOT, _COVERAGE
-    dataset, _, release = snapshot.table("metadata").rows[0]
+    dataset, _, release = snapshot.table("metadata").rows[0][:3]
     raw = DatasetSnapshot.build(dataset, release, OBSERVATION_SNAPSHOT, snapshot.tables[1:],
         coverage=_COVERAGE, inputs=snapshot.manifest.inputs)
     batch = observations_from_snapshot(raw)

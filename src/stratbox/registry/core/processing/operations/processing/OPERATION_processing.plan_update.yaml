@@ -19,7 +19,8 @@
           "contract": {
             "schema_id": "processing.update_plan"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -28,9 +29,17 @@
         "coverage"
       ],
       "summary": "Plan independent source, method, reference-edition and destination updates without performing effects.",
-      "function": "inspect"
+      "function": "inspect",
+      "required_parameters": [
+        "targets"
+      ]
     },
-    "method_id": "processing-plan_update"
+    "method_id": "processing-plan_update",
+    "request_fields": {
+      "coverage": "parameter",
+      "retained": "parameter",
+      "targets": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:plan_update"

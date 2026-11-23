@@ -9,6 +9,7 @@
     ],
     "kind": "document",
     "profile_id": "minfin.document.blocks",
-    "scope": "ordered text and table blocks"
+    "scope": "ordered text and table blocks",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit"
   }
 }

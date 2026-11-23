@@ -40,13 +40,17 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Replay a complete selected source flake without the original reader.",
       "function": "replay"
     },
-    "method_id": "rosstat-tables-read_flake"
+    "method_id": "rosstat-tables-read_flake",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:read_flake"

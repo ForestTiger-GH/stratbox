@@ -22,14 +22,16 @@
             "schema_id": "observations.prepared_view.snapshot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +41,12 @@
       "summary": "Persist every prepared view value, coverage statement and evidence reference.",
       "function": "encode"
     },
-    "method_id": "frg.view_snapshot"
+    "method_id": "frg.view_snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "version_id": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_view_snapshot"

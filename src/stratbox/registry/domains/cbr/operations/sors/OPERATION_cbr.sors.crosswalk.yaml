@@ -30,15 +30,23 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
         "config"
       ],
-      "summary": "Calculate an edition-aware crosswalk from supplied SORS results."
+      "summary": "Calculate an edition-aware crosswalk from supplied SORS results.",
+      "required_parameters": [
+        "config"
+      ]
     },
-    "method_id": "sors-crosswalk"
+    "method_id": "sors-crosswalk",
+    "request_fields": {
+      "config": "method",
+      "strict": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:run_crosswalk"

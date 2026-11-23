@@ -21,14 +21,16 @@
           "contract": {
             "schema_id": "observations.batch.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,7 +40,12 @@
       "summary": "Encode integrated, historical or calculated observations for the selected logical store.",
       "function": "encode"
     },
-    "method_id": "frg.observation_snapshot"
+    "method_id": "frg.observation_snapshot",
+    "request_fields": {
+      "batch": "input",
+      "dataset_id": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_observation_snapshot"

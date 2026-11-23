@@ -28,7 +28,8 @@
             "schema_id": "cbr.forms.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -36,7 +37,11 @@
       ],
       "summary": "Select a supported physical form table and apply explicit normalization to decoded flakes."
     },
-    "method_id": "cbr-forms-source-projection"
+    "method_id": "cbr-forms-source-projection",
+    "request_fields": {
+      "flakes": "input",
+      "include_deleted": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:normalize_form"

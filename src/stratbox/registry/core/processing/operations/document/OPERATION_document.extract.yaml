@@ -30,7 +30,8 @@
             "schema_id": "document.blocks.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -38,9 +39,19 @@
         "issue_id",
         "asset_id"
       ],
-      "summary": "Extract ordered text blocks and explicit document extraction qualifications."
+      "summary": "Extract ordered text blocks and explicit document extraction qualifications.",
+      "required_parameters": [
+        "series_id",
+        "issue_id"
+      ]
     },
-    "method_id": "document-extract"
+    "method_id": "document-extract",
+    "request_fields": {
+      "asset_id": "parameter",
+      "issue_id": "parameter",
+      "payload": "input",
+      "series_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:extract_document"

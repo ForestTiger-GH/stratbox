@@ -27,13 +27,17 @@
             "schema_id": "workbook.cells.extract",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Restore every physical cell and source context from a verified workbook snapshot.",
       "function": "replay"
     },
-    "method_id": "workbook-replay"
+    "method_id": "workbook-replay",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:replay_workbook"

@@ -8,6 +8,7 @@
     ],
     "kind": "publication",
     "profile_id": "minfin.document_cards",
-    "scope": "publisher document cards"
+    "scope": "publisher document cards",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit"
   }
 }

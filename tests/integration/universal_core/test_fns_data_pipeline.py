@@ -395,3 +395,25 @@ def test_snapshot_metadata_binds_only_the_correct_family_layer_and_actual_value_
         live = project_output(calculated if layer == "calculation" else full, layer)
         with pytest.raises(HandoffError, match="schema_mismatch"):
             bind_request(definition, {"snapshot": live})
+
+
+def test_family_bound_admission_and_source_context_survive_independent_retention():
+    from stratbox.domains.fns.operations.sme.family import admit
+    from stratbox.shared.data.sources import SourceInstance
+    from stratbox.shared.data.processing import DataContract
+    raw = SourcePayload(encoded(sme_source()))
+    instance = SourceInstance("fns.sme", DataContract("fns.sme.flake"),
+        group_id="population_records", issue_id=SME_DAY.isoformat())
+    assert admit(None, instance, raw).state == "conditional"
+    value = success(sme.extract(sme.ExtractRequest(raw, context("fns.sme", SME_DAY))))
+    assert admit(None, instance, value).state == "admitted"
+    invalid = success(sme.extract(sme.ExtractRequest(SourcePayload(encoded(fixture(date(2026,11,9)))), context("fns.sme", SME_DAY))))
+    assert admit(None, instance, invalid).state == "rejected"
+    projected = success(sme.project(sme.FlakeRequest(value)))
+    integrated = success(sme.align(sme.ProjectionRequest(projected)))
+    use, = integrated.batch.source_uses
+    assert (use.coordinate.source_id, use.coordinate.issue_id, use.coordinate.source_group_id) == (
+        "fns.sme", SME_DAY.isoformat(), "population_records")
+    snapshot = success(sme.dataset_snapshot(sme.DatasetRequest(integrated)))
+    replayed = success(sme.read_dataset_snapshot(sme.SnapshotRequest(retained(snapshot))))
+    assert replayed.batch.source_uses == integrated.batch.source_uses

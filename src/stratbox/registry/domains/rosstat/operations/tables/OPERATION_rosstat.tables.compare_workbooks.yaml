@@ -47,12 +47,17 @@
           "contract": {
             "schema_id": "workbook.changes"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Compare exact physical workbook cells and layout before economic interpretation."
     },
-    "method_id": "rosstat-tables-compare_workbooks"
+    "method_id": "rosstat-tables-compare_workbooks",
+    "request_fields": {
+      "after": "input",
+      "before": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:compare_workbooks"

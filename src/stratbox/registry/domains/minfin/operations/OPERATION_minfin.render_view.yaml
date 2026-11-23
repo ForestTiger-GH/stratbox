@@ -25,7 +25,8 @@
             "schema_id": "observations.view.representation",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -33,7 +34,11 @@
       ],
       "summary": "Render a prepared view using an explicitly selected portable format."
     },
-    "method_id": "minfin.render_view"
+    "method_id": "minfin.render_view",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:render_view"

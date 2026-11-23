@@ -27,7 +27,9 @@
           "contract": {
             "schema_id": "cbr.industries.0104a.index"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -36,7 +38,12 @@
       ],
       "summary": "Discover the selected stock or flow publication series."
     },
-    "method_id": "cbr-0104a-index"
+    "method_id": "cbr-0104a-index",
+    "request_fields": {
+      "date_from": "parameter",
+      "date_to": "parameter",
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:discover"

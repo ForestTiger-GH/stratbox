@@ -351,3 +351,54 @@ def test_crosswalk_retains_mapping_inputs_and_all_diagnostic_tables(tmp_path):
     before = checked(sors.build_pivot(sors.PivotSorsRequest(crosswalk, sors.SorsPivotRequest(class_code="02", metrics=("overdue_rub",)))))
     after = checked(sors.build_pivot(sors.PivotSorsRequest(restored, sors.SorsPivotRequest(class_code="02", metrics=("overdue_rub",)))))
     pd.testing.assert_frame_equal(before.table, after.table)
+
+
+def test_selected_sors_region_keeps_full_source_vector_through_products_and_replay():
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import source_uses
+    strict = strict_context()
+    uses = source_uses(source_inputs())
+    assert len(uses) == 10
+    bundle = seal(replace(strict.source_bundle, source_uses=uses))
+    strict = seal(replace(strict, source_bundle=bundle))
+    encoded = checked(sors.build_restoration_snapshot(sors.SorsRestorationSnapshotRequest(strict)))
+    restored = checked(sors.read_restoration_snapshot(sors.ReadSorsSnapshotRequest(encoded)))
+    assert restored.source_bundle.source_uses == uses
+    pivot = checked(sors.build_pivot(sors.PivotSorsRequest(restored,
+        sors.SorsPivotRequest(region_code="r1", metrics=("overdue_rub",)))))
+    assert pivot.source_uses == uses
+    views = checked(sors.build_views(sors.BuildSorsViewsRequest(restored)))
+    assert views.source_uses == uses
+    saved = checked(sors.build_view_snapshot(sors.SorsViewSnapshotRequest(views)))
+    replayed = checked(sors.read_view_snapshot(sors.ReadSorsSnapshotRequest(saved)))
+    assert replayed.source_uses == uses
+
+
+def test_explicit_source_binding_extension_replays_sors_with_the_canonical_dependency_vector(monkeypatch):
+    """SORS stays a multi-source catalog operation; an extension owns its binding."""
+    from stratbox.core.registry import operation_catalog
+    from stratbox.core.registry.source_catalog import SourceCatalog, SourceOperation
+    from stratbox.core.execution import prepare_input, project_output
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import source_uses
+    catalog = operation_catalog()
+    sources = catalog.source_catalog()
+    primary = sources.source("cbr.corporate_lending.debt_0105a")
+    operations = ("cbr.sors.restoration_snapshot", "cbr.sors.read_restoration_snapshot",
+        "cbr.sors.build_views", "cbr.sors.view_snapshot", "cbr.sors.read_view_snapshot")
+    extended = replace(primary, operations=(*primary.operations,
+        *(SourceOperation(operation_id) for operation_id in operations)))
+    extension_catalog = SourceCatalog(tuple(extended if source.series_id == primary.series_id else source
+        for source in sources.sources), catalog)
+    monkeypatch.setattr(type(catalog), "source_catalog", lambda self: extension_catalog)
+    bound = catalog.bind_source(primary.series_id, format="xlsx")
+    strict = strict_context()
+    uses = source_uses(source_inputs())
+    strict = seal(replace(strict, source_bundle=seal(replace(strict.source_bundle, source_uses=uses))))
+    supplied = None
+    for operation_id in operations:
+        definition = catalog.get(operation_id)
+        port = definition.processing.inputs[0]
+        incoming = supplied if supplied is not None else prepare_input(strict, port.contract)
+        result = bound.bind(operation_id, inputs={port.name: incoming}).invoke()
+        assert result.outcome == "succeeded", (operation_id, result.diagnostics)
+        supplied = project_output(result, definition.processing.outputs[0].name)
+    assert result.value.source_uses == uses

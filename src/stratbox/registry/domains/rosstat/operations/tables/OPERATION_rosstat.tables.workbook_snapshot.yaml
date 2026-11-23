@@ -35,20 +35,25 @@
             "schema_id": "workbook.cells.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "storage_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Encode every physical workbook field as a portable snapshot.",
       "function": "encode"
     },
-    "method_id": "rosstat-tables-workbook_snapshot"
+    "method_id": "rosstat-tables-workbook_snapshot",
+    "request_fields": {
+      "workbook": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:workbook_snapshot"

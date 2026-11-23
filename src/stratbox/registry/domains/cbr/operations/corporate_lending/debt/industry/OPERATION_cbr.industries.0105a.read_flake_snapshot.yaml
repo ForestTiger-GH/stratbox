@@ -32,13 +32,17 @@
             "schema_id": "cbr.industries.0105a.parsed_file",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore a complete flake and validate its original table identities.",
       "function": "replay"
     },
-    "method_id": "cbr-industry-snapshot"
+    "method_id": "cbr-industry-snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.snapshot_operations:read_flake_snapshot"

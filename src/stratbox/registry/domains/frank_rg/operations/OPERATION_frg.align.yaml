@@ -13,7 +13,8 @@
           "name": "batches",
           "contract": {
             "schema_id": "observations.batch.collection"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -23,16 +24,26 @@
             "schema_id": "observations.batch",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "dataset_id",
         "release_id"
       ],
-      "summary": "Align explicitly supplied batches with exact metric contracts; ambiguous duplicates are rejected."
+      "summary": "Align explicitly supplied batches with exact metric contracts; ambiguous duplicates are rejected.",
+      "required_parameters": [
+        "dataset_id",
+        "release_id"
+      ]
     },
-    "method_id": "frg.align"
+    "method_id": "frg.align",
+    "request_fields": {
+      "batches": "input",
+      "dataset_id": "parameter",
+      "release_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:align"

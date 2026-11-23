@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from urllib.parse import quote
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import Observation, ObservationBatch
 from stratbox.shared.data.observation_snapshots import observation_snapshot
 from stratbox.shared.evidence import UsedInputReceipt
@@ -102,7 +103,10 @@ def build_flake(request):
     profile_digest = profile_identity(profile)
     lineage = (*extract.lineage, UsedInputReceipt("extract", extract.identity, "application/vnd.stratbox.dataset+json", "inline", extract.series_id),
                UsedInputReceipt("semantic_profile", profile_digest, "application/json", "inline", profile.profile_id))
-    batch = ObservationBatch(extract.series_id + ".flake", 1, extract.source_identity.sha256, tuple(observations), lineage)
+    batch = ObservationBatch(extract.series_id + ".flake", 1, extract.source_identity.sha256, tuple(observations), lineage,
+        (SourceUse(SourceCoordinate(extract.series_id, source_group_id="reported_metrics", issue_id=extract.issue_id,
+            asset_id=extract.asset_id, material_identity=extract.source_identity,
+            semantic_profile_edition=profile.profile_id + ":" + str(profile.version)), "extract", "byte_bound_profile_validated"),))
     observation_snapshot(batch)
     return SemanticFlake(extract.series_id, extract.issue_id, extract.asset_id, extract.source_identity,
                          extract.identity, profile.profile_id, profile.version, profile_digest, batch,

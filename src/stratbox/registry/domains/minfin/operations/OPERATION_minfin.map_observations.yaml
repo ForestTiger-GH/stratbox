@@ -31,15 +31,23 @@
             "schema_id": "minfin.mapped_observations",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
         "bindings"
       ],
-      "summary": "Map only explicitly reviewed source-cell coordinates to metric, geography, unit and period IDs."
+      "summary": "Map only explicitly reviewed source-cell coordinates to metric, geography, unit and period IDs.",
+      "required_parameters": [
+        "bindings"
+      ]
     },
-    "method_id": "minfin-reviewed-mapping"
+    "method_id": "minfin-reviewed-mapping",
+    "request_fields": {
+      "bindings": "parameter",
+      "extract": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:map_observations"

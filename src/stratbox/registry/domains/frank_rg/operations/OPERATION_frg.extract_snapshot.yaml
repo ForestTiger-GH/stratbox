@@ -22,14 +22,16 @@
             "schema_id": "workbook.cells.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +41,12 @@
       "summary": "Encode all physical workbook evidence for neutral storage.",
       "function": "encode"
     },
-    "method_id": "frg.extract_snapshot"
+    "method_id": "frg.extract_snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "extract": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:build_extract_snapshot"

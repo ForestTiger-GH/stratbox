@@ -26,4 +26,5 @@ def calculate(request):
     lineage = tuple(dict.fromkeys((*request.before.lineage, *request.after.lineage,
         UsedInputReceipt("before_integrated", comparison.before_identity, "application/vnd.stratbox.dataset+json", "inline", request.before.dataset_id),
         UsedInputReceipt("after_integrated", comparison.after_identity, "application/vnd.stratbox.dataset+json", "inline", request.after.dataset_id))))
-    return ObservationBatch(request.dataset_id, 1, request.release_id, tuple(observations), lineage)
+    return ObservationBatch(request.dataset_id, 1, request.release_id, tuple(observations), lineage, tuple(replace(use, input_role=role)
+        for role, batch in (("before", request.before), ("after", request.after)) for use in batch.source_uses))

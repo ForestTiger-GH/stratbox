@@ -32,7 +32,8 @@
           "contract": {
             "schema_id": "cbr.forms.comparison"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -40,7 +41,12 @@
       ],
       "summary": "Compare official form issues, material bytes, schemas and decoded source records independently of financial models."
     },
-    "method_id": "cbr-form-source-comparison"
+    "method_id": "cbr-form-source-comparison",
+    "request_fields": {
+      "baseline": "input",
+      "baseline_state": "parameter",
+      "candidate": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.source_products:compare_sources"

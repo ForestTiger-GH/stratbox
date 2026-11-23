@@ -42,7 +42,8 @@
             "version": 2,
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -51,11 +52,26 @@
         "member",
         "selected_sheets",
         "max_cells",
-        "csv_encoding"
+        "csv_encoding",
+        "publication"
       ],
-      "summary": "Extract explicitly selected workbook or CSV cells without inferring economic axes."
+      "summary": "Extract explicitly selected workbook or CSV cells without inferring economic axes.",
+      "required_parameters": [
+        "family_id",
+        "format"
+      ]
     },
-    "method_id": "minfin-source-cells"
+    "method_id": "minfin-source-cells",
+    "request_fields": {
+      "csv_encoding": "parameter",
+      "family_id": "parameter",
+      "format": "parameter",
+      "max_cells": "runtime",
+      "member": "parameter",
+      "payload": "input",
+      "publication": "dependency",
+      "selected_sheets": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:extract"

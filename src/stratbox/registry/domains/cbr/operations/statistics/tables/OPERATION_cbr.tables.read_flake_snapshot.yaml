@@ -27,13 +27,17 @@
             "schema_id": "cbr.workbook.flake",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Restore and validate all source cells from a complete retained snapshot.",
       "function": "replay"
     },
-    "method_id": "cbr-tables-read_flake_snapshot"
+    "method_id": "cbr-tables-read_flake_snapshot",
+    "request_fields": {
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:read_flake_snapshot"

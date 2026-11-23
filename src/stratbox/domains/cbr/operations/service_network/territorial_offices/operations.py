@@ -11,6 +11,7 @@ from stratbox.shared.evidence import (
     AcquiredSource,
 )
 from stratbox.shared.data.comparison import Comparison
+from stratbox.domains.cbr.tables.service_network.context import source_uses
 from stratbox.shared.data.releases import CompareReleaseRequest, ParsedRelease, ReleaseLink, build_release
 from stratbox.shared.data.representation import XLSX
 from stratbox.core.execution import (
@@ -172,6 +173,7 @@ def _parse(req, invocation, acquisition=None):
         count,
         invocation.used_inputs,
         observations=observations, excluded_fields=excluded,
+        source_uses=source_uses(DATASET, req.payload, req.as_of, METHOD),
         acquisition=acquisition,
         parameters=parameters,
         source_details={"formula_lineage": formulas, "selection": evidence},
@@ -231,6 +233,7 @@ def read_representation(
             invocation.used_inputs,
             facts_method=METHOD,
             observations=observations, excluded_fields=excluded,
+        source_uses=source_uses(DATASET, req.payload, req.as_of, METHOD),
             source_details=req.source_details,
             scope="unqualified_csv" if selection is None else "selected_fragment" if fragment else None,
         )

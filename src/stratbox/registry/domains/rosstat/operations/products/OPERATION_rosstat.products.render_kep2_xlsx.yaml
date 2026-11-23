@@ -36,12 +36,16 @@
           "contract": {
             "schema_id": "representation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render the monthly eleven-indicator workbook and a separate exact-value evidence sheet."
     },
-    "method_id": "rosstat-products-render_kep2_xlsx"
+    "method_id": "rosstat-products-render_kep2_xlsx",
+    "request_fields": {
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:render_kep2_xlsx"

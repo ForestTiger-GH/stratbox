@@ -30,7 +30,8 @@
             "schema_id": "cbr.statistics.dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,9 +40,20 @@
         "method",
         "release_ids"
       ],
-      "summary": "Calculate a selected absolute or percentage change separately from published adjusted growth."
+      "summary": "Calculate a selected absolute or percentage change separately from published adjusted growth.",
+      "required_parameters": [
+        "before",
+        "after"
+      ]
     },
-    "method_id": "cbr-statistics-calculate_change"
+    "method_id": "cbr-statistics-calculate_change",
+    "request_fields": {
+      "after": "parameter",
+      "before": "parameter",
+      "dataset": "input",
+      "method": "method",
+      "release_ids": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:calculate_change"

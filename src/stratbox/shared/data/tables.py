@@ -19,7 +19,9 @@ TABLE_ENCODING = "stratbox.tables.v1"
 TABLE_MEDIA_TYPE = "application/vnd.stratbox.tables"
 
 
-def _scalar(value, pandas, numpy, allow_infinite):
+def _scalar(value, pandas, numpy, allow_infinite, scalar_check=None):
+    if scalar_check is not None:
+        scalar_check(value)
     if value is None:
         return ["none"]
     if value is pandas.NA:
@@ -27,9 +29,9 @@ def _scalar(value, pandas, numpy, allow_infinite):
     if value is pandas.NaT:
         return ["nat"]
     if isinstance(value, numpy.datetime64):
-        return _scalar(pandas.Timestamp(value), pandas, numpy, allow_infinite)
+        return _scalar(pandas.Timestamp(value), pandas, numpy, allow_infinite, scalar_check)
     if isinstance(value, numpy.timedelta64):
-        return _scalar(pandas.Timedelta(value), pandas, numpy, allow_infinite)
+        return _scalar(pandas.Timedelta(value), pandas, numpy, allow_infinite, scalar_check)
     if isinstance(value, numpy.generic):
         value = value.item()
     if isinstance(value, bool):
@@ -60,7 +62,7 @@ def _scalar(value, pandas, numpy, allow_infinite):
     if isinstance(value, str):
         return ["text", value]
     if isinstance(value, tuple):
-        return ["tuple", [_scalar(item, pandas, numpy, allow_infinite) for item in value]]
+        return ["tuple", [_scalar(item, pandas, numpy, allow_infinite, scalar_check) for item in value]]
     raise TypeError("Unsupported table value")
 
 
@@ -69,6 +71,7 @@ def table_identity(
     *,
     checkpoint: Callable[[], None] | None = None,
     allow_infinite: bool = False,
+    scalar_check: Callable[[object], None] | None = None,
 ) -> ByteIdentity:
     """Hash the ordered schema and rows without building a second table encoding."""
     import numpy
@@ -78,14 +81,37 @@ def table_identity(
     size = 0
 
     def scalar(value):
-        return _scalar(value, pandas, numpy, allow_infinite)
+        return _scalar(value, pandas, numpy, allow_infinite, scalar_check)
 
     def feed(value):
         nonlocal size
-        line = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
-        digest.update(line)
+        def token(text):
+            nonlocal size
+            encoded = text.encode("utf-8")
+            digest.update(encoded)
+            size += len(encoded)
+
+        def emit(item):
+            if isinstance(item, str):
+                token('"')
+                for start in range(0, len(item), 4096):
+                    if checkpoint is not None:
+                        checkpoint()
+                    token(json.dumps(item[start:start + 4096], ensure_ascii=False)[1:-1])
+                token('"')
+            elif isinstance(item, (tuple, list)):
+                token("[")
+                for index, member in enumerate(item):
+                    if index:
+                        token(",")
+                    emit(member)
+                token("]")
+            else:
+                token(json.dumps(item, ensure_ascii=False, allow_nan=False, separators=(",", ":")))
+
+        emit(value)
         digest.update(b"\n")
-        size += len(line) + 1
+        size += 1
 
     def dtype(value):
         if isinstance(value, pandas.CategoricalDtype):

@@ -1,6 +1,7 @@
 """Count changes over comparable cells, without inferring individual office events."""
 from dataclasses import dataclass
 from decimal import Decimal
+from dataclasses import replace
 from stratbox.shared.data.observations import ObservationBatch, Observation, MetricRef
 from stratbox.shared.data.observation_snapshots import observation_snapshot
 from stratbox.shared.evidence import UsedInputReceipt
@@ -55,5 +56,6 @@ def calculate(request):
             new.period, dimensions, new.perimeter, value, status,
             f"baseline:{old.evidence_ref};candidate:{new.evidence_ref}"))
     inputs = tuple(dict.fromkeys((*request.baseline.lineage, *request.candidate.lineage, *dependencies)))
-    return OfficeChanges(ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), inputs),
+    return OfficeChanges(ObservationBatch(request.dataset_id, 1, request.version_id, tuple(observations), inputs, tuple(replace(use, input_role=role)
+        for role, batch in (("baseline", request.baseline), ("candidate", request.candidate)) for use in batch.source_uses)),
                          len(common), len(before.keys() - common), len(after.keys() - common))

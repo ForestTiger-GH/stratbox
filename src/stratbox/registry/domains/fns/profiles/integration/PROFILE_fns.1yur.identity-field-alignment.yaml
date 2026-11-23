@@ -6,6 +6,8 @@
     "formats": [],
     "kind": "integration",
     "profile_id": "fns.1yur.identity-field-alignment",
-    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit."
+    "scope": "Versioned identity-only mappings; qualified source subsets and historical omissions remain explicit.",
+    "admission_ref": "stratbox.domains.fns.operations.legal_entities.family:admit",
+    "implementation_ref": "stratbox.domains.fns.integration.legal_entities.alignment:align"
   }
 }

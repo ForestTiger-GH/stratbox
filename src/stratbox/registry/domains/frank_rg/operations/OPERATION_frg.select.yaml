@@ -22,7 +22,9 @@
           "contract": {
             "schema_id": "frg.selections"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -30,7 +32,11 @@
       ],
       "summary": "Select the latest report period per source and expose unresolved competing candidates."
     },
-    "method_id": "frg.selection-profile"
+    "method_id": "frg.selection-profile",
+    "request_fields": {
+      "inventory": "input",
+      "selected_sources": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:select"

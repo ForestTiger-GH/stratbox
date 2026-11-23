@@ -23,5 +23,53 @@
     "source_scope": "publisher_issue_and_asset",
     "integration": "explicit_metric_period_unit_geography",
     "coverage_policy": "reviewed_selection_with_exact_source_lineage"
-  }
+  },
+  "source_groups": [
+    {
+      "group_id": "kep2_indicators",
+      "title": "Краткосрочные экономические показатели РФ",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "rosstat.source_flake",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "workbook.cells.extract",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "short_term_indicators",
+        "rosstat.kep2",
+        "rosstat.reviewed_cells.metadata.rosstat.population_municipalities"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "indicator",
+        "territory",
+        "period",
+        "unit",
+        "basis"
+      ],
+      "period_model": "explicit_statistical_interval",
+      "qualification": "conditional",
+      "semantic_profile_editions": [
+        "rosstat.kep2:1"
+      ]
+    }
+  ]
 }

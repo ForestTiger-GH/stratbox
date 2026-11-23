@@ -54,4 +54,4 @@ def derive_index_growth(dataset: RosstatDataset, *, release_id: str) -> Observat
             dimensions=tuple(sorted(dimensions.items()))))
     if not values:
         raise ValueError("rosstat.growth_indices_required")
-    return ObservationBatch(dataset.batch.dataset_id + ".growth",1,release_id,tuple(values),dataset.batch.lineage)
+    return ObservationBatch(dataset.batch.dataset_id + ".growth",1,release_id,tuple(values),dataset.batch.lineage,dataset.batch.source_uses)

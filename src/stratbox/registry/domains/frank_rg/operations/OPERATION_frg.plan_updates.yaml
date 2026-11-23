@@ -23,7 +23,8 @@
           "contract": {
             "schema_id": "frg.update_plan"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -32,7 +33,12 @@
       ],
       "summary": "Plan file acquisition using caller checkpoints while keeping metadata observations distinct from byte identity."
     },
-    "method_id": "frg.metadata-update-profile"
+    "method_id": "frg.metadata-update-profile",
+    "request_fields": {
+      "catalog": "input",
+      "checkpoints": "parameter",
+      "force_refresh": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.handlers:plan_updates"

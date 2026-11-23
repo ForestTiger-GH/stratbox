@@ -37,12 +37,16 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Select monthly KEP2 observations with explicit next-period display dates and retained indices."
     },
-    "method_id": "rosstat-products-prepare_kep2_monthly"
+    "method_id": "rosstat-products-prepare_kep2_monthly",
+    "request_fields": {
+      "dataset": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:prepare_kep2_monthly"

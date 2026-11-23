@@ -22,14 +22,16 @@
             "schema_id": "minfin.document.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +41,12 @@
       "summary": "Retain ordered document evidence and complete publisher context in a portable dataset.",
       "function": "encode"
     },
-    "method_id": "minfin.document.snapshot"
+    "method_id": "minfin.document.snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "document": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.document_handlers:build_document_snapshot"

@@ -9,6 +9,8 @@
     "kind": "extraction",
     "profile_id": "cbr.territorial_offices.flake",
     "scope": "Explicitly selected territorial blocks with formula, ambiguity and selection evidence.",
-    "operation_id": "cbr.offices_reg.parse"
+    "operation_id": "cbr.offices_reg.parse",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.tables.service_network.territorial_offices.parser:convert_xlsx"
   }
 }

@@ -29,7 +29,9 @@
           "contract": {
             "schema_id": "frg.cleanup_receipts"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -37,9 +39,18 @@
         "expected_sha256"
       ],
       "summary": "Apply explicitly authorized cleanup effects with per-action receipts.",
-      "function": "maintain"
+      "function": "maintain",
+      "required_parameters": [
+        "authorized_directory",
+        "expected_sha256"
+      ]
     },
-    "method_id": "frg-conditional-cleanup-profile"
+    "method_id": "frg-conditional-cleanup-profile",
+    "request_fields": {
+      "authorized_directory": "effect",
+      "expected_sha256": "parameter",
+      "plan": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.housekeeping:apply_cleanup"

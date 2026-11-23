@@ -24,12 +24,16 @@
             "schema_id": "fns.sme.integrated_dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Apply the explicit dated identity map while retaining source geography, omitted fields and map identity."
     },
-    "method_id": "fns-sme-align"
+    "method_id": "fns-sme-align",
+    "request_fields": {
+      "projection": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.pipeline:align"

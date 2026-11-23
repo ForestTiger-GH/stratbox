@@ -23,7 +23,8 @@
           "contract": {
             "schema_id": "cbr.publications.update_plan"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -32,9 +33,19 @@
         "target",
         "destinations"
       ],
-      "summary": "Separate confirmed byte changes, processing changes and destination readiness without executing effects."
+      "summary": "Separate confirmed byte changes, processing changes and destination readiness without executing effects.",
+      "required_parameters": [
+        "processing_signature"
+      ]
     },
-    "method_id": "cbr-publication-update-plan"
+    "method_id": "cbr-publication-update-plan",
+    "request_fields": {
+      "checkpoint": "parameter",
+      "destinations": "parameter",
+      "original": "input",
+      "processing_signature": "method",
+      "target": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.publications.handlers:assess_updates"

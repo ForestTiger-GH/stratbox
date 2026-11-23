@@ -12,6 +12,7 @@ from hashlib import sha256
 import calendar
 import re
 
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import canonical_manifest_bytes
@@ -583,7 +584,13 @@ def align_statistics(flakes, *, row_bindings=(), period_bindings=(), mapping_ver
             raise ValueError("cbr.statistics.no_admitted_observations: " + codes)
         lineage = (*flake.lineage, UsedInputReceipt("source_flake", identity, "application/vnd.stratbox.dataset+json",
                                                    "inline", flake.series_id, version=identity))
-        batches.append(ObservationBatch(flake.series_id, 1, identity.sha256, tuple(observations), lineage))
+        from stratbox.core.registry.sources import source_cards
+        card = next(card for card in source_cards("cbr") if card.series_id == flake.series_id)
+        group = card.source_groups[0].group_id if len(card.source_groups) == 1 else None
+        uses = (SourceUse(SourceCoordinate(flake.series_id, source_group_id=group, issue_id=flake.issue_id,
+            asset_id=flake.asset_id, material_identity=flake.source_identity,
+            layout_edition=profile.edition, semantic_profile_edition=mapping_version), "flakes", "domain_validated"),)
+        batches.append(ObservationBatch(flake.series_id, 1, identity.sha256, tuple(observations), lineage, uses))
     if set(row_map) != used_rows or set(period_map) != used_periods:
         raise ValueError("cbr.statistics.unused_semantic_binding")
     if strict and diagnostics:

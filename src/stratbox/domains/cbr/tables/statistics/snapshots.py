@@ -28,7 +28,7 @@ _CELLS = TableSchema(DataContract("cbr.workbook.cells", 1, DataRole.EXTRACTS), (
 ), ("sheet", "row", "column"))
 
 
-def flake_snapshot(value: WorkbookFlake, *, dataset_id=None, version_id=None):
+def flake_snapshot(value: WorkbookFlake, *, dataset_id=None, version_id=None, checkpoint=None):
     if not isinstance(value, WorkbookFlake):
         raise ValueError("cbr.workbook.flake_required")
     asset = SourceAssetIdentity(value.series_id, value.issue_id, value.asset_id)
@@ -41,15 +41,20 @@ def flake_snapshot(value: WorkbookFlake, *, dataset_id=None, version_id=None):
                        for item in value.lineage)):
         raise ValueError("cbr.workbook.flake_binding_invalid")
     for sheet in value.sheets:
-        validate_sheet_cells(sheet)
+        validate_sheet_cells(sheet, checkpoint=checkpoint)
     meta = TypedTable(_META, ((value.series_id, value.issue_id, value.source_identity.sha256,
                               value.source_identity.size, value.profile_id, value.profile_version, value.asset_id),))
     sheets = TypedTable(_SHEETS, tuple((sheet.index, sheet.name, sheet.rows, sheet.columns,
                                      canonical_manifest_bytes(sheet.merged_ranges).decode()) for sheet in value.sheets))
-    cells = TypedTable(_CELLS, tuple((sheet.index, cell.row, cell.column, cell.coordinate,
-        *encode_scalar(cell.value), cell.raw_token, cell.kind, cell.formula, cell.number_format,
-        cell.indent, canonical_manifest_bytes(cell.formula_attributes).decode())
-        for sheet in value.sheets for cell in sheet.cells))
+    rows = []
+    for sheet in value.sheets:
+        for index, cell in enumerate(sheet.cells):
+            if checkpoint is not None and index % 256 == 0:
+                checkpoint()
+            rows.append((sheet.index, cell.row, cell.column, cell.coordinate,
+                *encode_scalar(cell.value), cell.raw_token, cell.kind, cell.formula, cell.number_format,
+                cell.indent, canonical_manifest_bytes(cell.formula_attributes).decode()))
+    cells = TypedTable(_CELLS, tuple(rows))
     result = DatasetSnapshot.build(dataset_id or value.series_id, version_id or "content", FLAKE,
         (("metadata", meta), ("sheets", sheets), ("cells", cells)), coverage=value.coverage, inputs=value.lineage)
     if version_id is None:

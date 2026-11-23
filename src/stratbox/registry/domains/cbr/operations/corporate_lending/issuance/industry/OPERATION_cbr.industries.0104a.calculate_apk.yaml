@@ -46,7 +46,8 @@
             "schema_id": "cbr.industries.0104a.calculation",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "stream",
@@ -57,12 +58,17 @@
           "path": "df_stream",
           "qualifications": [
             "derived.apk"
-          ]
+          ],
+          "source_policy": "primary_source_required",
+          "source_context_path": ""
         }
       ],
       "summary": "Calculate the APK aggregate while retaining its source-series identity."
     },
-    "method_id": "cbr-industry-apk"
+    "method_id": "cbr-industry-apk",
+    "request_fields": {
+      "stream": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:calculate_apk"

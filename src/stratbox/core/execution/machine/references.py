@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from stratbox.core.execution.contracts import OperationResult
 from stratbox.core.execution.machine.contracts import WireRequestError
+from stratbox.core.execution.machine.projections import computation_projection, diagnostic_projection, effect_projection
 from stratbox.shared.identity import ByteIdentity
 
 _REF = re.compile(r"[A-Za-z0-9_-]{1,256}\Z")
@@ -161,9 +162,10 @@ def reference_schemas(operation_id, *, catalog):
         "operation_id": {"const": op.operation_id},
         "method_id": {"const": op.method_id}, "outcome": {"type": "string"},
         "result_ref": {"type": "string"}, "value_ref": {"type": ["string", "null"]},
-        "preview": {}, "diagnostics": {"type": "array"}, "effects": {"type": "array"}},
+        "preview": {}, "computation": {"type": ["object", "null"]},
+        "diagnostics": {"type": "array"}, "effects": {"type": "array"}},
         "required": ["operation_id", "method_id", "outcome", "result_ref", "value_ref",
-                     "preview", "diagnostics", "effects"], "additionalProperties": False}
+                     "preview", "computation", "diagnostics", "effects"], "additionalProperties": False}
     return request, response
 
 
@@ -209,6 +211,7 @@ def invoke_reference(raw: bytes, *, catalog, values: TypedValueResolver, context
         "method_id": definition.method_id, "outcome": result.outcome,
         "result_ref": result_ref, "value_ref": value_ref,
         "preview": preview_value(result.value, max_rows=max_rows, max_bytes=max_bytes),
-        "diagnostics": [{"code": d.code, "stage": d.stage, "retry_disposition": d.retry_disposition} for d in result.diagnostics[:128]],
-        "effects": [{"kind": e.kind, "state": e.state, "effect_id": e.effect_id} for e in result.effects[:128]]}
+        "computation": computation_projection(result),
+        "diagnostics": [diagnostic_projection(item) for item in result.diagnostics[:128]],
+        "effects": [effect_projection(item) for item in result.effects[:128]]}
     return json.dumps(response, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("utf-8")

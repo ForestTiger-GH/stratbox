@@ -198,3 +198,20 @@ def test_force_refresh_and_reprocess_are_distinct_decisions():
     assert refresh.value.decisions[0].download_required
     assert not refresh.value.decisions[0].processing_required
     assert refresh.value.decisions[0].reason == "minfin.update.forced_material_verification"
+
+
+def test_force_controls_qualify_computation_identity_with_unchanged_publication_markers():
+    index = _discover(_publisher_card())
+    asset, = index.assets
+    method = bind_series("minfin.fedbud", asset.source_id).method_version
+    checkpoint = SourceCheckpoint(asset.source_id, asset.asset_id, asset.document_id,
+        asset.modified_on, asset.url, SourcePayload(b"same original").identity, method)
+    request = UpdateRequest(index, (checkpoint,), (asset.source_id,), frozenset({asset.source_id}), "flake")
+    baseline = plan_updates(request)
+    reprocessed = plan_updates(replace(request, force_reprocess=True))
+    refreshed = plan_updates(replace(request, force_refresh=True))
+    assert baseline.outcome == reprocessed.outcome == refreshed.outcome == "succeeded"
+    assert baseline.value.decisions[0].processing_required is False
+    assert reprocessed.value.decisions[0].processing_required is True
+    assert refreshed.value.decisions[0].download_required is True
+    assert len({result.computation.computation_id for result in (baseline, reprocessed, refreshed)}) == 3

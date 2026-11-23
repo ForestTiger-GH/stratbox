@@ -21,23 +21,33 @@
           "path": "payload",
           "qualifications": [
             "source.cbr.offices_reg"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
           "contract": {
             "schema_id": "source.payload",
             "role": "originals"
-          }
+          },
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
         "as_of",
         "url"
       ],
-      "summary": "Acquire the selected source material with byte and acquisition evidence."
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "required_parameters": [
+        "as_of",
+        "url"
+      ]
     },
-    "method_id": "cbr-offices-reg-xlsx"
+    "method_id": "cbr-offices-reg-xlsx",
+    "request_fields": {
+      "as_of": "parameter",
+      "url": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:acquire"

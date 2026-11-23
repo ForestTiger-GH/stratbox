@@ -21,7 +21,8 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -29,9 +30,18 @@
         "version_id"
       ],
       "summary": "Encode a complete aligned observation batch with exact types, periods, units and lineage.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "observation-snapshot"
+    "method_id": "observation-snapshot",
+    "request_fields": {
+      "batch": "input",
+      "dataset_id": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.observation_operations:snapshot_observations"

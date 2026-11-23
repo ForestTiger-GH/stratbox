@@ -64,10 +64,21 @@ _BY_ID = {item.profile_id: item for item in _PROFILES}
 
 
 def acquisition_profile(profile_id):
+    if not isinstance(profile_id, str) or not profile_id:
+        raise ValueError("cbr.profile.acquisition_unknown")
     try:
         return _BY_ID[profile_id]
     except (KeyError, TypeError):
-        raise ValueError("cbr.profile.acquisition_unknown") from None
+        from stratbox.core.registry.sources import resolve_domain_profile
+        try:
+            profile = resolve_domain_profile("cbr", profile_id)
+        except ValueError as error:
+            if str(error) == "registry.source_domain_profile_unknown":
+                raise ValueError("cbr.profile.acquisition_unknown") from None
+            raise
+        if not isinstance(profile, AcquisitionProfile):
+            raise ValueError("cbr.profile.acquisition_invalid")
+        return profile
 
 
 def reporting_form_index(form_code):

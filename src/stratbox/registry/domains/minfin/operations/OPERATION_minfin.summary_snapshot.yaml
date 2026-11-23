@@ -23,14 +23,16 @@
             "schema_id": "minfin.headlines.snapshot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -38,9 +40,18 @@
         "version_id"
       ],
       "summary": "Retain the calculation result, method version and exact source-flake identity.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "minfin.summary_snapshot"
+    "method_id": "minfin.summary_snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "summary": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.pipeline_handlers:build_summary_snapshot"

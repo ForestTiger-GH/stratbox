@@ -13,6 +13,9 @@ from decimal import Decimal
 from enum import Enum
 from pathlib import PurePath
 import ast
+from hashlib import sha256
+import json
+from functools import lru_cache
 from types import UnionType
 from typing import Callable
 from zoneinfo import ZoneInfo
@@ -20,7 +23,8 @@ from zoneinfo import ZoneInfo
 from stratbox.shared.data.documents import DocumentExtract, document_snapshot
 from stratbox.shared.data.observation_snapshots import observation_snapshot
 from stratbox.shared.data.observations import ObservationBatch
-from stratbox.shared.data.snapshots import DatasetSnapshot
+from stratbox.shared.data.observations import SubjectRef, MetricRef, PeriodRef
+from stratbox.shared.data.snapshots import DatasetSnapshot, TypedTable
 from stratbox.shared.data.views import ObservationView, view_snapshot
 from stratbox.shared.data.workbooks import WorkbookExtract, workbook_snapshot
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
@@ -31,21 +35,24 @@ SnapshotFactory = Callable[[object, object], DatasetSnapshot | None]
 _UNHANDLED = object()
 
 
-def _scientific_value(value, convert):
+def _scientific_value(value, convert, *, checkpoint=None, scalar_check=None):
     """Keep dataframe dependencies lazy while retaining their exact table schema."""
     modules = {kind.__module__.split(".", 1)[0] for kind in type(value).__mro__}
     if "pandas" in modules:
         import pandas
         from stratbox.shared.data.tables import table_identity
         if isinstance(value, pandas.DataFrame):
-            identity = table_identity((("value", value),), allow_infinite=True)
+            identity = table_identity((("value", value),), allow_infinite=True, checkpoint=checkpoint,
+                                      scalar_check=scalar_check)
             return {"type": "dataframe", "identity": plain(identity), "attrs": convert(value.attrs)}
         if isinstance(value, pandas.Series):
-            identity = table_identity((("value", value.to_frame()),), allow_infinite=True)
+            identity = table_identity((("value", value.to_frame()),), allow_infinite=True, checkpoint=checkpoint,
+                                      scalar_check=scalar_check)
             return {"type": "series", "name": convert(value.name), "identity": plain(identity),
                     "attrs": convert(value.attrs)}
         if isinstance(value, pandas.Index):
-            identity = table_identity((("value", pandas.DataFrame(index=value)),), allow_infinite=True)
+            identity = table_identity((("value", pandas.DataFrame(index=value)),), allow_infinite=True, checkpoint=checkpoint,
+                                      scalar_check=scalar_check)
             return {"type": "index", "identity": plain(identity)}
         if value is pandas.NA:
             return {"type": "pandas_na"}
@@ -58,7 +65,7 @@ def _scientific_value(value, convert):
     if "numpy" in modules:
         import numpy
         if isinstance(value, numpy.ndarray):
-            return {"type": "ndarray", "dtype": value.dtype.str, "shape": list(value.shape),
+            return {"type": "ndarray", "dtype": value.dtype.descr if value.dtype.names else value.dtype.str, "shape": list(value.shape),
                     "values": convert(value.tolist())}
         if isinstance(value, numpy.generic):
             if value.dtype.kind in {"M", "m"}:
@@ -120,6 +127,7 @@ def plain(value):
     raise ValueError("processing.control_value_unsupported")
 
 
+@lru_cache(maxsize=4096)
 def _trace_annotation(annotation):
     """Identify explicitly typed provenance, including postponed annotations."""
     from stratbox.shared.data.datasets import ComputationReceipt
@@ -153,13 +161,25 @@ def _trace_annotation(annotation):
         item is type(None) or item is Ellipsis or _trace_annotation(item) for item in arguments)
 
 
+@lru_cache(maxsize=4096)
+def _argument_fields(kind):
+    return tuple(sorted((field for field in fields(kind) if not _trace_annotation(field.type)),
+                        key=lambda field: field.name))
+
+
 def argument_value(value):
     """Encode consumed content while keeping typed execution ancestry separate."""
     from stratbox.shared.data.datasets import ComputationReceipt
     from stratbox.shared.evidence import AcquisitionReceipt
     from stratbox.shared.materials import MaterialArtifact
+    from stratbox.shared.data.source_context import SourceUse
+    sealed = _sealed_argument(value)
+    if sealed is not _UNHANDLED:
+        return sealed
     if isinstance(value, ComputationReceipt):
         return None
+    if isinstance(value, SourceUse):
+        return {"coordinate": argument_value(value.coordinate), "input_role": value.input_role}
     if isinstance(value, AcquisitionReceipt):
         return {"type": "acquisition", **{item.name: argument_value(getattr(value, item.name))
                 for item in fields(value) if item.name != "observed_at_utc"}}
@@ -182,14 +202,273 @@ def argument_value(value):
         return sorted((argument_value(item) for item in value),
                       key=lambda item: canonical_manifest_bytes({"item": item}))
     if is_dataclass(value) and not isinstance(value, ByteIdentity):
-        return {item.name: argument_value(getattr(value, item.name)) for item in fields(value)
-                if not _trace_annotation(item.type)}
+        return {item.name: argument_value(getattr(value, item.name)) for item in _argument_fields(type(value))}
     return plain(value)
 
 
-def argument_identity(value) -> ByteIdentity:
-    """Exact consumed content and context, independent of how execution reached it."""
-    return ByteIdentity.of(canonical_manifest_bytes({"value": argument_value(value)}))
+def _sealed_argument(value):
+    """Use core-owned seals only where construction verified deep immutability."""
+    if isinstance(value, TypedTable):
+        return {"type": "typed_table", "contract": plain(value.schema),
+                "identity": plain(value.identity), "row_count": len(value.rows)}
+    if isinstance(value, DatasetSnapshot):
+        manifest = value.manifest
+        return {"type": "dataset_snapshot", "dataset_id": manifest.dataset_id,
+                "version_id": manifest.version_id, "contract": plain(manifest.contract),
+                "coverage": plain(manifest.coverage),
+                "components": [{"name": part.name, "schema": plain(part.schema),
+                    "identity": plain(part.identity), "row_count": part.row_count}
+                    for part in manifest.components],
+                "tables": [{"name": name, "identity": plain(table.identity)} for name, table in value.tables]}
+    return _UNHANDLED
+
+
+def argument_identity(value, *, checkpoint=None, budget=None, cache=None) -> ByteIdentity:
+    """Stream exact semantic content with bounded memory and cancellation.
+
+    An invocation may retain signatures of deeply immutable values. Mutable
+    dataframes, lists, mappings and dataclasses containing them are scanned on
+    every call, so a later mutation cannot reuse an earlier signature. Core
+    typed tables and snapshots use constructor-verified content seals.
+    """
+    from stratbox.shared.data.datasets import ComputationReceipt
+    from stratbox.shared.evidence import AcquisitionReceipt
+    from stratbox.shared.materials import MaterialArtifact
+    from stratbox.shared.data.source_context import SourceUse
+
+    def check():
+        if checkpoint is not None:
+            checkpoint()
+        elif budget is not None:
+            budget.checkpoint()
+
+    def bound(resource, amount):
+        # Signing observes already-owned values; it never consumes them twice.
+        if budget is not None:
+            limit = getattr(budget.limits, resource)
+            if limit is not None and amount > limit:
+                from stratbox.core.limits import BudgetExceeded
+                raise BudgetExceeded(resource)
+
+    check()
+    if isinstance(value, SourcePayload):
+        bound("input_bytes", value.identity.size)
+    elif isinstance(value, DatasetSnapshot):
+        bound("cells", snapshot_cells(value))
+    elif isinstance(value, TypedTable):
+        bound("cells", len(value.rows) * len(value.schema.columns))
+    elif isinstance(value, ObservationBatch):
+        bound("cells", len(value.observations))
+    elif type(value) is str:
+        bound("input_bytes", len(value))
+    metrics = None if cache is None else cache.setdefault("signature_metrics", {"scans": 0, "hits": 0})
+    key = ("argument", id(value))
+    retained = None if cache is None else cache.get(key)
+    if retained is not None and retained[0] is value:
+        if metrics is not None:
+            metrics["hits"] += 1
+        return retained[1]
+    if metrics is not None:
+        metrics["scans"] += 1
+    digest, size, visits = sha256(), 0, 0
+    active = set()
+    leaf_encodings = {}
+    quoted_encodings = {}
+    encoding_size = 0
+    encoding_limit = 65536 if budget is None or budget.limits.temporary_bytes is None else min(
+        65536, budget.limits.temporary_bytes // 2)
+
+    def feed(token):
+        nonlocal size
+        data = token.encode("utf-8")
+        bound("temporary_bytes", len(data))
+        digest.update(data)
+        size += len(data)
+
+    def quoted(text):
+        nonlocal size, encoding_size
+        # Avoid a second full encoded copy even for one large text value.
+        retained = quoted_encodings.get(text) if len(text) <= 256 else None
+        if retained is not None:
+            digest.update(retained)
+            size += len(retained)
+            return
+        if len(text) <= 256 and len(quoted_encodings) < 1024:
+            encoded = json.dumps(text, ensure_ascii=False).encode("utf-8")
+            if encoding_size + len(encoded) <= encoding_limit:
+                bound("temporary_bytes", len(encoded))
+                quoted_encodings[text] = encoded
+                encoding_size += len(encoded)
+                digest.update(encoded)
+                size += len(encoded)
+                return
+        feed('"')
+        for start in range(0, len(text), 4096):
+            check()
+            feed(json.dumps(text[start:start + 4096], ensure_ascii=False)[1:-1])
+        feed('"')
+
+    def scientific_scalar(item):
+        if isinstance(item, (str, bytes)):
+            bound("input_bytes", len(item))
+
+    def mapping(items, depth, metadata=False, ordered=False):
+        immutable = True
+        feed("{")
+        for index, (name, item) in enumerate(items if ordered else sorted(items)):
+            if index:
+                feed(",")
+            quoted(name)
+            feed(":")
+            immutable = walk(item, depth + 1, metadata=metadata) and immutable
+        feed("}")
+        return immutable
+
+    def walk(item, depth=0, *, metadata=False):
+        nonlocal visits, size, encoding_size
+        visits += 1
+        if visits % 256 == 0:
+            check()
+        if depth > 64:
+            raise ValueError("processing.input_structure_invalid")
+        if item is None:
+            feed("null")
+            return True
+        if type(item) is bool:
+            feed("true" if item else "false")
+            return True
+        if type(item) is int:
+            if not metadata:
+                bound("input_bytes", max(1, (item.bit_length() - 1) * 30102 // 100000 + 1))
+            feed(str(item))
+            return True
+        if type(item) is str:
+            if not metadata:
+                bound("input_bytes", len(item))
+            quoted(item)
+            return True
+        if isinstance(item, Enum):
+            return walk(item.value, depth + 1, metadata=metadata)
+        if isinstance(item, (SubjectRef, MetricRef, PeriodRef)):
+            retained = leaf_encodings.get(id(item))
+            if retained is not None and retained[0] is item:
+                digest.update(retained[1])
+                size += len(retained[1])
+                return True
+            leaf_values = tuple(getattr(item, field.name) for field in fields(item))
+            if (len(leaf_encodings) < 256
+                    and all(value is None or isinstance(value, (str, int, bool, Decimal, date)) for value in leaf_values)
+                    and sum(len(value) for value in leaf_values if isinstance(value, str)) <= 1024):
+                encoded = canonical_manifest_bytes(argument_value(item))
+                temporary = None if budget is None else budget.limits.temporary_bytes
+                if (len(encoded) <= 4096 and encoding_size + len(encoded) <= encoding_limit
+                        and (temporary is None or len(encoded) <= temporary)):
+                    leaf_encodings[id(item)] = (item, encoded)
+                    encoding_size += len(encoded)
+                    digest.update(encoded)
+                    size += len(encoded)
+                    return True
+        if isinstance(item, ComputationReceipt):
+            return walk(None, depth + 1)
+        if isinstance(item, SourceUse):
+            walk({"coordinate": item.coordinate, "input_role": item.input_role}, depth + 1)
+            return True
+        sealed = _sealed_argument(item)
+        if sealed is not _UNHANDLED:
+            if isinstance(item, TypedTable):
+                bound("cells", len(item.rows) * len(item.schema.columns))
+            elif isinstance(item, DatasetSnapshot):
+                bound("cells", snapshot_cells(item))
+            walk(sealed, depth + 1, metadata=True)
+            return True
+        if isinstance(item, AcquisitionReceipt):
+            walk({"type": "acquisition", **{field.name: getattr(item, field.name)
+                for field in fields(item) if field.name != "observed_at_utc"}}, depth + 1)
+            return True
+        if isinstance(item, SourcePayload):
+            bound("input_bytes", item.identity.size)
+            walk(plain(item), depth + 1, metadata=True)
+            return True
+        if isinstance(item, MaterialArtifact):
+            walk({"type": "material_artifact", "contract": item.contract,
+                "representation": item.representation, "series_id": item.series_id,
+                "source_asset": item.source_asset}, depth + 1)
+            return True
+        modules = {kind.__module__.split(".", 1)[0] for kind in type(item).__mro__}
+        if "pandas" in modules:
+            import pandas
+            if isinstance(item, (pandas.DataFrame, pandas.Series)):
+                bound("cells", int(item.size))
+                bound("input_bytes", int(item.size))
+            scientific = _scientific_value(item, lambda nested: nested, checkpoint=check,
+                                           scalar_check=scientific_scalar)
+            if scientific is not _UNHANDLED:
+                walk(scientific, depth + 1, metadata=True)
+                return False  # attrs and frames remain caller-mutable.
+        if "numpy" in modules:
+            import numpy
+            if isinstance(item, numpy.ndarray):
+                bound("cells", int(item.size))
+                feed('{"dtype":')
+                walk(item.dtype.descr if item.dtype.names else item.dtype.str, depth + 1, metadata=True)
+                feed(',"shape":')
+                walk(tuple(item.shape), depth + 1)
+                feed(',"type":"ndarray","values":[')
+                for index, scalar in enumerate(item.flat):
+                    if index:
+                        feed(",")
+                    walk(scalar, depth + 1)
+                feed("]}")
+                return False
+            scientific = _scientific_value(item, lambda nested: nested, checkpoint=check)
+            if scientific is not _UNHANDLED:
+                return walk(scientific, depth + 1, metadata=True)
+        if isinstance(item, (tuple, list, set, frozenset)):
+            if id(item) in active:
+                raise ValueError("processing.input_structure_invalid")
+            active.add(id(item))
+            members = item
+            if isinstance(item, (set, frozenset)):
+                bound("temporary_bytes", len(item) * 32)
+                members = sorted(item, key=lambda nested: argument_identity(nested, checkpoint=check).sha256)
+            feed("[")
+            immutable = type(item) in {tuple, frozenset}
+            for index, nested in enumerate(members):
+                if index:
+                    feed(",")
+                immutable = walk(nested, depth + 1, metadata=metadata) and immutable
+            feed("]")
+            active.remove(id(item))
+            return immutable
+        if isinstance(item, Mapping):
+            if id(item) in active or any(not isinstance(name, str) for name in item):
+                raise ValueError("processing.control_key_unsupported")
+            active.add(id(item))
+            mapping(item.items(), depth, metadata=metadata)
+            active.remove(id(item))
+            return False
+        if is_dataclass(item) and not isinstance(item, ByteIdentity):
+            if id(item) in active:
+                raise ValueError("processing.input_structure_invalid")
+            active.add(id(item))
+            if isinstance(item, ObservationBatch):
+                bound("cells", len(item.observations))
+            immutable = mapping(((field.name, getattr(item, field.name)) for field in _argument_fields(type(item))),
+                                depth, metadata=metadata, ordered=True)
+            active.remove(id(item))
+            return bool(getattr(type(item), "__dataclass_params__").frozen) and immutable
+        walk(plain(item), depth + 1, metadata=True)
+        return isinstance(item, (ByteIdentity, Decimal, date, time, timedelta, timezone, ZoneInfo,
+                                 float, bytes, PurePath))
+
+    feed('{"value":')
+    immutable = walk(value)
+    feed("}")
+    check()
+    identity = ByteIdentity(digest.hexdigest(), size)
+    if cache is not None and immutable:
+        cache[key] = (value, identity)
+    return identity
 
 
 def snapshot_of(value, invocation=None, *, snapshot_factory: SnapshotFactory | None = None):

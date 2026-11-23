@@ -21,7 +21,8 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -29,9 +30,18 @@
         "version_id"
       ],
       "summary": "Preserve observation and capture dates, literal cells, qualifications and complete source evidence.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-offices-snapshot"
+    "method_id": "cbr-offices-snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "release": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.snapshots:snapshot_release"

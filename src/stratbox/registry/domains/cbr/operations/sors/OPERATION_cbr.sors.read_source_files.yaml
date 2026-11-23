@@ -18,7 +18,8 @@
             "schema_id": "cbr.sors.source_inputs",
             "version": 2
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_collection"
         }
       ],
       "parameters": [
@@ -34,9 +35,34 @@
         "sme_ie_regional_totals",
         "regional_totals_history"
       ],
-      "summary": "Read a caller-selected bundle of retained source files with bounded byte checks."
+      "summary": "Read a caller-selected bundle of retained source files with bounded byte checks.",
+      "required_parameters": [
+        "regional_traditional",
+        "national_okved2",
+        "federal_district_okved2",
+        "national_traditional",
+        "sme_national_totals",
+        "sme_national_okved2",
+        "sme_ie_national_okved2",
+        "sme_federal_district_okved2",
+        "sme_regional_totals",
+        "sme_ie_regional_totals"
+      ]
     },
-    "method_id": "sors-file-read"
+    "method_id": "sors-file-read",
+    "request_fields": {
+      "federal_district_okved2": "parameter",
+      "national_okved2": "parameter",
+      "national_traditional": "parameter",
+      "regional_totals_history": "parameter",
+      "regional_traditional": "parameter",
+      "sme_federal_district_okved2": "parameter",
+      "sme_ie_national_okved2": "parameter",
+      "sme_ie_regional_totals": "parameter",
+      "sme_national_okved2": "parameter",
+      "sme_national_totals": "parameter",
+      "sme_regional_totals": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:read_source_files"

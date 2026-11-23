@@ -27,20 +27,25 @@
             "schema_id": "document.blocks.snapshot",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         },
         {
           "name": "dataset_snapshot",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "summary": "Encode document blocks and qualifications for independent retention.",
       "function": "encode"
     },
-    "method_id": "document-snapshot"
+    "method_id": "document-snapshot",
+    "request_fields": {
+      "document": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:snapshot_document"

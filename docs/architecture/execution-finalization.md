@@ -18,7 +18,9 @@ Work/Run/Attempt lifecycles and real permission enforcement.
 ```text
 Invocation + optional started event
     -> type and provider admission
+    -> signature preflight for effectful operations
     -> handler execution / expected-error classification
+    -> trusted result postconditions
     -> output accounting / computation evidence where applicable
     -> deadline-only post-handler check (independent of late cancellation)
     -> runner-owned seal of invocation facts
@@ -33,6 +35,24 @@ A failed `OperationResult` constructor must not follow an emitted false
 first. If an ordinary error occurs while constructing the validated result,
 the runner produces a classified fallback with preserved receipts and without
 repeating the handler or external effects.
+
+`ExecutionContext.result_admissions` carries trusted typed `ResultAdmission`
+policies from the binding. Each policy returns bounded diagnostics for a
+prepared or final value. The runner applies final-value policies before
+constructing `OperationResult` and before emitting its terminal event. A rejected
+value becomes unavailable and the normal result carries the rejection reason.
+Confirmed receipts remain confirmed; an unresolved effect still forces
+`unknown` and reconciliation. A late source mismatch never implies rollback.
+The final policy receives the actual work outcome. Source obligations select
+the usable complete or partial output branch, so a valid office-selection
+candidate never requires a complete-release attribute that it does not carry.
+
+`Invocation.admit_prepared(value)` runs the same policy in its `precommit`
+phase. Dataset publication calls it on the prepared snapshot before asking the
+writer to persist any component. This prevents a detectable bad snapshot from
+causing storage writes. Other effectful handlers can use the same explicit
+boundary when prepared data exists. A policy comes from trusted Python code;
+registry data cannot install executable callbacks.
 
 A successful `operation.finished` collection matches the result's operation,
 invocation, method identity and outcome. This event is *an observation*: its presence

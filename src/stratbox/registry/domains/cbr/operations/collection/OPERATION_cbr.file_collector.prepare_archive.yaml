@@ -14,7 +14,8 @@
           "contract": {
             "schema_id": "cbr.file_collector.collected_files",
             "role": "originals"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -25,12 +26,16 @@
             "version": 2,
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render a manifest-bearing archive whose members retain their original role."
     },
-    "method_id": "cbr-file-manifest-zip"
+    "method_id": "cbr-file-manifest-zip",
+    "request_fields": {
+      "files": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.collection.handlers:prepare_archive"

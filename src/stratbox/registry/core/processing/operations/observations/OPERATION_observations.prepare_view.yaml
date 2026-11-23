@@ -29,7 +29,8 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_optional"
         }
       ],
       "parameters": [
@@ -40,9 +41,21 @@
         "coverage",
         "qualifications"
       ],
-      "summary": "Prepare an explicit observation selection preserving periods, missing states and provenance."
+      "summary": "Prepare an explicit observation selection preserving periods, missing states and provenance.",
+      "required_parameters": [
+        "view_id"
+      ]
     },
-    "method_id": "observations-prepare_view"
+    "method_id": "observations-prepare_view",
+    "request_fields": {
+      "batch": "input",
+      "coverage": "parameter",
+      "metric_ids": "parameter",
+      "period_kinds": "parameter",
+      "qualifications": "parameter",
+      "subject_ids": "parameter",
+      "view_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.operations.processing.handlers:prepare_view"

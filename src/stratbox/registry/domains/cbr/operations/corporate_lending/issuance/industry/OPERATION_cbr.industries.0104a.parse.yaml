@@ -39,7 +39,8 @@
             "schema_id": "cbr.industries.0104a.parsed_file",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "stream",
@@ -47,7 +48,9 @@
             "schema_id": "cbr.industries.0104a.stream",
             "role": "extracts"
           },
-          "path": "df_stream"
+          "path": "df_stream",
+          "source_policy": "primary_source_required",
+          "source_context_path": ""
         }
       ],
       "parameters": [
@@ -55,9 +58,18 @@
         "source",
         "selection"
       ],
-      "summary": "Extract source-local industry data with selection and validation scope."
+      "summary": "Extract source-local industry data with selection and validation scope.",
+      "required_parameters": [
+        "source_name"
+      ]
     },
-    "method_id": "cbr-0104a-workbook"
+    "method_id": "cbr-0104a-workbook",
+    "request_fields": {
+      "payload": "input",
+      "selection": "parameter",
+      "source": "parameter",
+      "source_name": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.issuance.operations:parse"

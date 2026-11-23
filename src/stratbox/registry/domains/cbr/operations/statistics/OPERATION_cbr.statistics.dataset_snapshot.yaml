@@ -27,13 +27,17 @@
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Encode admitted observations, mapping edition, diagnostics and complete input versions.",
       "function": "encode"
     },
-    "method_id": "cbr-statistics-dataset_snapshot"
+    "method_id": "cbr-statistics-dataset_snapshot",
+    "request_fields": {
+      "dataset": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:build_dataset_snapshot"

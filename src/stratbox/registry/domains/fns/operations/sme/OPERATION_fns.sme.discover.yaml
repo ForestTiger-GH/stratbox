@@ -27,12 +27,17 @@
           "contract": {
             "schema_id": "fns.sme.index"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Discover source issues with source-specific identity and coverage."
     },
-    "method_id": "fns-sme-index"
+    "method_id": "fns-sme-index",
+    "request_fields": {
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.fns.operations.sme.operations:discover"

@@ -28,12 +28,16 @@
             "schema_id": "cbr.forms.model_inputs",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Admit reviewed metric, source subject, unit, period and formula axes before financial-model evaluation."
     },
-    "method_id": "cbr-forms-model-input-admission"
+    "method_id": "cbr-forms-model-input-admission",
+    "request_fields": {
+      "batch": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.calculation:prepare_model_inputs"

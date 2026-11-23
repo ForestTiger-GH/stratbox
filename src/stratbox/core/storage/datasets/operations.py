@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from stratbox.core.execution.contracts import EffectReceipt, ExecutionContext, OperationFailure
 from stratbox.core.execution.runner import Completion, run
 from stratbox.core.limits import BudgetError
@@ -26,6 +28,7 @@ def query_snapshot(request, *, context=None):
                           checkpoint=invocation.check_cancelled)
         except (ValueError, TypeError, KeyError):
             raise OperationFailure("dataset.query_invalid") from None
+        value = _preview_context(req.snapshot, value)
         invocation.use(UsedInputReceipt("dataset_snapshot", req.snapshot.identity, SNAPSHOT_MEDIA_TYPE,
                                        "inline", req.snapshot.manifest.dataset_id))
         invocation.account_output(value.table.identity, key="preview")
@@ -33,6 +36,26 @@ def query_snapshot(request, *, context=None):
             "offset": req.query.offset, "limit": req.query.limit, "has_more": value.has_more})
         return value
     return run(QUERY, request, work, context=context)
+
+
+def _preview_context(snapshot, preview):
+    """Read only selected rows and already-loaded, explicitly registered metadata."""
+    from stratbox.core.execution.value_context import value_context, retained_context_components
+    from stratbox.shared.data.snapshots import TypedTable
+    original = snapshot.table(preview.component)
+    selected = TypedTable(original.schema, tuple(original.rows[position] for position in preview.source_rows))
+    direct = value_context(selected, original.schema.contract)
+    if direct.uses:
+        return replace(preview, source_uses=direct.uses, source_context_qualification="selected_rows")
+    metadata_names = retained_context_components(snapshot, component=preview.component)
+    if not metadata_names:
+        return preview
+    metadata = DatasetSnapshot(snapshot.manifest, tuple((name, table) for name, table in snapshot.tables if name in metadata_names))
+    context = value_context(metadata)
+    coordinates = {use.coordinate for use in context.uses if use.coordinate.source_id is not None}
+    if len(coordinates) == 1 and all(use.coordinate.source_id is not None for use in context.uses):
+        return replace(preview, source_uses=context.uses, source_context_qualification="snapshot_single_coordinate")
+    return replace(preview, source_context_qualification="snapshot_scope_ambiguous" if context.uses else "unqualified")
 
 
 def _selection(request, role, provider, *, reference=False):
@@ -98,6 +121,9 @@ def write_snapshot(request: WriteSnapshotRequest, *, store=None, context: Execut
             for _, table in snapshot.tables:
                 invocation.budget.charge("input_bytes", table.identity.size)
                 invocation.budget.charge("cells", len(table.rows) * max(1, len(table.schema.columns)))
+        # The checked candidate remains in evidence even when its semantic
+        # postcondition refuses publication before any provider write begins.
+        invocation.admit_prepared(snapshot)
         effect_id = ByteIdentity.of(canonical_manifest_bytes({"provider": writer.provider_id, "scope": writer.scope_id,
             "dataset": snapshot.manifest.dataset_id, "version": snapshot.manifest.version_id,
             "identity": identity_value(snapshot.identity)})).sha256

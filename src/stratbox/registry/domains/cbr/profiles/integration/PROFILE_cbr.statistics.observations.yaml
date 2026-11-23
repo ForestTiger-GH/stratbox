@@ -11,6 +11,7 @@
     "scope": "Debt securities issued on the domestic market, separate nominal and market valuations and monthly/quarterly tables.",
     "alignment_operation": "cbr.statistics.align",
     "product_profile": "cbr.statistics.views",
-    "view_operation": "cbr.statistics.build_view"
+    "view_operation": "cbr.statistics.build_view",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

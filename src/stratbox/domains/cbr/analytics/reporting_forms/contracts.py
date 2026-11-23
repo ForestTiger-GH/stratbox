@@ -6,6 +6,7 @@ from typing import Mapping, TYPE_CHECKING
 from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.data.observations import ObservationBatch, PeriodRef
+from stratbox.shared.data.source_context import SourceUse
 from stratbox.domains.cbr.tables.reporting_forms.contracts import FormSnapshot
 if TYPE_CHECKING:
     from pandas import DataFrame
@@ -55,3 +56,4 @@ class FormData:
     indicator_order: Mapping[str, int]
     lineage: tuple[UsedInputReceipt, ...]
     evidence: ComputationReceipt | None = None
+    source_uses: tuple[SourceUse, ...] = ()

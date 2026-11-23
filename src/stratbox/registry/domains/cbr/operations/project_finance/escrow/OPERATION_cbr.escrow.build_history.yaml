@@ -20,7 +20,8 @@
           "contract": {
             "schema_id": "cbr.escrow.parse_requests",
             "role": "originals"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -31,7 +32,8 @@
             "version": 2,
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -40,7 +42,11 @@
       "summary": "Parse supplied escrow sources and construct their history.",
       "composition": true
     },
-    "method_id": "cbr-escrow-history"
+    "method_id": "cbr-escrow-history",
+    "request_fields": {
+      "continue_on_error": "parameter",
+      "sources": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.project_finance.handlers:build_history"

@@ -15,7 +15,7 @@ from stratbox.core.registry.catalog import OperationRef, OperationRegistration, 
 from stratbox.core.registry.resources import iter_resources, owner_directory, read_document, resource_owners
 from stratbox.shared.data.operations import (
     InputPort, OutputPort, OperationSemantics, ProcessingFunction,
-    ProcessingStage, StageDeclaration, OperationKey,
+    ProcessingStage, StageDeclaration, OperationKey, RequestField,
 )
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.identifiers import safe_token
@@ -56,6 +56,17 @@ def _reference(value, *, owner=None, implementation=False):
     return value
 
 
+def _resource_reference(value, *, owner):
+    if not isinstance(value, str) or value.count(":") != 1:
+        raise RegistryError("registry.invalid_method_resource")
+    package, path = value.split(":")
+    _reference(package + ":RESOURCE", owner=owner)
+    if (not path or path.startswith("/") or "\\" in path
+            or any(segment in {"", ".", ".."} for segment in path.split("/"))):
+        raise RegistryError("registry.invalid_method_resource")
+    return value
+
+
 def _load_type(ref):
     module, symbol = ref.split(":")
     try:
@@ -77,27 +88,35 @@ def _contract(value):
 
 def _port(value, input):
     common = ("path", "qualifications", "coverage", "outcomes")
-    value = _object(value, ("name", "contract"), (*common, "required", "alternatives") if input else common)
+    if not input:
+        common += ("source_policy", "collection", "source_context_path")
+    value = _object(value, ("name", "contract"), (*common, "required", "alternatives", "collection") if input else common)
     options = {"name": value["name"], "contract": _contract(value["contract"]),
                "path": value.get("path", value["name"])}
     for name in ("qualifications", "coverage", "outcomes"):
         options[name] = frozenset(_strings(value.get(name, ["succeeded"] if name == "outcomes" else [])))
     if input:
         options["required"] = value.get("required", True)
+        options["collection"] = value.get("collection", False)
         options["alternatives"] = tuple(_contract(item) for item in _list(value.get("alternatives", [])))
+    else:
+        options["source_policy"] = value.get("source_policy", "source_optional")
+        options["source_context_path"] = value.get("source_context_path")
+        options["collection"] = value.get("collection", False)
     return (InputPort if input else OutputPort)(**options)
 
 
 def _processing(value):
     if value is None:
         return None
-    value = _object(value, ("stages", "summary"), ("inputs", "outputs", "parameters", "composition", "function"))
+    value = _object(value, ("stages", "summary"), ("inputs", "outputs", "parameters", "composition", "function", "required_parameters"))
     return OperationSemantics(
         stages=tuple(ProcessingStage(item) for item in _strings(value["stages"])),
         inputs=tuple(_port(item, True) for item in _list(value.get("inputs", []))),
         outputs=tuple(_port(item, False) for item in _list(value.get("outputs", []))),
         parameters=_strings(value.get("parameters", [])), summary=value["summary"],
         composition=value.get("composition", False), function=ProcessingFunction(value.get("function", "process")),
+        required_parameters=_strings(value.get("required_parameters", [])),
     )
 
 
@@ -113,7 +132,20 @@ def _budget(value):
     return ExecutionBudget(**value)
 
 
-def _compile(d, *, typed):
+def _request_fields(value):
+    if not isinstance(value, dict):
+        raise RegistryError("registry.request_fields_invalid")
+    result = []
+    for path, declaration in sorted(value.items()):
+        if isinstance(declaration, str):
+            result.append(RequestField(path, declaration))
+        else:
+            declaration = _object(declaration, ("role",), ("reason",))
+            result.append(RequestField(path, declaration["role"], declaration.get("reason", "")))
+    return tuple(result)
+
+
+def _compile(d, *, typed, implementation=None):
     value_types = d["value_type"]
     return OperationDefinition(
         operation_id=d["operation_id"], method_id=d["method_id"],
@@ -126,13 +158,17 @@ def _compile(d, *, typed):
         limits=_budget(d.get("limits")),
         runtime_dependencies=tuple(_dependency(item) for item in _list(d.get("runtime_dependencies", []))),
         processing=_processing(d.get("processing")),
+        request_fields=_request_fields(d.get("request_fields", {})),
+        method_refs=tuple(dict.fromkeys(([implementation["handler_ref"]] if implementation else [])
+                          + list((implementation or {}).get("method_refs", [])))),
+        method_resources=tuple((implementation or {}).get("method_resources", [])),
     )
 
 
 def validate_operation_document(value, *, owner_id=None):
     """Validate canonical metadata without resolving executable or value types."""
     try:
-        value = _object(value, ("schema", "owner_id", "definition", "implementation"), ("source_requirements",))
+        value = _object(value, ("schema", "owner_id", "definition", "implementation"), ("source_requirements", "source_assembly"))
         if value["schema"] != "stratbox.operation":
             raise RegistryError("registry.invalid_schema")
         owner = value["owner_id"]
@@ -141,8 +177,8 @@ def validate_operation_document(value, *, owner_id=None):
             raise RegistryError("registry.owner_mismatch")
         d = _object(value["definition"], ("operation_id", "method_id", "request_type", "value_type"),
                     ("required_capabilities", "possible_effects", "partial_allowed", "optional_capabilities",
-                     "limits", "runtime_dependencies", "processing"))
-        i = _object(value["implementation"], ("handler_ref",), ("wire_codec_ref", "wire_contract_ref"))
+                     "limits", "runtime_dependencies", "processing", "request_fields"))
+        i = _object(value["implementation"], ("handler_ref",), ("wire_codec_ref", "wire_contract_ref", "method_refs", "method_resources"))
         for name in ("handler_ref", "wire_codec_ref", "wire_contract_ref"):
             if i.get(name) is not None:
                 _reference(i[name], owner=owner, implementation=True)
@@ -152,8 +188,16 @@ def validate_operation_document(value, *, owner_id=None):
             raise RegistryError("registry.invalid_value_types")
         for item in value_types:
             _reference(item, owner=owner)
-        _compile(d, typed=False)
-        OperationRef(d["operation_id"], **i)
+        for reference in _strings(i.get("method_refs", [])):
+            _reference(reference, owner=owner)
+        for resource in _strings(i.get("method_resources", [])):
+            _resource_reference(resource, owner=owner)
+        _compile(d, typed=False, implementation=i)
+        OperationRef(d["operation_id"], **{key: value for key, value in i.items()
+                                          if key in {"handler_ref", "wire_codec_ref", "wire_contract_ref"}})
+        if "source_assembly" in value:
+            from stratbox.core.registry.requirements import validate_source_assembly
+            validate_source_assembly(value["source_assembly"], owner_id=owner)
         if "source_requirements" in value:
             from stratbox.core.registry.requirements import decode_requirement
             requirements = tuple(decode_requirement(item) for item in _list(value["source_requirements"]))
@@ -216,6 +260,16 @@ def operation_document(operation_id):
 
 
 @lru_cache(maxsize=4096)
+def metadata_definition(operation_id):
+    """Compile policies while retaining Python links as inert declarations."""
+    try:
+        document = _definition_index()[operation_id]
+    except (KeyError, TypeError):
+        raise RegistryError("registry.operation_unavailable") from None
+    return _compile(document["definition"], typed=False, implementation=document["implementation"])
+
+
+@lru_cache(maxsize=4096)
 def definition(operation_id):
     """Compile the canonical declaration directly, without a Python backlink."""
     if not isinstance(operation_id, str):
@@ -224,7 +278,7 @@ def definition(operation_id):
         document = _definition_index()[operation_id]
     except KeyError:
         raise RegistryError("registry.operation_unavailable") from None
-    return _compile(document["definition"], typed=True)
+    return _compile(document["definition"], typed=True, implementation=document["implementation"])
 
 
 def _stage(value):
@@ -249,7 +303,8 @@ def owner_registration(owner_id):
             from stratbox.core.execution.value_context import validate_value_contexts
             validate_value_contexts(owner["value_contexts"])
         return OperationRegistration(
-            owner_id, tuple(OperationRef(document["definition"]["operation_id"], **document["implementation"])
+            owner_id, tuple(OperationRef(document["definition"]["operation_id"], **{key: value for key, value in document["implementation"].items()
+                                       if key in {"handler_ref", "wire_codec_ref", "wire_contract_ref"}})
                             for document in _operation_documents(owner_id)),
             tuple(_stage(item) for item in _list(owner.get("stages", []))),
         )
@@ -266,3 +321,8 @@ def operation_references(owner_id, *, handler_module=None):
         return references
     return tuple(ref for ref in references if (module := ref.handler_ref.split(":")[0]) == handler_module
                  or module.startswith(handler_module + "."))
+
+
+def validate_request_contract(definition, *, require_classification=False):
+    from stratbox.core.registry.type_links import validate_request_contract as validate
+    return validate(definition, require_classification=require_classification)

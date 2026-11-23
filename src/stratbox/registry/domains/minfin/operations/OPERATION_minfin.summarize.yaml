@@ -31,7 +31,8 @@
             "schema_id": "minfin.headlines",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -39,7 +40,11 @@
       ],
       "summary": "Calculate three budget headlines or NWF total/liquid stocks and same-period prior-year percentages."
     },
-    "method_id": "minfin.profile-headlines"
+    "method_id": "minfin.profile-headlines",
+    "request_fields": {
+      "flake": "input",
+      "period_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:calculate_headlines"

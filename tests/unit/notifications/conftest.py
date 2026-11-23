@@ -119,8 +119,7 @@ class Inbox:
         return self.receipts.get((request.dispatch_id, request.attempt_id))
 
 
-@pytest.fixture
-def session():
+def make_session():
     clock = Clock()
     context = ExecutionContext(clock=clock)
     source = Source()
@@ -136,3 +135,13 @@ def session():
     configure_subscription(SubscriptionChange("create", spec), runtime=runtime, context=context)
     configure_subscription(SubscriptionChange("enable", spec, 1), runtime=runtime, context=context)
     return runtime, key, context, source, inbox, spec
+
+
+@pytest.fixture
+def session_factory():
+    return make_session
+
+
+@pytest.fixture
+def session():
+    return make_session()

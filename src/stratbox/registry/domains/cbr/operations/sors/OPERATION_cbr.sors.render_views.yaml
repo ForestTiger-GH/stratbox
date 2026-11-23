@@ -28,12 +28,16 @@
             "schema_id": "cbr.sors.workbook",
             "role": "products"
           },
-          "path": "representation"
+          "path": "representation",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Render supplied prepared SORS sheets without data selection or calculation."
     },
-    "method_id": "sors-xlsx"
+    "method_id": "sors-xlsx",
+    "request_fields": {
+      "views": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.sors.api:render_views"

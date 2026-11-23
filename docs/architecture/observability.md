@@ -140,6 +140,19 @@ Its data schema v2 and record identity are distinct from archived v1
 summaries. History uses a single consistent result assertion per invocation
 for aggregation and flags conflicting assertions.
 
+Result admission diagnostics identify the rejected source/group/contract
+condition before the terminal assertion is emitted. Their stage distinguishes
+`preflight`, `precommit_admission` and `result_admission`. Source and profile
+meaning stays with the trusted binding; event payloads retain bounded reasons
+and identities rather than input tables or private provider configuration.
+A postcondition failure preserves the physical effect receipts, including
+confirmed commits and unresolved effects requiring reconciliation.
+The computation summary includes its content-addressed method fingerprint and
+actual receipt qualifications. Signature coverage distinguishes an exhaustive
+declared request, the conservative complete-request fallback and an unqualified
+receipt. This metadata helps a consumer explain a reuse decision; it establishes
+neither current authorization nor continued availability of the result bytes.
+
 Notifications consumes the positioned journal through an explicit source
 binding. [Notification architecture and consumer evidence](notifications.md)
 

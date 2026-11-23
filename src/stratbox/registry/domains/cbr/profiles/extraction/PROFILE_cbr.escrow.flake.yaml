@@ -9,6 +9,8 @@
     "kind": "extraction",
     "profile_id": "cbr.escrow.flake",
     "scope": "Reviewed regional source table; historical HTML is an original-only layout.",
-    "operation_id": "cbr.escrow.parse"
+    "operation_id": "cbr.escrow.parse",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit",
+    "implementation_ref": "stratbox.domains.cbr.tables.project_finance.profiles:required_indicators"
   }
 }

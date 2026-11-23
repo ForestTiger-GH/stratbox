@@ -103,6 +103,7 @@ def test_independent_dependency_editions_survive_identical_payload_bytes():
             version=ByteIdentity.of(revision))
         def work(req, invocation):
             invocation.use(direct)
+            invocation.depend(dependency)
             invocation.record(ByteIdentity.of(b"output"))
             return "same output"
         return run(DEFINITION, Request(("a",)), work,
@@ -111,6 +112,16 @@ def test_independent_dependency_editions_survive_identical_payload_bytes():
     before, after = perform(b"edition-a"), perform(b"edition-b")
     assert len(before.computation.inputs) == 2
     assert before.computation.computation_id != after.computation.computation_id
+
+
+def test_unused_environment_reference_does_not_qualify_a_computation():
+    dependency = UsedInputReceipt("unused_reference", ByteIdentity.of(b"reference"),
+        "application/json", "reference_only", version=ByteIdentity.of(b"reference-definition"))
+    direct = consume(Request(("a",)))
+    supplied = consume(Request(("a",)), context=ExecutionContext(input_receipts=(dependency,)))
+    assert supplied.computation.computation_id == direct.computation.computation_id
+    assert dependency in supplied.used_inputs
+    assert dependency not in supplied.computation.inputs
 
 
 def test_payload_interpretation_qualifies_identical_bytes_without_handler_receipts():

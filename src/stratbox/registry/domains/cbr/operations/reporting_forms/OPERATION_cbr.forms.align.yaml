@@ -14,7 +14,8 @@
           "contract": {
             "schema_id": "cbr.forms.snapshots",
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -24,7 +25,8 @@
             "schema_id": "cbr.forms.observations",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -33,9 +35,20 @@
         "periods",
         "subjects"
       ],
-      "summary": "Align reviewed source fields to versioned observations with distinct bank and banking-group identities and explicit flow periods."
+      "summary": "Align reviewed source fields to versioned observations with distinct bank and banking-group identities and explicit flow periods.",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-forms-observation-alignment"
+    "method_id": "cbr-forms-observation-alignment",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "periods": "parameter",
+      "snapshots": "input",
+      "subjects": "parameter",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.integration:align_forms"

@@ -8,6 +8,11 @@
     ],
     "kind": "identification",
     "profile_id": "minfin.conbud_assets.metadata.minfin.conbud.annual",
-    "scope": "annual"
+    "scope": "annual",
+    "admission_ref": "stratbox.domains.minfin.profiles:admit",
+    "implementation_ref": "stratbox.domains.minfin.publications.profiles:identification_profile",
+    "implementation_parameters": {
+      "profile_id": "minfin.conbud_assets"
+    }
   }
 }

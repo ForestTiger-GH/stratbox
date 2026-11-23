@@ -24,7 +24,8 @@
             "schema_id": "observations.prepared_view",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -33,9 +34,19 @@
         "period_kinds",
         "subject_ids"
       ],
-      "summary": "Prepare an explicit selection of qualified observations without aggregation or source reopening."
+      "summary": "Prepare an explicit selection of qualified observations without aggregation or source reopening.",
+      "required_parameters": [
+        "view_id"
+      ]
     },
-    "method_id": "frg.prepare_view"
+    "method_id": "frg.prepare_view",
+    "request_fields": {
+      "batch": "input",
+      "metric_ids": "parameter",
+      "period_kinds": "parameter",
+      "subject_ids": "parameter",
+      "view_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.frank_rg.operations.pipeline_handlers:prepare_view"

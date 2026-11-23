@@ -8,10 +8,7 @@ from stratbox.domains.cbr.analytics.reporting_forms.contracts import FormData
 from stratbox.domains.cbr.products.reporting_forms.contracts import FormViews
 from stratbox.domains.cbr.products.reporting_forms.profiles import FORM_VIEW_PROFILES
 from .definitions import VIEWS, RENDER
-
-
-def _data_metadata(form, indicator_order):
-    return {"form": form, "indicator_order": dict(indicator_order)}
+from stratbox.domains.cbr.tables.reporting_forms.context import data_metadata, views_metadata
 
 
 def build_form_views(
@@ -27,7 +24,7 @@ def build_form_views(
         order = dict(req.indicator_order)
         long, banks, model = use_tables(
             invocation, (("long", req.long), ("banks", req.banks), ("model", req.model)),
-            receipt=req.evidence, role="form_data", metadata=_data_metadata(req.form, order),
+            receipt=req.evidence, role="form_data", metadata=data_metadata(req.form, order, req.source_uses),
         )
         if req.evidence is not None:
             for receipt in req.evidence.inputs:
@@ -44,8 +41,8 @@ def build_form_views(
             model_df=model,
             indicator_order=order,
         )
-        evidence = record_tables(invocation, tuple(sheets.items()), metadata={"form": req.form, "profile": profile})
-        return FormViews(req.form, profile, MappingProxyType(dict(sheets)), tuple(invocation.used_inputs), evidence)
+        evidence = record_tables(invocation, tuple(sheets.items()), metadata=views_metadata(req.form, profile, req.source_uses))
+        return FormViews(req.form, profile, MappingProxyType(dict(sheets)), tuple(invocation.used_inputs), evidence, req.source_uses)
 
     return run(VIEWS, request, work, context=context)
 
@@ -66,7 +63,7 @@ def render_workbook(
             raise OperationFailure("request.empty_views")
         tables = tuple(req.sheets.items())
         frames = use_tables(invocation, tables, receipt=req.evidence, role="form_views",
-                            metadata={"form": req.form, "profile": req.profile})
+                            metadata=views_metadata(req.form, req.profile, req.source_uses))
         if req.evidence is not None:
             for receipt in req.evidence.inputs:
                 invocation.use(receipt)

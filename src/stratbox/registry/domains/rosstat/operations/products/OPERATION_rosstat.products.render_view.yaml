@@ -36,7 +36,8 @@
           "contract": {
             "schema_id": "representation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -44,7 +45,11 @@
       ],
       "summary": "Render prepared observations as CSV, JSON or JSONL with exact values and evidence."
     },
-    "method_id": "rosstat-products-render_view"
+    "method_id": "rosstat-products-render_view",
+    "request_fields": {
+      "format": "parameter",
+      "view": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.handlers:render_view"

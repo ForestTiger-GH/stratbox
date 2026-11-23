@@ -20,7 +20,8 @@
           "contract": {
             "schema_id": "cbr.workbook.flake_collection",
             "role": "extracts"
-          }
+          },
+          "collection": true
         }
       ],
       "outputs": [
@@ -30,7 +31,8 @@
             "schema_id": "cbr.statistics.dataset",
             "role": "integrated"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -41,7 +43,14 @@
       ],
       "summary": "Align qualified source periods and units with explicit identities, mappings and unresolved semantics."
     },
-    "method_id": "cbr-statistics-align"
+    "method_id": "cbr-statistics-align",
+    "request_fields": {
+      "flakes": "input",
+      "mapping_version": "method",
+      "period_bindings": "parameter",
+      "row_bindings": "parameter",
+      "strict": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:align"

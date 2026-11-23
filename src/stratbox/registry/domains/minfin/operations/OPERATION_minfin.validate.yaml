@@ -30,12 +30,16 @@
           "contract": {
             "schema_id": "minfin.structural_validation"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Validate source-cell geometry and report structural coverage, never economic correctness."
     },
-    "method_id": "minfin-structure"
+    "method_id": "minfin-structure",
+    "request_fields": {
+      "extract": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:validate"

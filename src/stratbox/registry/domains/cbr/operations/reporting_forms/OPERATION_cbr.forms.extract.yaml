@@ -46,7 +46,8 @@
           "outcomes": [
             "partial",
             "succeeded"
-          ]
+          ],
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -56,9 +57,20 @@
         "strict",
         "member_name"
       ],
-      "summary": "Decode every supported DBF and retain exact bytes and inventory for every regular archive member."
+      "summary": "Decode every supported DBF and retain exact bytes and inventory for every regular archive member.",
+      "required_parameters": [
+        "key"
+      ]
     },
-    "method_id": "cbr-forms-all-dbf"
+    "method_id": "cbr-forms-all-dbf",
+    "request_fields": {
+      "encoding_overrides": "parameter",
+      "key": "parameter",
+      "member_name": "parameter",
+      "payload": "input",
+      "strict": "parameter",
+      "text_encoding": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.reporting_forms.extracts:extract_forms"

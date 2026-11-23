@@ -10,6 +10,7 @@ from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 from stratbox.shared.data.snapshots import SnapshotCoverage
+from stratbox.shared.data.source_context import SourceUse
 
 from stratbox.domains.cbr.tables.corporate_lending.debt.contracts import ParsedCbr0105ADebtCorpFile
 from stratbox.domains.cbr.tables.corporate_lending.observations import CorporateSourceDataset
@@ -85,3 +86,4 @@ class SorsSourceBundle:
         "unknown", "Selected publication slice; publisher historical coverage is unspecified."
     )
     method_version: str = "sors-source-bundle-2"
+    source_uses: tuple[SourceUse, ...] = ()

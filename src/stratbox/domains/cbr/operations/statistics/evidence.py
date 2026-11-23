@@ -15,7 +15,7 @@ def _snapshot(value, invocation):
     # Check a lower bound before allocating a canonical tabular projection.
     if isinstance(value, WorkbookFlake):
         invocation.budget.check("cells", sum(len(sheet.cells) for sheet in value.sheets))
-        return flake_snapshot(value)
+        return flake_snapshot(value, checkpoint=invocation.check_cancelled)
     if isinstance(value, StatisticsDataset):
         invocation.budget.check("cells", sum(len(batch.observations) for batch in value.batches))
         return dataset_snapshot(value)

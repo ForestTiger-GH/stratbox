@@ -8,6 +8,8 @@
     ],
     "kind": "acquisition",
     "profile_id": "fns.sme.statistics-post",
-    "scope": "Publisher-owned index or dated official link."
+    "scope": "Publisher-owned index or dated official link.",
+    "admission_ref": "stratbox.domains.fns.operations.sme.family:admit",
+    "implementation_ref": "stratbox.domains.fns.operations.sme.family:_acquire"
   }
 }

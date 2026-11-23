@@ -22,7 +22,8 @@
           "contract": {
             "schema_id": "minfin.update_plan"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -35,7 +36,16 @@
       ],
       "summary": "Compare publisher document modification markers to caller-owned confirmed checkpoints without downloading XLSX."
     },
-    "method_id": "minfin.publisher-marker-profile"
+    "method_id": "minfin.publisher-marker-profile",
+    "request_fields": {
+      "checkpoints": "parameter",
+      "force_refresh": "parameter",
+      "force_reprocess": "parameter",
+      "index": "input",
+      "retained_sources": "parameter",
+      "selected_sources": "parameter",
+      "target": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.minfin.operations.handlers:plan_updates"

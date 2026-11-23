@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 
-from stratbox.shared.data.datasets import ComputationReceipt, DatasetVersion
+from stratbox.shared.data.datasets import ComputationReceipt, DatasetVersion, computation_identity
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import MaterialReference, SourcePayload, UsedInputReceipt
@@ -68,6 +68,8 @@ def _computation(value: ComputationReceipt | None, depth=0):
             "identity": _identity(v.identity), "manifest": v.manifest.decode("utf-8")},
             "output": _identity(value.output), "inputs": [_input(x) for x in value.inputs],
             "computation_id": _identity(value.computation_id),
+            "method_fingerprint": _identity(value.method_fingerprint),
+            "qualifications": sorted(value.qualifications),
             "parents": [[name, _computation(parent, depth + 1)] for name, parent in value.parents]}
     # Validate producer-owned values as strictly as retained values.
     _validate_computation_record(result)
@@ -89,12 +91,19 @@ def _validate_computation_record(value):
         names.add(pair[0])
     manifest = _json(v["manifest"].encode("utf-8"))
     if not isinstance(manifest, dict) or set(manifest) != {
-        "manifest_version", "dataset_id", "release_id", "method_version", "inputs", "parameters", "arguments", "resources", "result"
+        "manifest_version", "dataset_id", "release_id", "method_version", "method_fingerprint", "qualifications", "inputs", "parameters", "arguments", "resources", "result"
     } or any(manifest[key] != v[key] for key in ("manifest_version", "dataset_id", "release_id", "method_version")):
         raise ValueError("material.lineage_manifest_mismatch")
     if any(not isinstance(manifest[key], dict) for key in ("parameters", "arguments", "resources")):
         raise ValueError("material.lineage_manifest_mismatch")
     if manifest["result"] != value["output"]:
+        raise ValueError("material.lineage_manifest_mismatch")
+    if manifest["method_fingerprint"] != value["method_fingerprint"]:
+        raise ValueError("material.lineage_manifest_mismatch")
+    if (not isinstance(value["qualifications"], list)
+            or any(not isinstance(item, str) or not item for item in value["qualifications"])
+            or value["qualifications"] != sorted(set(value["qualifications"]))
+            or manifest["qualifications"] != value["qualifications"]):
         raise ValueError("material.lineage_manifest_mismatch")
     inputs = tuple(_read_input(x) for x in value["inputs"])
     expected = [{"role": x.role, "sha256": x.identity.sha256, "size": x.identity.size,
@@ -102,13 +111,20 @@ def _validate_computation_record(value):
                  **({"version": x.version.sha256} if x.version else {})} for x in inputs]
     if manifest["inputs"] != expected or canonical_manifest_bytes(manifest) != v["manifest"].encode("utf-8"):
         raise ValueError("material.lineage_manifest_mismatch")
+    fingerprint = value["method_fingerprint"]
+    if fingerprint is not None:
+        computed = computation_identity(v["dataset_id"], v["method_version"], inputs,
+            parameters=manifest["parameters"], arguments=manifest["arguments"],
+            resources=manifest["resources"], method_fingerprint=_read_identity(fingerprint))
+        if _identity(computed) != value["computation_id"]:
+            raise ValueError("material.computation_identity_mismatch")
 
 
 def _read_computation(value, depth=0):
     if value is None:
         return None
     if depth > 32 or not isinstance(value, dict) or set(value) != {
-        "version", "output", "inputs", "computation_id", "parents"
+        "version", "output", "inputs", "computation_id", "method_fingerprint", "qualifications", "parents"
     } or not isinstance(value["parents"], list) or len(value["parents"]) > 256:
         raise ValueError("material.lineage_invalid")
     _validate_computation_record(value)
@@ -119,7 +135,9 @@ def _read_computation(value, depth=0):
         raise ValueError("material.lineage_identity_mismatch")
     return ComputationReceipt(version, _read_identity(value["output"]), tuple(_read_input(x) for x in value["inputs"]),
                               _read_identity(value["computation_id"]),
-                              tuple((name, _read_computation(parent, depth + 1)) for name, parent in value["parents"]))
+                              tuple((name, _read_computation(parent, depth + 1)) for name, parent in value["parents"]),
+                              _read_identity(value["method_fingerprint"]) if value["method_fingerprint"] is not None else None,
+                              frozenset(value["qualifications"]))
 
 
 def _contract(value: DataContract):

@@ -8,6 +8,7 @@
     ],
     "kind": "integration",
     "profile_id": "cbr.statistics.observations.metadata.cbr.banking_sector_structure.obs_table_20s",
-    "scope": "Published balance-sheet hierarchy, valuation currency and loan maturity components are preserved without implicit summation."
+    "scope": "Published balance-sheet hierarchy, valuation currency and loan maturity components are preserved without implicit summation.",
+    "admission_ref": "stratbox.domains.cbr.profiles:admit"
   }
 }

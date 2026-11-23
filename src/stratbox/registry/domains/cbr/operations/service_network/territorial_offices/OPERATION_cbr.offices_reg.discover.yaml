@@ -27,12 +27,17 @@
           "contract": {
             "schema_id": "cbr.offices_reg.index"
           },
-          "path": ""
+          "path": "",
+          "collection": true,
+          "source_policy": "source_inapplicable"
         }
       ],
       "summary": "Discover source issues with source-specific identity and coverage."
     },
-    "method_id": "cbr-offices-reg-index"
+    "method_id": "cbr-offices-reg-index",
+    "request_fields": {
+      "index": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.service_network.territorial_offices.operations:discover"

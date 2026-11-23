@@ -171,6 +171,41 @@ _REQUIRED_CODE = (
 )
 
 
+def _source_code_inventory():
+    root = SRC / "stratbox"
+    return {"stratbox/" + path.relative_to(root).as_posix(): _identity(path.read_bytes())
+            for path in sorted(root.rglob("*")) if path.is_file()
+            and (path.suffix in {".py", ".pyi"} or path.name == "py.typed")}
+
+
+def _verify_code_members(names, prefix, read_bytes):
+    """Verify the installed implementation as well as declarative resources."""
+    base = prefix + "stratbox/"
+    expected = _source_code_inventory()
+    actual = {name[len(prefix):] for name in names if name.startswith(base)
+              and (name.endswith((".py", ".pyi")) or name.endswith("/py.typed"))}
+    missing = sorted(expected.keys() - actual)
+    extra = sorted(actual - expected.keys())
+    changed = sorted(name for name in actual & expected.keys()
+                     if _identity(read_bytes(prefix + name)) != expected[name])
+    bytecode = sorted(name for name in names if name.startswith(base)
+                      and ("/__pycache__/" in name or name.endswith((".pyc", ".pyo"))))
+    if missing or extra or changed or bytecode:
+        raise ValueError("Implementation distribution mismatch: "
+                         f"missing={missing}, extra={extra}, changed={changed}, bytecode={bytecode}")
+    manifest = json.dumps(sorted(expected.items()), separators=(",", ":")).encode("utf-8")
+    return {"files": len(expected), "identity": sha256(manifest).hexdigest()}
+
+
+def _distribution_identity(path):
+    digest, size = sha256(), 0
+    with Path(path).open("rb") as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+            size += len(block)
+    return {"sha256": digest.hexdigest(), "size": size}
+
+
 def verify_wheel(path: str) -> dict[str, object]:
     counts: dict[str, int] = {}
     with ZipFile(path) as archive:
@@ -186,6 +221,7 @@ def verify_wheel(path: str) -> dict[str, object]:
         for name in _REQUIRED_CODE:
             if name not in members:
                 raise ValueError("Required semantic owner missing from wheel: " + name)
+        code_counts = _verify_code_members(members, "", archive.read)
         root = "stratbox/shared/reference/"
         bundled_families = {
             item[len(root):].split("/")[0]
@@ -225,6 +261,7 @@ def verify_wheel(path: str) -> dict[str, object]:
                 raise ValueError("Undeclared reference resources in wheel: " + str(unknown))
     return {"wheel": path, "asset_occurrences": counts,
             "domain_inventory": domain_counts, "registry_inventory": registry_counts,
+            "implementation_inventory": code_counts, "distribution_identity": _distribution_identity(path),
             "result": "verified"}
 
 
@@ -258,6 +295,7 @@ def verify_sdist(path: str) -> dict[str, object]:
         for name in _REQUIRED_CODE:
             if root + name not in directory:
                 raise ValueError("Required semantic owner missing from sdist: " + name)
+        code_counts = _verify_code_members(directory, root, read_domain_member)
         reference_root = root + "stratbox/shared/reference/"
         present = {
             name[len(reference_root):].split("/")[0]
@@ -296,6 +334,7 @@ def verify_sdist(path: str) -> dict[str, object]:
                 raise ValueError("Undeclared resources in source distribution: " + str(orphans))
     return {"sdist": path, "asset_occurrences": counts,
             "domain_inventory": domain_counts, "registry_inventory": registry_counts,
+            "implementation_inventory": code_counts, "distribution_identity": _distribution_identity(path),
             "result": "verified"}
 
 

@@ -99,7 +99,8 @@ def net_changes(before, after, *, metric_ids=()):
     batch = ObservationBatch(after.context.series_id + ".net_changes", 1,
         "change-" + ByteIdentity.of(canonical_manifest_bytes({"before": before_identity.sha256,
             "after": after_identity.sha256, "metrics": sorted(selected)})).sha256,
-        tuple(observations), lineage)
+        tuple(observations), lineage, tuple(replace(use, input_role=role) for role, source in
+            (("before", before), ("after", after)) for use in source.batch.source_uses))
     return Calculation(after.context, after_identity, batch, method,
         SnapshotCoverage("partial", "Exactly the matched selected stock observations and their two source vintages."),
         tuple(dict.fromkeys((*before.qualifications, *after.qualifications,
@@ -147,7 +148,7 @@ def shares(dataset, *, numerator_metric, denominator_metric, numerator_dimension
         "numerator_dimensions": numerator_dimensions, "denominator_dimensions": denominator_dimensions,
         "dataset": dataset_identity.sha256, "precision": 36}
     batch = ObservationBatch(dataset.context.series_id + ".shares", 1,
-        "share-" + ByteIdentity.of(canonical_manifest_bytes(parameters)).sha256, tuple(observations), lineage)
+        "share-" + ByteIdentity.of(canonical_manifest_bytes(parameters)).sha256, tuple(observations), lineage, dataset.batch.source_uses)
     return Calculation(dataset.context, dataset_identity, batch, method,
         SnapshotCoverage("partial", "Explicit numerator/denominator selections at identical periods, subjects, perimeters and editions."),
         tuple(dict.fromkeys(qualifications)), (), canonical_manifest_bytes(parameters).decode("utf-8"), (dataset_identity,))

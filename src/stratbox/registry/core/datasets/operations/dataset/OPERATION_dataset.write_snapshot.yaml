@@ -44,14 +44,16 @@
           },
           "qualifications": [
             "storage.confirmed"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "receipt",
           "contract": {
             "schema_id": "dataset.write_receipt"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -59,7 +61,11 @@
       ],
       "summary": "Publish an immutable logical dataset version through a selected adapter."
     },
-    "method_id": "dataset-write"
+    "method_id": "dataset-write",
+    "request_fields": {
+      "selection": "parameter",
+      "snapshot": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.core.storage.datasets.operations:write_snapshot"

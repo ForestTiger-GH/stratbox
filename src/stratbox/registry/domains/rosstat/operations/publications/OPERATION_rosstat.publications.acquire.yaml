@@ -34,7 +34,8 @@
           "path": "source.payload",
           "qualifications": [
             "source.rosstat.publications"
-          ]
+          ],
+          "source_policy": "source_inapplicable"
         },
         {
           "name": "payload",
@@ -42,7 +43,8 @@
             "schema_id": "source.payload",
             "role": "originals"
           },
-          "path": "source.payload"
+          "path": "source.payload",
+          "source_policy": "source_inapplicable"
         }
       ],
       "parameters": [
@@ -52,7 +54,13 @@
       ],
       "summary": "Acquire a selected publisher asset and qualify its file envelope."
     },
-    "method_id": "rosstat-original-envelope"
+    "method_id": "rosstat-original-envelope",
+    "request_fields": {
+      "asset": "input",
+      "deadline_seconds": "runtime",
+      "max_bytes": "runtime",
+      "retry": "runtime"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.rosstat.operations.publications:acquire"

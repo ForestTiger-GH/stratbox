@@ -77,7 +77,8 @@ def test_canonical_definition_is_independent_of_python_projection_and_handler(mo
     monkeypatch.setattr(catalog_module, "_load", lambda ref: (_ for _ in ()).throw(AssertionError(ref)))
     catalog_module._definition.cache_clear()
     catalog = OperationCatalog((OperationRef("workbook.extract", "unavailable.engine:extract"),))
-    assert catalog.get("workbook.extract") == expected
+    from dataclasses import replace
+    assert catalog.get("workbook.extract") == replace(expected, method_refs=("unavailable.engine:extract",))
 
 
 def test_zip_package_root_and_discovery_are_reused_without_rescanning(monkeypatch, tmp_path):

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.data.observations import Observation, ObservationBatch, MetricRef, PeriodRef, SubjectRef
 from stratbox.shared.data.observation_snapshots import observation_snapshot, observations_from_snapshot, OBSERVATION_SNAPSHOT
 from stratbox.shared.data.processing import DataContract, DataRole
@@ -90,7 +91,10 @@ def integrate_flakes(flakes: tuple[RosstatSourceFlake,...], *, dataset_id: str, 
             seen.add(key)
             observations.append(value)
     complete=all(flake.coverage.status == "complete" for flake in flakes)
-    return RosstatDataset(ObservationBatch(dataset_id,1,release_id,tuple(observations),tuple(lineage)),tuple(sources),
+    return RosstatDataset(ObservationBatch(dataset_id,1,release_id,tuple(observations),tuple(lineage),
+        tuple(SourceUse(SourceCoordinate(flake.series_id, source_group_id="kep2_indicators" if flake.series_id == "rosstat.short_term_indicators" else None,
+            issue_id=flake.issue_id, asset_id=flake.asset_id, material_identity=flake.source_identity,
+            semantic_profile_edition=flake.profile_id + ":" + str(flake.profile_version)), "flakes", "domain_validated") for flake in flakes)),tuple(sources),
         SnapshotCoverage("complete" if complete else "partial","Union of explicitly supplied Rosstat source-flake scopes; no source-wide completeness inferred."))
 
 

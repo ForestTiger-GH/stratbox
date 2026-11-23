@@ -26,14 +26,16 @@
             "schema_id": "cbr.industries.0105a.view.snapshot",
             "role": "products"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         },
         {
           "name": "dataset",
           "contract": {
             "schema_id": "dataset.snapshot"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "parameters": [
@@ -41,9 +43,18 @@
         "version_id"
       ],
       "summary": "Encode a complete view with table schemas and domain context.",
-      "function": "encode"
+      "function": "encode",
+      "required_parameters": [
+        "dataset_id",
+        "version_id"
+      ]
     },
-    "method_id": "cbr-industry-snapshot"
+    "method_id": "cbr-industry-snapshot",
+    "request_fields": {
+      "dataset_id": "parameter",
+      "value": "input",
+      "version_id": "parameter"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.corporate_lending.debt.snapshot_operations:build_view_snapshot"

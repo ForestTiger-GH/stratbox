@@ -30,12 +30,16 @@
             "schema_id": "cbr.workbook.flake",
             "role": "extracts"
           },
-          "path": ""
+          "path": "",
+          "source_policy": "primary_source_required"
         }
       ],
       "summary": "Extract every physical cell, formula and source note before statistical or model selection."
     },
-    "method_id": "cbr-tables-extract"
+    "method_id": "cbr-tables-extract",
+    "request_fields": {
+      "original": "input"
+    }
   },
   "implementation": {
     "handler_ref": "stratbox.domains.cbr.operations.statistics.handlers:extract"
