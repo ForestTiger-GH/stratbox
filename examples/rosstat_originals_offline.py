@@ -18,7 +18,7 @@ from stratbox.core.operations.source.version_comparison import (
 from stratbox.domains.rosstat.publications.contracts import (
     DiscoverRosstatRequest, AcquireRosstatToStoreRequest,
 )
-from stratbox.domains.rosstat.publications.operations import discover, acquire_to_store
+from stratbox.domains.rosstat.operations.publications import discover, acquire_to_store
 from stratbox.shared.evidence import PublicationReceipt, SourcePayload
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.source_publications import (

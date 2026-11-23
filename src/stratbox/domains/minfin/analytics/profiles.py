@@ -14,7 +14,7 @@ class HeadlineProfile:
     accepted_basis: frozenset[str]
     periods: frozenset[str]
     calculator: Callable[[FlakeTable, int, int | None], tuple[HeadlineMetric, ...]]
-    method_version: int = 1
+    method_version: int = 2
 
 
 _METRICS = {

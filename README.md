@@ -8,6 +8,7 @@ The package organizes neutral execution and infrastructure under `stratbox.core`
 shared data contracts and reference resources under `stratbox.shared`, and
 independent business packages under `stratbox.domains`.
 
+- [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
 - [Geography name matching](docs/current-how/geography-name-resolution.md)
 - [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
@@ -36,5 +37,5 @@ python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):
 # python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.19.0-py3-none-any.whl
+# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.20.0-py3-none-any.whl
 ```

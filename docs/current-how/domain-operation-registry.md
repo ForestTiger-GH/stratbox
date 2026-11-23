@@ -95,12 +95,14 @@ calculations in analytics, and prepared views/rendering in products. Reporting
 forms, service-network statistics, project finance and generic statistical
 workbooks follow the same functional boundaries.
 
-Registered domain owners include `cbr`, `minfin`, `frank_rg`,
-`rosstat.publications`, `fns.sme_register` and `fns.legal_entities_1yur`.
+Registered domain owners are `cbr`, `minfin`, `frank_rg`, `rosstat` and `fns`.
 Their business catalogs can subdivide sources without multiplying operation
 owners. Use CBR's `describe_source` and `describe_family` operations for
 source-scoped coverage; the root owner's aggregate stages describe its combined
-surface. See the [CBR route guide](cbr-data-pipeline.md).
+surface. The shared `catalog.source_catalog()` interface covers all five
+publishers with the same source/profile/operation binding shape. See the
+[CBR route guide](cbr-data-pipeline.md) and
+[independent publisher routes](independent-domain-data-routes.md).
 
 ## 3. Restricted read-only machine calls
 
@@ -117,6 +119,13 @@ Machine read-only admission remains limited to `cbr.offices.parse` v1,
 their respective owner; immutable schemas live separately in `machine_contracts.py`.
 Machine admission never grants authorization for
 network, storage, deletion or publication side effects.
+
+Hosts that already hold validated typed requests can additionally use
+`invoke_reference` with a host-owned `TypedValueResolver`. This interface applies
+the actual registered definition and explicit effect grants, reserves result
+capacity before execution, and returns typed result/value handles plus a bounded
+preview. It supplies no arbitrary object deserializer or destination authority.
+See [machine access](independent-domain-data-routes.md#7-machine-access).
 
 Logical operation IDs and versions are independent of Python module paths.
 The new module topology is canonical; no historical import aliases are

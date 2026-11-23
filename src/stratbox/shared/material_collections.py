@@ -12,7 +12,7 @@ from unicodedata import normalize
 
 from stratbox.shared.data.lineage import input_from, input_value
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.snapshots import SnapshotCoverage, identifier
+from stratbox.shared.data.snapshots import SnapshotCoverage, identifier, coverage_value, coverage_from
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -141,7 +141,7 @@ def collection_value(value: CollectionManifest) -> dict:
         } for x in value.members],
         "dispositions": [{"key": x.key, "status": x.status, "diagnostic": x.diagnostic}
                          for x in value.dispositions],
-        "coverage": {"status": value.coverage.status, "description": value.coverage.description},
+        "coverage": coverage_value(value.coverage),
         "inputs": [input_value(x) for x in value.inputs],
     }
 
@@ -184,7 +184,7 @@ def decode_collection(data: bytes) -> CollectionManifest:
                 _read_identity(item["descriptor_identity"]) if item["descriptor_identity"] is not None else None))
         result = CollectionManifest(value["collection_id"], value["version_id"], tuple(members),
             tuple(CollectionDisposition(**item) for item in value["dispositions"]),
-            SnapshotCoverage(**value["coverage"]), tuple(input_from(item) for item in value["inputs"]))
+            coverage_from(value["coverage"]), tuple(input_from(item) for item in value["inputs"]))
         if encode_collection(result) != data:
             raise ValueError("collection.manifest_noncanonical")
         return result

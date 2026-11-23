@@ -90,7 +90,7 @@ def flake_from_snapshot(snapshot):
             kind, formula, fmt, indent, tuple(tuple(pair) for pair in attrs)))
     values = []
     for index, name, rows, columns, ranges in sheets.rows:
-        if (rows < 0 or columns < 0 or rows * columns > 5_000_000 or any(cell.row > rows or cell.column > columns
+        if (rows < 0 or columns < 0 or len(grouped[index]) > 5_000_000 or any(cell.row > rows or cell.column > columns
                 for cell in grouped[index])):
             raise ValueError("cbr.workbook.snapshot_extent_invalid")
         merges = json.loads(ranges)

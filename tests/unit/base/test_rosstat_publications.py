@@ -17,9 +17,9 @@ from stratbox.domains.rosstat.publications.discovery.selection import (
 from stratbox.domains.rosstat.publications.discovery.coverage import (
     qualified_inventory_from_index, qualified_presence_from_index,
 )
-from stratbox.domains.rosstat.publications.operations import discover
+from stratbox.domains.rosstat.operations.publications import discover
 from stratbox.domains.rosstat.publications.download.envelope import detect_bytes
-from stratbox.domains.rosstat._source import allowed_file_url, file_request
+from stratbox.domains.rosstat.publications.access import allowed_file_url, file_request
 from stratbox.core.execution import OperationFailure
 from stratbox.domains.registry import operation_catalog
 

@@ -12,9 +12,12 @@ from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 
 def extract_document(payload: SourcePayload, *, series_id, issue_id, asset_id="main",
-                     profile_id="document.blocks.v1", profile_version=1, budget=None, checkpoint=None):
+                     profile_id="document.blocks.v1", profile_version=1, budget=None, checkpoint=None,
+                     max_pages=10_000):
     if not isinstance(payload, SourcePayload) or not 0 < len(payload.data) <= 128 * 1024 * 1024:
         raise ValueError("document.source_size_invalid")
+    if type(max_pages) is not int or not 1 <= max_pages <= 10_000:
+        raise ValueError("document.page_limit_invalid")
 
     def check(size=0):
         if budget is not None:
@@ -30,7 +33,7 @@ def extract_document(payload: SourcePayload, *, series_id, issue_id, asset_id="m
         reader = pypdf.PdfReader(BytesIO(payload.data), strict=True)
         if reader.is_encrypted:
             raise ValueError("document.encrypted_pdf")
-        if len(reader.pages) > 10000:
+        if len(reader.pages) > max_pages:
             raise ValueError("document.page_limit")
         for ordinal, page in enumerate(reader.pages):
             check()

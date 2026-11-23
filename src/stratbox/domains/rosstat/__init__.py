@@ -1,1 +1,1 @@
-"""Official Rosstat source families. Publication acquisition is a separate owner."""
+"""Rosstat publication families, source tables, integration and products."""

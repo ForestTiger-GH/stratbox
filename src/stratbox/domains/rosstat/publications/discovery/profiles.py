@@ -13,7 +13,7 @@ from pathlib import PurePosixPath
 import re
 from urllib.parse import unquote, urlsplit
 
-from stratbox.domains.rosstat._source import allowed_file_url, allowed_rosstat_base
+from stratbox.domains.rosstat.publications.access import allowed_file_url, allowed_rosstat_base
 from .links import parse_page_links
 from .coverage import assess
 from .families import RULES

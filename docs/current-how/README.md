@@ -6,6 +6,16 @@
 
 [Logical dataset snapshots and storage adapters](logical-dataset-snapshots.md)
 
+[Independent domain routes, source cards and portable replay](independent-domain-data-routes.md)
+
+[FNS source families and retained projections](fns-data-pipeline.md)
+
+[Rosstat tables, KEP2 and document routes](rosstat-data-route.md)
+
+[Minfin source, observation and product routes](minfin-data-route.md)
+
+[Frank RG supplied profiles and replay](frank-rg-data-route.md)
+
 [CBR publication registry and independent processing routes](cbr-data-pipeline.md)
 
 [CBR statistical workbooks: source cells, qualified observations and retained views](cbr-statistical-workbooks.md)
@@ -32,7 +42,7 @@
 
 [Processing roles, qualified connections and bounded operation discovery](processing-operation-catalog.md)
 
-**Status:** maintained current shared contracts and CBR processing routes, plus
+**Status:** maintained shared contracts and independent publisher processing routes, plus
 the nine bounded historical implementation slices below. The current route
 guides describe executable local operations and regression coverage. Full
 Current HOW reconstruction, deployed-state verification and independent

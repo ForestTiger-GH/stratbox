@@ -5,18 +5,18 @@ from stratbox.core.execution.contracts import OperationDefinition
 from stratbox.core.execution.semantics import InputPort, OutputPort, OperationSemantics, ProcessingStage as S, ProcessingFunction as F
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.workbooks import WorkbookExtract, WorkbookComparison, WORKBOOK_EXTRACT
-from stratbox.shared.data.documents import DocumentExtract, DOCUMENT_EXTRACT
+from stratbox.shared.data.workbooks import WorkbookExtract, WorkbookComparison, WORKBOOK_EXTRACT, WORKBOOK_SNAPSHOT as WORKBOOK_SNAPSHOT_CONTRACT
+from stratbox.shared.data.documents import DocumentExtract, DOCUMENT_EXTRACT, DOCUMENT_SNAPSHOT as DOCUMENT_SNAPSHOT_CONTRACT
 from stratbox.shared.data.observations import ObservationBatch
-from stratbox.shared.data.views import ObservationView, OBSERVATION_VIEW
+from stratbox.shared.data.views import ObservationView, OBSERVATION_VIEW, OBSERVATION_VIEW_SNAPSHOT
 from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.updates import ProcessingTarget, RetainedProcessing, UpdatePlan
 
-LIMITS = ExecutionBudget(input_bytes=128*1024*1024, output_bytes=512*1024*1024, cells=5_000_000)
+LIMITS = ExecutionBudget(input_bytes=512*1024*1024, output_bytes=512*1024*1024, cells=80_000_000)
 SNAPSHOT = DataContract("dataset.snapshot")
-PAYLOAD = DataContract("material.source", role=DataRole.ORIGINALS)
+PAYLOAD = DataContract("source.payload", role=DataRole.ORIGINALS)
 BATCH = DataContract("observations.batch", role=DataRole.INTEGRATED)
 
 
@@ -74,8 +74,11 @@ class UpdatePlanRequest:
 
 
 def definition(op, request, value, stages, inputs, output, *, function=F.PROCESS, parameters=(), summary):
+    outputs = (output,)
+    if function is F.ENCODE and value is DatasetSnapshot:
+        outputs += (OutputPort("dataset_snapshot", SNAPSHOT),)
     return OperationDefinition(op, 1, op.replace(".", "-")+"-1", request, value, limits=LIMITS,
-        processing=OperationSemantics(stages, inputs, (output,), parameters, summary, function=function))
+        processing=OperationSemantics(stages, inputs, outputs, parameters, summary, function=function))
 
 
 WORKBOOK = definition("workbook.extract", ExtractRequest, WorkbookExtract, (S.EXTRACT,),
@@ -85,10 +88,10 @@ WORKBOOK_READABLE = definition("workbook.readable", WorkbookRequest, Representat
     (InputPort("workbook", WORKBOOK_EXTRACT, "workbook"),), OutputPort("readable", DataContract("workbook.readable.jsonl", role=DataRole.READABLE)),
     summary="Render physical cell evidence as source-readable JSONL without assigning economic meaning.")
 WORKBOOK_SNAPSHOT = definition("workbook.snapshot", WorkbookRequest, DatasetSnapshot, (),
-    (InputPort("workbook", WORKBOOK_EXTRACT, "workbook"),), OutputPort("snapshot", SNAPSHOT), function=F.ENCODE,
+    (InputPort("workbook", WORKBOOK_EXTRACT, "workbook"),), OutputPort("snapshot", WORKBOOK_SNAPSHOT_CONTRACT), function=F.ENCODE,
     summary="Encode a complete workbook extract into independently addressable sheet partitions.")
 WORKBOOK_REPLAY = definition("workbook.replay", SnapshotRequest, WorkbookExtract, (),
-    (InputPort("snapshot", SNAPSHOT, "snapshot"),), OutputPort("workbook", WORKBOOK_EXTRACT), function=F.REPLAY,
+    (InputPort("snapshot", WORKBOOK_SNAPSHOT_CONTRACT, "snapshot"),), OutputPort("workbook", WORKBOOK_EXTRACT), function=F.REPLAY,
     summary="Restore every physical cell and source context from a verified workbook snapshot.")
 WORKBOOK_COMPARE = definition("workbook.compare", CompareWorkbooksRequest, WorkbookComparison, (S.COMPARE,),
     (InputPort("before", WORKBOOK_EXTRACT, "before"), InputPort("after", WORKBOOK_EXTRACT, "after")),
@@ -100,20 +103,20 @@ DOCUMENT_READABLE = definition("document.readable", DocumentRequest, Representat
     (InputPort("document", DOCUMENT_EXTRACT, "document"),), OutputPort("readable", DataContract("document.readable.jsonl", role=DataRole.READABLE)),
     summary="Render ordered document evidence and its source context as JSONL.")
 DOCUMENT_SNAPSHOT = definition("document.snapshot", DocumentRequest, DatasetSnapshot, (),
-    (InputPort("document", DOCUMENT_EXTRACT, "document"),), OutputPort("snapshot", SNAPSHOT), function=F.ENCODE,
+    (InputPort("document", DOCUMENT_EXTRACT, "document"),), OutputPort("snapshot", DOCUMENT_SNAPSHOT_CONTRACT), function=F.ENCODE,
     summary="Encode document blocks and qualifications for independent retention.")
 DOCUMENT_REPLAY = definition("document.replay", SnapshotRequest, DocumentExtract, (),
-    (InputPort("snapshot", SNAPSHOT, "snapshot"),), OutputPort("document", DOCUMENT_EXTRACT), function=F.REPLAY,
+    (InputPort("snapshot", DOCUMENT_SNAPSHOT_CONTRACT, "snapshot"),), OutputPort("document", DOCUMENT_EXTRACT), function=F.REPLAY,
     summary="Restore ordered document evidence without reacquiring the original.")
 VIEW = definition("observations.prepare_view", PrepareViewRequest, ObservationView, (S.VIEW,),
     (InputPort("batch", BATCH, "batch"),), OutputPort("view", OBSERVATION_VIEW),
     parameters=("view_id", "metric_ids", "period_kinds", "subject_ids", "coverage", "qualifications"),
     summary="Prepare an explicit observation selection preserving periods, missing states and provenance.")
 VIEW_SNAPSHOT = definition("observations.view_snapshot", ViewRequest, DatasetSnapshot, (),
-    (InputPort("view", OBSERVATION_VIEW, "view"),), OutputPort("snapshot", SNAPSHOT), function=F.ENCODE,
+    (InputPort("view", OBSERVATION_VIEW, "view"),), OutputPort("snapshot", OBSERVATION_VIEW_SNAPSHOT), function=F.ENCODE,
     summary="Encode a prepared observation view for independent replay.")
 VIEW_REPLAY = definition("observations.replay_view", SnapshotRequest, ObservationView, (),
-    (InputPort("snapshot", SNAPSHOT, "snapshot"),), OutputPort("view", OBSERVATION_VIEW), function=F.REPLAY,
+    (InputPort("snapshot", OBSERVATION_VIEW_SNAPSHOT, "snapshot"),), OutputPort("view", OBSERVATION_VIEW), function=F.REPLAY,
     summary="Restore a verified prepared observation view with its original selection provenance.")
 VIEW_RENDER = definition("observations.render_view", ViewRequest, Representation, (S.RENDER,),
     (InputPort("view", OBSERVATION_VIEW, "view"),), OutputPort("product", DataContract("observations.rendered_view", role=DataRole.PRODUCTS)),

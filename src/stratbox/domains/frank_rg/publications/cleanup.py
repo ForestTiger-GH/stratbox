@@ -86,10 +86,8 @@ def _plan_identity(request, actions, directory_identity, profile_versions) -> By
     }))
 
 
-def validate_plan(plan: CleanupPlan) -> None:
+def validate_plan(plan: CleanupPlan, *, bound_families: tuple, bound_sources: dict) -> None:
     """Check plan integrity and shallow directory scope without reading files."""
-    from ..operations.bindings import bind_family, bind_source
-    from .catalog import families
 
     def invalid():
         raise OperationFailure("effect.plan_invalid")
@@ -123,8 +121,8 @@ def validate_plan(plan: CleanupPlan) -> None:
         ):
             invalid()
         try:
-            bind_source(action.source_id)
-        except ValueError:
+            bound_sources[action.source_id]
+        except (ValueError, KeyError):
             invalid()
         for path in (action.source.path, action.destination):
             if path is None and action.kind == "remove":
@@ -155,7 +153,6 @@ def validate_plan(plan: CleanupPlan) -> None:
             action.kind == "rename" and not plan.request.delete_others
         ):
             invalid()
-    bound_families = tuple(bind_family(item.family_id) for item in families())
     if plan.identity != _plan_identity(
         plan.request, plan.actions, plan.directory_identity, _profile_versions(bound_families),
     ):
@@ -174,16 +171,13 @@ def _should_remove(asset: Asset, latest_paths: set[str]) -> bool:
     )
 
 
-def create_plan(request: PlanCleanupRequest, store, invocation) -> CleanupPlan:
+def create_plan(request: PlanCleanupRequest, store, invocation, *, bound_families: tuple, bound_sources: dict) -> CleanupPlan:
     """Read and qualify inputs; the caller must separately apply the proposal."""
-    from ..operations.bindings import bind_family, bind_source
-    from .catalog import families
     from .naming import build_internal_file_name, identify_index
 
     if type(request.delete_others) is not bool:
         raise OperationFailure("frg.cleanup.invalid_delete_flag")
     directory_identity = store.directory_identity(request.directory)
-    bound_families = tuple(bind_family(item.family_id) for item in families())
     discovery = bound_families[0].discovery
     if any(item.discovery != discovery for item in bound_families):
         raise OperationFailure("frg.profile.discovery_incompatible")
@@ -222,7 +216,7 @@ def create_plan(request: PlanCleanupRequest, store, invocation) -> CleanupPlan:
             raise OperationFailure("frg.selection.ambiguous")
         if len({inspect(item).identity for item in candidates}) != 1:
             raise OperationFailure("frg.selection.ambiguous")
-        bound = bind_source(selection.source_id)
+        bound = bound_sources[selection.source_id]
         canonical = child_path(request.directory, build_internal_file_name(
             candidates[0].period, bound.rule, format=candidates[0].format,
             profile=bound.parent.naming,
@@ -238,7 +232,7 @@ def create_plan(request: PlanCleanupRequest, store, invocation) -> CleanupPlan:
     destinations = set()
     for asset in latest:
         invocation.check_cancelled()
-        bound = bind_source(asset.source_id)
+        bound = bound_sources[asset.source_id]
         target_name = build_internal_file_name(
             asset.period, bound.rule, format=asset.format, profile=bound.parent.naming,
         )

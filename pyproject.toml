@@ -25,7 +25,7 @@ sors-restoration = ["stratbox[dataframe,excel]", "highspy>=1.11,<2"]
 test = [
   "pytest>=8.0",
   "scipy>=1.10",
-  "stratbox[http,dataframe,excel,excel-legacy,excel-binary,dbf,rar,sors-restoration]",
+  "stratbox[http,dataframe,excel,excel-legacy,excel-binary,dbf,rar,pdf,documents,sors-restoration]",
 ]
 
 [tool.setuptools]
@@ -43,6 +43,8 @@ version = {attr = "stratbox.__version__"}
 "stratbox.domains.cbr" = ["REGISTRY_*.yaml"]
 "stratbox.domains.minfin" = ["REGISTRY_*.yaml"]
 "stratbox.domains.frank_rg" = ["REGISTRY_*.yaml"]
+"stratbox.domains.fns" = ["REGISTRY_*.yaml"]
+"stratbox.domains.rosstat" = ["REGISTRY_*.yaml"]
 "stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk" = ["_resources/*.csv", "_resources/*.json"]
 
 [tool.setuptools.packages.find]

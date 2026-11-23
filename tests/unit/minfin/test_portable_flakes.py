@@ -23,7 +23,7 @@ def _budget_flake():
         (FlakeRow(9, "1", "Доходы, всего", ("100.0000", "110")),
          FlakeRow(12, "2", "Расходы, всего", ("120", "135")),
          FlakeRow(18, "3", "Дефицит (-)/Профицит (+)", ("-20", "-25"))),
-        "minfin.flake.budget.v1", "billion_rub",
+        "minfin.flake.budget.v2", "billion_rub",
     )
 
 

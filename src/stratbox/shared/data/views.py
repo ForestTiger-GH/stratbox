@@ -14,6 +14,7 @@ from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, Scalar
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 OBSERVATION_VIEW = DataContract("observations.prepared_view", 1, DataRole.PRODUCTS)
+OBSERVATION_VIEW_SNAPSHOT = DataContract("observations.prepared_view.snapshot", 1, DataRole.PRODUCTS)
 _SCHEMA = TableSchema(DataContract("observations.view.metadata", 1), (
     ColumnSchema("view_id", ScalarType.TEXT), ColumnSchema("source_sha256", ScalarType.TEXT),
     ColumnSchema("source_size", ScalarType.INTEGER), ColumnSchema("qualifications", ScalarType.TEXT)))

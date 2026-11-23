@@ -32,13 +32,13 @@ def _flake(kind):
                 FlakeRow(5, "2", "Расходы, всего", ("120", "135")),
                 FlakeRow(8, "3", "Дефицит (-)/Профицит (+)", ("-20", "-25")),
                 FlakeRow(9, "4", "No numeric coercion", (None, "")),
-            ), "minfin.flake.budget.v1", "billion_rub")
+            ), "minfin.flake.budget.v2", "billion_rub")
     return FlakeTable("minfin.nwf", "minfin.nwf.flows", ByteIdentity.of(b"nwf original"),
         "Source", "monthly", "stock", columns, (
-            FlakeRow(5, "2", "Объем на конец периода", ("100.0000", "110")),
-            FlakeRow(8, "5", "Размещено в иные разрешенные активы на конец периода", ("20", "30")),
+            FlakeRow(5, "2", "Объем на конец периода", ("100.0000", "110"), "RUB", "1000000000", "stock"),
+            FlakeRow(8, "5", "Размещено в иные разрешенные активы на конец периода", ("20", "30"), "RUB", "1000000000", "stock"),
             FlakeRow(9, "6", "Other source units", (None, "")),
-        ), "minfin.flake.nwf.v1", "mixed")
+        ), "minfin.flake.nwf.v2", "mixed")
 
 
 def _assert(result):

@@ -6,12 +6,13 @@ import json
 
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
-from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
+from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable, coverage_value
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
 
 DOCUMENT_EXTRACT = DataContract("document.blocks.extract", 1, DataRole.EXTRACTS)
+DOCUMENT_SNAPSHOT = DataContract("document.blocks.snapshot", 1, DataRole.EXTRACTS)
 _T, _I = ScalarType.TEXT, ScalarType.INTEGER
 _META = TableSchema(DataContract("document.extract.metadata", 1), tuple(ColumnSchema(n, t) for n, t in (
     ("series_id", _T), ("issue_id", _T), ("asset_id", _T), ("sha256", _T), ("size", _I),
@@ -117,7 +118,7 @@ def readable_document(value: DocumentExtract):
     records = [{"kind": "document", "series_id": value.series_id, "issue_id": value.issue_id,
         "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
         "profile_id": value.profile_id, "profile_version": value.profile_version,
-        "coverage": value.coverage.status, "qualifications": value.qualifications}]
+        "coverage": coverage_value(value.coverage), "qualifications": value.qualifications}]
     records.extend({"ordinal": b.ordinal, "kind": b.kind, "text": b.text, "page": b.page,
                     "rows": b.rows, "locator": b.locator} for b in value.blocks)
     return Representation("document.readable.jsonl", 1, "application/x-ndjson",

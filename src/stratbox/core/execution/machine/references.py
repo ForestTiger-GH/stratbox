@@ -12,6 +12,7 @@ from decimal import Decimal
 from enum import Enum
 import json
 import re
+from itertools import islice
 from typing import Protocol
 from uuid import uuid4
 
@@ -25,6 +26,37 @@ _REF = re.compile(r"[A-Za-z0-9_-]{1,256}\Z")
 class TypedValueResolver(Protocol):
     def resolve(self, reference: str, expected_type: type) -> object: ...
     def retain(self, value: object) -> str: ...
+    def reserve_result(self):
+        """Reserve an atomic result/value handle pair before execution."""
+        ...
+
+
+class _MemoryReservation:
+    def __init__(self, owner):
+        self.owner = owner
+        self.keys = ("value_"+uuid4().hex, "value_"+uuid4().hex)
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def commit(self, result):
+        if self.closed:
+            raise WireRequestError("reference.reservation_closed")
+        result_ref, value_ref = self.keys
+        self.owner._values[result_ref] = result
+        if result.value is not None:
+            self.owner._values[value_ref] = result.value
+        self.close()
+        return result_ref, value_ref if result.value is not None else None
+
+    def close(self):
+        if not self.closed:
+            self.owner._reserved -= 2
+            self.closed = True
+
+    def __exit__(self, *args):
+        self.close()
 
 
 class MemoryValueResolver:
@@ -34,13 +66,21 @@ class MemoryValueResolver:
             raise ValueError("reference.capacity_invalid")
         self.max_values = max_values
         self._values = {}
+        self._reserved = 0
 
     def retain(self, value):
-        if len(self._values) >= self.max_values:
+        if len(self._values) + self._reserved >= self.max_values:
             raise WireRequestError("reference.capacity_exhausted")
         key = "value_" + uuid4().hex
         self._values[key] = value
         return key
+
+    def reserve_result(self):
+        if len(self._values) + self._reserved + 2 > self.max_values:
+            raise WireRequestError("reference.capacity_exhausted")
+        reservation = _MemoryReservation(self)
+        self._reserved += 2
+        return reservation
 
     def resolve(self, reference, expected_type):
         if type(reference) is not str or not _REF.fullmatch(reference):
@@ -61,6 +101,8 @@ def _safe(value, *, remaining, depth=0, max_rows=20):
     if depth > 5 or remaining[0] <= 0:
         return {"truncated": True}
     remaining[0] -= 1
+    if type(value) is int and value.bit_length() > 1024:
+        return {"type": "integer", "bit_length": value.bit_length(), "value_omitted": "magnitude"}
     if value is None or type(value) in {int, bool}:
         return value
     if isinstance(value, Enum):
@@ -68,6 +110,8 @@ def _safe(value, *, remaining, depth=0, max_rows=20):
     if type(value) is str:
         return value if len(value) <= 1000 else value[:1000] + "…"
     if isinstance(value, Decimal):
+        if len(value.as_tuple().digits) > 1000:
+            return {"type": "decimal", "value_omitted": "precision"}
         return {"type": "decimal", "value": str(value)}
     if type(value) in {date, datetime}:
         return value.isoformat()
@@ -78,8 +122,9 @@ def _safe(value, *, remaining, depth=0, max_rows=20):
         return {"items": [_safe(v, remaining=remaining, depth=depth+1, max_rows=max_rows)
                           for v in value[:max_rows]], "count": len(value), "truncated": len(value) > max_rows}
     if isinstance(value, dict):
-        selected = list(value.items())[:max_rows]
-        return {str(k): _safe(v, remaining=remaining, depth=depth+1, max_rows=max_rows) for k, v in selected}
+        selected = islice(value.items(), max_rows)
+        return {(k[:1000] if type(k) is str else f"key_{i}_{type(k).__name__}"):
+            _safe(v, remaining=remaining, depth=depth+1, max_rows=max_rows) for i,(k,v) in enumerate(selected)}
     if is_dataclass(value):
         return {f.name: _safe(getattr(value, f.name), remaining=remaining, depth=depth+1, max_rows=max_rows)
                 for f in fields(value) if f.repr and not f.name.startswith("_")}
@@ -90,8 +135,12 @@ def preview_value(value, *, max_rows=20, max_bytes=32_768):
     if (type(max_rows) is not int or not 1 <= max_rows <= 100
             or type(max_bytes) is not int or not 256 <= max_bytes <= 131_072):
         raise WireRequestError("reference.preview_limit_invalid")
-    projected = _safe(value, remaining=[1000], max_rows=max_rows)
-    raw = json.dumps(projected, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
+    try:
+        projected = _safe(value, remaining=[1000], max_rows=max_rows)
+        raw = json.dumps(projected, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
+    except Exception:
+        # A preview is optional; it must never hide a retained effect receipt.
+        return {"type": type(value).__name__, "preview_omitted": "unsupported_value", "bounded": True}
     if len(raw) > max_bytes:
         return {"type": type(value).__name__, "preview_omitted": "byte_limit", "bounded": True}
     return projected
@@ -150,12 +199,12 @@ def invoke_reference(raw: bytes, *, catalog, values: TypedValueResolver, context
     typed = values.resolve(request["request_ref"], definition.request_type)
     if not isinstance(typed, definition.request_type):
         raise WireRequestError("reference.request_type_mismatch")
-    _, handler, _ = catalog.resolve(definition.operation_id, definition.contract_version)
-    result = handler(typed, context=context)
-    if not isinstance(result, OperationResult) or result.definition != definition:
-        raise WireRequestError("reference.result_mismatch")
-    result_ref = values.retain(result)
-    value_ref = values.retain(result.value) if result.value is not None else None
+    with values.reserve_result() as reservation:
+        _, handler, _ = catalog.resolve(definition.operation_id, definition.contract_version)
+        result = handler(typed, context=context)
+        if not isinstance(result, OperationResult) or result.definition != definition:
+            raise WireRequestError("reference.result_mismatch")
+        result_ref, value_ref = reservation.commit(result)
     response = {"operation_id": definition.operation_id, "contract_version": definition.contract_version,
         "method_version": definition.method_version, "outcome": result.outcome,
         "result_ref": result_ref, "value_ref": value_ref,

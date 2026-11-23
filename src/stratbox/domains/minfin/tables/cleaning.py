@@ -13,7 +13,7 @@ def _scalar(cell):
         return None
     if cell.kind == "formula":
         return cell.cached
-    if cell.kind in {"number", "date", "date_serial", "text"}:
+    if cell.kind in {"number", "date", "date_serial", "text", "blank", "error", "boolean"}:
         return cell.value
     return None
 
@@ -88,11 +88,15 @@ def build_flake(request: BuildFlakeRequest, *, profile: TableProfile, frequency:
         indicator = re.sub(profile.notes_pattern, "", indicator).strip()
         if not indicator:
             continue
+        monetary = profile.unit_hint == "billion_rub" or (
+            profile.profile_id == "minfin.nwf_table.v1" and code.rstrip(".") in {"2", "5"})
         cleaned.append(FlakeRow(row, code, indicator,
-                                 tuple(str(value) if value is not None and str(value) != "" else None
-                                       for value in values)))
+                                 tuple(str(value) if value is not None else None
+                                       for value in values),
+                                 "RUB" if monetary else None, "1000000000" if monetary else None,
+                                 basis if profile.unit_hint == "billion_rub" else ("stock" if monetary else None)))
     if not cleaned:
         raise ValueError("minfin.flake.no_table_rows")
     return FlakeTable(extract.family_id, extract.source_id, extract.source_identity,
                       sheet.name, frequency, basis, periods, tuple(cleaned),
-                      method_version=profile.method_version, unit_hint=profile.unit_hint)
+                      method_version=profile.method_version, unit_hint=profile.unit_hint, publication=extract.publication)

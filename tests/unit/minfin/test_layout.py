@@ -21,7 +21,7 @@ def test_root_has_only_canonical_registry_records_and_one_owner():
     }
     assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py"}
     assert {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")} == {
-        "publications", "tables", "analytics", "operations",
+        "publications", "tables", "analytics", "operations", "integration", "products", "documents",
     }
     assert all((root / name / "__init__.py").is_file()
                for name in ("publications", "tables", "analytics", "operations"))
@@ -51,12 +51,12 @@ def test_public_api_is_the_same_type_as_its_semantic_contract():
 def test_all_minfin_operations_resolve_to_one_owner_and_semantic_handlers():
     register = operation_catalog()
     ref = tuple(r for r in register.references if r.operation_id.startswith("minfin."))
-    assert len(ref) == 21
-    assert len({r.operation_id for r in ref}) == 21
+    assert len(ref) == 34
+    assert len({r.operation_id for r in ref}) == 34
     for operation in ref:
         assert register.owner_of(operation.operation_id, operation.contract_version) == "minfin"
-        assert operation.definition_ref.startswith("stratbox.domains.minfin.operations.definitions:")
-        assert operation.handler_ref.startswith("stratbox.domains.minfin.operations.handlers:")
+        assert operation.definition_ref.startswith("stratbox.domains.minfin.operations.")
+        assert operation.handler_ref.startswith("stratbox.domains.minfin.operations.")
         definition, handler, wire = register.resolve(operation.operation_id, operation.contract_version)
         assert definition.operation_id == operation.operation_id
         assert definition.contract_version == operation.contract_version

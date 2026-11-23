@@ -6,6 +6,7 @@ from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import DatasetSnapshot
+from ..publications.context import PublicationContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +18,10 @@ class Cell:
     value: str
     number_format: str = ""
     cached: str | None = None
+    raw_token: str | None = None
+    indent: int = 0
+    formula_attributes: tuple[tuple[str, str], ...] = ()
+    evidence_kind: str = "source_lexeme"
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +30,7 @@ class Sheet:
     rows: int
     columns: int
     cells: tuple[Cell, ...]
+    merged_ranges: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +42,8 @@ class TableExtract:
     sheets: tuple[Sheet, ...]
     member: str | None = None
     coverage: str = "nonempty_cells"
+    publication: PublicationContext | None = None
+    qualifications: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +55,7 @@ class ExtractRequest:
     selected_sheets: tuple[str, ...] = ()
     max_cells: int = 150_000
     csv_encoding: str = "utf-8-sig"
+    publication: PublicationContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +74,8 @@ class SheetChange:
     before_columns: int | None
     after_rows: int | None
     after_columns: int | None
+    before_merged_ranges: tuple[str, ...] = ()
+    after_merged_ranges: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +177,9 @@ class FlakeRow:
     code: str
     indicator: str
     values: tuple[str | None, ...]
+    unit: str | None = None
+    scale: str | None = None
+    value_basis: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,7 +193,8 @@ class FlakeTable:
     columns: tuple[FlakeColumn, ...]
     rows: tuple[FlakeRow, ...]
     method_version: str = "minfin.flake.v1"
-    unit_hint: str = "billion_rub"  # per-row units in NWF may differ; only headline metrics use RUB
+    unit_hint: str = "billion_rub"
+    publication: PublicationContext | None = None
 
     @property
     def latest_period(self) -> str:

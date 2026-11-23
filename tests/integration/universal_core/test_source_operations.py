@@ -14,8 +14,8 @@ from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.releases import CompareReleaseRequest, ReadReleaseRequest
 import stratbox.domains.cbr.operations.service_network.bank_offices as daily
 import stratbox.domains.cbr.operations.service_network.territorial_offices as monthly
-from stratbox.domains.fns import legal_entities_1yur
-from stratbox.domains.fns import sme_register
+from stratbox.domains.fns.operations import legal_entities as legal_entities_1yur
+from stratbox.domains.fns.operations import sme as sme_register
 
 from source_fixtures import (
     FORM_EPOCHS,

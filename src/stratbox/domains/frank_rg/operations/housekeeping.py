@@ -26,13 +26,29 @@ from ..publications.cleanup import (
     CleanupPlan,
     CleanupReceipt,
     PlanCleanupRequest,
-    create_plan,
-    validate_plan,
+    create_plan as _create_plan,
+    validate_plan as _validate_plan,
 )
 
 from .housekeeping_definitions import (
     APPLY, ARCHIVE, PLAN, STREAM_ARCHIVE, StreamArchiveRequest,
 )
+
+
+def _cleanup_bindings():
+    from .bindings import bind_family, bind_source
+    from ..publications.catalog import families
+    groups = tuple(bind_family(item.family_id) for item in families())
+    sources = {series.source_id: bind_source(series.source_id) for group in groups for series in group.source.series}
+    return {"bound_families": groups, "bound_sources": sources}
+
+
+def create_plan(request, store, invocation):
+    return _create_plan(request, store, invocation, **_cleanup_bindings())
+
+
+def validate_plan(plan):
+    return _validate_plan(plan, **_cleanup_bindings())
 
 
 def _archive_manifest(plan: CleanupPlan, report_json: bytes | None = None) -> bytes:

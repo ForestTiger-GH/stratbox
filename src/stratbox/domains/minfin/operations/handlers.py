@@ -24,6 +24,7 @@ from ..tables.contracts import (
 from ..analytics.contracts import SummaryRequest, NoticeRequest, NoticePreparation
 from .contracts import CaptureRequest, CaptureResult
 from ..publications.catalog import family
+from ..publications.context import context_for
 from ..publications.access import PAGE_MIMES, page_request, allowed_page
 from ..publications.discovery import discover_links, enrich_index, identify_index
 from ..tables.extraction import compare_tables, extract_tables, validate_tables
@@ -133,7 +134,8 @@ def capture(request: CaptureRequest, *, transport: HttpTransport | None = None,
         if req.asset.format == "pdf":
             raise OperationFailure("minfin.pdf_requires_readable_operation")
         value = _extract(ExtractRequest(req.asset.family_id, acquired.source.payload, req.asset.format,
-                                        req.member, req.selected_sheets, req.max_cells), invocation)
+                                        req.member, req.selected_sheets, req.max_cells,
+                                        publication=context_for(req.asset)), invocation)
         return CaptureResult(acquired, value)
     return run(D.CAPTURE, request, work, context=context, providers={"http": transport},
                provider_selections={} if selection is None else {"http": selection})

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
-
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.core.execution.contracts import OperationDefinition
 from stratbox.domains.cbr.operations.corporate_lending.industry.limits import TABLE_LIMITS as _TABLE_LIMITS

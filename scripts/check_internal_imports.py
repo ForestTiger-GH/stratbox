@@ -186,21 +186,24 @@ def _source_publisher(path: Path) -> str | None:
     return parts[1] if (parent / "__init__.py").is_file() else None
 
 
-_CBR_LAYER_DEPENDENCIES = {
+_DOMAIN_LAYER_DEPENDENCIES = {
     "publications": {"publications"},
-    "tables": {"publications", "tables"},
-    "integration": {"publications", "tables", "integration"},
-    "analytics": {"publications", "tables", "integration", "analytics"},
-    "products": {"publications", "tables", "integration", "analytics", "products"},
+    "documents": {"publications", "documents"},
+    "tables": {"publications", "documents", "tables"},
+    "integration": {"publications", "documents", "tables", "integration"},
+    "analytics": {"publications", "documents", "tables", "integration", "analytics"},
+    "products": {"publications", "documents", "tables", "integration", "analytics", "products"},
 }
 
 
-def _cbr_layer_violation(relative: str, target: str) -> bool:
-    prefix = "stratbox.domains.cbr."
+def _domain_layer_violation(relative: str, target: str) -> bool:
     parts = relative.split("/")
-    if len(parts) < 4 or parts[:2] != ["domains", "cbr"] or not target.startswith(prefix):
+    if len(parts) < 4 or parts[0] != "domains":
         return False
-    allowed = _CBR_LAYER_DEPENDENCIES.get(parts[2])
+    prefix = f"stratbox.domains.{parts[1]}."
+    if not target.startswith(prefix):
+        return False
+    allowed = _DOMAIN_LAYER_DEPENDENCIES.get(parts[2])
     return allowed is not None and target[len(prefix):].split(".")[0] not in allowed
 
 
@@ -243,8 +246,8 @@ def check_dependency_direction() -> list[str]:
                 failures.append(f"{prefix}: shared contracts depend on executable core {target}")
             if owner == "domains.registry" and _domain(target, owners):
                 failures.append(f"{prefix}: domain catalog depends on concrete domain {target}")
-            if _cbr_layer_violation(relative, target):
-                failures.append(f"{prefix}: upward CBR functional import {target}")
+            if _domain_layer_violation(relative, target):
+                failures.append(f"{prefix}: upward domain functional import {target}")
             target_domain = _domain(target, owners)
             if _is_legacy_domain_path(target):
                 failures.append(f"{prefix}: obsolete domain import {target}")

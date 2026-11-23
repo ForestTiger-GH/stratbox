@@ -3,12 +3,10 @@ from __future__ import annotations
 import csv
 from datetime import date, datetime, time
 from decimal import Decimal
-from io import BytesIO, StringIO
+from io import StringIO
 from math import isfinite
 
 from stratbox.core.formats.archives.members import ArchiveLimits, extract_members
-from stratbox.core.formats.spreadsheets.workbook_input import workbook_profile
-from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from .contracts import (Cell, CellChange, CompareRequest, ExtractRequest, Sheet,
                         SheetChange, TableComparison, TableExtract, ValidateRequest, Validation)
@@ -64,92 +62,39 @@ def _tables_csv(data: bytes, max_cells: int, *, encoding: str) -> tuple[Sheet, .
     return (Sheet("CSV", rows, largest, tuple(cells)),)
 
 
-def _tables_xlsx(data: bytes, kind: str, selected_sheets: tuple[str, ...], max_cells: int) -> tuple[Sheet, ...]:
-    require_extra("openpyxl", "excel")
-    from openpyxl import load_workbook
-    try:
-        main = load_workbook(BytesIO(data), read_only=True, data_only=False, keep_links=False)
-        values = load_workbook(BytesIO(data), read_only=True, data_only=True, keep_links=False)
-        try:
-            all_names = tuple(main.sheetnames)
-            names = selected_sheets or all_names
-            if len(set(names)) != len(names) or not names or any(name not in all_names for name in names):
-                raise ValueError("minfin.sheet_selection_invalid")
-            result: list[Sheet] = []
-            count = 0
-            for name in names:
-                sh, cached = main[name], values[name]
-                rows, cols = sh.max_row or 0, sh.max_column or 0
-                if rows * cols > max_cells * 8 or rows > 1_000_000 or cols > 16_384:
-                    raise ValueError("minfin.sheet_dense_limit")
-                cells: list[Cell] = []
-                for row, cached_row in zip(sh.iter_rows(), cached.iter_rows()):
-                    for item, cv in zip(row, cached_row):
-                        if item.value is None:
-                            continue
-                        count += 1
-                        if count > max_cells:
-                            raise ValueError("minfin.cell_limit")
-                        if item.data_type == "f":
-                            value, ckind = _value(item.value)
-                            cache, _ = _value(cv.value)
-                            cells.append(Cell(name, item.row, item.column, "formula", value,
-                                              item.number_format or "", cache if cv.value is not None else None))
-                        elif item.data_type == "e":
-                            value, _ = _value(item.value)
-                            cells.append(Cell(name, item.row, item.column, "error", value, item.number_format or ""))
-                        else:
-                            value, ckind = _value(item.value)
-                            cells.append(Cell(name, item.row, item.column, ckind, value, item.number_format or ""))
-                result.append(Sheet(name, rows, cols, tuple(cells)))
-            return tuple(result)
-        finally:
-            main.close()
-            values.close()
-    except (OSError, KeyError, IndexError, EOFError, TypeError):
-        raise ValueError("minfin.workbook_invalid") from None
-
-
-def _tables_xls(data: bytes, selected_sheets: tuple[str, ...], max_cells: int) -> tuple[Sheet, ...]:
-    require_extra("xlrd", "excel-legacy")
-    import xlrd
-    try:
-        book = xlrd.open_workbook(file_contents=data, on_demand=True)
-        try:
-            all_names = tuple(book.sheet_names())
-            names = selected_sheets or all_names
-            if len(set(names)) != len(names) or not names or any(n not in all_names for n in names):
-                raise ValueError("minfin.sheet_selection_invalid")
-            results = []
-            count = 0
-            for name in names:
-                sh = book.sheet_by_name(name)
-                if sh.nrows * sh.ncols > max_cells * 8:
-                    raise ValueError("minfin.sheet_dense_limit")
-                cells = []
-                for r in range(sh.nrows):
-                    for c in range(sh.ncols):
-                        val = sh.cell(r, c)
-                        if val.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
-                            continue
-                        count += 1
-                        if count > max_cells:
-                            raise ValueError("minfin.cell_limit")
-                        if val.ctype == xlrd.XL_CELL_ERROR:
-                            value, kind = str(val.value), "error"
-                        elif val.ctype == xlrd.XL_CELL_BOOLEAN:
-                            value, kind = _value(bool(val.value))
-                        elif val.ctype == xlrd.XL_CELL_DATE:
-                            value, kind = repr(val.value), "date_serial"  # retain epoch/basis without guessing timezone
-                        else:
-                            value, kind = _value(val.value)
-                        cells.append(Cell(name, r + 1, c + 1, kind, value))
-                results.append(Sheet(name, sh.nrows, sh.ncols, tuple(cells)))
-            return tuple(results)
-        finally:
-            book.release_resources()
-    except (OSError, xlrd.XLRDError):
-        raise ValueError("minfin.workbook_invalid") from None
+def _tables_workbook(data: bytes, kind: str, selected_sheets: tuple[str, ...], max_cells: int, invocation=None):
+    from stratbox.core.formats.spreadsheets.extracts import extract_workbook
+    book = extract_workbook(SourcePayload(data), series_id="minfin.material", issue_id="unidentified",
+        budget=invocation.budget if invocation is not None else None,
+        checkpoint=invocation.check_cancelled if invocation is not None else None)
+    if book.format != kind:
+        raise ValueError("minfin.workbook_type_mismatch")
+    names = selected_sheets or tuple(sheet.name for sheet in book.sheets)
+    if not names or len(set(names)) != len(names) or any(name not in {s.name for s in book.sheets} for name in names):
+        raise ValueError("minfin.sheet_selection_invalid")
+    selected = {sheet.name: sheet for sheet in book.sheets}
+    count = 0
+    result = []
+    for name in names:
+        sheet = selected[name]
+        cells = []
+        for item in sheet.cells:
+            count += 1
+            if count > max_cells:
+                raise ValueError("minfin.cell_limit")
+            text, cell_kind = _value(item.value)
+            if item.kind == "e":
+                cell_kind = "error"
+            if item.formula is not None:
+                cached = text if item.value is not None else None
+                cells.append(Cell(name, item.row, item.column, "formula", "=" + item.formula,
+                                  item.number_format, cached, item.raw_token, item.indent,
+                                  item.formula_attributes, item.evidence_kind))
+            else:
+                cells.append(Cell(name, item.row, item.column, cell_kind, text, item.number_format,
+                                  None, item.raw_token, item.indent, (), item.evidence_kind))
+        result.append(Sheet(name, sheet.rows, sheet.columns, tuple(cells), sheet.merged_ranges))
+    return tuple(result), book.qualifications
 
 
 def extract_tables(request: ExtractRequest, invocation=None, *,
@@ -165,6 +110,8 @@ def extract_tables(request: ExtractRequest, invocation=None, *,
         raise ValueError("minfin.binding_missing")
     if request.payload.source_id is not None and request.payload.source_id not in allowed_sources:
         raise ValueError("minfin.source_family_mismatch")
+    if request.publication is not None and request.publication.series_id != request.payload.source_id:
+        raise ValueError("minfin.publication_source_mismatch")
     data = request.payload.data
     member = request.member
     ext = request.format
@@ -184,23 +131,19 @@ def extract_tables(request: ExtractRequest, invocation=None, *,
     elif member is not None:
         raise ValueError("minfin.member_not_applicable")
     if ext in {"xlsx", "xlsm", "xls"}:
-        profile = workbook_profile(data, budget=invocation.budget if invocation is not None else None,
-                                   cancelled=invocation.cancelled if invocation is not None else None)
-        if profile.kind != ext:
-            raise ValueError("minfin.workbook_type_mismatch")
-        profile.check_materialization(invocation.budget if invocation is not None else None)
-        tables = (_tables_xls(data, request.selected_sheets, request.max_cells) if ext == "xls"
-                  else _tables_xlsx(data, ext, request.selected_sheets, request.max_cells))
+        tables, qualifications = _tables_workbook(data, ext, request.selected_sheets, request.max_cells, invocation)
     elif ext == "csv":
         if request.selected_sheets and request.selected_sheets != ("CSV",):
             raise ValueError("minfin.sheet_selection_invalid")
         tables = _tables_csv(data, request.max_cells, encoding=request.csv_encoding)
+        qualifications = ("CSV source fields retain lexical text; numeric and date semantics are unapplied.",)
     else:
         raise ValueError("minfin.extract_unsupported_format")
     if invocation is not None:
         invocation.check_cancelled()
     return TableExtract(request.family_id, request.payload.source_id or request.family_id + ".attachments",
-                        request.payload.identity, request.format, tables, member)
+                        request.payload.identity, request.format, tables, member,
+                        publication=request.publication, qualifications=qualifications)
 
 
 def compare_tables(request: CompareRequest) -> TableComparison:
@@ -219,8 +162,10 @@ def compare_tables(request: CompareRequest) -> TableComparison:
         a, b = old_layout.get(name), new_layout.get(name)
         previous = (a.rows, a.columns) if a is not None else (None, None)
         current = (b.rows, b.columns) if b is not None else (None, None)
-        if previous != current:
-            layout_changes.append(SheetChange(name, previous[0], previous[1], current[0], current[1]))
+        old_merges = a.merged_ranges if a is not None else ()
+        new_merges = b.merged_ranges if b is not None else ()
+        if previous != current or old_merges != new_merges:
+            layout_changes.append(SheetChange(name, previous[0], previous[1], current[0], current[1], old_merges, new_merges))
     changes = []
     for key in sorted(set(old) | set(new)):
         if old.get(key) != new.get(key):

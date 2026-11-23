@@ -15,6 +15,7 @@ from stratbox.core.execution.semantics import (
     OutputPort,
     OperationSemantics,
     ProcessingStage,
+    ProcessingFunction,
 )
 
 
@@ -74,7 +75,7 @@ PLAN = OperationDefinition(
     CleanupPlan,
     _STORE,
     processing=OperationSemantics(
-        stages=(ProcessingStage.INSPECT,),
+        stages=(), function=ProcessingFunction.MAINTAIN,
         summary="Prepare a read-only, revision-bound report cleanup proposal.",
         outputs=(OutputPort("plan", DataContract("frg.cleanup_plan", 1, None)),),
         parameters=("directory", "delete_others"),
@@ -91,7 +92,7 @@ APPLY = OperationDefinition(
     _EFFECTS,
     partial_allowed=True,
     processing=OperationSemantics(
-        stages=(ProcessingStage.PUBLISH,),
+        stages=(), function=ProcessingFunction.MAINTAIN,
         summary="Apply explicitly authorized cleanup effects with per-action receipts.",
         inputs=(
             InputPort("plan", DataContract("frg.cleanup_plan", 1, None), path="plan"),

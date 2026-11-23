@@ -117,7 +117,7 @@ def test_analytical_preparation_can_consume_source_tables(tmp_path):
         "from stratbox.domains.cbr.operations.corporate_lending.debt import operations\n",
         encoding="utf-8",
     )
-    assert any("upward CBR functional import" in x for x in checker["check_dependency_direction"]())
+    assert any("upward domain functional import" in x for x in checker["check_dependency_direction"]())
 
 
 def test_source_tables_share_source_schemas_without_importing_operations(tmp_path):
@@ -136,7 +136,7 @@ def test_source_tables_share_source_schemas_without_importing_operations(tmp_pat
         "import operations\n",
         encoding="utf-8",
     )
-    assert any("upward CBR functional import" in x for x in checker["check_dependency_direction"]())
+    assert any("upward domain functional import" in x for x in checker["check_dependency_direction"]())
 
 def test_source_tables_cannot_import_product_or_calculation_logic(tmp_path):
     checker, domains = _checker(tmp_path)
@@ -148,5 +148,5 @@ def test_source_tables_cannot_import_product_or_calculation_logic(tmp_path):
         encoding="utf-8",
     )
     problems = checker["check_dependency_direction"]()
-    assert any("upward CBR functional import" in message and "rendering" in message for message in problems)
-    assert any("upward CBR functional import" in message and "calculation" in message for message in problems)
+    assert any("upward domain functional import" in message and "rendering" in message for message in problems)
+    assert any("upward domain functional import" in message and "calculation" in message for message in problems)

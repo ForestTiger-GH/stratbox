@@ -1,42 +1,33 @@
-"""Versioned official landing pages, not hardcoded monthly download URLs."""
-
-from __future__ import annotations
-
+"""Editioned family registries; no executable parser or engine imports."""
+from functools import lru_cache
+from importlib.resources import files
+import json
 from .contracts import RosstatSourceSpec
 
-_SOURCES = (
-    RosstatSourceSpec(
-        "rosstat.socioeconomic_russia", "Социально-экономическое положение России",
-        "https://rosstat.gov.ru/compendium/document/50801",
-        "socioeconomic_russia", frozenset({"pdf"}), "monthly",
-    ),
-    RosstatSourceSpec(
-        "rosstat.socioeconomic_regions", "Социально-экономическое положение субъектов РФ",
-        "https://rosstat.gov.ru/folder/11109/document/13259",
-        "socioeconomic_regions", frozenset({"zip", "rar"}), "monthly",
-    ),
-    RosstatSourceSpec(
-        "rosstat.short_term_indicators", "Краткосрочные экономические показатели РФ",
-        "https://rosstat.gov.ru/compendium/document/50802",
-        "short_term_indicators", frozenset({"xlsx"}), "monthly",
-    ),
-    RosstatSourceSpec(
-        "rosstat.population_municipalities", "Численность населения по муниципальным образованиям",
-        "https://rosstat.gov.ru/compendium/document/13282",
-        "population_municipalities", frozenset({"xlsx"}), "annual",
-    ),
+_REGISTRIES = (
+    "REGISTRY_SOCIOECONOMIC_RUSSIA.yaml", "REGISTRY_SOCIOECONOMIC_REGIONS.yaml",
+    "REGISTRY_SHORT_TERM_INDICATORS.yaml", "REGISTRY_POPULATION_MUNICIPALITIES.yaml",
 )
-_BY_ID = {source.series_id: source for source in _SOURCES}
-if len(_BY_ID) != len(_SOURCES):
-    raise RuntimeError("rosstat.catalog_duplicate")
 
-
+@lru_cache(maxsize=1)
 def list_rosstat_sources() -> tuple[RosstatSourceSpec, ...]:
-    return _SOURCES
+    values = []
+    for name in _REGISTRIES:
+        record = json.loads(files("stratbox.domains.rosstat").joinpath(name).read_text(encoding="utf-8"))
+        if record["schema"] != "stratbox.rosstat.registry.v1" or record["publisher_id"] != "rosstat":
+            raise ValueError("rosstat.registry_invalid")
+        values.append(RosstatSourceSpec(
+            record["family_id"], record["title"], record["landing_url"],
+            record["profiles"]["discovery"], frozenset(record["accepted_formats"]),
+            record["frequency_hint"],
+        ))
+    if len({value.series_id for value in values}) != len(values):
+        raise ValueError("rosstat.catalog_duplicate")
+    return tuple(values)
 
 
 def get_rosstat_source(series_id: str) -> RosstatSourceSpec:
-    try:
-        return _BY_ID[series_id]
-    except (KeyError, TypeError):
-        raise ValueError("rosstat.series_unknown") from None
+    for value in list_rosstat_sources():
+        if value.series_id == series_id:
+            return value
+    raise ValueError("rosstat.series_unknown")

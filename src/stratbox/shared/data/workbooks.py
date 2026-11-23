@@ -12,13 +12,16 @@ import json
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.scalars import encode_scalar, decode_scalar
-from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
+from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable, coverage_value
 from stratbox.shared.data.workbook_cells import WorkbookCell, SheetCells, validate_sheet_cells
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
 
 WORKBOOK_EXTRACT = DataContract("workbook.cells.extract", 1, DataRole.EXTRACTS)
+# The wrapper port describes a DatasetSnapshot; its manifest retains the
+# logical extract contract. A live extract and its retained encoding differ.
+WORKBOOK_SNAPSHOT = DataContract("workbook.cells.snapshot", 1, DataRole.EXTRACTS)
 _T, _I = ScalarType.TEXT, ScalarType.INTEGER
 _META = TableSchema(DataContract("workbook.extract.metadata", 1), tuple(ColumnSchema(n, t) for n, t in (
     ("series_id", _T), ("issue_id", _T), ("asset_id", _T), ("sha256", _T), ("size", _I),
@@ -33,6 +36,7 @@ _CELLS = TableSchema(DataContract("workbook.extract.cells", 1), (
     ColumnSchema("indent", _I), ColumnSchema("formula_attributes", _T), ColumnSchema("evidence_kind", _T),
 ), ("row", "column"))
 _PARTITION_ROWS = 20_000
+_PARTITION_BYTES = 8 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +88,26 @@ def _array(value):
     return decoded
 
 
+def _cell_partitions(sheet):
+    """Bound both row count and conservative encoded size before table building."""
+    current, size = [], 0
+    for c in sheet.cells:
+        row = (c.row, c.column, c.coordinate, *encode_scalar(c.value), c.raw_token,
+               c.kind, c.formula, c.number_format, c.indent, _json(c.formula_attributes), c.evidence_kind)
+        # Six bytes per character bounds JSON escapes and UTF-8; scalar fields
+        # and separators have a small constant envelope.
+        upper = 256 + sum(6 * len(v) for v in row if isinstance(v, str))
+        if upper > _PARTITION_BYTES:
+            raise ValueError("workbook.cell_serialization_limit")
+        if current and (len(current) >= _PARTITION_ROWS or size + upper > _PARTITION_BYTES):
+            yield tuple(current)
+            current, size = [], 0
+        current.append(row)
+        size += upper
+    if current or not sheet.cells:
+        yield tuple(current)
+
+
 def workbook_snapshot(value: WorkbookExtract, *, dataset_id=None, version_id=None):
     if not isinstance(value, WorkbookExtract):
         raise TypeError("workbook.extract_required")
@@ -93,13 +117,11 @@ def workbook_snapshot(value: WorkbookExtract, *, dataset_id=None, version_id=Non
         value.profile_id, value.profile_version, _json(value.qualifications)),))
     sheet_rows, partitions = [], []
     for sheet in value.sheets:
-        count = max(1, (len(sheet.cells) + _PARTITION_ROWS - 1) // _PARTITION_ROWS)
-        sheet_rows.append((sheet.index, sheet.name, sheet.rows, sheet.columns, _json(sheet.merged_ranges), count))
-        for part in range(count):
-            rows = tuple((c.row, c.column, c.coordinate, *encode_scalar(c.value), c.raw_token,
-                c.kind, c.formula, c.number_format, c.indent, _json(c.formula_attributes), c.evidence_kind)
-                for c in sheet.cells[part * _PARTITION_ROWS:(part + 1) * _PARTITION_ROWS])
+        count = 0
+        for part, rows in enumerate(_cell_partitions(sheet)):
             partitions.append((f"sheet_{sheet.index:04d}_{part:05d}", TypedTable(_CELLS, rows)))
+            count += 1
+        sheet_rows.append((sheet.index, sheet.name, sheet.rows, sheet.columns, _json(sheet.merged_ranges), count))
     result = DatasetSnapshot.build(dataset_id or value.series_id, version_id or "content", WORKBOOK_EXTRACT,
         (("metadata", meta), ("sheets", TypedTable(_SHEETS, tuple(sheet_rows))), *partitions),
         coverage=value.coverage, inputs=value.lineage)
@@ -118,7 +140,7 @@ def workbook_from_snapshot(snapshot: DatasetSnapshot) -> WorkbookExtract:
     series, issue, asset, sha, size, fmt, profile, version, qualifications = meta.rows[0]
     restored, expected = [], ["metadata", "sheets"]
     for index, name, rows, columns, merges, count in sheets.rows:
-        if type(count) is not int or not 1 <= count <= 250:
+        if type(count) is not int or not 1 <= count <= 10_000:
             raise ValueError("workbook.partition_count_invalid")
         cells = []
         for part in range(count):
@@ -147,7 +169,7 @@ def readable_workbook(value: WorkbookExtract) -> Representation:
     records = [{"kind": "workbook", "series_id": value.series_id, "issue_id": value.issue_id,
         "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
         "profile_id": value.profile_id, "profile_version": value.profile_version,
-        "coverage": {"status": value.coverage.status, "description": value.coverage.description},
+        "coverage": coverage_value(value.coverage),
         "qualifications": value.qualifications}]
     for sheet in value.sheets:
         records.append({"kind": "sheet", "index": sheet.index, "name": sheet.name,

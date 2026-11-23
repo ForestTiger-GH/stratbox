@@ -1,0 +1,18 @@
+{
+  "schema": "stratbox.rosstat.registry.v1",
+  "family_id": "rosstat.short_term_indicators",
+  "publisher_id": "rosstat",
+  "title": "Краткосрочные экономические показатели РФ",
+  "landing_url": "https://rosstat.gov.ru/compendium/document/50802",
+  "accepted_formats": [
+    "xlsx"
+  ],
+  "frequency_hint": "monthly",
+  "profiles": {
+    "discovery": "short_term_indicators",
+    "table": "rosstat.kep2.v1"
+  },
+  "source_scope": "publisher_issue_and_asset",
+  "integration": "explicit_metric_period_unit_geography",
+  "coverage_policy": "reviewed_selection_with_exact_source_lineage"
+}

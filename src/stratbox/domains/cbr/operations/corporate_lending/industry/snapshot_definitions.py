@@ -1,6 +1,6 @@
 """Identical snapshot transport semantics with independent family contracts."""
 from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingStage
+from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingFunction
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.snapshots import DatasetSnapshot
 
@@ -24,13 +24,13 @@ def snapshot_definitions(family, kind, value_type):
     return (
         OperationDefinition(f"{prefix}.{kind}_snapshot", 1, "cbr-industry-snapshot-1", IndustrySnapshotRequest,
             DatasetSnapshot, limits=TABLE_LIMITS, processing=OperationSemantics(
-                stages=(ProcessingStage.RENDER,), summary=f"Encode a complete {kind} with table schemas and domain context.",
+                stages=(), function=ProcessingFunction.ENCODE, summary=f"Encode a complete {kind} with table schemas and domain context.",
                 inputs=(InputPort("value", value_contract, path="value"),),
                 outputs=(OutputPort("snapshot", snapshot), OutputPort("dataset", generic)),
                 parameters=("dataset_id", "version_id"))),
         OperationDefinition(f"{prefix}.read_{kind}_snapshot", 1, "cbr-industry-snapshot-1", ReadIndustrySnapshotRequest,
             value_type, limits=TABLE_LIMITS, processing=OperationSemantics(
-                stages=(ProcessingStage.READ_EXTRACT,), summary=f"Restore a complete {kind} and validate its original table identities.",
+                stages=(), function=ProcessingFunction.REPLAY, summary=f"Restore a complete {kind} and validate its original table identities.",
                 inputs=(InputPort("snapshot", snapshot, path="snapshot", alternatives=(generic,)),),
                 outputs=(OutputPort("value", value_contract),))),
     )

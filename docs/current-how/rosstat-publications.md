@@ -1,9 +1,13 @@
 # Rosstat originals: discovery, version comparison, publication, notification
 
-The publication owner identifies official **series → publisher issue → file
+The publication package within the single `rosstat` owner identifies official **series → publisher issue → file
 asset → byte version**. It does not parse statistical tables, define
 observation periods or choose an application's filenames. Parsing, archive
 extraction, flakes, calculations and presentation are separate operations.
+
+The full table-to-product route is documented in [Rosstat data processing](rosstat-data-route.md).
+Publication operations live under `stratbox.domains.rosstat.operations.publications`;
+selection, review and update operations are also registered under the root owner.
 
 ## Four official landing-page registrations
 
@@ -31,7 +35,7 @@ from stratbox.domains.rosstat.publications.contracts import (
 from stratbox.domains.rosstat.publications.discovery.selection import (
     select_assets, compare_publication_indices,
 )
-from stratbox.domains.rosstat.publications.operations import discover, acquire, acquire_to_store
+from stratbox.domains.rosstat.operations.publications import discover, acquire, acquire_to_store
 from stratbox.core.operations.source.originals import OriginalDestination
 from stratbox.core.storage.filestore import LocalFileStore
 

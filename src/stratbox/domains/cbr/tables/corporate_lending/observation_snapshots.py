@@ -5,7 +5,7 @@ import json
 from stratbox.core.formats.dataframes import frame_to_table, frame_from_table
 from stratbox.shared.data.lineage import computation_value, computation_from, input_value, input_from
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
+from stratbox.shared.data.snapshots import coverage_from, ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
 from stratbox.shared.data.tables import TABLE_ENCODING, table_identity
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -84,7 +84,7 @@ def from_snapshot(value, *, checkpoint=None):
     result = CorporateSourceDataset(data["series_id"], data["issue_id"], ByteIdentity(**data["source_identity"]),
         data["profile_id"], data["profile_version"], frame_from_table(table, data["descriptor"], checkpoint=checkpoint),
         tuple(data["available_periods"]), tuple(data["selected_periods"]), tuple(tuple(item) for item in data["diagnostics"]),
-        SnapshotCoverage(**data["coverage"]), tuple(input_from(item) for item in data["lineage"]),
+        coverage_from(data["coverage"]), tuple(input_from(item) for item in data["lineage"]),
         computation_from(data["evidence"]), asset_id=data["asset_id"])
     validate(result, require_seal=True)
     return result

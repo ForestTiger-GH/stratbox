@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "domain_id": "fns",
+  "families": [
+    {"family_id": "fns.sme", "registry": "REGISTRY_SME.yaml"},
+    {"family_id": "fns.legal_entities", "registry": "REGISTRY_LEGAL_ENTITIES.yaml"}
+  ]
+}

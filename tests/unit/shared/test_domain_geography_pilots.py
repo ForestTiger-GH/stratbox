@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from stratbox.domains.fns.sme_register.parser import inspect_region_names
+from stratbox.domains.fns.tables.sme.parser import inspect_region_names
 from stratbox.domains.cbr.tables.corporate_lending.industry.geography import normalize_cbr_0105a_region_name
 
 

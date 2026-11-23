@@ -8,7 +8,9 @@ from decimal import Decimal, InvalidOperation, localcontext
 from typing import TYPE_CHECKING
 
 from ..tables.periods import preceding_year
-from ..tables.contracts import FlakeTable
+from stratbox.shared.data.calculations import exact_difference
+from ..tables.contracts import FlakeTable, SerializeFlakeRequest
+from ..tables.flake_codec import serialize_flake
 from .contracts import HeadlineMetric, HeadlineSummary, SummaryRequest
 if TYPE_CHECKING:
     from .profiles import HeadlineProfile
@@ -33,6 +35,10 @@ def _row(flake: FlakeTable, code: str, starts_with: str):
     item = matching[0]
     if not item.indicator.casefold().startswith(starts_with.casefold()):
         raise ValueError("minfin.summary.unexpected_metric_label")
+    if (item.unit is not None and (item.unit != "RUB" or Decimal(item.scale) != Decimal("1e9"))
+            or item.value_basis is not None and item.value_basis != flake.value_basis
+            or flake.unit_hint == "mixed" and (item.unit is None or item.value_basis != "stock")):
+        raise ValueError("minfin.summary.unit_or_basis_mismatch")
     if len(item.values) != len(flake.columns):
         raise ValueError("minfin.summary.invalid_dimensions")
     return item
@@ -45,7 +51,7 @@ def _metric(metric_id: str, label: str, current: Decimal, prior: Decimal | None)
         outcome = "prior_missing"
     elif prior == 0:
         outcome = "prior_zero"
-    elif current * prior < 0:
+    elif (current < 0 < prior) or (prior < 0 < current):
         outcome = "sign_change"
     else:
         with localcontext() as ctx:
@@ -70,9 +76,9 @@ def budget_metrics(flake: FlakeTable, index: int, prior_index: int | None) -> tu
         previous.append(_number(row.values[prior_index]) if prior_index is not None else None)
     if any(item is None for item in current):
         raise ValueError("minfin.summary.missing_headline_value")
-    if abs(current[0] - current[1] - current[2]) > Decimal("0.05"):
+    if abs(exact_difference(current[2], exact_difference(current[1], current[0]))) > Decimal("0.05"):
         raise ValueError("minfin.summary.inconsistent_budget_totals")
-    if all(x is not None for x in previous) and abs(previous[0] - previous[1] - previous[2]) > Decimal("0.05"):
+    if all(x is not None for x in previous) and abs(exact_difference(previous[2], exact_difference(previous[1], previous[0]))) > Decimal("0.05"):
         raise ValueError("minfin.summary.inconsistent_budget_totals")
     return tuple(_metric(metric_id, label, now, prev)
                  for (_, metric_id, label), now, prev in zip(labels, current, previous))
@@ -95,14 +101,17 @@ def nwf_metrics(flake: FlakeTable, index: int, prior_index: int | None) -> tuple
         raise ValueError("minfin.summary.invalid_nwf_balance")
     return (
         _metric("nwf.total", "Объем ФНБ на конец периода", now_total, prev_total),
-        _metric("nwf.liquid", "Ликвидные активы ФНБ", now_total - now_other,
-                prev_total - prev_other if prev_total is not None and prev_other is not None else None),
+        _metric("nwf.liquid", "Ликвидные активы ФНБ", exact_difference(now_other, now_total),
+                exact_difference(prev_other, prev_total) if prev_total is not None and prev_other is not None else None),
     )
 
 
 def summarize(request: SummaryRequest, profile: HeadlineProfile) -> HeadlineSummary:
     """Profile binding selects a calculation without family-ID switches."""
     flake = request.flake
+    expected_unit = "mixed" if profile.profile_id == "minfin.nwf_headlines.v1" else "billion_rub"
+    if flake.unit_hint != expected_unit:
+        raise ValueError("minfin.summary.unit_mismatch")
     if flake.value_basis not in profile.accepted_basis or flake.frequency not in profile.periods:
         raise ValueError("minfin.summary.incompatible_basis")
     if (flake.frequency == "annual") != (flake.value_basis == "annual"):
@@ -118,7 +127,9 @@ def summarize(request: SummaryRequest, profile: HeadlineProfile) -> HeadlineSumm
     prior_index = periods.index(prior) if prior in periods else None
     metrics = profile.calculator(flake, index, prior_index)
     return HeadlineSummary(flake.family_id, flake.source_id, target, flake.frequency,
-                           flake.value_basis, flake.original_identity, flake.method_version, metrics)
+                           flake.value_basis, flake.original_identity, flake.method_version, metrics,
+                           profile.profile_id, profile.method_version,
+                           serialize_flake(SerializeFlakeRequest(flake)).identity, flake.publication)
 
 
 __all__ = ("summarize", "budget_metrics", "nwf_metrics")

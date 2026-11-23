@@ -7,7 +7,7 @@ from stratbox.core.operations.source.version_comparison import (
     CompareOriginalVersionsRequest, OriginalVersion, compare_original_versions,
 )
 from stratbox.domains.rosstat.publications.contracts import DiscoverRosstatRequest
-from stratbox.domains.rosstat.publications.operations import discover
+from stratbox.domains.rosstat.operations.publications import discover
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.identity import ByteIdentity
 

@@ -15,7 +15,7 @@ from stratbox.shared.identity import ByteIdentity
 from stratbox.domains.rosstat.publications.contracts import (
     AcquireRosstatRequest, AcquireRosstatToStoreRequest, DiscoverRosstatRequest,
 )
-from stratbox.domains.rosstat.publications.operations import acquire, acquire_to_store, discover
+from stratbox.domains.rosstat.operations.publications import acquire, acquire_to_store, discover
 
 
 def workbook():

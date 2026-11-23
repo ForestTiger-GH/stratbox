@@ -1,0 +1,19 @@
+{
+  "schema": "stratbox.rosstat.registry.v1",
+  "family_id": "rosstat.socioeconomic_regions",
+  "publisher_id": "rosstat",
+  "title": "Социально-экономическое положение субъектов РФ",
+  "landing_url": "https://rosstat.gov.ru/folder/11109/document/13259",
+  "accepted_formats": [
+    "zip",
+    "rar"
+  ],
+  "frequency_hint": "monthly",
+  "profiles": {
+    "discovery": "socioeconomic_regions",
+    "table": "reviewed_archive_member_cells"
+  },
+  "source_scope": "publisher_issue_and_asset",
+  "integration": "explicit_metric_period_unit_geography",
+  "coverage_policy": "reviewed_selection_with_exact_source_lineage"
+}

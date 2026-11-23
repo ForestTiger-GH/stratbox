@@ -38,6 +38,15 @@ _EXPORTS = {
         "StreamArchiveRequest", "PLAN", "APPLY", "ARCHIVE", "STREAM_ARCHIVE",
     ),
 }
+_EXPORTS.update({
+    ".tables.contracts": ("ExtractRequest", "ExtractSnapshotRequest", "ReadExtractRequest", "ValidateExtractRequest", "ExtractValidation", "CompareExtractRequest", "ReadableRequest", "CellBinding", "SemanticProfile", "BuildFlakeRequest", "SemanticFlake", "FlakeSnapshotRequest", "ReadFlakeRequest"),
+    ".tables.profiles": ("ProfileAvailability", "profile_availability", "all_profile_availability"),
+    ".integration.contracts": ("IntegrateRequest", "AlignRequest", "HistoryRequest", "ObservationSnapshotRequest", "ReadObservationsRequest"),
+    ".analytics.contracts": ("CalculateRequest",),
+    ".products.contracts": ("PrepareViewRequest", "ViewSnapshotRequest", "ReadViewRequest", "RenderViewRequest"),
+    ".operations.pipeline_handlers": ("extract", "build_extract_snapshot", "read_extract", "validate", "compare", "readable", "build_flake", "build_flake_snapshot", "read_flake", "integrate", "align", "build_history", "build_observation_snapshot", "read_observations", "calculate", "prepare_view", "build_view_snapshot", "read_view", "render_view"),
+})
+
 _MODULES = {name: module for module, names in _EXPORTS.items() for name in names}
 
 

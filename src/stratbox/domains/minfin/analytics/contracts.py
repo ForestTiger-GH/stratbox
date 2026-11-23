@@ -6,6 +6,8 @@ from typing import Literal
 from stratbox.shared.identity import ByteIdentity
 from ..publications.contracts import Asset, UpdateDecision
 from ..tables.contracts import FlakeTable
+from ..publications.context import PublicationContext
+from stratbox.shared.data.snapshots import DatasetSnapshot
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +31,10 @@ class HeadlineSummary:
     original_identity: ByteIdentity
     flake_method_version: str
     metrics: tuple[HeadlineMetric, ...]
+    calculation_profile: str = ""
+    calculation_version: int = 0
+    flake_identity: ByteIdentity | None = None
+    publication: PublicationContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,3 +84,15 @@ class NoticeRequest:
     decision: UpdateDecision
     include_initial: bool = False
     baseline_original_identity: ByteIdentity | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SummarySnapshotRequest:
+    summary: HeadlineSummary
+    dataset_id: str
+    version_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReadSummaryRequest:
+    snapshot: DatasetSnapshot

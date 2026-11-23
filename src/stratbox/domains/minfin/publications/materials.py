@@ -4,7 +4,6 @@ These are source-specific actions invoked from registered operation handlers.
 The domain never owns HTTP transports, storage effects, or message delivery.
 """
 from __future__ import annotations
-from io import BytesIO
 from stratbox.core.execution import Completion, OperationFailure
 from stratbox.core.network import HttpTransport, RetryPolicy
 from stratbox.core.operations.source.acquisition import receive_source
@@ -43,47 +42,31 @@ def acquire_material(req: AcquireRequest, invocation, transport: HttpTransport |
 
 
 def read_document(req: ReadableRequest, invocation):
-    from stratbox.core.runtime.dependencies import require_extra
-    family(req.family_id)
+    from stratbox.core.formats.documents import extract_document
+    spec = family(req.family_id)
     if type(req.max_pages) is not int or not 1 <= req.max_pages <= 250:
         raise OperationFailure("minfin.pdf_page_limit_invalid")
-    use_payload(req.payload, invocation, role="publisher_pdf", limit=64 * 1024 * 1024)
-    if req.format == "pdf":
-        if not req.payload.data.startswith(b"%PDF-"):
-            raise OperationFailure("minfin.pdf_envelope_invalid")
-        pypdf = require_extra("pypdf", "pdf")
-        try:
-            reader = pypdf.PdfReader(BytesIO(req.payload.data), strict=True)
-            if reader.is_encrypted or len(reader.pages) > req.max_pages:
-                raise OperationFailure("minfin.pdf_inaccessible_or_oversized")
-            pages = tuple(page.extract_text() or "" for page in reader.pages)
-        except OperationFailure:
-            raise
-        except Exception:
-            raise OperationFailure("minfin.pdf_parse_failed") from None
-    elif req.format == "docx":
-        if not req.payload.data.startswith(b"PK"):
-            raise OperationFailure("minfin.docx_envelope_invalid")
-        docx = require_extra("docx", "documents")
-        try:
-            # Bound document ZIP before the third-party XML parser sees it.
-            from stratbox.core.formats.archives.members import ArchiveLimits, open_zip
-            with open_zip(req.payload.data, ArchiveLimits(1000, 80_000_000, 16_000_000, 64_000_000)) as package:
-                if "word/document.xml" not in package.namelist():
-                    raise OperationFailure("minfin.docx_invalid")
-            document = docx.Document(BytesIO(req.payload.data))
-            blocks = [p.text for p in document.paragraphs if p.text.strip()]
-            for table in document.tables:
-                for row in table.rows:
-                    blocks.append(" | ".join(cell.text.replace("\n", " ") for cell in row.cells))
-            if sum(len(block) for block in blocks) > 5_000_000:
-                raise OperationFailure("minfin.readable_text_limit")
-            pages = tuple(blocks[:20_000])
-        except OperationFailure:
-            raise
-        except Exception:
-            raise OperationFailure("minfin.docx_parse_failed") from None
-    else:
+    if req.format not in {"pdf", "docx"}:
         raise OperationFailure("minfin.readable_format_unsupported")
-    return Completion(ReadableDocument(req.family_id, req.payload.identity, pages),
-                      "partial", "minfin.readable_text_only")
+    use_payload(req.payload, invocation, role="publisher_document", limit=64 * 1024 * 1024)
+    source_id = req.payload.source_id or spec.default_source_id
+    if source_id not in {spec.default_source_id, *(item.source_id for item in spec.series)}:
+        raise ValueError("minfin.source_family_mismatch")
+    publication = req.publication
+    if publication is not None and publication.series_id != source_id:
+        raise ValueError("minfin.publication_source_mismatch")
+    document = extract_document(req.payload, series_id=source_id,
+        issue_id=publication.issue_id if publication is not None else "unidentified",
+        asset_id=publication.asset_id if publication is not None else "supplied",
+        profile_id="minfin.document.blocks.v1", budget=invocation.budget, checkpoint=invocation.check_cancelled,
+        max_pages=req.max_pages)
+    if document.format != req.format:
+        raise ValueError("minfin.document_format_mismatch")
+    if document.format == "pdf" and len(document.blocks) > req.max_pages:
+        raise OperationFailure("minfin.pdf_inaccessible_or_oversized")
+    pages = tuple(block.text if block.kind != "table" else "\n".join(" | ".join(row) for row in block.rows)
+                  for block in document.blocks)
+    invocation.account_output(document.identity)
+    invocation.record(document.identity)
+    return Completion(ReadableDocument(req.family_id, req.payload.identity, pages,
+                      document=document, publication=publication), "partial", "minfin.readable_text_only")

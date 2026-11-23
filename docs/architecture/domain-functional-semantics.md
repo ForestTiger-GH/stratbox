@@ -8,8 +8,8 @@ cross-source data contracts and shared reference semantics belong to
 `stratbox.shared`.
 
 The registered operation owner and a publication-family identifier are different
-identities. CBR has one root operation owner, `cbr`, with independently maintained
-functional segments. A source card describes applicability to one publication,
+identities. Each publisher has one root operation owner with independently
+maintained functional segments. A source card describes applicability to one publication,
 format and table edition. An aggregate domain capability never establishes that
 every publication supports the same analytical route.
 
@@ -17,12 +17,11 @@ every publication supports the same analytical route.
 
 | Registered owner | Original and economic object | Important semantic boundary |
 | --- | --- | --- |
-| `rosstat.publications` | Rosstat indexes, releases, assets and exact native files | Publisher issue labels are distinct from observation periods; original byte identity precedes statistical interpretation |
+| `rosstat` | Four publication families, physical workbooks/documents, selected statistical flakes, integrated observations and products | KEP2 preserves annual, quarterly and monthly source values; other layouts require exact admitted profiles, and municipality identity requires a dated territory edition |
 | `cbr` | Bank of Russia reporting forms, banking and monetary statistics, lending, funding, office networks and other declared publication families | One root registration; separate source, integration, calculation and product owners with source-specific coverage |
-| `minfin` | Ministry of Finance publications, document structures, source flakes and explicitly qualified fiscal facts | Source evidence and readable material remain independent of later semantic integration; acquisition, comparison, flakes and calculations have separate operations |
-| `frank_rg` | Logical report sources, deliveries, source file assessment, naming, archive selection and cleanup | Supplier reporting dates, delivery metadata and exact byte revisions remain distinct; workbook interpretation and calculations are explicit gaps |
-| `fns.legal_entities_1yur` | Legal entities by status, legal form and published geographic unit | Dated snapshots and historically changing columns require explicit epoch mappings |
-| `fns.sme_register` | Regional SME-register statistics | Dated regional/monthly observations retain published identities and measures |
+| `minfin` | Ministry of Finance publications, document structures, source flakes, qualified fiscal observations, calculations and products | Publication dates, fiscal periods, stock dates, per-row units and scale remain distinct through integration and replay |
+| `frank_rg` | Logical report sources, deliveries, complete physical workbooks, profile-bound semantic flakes, observations and products | Supplier reporting dates, exact byte revisions and reviewed profile identity remain distinct; business cell layouts must be explicitly supplied and bound to the original |
+| `fns` | SME-register statistics and legal entities by status, legal form and published geographic unit | Full physical evidence precedes reviewed projections; RF, federal districts and subjects remain distinct, and historical column epochs require explicit mappings |
 
 The exact operation inventory comes from `domain_registration_inventory()`.
 A `_registration.py` declares an actual registration boundary; ordinary package
@@ -35,26 +34,27 @@ For CBR, operation namespaces such as `cbr.forms`, `cbr.industries.0105a`,
 Publication families such as `cbr.reporting_forms` and `cbr.project_finance`
 classify logical sources. Neither set replaces the root ownership identity.
 
-## 2. CBR functional owners
+## 2. Functional owners across publishers
 
-The CBR domain root holds `REGISTRY_*.yaml` declarations for logical publication
+Each publisher root holds `REGISTRY_*.yaml` declarations for logical publication
 families and one `_registration.py`. Registry declarations identify sources and
 reviewed profile references. Source routes, physical layouts, mappings, models
 and output profiles have distinct implementation owners.
 
-| Functional owner under `stratbox.domains.cbr` | Responsibility | Boundary kept explicit |
+| Functional owner under `stratbox.domains.<publisher>` | Responsibility | Boundary kept explicit |
 | --- | --- | --- |
 | `publications` | Logical source catalog, acquisition profiles, official routes, issue/asset selection and acquisition evidence | A constructed URL is a route, while an evidenced publication link is source discovery |
 | `tables` | Workbook cells, DBF members, source-specific parsers, physical schemas, literal representations, source projections and selected source histories | Source-local structure and source dates remain available before semantic mapping |
+| `documents` where needed | Publisher-bound ordered text blocks and document snapshots | Text extraction does not establish table geometry or economic interpretation |
 | `integration` | Period, metric, subject and geography alignment; integrated observation datasets and version vectors | Shared identity requires an admitted mapping, and missing interpretation remains qualified |
 | `analytics` | Financial-model input admission, formulas, count changes, shares, APK and SORS methods | Calculation scope and required inputs are independent of presentation selection |
 | `products` | Prepared views, presentation profiles, ordered tables and file renderers | Rendering can start from a retained prepared view without reacquiring or recalculating data |
 | `operations` | Typed definitions, execution handlers, explicit compositions, registrations and source/family catalog bindings | Executable registration remains the sole operation registry; profile bindings qualify existing operations |
 
-These boundaries follow the same separation between root declarations,
-functional implementation and callable operations used by Minfin and Frank RG.
-They do not imply that those publishers have identical extraction or analytical
-coverage.
+These boundaries apply to CBR, FNS, Rosstat, Minfin and Frank RG. Each publisher
+retains its reviewed extraction and analytical coverage. Shared physical
+workbook/document codecs, snapshots, observation views and territory editions
+have neutral owners; domain profiles assign source-specific meaning.
 
 The `operations/<segment>/registration.py` modules contribute references to the
 single CBR root registration. They are assembly modules for functional segments,
@@ -148,6 +148,12 @@ roles even if they are stored on the same network drive. A retained dataset
 reference permits a later process to restore the appropriate semantic boundary
 without reconstructing a live Python execution environment.
 
+Snapshot ports describe the retained wrapper separately from its live typed
+value. Encoders expose a precise replay contract and a generic `dataset.snapshot`
+port for storage. A workbook snapshot therefore connects to its workbook replay
+codec and neutral storage, while a document replay requires a document snapshot.
+The embedded manifest continues to name the logical stored data contract.
+
 ## 6. Functional invariants and acceptance
 
 1. Originals, source extracts, integrated observations, derived calculations and
@@ -174,6 +180,7 @@ wheel/sdist contents and isolated resolution when its dependencies are present.
 No fixed owner count or operation count is an architectural ceiling.
 
 Related maintained interfaces are described in [processing operation discovery](../current-how/processing-operation-catalog.md),
+[independent publisher routes](../current-how/independent-domain-data-routes.md),
 [CBR processing routes](../current-how/cbr-data-pipeline.md),
 [reporting forms](../current-how/cbr-reporting-forms.md) and
 [office-network publications](../current-how/cbr-service-network.md).

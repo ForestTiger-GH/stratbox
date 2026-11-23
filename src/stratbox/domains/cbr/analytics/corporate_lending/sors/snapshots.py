@@ -14,7 +14,7 @@ from math import isfinite
 from stratbox.core.formats.dataframes import frame_from_table, frame_to_table
 from stratbox.shared.data.lineage import computation_from, computation_value, input_from, input_value
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
+from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable, coverage_from
 from stratbox.shared.data.tables import TABLE_ENCODING, table_identity
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
@@ -292,7 +292,7 @@ def from_snapshot(value, *, expected_kind=None, checkpoint=None):
         evidence = computation_from(metadata["evidence"])
         if name == "bundle":
             restored[name] = SorsSourceBundle(**grids, evidence=evidence, as_of_date=metadata["as_of_date"], publication_step=metadata["publication_step"],
-                lineage=tuple(input_from(item) for item in metadata["lineage"]), coverage=SnapshotCoverage(**metadata["coverage"]), method_version=metadata["method_version"])
+                lineage=tuple(input_from(item) for item in metadata["lineage"]), coverage=coverage_from(metadata["coverage"]), method_version=metadata["method_version"])
         elif name == "restoration":
             restored[name] = SorsRestorationResult(**grids, evidence=evidence, summary=_summary(metadata["summary"]),
                                                    source_bundle=restored["bundle"], run_config=run_config_from(metadata["run_config"]))

@@ -100,12 +100,24 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             source_snapshot.write_text(
                 json.dumps(source_inventory, ensure_ascii=False), encoding="utf-8"
             )
+            from stratbox.domains.registry import operation_catalog
+            source_cards = root / "source-card-inventory.json"
+            cards = operation_catalog().source_catalog()
+            source_card_inventory = sorted(
+                [card.publisher_id, card.family_id, card.series_id]
+                for card in cards.sources
+            )
+            source_cards.write_text(
+                json.dumps(source_card_inventory, ensure_ascii=False), encoding="utf-8"
+            )
             report["steps"].append({
                 "name": "source_domain_inventory",
                 "command": ["domain_registration_inventory"],
                 "exit_code": 0, "result": "passed",
                 "operation_count": len(source_inventory),
                 "owner_count": len({item[0] for item in source_inventory}),
+                "source_count": len(source_card_inventory),
+                "family_count": len(cards.families),
             })
             base_check = (
                 "import importlib.metadata, json, sys; "
@@ -138,6 +150,11 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "catalog = operation_catalog(); "
                 "[catalog.resolve(ref.operation_id, ref.contract_version) "
                 "for ref in catalog.list_refs()]; "
+                "cards = catalog.source_catalog(); "
+                "actual_cards = sorted([c.publisher_id, c.family_id, c.series_id] for c in cards.sources); "
+                "expected_cards = json.loads(open(sys.argv[3], encoding='utf-8').read()); "
+                "assert actual_cards == expected_cards, (actual_cards, expected_cards); "
+                "[cards.describe(c.series_id, operations=catalog) for c in cards.sources]; "
                 "from stratbox.domains.cbr.analytics.reporting_forms.model import load_models; "
                 "from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping "
                 "import read_crosswalk_manifest, read_legacy_atoms, read_legacy_membership; "
@@ -151,7 +168,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             )
             _run("isolated_full_resolution", [
                 interpreter, "-I", "-B", "-c", full_check,
-                str(installed), str(source_snapshot),
+                str(installed), str(source_snapshot), str(source_cards),
             ], report, cwd=root)
         report["result"] = "passed" if full_pytest else "partial"
     except (RuntimeError, OSError) as error:

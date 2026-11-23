@@ -71,6 +71,10 @@ class ReportPeriod:
         return f"{self.snapshot_date:%Y-%m} week {self.week_no}"
 
     @property
+    def issue_id(self) -> str:
+        return self.snapshot_date.isoformat() if self.week_no is None else f"{self.snapshot_date:%Y-%m}-week-{self.week_no}"
+
+    @property
     def rank(self) -> tuple[date, int]:
         return self.snapshot_date, self.week_no or 0
 

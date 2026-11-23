@@ -1,17 +1,19 @@
 # Business domains
 
-Source-specific business logic lives under `stratbox.domains.<publisher>`,
-then substantive publication families and independently owned statistical series.
+Source-specific business logic lives under `stratbox.domains.<publisher>`.
+Functional owners contain substantive publication families and statistical series.
 
-Current publishers are `cbr`, `fns`, `frank_rg`, and `rosstat`. Grouping packages may
-contain source-level helpers but never claim child operations implicitly.
+Publishers are `cbr`, `fns`, `frank_rg`, `minfin`, and `rosstat`. Publications,
+documents, tables, integration, analytics and products have independent
+responsibilities; operation facades compose them explicitly.
 
 An owner publishes exactly one `_registration.py` containing its immutable
 `OperationRegistration`. The owner ID is its full dotted package path relative
 to `stratbox.domains`. Only manifest-bearing packages own operations.
 The `domains.registry` discovers bundled manifests recursively and validates
-that definition, handler and codec belong to the *nearest* owner. The ordinary
-`operations.py` and `api.py` contain executable implementations.
+that definition, handler and codec belong to the *nearest* owner. Executable entry points live in the publisher's `operations` package.
+
+[Independent processing and replay](../../../docs/current-how/independent-domain-data-routes.md)
 
 The domain-layer structure is independent of storage taxonomy: original
 publications, normalized datasets and views may use different classifications.

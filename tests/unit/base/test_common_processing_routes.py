@@ -200,3 +200,37 @@ def test_reference_invocation_uses_real_definition_and_refuses_ungranted_effects
     with pytest.raises(ValueError,match="effects_not_granted"):
         invoke_reference(json.dumps({"operation_id":"dataset.write_snapshot","contract_version":1,
             "request_ref":reference}).encode(),catalog=catalog,values=vault)
+
+
+def test_reference_capacity_is_reserved_before_any_handler_and_preview_never_loses_receipt():
+    from stratbox.core.execution.machine.references import MemoryValueResolver,invoke_reference,preview_value
+    from stratbox.core.operations.processing.definitions import ExtractRequest,WORKBOOK
+    vault=MemoryValueResolver(max_values=2)
+    reference=vault.retain(ExtractRequest(workbook(),"example.table","2026"))
+    class Catalog:
+        called=False
+        def get(self,*args): return WORKBOOK
+        def resolve(self,*args):
+            self.called=True
+            raise AssertionError("No resolution or execution before capacity admission")
+    catalog=Catalog()
+    with pytest.raises(ValueError,match="capacity_exhausted"):
+        invoke_reference(json.dumps({"operation_id":"workbook.extract","contract_version":1,
+            "request_ref":reference}).encode(),catalog=catalog,values=vault)
+    assert not catalog.called
+    assert preview_value(10**5000,max_bytes=256)["value_omitted"]=="magnitude"
+
+
+def test_processing_receipts_pin_inputs_parameters_and_control_results():
+    from stratbox.core.operations.processing import handlers as h, definitions as d
+    first=h.extract_workbook(d.ExtractRequest(workbook(),"example.table","first"))
+    second=h.extract_workbook(d.ExtractRequest(workbook(),"example.table","second"))
+    assert first.outcome==second.outcome=="succeeded"
+    assert first.computation.computation_id!=second.computation.computation_id
+    encoded=h.snapshot_workbook(d.WorkbookRequest(first.value))
+    assert any(r.role=="input_workbook" for r in encoded.used_inputs)
+    comparison=h.compare_workbooks(d.CompareWorkbooksRequest(first.value,second.value))
+    assert comparison.outcome=="succeeded" and comparison.computation is not None
+    assert comparison.resources_used and any(n=="output_bytes" for n,_ in comparison.resources_used)
+    plan=h.plan_update(d.UpdatePlanRequest(()))
+    assert plan.outcome=="succeeded" and plan.computation is not None

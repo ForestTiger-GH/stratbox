@@ -9,6 +9,8 @@ from datetime import date
 from typing import Literal
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import AcquiredSource, SourcePayload
+from stratbox.shared.data.documents import DocumentExtract
+from .context import PublicationContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +124,7 @@ class ReadableRequest:
     payload: SourcePayload
     max_pages: int = 100
     format: Literal["pdf", "docx"] = "pdf"
+    publication: PublicationContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +133,8 @@ class ReadableDocument:
     source_identity: ByteIdentity
     pages: tuple[str, ...]
     coverage: Literal["text_only_partial"] = "text_only_partial"
+    document: DocumentExtract | None = None
+    publication: PublicationContext | None = None
 
 
 @dataclass(frozen=True, slots=True)

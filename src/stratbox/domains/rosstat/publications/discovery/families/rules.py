@@ -32,9 +32,27 @@ class FamilyRule:
         return self.primary_asset_id, "primary", "profile.default_primary"
 
 
-_YEAR_MONTH = re.compile(r"(?<!\d)(20\d{2})[-_. /](0?[1-9]|1[0-2])(?!\d)")
-_MONTH_YEAR = re.compile(r"(?<!\d)(0?[1-9]|1[0-2])[-_. /](20\d{2})(?!\d)")
-_YEAR = re.compile(r"(?<!\d)(20\d{2})(?!\d)")
+_YEAR_MONTH = re.compile(r"(?<!\d)((?:18|19|20|21)\d{2})[-_. /](0?[1-9]|1[0-2])(?!\d)")
+_MONTH_YEAR = re.compile(r"(?<!\d)(0?[1-9]|1[0-2])[-_. /]((?:18|19|20|21)\d{2})(?!\d)")
+_YEAR = re.compile(r"(?<!\d)((?:18|19|20|21)\d{2})(?!\d)")
+_MONTH_NAMES = {
+    "январ":1,"феврал":2,"март":3,"апрел":4,"ма":5,"июн":6,
+    "июл":7,"август":8,"сентябр":9,"октябр":10,"ноябр":11,"декабр":12,
+}
+_MONTH_WORD = r"(?:январ[ья]|феврал[ья]|марта?|апрел[ья]|ма[йя]|июн[ья]|июл[ья]|августа?|сентябр[ья]|октябр[ья]|ноябр[ья]|декабр[ья])"
+_WORD_PERIOD = re.compile(r"(?<![а-я])(" + _MONTH_WORD + r")(?:\s*[-–—]\s*(" + _MONTH_WORD + r"))?\s+((?:18|19|20|21)\d{2})(?!\d)",re.I)
+
+
+def _named_periods(text):
+    values=set()
+    for first,last,year in _WORD_PERIOD.findall(text):
+        name=(last or first).casefold()
+        month=next(number for stem,number in _MONTH_NAMES.items() if name.startswith(stem))
+        if last and not first.casefold().startswith("январ"):
+            # Other ranges need a separately reviewed issue convention.
+            continue
+        values.add(f"{int(year):04d}-{month:02d}")
+    return values
 
 
 def parse_issue(rule: FamilyRule, filename: str, label: str) -> tuple[str | None, str | None, tuple[str, ...]]:
@@ -54,7 +72,7 @@ def parse_issue(rule: FamilyRule, filename: str, label: str) -> tuple[str | None
             f"{int(year):04d}-{int(month):02d}"
             for month, year in _MONTH_YEAR.findall(text)
         }
-        return matches
+        return matches | _named_periods(text)
     from_name, from_label = periods(filename), periods(label)
     if len(from_name) > 1 or len(from_label) > 1 or (
         from_name and from_label and from_name != from_label
