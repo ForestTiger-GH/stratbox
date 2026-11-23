@@ -134,14 +134,17 @@ def _source_facts():
 @lru_cache(maxsize=1)
 def _contract_sources():
     from stratbox.core.resources import resource_owners, iter_resources, read_document
+    from stratbox.domains.registry.declarations import decode_source_group
     bindings = {}
     for owner in resource_owners():
         for resource in iter_resources(owner, "sources"):
             source = read_document(resource)
-            for group in source.get("source_groups", ()):
-                for declared in group.get("contracts", ()):
-                    contract = _contract({"role": None, **declared})
-                    bindings.setdefault(contract, set()).add((source["series_id"], source["family_id"], group["group_id"]))
+            for declaration in source.get("source_groups", ()):
+                # Output-port references and inline declarations identify the
+                # same contracts; inference must use the canonical resolved group.
+                group = decode_source_group(declaration)
+                for contract in group.contracts:
+                    bindings.setdefault(contract, set()).add((source["series_id"], source["family_id"], group.group_id))
     return {contract: next(iter(values)) for contract, values in bindings.items() if len(values) == 1}
 
 

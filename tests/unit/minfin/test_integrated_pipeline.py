@@ -3,6 +3,8 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
+import pytest
+
 from stratbox.domains import minfin
 from stratbox.domains.minfin.tables.contracts import FlakeColumn, FlakeRow
 from stratbox.shared.data.observations import MetricRef, SubjectRef
@@ -77,7 +79,8 @@ def test_explicit_mixed_row_mapping_does_not_invent_stocks_or_zero_values():
     assert batch.observations[1].metric.quantity_kind == "flow"
 
 
-def test_ordered_document_and_publisher_context_survive_cold_replay():
+@pytest.mark.parametrize("series_id", ["minfin.nwf.volume", "minfin.nwf.preferred_shares"])
+def test_ordered_document_and_publisher_context_survive_cold_replay(series_id):
     from io import BytesIO
     from docx import Document
     from stratbox.shared.evidence import SourcePayload
@@ -89,7 +92,7 @@ def test_ordered_document_and_publisher_context_survive_cold_replay():
     document.add_paragraph("After table")
     stream = BytesIO()
     document.save(stream)
-    publication = minfin.PublicationContext("minfin.nwf.volume", "issue-5", "main", date(2026, 5, 1),
+    publication = minfin.PublicationContext(series_id, "issue-5", "main", date(2026, 5, 1),
         date(2026, 5, 2), "source-document-5", "https://minfin.gov.ru/example")
     payload = SourcePayload(stream.getvalue(), source_id=publication.series_id)
     value = ok(minfin.extract_document(minfin.ExtractDocumentRequest("minfin.nwf", payload, publication)))

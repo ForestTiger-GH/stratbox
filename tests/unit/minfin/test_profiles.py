@@ -147,23 +147,25 @@ def test_profile_based_budget_flake_and_economic_calculation():
 def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatch, tmp_path):
     from shutil import copytree
     from stratbox.domains.minfin.publications import catalog
-    from stratbox.core import resources as registry_resources, sources
-    root = Path(str(registry_resources.registry_root()))
+    from stratbox.core import resources as registry_resources
+    from stratbox.domains.registry import declarations as sources
+    root = Path(str(registry_resources.source_registry_root()))
     copytree(root, tmp_path / "registry")
-    declaration_root = tmp_path / "registry" / "domains" / "minfin"
-    profile = declaration_root / "families" / "fedbud" / "FAMILY_minfin.fedbud.publication.yaml"
+    declaration_root = tmp_path / "registry"
+    profile = declaration_root / "families" / "minfin" / "fedbud" / "FAMILY_minfin.fedbud.publication.yaml"
     added = json.loads(profile.read_text())
     added["profile_id"] = "minfin.future.publication"
     added["declaration"]["family_id"] = "minfin.future"
     added["declaration"]["title"] = "Another logical family using a registered typed profile"
     (profile.parent / "FAMILY_minfin.future.publication.yaml").write_text(json.dumps(added))
-    for source in (declaration_root / "sources").rglob("SOURCE_minfin.fedbud.*.yaml"):
+    for source in (declaration_root / "sources" / "minfin").rglob("SOURCE_minfin.fedbud.*.yaml"):
         value = json.loads(source.read_text())
         value["family_id"] = "minfin.future"
         value["series_id"] = value["series_id"].replace("minfin.fedbud", "minfin.future")
         value["family_profile"] = added["profile_id"]
         (source.parent / ("SOURCE_" + value["series_id"] + ".yaml")).write_text(json.dumps(value))
-    monkeypatch.setattr(registry_resources, "registry_root", lambda: tmp_path / "registry")
+    monkeypatch.setattr(registry_resources, "source_registry_root", lambda: tmp_path / "registry")
+    registry_resources._source_records.cache_clear()
     catalog.families.cache_clear()
     sources._sources.cache_clear()
     sources._profile_documents.cache_clear()
@@ -175,6 +177,7 @@ def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatc
         catalog.families.cache_clear()
         sources._sources.cache_clear()
         sources._profile_documents.cache_clear()
+        registry_resources._source_records.cache_clear()
 
 
 def test_force_refresh_and_reprocess_are_distinct_decisions():

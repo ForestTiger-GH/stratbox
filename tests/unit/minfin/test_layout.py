@@ -18,13 +18,18 @@ def test_root_has_only_canonical_registry_records_and_one_owner():
     from stratbox.domains.registry.declarations import source_cards
     assert not tuple(root.glob("REGISTRY_*.yaml"))
     assert len(source_cards("minfin")) == 13
-    assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py", "profiles.py"}
+    assert {p.name for p in root.glob("*.py")} == {"__init__.py", "profiles.py"}
     assert {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("__")} == {
         "publications", "tables", "analytics", "operations", "integration", "products", "documents",
     }
     assert all((root / name / "__init__.py").is_file()
                for name in ("publications", "tables", "analytics", "operations"))
-    assert list(root.rglob("_registration.py")) == [root / "_registration.py"]
+    assert not tuple(root.rglob("_registration.py"))
+    assert not tuple(root.rglob("registration.py"))
+    from stratbox.core.resources import owner_directory, read_document
+    assert read_document(owner_directory("minfin").joinpath("OWNER.yaml"))["owner_id"] == "minfin"
+    assert {owner.owner_id for owner in operation_catalog().registrations
+            if owner.owner_id == "minfin" or owner.owner_id.startswith("minfin.")} == {"minfin"}
 
 
 def test_public_api_is_the_same_type_as_its_semantic_contract():

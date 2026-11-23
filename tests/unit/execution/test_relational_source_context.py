@@ -10,7 +10,7 @@ from stratbox.operations import operation_catalog
 from stratbox.shared.data.observation_snapshots import observation_snapshot
 from stratbox.shared.data.observations import ObservationBatch
 from stratbox.shared.data.operations import OperationSemantics, OutputPort, ProcessingStage
-from stratbox.shared.data.processing import DataContract
+from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
 from stratbox.shared.data.source_context import SourceCoordinate, SourceUse, ValueContext
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -37,6 +37,18 @@ def test_repeated_source_uses_preserve_source_issue_edition_and_collection_posit
     repeated = value_context((asset, asset)).uses
     assert len(repeated) == 2
     assert repeated[0].input_role != repeated[1].input_role
+
+
+def test_contract_source_inference_resolves_declared_output_ports_without_false_exclusivity():
+    shared_contract = DataContract("minfin.publisher_document", role=DataRole.EXTRACTS)
+    for series_id in ("minfin.nwf.volume", "minfin.nwf.preferred_shares", "minfin.nwf.veb_deposits"):
+        use = SourceUse(SourceCoordinate(series_id))
+        assert value_context(use, shared_contract).source_ids == (series_id,)
+    assert value_context((), shared_contract).source_ids == ()
+    # A genuinely source-specific contract still rejects another source's claim.
+    with pytest.raises(ValueError, match="source.context_contract_mismatch"):
+        value_context(SourceUse(SourceCoordinate("minfin.nwf.volume")),
+                      DataContract("cbr.offices.release", role=DataRole.EXTRACTS))
 
 
 def test_two_releases_and_two_source_groups_remain_distinct_after_snapshot_roundtrip():

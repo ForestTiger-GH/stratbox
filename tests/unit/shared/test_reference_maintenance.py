@@ -32,10 +32,10 @@ def _domain_materials():
         relative = path.relative_to(source).as_posix()
         if path.is_file() and asset(relative):
             yield "stratbox/domains/" + relative, path.read_bytes()
-    registry = _ROOT / "src/stratbox/registry"
+    registry = package / "operations" / "specifications"
     for path in sorted(registry.rglob("*")):
         if path.is_file() and path.suffix in {".yaml", ".yml"}:
-            yield "stratbox/registry/" + path.relative_to(registry).as_posix(), path.read_bytes()
+            yield "stratbox/operations/specifications/" + path.relative_to(registry).as_posix(), path.read_bytes()
 
 
 def test_reference_edition_verifier_covers_all_bundled_editions(capsys):

@@ -18,10 +18,15 @@ import stratbox.domains.cbr.operations.corporate_lending.issuance.operations as 
 
 def test_cbr_is_one_registered_owner_with_functional_operation_references():
     root = Path(__file__).resolve().parents[3] / "src/stratbox/domains/cbr"
-    assert (root / "_registration.py").is_file()
-    assert (root / "operations/corporate_lending/registration.py").is_file()
-    assert not (root / "operations/corporate_lending/debt/_registration.py").exists()
-    assert not (root / "operations/corporate_lending/issuance/_registration.py").exists()
+    from stratbox.core.resources import owner_directory, read_document
+    catalog = domain_catalog()
+    assert read_document(owner_directory("cbr").joinpath("OWNER.yaml"))["owner_id"] == "cbr"
+    assert {item.owner_id for item in catalog.registrations
+            if item.owner_id == "cbr" or item.owner_id.startswith("cbr.")} == {"cbr"}
+    for operation_id in ("cbr.industries.0105a.parse", "cbr.industries.0104a.parse"):
+        assert catalog.owner_of(operation_id) == "cbr"
+    assert not tuple(root.rglob("_registration.py"))
+    assert not tuple(root.rglob("registration.py"))
     assert not (root / "corporate_lending/industries").exists()
 
 
