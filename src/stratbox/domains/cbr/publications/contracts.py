@@ -1,12 +1,12 @@
 """Logical series, discovered instances and explicit caller-supplied originals."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import SnapshotCoverage, identifier
-from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.evidence import AcquisitionReceipt, SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.materials import MaterialArtifact
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -22,13 +22,17 @@ class SourceSeries:
     acquisition_profile: str
     extraction_profile: str | None = None
     normalization_profile: str | None = None
+    table_profile: str | None = None
+    integration_profile: str | None = None
+    product_profile: str | None = None
 
     def __post_init__(self):
         for value in (self.series_id, self.family_id, self.acquisition_profile):
             identifier(value)
         if self.issue_model not in {"rolling", "dated", "capture"} or not self.formats or not self.title:
             raise ValueError("cbr.registry.series_invalid")
-        for value in (self.extraction_profile, self.normalization_profile):
+        for value in (self.extraction_profile, self.normalization_profile, self.table_profile,
+                      self.integration_profile, self.product_profile):
             if value is not None:
                 identifier(value)
 
@@ -123,10 +127,64 @@ class IdentifiedOriginal:
     format: str
     identification: str = "caller_context_and_verified_format"
     lineage: tuple[UsedInputReceipt, ...] = ()
+    acquisition: AcquisitionReceipt | None = None
+    artifact: MaterialArtifact = field(init=False)
 
-    @property
-    def artifact(self):
-        return MaterialArtifact(DataContract("cbr.publication.original", 1, DataRole.ORIGINALS),
+    def __post_init__(self):
+        if self.acquisition is not None and (
+            self.acquisition.identity != self.payload.identity
+            or self.acquisition.media_type != self.payload.media_type
+            or self.acquisition.source_id != self.asset.series_id
+        ):
+            raise ValueError("cbr.original.acquisition_mismatch")
+        object.__setattr__(self, "artifact", MaterialArtifact(DataContract("cbr.publication.original", 1, DataRole.ORIGINALS),
             Representation("cbr.original." + self.format, 1, self.payload.media_type,
                            self.payload.data, self.payload.charset), self.lineage,
-            self.asset.series_id, self.asset)
+            self.asset.series_id, self.asset))
+
+
+@dataclass(frozen=True, slots=True)
+class SelectPublicationRequest:
+    inventory: PublicationInventory
+    issue_id: str | None = None
+    format: str | None = None
+    asset_id: str = "main"
+    url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AcquirePublicationRequest:
+    asset: PublicationAsset
+    issue_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessingCheckpoint:
+    asset: SourceAssetIdentity
+    original_identity: ByteIdentity
+    processing_signature: ByteIdentity
+    result_identity: ByteIdentity | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DestinationObservation:
+    destination_id: str
+    confirmed_identity: ByteIdentity | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AssessUpdatesRequest:
+    original: IdentifiedOriginal
+    processing_signature: ByteIdentity
+    checkpoint: ProcessingCheckpoint | None = None
+    target: str = "original"
+    destinations: tuple[DestinationObservation, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationUpdatePlan:
+    source_state: str
+    processing_required: bool
+    destination_actions: tuple[tuple[str, str], ...]
+    original_identity: ByteIdentity
+    checkpoint_candidate: ProcessingCheckpoint

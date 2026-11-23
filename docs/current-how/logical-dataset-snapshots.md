@@ -1,7 +1,7 @@
 # Logical dataset snapshots
 
 Scope: implemented core contracts, memory and file reference adapters, Minfin
-flake integration and the grouped CBR snapshot codecs in Stratbox 0.18.0.
+flake integration and the grouped CBR snapshot codecs in Stratbox 0.19.0.
 
 Stratbox represents a logical dataset as an immutable versioned manifest and
 explicitly typed table components. Domain code supplies the same value to any

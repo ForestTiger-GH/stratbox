@@ -138,15 +138,15 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "catalog = operation_catalog(); "
                 "[catalog.resolve(ref.operation_id, ref.contract_version) "
                 "for ref in catalog.list_refs()]; "
-                "from stratbox.domains.cbr.reporting_forms.common.models import load_models; "
-                "from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping "
+                "from stratbox.domains.cbr.analytics.reporting_forms.model import load_models; "
+                "from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping "
                 "import read_crosswalk_manifest, read_legacy_atoms, read_legacy_membership; "
                 "assert not load_models().empty; "
                 "assert read_crosswalk_manifest(); "
                 "assert not read_legacy_atoms().empty; "
                 "assert not read_legacy_membership().empty; "
                 "from importlib.resources import files; "
-                "assert files(\'stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk\')"
+                "assert files(\'stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk\')"
                 ".joinpath(\'_resources\', \'atom_class_edges.csv\').read_bytes()"
             )
             _run("isolated_full_resolution", [

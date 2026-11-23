@@ -9,20 +9,19 @@ import pytest
 
 from stratbox.core.storage.filestore import LocalFileStore
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration import (
-    SorsCrosswalkConfig,
-    SorsOptimizationConfig,
-    SorsRunConfig,
-    SorsSourceFiles,
-    SorsWorkbookRequest,
-    CrosswalkSorsRequest,
-    RenderSorsRequest,
-    RestoreSorsRequest,
-    crosswalk,
-    read_source_files,
-    render_workbook,
-    restore,
-)
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsOptimizationConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceFiles
+from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsWorkbookRequest
+from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import CrosswalkSorsRequest
+from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RenderSorsRequest
+from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RestoreSorsRequest
+from stratbox.domains.cbr.operations.corporate_lending.sors.api import run_crosswalk
+from stratbox.domains.cbr.operations.corporate_lending.sors.api import read_source_files
+from stratbox.domains.cbr.operations.corporate_lending.sors.api import build_views, render_views, prepare_from_originals
+from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import BuildSorsViewsRequest, PrepareSorsOriginalsRequest
+from stratbox.domains.cbr.operations.corporate_lending.sors.api import restore
 
 _REAL_ROOT = os.environ.get('STRATBOX_SORS_REAL_DATA_DIR')
 _RUN_PERFORMANCE = os.environ.get('STRATBOX_SORS_RUN_PERFORMANCE') == '1'
@@ -62,8 +61,10 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     started = perf_counter()
     inputs = read_source_files(_files(), store=LocalFileStore())
     assert inputs.outcome == "succeeded", inputs.diagnostics
+    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
+    assert bundle.outcome == "succeeded", bundle.diagnostics
     operation = restore(RestoreSorsRequest(
-        inputs.value,
+        bundle.value,
         SorsRunConfig(as_of_date='2026-06-01'),
     ))
     assert operation.outcome == "succeeded", operation.diagnostics
@@ -75,7 +76,9 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     assert int(component_zeros['published_value'].astype(float).eq(0.0).sum()) == 11_274
 
     started = perf_counter()
-    exported = render_workbook(RenderSorsRequest(result, SorsWorkbookRequest()))
+    views = build_views(BuildSorsViewsRequest(result, SorsWorkbookRequest()))
+    assert views.outcome == "succeeded", views.diagnostics
+    exported = render_views(RenderSorsRequest(views.value))
     assert exported.outcome == "succeeded", exported.diagnostics
     workbook = exported.value
     assert perf_counter() - started < 60
@@ -91,8 +94,10 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
     started = perf_counter()
     inputs = read_source_files(_files(), store=LocalFileStore())
     assert inputs.outcome == "succeeded", inputs.diagnostics
+    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
+    assert bundle.outcome == "succeeded", bundle.diagnostics
     operation = restore(RestoreSorsRequest(
-        inputs.value,
+        bundle.value,
         SorsRunConfig(
             as_of_date='2026-06-01',
             optimization=SorsOptimizationConfig(
@@ -113,10 +118,12 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
 def test_crosswalk_feasibility_gate() -> None:
     inputs = read_source_files(_files(), store=LocalFileStore())
     assert inputs.outcome == "succeeded", inputs.diagnostics
-    strict = restore(RestoreSorsRequest(inputs.value, SorsRunConfig(as_of_date='2026-06-01')))
+    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
+    assert bundle.outcome == "succeeded", bundle.diagnostics
+    strict = restore(RestoreSorsRequest(bundle.value, SorsRunConfig(as_of_date="2026-06-01")))
     assert strict.outcome == "succeeded", strict.diagnostics
     started = perf_counter()
-    operation = crosswalk(CrosswalkSorsRequest(
+    operation = run_crosswalk(CrosswalkSorsRequest(
         strict.value,
         SorsCrosswalkConfig(
             mode='feasibility',

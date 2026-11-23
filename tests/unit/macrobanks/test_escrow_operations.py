@@ -3,8 +3,8 @@ from io import BytesIO
 from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr import escrow
-from stratbox.domains.cbr.escrow.columns import ESCROW_INDICATOR_SPECS
+from stratbox.domains.cbr.operations import project_finance as escrow
+from stratbox.domains.cbr.tables.project_finance.profiles import required_indicators
 
 
 def workbook_bytes():
@@ -12,7 +12,7 @@ def workbook_bytes():
     sheet = workbook.active
     sheet.title = "Регионы"
     titles = [
-        item.canonical_name for item in ESCROW_INDICATOR_SPECS if item.is_required
+        item.canonical_name for item in required_indicators()
     ]
     sheet.append(["№", "Субъект Российской Федерации (федеральный округ)", *titles])
     sheet.append(["Центральный ФО", None, *[1] * len(titles)])
@@ -29,13 +29,13 @@ def test_escrow_history_is_offline_and_renders_views_to_exact_bytes():
     history = escrow.build_history(escrow.EscrowHistoryBuildRequest((request,)))
     assert history.outcome == "succeeded", history.diagnostics
     assert history.used_inputs[0].identity == payload.identity
-    assert history.value.dates == ("2026-06-01",)
-    region = history.value.df_long[
-        history.value.df_long["Регион"].eq("Белгородская область")
+    assert tuple(item.period for item in history.value.releases) == ("2026-06-01",)
+    region = history.value.observations[
+        history.value.observations["region"].eq("Белгородская область")
     ]
-    assert 0 in region["Значение"].values
+    assert 0 in region["value"].values
     assert (
-        "active_credit_contracts_amount_mln_rub" not in region["indicator_code"].values
+        region.loc[region["indicator_code"].eq("active_credit_contracts_amount_mln_rub"), "status"].iloc[0] == "blank"
     )
     views = escrow.build_views(escrow.BuildEscrowViewsRequest(history.value))
     assert views.outcome == "succeeded", views.diagnostics
@@ -105,6 +105,6 @@ def test_escrow_view_rejects_mutated_geography_snapshot():
     request = escrow.ParseEscrowRequest(SourcePayload(workbook_bytes()), "escrow_01062026.xlsx")
     history = escrow.build_history(escrow.EscrowHistoryBuildRequest((request,)))
     assert history.outcome == "succeeded"
-    history.value.parsed_files[0].df_rows.iloc[0, 0] = 1000
+    history.value.rows.iloc[0, 1] = 1000
     result = escrow.build_views(escrow.BuildEscrowViewsRequest(history.value))
     assert result.diagnostics[0].code == "input.identity_mismatch"

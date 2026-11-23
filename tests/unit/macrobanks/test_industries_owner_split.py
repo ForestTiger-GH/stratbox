@@ -1,29 +1,28 @@
-"""Series-owner symmetry and shared industry-family semantics."""
+"""Functional ownership and shared stock/flow industry semantics."""
 
 from pathlib import Path
 
 from stratbox.domains.registry import domain_catalog
-from stratbox.domains.cbr.corporate_lending.industries import (
-    debt_0105a, issuance_0104,
+from stratbox.domains.cbr.operations.corporate_lending import (
+    debt as debt_0105a, issuance as issuance_0104,
 )
-from stratbox.domains.cbr.corporate_lending.industries.common import (
-    operation_helpers, parsing, normalization, contracts, streams, rendering,
-)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-    operations as debt_operations,
-)
-from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-    operations as issuance_operations,
-)
+import stratbox.domains.cbr.operations.corporate_lending.industry.operation_helpers as operation_helpers
+import stratbox.domains.cbr.tables.corporate_lending.industry.parsing as parsing
+import stratbox.domains.cbr.tables.corporate_lending.industry.normalization as normalization
+import stratbox.domains.cbr.tables.corporate_lending.industry.contracts as contracts
+import stratbox.domains.cbr.tables.corporate_lending.industry.streams as streams
+import stratbox.domains.cbr.products.corporate_lending.industry.rendering as rendering
+import stratbox.domains.cbr.operations.corporate_lending.debt.operations as debt_operations
+import stratbox.domains.cbr.operations.corporate_lending.issuance.operations as issuance_operations
 
 
-def test_industries_is_family_not_operation_owner():
-    root = Path(__file__).resolve().parents[3] / (
-        "src/stratbox/domains/cbr/corporate_lending/industries"
-    )
-    assert not (root / "_registration.py").exists()
-    assert (root / "debt_0105a/_registration.py").is_file()
-    assert (root / "issuance_0104/_registration.py").is_file()
+def test_cbr_is_one_registered_owner_with_functional_operation_references():
+    root = Path(__file__).resolve().parents[3] / "src/stratbox/domains/cbr"
+    assert (root / "_registration.py").is_file()
+    assert (root / "operations/corporate_lending/registration.py").is_file()
+    assert not (root / "operations/corporate_lending/debt/_registration.py").exists()
+    assert not (root / "operations/corporate_lending/issuance/_registration.py").exists()
+    assert not (root / "corporate_lending/industries").exists()
 
 
 def test_independent_series_keep_published_operation_contracts():
@@ -53,19 +52,13 @@ def test_common_cell_normalization_is_owned_by_industry_family():
 def test_shared_selection_and_stream_schema_are_family_owned():
     assert debt_0105a.IndustrySelection is contracts.IndustrySelection
     assert issuance_0104.IndustrySelection is contracts.IndustrySelection
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        derived,
-    )
+    import stratbox.domains.cbr.analytics.corporate_lending.industry.apk as derived
     assert derived.STREAM_COLUMNS is streams.STREAM_COLUMNS
     assert "source_sha256" in streams.STREAM_COLUMNS
 
 def test_excel_grid_renderer_is_shared_without_stock_private_imports():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        export as debt_export,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-        export as issuance_export,
-    )
+    import stratbox.domains.cbr.products.corporate_lending.debt.rendering as debt_export
+    import stratbox.domains.cbr.products.corporate_lending.issuance.rendering as issuance_export
     assert debt_export._write_cbr_industry_sheet is rendering._write_cbr_industry_sheet
     assert issuance_export._write_cbr_industry_sheet is rendering._write_cbr_industry_sheet
     assert debt_export._industry_table_dates is rendering._industry_table_dates
@@ -92,15 +85,9 @@ def test_shared_grid_date_columns_reject_ambiguous_multi_value_columns():
         rendering._industry_table_dates(sheet)
 
 def test_both_series_share_exact_industry_selection_semantics():
-    from stratbox.domains.cbr.corporate_lending.industries.common import (
-        selection as shared_selection,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        selection as stock_selection,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-        selection as flow_selection,
-    )
+    import stratbox.domains.cbr.tables.corporate_lending.industry.selection as shared_selection
+    import stratbox.domains.cbr.tables.corporate_lending.debt.selection as stock_selection
+    import stratbox.domains.cbr.tables.corporate_lending.issuance.selection as flow_selection
 
     chosen = contracts.IndustrySelection(("apk", "total"))
     assert stock_selection.resolve_industry_codes(chosen) == (
@@ -119,42 +106,39 @@ def test_both_series_share_exact_industry_selection_semantics():
 
 
 def test_common_structural_types_are_owned_by_family_not_by_stock_series():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        contracts as stock,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-        contracts as flow,
-    )
+    import stratbox.domains.cbr.tables.corporate_lending.debt.contracts as stock
+    import stratbox.domains.cbr.tables.corporate_lending.issuance.contracts as flow
 
     assert stock.Cbr0105ADebtCorpIndustrySpec is contracts.IndustrySpec
     assert stock.Cbr0105ADebtCorpRegionSpec is contracts.IndustryRegionSpec
     assert stock.Cbr0105ADebtCorpValidationIssue is contracts.IndustryValidationIssue
-    assert stock.Cbr0105ADebtCorpApkCalculationResult is contracts.IndustryApkCalculationResult
-    assert stock.Cbr0105ADebtCorpPivotRequest is contracts.IndustryPivotRequest
-    assert stock.Cbr0105ADebtCorpPivotSetResult is contracts.IndustryPivotSetResult
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.contracts import IndustryApkCalculationResult
+    from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest, IndustryPivotSetResult
+    assert IndustryApkCalculationResult.__module__ == "stratbox.domains.cbr.analytics.corporate_lending.industry.contracts"
+    assert IndustryPivotRequest.__module__ == IndustryPivotSetResult.__module__ == "stratbox.domains.cbr.products.corporate_lending.industry.contracts"
+    assert not hasattr(stock, "Cbr0105ADebtCorpApkCalculationResult")
+    assert not hasattr(stock, "Cbr0105ADebtCorpPivotRequest")
     assert flow.IndustrySpec is contracts.IndustrySpec
     assert flow.RegionSpec is contracts.IndustryRegionSpec
     assert flow.ValidationIssue is contracts.IndustryValidationIssue
-    assert flow.IndustryPivotRequest is contracts.IndustryPivotRequest
+    assert not hasattr(flow, "IndustryPivotRequest")
 
 
-def test_issuance_uses_common_contracts_not_stock_owner_contracts():
-    owner = Path(__file__).resolve().parents[3] / (
-        "src/stratbox/domains/cbr/corporate_lending/industries/issuance_0104"
-    )
-    for module in ("contracts.py", "parser.py", "operations.py"):
-        assert "industries.debt_0105a.contracts" not in (
-            owner / module
-        ).read_text(encoding="utf-8")
+def test_issuance_uses_shared_contracts_without_debt_private_types():
+    import ast
+    root = Path(__file__).resolve().parents[3] / "src/stratbox/domains/cbr"
+    for relative in ("tables/corporate_lending/issuance/contracts.py",
+                     "tables/corporate_lending/issuance/parser.py",
+                     "operations/corporate_lending/issuance/operations.py"):
+        tree = ast.parse((root / relative).read_text(encoding="utf-8"))
+        imports = [node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
+        assert "stratbox.domains.cbr.tables.corporate_lending.debt.contracts" not in imports
 
 
 def test_series_implementations_use_direct_family_helpers():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        parser as stock_parser, derived as stock_derived,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-        parser as flow_parser,
-    )
+    import stratbox.domains.cbr.tables.corporate_lending.debt.parser as stock_parser
+    import stratbox.domains.cbr.analytics.corporate_lending.industry.apk as stock_derived
+    import stratbox.domains.cbr.tables.corporate_lending.issuance.parser as flow_parser
 
     assert stock_parser.optimize_industry_stream_dtypes is streams.optimize_industry_stream_dtypes
     assert stock_derived.concat_industry_streams is streams.concat_industry_streams

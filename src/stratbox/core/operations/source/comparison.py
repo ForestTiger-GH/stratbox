@@ -87,7 +87,12 @@ def _observations(value):
     return groups
 
 
-def explain_comparison(result, request, invocation):
+def explain_comparison(result, request, invocation, *, same_issue=None):
+    """Describe comparison layers, optionally qualifying publisher-issue identity.
+
+    Sources keyed by capture date can explicitly distinguish that date from the
+    issue's observation date. Other callers retain date-keyed behavior.
+    """
     old, new = request.baseline, request.candidate
     if old is None or request.baseline_state != "available":
         return result
@@ -108,7 +113,8 @@ def explain_comparison(result, request, invocation):
         sum(min(before_counts[key], after_counts[key]) for key in common),
         sum(before_counts.values()), sum(after_counts.values()), len({key[0] for key in common}), scope,
     )
-    if old.as_of == new.as_of:
+    issue_matches = old.as_of == new.as_of if same_issue is None else same_issue
+    if issue_matches:
         if method == "changed":
             result = Comparison("indeterminate", "comparison.method_changed")
             facts = "incompatible"

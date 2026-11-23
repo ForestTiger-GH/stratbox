@@ -32,8 +32,16 @@ def test_published_contracts_remain_discoverable_and_machine_admission_is_explic
     current_versions = {}
     for name, version in identities:
         current_versions[name] = max(version, current_versions.get(name, 0))
-    missing = [(name, version) for name, version in baseline if current_versions.get(name, 0) < version]
+    # A renamed responsibility starts its own schema version sequence. These
+    # replacements are explicit; arbitrary removal still fails this gate.
+    replacements = {
+        "cbr.sors.load_sources": ("cbr.sors.prepare_from_originals", 1),
+        "cbr.sors.render_workbook": ("cbr.sors.render_views", 1),
+    }
+    expected = {replacements.get(name, (name, version)) for name, version in baseline}
+    missing = [(name, version) for name, version in expected if current_versions.get(name, 0) < version]
     assert not missing, f"Operation responsibilities missing or regressed: {sorted(missing)}"
+    assert not set(replacements) & current_versions.keys()
 
     admitted = {(ref.operation_id, ref.contract_version) for ref in all_ops.references if ref.wire_codec_ref}
     assert {('cbr.offices.parse', 1), ('cbr.offices.compare', 2), ('frg.plan_cleanup', 1)} <= admitted
@@ -211,9 +219,9 @@ def test_discovered_owner_contracts_are_complete_and_extensible():
     assert {(operation_id, version) for _, operation_id, version in rows} == {
         (ref.operation_id, ref.contract_version) for ref in catalog.references
     }
-    assert ("cbr.corporate_lending.industries.debt_0105a", "cbr.industries.0105a.parse", 3) in rows
-    assert ("cbr.corporate_lending.industries.issuance_0104",
-            "cbr.industries.0104a.parse", 3) in rows
+    assert ("cbr", "cbr.industries.0105a.parse", 3) in rows
+    assert ("cbr", "cbr.industries.0104a.parse", 3) in rows
+    assert {owner for owner in owners if owner == "cbr" or owner.startswith("cbr.")} == {"cbr"}
     assert all(".registration:" not in ref.definition_ref for ref in catalog.references)
 
 

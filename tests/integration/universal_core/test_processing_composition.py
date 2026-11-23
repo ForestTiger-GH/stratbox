@@ -13,7 +13,7 @@ from stratbox.core.operations.source.originals import (
     save_original,
 )
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.service_network import bank_offices
+import stratbox.domains.cbr.operations.service_network.bank_offices as bank_offices
 from stratbox.domains.registry import operation_catalog
 from stratbox.shared.data.releases import CompareReleaseRequest
 from stratbox.shared.evidence import SourcePayload

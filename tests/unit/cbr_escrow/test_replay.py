@@ -17,10 +17,11 @@ from stratbox.core.storage.datasets.codec import reference_value
 from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest, WriteSnapshotRequest
 from stratbox.core.storage.datasets.operations import read_snapshot, write_snapshot
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr import escrow
-from stratbox.domains.cbr.escrow.columns import ESCROW_INDICATOR_SPECS, resolve_indicator_spec_by_header
-from stratbox.domains.cbr.escrow.pivots import build_escrow_pivot
-from stratbox.domains.cbr.escrow.snapshots import dataset_snapshot
+from stratbox.domains.cbr.operations import project_finance as escrow
+from stratbox.domains.cbr.tables.project_finance.profiles import required_indicators
+from stratbox.domains.cbr.tables.project_finance.columns import resolve_indicator_spec_by_header
+from stratbox.domains.cbr.products.project_finance.pivots import build_escrow_pivot
+from stratbox.domains.cbr.integration.project_finance.snapshots import dataset_snapshot
 from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload
 
@@ -34,7 +35,7 @@ def publication(*, period="01062026", region="Example region", amount="0012.2500
     book = Workbook()
     sheet = book.active
     sheet.title = "Regions"
-    specs = [spec for spec in ESCROW_INDICATOR_SPECS if spec.is_required]
+    specs = list(required_indicators())
     headers = [spec.canonical_name for spec in specs]
     values = [7.25 if spec.value_kind == "percent" else amount for spec in specs]
     if extra:
@@ -87,7 +88,7 @@ from stratbox.core.storage.datasets.codec import reference_from
 from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest
 from stratbox.core.storage.datasets.operations import read_snapshot
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr import escrow
+from stratbox.domains.cbr.operations import project_finance as escrow
 info=json.loads(Path(sys.argv[1]).read_text())
 store=FileDatasetStore(LocalFileStore(info["root"]),"datasets",provider_id="files",scope_id="escrow")
 loaded=read_snapshot(ReadSnapshotRequest(reference_from(info["reference"])),store=store)

@@ -62,7 +62,7 @@ def test_static_checker_rejects_forbidden_core_imports(tmp_path):
         "from stratbox.core.notifications.state import StateMutation\n", encoding="utf-8"
     )
     (operation / "bad.py").write_text(
-        "from stratbox.domains.cbr.escrow import operations\n", encoding="utf-8"
+        "from stratbox.domains.cbr.operations.project_finance import operations\n", encoding="utf-8"
     )
     check.__globals__["SRC"] = src
     check.__globals__["PACKAGE"] = src / "stratbox"
@@ -175,7 +175,7 @@ def test_external_source_scanner_rejects_moved_imports(tmp_path):
 
 
 def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path):
-    """Nested business owners are not collapsed into a single CBR namespace."""
+    """A publisher may still choose isolated nested business owners."""
     root = Path(__file__).resolve().parents[3]
     checker = runpy.run_path(str(root / "scripts" / "check_internal_imports.py"))
     check = checker["check_dependency_direction"]
@@ -194,19 +194,17 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
 
     (package / "domains").mkdir(parents=True)
     (package / "domains" / "__init__.py").write_text("", encoding="utf-8")
-    escrow = owner("cbr/escrow")
-    owner("cbr/reporting_forms")
+    first = owner("publisher/first")
+    owner("publisher/second")
     owner("fns/sme_register")
-    sors = owner("cbr/corporate_lending/sors_restoration")
-    owner("cbr/corporate_lending/industries/debt_0105a")
 
-    (escrow / "bad.py").write_text(
-        "from stratbox.domains.cbr.reporting_forms import contracts\n"
+    (first / "bad.py").write_text(
+        "from stratbox.domains.publisher.second import contracts\n"
         "from stratbox.domains.fns.sme_register import operations\n",
         encoding="utf-8",
     )
-    (sors / "allowed.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import schema\n",
+    (first / "allowed.py").write_text(
+        "from stratbox.domains.publisher.first import schema\n",
         encoding="utf-8",
     )
     check.__globals__["SRC"] = source

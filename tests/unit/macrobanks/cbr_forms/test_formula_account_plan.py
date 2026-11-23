@@ -5,15 +5,15 @@ from importlib.resources import files
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr import reporting_forms as forms
-from stratbox.domains.cbr.reporting_forms.common.formula import build_formula_long
-from stratbox.domains.cbr.reporting_forms.common.models import parse_form_model
-from stratbox.domains.cbr.reporting_forms.forms.form101 import DEFAULT_SPEC
+from stratbox.domains.cbr.operations import reporting_forms as forms
+from stratbox.domains.cbr.analytics.reporting_forms.formula import build_formula_long
+from stratbox.domains.cbr.analytics.reporting_forms.model import parse_form_model
+from stratbox.domains.cbr.tables.reporting_forms.layouts.form101 import DEFAULT_SPEC
 
 
 def _model():
     return parse_form_model(
-        files("stratbox.domains.cbr.reporting_forms.models").joinpath("form101.csv").read_bytes(),
+        files("stratbox.domains.cbr.analytics.reporting_forms.models").joinpath("form101.csv").read_bytes(),
         "101",
     )
 

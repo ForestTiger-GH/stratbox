@@ -1,16 +1,17 @@
 # CBR industries — monthly corporate loan issuance (01_04_A)
 
-The `stratbox.domains.cbr.corporate_lending.industries.issuance_0104` package is the second
-operation owner under the industry-statistics family. It reads the Bank of Russia
-`01_04_A_New_loans_corp_YYYYMMDD.xlsx` monthly workbooks as corporate loan
-**flows**, independently of the `01_05_A_Debt_corp` **stock** series. Both
-series have local `_registration.py` declarations. Shared industry selection, cell validation, worksheet rendering,
-and operation evidence helpers reside in `industries.common`; the issuance
-adapter also uses the explicitly identified reference industry, geography
-and APK profiles of `industries.debt_0105a`.
-Structural industry, region, validation, APK result and pivot result contracts
-are owned by `industries.common.contracts`; shared structural shapes do not
-make stock and flow equivalent or imply an unreviewed publication profile.
+The `stratbox.domains.cbr.operations.corporate_lending.issuance` API processes
+Bank of Russia `01_04_A_New_loans_corp_YYYYMMDD.xlsx` monthly workbooks as
+corporate loan flows. Debt stocks from `01_05_A_Debt_corp` have separate
+source semantics. A single root CBR registration exposes both routes.
+
+Publication discovery and release-period rules belong to
+`publications.corporate_lending`. Source parsing and common published dimensions
+belong to `tables.corporate_lending`. Cross-release normalization belongs to
+`integration.corporate_lending`; APK calculations belong to
+`analytics.corporate_lending.industry`; prepared views and rendering belong to
+`products.corporate_lending`. Shared industry shapes support both stock and flow
+without assigning issuance to the debt implementation.
 
 ## Public operations
 
@@ -19,11 +20,17 @@ make stock and flow equivalent or imply an unreviewed publication profile.
 | `discover` | `DiscoverIssuanceRequest` | Dated official source links |
 | `acquire` | `IssuanceSourceLink` | Verified original `AcquiredSource` |
 | `parse` | `ParseIssuanceRequest` | One semantic `ParsedIssuanceFile` |
-| `build_stream` | `BuildIssuanceStreamRequest` | Canonical regional-industry history |
+| `build_stream` | `BuildIssuanceStreamRequest` | Explicit parse/integrate composition over selected originals |
+| `integrate_flakes` | `IntegrateIssuanceFlakesRequest` | History built from independently retained source flakes |
 | `calculate_apk` | `CalculateIssuanceApkRequest` | Shared APK calculation and augmented stream |
-| `build_pivots` | `PivotIssuanceRequest` | Generic two-dimensional pivots |
+| `build_pivots` | `PivotIssuanceRequest` | Prepared two-dimensional product tables |
+| `render_pivots` | `RenderIssuancePivotsRequest` | Workbook encoding from prepared tables |
 | `render_industry` | `IssuanceWorkbookRequest` | One independently verified XLSX representation |
 | `render_industries` | `RenderIssuanceIndustriesRequest` | Batch of XLSX representations from one verified snapshot |
+
+Flakes, integrated histories, calculations and prepared views each have complete
+snapshot/read operations. The [corporate lending route](cbr-corporate-lending.md)
+shows how to retain and continue each boundary through neutral dataset storage.
 
 Use `OperationResult.outcome` and diagnostics before consuming `.value`. Only
 complete streams can be rendered by `render_industry`; partial collection is
@@ -65,11 +72,11 @@ month; the returned `IssuanceWorkbookResult` exposes both time scales.
 ```python
 from pathlib import Path
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as loans
+from stratbox.domains.cbr.operations.corporate_lending import issuance as loans
 
 path = Path("01_04_A_New_loans_corp_20260801.xlsx")
 request = loans.ParseIssuanceRequest(SourcePayload(path.read_bytes()), path.name)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
+from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySelection
 
 stream_run = loans.build_stream(loans.BuildIssuanceStreamRequest(
     (request,), selection=IndustrySelection(("apk", "total")),

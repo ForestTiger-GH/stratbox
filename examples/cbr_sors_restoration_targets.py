@@ -3,7 +3,7 @@
 import argparse
 
 from cbr_sors_restoration_colab import run, source_files
-from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
+import stratbox.domains.cbr.operations.corporate_lending.sors as sors
 
 
 def main():

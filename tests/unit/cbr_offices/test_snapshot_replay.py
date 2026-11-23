@@ -18,8 +18,8 @@ from stratbox.core.network import HttpResponse
 from stratbox.core.storage.datasets import operations as datasets
 from stratbox.core.storage.datasets.files import FileDatasetStore
 from stratbox.core.storage.filestore.local import LocalFileStore
-from stratbox.domains.cbr.service_network import bank_offices as daily
-from stratbox.domains.cbr.service_network import territorial_offices as monthly
+from stratbox.domains.cbr.operations.service_network import bank_offices as daily
+from stratbox.domains.cbr.operations.service_network import territorial_offices as monthly
 from stratbox.domains.registry import operation_catalog
 from stratbox.shared.data.releases import CompareReleaseRequest
 from stratbox.shared.evidence import SourcePayload
@@ -71,7 +71,7 @@ def test_daily_complete_replay_preserves_dates_and_comparison(tmp_path, monkeypa
     encoded = accepted(bind_request(daily.SNAPSHOT, {"release": project_output(parsed, "release")},
         parameters={"dataset_id": "office.observations", "version_id": "release-1"}).invoke(daily.snapshot_release))
     loaded, reference = roundtrip(tmp_path, encoded.value)
-    from stratbox.domains.cbr.service_network.bank_offices import operations
+    from stratbox.domains.cbr.operations.service_network.bank_offices import operations
     monkeypatch.setattr(operations, "extract_records", lambda *_: pytest.fail("replay parsed the original HTML"))
     restored = accepted(bind_request(daily.RESTORE, {"snapshot": project_output(loaded, "snapshot")}).invoke(daily.restore_release))
     assert restored.value == parsed.value
@@ -88,7 +88,7 @@ import json, sys
 from stratbox.core.storage.datasets import operations as datasets
 from stratbox.core.storage.datasets.files import FileDatasetStore
 from stratbox.core.storage.filestore.local import LocalFileStore
-from stratbox.domains.cbr.service_network import bank_offices as offices
+from stratbox.domains.cbr.operations.service_network import bank_offices as offices
 from stratbox.shared.data.releases import CompareReleaseRequest
 from stratbox.shared.data.snapshots import SnapshotReference
 from stratbox.shared.identity import ByteIdentity
@@ -158,7 +158,7 @@ def test_territorial_selection_formula_unknown_fields_and_scope_survive(tmp_path
     assert "Новая территория 000" in {item.subject.id for item in value.batch.observations}
     encoded = accepted(monthly.snapshot_release(monthly.SnapshotOfficesRegRequest(value, "offices.territory", "one")))
     loaded, _ = roundtrip(tmp_path, encoded.value)
-    from stratbox.domains.cbr.service_network.territorial_offices import operations
+    from stratbox.domains.cbr.operations.service_network.territorial_offices import operations
     monkeypatch.setattr(operations, "convert_xlsx", lambda *_args, **_kwargs: pytest.fail("replay parsed original XLSX"))
     restored = accepted(bind_request(monthly.RESTORE, {"snapshot": project_output(loaded, "snapshot")}).invoke(monthly.restore_release)).value
     assert restored == value

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "family_id": "cbr.exchange_rates",
+  "series": [
+    {
+      "series_id": "cbr.exchange_rates.exchange_rate",
+      "family_id": "cbr.exchange_rates",
+      "title": "Exchange rate indices",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.exchange_rate",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.exchange_rate.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "family_id": "cbr.funding",
+  "series": [
+    {
+      "series_id": "cbr.funding.funds_all",
+      "family_id": "cbr.funding",
+      "title": "Client funds by published component",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.funds_all",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.funds_all.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.funds_clients",
+      "family_id": "cbr.funding",
+      "title": "Client funds",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.funds_clients",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.funds_clients.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.funds_org",
+      "family_id": "cbr.funding",
+      "title": "Organization funds",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.funds_org",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.funds_org.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.dep_corp",
+      "family_id": "cbr.funding",
+      "title": "Corporate deposits excluding individual entrepreneurs",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.dep_corp",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.dep_corp.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.dep_ind",
+      "family_id": "cbr.funding",
+      "title": "Household deposits and funds including escrow",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.dep_ind",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.dep_ind.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.dep_ind_no_escrow",
+      "family_id": "cbr.funding",
+      "title": "Household deposits excluding escrow",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.dep_ind_no_escrow",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.dep_ind_no_escrow.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.dep_entrepreneur",
+      "family_id": "cbr.funding",
+      "title": "Individual entrepreneur funds",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.dep_entrepreneur",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.dep_entrepreneur.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.escrow_accounts",
+      "family_id": "cbr.funding",
+      "title": "Escrow account balances",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.escrow_accounts",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.escrow_accounts.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.funding.budget_all",
+      "family_id": "cbr.funding",
+      "title": "Budget funds",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.budget_all",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.budget_all.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    }
+  ]
+}

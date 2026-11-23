@@ -2,7 +2,7 @@
 
 ## Implemented scope
 
-`stratbox.domains.cbr.corporate_lending.sors_restoration` reconstructs regional
+`stratbox.domains.cbr.analytics.corporate_lending.sors` reconstructs regional
 OKVED2 observations from corporate, SME and SME-IE publications. The source
 bundle, strict restoration and crosswalk each have a complete `DatasetSnapshot`
 codec. A retained strict result contains the source data needed to build a fresh
@@ -10,28 +10,56 @@ crosswalk model. A retained crosswalk contains that strict result and its source
 bundle. Solver sessions, Python pickles and live workbook objects are outside the
 snapshot format.
 
-This route makes material boundaries independent of a process lifetime:
+The public operation API is `stratbox.domains.cbr.operations.corporate_lending.sors`.
+Source extraction belongs to `tables.corporate_lending`, qualified model input preparation belongs
+to `analytics.corporate_lending.sors.inputs`, and prepared products belong to
+`products.corporate_lending.sors`.
 
-1. Acquire caller-selected publication bytes, or reuse the complete 0105a flake.
-2. Run `load_sources` to extract, align and validate a source bundle.
-3. Encode the bundle, write it through neutral dataset storage, read its pinned
-   reference, and decode it when computation is required.
-4. Run `restore` on that reconstructed bundle with an explicit `SorsRunConfig`.
-5. Retain and read the strict result independently. `run_crosswalk` then rebuilds
-   its model from retained source data and component bounds.
-6. Retain and read the crosswalk independently. `build_pivot` and
-   `render_workbook` consume reconstructed domain results.
+The independent route is:
 
-`load_sources` remains an explicit extraction-and-integration composition for
-the eleven input roles below. Individual source flakes for the other ten roles
-are not implemented by this change. The existing source adapters and validation
-profile still qualify a specific publication structure; portability does not
-extend their coverage to arbitrary historical CBR layouts.
+1. Acquire and identify selected publication originals through `publications`.
+2. Extract complete workbook flakes and independent corporate observations;
+   extract the regional 0105a workbook through its specialized source parser.
+3. Run `prepare_inputs` on those retained source observations and the complete
+   regional flake to align and validate a model input bundle.
+4. Retain the bundle through neutral dataset storage and read it in another
+   invocation when calculation is required.
+5. Run pure `restore` on the qualified bundle with an explicit `SorsRunConfig`.
+6. Retain and read the strict result. `run_crosswalk` rebuilds its model from the
+   retained source data and strict component bounds.
+7. Run `build_views` on a strict or crosswalk result. It prepares every selected
+   data, pivot, dimension and audit sheet into a complete `SorsViewPack`.
+8. Retain and read that view pack independently; `render_views` encodes only the
+   supplied prepared sheets into a workbook.
+
+| Code | Operation | Declared work and admitted input |
+| --- | --- | --- |
+| P1 | `prepare_inputs` | Integration of sealed corporate source observations and a complete parsed 0105a flake |
+| P2 | `prepare_from_flakes` | Explicit extraction/integration composition over workbook flakes and a parsed 0105a flake |
+| P3 | `prepare_from_originals` | Explicit extraction/integration composition over supplied publication bytes |
+| P4 | `restore` | Calculation from a qualified `SorsSourceBundle` only |
+| P5 | `restore_from_originals` | Explicit extraction/integration/calculation composition |
+| P6 | `build_views` | Product selection and preparation from a strict or crosswalk result |
+| P7 | `render_views` | Workbook encoding from a prepared, sealed `SorsViewPack` |
+
+The model input preparation has INTEGRATE semantics and belongs physically to
+the SORS analytical method because it applies that method's classifier, portfolio
+and rounding rules. Common industry history alignment remains under integration.
+The composition operations expose their stages in the catalog. `restore` never
+extracts a workbook implicitly. `prepare_inputs` never interprets unqualified
+workbook cells. `render_views` never chooses a model scope, builds a pivot or
+runs the solver. These entry points allow a caller to retain the intermediate
+result appropriate to its own workflow.
+
+The source observation profiles retain all periods by default, with exact
+numbers, missing-value statuses and source references. Their source layout
+qualification remains explicit; this route does not claim support for every
+historical CBR workbook edition.
 
 ## Declared publications
 
 `DEPENDENCIES` is the machine-readable declaration. Logical publication IDs are
-resolved through the shared CBR publication registry. Acquisition profiles own
+resolved through the shared CBR publication catalog. Acquisition profiles own
 URLs and file selection. SORS owns the computational purpose of each input.
 
 | Input field | Publication | Requirement | Computational purpose |
@@ -63,29 +91,48 @@ tables fail admission. An unknown historical coverage claim does not waive
 these requirements. The default coverage remains `unknown`: a complete set of
 inputs for one calculation does not prove publisher history completeness.
 
-## Reusing the 0105a flake
+## Reusing source observations and the 0105a flake
 
-`SorsSourceInputs.regional_traditional` accepts either a `SourcePayload` or a
-`ParsedCbr0105ADebtCorpFile` returned by the shared 0105a extractor, including one
-reconstructed from a stored flake snapshot. Other source fields currently accept
-original payloads.
+Each nonregional source field admits a `CorporateSourceDataset` produced by
+`cbr.corporate_lending.extract_observations`, including its independently read
+snapshot. `prepare_inputs` requires that interpreted and sealed value. The
+explicit `prepare_from_flakes` composition also admits an all-sheet
+`WorkbookFlake` and runs its source-local interpretation before integration.
+`prepare_from_originals` also admits original `SourcePayload` values. The
+operation-specific admission rule applies even though `SorsSourceInputs`
+represents the common collection of dependency roles.
 
-The flake bridge verifies its computation seal, original identity, report date,
-geography reference and full source dimensions. A selected industry subset is
-insufficient for SORS and is rejected. The projection preserves original source
-coordinates and identity, then applies the explicitly selected publication
-rounding policy. It does not reopen the workbook. The source-bundle receipt
-retains the flake extraction as a computational parent.
+`regional_traditional` uses the complete `ParsedCbr0105ADebtCorpFile` in the
+retained-input routes. The regional bridge verifies the extraction seal,
+original identity, report date, geography edition and complete dimensions: all
+six measure/currency sheets, 96 geographic rows and 26 published activity
+categories. Selected industry flakes remain valid for ordinary industry work
+but fail this model's complete-input admission.
 
-The source manifest uses the original workbook's byte hash and size from the
-flake's source receipt. It does not substitute the size or identity of a flake
-encoding. Rebuilding an input bundle from a flake therefore preserves its
-published-source identity while recording a different computational route.
+National and SME source datasets retain multiple reporting dates independently
+of SORS. Federal district datasets retain loan flows as reference months as
+well as debt and overdue stocks as dates. Model preparation selects the
+requested stock date, qualifies activity/geography mappings, checks dimensions
+and applies the caller's explicit rounding policy. Blank cells, markers and
+uncached formulas remain visible in the source artifact; required unresolved
+model values block preparation rather than becoming zeroes.
+
+The original source hash and byte size remain distinct from the identity and
+size of an encoded flake. A prepared input bundle retains source receipts and
+the independently supplied source-observation computations as parents. Its
+source manifest continues to identify the publisher original.
+
+Model input scope remains complete when an outward product requests one region,
+one activity, or a small metric set. All ten required publication roles and the
+three portfolio scopes participate in the reconstruction contract. An output
+filter therefore cannot remove national, district or auxiliary SME constraints.
+The optional regional history supports an additional consistency check.
 
 ## Snapshot contents and integrity
 
-All snapshots have a canonical context table, a dataframe descriptor table and
-typed components for every domain grid. The neutral dataframe codec preserves
+Bundle and model snapshots have a canonical context table, a dataframe
+descriptor table and typed components for every domain grid. Prepared-view
+snapshots have a context component and every selected product sheet. The neutral dataframe codec preserves
 column order, indexes, dtypes, tuple-valued expressions, missing values and
 unbounded numerical intervals. Full source and result grids retain publication
 tokens, coordinates and interval semantics where supplied by their adapters.
@@ -95,6 +142,7 @@ tokens, coordinates and interval semantics where supplied by their adapters.
 | Bundle | Every source-specific and combined grid; geography and classifier dimensions; categories; bindings; validation; source and dependency manifests; original and reference receipts; report date; rounding step; coverage; adapter version; computation receipt |
 | Restoration | Complete bundle plus all strict result, component, constraint, fact, derivation, rounding, optimization, conflict and audit grids; summary; complete run configuration; computation receipt |
 | Crosswalk | Complete restoration plus all crosswalk facts, bounds, mappings, relations, scenario, solver and diagnostic grids; scenario configuration; mapping version; run ID; computation receipt |
+| Prepared views | Every selected sheet in order, complete table values and dtypes, sheet names, product profile, source result identity and view computation receipt |
 
 `source_bundle`, `run_config`, `strict_result` and `crosswalk_config` are explicit
 typed dependencies. A tabular export containing only the primary output grid
@@ -117,12 +165,13 @@ decoding requires every component of the declared snapshot.
 
 ## API example
 
-The following sequence assumes `sources` is an admitted `SorsSourceInputs`,
+The following sequence assumes `sources` contains interpreted source
+observations and the complete regional 0105a flake in a `SorsSourceInputs`,
 `config` is the requested `SorsRunConfig`, and `dataset_store` is a caller-selected
 dataset adapter. Operation outcomes must be checked before consuming `.value`.
 
 ```python
-from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
+from stratbox.domains.cbr.operations.corporate_lending import sors
 from stratbox.core.storage.datasets.definitions import (
     ReadSnapshotRequest, WriteSnapshotRequest,
 )
@@ -135,7 +184,7 @@ def checked(result):
     return result.value
 
 
-bundle = checked(sors.load_sources(sors.LoadSorsRequest(sources, config)))
+bundle = checked(sors.prepare_inputs(sors.PrepareSorsRequest(sources, config)))
 encoded = checked(sors.build_bundle_snapshot(sors.SorsBundleSnapshotRequest(bundle)))
 reference = checked(write_snapshot(
     WriteSnapshotRequest(encoded), store=dataset_store,
@@ -157,7 +206,16 @@ replayed_strict = checked(sors.read_restoration_snapshot(sors.ReadSorsSnapshotRe
 crosswalk = checked(sors.run_crosswalk(sors.CrosswalkSorsRequest(
     replayed_strict, sors.SorsCrosswalkConfig(mode="feasibility"),
 )))
-workbook = checked(sors.render_workbook(sors.RenderSorsRequest(crosswalk)))
+views = checked(sors.build_views(sors.BuildSorsViewsRequest(crosswalk)))
+encoded_views = checked(sors.build_view_snapshot(sors.SorsViewSnapshotRequest(views)))
+view_reference = checked(write_snapshot(
+    WriteSnapshotRequest(encoded_views), store=dataset_store,
+)).reference
+
+# Rendering can begin in another process with only this prepared-view snapshot.
+material = checked(read_snapshot(ReadSnapshotRequest(view_reference), store=dataset_store))
+replayed_views = checked(sors.read_view_snapshot(sors.ReadSorsSnapshotRequest(material)))
+workbook = checked(sors.render_views(sors.RenderSorsRequest(replayed_views)))
 ```
 
 The crosswalk has the analogous `build_crosswalk_snapshot` and
@@ -179,14 +237,14 @@ qualified classifier and requested mapping edition, and the official HiGHS
 backend. Solver identity and runtime diagnostics remain in the result. A
 snapshot retains data and evidence rather than an executable environment;
 repeating a solve under a different implementation or backend version is a new
-computation with its own receipt. Rendering an existing result does not require
-running HiGHS again.
+computation with its own receipt. Rendering a prepared view pack requires its data and renderer; source
+workbooks, source-bundle reconstruction and a solver session are unnecessary.
 
 Tests exercise complete grid and evidence round trips, incomplete and mutated
 context rejection, and a separate Python process that reads a retained bundle,
 runs the real strict solver, encodes and reads its result, reads an independently
 retained strict result, runs a real crosswalk, retains that crosswalk, builds a
-pivot and renders a workbook. The bounded numerical fixture identifies two
+pivot, retains and reads a complete prepared-view pack, and renders its workbook. The bounded numerical fixture identifies two
 legacy-to-OKVED2 values as 90 and 10. These tests establish computational
 continuation; they do not certify all historical publications or the economic
 adequacy of every mapping scenario.

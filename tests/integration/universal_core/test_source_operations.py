@@ -12,8 +12,8 @@ from stratbox.core.network import HttpResponse
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.data.releases import CompareReleaseRequest, ReadReleaseRequest
-from stratbox.domains.cbr.service_network import bank_offices as daily
-from stratbox.domains.cbr.service_network import territorial_offices as monthly
+import stratbox.domains.cbr.operations.service_network.bank_offices as daily
+import stratbox.domains.cbr.operations.service_network.territorial_offices as monthly
 from stratbox.domains.fns import legal_entities_1yur
 from stratbox.domains.fns import sme_register
 

@@ -13,13 +13,15 @@ from stratbox.core.operations.materials.definitions import ReadLocationRequest
 from stratbox.core.operations.materials.operations import read_location
 from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding, ProviderSelection
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.publications import (
+from stratbox.domains.cbr.operations.publications import (
     DiscoverRequest, IdentifyRequest, ListSourcesRequest, discover, identify, list_sources,
 )
-from stratbox.domains.cbr.publications.definitions import IDENTIFY
-from stratbox.domains.cbr.publications.registry import CATALOG_SERIES, all_sources, validate_profiles
-from stratbox.domains.cbr.publications.profiles import processing_profile
-from stratbox.domains.cbr.file_collection.materials import CollectMaterial, CollectMaterialsRequest, collect_materials
+from stratbox.domains.cbr.operations.publications.definitions import IDENTIFY
+from stratbox.domains.cbr.publications.selection import CATALOG_SERIES
+from stratbox.domains.cbr.publications.catalog import all_sources
+from stratbox.domains.cbr.operations.bindings import validate_all_profiles as validate_profiles
+from stratbox.domains.cbr.operations.bindings import processing_profile
+from stratbox.domains.cbr.operations.collection.materials import CollectMaterial, CollectMaterialsRequest, collect_materials
 from stratbox.domains.registry import operation_catalog
 from stratbox.shared.data.processing import DataRole
 from stratbox.shared.evidence import SourcePayload
@@ -164,11 +166,11 @@ def test_discovery_resolves_context_http_binding_and_preserves_alternative_route
     assert value.coverage.status == "unknown" and value.rejected_links == 1
 
 
-def test_fixed_source_without_extractor_is_original_only_and_explicit_empty_page_is_invalid():
+def test_fixed_source_binds_complete_workbook_extraction_and_rejects_empty_page_url():
     payload = SourcePayload(b'<a href="/vfs/statistics/BankSector/Loans_to_corporations/01_02_A_Debt_corp_by_activity.xlsx">file</a>')
     value = good(discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload)))
-    assert value.assets[0].recognition == "original_only"
-    assert value.assets[0].extraction_profile is None
+    assert value.assets[0].recognition == "registered_variant"
+    assert value.assets[0].extraction_profile == "cbr.workbook.flake.v1"
     invalid = discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload, page_url=""))
     assert invalid.outcome == "failed" and invalid.diagnostics[0].code == "request.source_url_invalid"
 

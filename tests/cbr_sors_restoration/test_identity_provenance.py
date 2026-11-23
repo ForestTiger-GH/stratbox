@@ -10,10 +10,10 @@ from dataclasses import fields, replace
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.contracts import (
-    SorsSourceBundle, SorsRunConfig, SorsDeterministicConfig,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.operations import _identities
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsDeterministicConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.operations import _identities
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.reference.assets import (
@@ -118,13 +118,13 @@ def test_sors_dataset_identity_ignores_classifier_policy_but_model_does_not():
 
 def test_unsealed_prebuilt_sors_bundle_is_rejected_before_solver():
     from stratbox.core.execution import OperationFailure
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.api import _use_grids
+    from stratbox.domains.cbr.operations.corporate_lending.sors.api import _use_grids
     with pytest.raises(OperationFailure, match="input.snapshot_required"):
         _use_grids(None, _bundle((_classifier(),)), "sors_source_bundle")
 
 
 def test_strict_identity_fingerprints_classifier_byte_and_edition_changes(monkeypatch):
-    import stratbox.domains.cbr.corporate_lending.sors_restoration.operations as operations
+    import stratbox.domains.cbr.analytics.corporate_lending.sors.operations as operations
     from stratbox.shared.reference.assets import qualified_reference_use
     receipt = _classifier()
     used = qualified_reference_use(

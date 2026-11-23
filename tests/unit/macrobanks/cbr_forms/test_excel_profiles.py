@@ -8,12 +8,12 @@ from openpyxl import load_workbook
 from datetime import date
 from io import BytesIO
 
-from stratbox.domains.cbr.reporting_forms import FormData, FormKey, SelectFormSourcesRequest, build_form_views, render_workbook, select_sources
-from stratbox.domains.cbr.reporting_forms.common.direct_form import build_direct_long
-from stratbox.domains.cbr.reporting_forms.common.excel_profiles import build_hierarchical_statement_sheets
-from stratbox.domains.cbr.reporting_forms.common.models import get_model_for, load_models
-from stratbox.domains.cbr.reporting_forms.forms import form802
-from stratbox.domains.cbr.reporting_forms.forms.registry import FORM_REGISTRY
+from stratbox.domains.cbr.operations.reporting_forms import FormData, FormKey, SelectFormSourcesRequest, build_form_views, render_workbook, select_sources
+from stratbox.domains.cbr.analytics.reporting_forms.direct_form import build_direct_long
+from stratbox.domains.cbr.products.reporting_forms.excel_profiles import build_hierarchical_statement_sheets
+from stratbox.domains.cbr.analytics.reporting_forms.model import get_model_for, load_models
+from stratbox.domains.cbr.tables.reporting_forms.layouts import form802
+from stratbox.domains.cbr.products.reporting_forms.profiles import FORM_VIEW_PROFILES
 
 
 def _banks() -> pd.DataFrame:
@@ -60,10 +60,10 @@ def test_source_selection_preserves_dates_supplied_by_the_consumer() -> None:
 
 
 def test_registry_assigns_hierarchical_profile_only_to_802() -> None:
-    assert FORM_REGISTRY["802"].excel_profile == "hierarchical_statement"
+    assert FORM_VIEW_PROFILES["802"] == "hierarchical_statement"
     assert {
-        code: entry.excel_profile
-        for code, entry in FORM_REGISTRY.items()
+        code: profile
+        for code, profile in FORM_VIEW_PROFILES.items()
         if code != "802"
     } == {
         "101": "standard",

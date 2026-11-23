@@ -49,9 +49,11 @@ actual callable coverage is inspected separately.
 
 ## 2. Definitions, executable handlers and machine schemas
 
-An owner keeps typed definitions in a lightweight `definitions.py` module and
-imports those same objects into `operations.py` or `api.py`. Neutral original
-operations use `original_definitions.py` and `version_definitions.py`.
+An owner keeps typed definitions in lightweight metadata modules and imports
+those same objects into executable handlers. CBR organizes these modules under
+functional segments of `operations/`; each segment can have several focused
+definition and handler modules. Neutral original operations use
+`original_definitions.py` and `version_definitions.py`.
 The definition holds request/result classes, method identity, capability and
 effect declarations, resource limits and optional `OperationSemantics`.
 
@@ -83,7 +85,8 @@ from stratbox.domains.registry import operation_catalog
 
 catalog = operation_catalog()
 page = catalog.page(
-    owner_id="cbr.service_network.bank_offices",
+    owner_id="cbr",
+    query="cbr.offices.",
     stage="extract",
     role="extracts",
     offset=0,
@@ -111,6 +114,59 @@ handler declaration alone grants no machine interface. Network, writes and
 publication still require the host's actual provider and authorization boundary.
 The core supplies no MCP server or application task manager.
 
+### CBR source and family descriptions
+
+CBR has one registered operation owner, `cbr`. Functional segments under
+`stratbox.domains.cbr.operations` contribute references to that root. Source
+identifiers such as `cbr.reporting_forms.f802` and
+`cbr.service_network.bank_offices` are publication identities, so they are not
+valid substitutes for `owner_id="cbr"` in generic owner coverage.
+
+The domain supplies a more specific read-only interface:
+
+```python
+from stratbox.domains.cbr.operations.catalog import (
+    DescribeSourceRequest, DescribeFamilyRequest,
+    describe_source, describe_family,
+)
+
+source_result = describe_source(DescribeSourceRequest(
+    "cbr.reporting_forms.f802", format="rar",
+))
+assert source_result.outcome == "succeeded", source_result.diagnostics
+source = source_result.value
+for operation in source.operations:
+    print(operation.key, operation.method_version, operation.parameters)
+for stage in source.stages:
+    print(stage.stage.value, stage.state, stage.qualifications)
+
+family_result = describe_family(DescribeFamilyRequest("cbr.reporting_forms"))
+assert family_result.outcome == "succeeded", family_result.diagnostics
+for stage in family_result.value.stages:
+    print(stage.stage.value, stage.conditional_sources, stage.missing_sources)
+```
+
+The registered operation IDs are `cbr.describe_source@1` and
+`cbr.describe_family@1`. `DescribeSourceRequest` accepts `series_id` and optional
+`format`, `table_id` and `edition` selectors. Unknown sources, formats, tables
+and editions fail admission instead of inheriting another source's capabilities.
+
+| Source-card field | Meaning |
+| --- | --- |
+| `source`, `table_profile`, `tables` | Logical publication, reviewed table variants, physical patterns, schemas, dimensions, period basis and unit policy |
+| `profiles` | Extraction, source projection, financial model, integration and product profiles with editions and applicable operation keys |
+| `operations` | Exact registered versions, method versions, ports, parameters, composition flags and source-specific qualifications |
+| `stages` | Applicability for this source and selection, including conditional interpretation and missing work |
+| `handoffs` | Compatible direct ports, explicit collection assembly and crossings to delegated neutral operations |
+| `delegated_operations` | Actual neutral storage/archive contracts requiring caller-selected infrastructure |
+| `supported_formats`, `original_only_formats` | Formats with a reviewed source extractor versus formats admitted only for original preservation |
+
+These cards resolve operation metadata from the executable registry. They are
+bindings to existing definitions rather than a second executable catalog.
+`describe_family` preserves each source's description and separately lists
+supported, conditional, missing and delegated sources for every stage. It also
+exposes multi-source method dependency contracts where the family declares them.
+
 ## 4. Semantic connections retain their conditions
 
 ```python
@@ -123,8 +179,11 @@ for link in links:
 
 Each `InputPort` and `OutputPort` identifies a logical port, its schema and
 an attribute path relative to the typed request or returned value. An empty
-path denotes the whole object. Paths describe binding locations; the library
-does not evaluate them or construct subsequent requests automatically.
+path denotes the whole object. Metadata inspection never invokes handlers.
+The explicit `project_output` and `bind_request` helpers in
+`stratbox.core.execution.handoff` apply declared paths to checked outputs and
+caller-supplied parameters. They do not select a business route on the caller's
+behalf.
 
 Connections require an exact schema ID, edition and role match, or an explicitly
 listed input alternative. Output and accepted-input outcome sets must overlap.
@@ -153,7 +212,7 @@ their owner; this check performs no content verification.
 ## 5. Domain coverage and bound delegation
 
 ```python
-coverage = catalog.coverage("cbr.service_network.bank_offices")
+coverage = catalog.coverage("cbr")
 for item in coverage:
     print(item.stage.value, item.state, item.operations, item.reason)
 ```
@@ -181,10 +240,12 @@ stage mismatches and delegation to a composite fail explicitly. Use the merged
 
 Selected statistical owners delegate original save/read calls to neutral source
 operations. Their binding retains source-issue association and requires
-source-specific readmission after reading. Complete domain snapshot constructors
-advertise `render`; ingestion delegates to `dataset.write_snapshot`, whose
-receiving adapter performs the actual persistent write. Snapshot reads and
-domain restore operations provide the explicit continuation boundary.
+source-specific readmission after reading. Snapshot constructors produce
+portable logical values; their declared stages reflect the encoded boundary
+or a representation-rendering step. Encoding itself performs no persistence.
+Ingestion delegates to `dataset.write_snapshot`, whose receiving adapter
+performs the actual write. Snapshot reads and domain restore operations provide
+the explicit continuation boundary.
 
 Missing readable conversion, semantic integration or external publication stages
 remain visible where the owner has no implementation. A shared ingestion adapter
@@ -195,6 +256,61 @@ absent functionality.
 Runtime availability is separate: an implemented acquisition can still require
 an HTTP provider in a particular environment. Likewise, an unused stage does
 not become inapplicable merely because one consumer omits it.
+
+### CBR source coverage remains narrower than aggregate domain coverage
+
+The root CBR registration aggregates publication lifecycle, source extraction,
+statistical integration, financial models, office counts, escrow and corporate
+lending methods. `coverage("cbr")` therefore describes the union of declared
+implementations. A consumer planning work for one source uses its source card
+and input qualifications as well.
+
+CBR source-stage states are `supported`, `conditional`, `missing` and `delegated`.
+They qualify business scope rather than replace the generic owner-level states
+above. In particular, semantic integration, calculation and view construction
+are conditional on admitted source/table editions and explicit interpretation.
+A `supported` renderer can still be a source-flake exporter rather than a
+financial-workbook renderer.
+
+| CBR scope | Actual independent coverage | Scope that remains qualified |
+| --- | --- | --- |
+| The 44 registered workbook-flake series | `cbr.tables.extract`, `validate`, `compare`, `readable`, `flake_snapshot`, `read_flake_snapshot`; `cbr.statistics.align`, `calculate_change`, `calculate_share`, `build_view`, `render_view` and dataset/view replay operations | Complete source-cell extraction precedes economic interpretation. Source variants, units, periods, mappings and formula caches determine admitted analytical coverage. |
+| Six modeled reporting forms | Source projection; semantic alignment; `prepare_model_inputs`; `calculate`; prepared views; result and observation replay; workbook rendering | One reviewed form per model input, complete source channels, exact metric/unit/scale, subject and period bindings, formula axes and explicit subject selection |
+| Forms `134` and `803` | All-member DBF extraction, readable source records, source comparison, typed flake replay and CSV collections | Reviewed projection, semantic alignment, financial calculation and financial views are missing; source export rendering remains available |
+| Office-network publications | Qualified source release/history, explicit identity alignment, count changes, prepared views and CSV/XLSX rendering | Known official state date is separate from capture date; unresolved geography, selected fragments and formula-cache exclusions remain explicit |
+| Escrow/project-finance publication | Reviewed regional workbook source, integrated data, prepared views, separate rendering and replay | Historical HTML has an original-preservation scope; metric definitions and source periods must remain qualified |
+| Corporate industry/SORS routes | Independent debt/issuance source flakes, integration, APK, views and rendering; SORS prepared bundles, restoration and retained products | Stock/flow meanings differ; SORS declares complete required inputs and an optional validation history independently of the displayed subset |
+
+The workbook series have callable processing routes beyond original acquisition.
+Their full physical cell coverage is a different claim from complete semantic
+interpretation. A shared `ObservationBatch` or dataset codec also establishes
+portable structure, not automatic cross-source metric or geography equivalence.
+
+### A retained reporting-form batch can enter the financial model independently
+
+For the six reviewed forms, the source card exposes these exact contracts:
+
+| Producer output | Consumer input | Meaning |
+| --- | --- | --- |
+| `cbr.forms.align@1` → `batch` | `cbr.forms.observations_snapshot@1` → `batch` | Encode aligned data before the neutral dataset write/read boundary |
+| `cbr.forms.restore_observations@1` → `batch` | `cbr.forms.prepare_model_inputs@1` → `batch` | Resume from retained semantic observations |
+| `cbr.forms.prepare_model_inputs@1` → `inputs` | `cbr.forms.calculate@1` → `inputs` | Admit reviewed model variables before evaluating the selected model |
+| `cbr.forms.calculate@1` → `data` | `cbr.forms.build_views@2` → `data` | Prepare presentation tables from calculated data |
+| `cbr.forms.build_views@2` → `views` | `cbr.forms.render_workbook@2` → `views` | Render independently of source reading or calculation |
+
+`cbr.forms.build_data@2` is an explicitly declared composition of
+source-projection alignment, model-input preparation and the same calculator.
+It does not provide the sole entry into calculation. Form `102` requires an
+explicit interval in either route, and bank and banking-group namespaces remain
+distinct.
+
+A source-card handoff with `assembly="direct"` means the output and input port
+shapes match. Its consumer's parameters and semantic conditions still apply;
+the generic catalog can therefore classify the same connection as
+`conditional`. `assembly="explicit_collection"` additionally requires the
+caller to assemble selected outputs into a tuple, resolve competing revisions
+and preserve coverage. Source-local projections cannot silently become an
+integrated collection merely by sharing the same file extension.
 
 ## 6. Execution evidence and independent local calls
 
@@ -229,6 +345,11 @@ Reuse those admitted definitions for application discovery rather than
 maintaining an independent application-only catalog. Declare genuinely missing
 or inapplicable stages and exact shared bindings where they are known.
 
-The same approach applies to future publishers and deeply nested owners.
-Automatic domain discovery and packaging validation impose no fixed owner or
-operation count.
+The same approach applies to future publisher domains and their functional
+segments. Choose the registration boundary deliberately: a nested implementation
+package does not require its own registered owner. Automatic discovery and
+packaging validation impose no fixed owner or operation count.
+
+See [functional domain boundaries](../architecture/domain-functional-semantics.md)
+and the maintained [CBR processing route](cbr-data-pipeline.md) for source-specific
+ownership and the independent continuation contracts.

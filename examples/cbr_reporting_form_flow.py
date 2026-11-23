@@ -24,8 +24,8 @@ from stratbox.core.storage.datasets.codec import reference_from, reference_value
 from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest, WriteSnapshotRequest
 from stratbox.core.storage.datasets.operations import read_snapshot, write_snapshot
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr import reporting_forms as forms
-from stratbox.domains.cbr.file_collection import CollectMaterial, CollectMaterialsRequest, collect_materials
+from stratbox.domains.cbr.operations import reporting_forms as forms
+from stratbox.domains.cbr.operations.collection import CollectMaterial, CollectMaterialsRequest, collect_materials
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.material_collections import decode_collection
 

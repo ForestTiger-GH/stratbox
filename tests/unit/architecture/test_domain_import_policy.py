@@ -43,10 +43,10 @@ def test_source_grouping_helpers_obey_publisher_boundaries(tmp_path):
 
 def test_distinct_owners_cannot_import_implementations(tmp_path):
     checker, domains = _checker(tmp_path)
-    source = _package(domains, "cbr/escrow", manifest=True)
-    _package(domains, "cbr/reporting_forms", manifest=True)
+    source = _package(domains, "publisher/first", manifest=True)
+    _package(domains, "publisher/second", manifest=True)
     (source / "bad.py").write_text(
-        "from stratbox.domains.cbr.reporting_forms import operations\n",
+        "from stratbox.domains.publisher.second import operations\n",
         encoding="utf-8",
     )
     assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
@@ -102,50 +102,51 @@ def test_invalid_intermediate_folder_fails_import_checker(tmp_path):
     assert any("unreachable_manifest" in x for x in checker["check_dependency_direction"]())
 
 
-def test_sors_only_imports_published_debt_parser_schema(tmp_path):
+def test_analytical_preparation_can_consume_source_tables(tmp_path):
     checker, domains = _checker(tmp_path)
-    sors = _package(domains, "cbr/corporate_lending/sors_restoration", manifest=True)
-    _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
+    _package(domains, "cbr", manifest=True)
+    sors = _package(domains, "cbr/analytics/corporate_lending/sors")
+    _package(domains, "cbr/tables/corporate_lending/debt")
     (sors / "allowed.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.parser "
+        "from stratbox.domains.cbr.tables.corporate_lending.debt.parser "
         "import parse_cbr_0105a_debt_corp_excel_bytes\n",
         encoding="utf-8",
     )
     assert checker["check_dependency_direction"]() == []
     (sors / "forbidden.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
-        "import operations\n",
+        "from stratbox.domains.cbr.operations.corporate_lending.debt import operations\n",
         encoding="utf-8",
     )
-    assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
+    assert any("upward CBR functional import" in x for x in checker["check_dependency_direction"]())
 
 
-def test_issuance_cannot_import_debt_operation_implementation(tmp_path):
+def test_source_tables_share_source_schemas_without_importing_operations(tmp_path):
     checker, domains = _checker(tmp_path)
-    debt = _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
-    flow = _package(domains, "cbr/corporate_lending/industries/issuance_0104", manifest=True)
+    _package(domains, "cbr", manifest=True)
+    _package(domains, "cbr/tables/corporate_lending/industry")
+    flow = _package(domains, "cbr/tables/corporate_lending/issuance")
     (flow / "allowed.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "from stratbox.domains.cbr.tables.corporate_lending.industry "
         "import schema\n",
         encoding="utf-8",
     )
     assert checker["check_dependency_direction"]() == []
     (flow / "forbidden.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
+        "from stratbox.domains.cbr.operations.corporate_lending.debt "
         "import operations\n",
         encoding="utf-8",
     )
-    assert any("cross-domain import" in x for x in checker["check_dependency_direction"]())
+    assert any("upward CBR functional import" in x for x in checker["check_dependency_direction"]())
 
-def test_issuance_cannot_import_stock_private_export_or_selection(tmp_path):
+def test_source_tables_cannot_import_product_or_calculation_logic(tmp_path):
     checker, domains = _checker(tmp_path)
-    flow = _package(domains, "cbr/corporate_lending/industries/issuance_0104", manifest=True)
-    _package(domains, "cbr/corporate_lending/industries/debt_0105a", manifest=True)
+    _package(domains, "cbr", manifest=True)
+    flow = _package(domains, "cbr/tables/corporate_lending/issuance")
     (flow / "bad.py").write_text(
-        "from stratbox.domains.cbr.corporate_lending.industries.debt_0105a "
-        "import export, selection\n",
+        "from stratbox.domains.cbr.products.corporate_lending import rendering\n"
+        "from stratbox.domains.cbr.analytics.corporate_lending import calculation\n",
         encoding="utf-8",
     )
     problems = checker["check_dependency_direction"]()
-    assert any("cross-domain import" in message and "export" in message for message in problems)
-    assert any("cross-domain import" in message and "selection" in message for message in problems)
+    assert any("upward CBR functional import" in message and "rendering" in message for message in problems)
+    assert any("upward CBR functional import" in message and "calculation" in message for message in problems)

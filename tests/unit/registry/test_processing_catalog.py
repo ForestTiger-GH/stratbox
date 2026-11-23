@@ -45,8 +45,8 @@ def test_pages_cover_the_catalog_in_stable_order_with_bounded_results():
 
 def test_stage_role_owner_and_machine_readiness_filters_are_independent():
     catalog = operation_catalog()
-    owner = "cbr.service_network.bank_offices"
-    extracted = catalog.page(owner_id=owner, stage="extract", role="extracts")
+    owner = "cbr"
+    extracted = catalog.page(owner_id=owner, stage="extract", role="extracts", query="cbr.offices.")
     assert {item["operation_id"] for item in extracted.entries} == {
         "cbr.offices.parse",
         "cbr.offices.capture",
@@ -133,17 +133,24 @@ def test_all_builtin_processing_parameters_and_port_roots_match_the_python_contr
             ), (definition.operation_id, port.path)
 
 
-def test_known_missing_stages_and_shared_storage_are_not_invented_tools():
+def test_cbr_scoped_stages_and_shared_storage_are_not_invented_tools():
     catalog = operation_catalog()
-    owner = "cbr.service_network.bank_offices"
+    owner = "cbr"
     coverage = {item.stage: item for item in catalog.coverage(owner)}
     assert coverage[ProcessingStage.EXTRACT].state == "implemented"
     assert coverage[ProcessingStage.PRESERVE].state == "delegated"
     assert coverage[ProcessingStage.PRESERVE].binding
-    assert coverage[ProcessingStage.INTEGRATE].state == "missing"
+    assert coverage[ProcessingStage.INTEGRATE].state == "implemented"
     assert coverage[ProcessingStage.INGEST].state == "delegated"
     assert coverage[ProcessingStage.INGEST].operations == (OperationKey("dataset.write_snapshot", 1),)
-    assert not catalog.page(owner_id=owner, stage="integrate").entries
+    assert coverage[ProcessingStage.PUBLISH].state == "missing"
+    assert catalog.page(owner_id=owner, stage="integrate").entries
+    from stratbox.domains.cbr.operations.bindings import bind_source
+    # Broad publisher coverage must not imply a financial model for every form.
+    scoped = bind_source("cbr.reporting_forms.f134", catalog=catalog)
+    stages = {item.stage: item for item in scoped.stages}
+    assert stages[ProcessingStage.EXTRACT].state == "supported"
+    assert stages[ProcessingStage.CALCULATE].state == "missing"
     assert catalog.get("cbr.offices.acquire", 2).required_capabilities == frozenset(
         {"http"}
     )

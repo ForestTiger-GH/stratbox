@@ -11,37 +11,30 @@ import pytest
 from openpyxl import Workbook, load_workbook
 
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.contracts import (
-    Cbr0105ADebtCorpIndustryWorkbookRequest,
-    Cbr0105ADebtCorpPivotRequest,
-    Cbr0105ADebtCorpPivotWorkbookRequest,
-    Cbr0105ADebtCorpSourceFailure,
-    Cbr0105ADebtCorpSourceLink,
-    Cbr0105ADebtCorpStreamResult,
-    Cbr0105ADebtCorpValidationIssue,
-)
+from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpIndustryWorkbookRequest
+from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest
+from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpPivotWorkbookRequest
+from stratbox.domains.cbr.tables.corporate_lending.debt.contracts import Cbr0105ADebtCorpSourceFailure
+from stratbox.domains.cbr.publications.corporate_lending.contracts import Cbr0105ADebtCorpSourceLink
+from stratbox.domains.cbr.integration.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
+from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustryValidationIssue as Cbr0105ADebtCorpValidationIssue
 from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-    ParseIndustryRequest, RenderIndustryRequest, RenderPivotRequest, parse, render_industry, render_pivots,
-)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import build_cbr_0105a_debt_corp_pivot_set
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.parser import (
-    concat_industry_streams,
-    parse_cbr_0105a_debt_corp_excel_bytes,
-)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.pivots import Cbr0105ADebtCorpPivotError
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import (
-    CBR_0105A_DEBT_CORP_REGION_LAYOUT,
-    normalize_cbr_0105a_debt_corp_regions_to_latest,
-)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import (
-    CBR_0105A_DEBT_CORP_INDUSTRY_SPECS,
-)
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.sources import (
-    discover_cbr_0105a_debt_corp_links_from_html,
-)
+from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import ParseIndustryRequest
+from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderIndustryRequest
+from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderPivotRequest
+from stratbox.domains.cbr.operations.corporate_lending.debt.operations import parse
+from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_industry
+from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_pivots
+from stratbox.domains.cbr.products.corporate_lending.industry.views import build_cbr_0105a_debt_corp_pivot_set
+from stratbox.domains.cbr.tables.corporate_lending.debt.parser import concat_industry_streams
+from stratbox.domains.cbr.tables.corporate_lending.debt.parser import parse_cbr_0105a_debt_corp_excel_bytes
+from stratbox.domains.cbr.products.corporate_lending.industry.views import Cbr0105ADebtCorpPivotError
+from stratbox.domains.cbr.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
+from stratbox.domains.cbr.integration.corporate_lending.industry.geography import normalize_cbr_0105a_debt_corp_regions_to_latest
+from stratbox.domains.cbr.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+from stratbox.domains.cbr.publications.corporate_lending.debt import discover_cbr_0105a_debt_corp_links_from_html
 
 
 SHEETS = (
@@ -178,7 +171,8 @@ def _parsed_pair():
 
 @lru_cache(maxsize=1)
 def _stream_result() -> Cbr0105ADebtCorpStreamResult:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import BuildIndustryStreamRequest, build_stream
+    from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import BuildIndustryStreamRequest
+    from stratbox.domains.cbr.operations.corporate_lending.debt.operations import build_stream
 
     inputs = tuple(ParseIndustryRequest(
         SourcePayload(_workbook_bytes(report_date=printed, kemerovo_name=region)),
@@ -539,13 +533,9 @@ def test_pivot_partial_stream_policy_is_explicit() -> None:
 
 
 def test_apk_calculation_uses_corrected_lpk_formula() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
-        CBR_0105A_DEBT_CORP_APK_FORMULA_RU,
-        CBR_0105A_DEBT_CORP_LPK_FORMULA_RU,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
-        calculate_cbr_0105a_debt_corp_apk_industry,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import CBR_0105A_DEBT_CORP_APK_FORMULA_RU
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import CBR_0105A_DEBT_CORP_LPK_FORMULA_RU
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     stream = result.df_stream.copy()
@@ -584,12 +574,8 @@ def test_apk_calculation_uses_corrected_lpk_formula() -> None:
 
 
 def test_apk_calculation_rejects_incomplete_component_group() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
-        Cbr0105ADebtCorpDerivedIndustryError,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
-        calculate_cbr_0105a_debt_corp_apk_industry,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import Cbr0105ADebtCorpDerivedIndustryError
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     stream = result.df_stream.copy()
@@ -611,9 +597,7 @@ def test_apk_calculation_rejects_incomplete_component_group() -> None:
 
 
 def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import (
-        calculate_cbr_0105a_debt_corp_apk_industry,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     calculated = calculate_cbr_0105a_debt_corp_apk_industry(result.df_stream)
@@ -740,7 +724,7 @@ def test_industry_workbook_rejects_unknown_industry() -> None:
 
 def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
     from stratbox.core.execution import ExecutionBudget, ExecutionContext
-    from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as domain
+    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
 
     original = SourcePayload(_workbook_bytes(
         report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
@@ -776,8 +760,8 @@ def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
 
 
 def test_selective_history_preserves_full_validation_and_batch_workbooks() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as domain
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.selection import resolve_industry_codes
+    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
+    from stratbox.domains.cbr.tables.corporate_lending.debt.selection import resolve_industry_codes
 
     payload = SourcePayload(_workbook_bytes(
         report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
@@ -822,7 +806,7 @@ def test_selective_history_preserves_full_validation_and_batch_workbooks() -> No
 
 
 def test_selection_rejects_invalid_codes_and_detects_excluded_negative_cells() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as domain
+    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
 
     raw = _workbook_bytes(
         report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
@@ -848,7 +832,7 @@ def test_selection_rejects_invalid_codes_and_detects_excluded_negative_cells() -
 
 
 def test_batch_render_rejects_mutated_caller_table() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as domain
+    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
 
     result = _stream_result()
     result.df_stream.loc[result.df_stream.index[0], "value"] = 999

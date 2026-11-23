@@ -28,7 +28,7 @@ def wire_schemas(operation_id, contract_version):
     return _wire_schemas(operation_id, contract_version, catalog=operation_catalog())
 from stratbox.shared.evidence import SourcePayload
 from stratbox.core.execution import Correlation, ExecutionContext, OperationDefinition, run
-from stratbox.domains.cbr.service_network import bank_offices as cbr_offices
+import stratbox.domains.cbr.operations.service_network.bank_offices as cbr_offices
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures/universal_core/offices-basic.html"
 _DAY = date(2026, 11, 12)
@@ -44,7 +44,7 @@ catalog = operation_catalog()
 descriptions = catalog.describe()
 catalog.page(stage='extract', limit=5)
 catalog.compatible_next('cbr.offices.acquire', 2)
-catalog.coverage('cbr.service_network.bank_offices')
+catalog.coverage('cbr')
 from stratbox.core.execution.machine import wire_schemas
 for ref in catalog.references:
     if ref.wire_contract_ref:

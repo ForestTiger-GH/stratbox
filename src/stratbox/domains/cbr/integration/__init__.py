@@ -1,0 +1,1 @@
+"""CBR integration functional owner."""

@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "family_id": "cbr.household_lending",
+  "series": [
+    {
+      "series_id": "cbr.household_lending.mortgage_debt_ind",
+      "family_id": "cbr.household_lending",
+      "title": "Household loan debt",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_debt_ind",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_debt_ind.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.household_lending.mortgage_debt",
+      "family_id": "cbr.household_lending",
+      "title": "Mortgage debt",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_debt",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_debt.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.household_lending.mortgage_scpa_debt",
+      "family_id": "cbr.household_lending",
+      "title": "Mortgage debt under shared construction agreements",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_scpa_debt",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_scpa_debt.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.household_lending.mortgage_ihc",
+      "family_id": "cbr.household_lending",
+      "title": "Mortgages for individual housing construction",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_ihc",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_ihc.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.household_lending.mortgage_full",
+      "family_id": "cbr.household_lending",
+      "title": "Mortgage lending history",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_full",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_full.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.household_lending.mortgage_scpa_full",
+      "family_id": "cbr.household_lending",
+      "title": "Mortgages under shared construction agreements",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.mortgage_scpa_full",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.mortgage_scpa_full.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    }
+  ]
+}

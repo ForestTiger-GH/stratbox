@@ -20,8 +20,8 @@ from stratbox.core.operations.source.originals import (
     ReconcileOriginalRequest, SaveOriginalRequest, read_original, receive_original, receive_to_store,
     reconcile_original, save_original,
 )
-from stratbox.domains.cbr import file_collection as collector
-from stratbox.domains.cbr.service_network import bank_offices
+import stratbox.domains.cbr.operations.collection as collector
+import stratbox.domains.cbr.operations.service_network.bank_offices as bank_offices
 
 class BodyTransport:
     accounts_http_budget = True

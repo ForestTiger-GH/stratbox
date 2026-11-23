@@ -186,38 +186,22 @@ def _source_publisher(path: Path) -> str | None:
     return parts[1] if (parent / "__init__.py").is_file() else None
 
 
-def _approved_inter_owner_reference(source: str, target: str, module: str) -> bool:
-    """Directional published-source reuse, constrained to named semantic modules."""
-    prefix = "stratbox.domains.cbr.corporate_lending.industries.debt_0105a."
-    if source == "cbr.corporate_lending.sors_restoration" and (
-        target == "cbr.corporate_lending.industries.debt_0105a"
-    ):
-        allowed = {
-            "parser": {"", "parse_cbr_0105a_debt_corp_excel_bytes"},
-            "schema": {"", "CBR_0105A_DEBT_CORP_INDUSTRY_SPECS"},
-            "contracts": {"", "ParsedCbr0105ADebtCorpFile"},
-        }
-        return any(
-            module == prefix + name or module in {
-                prefix + name + "." + symbol for symbol in symbols if symbol
-            }
-            for name, symbols in allowed.items()
-        )
-    if source == "cbr.corporate_lending.industries.issuance_0104" and (
-        target == "cbr.corporate_lending.industries.debt_0105a"
-    ):
-        # Publication 01_04_A uses the same official industry, region,
-        # stream, APK and workbook rules as published in the 01_05_A profile.
-        # Direct use of the debt operation implementation is prohibited.
-        modules = {
-            "schema", "regions", "derived", "pivots",
-        }
-        return any(
-            module == prefix + name or module.startswith(prefix + name + ".")
-            for name in modules
-        )
-    return False
+_CBR_LAYER_DEPENDENCIES = {
+    "publications": {"publications"},
+    "tables": {"publications", "tables"},
+    "integration": {"publications", "tables", "integration"},
+    "analytics": {"publications", "tables", "integration", "analytics"},
+    "products": {"publications", "tables", "integration", "analytics", "products"},
+}
 
+
+def _cbr_layer_violation(relative: str, target: str) -> bool:
+    prefix = "stratbox.domains.cbr."
+    parts = relative.split("/")
+    if len(parts) < 4 or parts[:2] != ["domains", "cbr"] or not target.startswith(prefix):
+        return False
+    allowed = _CBR_LAYER_DEPENDENCIES.get(parts[2])
+    return allowed is not None and target[len(prefix):].split(".")[0] not in allowed
 
 
 def check_dependency_direction() -> list[str]:
@@ -259,6 +243,8 @@ def check_dependency_direction() -> list[str]:
                 failures.append(f"{prefix}: shared contracts depend on executable core {target}")
             if owner == "domains.registry" and _domain(target, owners):
                 failures.append(f"{prefix}: domain catalog depends on concrete domain {target}")
+            if _cbr_layer_violation(relative, target):
+                failures.append(f"{prefix}: upward CBR functional import {target}")
             target_domain = _domain(target, owners)
             if _is_legacy_domain_path(target):
                 failures.append(f"{prefix}: obsolete domain import {target}")
@@ -274,9 +260,7 @@ def check_dependency_direction() -> list[str]:
                         failures.append(f"{prefix}: grouping imports domain implementation {target}")
                     elif source_domain != target_domain:
                         parent_dependency = source_domain.startswith(target_domain + ".")
-                        if not (parent_dependency or _approved_inter_owner_reference(
-                            source_domain, target_domain, target
-                        )):
+                        if not parent_dependency:
                             failures.append(f"{prefix}: cross-domain import {target}")
             if owner == "core:execution" and target.startswith((
                 "stratbox.core.operations", "stratbox.core.observability", "stratbox.core.notifications"

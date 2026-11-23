@@ -1,8 +1,10 @@
 # Domain operation registration and machine dispatch
 
 Stratbox separates source-specific business implementations from the neutral
-operation execution catalog. Source packages group publication families, while
-an exact `_registration.py` file establishes an operation owner at any depth.
+operation execution catalog. An exact `_registration.py` file establishes an
+operation owner. Publication families, processing layers and operation modules
+describe different responsibilities. CBR registers its whole operation surface
+under the single root owner `cbr`.
 
 ## 1. Discover and resolve operations
 
@@ -38,47 +40,67 @@ relative to `stratbox.domains`. Its `OperationRef` entries reference an
 fully qualified Python module and symbol name.
 
 The registry validates all module references against the **nearest registered
-owner**, including parent/child publication series. It rejects ambiguous
+owner**. The discovery mechanism permits nested owners when a domain explicitly
+declares that boundary; a nested implementation package alone creates no owner.
+It rejects ambiguous
 ownership, mismatched owner IDs and duplicate (operation ID, contract version)
 pairs. Executable definitions, handlers and codecs are still resolved lazily by
 `OperationCatalog`. Creating a catalog performs no source HTTP requests,
 file capture, scheduling or destination effects.
 
-## 2. Add a source or publication family
+## 2. Register a publisher or extend an existing owner
 
-Create normal Python packages with `__init__.py` under a publisher namespace,
-for example `stratbox.domains.cbr.new_family.series_a`. Add
-`_registration.py` **only** to the exact package owning operations:
+For a new publisher owner, create normal Python packages with `__init__.py`,
+for example `stratbox.domains.example_publisher` and its `operations` package.
+Add `_registration.py` **only** to the package owning operations:
 
 ```python
 from stratbox.core.execution.catalog import OperationRef, OperationRegistration
 
 REGISTRATION = OperationRegistration(
-    owner_id="cbr.new_family.series_a",
+    owner_id="example_publisher",
     operations=(
         OperationRef(
-            "cbr.series_a.parse", 1,
-            "stratbox.domains.cbr.new_family.series_a.definitions:PARSE",
-            "stratbox.domains.cbr.new_family.series_a.operations:parse",
+            "example_publisher.parse", 1,
+            "stratbox.domains.example_publisher.operations.definitions:PARSE",
+            "stratbox.domains.example_publisher.operations.handlers:parse",
         ),
     ),
 )
 ```
 
 Typed operation definitions stay in lightweight `definitions.py` modules.
-Executable methods import these definitions into `operations.py` or `api.py`. A business source
-registry may separately use `registry.py` for publication definitions; that
-file is **not** the operation manifest. No global list of publishers, families,
-or operations is maintained. Parent grouping packages should remain lightweight.
+Executable methods import these definitions into their handler modules. A business
+source catalog separately describes publications and processing profiles; it is
+distinct from the operation manifest. Cross-domain discovery requires no central
+publisher or operation allowlist. Each owner can explicitly compose its functional
+segments and maintain its own business registries. Grouping packages remain lightweight.
 Public owner package exports are lazily loaded so metadata listing does not
 require optional spreadsheet or solver engines.
 
-The current owners include `cbr`, `fns` and `frank_rg` publisher branches.
-The `industries` package groups two independent publication owners:
-`industries.debt_0105a` for stock, and `industries.issuance_0104` for
-monthly issuance. Common source parsing and execution/evidence helpers are
-implemented in `industries.common`. The existing logical operation IDs and
-contract versions are stable across this structural relocation.
+For an existing CBR segment, keep the root owner `cbr`. Add operation definitions
+and handlers under `stratbox.domains.cbr.operations.<segment>`, export their
+`OperationRef` entries from the segment's `registration.py`, and include that
+segment in the root `_registration.py` composition. Keep its lifecycle declarations
+alongside its operation references. Creating a new CBR family or source requires
+the relevant publication, acquisition, layout and semantic bindings; it does not
+require a child `_registration.py`.
+
+CBR separates `publications`, `tables`, `integration`, `analytics`, `products`
+and `operations`. Corporate debt and issuance have separate contracts and
+operations under `operations.corporate_lending.debt` and
+`operations.corporate_lending.issuance`; both belong to root `cbr`. Source parsing
+helpers live in the table layer, shared semantic interpretation in integration,
+calculations in analytics, and prepared views/rendering in products. Reporting
+forms, service-network statistics, project finance and generic statistical
+workbooks follow the same functional boundaries.
+
+Registered domain owners include `cbr`, `minfin`, `frank_rg`,
+`rosstat.publications`, `fns.sme_register` and `fns.legal_entities_1yur`.
+Their business catalogs can subdivide sources without multiplying operation
+owners. Use CBR's `describe_source` and `describe_family` operations for
+source-scoped coverage; the root owner's aggregate stages describe its combined
+surface. See the [CBR route guide](cbr-data-pipeline.md).
 
 ## 3. Restricted read-only machine calls
 

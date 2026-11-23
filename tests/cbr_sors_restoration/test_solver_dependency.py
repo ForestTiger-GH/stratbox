@@ -5,14 +5,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.contracts import (
-    CsrMatrixData,
-    SorsLinearProblem,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.highs import (
-    SorsSolverDependencyError,
-    _load_highs,
-)
+from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import CsrMatrixData
+from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import SorsLinearProblem
+from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs import SorsSolverDependencyError
+from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs import _load_highs
 
 
 def test_solver_has_no_scipy_internal_fallback(monkeypatch) -> None:
@@ -25,13 +21,9 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
     monkeypatch,
     small_result,
 ) -> None:
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.contracts import (
-        SorsCrosswalkConfig,
-    )
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk import operations
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.problem import (
-        CrosswalkCompilation,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
+    import stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations as operations
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.problem import CrosswalkCompilation
 
     problem = SorsLinearProblem(
         model_layer='CROSSWALK',
@@ -104,7 +96,7 @@ def test_crosswalk_solver_unavailable_returns_nonaccepted_result(
 def test_highs_session_applies_solver_options_and_refreshes_bounds(monkeypatch) -> None:
     from types import SimpleNamespace
 
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.linear import highs as highs_module
+    import stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs as highs_module
 
     calls: dict[str, object] = {}
 

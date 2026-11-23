@@ -5,10 +5,8 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.results import (
-    SorsRestorationResult,
-    SorsRunSummary,
-)
+from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
+from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRunSummary
 
 
 @pytest.fixture

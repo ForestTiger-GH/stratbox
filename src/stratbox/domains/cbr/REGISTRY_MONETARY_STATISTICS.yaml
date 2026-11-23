@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "family_id": "cbr.monetary_statistics",
+  "series": [
+    {
+      "series_id": "cbr.monetary_statistics.monetary_agg",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Monetary aggregates",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.monetary_agg",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.monetary_agg.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.monetary_statistics.survey_cb",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Central bank survey",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.survey_cb",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.survey_cb.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.monetary_statistics.balance_odc",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Credit institution balance sheet",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.balance_odc",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.balance_odc.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.monetary_statistics.survey_odc",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Credit institution survey",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.survey_odc",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.survey_odc.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.monetary_statistics.survey_dc_new",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Banking system survey",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.survey_dc_new",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.survey_dc_new.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    },
+    {
+      "series_id": "cbr.monetary_statistics.annex_survey_dc",
+      "family_id": "cbr.monetary_statistics",
+      "title": "Banking system survey annex",
+      "issue_model": "rolling",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.annex_survey_dc",
+      "extraction_profile": "cbr.workbook.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.annex_survey_dc.v1",
+      "integration_profile": "cbr.statistics.observations.v1",
+      "product_profile": "cbr.statistics.views.v1"
+    }
+  ]
+}

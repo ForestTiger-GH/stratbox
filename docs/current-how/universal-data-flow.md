@@ -1,7 +1,7 @@
 # Universal material flow and operation handoff
 
 Scope: implemented core contracts and the Minfin, Frank RG and grouped CBR routes
-in Stratbox 0.18.0. Original formats include PDF, workbooks, archives, HTML and arbitrary
+in Stratbox 0.19.0. Original formats include PDF, workbooks, archives, HTML and arbitrary
 admitted byte representations. Logical dataset adapters have a separate typed
 table interface.
 

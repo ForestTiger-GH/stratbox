@@ -2,12 +2,11 @@
 from importlib import import_module
 
 _EXPORTS = {
-    "all_sources": ".registry", "families": ".registry", "source": ".registry",
+    "all_sources": ".catalog", "families": ".catalog", "source": ".catalog",
     "acquisition_profile": ".profiles", "SourceSeries": ".contracts",
     "PublicationAsset": ".contracts", "PublicationInventory": ".contracts",
     "ListSourcesRequest": ".contracts", "DiscoverRequest": ".contracts",
     "IdentifyRequest": ".contracts", "IdentifiedOriginal": ".contracts",
-    "list_sources": ".operations", "discover": ".operations", "identify": ".operations",
 }
 __all__ = tuple(_EXPORTS)
 

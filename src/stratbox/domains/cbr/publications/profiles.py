@@ -1,5 +1,5 @@
 """Official acquisition defaults, separate from logical publication identities."""
-from .contracts import AcquisitionProfile, ProcessingProfile
+from .contracts import AcquisitionProfile
 
 _PROFILES = (
     AcquisitionProfile('cbr.route.mortgage_debt_ind', 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_05_Debt_ind.xlsx', None),
@@ -70,27 +70,14 @@ def acquisition_profile(profile_id):
         raise ValueError("cbr.profile.acquisition_unknown") from None
 
 
-_PROCESSING = (
-    ProcessingProfile("cbr.forms.dbf_flakes.v1", "cbr.forms.extract", ("rar", "zip", "dbf"),
-                      "All regular members are retained; classic text DBF dialects are decoded explicitly."),
-    ProcessingProfile("cbr.escrow.flake.v1", "cbr.escrow.parse", ("xlsx",),
-                      "Reviewed regional workbook layouts; historical HTML remains an original-only variant.", 3),
-    ProcessingProfile("cbr.industries.debt.flake.v1", "cbr.industries.0105a.parse", ("xlsx",),
-                      "Regional corporate debt and overdue debt at the publication reference date.", 3),
-    ProcessingProfile("cbr.industries.issuance.flake.v1", "cbr.industries.0104a.parse", ("xlsx",),
-                      "Monthly loan issuance with distinct publication and observation periods.", 3),
-    ProcessingProfile("cbr.offices.flake.v1", "cbr.offices.parse", ("html",),
-                      "Bank-by-region office counts with separate capture and official reference dates."),
-    ProcessingProfile("cbr.territorial_offices.flake.v1", "cbr.offices_reg.parse", ("xlsx",),
-                      "Explicitly selected territorial blocks with ambiguity and formula evidence.", 3),
-) + tuple(ProcessingProfile(f"cbr.forms.f{code}.normalization.v1", "cbr.forms.normalize", ("rar", "zip", "dbf"),
-                            f"Modeled form {code}; physical field selection and financial normalization are explicit.")
-          for code in ("101", "102", "123", "135", "802", "805"))
-_PROCESSING_BY_ID = {item.profile_id: item for item in _PROCESSING}
+def reporting_form_index(form_code):
+    return acquisition_profile("cbr.route.form" + str(form_code)).default_url
 
 
-def processing_profile(profile_id):
-    try:
-        return _PROCESSING_BY_ID[profile_id]
-    except (KeyError, TypeError):
-        raise ValueError("cbr.profile.processing_unknown") from None
+def archive_url(form_code, as_of, *, format="rar"):
+    """One reviewed route template for the publisher's dated form archives."""
+    from datetime import date
+    from .catalog import FORM_CODES
+    if str(form_code) not in FORM_CODES or type(as_of) is not date or format not in {"rar", "zip"}:
+        raise ValueError("cbr.forms.archive_selection_invalid")
+    return f"https://www.cbr.ru/vfs/credit/forms/{form_code}-{as_of:%Y%m%d}.{format}"

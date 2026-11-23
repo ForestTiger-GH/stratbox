@@ -1,7 +1,7 @@
 """Typed declarations for universal archive packaging."""
 from dataclasses import dataclass
 from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import OperationSemantics, OutputPort, ProcessingStage
+from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingStage
 from stratbox.core.formats.archives.store import ArchiveWriteLimits, PathArchiveReceipt
 from stratbox.core.operations.source.original_definitions import OriginalDestination
 from stratbox.core.runtime.capabilities import ProviderSelection
@@ -41,8 +41,12 @@ ARCHIVE = OperationDefinition(
     frozenset({"output_filestore"}), frozenset({"storage.write"}),
     optional_capabilities=frozenset({"filestore"}), limits=LIMITS,
     processing=OperationSemantics(stages=(ProcessingStage.PRESERVE,),
+        inputs=(InputPort("members", DataContract("material.archive_members"), "members",
+                          outcomes=frozenset({"succeeded", "partial"})),
+                InputPort("manifest", DataContract("material.collection"), "manifest", required=False,
+                          outcomes=frozenset({"succeeded", "partial"}))),
         outputs=(OutputPort("archive", DataContract("material.archive_reference"), path="material",
                             qualifications=frozenset({"storage.confirmed"})),),
-        parameters=("members", "destination", "compression", "manifest", "manifest_name", "limits"),
+        parameters=("destination", "compression", "manifest_name", "limits"),
         summary="Package selected exact byte members from independent stores with explicit member lineage."))
 

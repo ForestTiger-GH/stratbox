@@ -10,13 +10,13 @@ import pytest
 from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries import issuance_0104 as issuance
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.regions import CBR_0105A_DEBT_CORP_REGION_LAYOUT
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
-from stratbox.domains.cbr.corporate_lending.industries.issuance_0104.parser import parse_workbook
-from stratbox.domains.cbr.corporate_lending.industries.issuance_0104.sources import (
-    discover_links, reference_period, report_date_from_filename,
-)
+import stratbox.domains.cbr.operations.corporate_lending.issuance as issuance
+from stratbox.domains.cbr.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
+from stratbox.domains.cbr.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+from stratbox.domains.cbr.tables.corporate_lending.issuance.parser import parse_workbook
+from stratbox.domains.cbr.publications.corporate_lending.issuance import discover_links
+from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import reference_period
+from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import report_date_from_filename
 
 SHEETS = (
     ("rubles", "в рублях", 1),
@@ -198,7 +198,9 @@ def test_render_optional_metadata_and_unknown_industry() -> None:
 
 
 def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import Cbr0105ADebtCorpPivotRequest, RenderPivotRequest, render_pivots
+    from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest
+    from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderPivotRequest
+    from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_pivots
 
     original = _request()
     base = issuance.parse(original)
@@ -237,7 +239,7 @@ def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
 
 
 def test_issuance_selected_observations_and_batch_export_match_individual() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
+    from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySelection
 
     original = _request()
     full = issuance.build_stream(issuance.BuildIssuanceStreamRequest((original,)))
@@ -277,7 +279,7 @@ def test_issuance_selected_observations_and_batch_export_match_individual() -> N
 
 
 def test_issuance_source_validation_checks_outside_selected_industries() -> None:
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import IndustrySelection
+    from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySelection
 
     run = issuance.parse(issuance.ParseIssuanceRequest(
         SourcePayload(_book(negative=True)), "01_04_A_New_loans_corp_20190201.xlsx",

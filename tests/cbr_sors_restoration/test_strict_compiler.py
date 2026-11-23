@@ -5,18 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import (
-    solver_lower_bound,
-    solver_upper_bound,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.schema import COMPONENTS
-from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.compiler import (
-    compile_strict_problem,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.quantities import (
-    SorsQuantityGraph,
-    component_quantity_id,
-)
+from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_lower_bound
+from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_upper_bound
+from stratbox.domains.cbr.analytics.corporate_lending.sors.schema import COMPONENTS
+from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import compile_strict_problem
+from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import SorsQuantityGraph
+from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import component_quantity_id
 
 
 def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
@@ -125,12 +119,8 @@ def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
 
 
 def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.compiler import (
-        refresh_strict_problem_bounds,
-    )
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.quantities import (
-        metric_quantity_id,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import refresh_strict_problem_bounds
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import metric_quantity_id
 
     region_code = 'r1'
     class_code = '01'
@@ -244,12 +234,8 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
 
 
 def test_refresh_updates_official_aggregate_row_after_deterministic_tightening() -> None:
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.compiler import (
-        refresh_strict_problem_bounds,
-    )
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.quantities import (
-        metric_quantity_id,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import refresh_strict_problem_bounds
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import metric_quantity_id
 
     region_code = 'r1'
     class_code = '01'

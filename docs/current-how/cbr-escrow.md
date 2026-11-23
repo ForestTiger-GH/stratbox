@@ -1,6 +1,6 @@
-# Escrow publication flakes, integration and workbook replay
+# Project finance: escrow source tables, integration and products
 
-The escrow domain implements independent boundaries for XLSX extraction,
+The CBR project-finance family implements independent boundaries for XLSX extraction,
 semantic integration, view preparation and rendering. Complete values at the
 flake, integrated-dataset and prepared-view boundaries can be stored and restored
 through the common logical dataset adapters. The renderer also returns a normal
@@ -10,6 +10,15 @@ This route covers the supported regional XLSX layout. Historical HTML issues
 are retained in discovery with an explicit unsupported extraction status and can
 be acquired as originals. Their economic definitions require a separate reviewed
 interpretation profile before entering the same integrated series.
+
+The functional owners are `publications/project_finance`,
+`tables/project_finance`, `integration/project_finance`,
+`products/project_finance` and `operations/project_finance`. Source metric
+definitions and physical header rules have separate declarations in the table
+profile. Sheet titles, order, number formats and colours live only in
+the product profile. Changing those presentation settings leaves the source
+flake identity unchanged. The former `cbr.escrow` Python package is removed;
+the stable semantic operation namespace remains `cbr.escrow.*`.
 
 Contents:
 
@@ -110,10 +119,12 @@ publisher-history coverage.
 
 ## 4. Prepared views
 
-`build_views(BuildEscrowViewsRequest(dataset, options))` uses an integrated
+`build_views(BuildEscrowViewsRequest(dataset, view))` uses an integrated
 dataset as its direct input. It prepares `EscrowPivotPack`: typed table values,
 indicator definitions, row order, row kinds, period order, missing-value policy,
-coverage and the exact source dataset identity.
+coverage, the exact source dataset identity and its full original-version vector.
+The prepared pack includes the selected product profile. A renderer requires
+neither original files nor an integrated dataset once this pack is retained.
 
 `regions_mode="latest"` selects the last publication's row order.
 `regions_mode="custom"` requires a unique explicit selection of known regions.
@@ -134,7 +145,7 @@ workbook representation under the same renderer version.
 ## 5. Calling the route
 
 ```python
-from stratbox.domains.cbr import escrow
+from stratbox.domains.cbr.operations import project_finance as escrow
 from stratbox.core.storage.datasets.definitions import (
     WriteSnapshotRequest, ReadSnapshotRequest,
 )
@@ -164,7 +175,15 @@ assert workbook.outcome == "succeeded", workbook.diagnostics
 The integrated dataset and prepared view have corresponding encode/read pairs
 for the same storage pattern. `build_history` remains a composition for callers
 starting from multiple supplied workbooks; independent integrations use
-`integrate_flakes` instead.
+`integrate_flakes` instead. Both paths return the same `EscrowDataset` contract;
+neither constructs presentation tables as a side effect.
+
+The current independently callable contracts are `parse@4`,
+`integrate_flakes@2`, `build_history@4`, `build_views@4` and
+`render_workbook@3`. All six complete snapshot/read contracts use version 2.
+Independent `validate`, `compare`, `readable` and `align_observations` operations
+have version 1. Exact source/table/product scope is available through
+`cbr.describe_source` for `cbr.project_finance.escrow`.
 
 A rendered representation can become a `MaterialArtifact` through the common
 operation-handoff API and be saved with `material.save_artifact`. The caller

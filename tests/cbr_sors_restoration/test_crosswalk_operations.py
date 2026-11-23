@@ -3,28 +3,18 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.contracts import (
-    SorsCrosswalkConfig,
-    SorsSourceBundle,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk import operations
-from stratbox.domains.cbr.corporate_lending.sors_restoration.linear.highs import SolveResult
-from stratbox.domains.cbr.corporate_lending.sors_restoration.metrics import (
-    METRIC_NAMES_RU,
-    METRIC_ORDER,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.okved2 import (
-    read_okved2_classes,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.publication_categories import (
-    build_publication_categories,
-    enrich_okved2_classes,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.results import (
-    SorsRestorationResult,
-    SorsRunSummary,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.schema import TARGET_METRICS
+from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
+import stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations as operations
+from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs import SolveResult
+from stratbox.domains.cbr.analytics.corporate_lending.sors.metrics import METRIC_NAMES_RU
+from stratbox.domains.cbr.analytics.corporate_lending.sors.metrics import METRIC_ORDER
+from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import build_publication_categories
+from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import enrich_okved2_classes
+from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
+from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRunSummary
+from stratbox.domains.cbr.analytics.corporate_lending.sors.schema import TARGET_METRICS
 
 
 def _published_row(
@@ -224,10 +214,11 @@ def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
-    from stratbox.domains.cbr.corporate_lending.sors_restoration import CrosswalkSorsRequest, run_crosswalk
+    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import CrosswalkSorsRequest
+    from stratbox.domains.cbr.operations.corporate_lending.sors.api import run_crosswalk
     from dataclasses import replace
     from stratbox.core.execution import OperationDefinition, run
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.api import _seal_grids
+    from stratbox.domains.cbr.operations.corporate_lending.sors.api import _seal_grids
 
     strict = _strict_with_bundle()
     snapshot = run(
@@ -288,10 +279,13 @@ def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
     from openpyxl import Workbook
 
     from stratbox.shared.evidence import SourcePayload
-    from stratbox.domains.cbr.corporate_lending.sors_restoration import (
-        LoadSorsRequest, RestoreSorsRequest, SorsRunConfig, SorsSourceInputs, load_sources, restore,
-    )
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.sources import loader
+    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import PrepareSorsOriginalsRequest
+    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RestoreSorsRequest
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceInputs
+    from stratbox.domains.cbr.operations.corporate_lending.sors.api import prepare_from_originals
+    from stratbox.domains.cbr.operations.corporate_lending.sors.api import restore
+    import stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.loader as loader
 
     config = SorsRunConfig(as_of_date="2026-06-01")
     fixture = replace(_strict_with_bundle().source_bundle,
@@ -303,7 +297,7 @@ def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
     book.save(buffer)
     book.close()
     sources = SorsSourceInputs(*([SourcePayload(buffer.getvalue())] * 10))
-    loaded = load_sources(LoadSorsRequest(sources, config))
+    loaded = prepare_from_originals(PrepareSorsOriginalsRequest(sources, config))
     assert loaded.outcome == "succeeded", loaded.diagnostics
     changed = restore(RestoreSorsRequest(loaded.value, replace(config, publication_step=0.5)))
     assert changed.diagnostics[0].code == "sors.source_publication_step_mismatch"

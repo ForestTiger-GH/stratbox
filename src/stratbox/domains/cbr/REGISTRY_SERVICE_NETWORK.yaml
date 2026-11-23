@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "family_id": "cbr.service_network",
+  "series": [
+    {
+      "series_id": "cbr.service_network.bank_offices",
+      "family_id": "cbr.service_network",
+      "title": "Credit institution offices by bank and territory",
+      "issue_model": "capture",
+      "formats": [
+        "html"
+      ],
+      "acquisition_profile": "cbr.route.bank_offices",
+      "extraction_profile": "cbr.offices.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.bank_offices.v1",
+      "integration_profile": "cbr.service_network.alignment.v1",
+      "product_profile": "cbr.service_network.views.v1"
+    },
+    {
+      "series_id": "cbr.service_network.territorial_offices",
+      "family_id": "cbr.service_network",
+      "title": "Credit institution offices by territory",
+      "issue_model": "dated",
+      "formats": [
+        "xlsx"
+      ],
+      "acquisition_profile": "cbr.route.territorial_offices",
+      "extraction_profile": "cbr.territorial_offices.flake.v1",
+      "normalization_profile": null,
+      "table_profile": "cbr.tables.territorial_offices.v1",
+      "integration_profile": "cbr.service_network.alignment.v1",
+      "product_profile": "cbr.service_network.views.v1"
+    }
+  ]
+}

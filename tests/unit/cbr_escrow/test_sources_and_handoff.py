@@ -7,9 +7,11 @@ from stratbox.core.network import HttpResponse
 from stratbox.core.operations.materials.definitions import ReadLocationRequest
 from stratbox.core.operations.materials.operations import read_location
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr import escrow
-from stratbox.domains.cbr.escrow import definitions
-from stratbox.domains.cbr.escrow._registration import REGISTRATION
+from stratbox.domains.cbr.operations import project_finance as escrow
+from stratbox.domains.cbr.operations.project_finance import definitions
+from stratbox.domains.cbr.operations.project_finance.registration import OPERATIONS
+from stratbox.core.execution.catalog import OperationRegistration
+REGISTRATION = OperationRegistration("cbr", OPERATIONS)
 from stratbox.shared.evidence import SourcePayload
 
 from .test_replay import publication, checked
@@ -54,7 +56,7 @@ def test_neutral_byte_read_and_complete_snapshot_handoff(tmp_path):
     assert restored.value.df_cells.equals(parsed.value.df_cells)
     dataset = escrow.integrate_flakes(escrow.IntegrateEscrowRequest((restored.value,)))
     checked(dataset)
-    view = bind_request(definitions.VIEWS, {"history": project_output(dataset, "dataset")}).invoke(escrow.build_views)
+    view = bind_request(definitions.VIEWS, {"dataset": project_output(dataset, "dataset")}).invoke(escrow.build_views)
     checked(view)
     rendered = bind_request(definitions.RENDER, {"views": project_output(view, "views")}).invoke(escrow.render_workbook)
     checked(rendered)
@@ -62,7 +64,7 @@ def test_neutral_byte_read_and_complete_snapshot_handoff(tmp_path):
 
 def test_all_escrow_registrations_resolve_to_the_declared_versions():
     catalog = OperationCatalog.from_registrations(REGISTRATION)
-    assert len(catalog.references) == 13
+    assert len(catalog.references) == 17
     for reference in catalog.references:
         definition, handler, codec = catalog.resolve(reference.operation_id, reference.contract_version)
         assert definition.contract_version == reference.contract_version

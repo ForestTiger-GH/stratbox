@@ -5,7 +5,7 @@ from collections import defaultdict
 from stratbox.domains.registry import domain_registration_inventory
 
 
-def test_each_operation_owner_publishes_one_semantic_namespace():
+def test_semantic_namespaces_have_one_publisher_owner():
     operation_namespaces: dict[str, set[str]] = defaultdict(set)
     namespace_owner: dict[str, str] = {}
     for owner, operation_id, version in domain_registration_inventory():
@@ -16,16 +16,17 @@ def test_each_operation_owner_publishes_one_semantic_namespace():
         previous = namespace_owner.setdefault(namespace, owner)
         assert previous == owner, (namespace, previous, owner)
     assert operation_namespaces
-    assert all(len(prefixes) == 1 for prefixes in operation_namespaces.values())
+    assert "cbr" in operation_namespaces
+    assert len(operation_namespaces["cbr"]) > 1
+    assert all(owner == "cbr" for namespace, owner in namespace_owner.items() if namespace.startswith("cbr."))
 
 
 def test_industry_stock_and_flow_remain_distinct_publication_semantics():
-    from stratbox.domains.cbr.corporate_lending.industries.debt_0105a import (
-        operations as stock, schema as stock_schema,
-    )
-    from stratbox.domains.cbr.corporate_lending.industries.issuance_0104 import (
-        operations as flow, parser as flow_parser, sources as flow_sources,
-    )
+    import stratbox.domains.cbr.operations.corporate_lending.debt.operations as stock
+    import stratbox.domains.cbr.tables.corporate_lending.debt.schema as stock_schema
+    import stratbox.domains.cbr.operations.corporate_lending.issuance.operations as flow
+    import stratbox.domains.cbr.tables.corporate_lending.issuance.parser as flow_parser
+    import stratbox.domains.cbr.publications.corporate_lending.issuance_editions as flow_editions
 
     assert stock.PARSE.operation_id != flow.PARSE.operation_id
     assert stock.PARSE.value_type is not flow.PARSE.value_type
@@ -35,8 +36,8 @@ def test_industry_stock_and_flow_remain_distinct_publication_semantics():
     assert len(stock_schema.CBR_0105A_DEBT_CORP_SHEET_SPECS) == 6
     assert {spec.measure for spec in flow_parser._SHEETS} == {"new_loans"}
     assert len(flow_parser._SHEETS) == 3
-    assert flow_sources.reference_period("2027-01-01") == "2026-12"
-    assert flow_sources.reference_period("2026-08-01") == "2026-07"
+    assert flow_editions.reference_period("2027-01-01") == "2026-12"
+    assert flow_editions.reference_period("2026-08-01") == "2026-07"
 
 
 def test_registry_matches_its_physical_semantic_owners():

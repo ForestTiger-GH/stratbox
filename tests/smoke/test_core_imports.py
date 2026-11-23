@@ -7,10 +7,10 @@ MODULES = [
     'stratbox.core.runtime.providers',
     'stratbox.core.formats',
     'stratbox.core.storage.filestore',
-    'stratbox.domains.cbr.file_collection',
-    'stratbox.domains.cbr.corporate_lending.industries.debt_0105a',
-    'stratbox.domains.cbr.reporting_forms',
-    'stratbox.domains.cbr.escrow',
+    'stratbox.domains.cbr.operations.collection',
+    'stratbox.domains.cbr.operations.corporate_lending.debt',
+    'stratbox.domains.cbr.operations.reporting_forms',
+    'stratbox.domains.cbr.operations.project_finance',
     'stratbox.domains.frank_rg',
 ]
 

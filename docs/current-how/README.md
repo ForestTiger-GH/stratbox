@@ -8,6 +8,8 @@
 
 [CBR publication registry and independent processing routes](cbr-data-pipeline.md)
 
+[CBR statistical workbooks: source cells, qualified observations and retained views](cbr-statistical-workbooks.md)
+
 [CBR reporting forms: complete DBF flakes, CSV collections and calculation replay](cbr-reporting-forms.md)
 
 [CBR corporate debt and issuance: retained flakes, histories, calculations and views](cbr-corporate-lending.md)

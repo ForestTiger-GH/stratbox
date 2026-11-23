@@ -1,7 +1,7 @@
 import pandas as pd
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.interval_closure import run_interval_closure
-from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.quantities import SorsQuantityGraph
+from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.interval_closure import run_interval_closure
+from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import SorsQuantityGraph
 
 
 def _graph(parent, children):
@@ -97,9 +97,7 @@ def test_exact_zero_strict_residual_excludes_zero() -> None:
 
 
 def test_negative_child_upper_residual_is_reported_as_conflict() -> None:
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.strict.interval_closure import (
-        SorsIntervalClosureConflictError,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.interval_closure import SorsIntervalClosureConflictError
 
     graph = _graph(
         ('parent', 0.0, 3.0, True, True),

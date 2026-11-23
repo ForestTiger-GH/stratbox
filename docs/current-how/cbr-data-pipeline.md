@@ -1,211 +1,245 @@
-# CBR publication registry and independent processing routes
+# CBR functional architecture and independently resumable data routes
 
-Scope: the implemented CBR material and dataset routes in Stratbox 0.18.0.
-Across the supported family routes, source acquisition, extraction, integration,
-calculation, view preparation and rendering have explicit operation boundaries.
-Exact originals, source
-flakes, integrated tables and prepared products can each be retained through
-caller-selected adapters and read again before continuing the route.
+Scope: the CBR implementation in Stratbox 0.19.0. The domain uses the same
+functional organization as Minfin and Frank RG: source declarations, source
+tables, semantic integration, calculations, products and operations have separate
+owners. One CBR registration exposes the exact callable contracts. Family and
+source descriptions qualify their actual coverage.
 
-The implementation supplies the registered operations, their domain codecs and
-reference file/memory dataset adapters. Runtime scheduling, mounted shares,
-application database ownership and publication into an external corpus remain
-explicit consumer responsibilities.
+## 1. Physical owners and registries
 
-## 1. Identities and registries
-
-`stratbox.domains.cbr.publications` is the common publication catalog. It keeps
-three kinds of information separate:
-
-| Registry value | Responsibility |
+| Owner under `stratbox.domains.cbr` | Responsibility |
 | --- | --- |
-| `SourceSeries` | Stable logical series, family, issue model and supported format variants. |
-| `AcquisitionProfile` | Official default acquisition route and filename recognition rules. |
-| `ProcessingProfile` | Exact registered operation/version, accepted variants and interpretation scope. |
+| `REGISTRY_*.yaml` | Twelve logical families, stable series IDs, issue models, format variants and profile references. |
+| `publications/` | Official routes, discovery and selection, release/date conventions, original admission, update assessment and collection manifests. |
+| `tables/<family>/` | Physical layouts, source cells or records, table editions, extraction and flake codecs. |
+| `integration/<family>/` | Versioned subject/metric/period mappings, comparable observations and integrated histories. |
+| `analytics/<family>/` | Calculations, financial models and complete inputs specific to an analytical method. |
+| `products/<family>/` | Prepared tables, display policies, view codecs and file renderers. |
+| `operations/<family>/` | Typed requests, declarations, thin handlers and explicit multi-stage compositions. |
+| `operations/bindings.py` | Source-scoped bindings to the operation catalog: formats, tables, editions, handoffs and missing capabilities. |
+| `_registration.py` | The sole publisher registration, aggregating maintained operation segments. |
 
-A URL, filename or file-store location is an acquisition detail. A publication
-identity consists of `series_id`, `issue_id` and `asset_id`. Observation periods
-inside a release remain separate domain values. Byte identity identifies the
-exact retained edition, including revisions to an existing publication issue.
+Dependency direction follows these boundaries. Publication access does not import
+parsers; tables do not import models or products; integration does not import
+analytics. Products consume lower-layer values. Operation compositions connect
+these owners explicitly. The import checker enforces this direction. Historical
+family packages and nested CBR operation registrations have been removed.
 
-The catalog currently contains 57 series in 11 families:
+Logical publication identity is `(series_id, issue_id, asset_id)`. It is separate
+from URL, filename, storage location and exact byte identity. A release may
+contain many observation periods. Rolling workbooks require explicit capture or
+issue context when acquired. Acquisition time does not establish an official
+reporting date.
 
-| Family | Series | Implemented scope |
+Source-table profiles, semantic mappings, calculation models and product styles
+have separate versions. Changing workbook colours does not change a source
+flake. A changed semantic mapping can require processing unchanged originals.
+
+## 2. Twelve families and 57 logical series
+
+The universal workbook route covers 44 XLSX series. Thirteen series have
+specialized extractors: eight reporting forms, two regional industry tables,
+regional escrow and two office-network publications.
+
+| Family | Series | Implemented route and distinctions |
 | --- | ---: | --- |
-| `cbr.household_lending` | 6 | Original acquisition and retention. |
-| `cbr.corporate_lending` | 17 | Originals; independent 0105a/0104a routes; explicit SORS input dependencies. |
-| `cbr.securities` | 1 | Original acquisition and retention. |
-| `cbr.borrowings` | 9 | Original acquisition and retention, including the separate escrow-balance series. |
-| `cbr.household_assets` | 2 | Original acquisition and retention. |
-| `cbr.monetary_statistics` | 6 | Original acquisition and retention. |
-| `cbr.external_debt` | 3 | Original acquisition and retention. |
-| `cbr.other_statistics` | 2 | Original acquisition and retention. |
-| `cbr.reporting_forms` | 8 | All-member source extraction; six financial normalization/model families. |
-| `cbr.project_finance` | 1 | Regional escrow XLSX flakes, integration, prepared views and rendering. |
-| `cbr.service_network` | 2 | Bank/region and territorial releases, evidence-preserving snapshots and replay. |
+| `cbr.reporting_forms` | 8 | All-member DBF flakes; reviewed projections, alignment and models for 101, 102, 123, 135, 802 and 805. Forms 134 and 803 retain the supported source route. |
+| `cbr.corporate_lending` | 17 | Fifteen workbook profiles plus separate 0105a debt and 0104a issuance routes. Source observations also feed the explicitly assembled SORS method. Stocks, monthly flows and borrower counts stay distinct. |
+| `cbr.household_lending` | 6 | Mortgage balances, flows and individual-housing tables with declared sheet variants, source units and period bases. |
+| `cbr.funding` | 9 | Client funds, organization and household deposits, entrepreneurs, budgets and escrow-account balances. Account balances remain separate from project-finance statistics. |
+| `cbr.project_finance` | 1 | Regional escrow cells, integrated history, prepared views and formatted workbooks. Historical HTML has original-only scope. |
+| `cbr.service_network` | 2 | Bank/territory office counts and territorial workbooks, histories, aligned observations, count changes and prepared views. |
+| `cbr.household_finance` | 2 | Household balance and operations tables; stocks, transactions and published changes have separate bases. |
+| `cbr.monetary_statistics` | 6 | Monetary aggregates and sectoral surveys/balances with distinct variants, units, institutional perimeters and published growth measures. |
+| `cbr.banking_sector_structure` | 1 | Sector structure with source-local institutional categories and declared period axes. |
+| `cbr.securities` | 1 | Debt-securities holdings with instrument, holder and source-perimeter qualifications. |
+| `cbr.external_debt` | 3 | Debt stocks and maturity/currency breakdowns; source variants and conflicting unit evidence remain visible. |
+| `cbr.exchange_rates` | 1 | Daily, monthly and annual rate/index tables; trade weights have independent unit qualifications. |
 
-These counts describe registered series, not reviewed historical completeness
-or 57 independently implemented analytical parsers. An absent extraction profile
-means that the catalog offers original retention only. SORS input parsers remain
-bounded components of its explicit input bundle.
+The former collector categories `borrowings`, `household_assets` and
+`other_statistics` are replaced by these semantic families. The 41-workbook
+collection is a named convenience selection in `publications/selection.py`,
+independent of the family registry.
 
-`cbr.publications.list_sources` can filter by family. `discover` accepts a supplied
-index or acquires the declared index through an HTTP provider. Fixed-file routes
-can be listed without a network call; availability remains unverified. An index
-inventory records its exact input identity, candidate variants and rejected
-links. Discovery does not manufacture absent historical releases.
+These counts describe implemented profiles, not reviewed historical completeness.
+Known table variants are explicit. Unknown sheets remain in complete workbook
+flakes and receive diagnostics before semantic interpretation.
 
-`cbr.publications.identify` admits supplied material under explicit series,
-issue, asset and format context. It verifies the relevant format boundary and
-returns an original artifact. The context is caller-supplied; it is never
-promoted into publisher-origin evidence merely because bytes came from a file
-whose name resembles a public release.
+## 3. Discover a source's actual route
 
-## 2. Collections and independently selected stores
+```python
+from stratbox.domains.cbr.operations.catalog import (
+    DescribeFamilyRequest, DescribeSourceRequest, describe_family, describe_source,
+)
 
-`cbr.file_collector.collect_materials` accepts a heterogeneous selection. Each
-item can use exactly one supplied payload, pinned material reference or explicit
-HTTP URL. Fixed publication profiles can also provide their registered default.
-Each item can choose a named provider; one batch can read several independent
-stores while leaving physical locations outside its logical identity.
+card = describe_source(DescribeSourceRequest("cbr.monetary_statistics.monetary_agg"))
+assert card.outcome == "succeeded", card.diagnostics
+for operation in card.value.operations:
+    print(operation.key, operation.stages, operation.composition)
 
-An explicit failed input remains a failed input. The collector never substitutes
-an Internet download for a missing retained file. With `continue_on_error=True`,
-later independent items may still succeed. The result retains completed originals
-and a disposition for every selected item: completed, failed, unsupported,
-not attempted or unknown, according to the producer's observed outcome.
-
-`CollectionManifest` is a shared contract, usable outside CBR. It records ordered
-member names, exact hashes and sizes, media types, semantic roles, optional source
-asset and artifact descriptor identities, input evidence and source coverage.
-It carries neither a target path nor a destination provider. `manifest.complete`
-describes the selected batch; `manifest.coverage` describes the claimed source
-universe. A successfully collected batch can have unknown historical coverage.
-
-The original fixed-file collector still offers a 41-item convenience selection,
-derived from the common registry. Its in-memory and streaming ZIP operations now
-embed the same common `manifest.json` format. The source files remain exact
-originals; the generated archive has a separate product identity. A convenience
-archive of successful files states that earlier failures and historical coverage
-are unspecified. The richer collection route can retain its complete disposition
-ledger when packaging the corresponding selected members.
-
-`material.archive` accepts supplied bytes and references from independent stores.
-Nested relative POSIX names support structures such as
-`regulatory-reporting/2026/2026-10-01/form-0409803/nested/A.csv`.
-Manifest membership, hashes and media types are checked before publication.
-Case/Unicode aliases, traversal and file-versus-directory name conflicts fail.
-Archive resource limits are explicit and no longer impose the former 500-member
-streaming ceiling.
-
-## 3. Processing boundaries by family
-
-| Route | Source-local value | Integrated or calculated value | Presentation value |
-| --- | --- | --- | --- |
-| Reporting forms | All regular archive members and decoded DBF records | Selected normalized history and bank/model calculations | Form views and XLSX, or source CSV collection |
-| Corporate debt 0105a | Publication-local regional debt observations | Selected debt stream and APK calculation | Prepared debt pivots and XLSX |
-| Corporate issuance 0104a | Publication-local issuance observations | Monthly flow stream and APK calculation | Prepared issuance pivots and XLSX |
-| Project finance/escrow | Source cells, row/column dimensions, tokens and statuses | Selected period history and indicator definitions | Prepared views and formatted XLSX |
-| Service network | Qualified ParsedRelease or explicit ambiguous territorial candidates | Release comparison; complete retained evidence | Existing neutral and tabular outputs |
-| SORS restoration | Publication observations loaded by composition; reusable 0105a flake | Validated source bundle, strict restoration grids and classification crosswalk | Pivots and workbook outputs |
-
-Every supported snapshot codec reconstructs the complete domain value required
-by its next operation. It preserves types, axes, source context and lineage,
-rather than restoring a single display table and guessing the omitted context.
-Domain restoration requires all declared components. Generic selected-component
-reads remain available for inspection.
-
-SORS `load_sources` remains a declared composition of source extraction and
-semantic integration. Its validated `SorsSourceBundle` already has the
-`integrated` role. A separately retained full 0105a flake can supply its regional
-debt input without reopening that workbook.
-
-Snapshot constructors encode values in memory and advertise the `render` stage.
-`dataset.write_snapshot` performs `ingest` and `preserve` through the receiving
-adapter. Domain decoders advertise `read_extract`. This classification describes
-the actual operation boundary and does not turn a prepared snapshot into a
-confirmed durable write.
-
-The family guides document exact API names and admission rules:
-
-- [Reporting forms and notebook-style DBF exports](cbr-reporting-forms.md).
-- [Corporate lending flakes, streams, calculations and views](cbr-corporate-lending.md).
-- [Escrow cells, datasets, views and workbook replay](cbr-escrow.md).
-- [Service network releases and explicit dates](cbr-service-network.md).
-- [SORS dependencies and complete calculation snapshots](cbr-sors-snapshots.md).
-
-## 4. Universal retention and publication
-
-The same storage choices apply at every boundary:
-
-| Value to retain | Neutral operation or interface | Resume point |
-| --- | --- | --- |
-| Exact original bytes | Source save/read or complete material artifact | Domain identification and extraction. |
-| Encoded material with its semantic descriptor | Material save/read/transfer | Matching domain decoder. |
-| Complete typed dataset snapshot | Dataset write/read with a pinned reference | Matching domain restore operation. |
-| CSV collection and companion schema/manifest | Material save/archive or receiving file adapter | Complete collection decoder where provided. |
-| Prepared view snapshot | Dataset write/read | Renderer without original acquisition. |
-| Rendered workbook | Material save/transfer/archive | Distribution or user consumption. |
-
-`FileDatasetStore` and `MemoryDatasetStore` implement the same immutable logical
-dataset contract. The file adapter preserves canonical typed components, reuses
-identical component objects and commits the manifest last. Distinct component
-names survive even when their table content is identical. A new process can
-reconstruct the adapter, read a pinned version and restore the domain value.
-
-A mounted network share or checked-out Tabularium corpus can be used through a
-file provider. A receiver with repository publication rules can accept the exact
-original, flake collection, dataset representation or rendered workbook through
-its own adapter. A local write proves that write only; remote repository commit,
-publication acknowledgement and access policy belong to the receiver. Source
-parsers and renderers contain no destination-specific branching.
-
-The complete synthetic offline example is
-[cbr_reporting_form_flow.py](../../examples/cbr_reporting_form_flow.py). It retains
-a form-803 original, restores its typed DBF flakes through a newly constructed
-file adapter, exports a CSV collection and replays that collection. Run from the
-repository after installing the required dependencies:
-
-```sh
-PYTHONPATH=src python examples/cbr_reporting_form_flow.py
+family = describe_family(DescribeFamilyRequest("cbr.reporting_forms"))
+assert family.outcome == "succeeded", family.diagnostics
 ```
 
-## 5. Deliberate limits and extension rules
+A source card includes exact operation/schema versions, table/variant IDs,
+edition admission, semantic/model/product profiles, qualifications and handoffs.
+Collection inputs require explicit assembly: one extracted workbook does not
+silently become a multi-source bundle. Direct schema compatibility still
+requires runtime admission and any declared parameters or additional inputs.
 
-The initial DBF codec accepts classic text-oriented dBASE III versions `0x03`
-and `0x83`, preserving lexical values and physical deletion flags. Memo/binary
-fields and other dialects require reviewed profiles. Explicit partial extraction
-retains unsupported original members and diagnostics. Forms 134 and 803 have a
-source route without a financial normalization model.
+Family coverage lists supported, conditional, missing and delegated sources for
+each stage. Publisher-wide `operation_catalog().coverage("cbr")` provides
+navigation; source cards answer whether a particular format/table can continue.
+Form 134 does not inherit form 101's financial model, and historical escrow HTML
+does not inherit the XLSX parser.
 
-Historical escrow HTML remains an original-only variant. The supported regional
-XLSX layout has reviewed source extraction and integration. Differences such as
-average versus weighted-average rates retain distinct indicator identities;
-historical definitions are not merged through title similarity.
+SORS appears as a separate multi-source method on the corporate-lending card,
+with ten required sources and one optional source. It is not an implied model
+for every corporate-lending table.
 
-Capture date, official as-of date and observation period remain separate.
-Ambiguous blocks, unresolved formulas, duplicate releases and conflicting
-versions require explicit decisions. A CSV lacking acquisition evidence cannot
-recreate that evidence. Its supplied dates remain qualified caller context.
+## 4. Processing and restart boundaries
 
-Resource limits, partial source coverage and unavailable adapters remain visible
-in operation results. Dataset snapshots are bounded in-memory values; partition
-large histories by release or a bounded period set. A future SQL adapter must
-preserve the same schemas, identities and commit evidence. Additional querying,
-mutable row updates and cross-version transactions require explicit capabilities.
+| Boundary | Responsibility | Retain and resume |
+| --- | --- | --- |
+| Inventory | Discover candidates and select an exact issue, asset and route. | Preserve index evidence and alternatives; availability/history remain qualified. |
+| Original | Acquire or admit supplied bytes with explicit source context. | Save exact bytes and acquisition/material evidence through the chosen provider. |
+| Readable material | Produce source-readable JSONL/CSV/text where provided. | Save as a representation with an identity separate from the original. |
+| Flake | Decode sheets, cells, DBF records or office tables under a physical profile. | Write a complete snapshot and reconstruct the same source value later. |
+| Integrated data | Apply mappings, periods, units, subjects and revision rules. | Retain typed data and exact input versions. |
+| Calculation | Consume admitted integrated/model inputs under an explicit method. | Preserve results, method version and dependency vector. |
+| Prepared view | Select rows/periods, arrange tables and declare display policy. | Retain tables and metadata; render without parsing or recalculating. |
+| Rendered product | Format a prepared view as XLSX/CSV. | Save, transfer or archive through a caller-selected destination. |
 
-## 6. Verification for this implementation
+Persistence is optional at each boundary. The next operation accepts the same
+logical value whether just produced in memory or reopened from storage. No
+physical database is required between every pair of operations. Encoding a
+snapshot is distinct from a confirmed durable write.
 
-The 0.18.0 local regression run completed with **1,092 passed and 7 skipped**.
-The skipped checks require the separately configured full real SORS dataset or
-opt-in performance gates. Synthetic cold-process tests exercised actual HiGHS
-restoration and crosswalk computation, retained release comparison, stored-view
-rendering and complete form CSV-collection replay.
+`MemoryDatasetStore` and `FileDatasetStore` implement the same immutable logical
+contract. Component schemas, exact values, input identities and manifests survive
+reopening in a new process. Partial component reads support inspection; complete
+domain replay requires every mandatory component. Paths and provider IDs stay
+outside logical data identity.
 
-The release-integrity check, internal-import boundary check, maintained README
-link check and offline reporting-form example also passed. The implementation
-contains 104 registered CBR operations, including explicit persistence/replay
-operations; registry coverage resolves every delegated stage to an available
-operation. These local checks establish the implemented contracts and fixtures,
-while live publisher inventory, full historical layouts and external receiving
-adapters retain their own verification scope.
+### Workbook statistics
+
+The route is `cbr.tables.extract` → `cbr.statistics.align` → optional
+`calculate_change`/`calculate_share` → `build_view` → `render_view`, with independent
+flake, dataset and view snapshot/read operations. Numeric lexemes, formulas,
+cached values, structural cell metadata and merged ranges survive flake replay.
+Missing formula caches remain unresolved; no spreadsheet engine runs implicitly.
+
+Source-derived identities stay scoped to series/table unless explicit versioned
+mappings establish wider equivalence. Published growth, transactions and adjusted
+rates keep their source basis. A change calculated from two levels is a separate
+computed indicator. See [statistical workbooks](cbr-statistical-workbooks.md).
+
+### Reporting forms
+
+Archives are extracted member by member before model selection. Supported DBF
+records retain fields, raw tokens, deletion flags and member identity. Reviewed
+projections feed `cbr.forms.align`; retained aligned observations continue through
+`prepare_model_inputs` → `calculate` → `build_views` → `render_workbook`. The source
+convenience composition calls the same independent stages. REGN and REGN_GKO
+remain different namespaces. Form 102 needs explicit flow intervals. Default
+model selection includes every admitted subject; a legacy subset is an explicit
+profile. See [reporting forms](cbr-reporting-forms.md) and the offline
+[DBF retention example](../../examples/cbr_reporting_form_flow.py).
+
+### Corporate lending and SORS
+
+0105a debt and 0104a issuance have distinct source, stream, calculation and view
+contracts. They share reviewed physical helpers without making issuance part of
+a debt owner. SORS source projection consumes retained workbook flakes; model
+preparation consumes retained source observations and a parsed 0105a flake.
+
+`cbr.sors.prepare_inputs` produces the complete validated model bundle.
+`prepare_from_flakes` and `prepare_from_originals` are explicit compositions;
+`restore` consumes the prepared bundle. `build_views` prepares every selected
+sheet; `render_views` formats the pack independently of extraction and the solver.
+Output region selection leaves the complete restoration constraints intact.
+See [corporate lending](cbr-corporate-lending.md) and
+[SORS snapshots](cbr-sors-snapshots.md).
+
+### Escrow and service network
+
+Escrow metrics and header recognition are separate from product styles.
+`integrate_flakes` and the original-file `build_history` composition return the
+same dataset type. `build_views` consumes that dataset. A prepared view retains
+exact source versions and can be rendered independently. See
+[escrow](cbr-escrow.md).
+
+The service-network route includes histories, alignment, count changes, views
+and rendering. Capture time, official reference date and observation period stay
+distinct. An aggregate count decline does not identify individual closed offices.
+See [service network](cbr-service-network.md).
+
+## 5. Collections and independent destinations
+
+`cbr.file_collector.collect_materials` accepts a heterogeneous explicit selection.
+Each member chooses supplied bytes, a pinned material reference, an explicit URL
+or an admitted default route. Named providers allow independent input stores in
+one batch. An unavailable explicit retained input remains an error; the collector
+does not replace it with an Internet download.
+
+Every selected item has an observed disposition: completed, failed, unsupported,
+not attempted or unknown. The shared `CollectionManifest` records exact members,
+hashes, sizes, semantic roles, source assets, input evidence and coverage.
+Selection completeness remains separate from publisher-history completeness.
+
+Collectors expose typed `archive_members` and `manifest` outputs, including
+partial results. They bind to `material.archive`, which verifies exact membership
+and retains the complete selection ledger. A ZIP of successful files can thus
+still describe failed and unattempted inputs. The file-only archive convenience
+operation can describe only the files supplied to it.
+
+Downloaded workbooks remain original artifacts. A generated escrow workbook is
+a product artifact. Both can be saved, transferred or packaged through neutral
+material operations. A mounted share or checked-out Tabularium corpus may supply
+a file destination; further repository publication follows the receiver's own
+policy and acknowledgement. Parsers, models and renderers contain no
+destination-specific branches.
+
+## 6. Observed updates and reprocessing
+
+`cbr.publications.assess_updates` compares an admitted original, a processing
+checkpoint and observed destination identities. It makes separate decisions for
+source state, processing and each destination, without executing effects.
+
+- Different bytes under the same issue are a source revision.
+- A new official dated issue changes interpretation even if bytes happen to agree.
+- A new capture label with unchanged rolling bytes does not itself change observations.
+- A changed processing signature or missing result requires processing.
+- An original may already be stored while a derived product awaits processing.
+- Each destination is confirmed only against its own observed identity.
+
+The caller forms the processing signature from selected table, mapping, model and
+view versions/parameters. A pending plan does not claim completed calculation or
+successful storage.
+
+## 7. Admission limits and verification
+
+The DBF codec supports reviewed classic text-oriented dBASE III layouts and
+retains unsupported members with explicit partial diagnostics. Forms 134 and 803
+have no reviewed financial model. Historical escrow HTML has no reviewed semantic
+parser. Additional source editions require reviewed profiles; current source
+success does not establish historical completeness.
+
+Ambiguous units, periods, geography, blocks and revisions remain qualified.
+Strict alignment rejects unresolved semantics where required; the complete flake
+remains available for inspection. Partition large histories by release or a
+bounded period set.
+
+Local verification covers complete snapshot replay, exact numeric values,
+source/model/product separation, typed material handoffs, independent adapters,
+model admission and cold-process rendering. The ordinary suite requires no live
+downloads. Real SORS and performance fixtures retain explicit opt-in flags.
+
+```sh
+PYTHONPATH=src python -B -m pytest -q
+python -B scripts/check_internal_imports.py
+python -B scripts/check_release_integrity.py
+python -B scripts/check_readme_links.py
+PYTHONPATH=src python -B examples/cbr_statistics_flow.py
+```

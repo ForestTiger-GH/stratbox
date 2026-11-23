@@ -6,7 +6,7 @@ import json
 
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.storage.bytes import write_verified_bytes
-from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
+import stratbox.domains.cbr.operations.corporate_lending.sors as sors
 
 
 def require_value(result):
@@ -17,7 +17,8 @@ def require_value(result):
 
 def run(files, config):
     originals = require_value(sors.read_source_files(files, store=LocalFileStore()))
-    return require_value(sors.restore(sors.RestoreSorsRequest(originals, config)))
+    bundle = require_value(sors.prepare_from_originals(sors.PrepareSorsOriginalsRequest(originals, config)))
+    return require_value(sors.restore(sors.RestoreSorsRequest(bundle, config)))
 
 
 def source_files(config_path):
@@ -31,7 +32,8 @@ def main():
     parser.add_argument("output")
     args = parser.parse_args()
     restored = run(source_files(args.source_paths_json), sors.SorsRunConfig(as_of_date=args.date))
-    workbook = require_value(sors.render_workbook(sors.RenderSorsRequest(restored))).representation
+    views = require_value(sors.build_views(sors.BuildSorsViewsRequest(restored)))
+    workbook = require_value(sors.render_views(sors.RenderSorsRequest(views))).representation
     saved = write_verified_bytes(args.output, workbook.data, store=LocalFileStore(),
                                  expected_sha256=workbook.identity.sha256)
     print(saved.status, saved.identity.sha256)

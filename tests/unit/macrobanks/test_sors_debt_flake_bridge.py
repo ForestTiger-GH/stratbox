@@ -5,12 +5,11 @@ import pandas as pd
 import pytest
 
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as debt
-from stratbox.domains.cbr.corporate_lending.sors_restoration.dependencies import original_input
-from stratbox.domains.cbr.corporate_lending.sors_restoration.publication import RoundingPolicy
-from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.regional_traditional import (
-    parse_regional_traditional, regional_traditional_from_flake,
-)
+import stratbox.domains.cbr.operations.corporate_lending.debt as debt
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import original_input
+from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.regional_traditional import parse_regional_traditional
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.regional_traditional import regional_traditional_from_flake
 
 from test_cbr_industries_0105a_debt_corp import _workbook_bytes
 

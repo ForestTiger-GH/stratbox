@@ -17,12 +17,13 @@ from stratbox.core.storage.datasets.codec import reference_value
 from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest, WriteSnapshotRequest
 from stratbox.core.storage.datasets.operations import read_snapshot, write_snapshot
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
-from stratbox.domains.cbr.corporate_lending.sors_restoration.api import _seal_grids
-from stratbox.domains.cbr.corporate_lending.sors_restoration.dependencies import (
-    DEPENDENCIES, dependencies, dependency_manifest, original_input,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.sources.common import source_manifest_record
+import stratbox.domains.cbr.operations.corporate_lending.sors as sors
+from stratbox.domains.cbr.operations.corporate_lending.sors.api import _seal_grids
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import DEPENDENCIES
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import dependencies
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import dependency_manifest
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import original_input
+from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.common import source_manifest_record
 from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload
 
@@ -117,6 +118,30 @@ def assert_grids_equal(before, after):
     assert after.evidence == before.evidence
 
 
+def test_source_validation_grid_is_portable_with_dates_and_portfolio_sets():
+    from types import SimpleNamespace
+    from stratbox.core.formats.dataframes import frame_to_table, frame_from_table
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.validation import _validate_structure
+    from stratbox.shared.data.processing import DataContract
+
+    bundle = SimpleNamespace(
+        source_manifest_grid=pd.DataFrame([{"source_series": "01_05_A", "rows": 14976}]),
+        regional_totals_history_grid=pd.DataFrame(),
+        atomic_regions_grid=pd.DataFrame(index=range(85)),
+        geography_nodes_grid=pd.DataFrame(index=range(96)),
+        okved2_classes_grid=pd.DataFrame(index=range(88)),
+        source_grid=pd.DataFrame({"as_of_date": ["2026-06-01"] * 3,
+                                  "portfolio_scope": ["CORPORATE_TOTAL", "SME", "SME_IE"]}),
+    )
+    records = []
+    _validate_structure(bundle, records)
+    frame = pd.DataFrame(records)
+    encoded, descriptor = frame_to_table(frame, contract=DataContract("test.sors.validation", 1))
+    restored = frame_from_table(encoded, descriptor)
+    pd.testing.assert_frame_equal(frame, restored)
+    assert restored.set_index("check_id").loc["structure:common_date", "actual"] == ("2026-06-01",)
+
+
 def test_bundle_manifest_is_shared_exact_and_roundtrips_every_grid(tmp_path):
     declarations = dependencies()
     assert declarations == DEPENDENCIES
@@ -133,6 +158,44 @@ def test_bundle_manifest_is_shared_exact_and_roundtrips_every_grid(tmp_path):
     assert restored.coverage == bundle.coverage
     assert restored.dependency_manifest_grid.iloc[-1]["status"] == "not_supplied"
     assert checked(sors.build_bundle_snapshot(sors.SorsBundleSnapshotRequest(restored))).identity == snapshot.identity
+
+
+def test_prepared_view_renders_in_a_process_without_model_execution(tmp_path, small_result):
+    views = checked(sors.build_views(sors.BuildSorsViewsRequest(small_result)))
+    encoded = checked(sors.build_view_snapshot(sors.SorsViewSnapshotRequest(views)))
+    _, reference = persist(encoded, tmp_path)
+    request = tmp_path / "views.json"
+    request.write_text(json.dumps({"root": str(tmp_path), "reference": reference_value(reference)}))
+    script = r'''
+import json, sys
+from pathlib import Path
+sys.modules["highspy"] = None
+sys.modules["stratbox.domains.cbr.analytics.corporate_lending.sors.operations"] = None
+sys.modules["stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.loader"] = None
+from stratbox.core.storage.datasets import FileDatasetStore
+from stratbox.core.storage.datasets.codec import reference_from
+from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest
+from stratbox.core.storage.datasets.operations import read_snapshot
+from stratbox.core.storage.filestore import LocalFileStore
+from stratbox.domains.cbr.operations.corporate_lending import sors
+
+def checked(result):
+    assert result.outcome == "succeeded", result.diagnostics
+    return result.value
+
+info = json.loads(Path(sys.argv[1]).read_text())
+store = FileDatasetStore(LocalFileStore(info["root"]), "datasets", provider_id="files", scope_id="sors")
+encoded = checked(read_snapshot(ReadSnapshotRequest(reference_from(info["reference"])), store=store))
+views = checked(sors.read_view_snapshot(sors.ReadSorsSnapshotRequest(encoded)))
+result = checked(sors.render_views(sors.RenderSorsRequest(views)))
+Path(info["root"], "views_only.xlsx").write_bytes(result.representation.data)
+'''
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")}
+    completed = subprocess.run([sys.executable, "-c", script, str(request)], env=env, text=True, capture_output=True, timeout=30)
+    assert completed.returncode == 0, completed.stderr + completed.stdout
+    workbook = load_workbook(tmp_path / "views_only.xlsx", read_only=True)
+    assert tuple(workbook.sheetnames) == tuple(name for name, _ in views.tables)
+    workbook.close()
 
 
 def test_restoration_replays_real_crosswalk_pivot_and_render_in_a_new_process(tmp_path):
@@ -161,7 +224,7 @@ from stratbox.core.storage.datasets.codec import reference_from
 from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest, WriteSnapshotRequest
 from stratbox.core.storage.datasets.operations import read_snapshot, write_snapshot
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.corporate_lending import sors_restoration as sors
+from stratbox.domains.cbr.operations.corporate_lending import sors
 
 def checked(result):
     assert result.outcome == "succeeded", result.diagnostics
@@ -200,7 +263,13 @@ assert restored.evidence == crosswalk.evidence
 assert any("crosswalk" in (receipt.source_id or "") for receipt in restored.evidence.inputs)
 pivot = checked(sors.build_pivot(sors.PivotSorsRequest(restored, sors.SorsPivotRequest(region_code="r1", metrics=("overdue_rub",)))))
 assert pivot.table.set_index("class_code").loc["02", "overdue_rub"] == 10.0
-workbook = checked(sors.render_workbook(sors.RenderSorsRequest(restored)))
+views = checked(sors.build_views(sors.BuildSorsViewsRequest(restored)))
+encoded_views = checked(sors.build_view_snapshot(sors.SorsViewSnapshotRequest(views)))
+views_ref = checked(write_snapshot(WriteSnapshotRequest(encoded_views), store=store)).reference
+replayed_views = checked(sors.read_view_snapshot(sors.ReadSorsSnapshotRequest(
+    checked(read_snapshot(ReadSnapshotRequest(views_ref), store=store)))))
+assert replayed_views.evidence == views.evidence
+workbook = checked(sors.render_views(sors.RenderSorsRequest(replayed_views)))
 Path(info["root"], "replayed_sors.xlsx").write_bytes(workbook.representation.data)
 '''
     env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")}

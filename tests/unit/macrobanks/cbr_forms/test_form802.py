@@ -3,11 +3,12 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.reporting_forms.common.direct_form import build_direct_long, normalize_code_plain, normalize_regn
-from stratbox.domains.cbr.reporting_forms.common.models import get_model_for, load_models
-from stratbox.domains.cbr.reporting_forms.common.wide import build_wide_table
-from stratbox.domains.cbr.reporting_forms.forms import form802
-from stratbox.domains.cbr.reporting_forms.forms.registry import FORM_REGISTRY
+from stratbox.domains.cbr.analytics.reporting_forms.direct_form import build_direct_long
+from stratbox.domains.cbr.tables.reporting_forms.layouts.schema import normalize_code_plain, normalize_regn
+from stratbox.domains.cbr.analytics.reporting_forms.model import get_model_for, load_models
+from stratbox.domains.cbr.products.reporting_forms.wide import build_wide_table
+from stratbox.domains.cbr.tables.reporting_forms.layouts import form802
+from stratbox.domains.cbr.tables.reporting_forms.layouts.registry import LAYOUT_REGISTRY
 
 
 def _banks() -> pd.DataFrame:
@@ -48,11 +49,13 @@ def test_regn_normalization_does_not_turn_1000_float_into_10000() -> None:
     assert normalize_regn("1000.0") == "1000"
 
 def test_registry_contains_802() -> None:
-    assert FORM_REGISTRY["802"].title == "0409802"
+    assert LAYOUT_REGISTRY["802"].code == "802"
 
 
 def test_form802_url_and_physical_measures() -> None:
-    assert form802.build_url(pd.Timestamp("2026-04-01")).endswith("/802-20260401.rar")
+    from datetime import date
+    from stratbox.domains.cbr.publications.profiles import archive_url
+    assert archive_url("802", date(2026, 4, 1)).endswith("/802-20260401.rar")
     assert form802.DEFAULT_SPEC.code_fields == ("STR",)
     assert form802.DEFAULT_SPEC.measure_fields == {
         "total": ("VSEGO",),

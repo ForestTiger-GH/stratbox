@@ -1,15 +1,11 @@
 import pytest
 
-from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import (
-    read_atom_class_edges,
-    read_crosswalk_manifest,
-    read_crosswalk_scenarios,
-    read_legacy_atoms,
-    validate_mapping_version,
-)
-from stratbox.domains.cbr.corporate_lending.sors_restoration.registries.okved2 import (
-    read_okved2_classes,
-)
+from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_atom_class_edges
+from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_crosswalk_manifest
+from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_crosswalk_scenarios
+from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_legacy_atoms
+from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import validate_mapping_version
+from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
 
 
 MAPPING_VERSION = 'cbr-legacy-okved2-crosswalk-2026.3'
@@ -81,9 +77,7 @@ def test_technical_category_is_explicitly_visible_as_uncertainty() -> None:
 
 
 def test_relation_ids_are_scenario_scoped() -> None:
-    from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import (
-        build_crosswalk_relations_grid,
-    )
+    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import build_crosswalk_relations_grid
 
     edges = read_atom_class_edges(
         read_okved2_classes(),

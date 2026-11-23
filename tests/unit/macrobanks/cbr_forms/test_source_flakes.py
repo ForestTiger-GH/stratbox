@@ -20,9 +20,9 @@ from stratbox.core.operations.materials.archive_definitions import ArchiveMember
 from stratbox.core.operations.source.original_definitions import OriginalDestination
 from stratbox.shared.material_collections import decode_collection, encode_collection
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr import reporting_forms as forms
-from stratbox.domains.cbr.reporting_forms import source_definitions as D
-from stratbox.domains.cbr.reporting_forms.definitions import BUILD, VIEWS, RENDER
+from stratbox.domains.cbr.operations import reporting_forms as forms
+from stratbox.domains.cbr.operations.reporting_forms import source_definitions as D
+from stratbox.domains.cbr.operations.reporting_forms.definitions import BUILD, VIEWS, RENDER
 
 
 def dbf(fields, records, *, version=3):
@@ -81,7 +81,7 @@ def test_source_only_forms_and_unknown_models_are_separate():
         flakes = accepted(forms.extract_forms(forms.ExtractFormRequest(key, payload)))
         assert flakes.value.members[0].table.records[0].values == ("0012",)
         refused = forms.normalize_form(forms.NormalizeFormRequest(flakes.value))
-        assert refused.diagnostics[0].code == "source.form_model_unsupported"
+        assert refused.diagnostics[0].code == "source.form_layout_unsupported"
 
 
 def test_index_selects_actual_published_dates_and_accepts_offline_html():
@@ -117,7 +117,7 @@ def test_full_flakes_history_calculation_and_views_replay_after_file_read(tmp_pa
     normalized = accepted(bind_request(D.NORMALIZE, {"flakes": project_output(restored, "flakes")}).invoke(forms.normalize_form))
     assert len(normalized.value.rows) == 1
     assert normalized.value.rows.iloc[0]["total"] == "000001.2300"
-    history = accepted(forms.integrate_forms(forms.IntegrateFormsRequest((normalized.value,), "cbr.form.802", "history-1")))
+    history = accepted(forms.build_source_history(forms.FormHistoryRequest((normalized.value,), "cbr.form.802", "history-1")))
     read_history = _roundtrip(tmp_path, history.value)
     released = accepted(bind_request(D.RESTORE_HISTORY, {"snapshot": project_output(read_history, "snapshot")}).invoke(forms.restore_history))
     data_result = accepted(bind_request(BUILD, {"snapshots": project_output(released, "snapshots")},
@@ -169,7 +169,7 @@ def test_incomplete_dataset_cannot_be_relabelled_as_restored_flakes(tmp_path):
 def test_csv_package_uses_common_manifest_and_restores_without_dbf_parsing(tmp_path, monkeypatch):
     import json
     from zipfile import ZipFile
-    from stratbox.domains.cbr.reporting_forms import flakes as flake_module
+    from stratbox.domains.cbr.tables.reporting_forms import flakes as flake_module
     original = dbf((("CODE", "C", 8, 0), ("VALUE", "N", 16, 4)), (
         (b" ", (b"0012", b"000001.2300")), (b"*", (b"0013", b"")),
     ))

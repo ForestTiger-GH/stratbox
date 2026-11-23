@@ -12,9 +12,10 @@ from stratbox.core.storage.datasets.operations import read_snapshot, write_snaps
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.data.snapshots import DatasetSnapshot
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.corporate_lending.industries import debt_0105a as debt, issuance_0104 as issuance
-from stratbox.domains.cbr.corporate_lending.industries.common.contracts import IndustryPivotRequest
-from stratbox.domains.cbr.corporate_lending.industries.debt_0105a.derived import CBR_0105A_DEBT_CORP_APK_SOURCE_INDUSTRY_CODES
+import stratbox.domains.cbr.operations.corporate_lending.debt as debt
+import stratbox.domains.cbr.operations.corporate_lending.issuance as issuance
+from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest
+from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import CBR_0105A_DEBT_CORP_APK_SOURCE_INDUSTRY_CODES
 
 from test_cbr_industries_0104a_issuance import _book as issuance_workbook, _request as issuance_request
 from test_cbr_industries_0105a_debt_corp import _workbook_bytes

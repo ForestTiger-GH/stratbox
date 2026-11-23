@@ -47,7 +47,7 @@ def test_every_sors_csv_is_required_not_just_any_one():
     check = _inspector()
     source = check["DOMAIN_SOURCE"]
     files = _real_members(source)
-    names = sorted(name for name in files if "/sors_restoration/crosswalk/_resources/" in name
+    names = sorted(name for name in files if "/sors/crosswalk/_resources/" in name
                    and name.endswith(".csv"))
     assert len(names) >= 3
     for missing in names:
