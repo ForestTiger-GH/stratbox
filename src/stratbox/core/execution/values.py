@@ -182,7 +182,7 @@ def argument_value(value):
         return {"coordinate": argument_value(value.coordinate), "input_role": value.input_role}
     if isinstance(value, AcquisitionReceipt):
         return {"type": "acquisition", **{item.name: argument_value(getattr(value, item.name))
-                for item in fields(value) if item.name != "observed_at_utc"}}
+                for item in fields(value) if item.name not in {"observed_at_utc", "shared_work_id"}}}
     if isinstance(value, MaterialArtifact):
         return {"type": "material_artifact", "contract": argument_value(value.contract),
                 "representation": argument_value(value.representation),
@@ -383,7 +383,7 @@ def argument_identity(value, *, checkpoint=None, budget=None, cache=None) -> Byt
             return True
         if isinstance(item, AcquisitionReceipt):
             walk({"type": "acquisition", **{field.name: getattr(item, field.name)
-                for field in fields(item) if field.name != "observed_at_utc"}}, depth + 1)
+                for field in fields(item) if field.name not in {"observed_at_utc", "shared_work_id"}}}, depth + 1)
             return True
         if isinstance(item, SourcePayload):
             bound("input_bytes", item.identity.size)

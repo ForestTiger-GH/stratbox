@@ -187,7 +187,7 @@ def test_update_plan_distinguishes_recompute_from_destination_copy():
 def test_reference_invocation_uses_real_definition_and_refuses_ungranted_effects():
     from stratbox.core.execution.machine.references import MemoryValueResolver,invoke_reference,reference_schemas
     from stratbox.core.operations.processing.definitions import ExtractRequest
-    from stratbox.core.registry import core_catalog
+    from stratbox.operations import core_catalog
     vault=MemoryValueResolver()
     reference=vault.retain(ExtractRequest(workbook(),"example.table","2026"))
     catalog=core_catalog()

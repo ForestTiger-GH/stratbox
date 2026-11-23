@@ -1,0 +1,128 @@
+{
+  "schema": "stratbox.source-template",
+  "owner_id": "minfin",
+  "template_id": "minfin.document",
+  "stages": [
+    "acquire",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "preserve",
+    "readable"
+  ],
+  "slots": {
+    "minfin_discover": {
+      "formats": [],
+      "operation_id": "minfin.discover",
+      "parameters": [],
+      "reason": "",
+      "state": "supported",
+      "context_scope": "family"
+    },
+    "minfin_inspect": {
+      "formats": [],
+      "operation_id": "minfin.inspect",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "minfin_acquire": {
+      "formats": [],
+      "operation_id": "minfin.acquire",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "minfin_plan_updates": {
+      "formats": [],
+      "identity_parameter": "selected_sources",
+      "operation_id": "minfin.plan_updates",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "minfin_readable": {
+      "formats": [],
+      "operation_id": "minfin.readable",
+      "parameters": [],
+      "reason": "PDF or DOCX bytes and explicit publication context are required; legacy DOC remains an original-only asset.",
+      "state": "conditional"
+    },
+    "minfin_extract_document": {
+      "formats": [],
+      "operation_id": "minfin.extract_document",
+      "parameters": [],
+      "reason": "PDF or DOCX bytes and explicit publication context are required; legacy DOC remains an original-only asset.",
+      "state": "conditional"
+    },
+    "minfin_document_snapshot": {
+      "formats": [],
+      "operation_id": "minfin.document_snapshot",
+      "parameters": [],
+      "reason": "PDF or DOCX bytes and explicit publication context are required; legacy DOC remains an original-only asset.",
+      "state": "conditional"
+    },
+    "minfin_read_document": {
+      "formats": [],
+      "operation_id": "minfin.read_document",
+      "parameters": [],
+      "reason": "PDF or DOCX bytes and explicit publication context are required; legacy DOC remains an original-only asset.",
+      "state": "conditional"
+    },
+    "minfin_render_document": {
+      "formats": [],
+      "operation_id": "minfin.render_document",
+      "parameters": [],
+      "reason": "PDF or DOCX bytes and explicit publication context are required; legacy DOC remains an original-only asset.",
+      "state": "conditional"
+    },
+    "source_save_original": {
+      "formats": [],
+      "operation_id": "source.save_original",
+      "parameters": [],
+      "reason": "Preserve supplied original bytes in caller-selected storage.",
+      "state": "delegated"
+    },
+    "source_read_original": {
+      "formats": [],
+      "operation_id": "source.read_original",
+      "parameters": [],
+      "reason": "Read exact retained originals using their confirmed source reference.",
+      "state": "delegated"
+    },
+    "dataset_write_snapshot": {
+      "formats": [],
+      "operation_id": "dataset.write_snapshot",
+      "parameters": [],
+      "reason": "Store a complete domain snapshot through the caller's dataset adapter.",
+      "state": "delegated"
+    },
+    "dataset_read_snapshot": {
+      "formats": [],
+      "operation_id": "dataset.read_snapshot",
+      "parameters": [],
+      "reason": "Read a pinned complete domain snapshot through the caller's dataset adapter.",
+      "state": "delegated"
+    },
+    "material_save_artifact": {
+      "formats": [],
+      "operation_id": "material.save_artifact",
+      "parameters": [],
+      "reason": "Wrap a rendered representation as a typed material artifact and select its destination.",
+      "state": "delegated"
+    },
+    "material_read_artifact": {
+      "formats": [],
+      "operation_id": "material.read_artifact",
+      "parameters": [],
+      "reason": "Replay a retained representation and its semantic descriptor.",
+      "state": "delegated"
+    },
+    "minfin_map_observations": {
+      "operation_id": "minfin.map_observations",
+      "state": "conditional",
+      "reason": "Requires a retained typed source-cell extract and caller-reviewed metric, period, geography and unit bindings."
+    }
+  }
+}

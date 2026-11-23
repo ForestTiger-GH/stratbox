@@ -20,7 +20,8 @@ from stratbox.shared.data.methods import MethodDescriptor
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 _INFRASTRUCTURE = (
-    "stratbox.core.execution", "stratbox.core.registry",
+    "stratbox.core.execution", "stratbox.operations",
+    "stratbox.core.resources", "stratbox.domains.registry",
     "stratbox.core.runtime", "stratbox.core.limits",
     "stratbox.core.storage", "stratbox.core.network", "stratbox.shared.identity",
     "stratbox.shared.identifiers", "stratbox.shared.evidence", "stratbox.shared.data.datasets",

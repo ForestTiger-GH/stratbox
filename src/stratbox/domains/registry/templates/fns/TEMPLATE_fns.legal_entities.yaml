@@ -1,0 +1,281 @@
+{
+  "schema": "stratbox.source-template",
+  "owner_id": "fns",
+  "template_id": "fns.legal_entities",
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "readable",
+    "render",
+    "validate",
+    "view"
+  ],
+  "slots": {
+    "fns_1yur_discover": {
+      "operation_id": "fns.1yur.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_acquire": {
+      "operation_id": "fns.1yur.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_extract": {
+      "operation_id": "fns.1yur.extract",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_readable": {
+      "operation_id": "fns.1yur.readable",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_validate": {
+      "operation_id": "fns.1yur.validate",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_compare_flakes": {
+      "operation_id": "fns.1yur.compare_flakes",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_project": {
+      "operation_id": "fns.1yur.project",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_align": {
+      "operation_id": "fns.1yur.align",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_compare_datasets": {
+      "operation_id": "fns.1yur.compare_datasets",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_calculate_changes": {
+      "operation_id": "fns.1yur.calculate_changes",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_calculate_shares": {
+      "operation_id": "fns.1yur.calculate_shares",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_view": {
+      "operation_id": "fns.1yur.view",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_render": {
+      "operation_id": "fns.1yur.render",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_process": {
+      "operation_id": "fns.1yur.process",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_capture_full": {
+      "operation_id": "fns.1yur.capture_full",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_render_artifact": {
+      "operation_id": "fns.1yur.render_artifact",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_readable_artifact": {
+      "operation_id": "fns.1yur.readable_artifact",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_flake_snapshot": {
+      "operation_id": "fns.1yur.flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_flake_snapshot": {
+      "operation_id": "fns.1yur.read_flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_projection_snapshot": {
+      "operation_id": "fns.1yur.projection_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_projection_snapshot": {
+      "operation_id": "fns.1yur.read_projection_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_dataset_snapshot": {
+      "operation_id": "fns.1yur.dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_dataset_snapshot": {
+      "operation_id": "fns.1yur.read_dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_calculation_snapshot": {
+      "operation_id": "fns.1yur.calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_calculation_snapshot": {
+      "operation_id": "fns.1yur.read_calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_view_snapshot": {
+      "operation_id": "fns.1yur.view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_view_snapshot": {
+      "operation_id": "fns.1yur.read_view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_parse": {
+      "operation_id": "fns.1yur.parse",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_capture": {
+      "operation_id": "fns.1yur.capture",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_read_representation": {
+      "operation_id": "fns.1yur.read_representation",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_1yur_compare": {
+      "operation_id": "fns.1yur.compare",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "source_save_original": {
+      "operation_id": "source.save_original",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "source_read_original": {
+      "operation_id": "source.read_original",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_write_snapshot": {
+      "operation_id": "dataset.write_snapshot",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_read_snapshot": {
+      "operation_id": "dataset.read_snapshot",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_save_artifact": {
+      "operation_id": "material.save_artifact",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_read_artifact": {
+      "operation_id": "material.read_artifact",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    }
+  }
+}

@@ -6,7 +6,7 @@ are removed, so a stale definition or handler reference is caught offline.
 from pathlib import Path
 
 from stratbox.domains import minfin
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.domains.minfin.publications import access, catalog, materials, contracts as publications
 from stratbox.domains.minfin.tables import contracts as tables, cleaning, extraction, representation
 from stratbox.domains.minfin.analytics import contracts as analytics, indicators, notices
@@ -15,7 +15,7 @@ from stratbox.domains.minfin.operations import contracts as composite
 
 def test_root_has_only_canonical_registry_records_and_one_owner():
     root = Path(minfin.__file__).parent
-    from stratbox.core.registry.sources import source_cards
+    from stratbox.domains.registry.declarations import source_cards
     assert not tuple(root.glob("REGISTRY_*.yaml"))
     assert len(source_cards("minfin")) == 13
     assert {p.name for p in root.glob("*.py")} == {"__init__.py", "_registration.py", "profiles.py"}

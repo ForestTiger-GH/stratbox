@@ -1,0 +1,275 @@
+{
+  "schema": "stratbox.source-template",
+  "owner_id": "cbr",
+  "template_id": "cbr.statistics.workbook",
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "readable",
+    "render",
+    "validate",
+    "view"
+  ],
+  "slots": {
+    "cbr_file_collector_collect_materials": {
+      "operation_id": "cbr.file_collector.collect_materials",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_publications_acquire": {
+      "operation_id": "cbr.publications.acquire",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_publications_assess_updates": {
+      "operation_id": "cbr.publications.assess_updates",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_publications_discover": {
+      "operation_id": "cbr.publications.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.banking_sector_structure.obs_table_20s"
+        ]
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "identity_parameter": "series_id"
+    },
+    "cbr_publications_identify": {
+      "operation_id": "cbr.publications.identify",
+      "state": "supported",
+      "reason": "",
+      "parameters": [
+        [
+          "series_id",
+          "cbr.banking_sector_structure.obs_table_20s"
+        ]
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "identity_parameter": "series_id"
+    },
+    "cbr_publications_list_sources": {
+      "operation_id": "cbr.publications.list_sources",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ],
+      "context_scope": "catalog"
+    },
+    "cbr_publications_select": {
+      "operation_id": "cbr.publications.select",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_align": {
+      "operation_id": "cbr.statistics.align",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_build_view": {
+      "operation_id": "cbr.statistics.build_view",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_calculate_change": {
+      "operation_id": "cbr.statistics.calculate_change",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_calculate_share": {
+      "operation_id": "cbr.statistics.calculate_share",
+      "state": "conditional",
+      "reason": "Requires the declared CBR source/table edition and qualified inputs.",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_dataset_snapshot": {
+      "operation_id": "cbr.statistics.dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_read_dataset_snapshot": {
+      "operation_id": "cbr.statistics.read_dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_read_view_snapshot": {
+      "operation_id": "cbr.statistics.read_view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_render_view": {
+      "operation_id": "cbr.statistics.render_view",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_statistics_view_snapshot": {
+      "operation_id": "cbr.statistics.view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_compare": {
+      "operation_id": "cbr.tables.compare",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_extract": {
+      "operation_id": "cbr.tables.extract",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_flake_snapshot": {
+      "operation_id": "cbr.tables.flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_read_flake_snapshot": {
+      "operation_id": "cbr.tables.read_flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_readable": {
+      "operation_id": "cbr.tables.readable",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "cbr_tables_validate": {
+      "operation_id": "cbr.tables.validate",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": [
+        "xlsx"
+      ]
+    },
+    "source_save_original": {
+      "operation_id": "source.save_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    "source_read_original": {
+      "operation_id": "source.read_original",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_write_snapshot": {
+      "operation_id": "dataset.write_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_read_snapshot": {
+      "operation_id": "dataset.read_snapshot",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_save_artifact": {
+      "operation_id": "material.save_artifact",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_archive": {
+      "operation_id": "material.archive",
+      "state": "delegated",
+      "reason": "Choose an admitted destination and supply the exact typed value or retained artifact.",
+      "parameters": [],
+      "formats": []
+    }
+  }
+}

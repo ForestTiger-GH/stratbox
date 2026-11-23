@@ -112,7 +112,7 @@ def test_csv_source_local_no_unjustified_economic_inference():
 
 
 def test_domain_registration_available_without_loading_handlers():
-    from stratbox.domains.registry import operation_catalog
+    from stratbox.operations import operation_catalog
     catalog = operation_catalog()
     ids = {r.operation_id for r in catalog.list_refs()}
     assert 'minfin.discover' in ids

@@ -45,7 +45,7 @@ def _source_operation_inventory() -> list[list[object]]:
     source = str(ROOT / "src")
     if source not in sys.path:
         sys.path.insert(0, source)
-    from stratbox.domains.registry import domain_registration_inventory
+    from stratbox.operations import domain_registration_inventory
 
     return [list(item) for item in domain_registration_inventory()]
 
@@ -105,9 +105,9 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             source_snapshot.write_text(
                 json.dumps(source_inventory, ensure_ascii=False), encoding="utf-8"
             )
-            from stratbox.core.registry.resources import resource_inventory
-            from stratbox.core.registry.sources import validate_source_bindings
-            from stratbox.domains.registry import operation_catalog
+            from stratbox.core.resources import resource_inventory
+            from stratbox.domains.registry.declarations import validate_source_bindings
+            from stratbox.operations import operation_catalog
             source_registry = root / "source-registry-inventory.json"
             registry_inventory = [list(item) for item in resource_inventory()]
             source_registry.write_text(json.dumps(registry_inventory), encoding="utf-8")
@@ -136,11 +136,11 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "import importlib.metadata, json, sys; "
                 "sys.path.insert(0, sys.argv[1]); "
                 "import stratbox; "
-                "from stratbox.domains.registry import domain_registration_inventory; "
+                "from stratbox.operations import domain_registration_inventory; "
                 "actual = [list(item) for item in domain_registration_inventory()]; "
                 "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
                 "assert actual == expected, (actual, expected); "
-                "from stratbox.core.registry.resources import resource_inventory; "
+                "from stratbox.core.resources import resource_inventory; "
                 "actual_resources = [list(item) for item in resource_inventory()]; "
                 "expected_resources = json.loads(open(sys.argv[3], encoding='utf-8').read()); "
                 "assert actual_resources == expected_resources, 'Registry distribution bytes differ'; "
@@ -152,7 +152,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "assert RegionNameResolver().resolve('Москва').subject.id == 'RU-MOW'; "
                 "[load_reference('stratbox.shared.reference.' + family).validate_all() "
                 "for family in ('banks', 'okved2', 'geography')]; "
-                "from stratbox.core.registry import operation_catalog; "
+                "from stratbox.operations import operation_catalog; "
                 "catalog = operation_catalog(); "
                 "assert catalog.admit(level='metadata').admitted; "
                 "assert set(item[1] for item in expected) <= {ref.operation_id for ref in catalog.list_refs()}; "
@@ -169,7 +169,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
             full_check = (
                 "import json, sys; "
                 "sys.path.insert(0, sys.argv[1]); "
-                "from stratbox.domains.registry import operation_catalog, domain_registration_inventory; "
+                "from stratbox.operations import operation_catalog, domain_registration_inventory; "
                 "actual = [list(item) for item in domain_registration_inventory()]; "
                 "expected = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
                 "assert actual == expected, (actual, expected); "
@@ -180,7 +180,7 @@ def check(*, report_path: Path, full_pytest: bool = True) -> dict:
                 "actual_cards = sorted([c.publisher_id, c.family_id, c.series_id] for c in cards.sources); "
                 "expected_cards = json.loads(open(sys.argv[3], encoding='utf-8').read()); "
                 "assert actual_cards == expected_cards, (actual_cards, expected_cards); "
-                "from stratbox.core.registry.sources import validate_source_bindings; "
+                "from stratbox.domains.registry.declarations import validate_source_bindings; "
                 "assert validate_source_bindings(catalog) == len(cards.sources); "
                 "[cards.describe(c.series_id, operations=catalog) for c in cards.sources]; "
                 "from stratbox.domains.cbr.analytics.reporting_forms.model import load_models; "

@@ -6,13 +6,16 @@ destinations and can choose their own infrastructure providers.
 
 The package organizes neutral execution and infrastructure under `stratbox.core`,
 shared data contracts and reference resources under `stratbox.shared`,
-independent business packages under `stratbox.domains`, and canonical source,
-operation and profile declarations under `stratbox.registry`.
+business packages and source declarations under `stratbox.domains`, and
+canonical operation definitions under `stratbox.operations`. The public
+`stratbox.sdk.StrategyBox` facade compiles operations, scenarios and cascades
+through `stratbox.composition` and executes them in one bounded session.
 
 - [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
 - [Geography name matching](docs/current-how/geography-name-resolution.md)
-- [Domain registration and automatic operation discovery](docs/current-how/domain-operation-registry.md)
+- [Operation discovery and source templates](docs/current-how/domain-operation-registry.md)
+- [Executable scenarios, shared resources and the SDK](docs/current-how/executable-composition.md)
 - [Processing roles, bounded catalog discovery and domain coverage](docs/current-how/processing-operation-catalog.md)
 - [Core API and domain operations](docs/current-how/universal-business-core.md)
 - [Universal material flow, named adapters and typed operation handoff](docs/current-how/universal-data-flow.md)
@@ -39,5 +42,5 @@ python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):
 # python -B scripts/local_release_check.py
 # After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.23.0-py3-none-any.whl
+# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.24.0-py3-none-any.whl
 ```

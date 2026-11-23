@@ -1,0 +1,281 @@
+{
+  "schema": "stratbox.source-template",
+  "owner_id": "fns",
+  "template_id": "fns.sme",
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "readable",
+    "render",
+    "validate",
+    "view"
+  ],
+  "slots": {
+    "fns_sme_discover": {
+      "operation_id": "fns.sme.discover",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_acquire": {
+      "operation_id": "fns.sme.acquire",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_extract": {
+      "operation_id": "fns.sme.extract",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_readable": {
+      "operation_id": "fns.sme.readable",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_validate": {
+      "operation_id": "fns.sme.validate",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_compare_flakes": {
+      "operation_id": "fns.sme.compare_flakes",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_project": {
+      "operation_id": "fns.sme.project",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_align": {
+      "operation_id": "fns.sme.align",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_compare_datasets": {
+      "operation_id": "fns.sme.compare_datasets",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_calculate_changes": {
+      "operation_id": "fns.sme.calculate_changes",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_calculate_shares": {
+      "operation_id": "fns.sme.calculate_shares",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_view": {
+      "operation_id": "fns.sme.view",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_render": {
+      "operation_id": "fns.sme.render",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_process": {
+      "operation_id": "fns.sme.process",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_capture_full": {
+      "operation_id": "fns.sme.capture_full",
+      "state": "conditional",
+      "reason": "Requires the declared reviewed source profile; calculation inputs also require matching metric definitions, scopes and periods.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_render_artifact": {
+      "operation_id": "fns.sme.render_artifact",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_readable_artifact": {
+      "operation_id": "fns.sme.readable_artifact",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_flake_snapshot": {
+      "operation_id": "fns.sme.flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_flake_snapshot": {
+      "operation_id": "fns.sme.read_flake_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_projection_snapshot": {
+      "operation_id": "fns.sme.projection_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_projection_snapshot": {
+      "operation_id": "fns.sme.read_projection_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_dataset_snapshot": {
+      "operation_id": "fns.sme.dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_dataset_snapshot": {
+      "operation_id": "fns.sme.read_dataset_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_calculation_snapshot": {
+      "operation_id": "fns.sme.calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_calculation_snapshot": {
+      "operation_id": "fns.sme.read_calculation_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_view_snapshot": {
+      "operation_id": "fns.sme.view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_view_snapshot": {
+      "operation_id": "fns.sme.read_view_snapshot",
+      "state": "supported",
+      "reason": "",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_parse": {
+      "operation_id": "fns.sme.parse",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_capture": {
+      "operation_id": "fns.sme.capture",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_read_representation": {
+      "operation_id": "fns.sme.read_representation",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "fns_sme_compare": {
+      "operation_id": "fns.sme.compare",
+      "state": "conditional",
+      "reason": "Explicit regional CSV product convenience; full source retention uses extract/process/capture_full.",
+      "parameters": [],
+      "formats": []
+    },
+    "source_save_original": {
+      "operation_id": "source.save_original",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "source_read_original": {
+      "operation_id": "source.read_original",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_write_snapshot": {
+      "operation_id": "dataset.write_snapshot",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "dataset_read_snapshot": {
+      "operation_id": "dataset.read_snapshot",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_save_artifact": {
+      "operation_id": "material.save_artifact",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    },
+    "material_read_artifact": {
+      "operation_id": "material.read_artifact",
+      "state": "delegated",
+      "reason": "A caller-selected neutral store retains exact bytes, snapshots or artifact descriptors.",
+      "parameters": [],
+      "formats": []
+    }
+  }
+}

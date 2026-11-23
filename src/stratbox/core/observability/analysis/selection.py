@@ -26,6 +26,12 @@ class RecordFilter:
     until_utc: datetime | None = None
     time_field: str = "occurred"
     diagnostic_code: str | None = None
+    session_id: str | None = None
+    plan_id: str | None = None
+    workflow_scope_id: str | None = None
+    task_id: str | None = None
+    item_key: str | None = None
+    shared_work_id: str | None = None
 
     def __post_init__(self):
         if self.time_field not in {"occurred", "observed"}:
@@ -47,6 +53,8 @@ def select_records(records: Iterable[JournalRecord], criteria: RecordFilter) -> 
             criteria.run_id is None or c.run_id == criteria.run_id,
             criteria.step_id is None or c.step_id == criteria.step_id,
             criteria.attempt_id is None or c.attempt_id == criteria.attempt_id,
+            all(getattr(criteria, name) is None or getattr(c, name) == getattr(criteria, name)
+                for name in ("session_id", "plan_id", "workflow_scope_id", "task_id", "item_key", "shared_work_id")),
             criteria.fact_id is None or record.fact_id == criteria.fact_id,
             criteria.cause_record_id is None or criteria.cause_record_id in record.cause_record_ids
             or c.cause_event_id == criteria.cause_record_id,

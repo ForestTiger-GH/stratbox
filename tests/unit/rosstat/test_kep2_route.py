@@ -277,3 +277,24 @@ def test_kep2_flake_snapshot_observes_cancellation_before_row_encoding(physical)
         raise OperationFailure("operation.cancelled", outcome="cancelled")
     with pytest.raises(OperationFailure, match="operation.cancelled"):
         flake_snapshot(value, checkpoint=checkpoint)
+
+
+def test_kep2_supplied_workflow_executes_real_physical_and_semantic_stages(native_workbook):
+    from stratbox.operations import operation_catalog
+    from stratbox.composition import compile_workflow
+    from stratbox.composition.builtins import source_workflow
+    from stratbox.core.execution.session import ExecutionSession, ExecutionSettings
+    catalog = operation_catalog()
+    workflow = source_workflow("rosstat.short_term_indicators",
+        payload=SourcePayload(native_workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        issue_id="2025-01", parameters={"asset_id": "main_workbook"}, output="all", catalog=catalog)
+    plan = compile_workflow(workflow, catalog)
+    with ExecutionSession(catalog, settings=ExecutionSettings(max_workers=1)) as session:
+        result = session.run(plan)
+    assert result.outcome == "succeeded", [(task.operation_id, task.state, task.reason) for task in result.tasks]
+    assert len({value.indicator_id for value in result.output("flake").values}) == 11
+    assert result.output("workbook").series_id == "rosstat.short_term_indicators"
+    assert result.output("representation").data
+    assert {task.operation_id for task in result.tasks if task.operation_id} == {
+        "rosstat.tables.extract_workbook", "rosstat.tables.extract_kep2", "rosstat.integration.integrate",
+        "rosstat.products.prepare_view", "rosstat.products.render_view"}

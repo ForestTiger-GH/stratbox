@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from stratbox.domains.registry import domain_registration_inventory
+from stratbox.operations import domain_registration_inventory
 
 
 def test_semantic_namespaces_have_one_publisher_owner():
@@ -40,7 +40,7 @@ def test_industry_stock_and_flow_remain_distinct_publication_semantics():
 
 
 def test_registry_matches_its_physical_semantic_owners():
-    from stratbox.domains._structure import discover_operation_owners
+    from stratbox.operations.layout import discover_operation_owners
     from importlib import resources
 
     registered = {owner for owner, _ in domain_registration_inventory()}

@@ -2,9 +2,9 @@
 
 Stratbox separates reusable technical operations from domain-specific methods.
 The installed package separates `stratbox.core`, `stratbox.shared`,
-`stratbox.domains` and canonical declarative `stratbox.registry` resources.
-Applications compose capabilities, operation calls and scheduling outside the
-library.
+`stratbox.domains`, `stratbox.operations` and `stratbox.composition`.
+Applications select capabilities, compose work through `stratbox.sdk` and own
+user schedules. The library owns local graph execution and shared resources.
 
 | Owner | Responsibility |
 | --- | --- |
@@ -17,8 +17,10 @@ library.
 | `core.operations` | Domain-neutral acquisition, original-byte storage, comparison, validation and table operations. |
 | `core.observability` | Event records, evidence assessment, capture, immutable journals and analysis. |
 | `core.notifications` | Topic/subscription definitions, authorized intents, transaction state and qualified handoff. |
-| `core.registry` | Canonical source/operation/profile loading, validation, indexing, catalog assembly and discovery projections. |
-| `registry` | Declarative source identities, complete operation contracts, owner coverage and processing-profile bindings. |
+| `operations` | Canonical operation contracts, owner coverage, admission, catalog assembly and discovery. |
+| `composition` | Scenario/cascade definitions, typed slots, port bindings and compiled graphs. |
+| `sdk` | Public discovery, compilation and session facade. |
+| `core.resources` | Neutral packaged-resource loading and delivery inventory. |
 | `shared.identifiers` | Bounded semantic identifiers. |
 | `shared.identity` | Immutable digest/byte size and canonical manifest encoding. |
 | `shared.evidence` | Source materials and acquisition, used-input, storage and publication receipts. |
@@ -27,7 +29,7 @@ library.
 | `shared.data.operations` | Processing stages, named input/output ports and compatibility invariants. |
 | `shared.reference` | Explicitly versioned packaged assets, bank and OKVED2 references and territorial name resolution. |
 | `shared.time` | Date-only calendar period and anchor generation. |
-| `domains.registry` | Validated domain view and inventory of canonical registry owners. |
+| `domains.registry` | Source identities, content groups, profiles and reusable source-route bindings. |
 | `domains.<source>.<family>.<owner>` | Official source parameters, interpretation, period rules, calculations and output profiles. |
 | Consumer | User interface, schedules, destinations, host authorization, publication and downstream effects. |
 

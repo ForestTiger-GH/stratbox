@@ -9,11 +9,11 @@ import sys
 import pytest
 
 from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.registry import OperationCatalog, OperationRef
-from stratbox.core.registry.operations import validate_request_contract
+from stratbox.operations import OperationCatalog, OperationRef
+from stratbox.operations.declarations import validate_request_contract
 from stratbox.shared.data.operations import InputPort, OperationSemantics, OutputPort, ProcessingStage, RequestField
 from stratbox.shared.data.processing import DataContract
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 
 @dataclass(frozen=True)
@@ -65,7 +65,7 @@ def test_nonexistent_typed_port_path_is_not_admitted():
 
 
 def test_static_unknown_requirement_source_is_rejected_without_typed_loading(monkeypatch):
-    from stratbox.core.registry import requirements
+    from stratbox.domains.registry import requirements
     catalog = operation_catalog()
     original = requirements.declared_requirements
     known = original("cbr.sors.prepare_inputs")
@@ -92,7 +92,7 @@ def test_admission_levels_report_distinct_proofs_and_stable_identities():
 
 
 def test_relocation_changes_resource_identity_and_preserves_semantic_identity(monkeypatch, tmp_path):
-    from stratbox.core.registry import resources
+    from stratbox.core import resources
     catalog = operation_catalog()
     before = catalog.admit(level="metadata")
     root = tmp_path / "registry"
@@ -112,10 +112,10 @@ def test_metadata_pages_and_admission_import_no_domains_or_optional_engines():
 import importlib.abc,sys
 class RejectImplementation(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(("stratbox.domains.","pandas","openpyxl","highspy","requests")):
+        if fullname.startswith(("stratbox.domains.","pandas","openpyxl","highspy","requests")) and not fullname.startswith("stratbox.domains.registry"):
             raise AssertionError("Unexpected metadata import: " + fullname)
 sys.meta_path.insert(0, RejectImplementation())
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 catalog=operation_catalog()
 assert catalog.admit(level="metadata").admitted
 assert len(catalog.describe()) == len(catalog.references)
@@ -167,7 +167,7 @@ def test_inline_prototype_cannot_claim_typed_admission_without_field_classificat
     ("other.roles", "registry.value_context_requirements_owner_mismatch"),
 ])
 def test_context_requirement_references_are_bounded_owner_checked_metadata_links(reference, code):
-    from stratbox.core.registry.admission import _context_requirement_links
+    from stratbox.operations.admission import _context_requirement_links
     records = ({"owner_id": "cbr", "value_contexts": {"types": {
         "example.ContextCarrier": {"requirements_ref": reference}}}},
         {"schema": "stratbox.operation", "owner_id": "cbr",
@@ -179,7 +179,7 @@ def test_context_requirement_references_are_bounded_owner_checked_metadata_links
 
 
 def test_core_typed_admission_resolves_global_context_role_owners():
-    from stratbox.core.registry import core_catalog
+    from stratbox.operations import core_catalog
     admission = core_catalog().admit(level="typed")
     assert admission.level == "typed"
     assert all(operation.startswith(("source.", "material.", "dataset.", "notifications.", "workbook.", "document.", "observations.", "processing."))

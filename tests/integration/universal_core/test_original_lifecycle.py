@@ -228,3 +228,81 @@ def test_stream_decompresses_with_bounded_output_chunks():
     buffer = ChunkSink()
     response = exchange_into(_request().request, buffer, transport=provider)
     assert response.identity == ByteIdentity.of(raw) and buffer.getvalue() == raw
+
+
+def test_scheduled_streamed_collector_retains_each_write_and_aggregate_cap(tmp_path):
+    from openpyxl import Workbook
+    from stratbox.sdk import StrategyBox
+    book = Workbook()
+    book.active.append(["Observed", 1])
+    buffer = BytesIO()
+    book.save(buffer)
+    book.close()
+    raw = buffer.getvalue()
+    ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
+    selection = collector.CollectFilesRequest(ids, try_case_variants=False, retry=RetryPolicy(1),
+                                             max_batch_bytes=2 * len(raw))
+    destinations = {key: OriginalDestination(f"original{index}.xlsx") for index, key in enumerate(ids)}
+    response = (200, {"content-type": "application/octet-stream"}, raw)
+    provider = BodyTransport(response, response)
+    store = LocalFileStore(str(tmp_path))
+    with StrategyBox(providers={"http": provider, "output_filestore": store}) as box:
+        result = box.invoke("cbr.file_collector.collect_to_store",
+                            parameters={"selection": selection, "destinations": destinations})
+    assert result.outcome == "succeeded", [(task.state, task.reason) for task in result.tasks]
+    assert len(result.results) == 2
+    assert len(result.effects) == 2
+    assert [item.source_id for item in result.output("collection").completed] == list(ids)
+    assert (tmp_path / "original0.xlsx").read_bytes() == raw
+    assert (tmp_path / "original1.xlsx").read_bytes() == raw
+
+
+@pytest.mark.parametrize("member_capacity", [1, 2])
+def test_scheduled_raw_collector_has_one_task_per_member_and_aggregate_cap(member_capacity):
+    from openpyxl import Workbook
+    from stratbox.sdk import StrategyBox
+    book = Workbook()
+    book.active.append(["Observed", 1])
+    buffer = BytesIO()
+    book.save(buffer)
+    book.close()
+    raw = buffer.getvalue()
+    ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
+    response = (200, {"content-type": "application/octet-stream"}, raw)
+    provider = BodyTransport(response, response)
+    with StrategyBox(providers={"http": provider}) as box:
+        result = box.invoke("cbr.file_collector.collect_raw", parameters={
+            "source_ids": ids, "try_case_variants": False, "retry": RetryPolicy(1),
+            "max_batch_bytes": member_capacity * len(raw)})
+    assert len(result.results) == 2
+    assert result.outcome == ("succeeded" if member_capacity == 2 else "partial")
+    value = result.output("collection")
+    assert [item.source_id for item in value.completed] == list(ids[:member_capacity])
+    assert len(provider.requests) == member_capacity
+    if member_capacity == 1:
+        assert value.not_attempted == ids[1:]
+        assert value.stop_reason == "budget.batch_bytes"
+
+
+def test_scheduled_raw_collector_retries_failed_member_without_repeating_prior_member():
+    from openpyxl import Workbook
+    from stratbox.sdk import StrategyBox
+    book = Workbook()
+    book.active.append(["Observed", 1])
+    buffer = BytesIO()
+    book.save(buffer)
+    book.close()
+    raw = buffer.getvalue()
+    ids = tuple(item.source_id for item in collector.discover(collector.DiscoverFilesRequest()).value[:2])
+    response = (200, {"content-type": "application/octet-stream"}, raw)
+    provider = BodyTransport(response, (503, {}, b"busy"), response)
+    with StrategyBox(providers={"http": provider}) as box:
+        result = box.invoke("cbr.file_collector.collect_raw", parameters={
+            "source_ids": ids, "try_case_variants": False, "retry": RetryPolicy(2, 0, 0),
+            "max_batch_bytes": 2 * len(raw)})
+    assert result.outcome == "succeeded", [(item.state, item.reason) for item in result.tasks]
+    assert [item.source_id for item in result.output("collection").completed] == list(ids)
+    assert len(provider.requests) == 3
+    assert provider.requests[0][0] != provider.requests[1][0] == provider.requests[2][0]
+    assert len(result.results) == 2
+    assert sum(len(attempts) for attempts in result.attempts.values()) == 3

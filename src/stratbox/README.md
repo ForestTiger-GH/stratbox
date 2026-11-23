@@ -1,11 +1,11 @@
 # Stratbox package
 
-The library has three responsibility owners: `core` for reusable execution and
-infrastructure, `shared` for data identity, evidence, statistical semantics,
-packaged references and calendar models, and `domains` for independent source
-parsers and business operations. `registry` contains canonical declarative
-source identities, operation contracts and processing-profile bindings;
-`core.registry` validates and assembles their catalogs.
+The library provides its public entry point through `sdk`. `operations` owns
+the canonical operation catalog, `composition` compiles scenarios and cascades,
+and `core` owns execution and infrastructure. `shared` owns data identity,
+evidence, statistical semantics, references and calendar models. `domains`
+owns source interpretation and business methods; `domains.registry` holds
+source identities, profiles and source bindings to reusable templates.
 
 [Shared semantic contracts](../../docs/current-how/shared-semantic-contracts.md)
 

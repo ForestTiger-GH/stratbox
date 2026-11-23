@@ -56,7 +56,8 @@ def sme_dataset(day=SME_DAY, *, increment=0):
 
 
 def test_registry_has_two_meaningful_families_and_complete_real_bindings():
-    from stratbox.domains.fns._registration import REGISTRATION
+    from stratbox.operations.declarations import owner_registration
+    REGISTRATION = owner_registration("fns")
     from stratbox.domains.fns.operations.source_catalog import source_cards
     assert families() == ("fns.sme", "fns.legal_entities")
     assert {value.series_id for value in all_sources()} == {"fns.sme", "fns.1yur"}

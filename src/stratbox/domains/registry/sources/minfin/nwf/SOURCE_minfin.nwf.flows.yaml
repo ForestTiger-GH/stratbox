@@ -1,0 +1,82 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.nwf",
+  "series_id": "minfin.nwf.flows",
+  "title": "Движение средств и результаты управления средствами ФНБ",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "xlsx"
+  ],
+  "family_profile": "minfin.nwf.publication",
+  "position": 6,
+  "publication": {
+    "slot": "monthly",
+    "periodicity": "monthly",
+    "basis": "stock",
+    "kind": "table"
+  },
+  "source_groups": [
+    {
+      "group_id": "fiscal_statistics",
+      "title": "Движение средств и результаты управления средствами ФНБ",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        }
+      ],
+      "profile_ids": [
+        "minfin.nwf.publication_page",
+        "minfin.document_cards",
+        "minfin.nwf_assets.metadata.minfin.nwf.flows",
+        "minfin.nwf_table",
+        "minfin.nwf_headlines"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "budget_or_fund",
+        "indicator",
+        "period",
+        "basis",
+        "unit"
+      ],
+      "period_model": "metric_specific_ytd_annual_or_stock",
+      "qualification": "conditional",
+      "outputs": [
+        {
+          "operation_id": "minfin.capture",
+          "port": "extract"
+        },
+        {
+          "operation_id": "minfin.build_flake",
+          "port": "flake"
+        }
+      ]
+    }
+  ],
+  "processing": {
+    "template": "minfin.fiscal",
+    "bindings": {},
+    "profiles": [
+      "minfin.nwf.publication_page",
+      "minfin.document_cards",
+      "minfin.nwf_assets.metadata.minfin.nwf.flows",
+      "minfin.nwf_table",
+      "minfin.nwf_headlines"
+    ],
+    "qualifications": [
+      "Publication dates are release evidence; reporting periods come from source columns.",
+      "Monthly and quarterly budget values remain cumulative YTD; NWF units and basis are row-specific."
+    ]
+  }
+}

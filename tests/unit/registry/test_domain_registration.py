@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from stratbox.domains import registry as domain_registry
-from stratbox.domains.registry import domain_catalog, operation_catalog, domain_registration_inventory
-from stratbox.domains._structure import DomainLayoutError, discover_operation_owners
-from stratbox.core.registry.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
-from stratbox.core.registry import core_catalog
+from stratbox import operations as domain_registry
+from stratbox.operations import domain_catalog, operation_catalog, domain_registration_inventory
+from stratbox.operations.layout import DomainLayoutError, discover_operation_owners
+from stratbox.operations.catalog import OperationRegistration, OperationCatalog, OperationRef, RegistryError
+from stratbox.operations import core_catalog
 
 
 def test_published_contracts_remain_discoverable_and_machine_admission_is_explicit():
@@ -55,7 +55,7 @@ def test_invalid_registrations_fail_explicitly():
     wrong = replace(ref, operation_id='wrong.contract')
     with pytest.raises(RegistryError, match='registry.operation_unavailable'):
         OperationCatalog((wrong,)).get(wrong.operation_id)
-    invalid_handler = replace(ref, handler_ref="stratbox.core.registry.resources:_KINDS")
+    invalid_handler = replace(ref, handler_ref="stratbox.core.resources:_KINDS")
     with pytest.raises(RegistryError, match='registry.invalid_handler'):
         OperationCatalog((invalid_handler,)).resolve(ref.operation_id)
 
@@ -81,8 +81,12 @@ def _synthetic_catalog(monkeypatch, tmp_path, declarations):
     (root / "__init__.py").write_text("", encoding="utf-8")
     for owner in declarations:
         _synthetic_package(root, owner)
-    monkeypatch.setattr(domain_registry, "owner_ids", lambda: tuple(sorted(declarations)))
-    monkeypatch.setattr(domain_registry, "owner_registration", lambda owner: declarations[owner])
+    from stratbox.operations import declarations as metadata
+    from stratbox.operations.assembly import assemble_owners
+    monkeypatch.setattr(metadata, "owner_ids", lambda: tuple(sorted(declarations)))
+    monkeypatch.setattr(metadata, "owner_registration", lambda owner: declarations[owner])
+    monkeypatch.setattr(domain_registry, "_catalog", lambda include: assemble_owners(
+        tuple(owner for owner in metadata.owner_ids() if include(owner)), metadata.owner_registration)[1])
     return domain_registry.domain_catalog
 
 
@@ -183,13 +187,14 @@ def test_broken_existing_manifest_fails_instead_of_being_skipped(monkeypatch, tm
     def failing_registration(name):
         raise RegistryError("registry.invalid_manifest")
 
-    monkeypatch.setattr(domain_registry, "owner_registration", failing_registration)
+    from stratbox.operations import declarations as metadata
+    monkeypatch.setattr(metadata, "owner_registration", failing_registration)
     with pytest.raises(RegistryError, match="registry.invalid_manifest"):
         catalog()
 
 
 def test_discovered_owner_contracts_are_complete_and_extensible():
-    owners = tuple(owner for owner in domain_registry.owner_ids() if not owner.startswith("core."))
+    owners = tuple(owner for owner in __import__("stratbox.operations.declarations", fromlist=["owner_ids"]).owner_ids() if not owner.startswith("core."))
     catalog = domain_catalog()
     rows = domain_registration_inventory()
     assert owners == tuple(sorted(owners))
@@ -213,8 +218,12 @@ def test_invalid_intermediate_package_rejects_manifest(monkeypatch, tmp_path):
     # The intervening family is not importable as a regular package.
     (broken / "__init__.py").write_text("", encoding="utf-8")
     (broken / "_registration.py").write_text("", encoding="utf-8")
-    with pytest.raises(DomainLayoutError, match="domain.unreachable_manifest"):
-        discover_operation_owners(root)
+    declarations = tmp_path / "declarations"
+    owner = declarations / "publisher"
+    owner.mkdir(parents=True)
+    (owner / "OWNER.yaml").write_text('{"owner_id":"publisher.family.series"}')
+    with pytest.raises(DomainLayoutError, match="domain.unreachable_owner"):
+        discover_operation_owners(root, declarations=declarations)
 
 
 def test_dynamic_new_owner_and_extra_operation_have_no_count_ceiling(monkeypatch, tmp_path):

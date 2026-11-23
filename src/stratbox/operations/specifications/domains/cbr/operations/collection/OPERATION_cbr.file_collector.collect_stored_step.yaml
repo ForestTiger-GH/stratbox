@@ -1,0 +1,115 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.file_collector.collect_stored_step",
+    "request_type": "stratbox.domains.cbr.operations.collection.steps:CollectStoredStepRequest",
+    "value_type": "stratbox.domains.cbr.publications.collection.contracts:Collection",
+    "required_capabilities": [
+      "http",
+      "output_filestore"
+    ],
+    "possible_effects": [
+      "storage.write"
+    ],
+    "partial_allowed": true,
+    "limits": {
+      "output_bytes": 268435456,
+      "temporary_bytes": 268435456
+    },
+    "processing": {
+      "stages": [
+        "acquire",
+        "preserve"
+      ],
+      "outputs": [
+        {
+          "name": "collection",
+          "contract": {
+            "schema_id": "cbr.file_collector.stored_collection",
+            "role": "originals"
+          },
+          "path": "",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "source_policy": "source_collection"
+        },
+        {
+          "name": "files",
+          "contract": {
+            "schema_id": "cbr.file_collector.stored_files",
+            "role": "originals"
+          },
+          "path": "stored_files",
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
+        },
+        {
+          "name": "manifest",
+          "contract": {
+            "schema_id": "material.collection"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "source_policy": "source_collection"
+        },
+        {
+          "name": "archive_members",
+          "contract": {
+            "schema_id": "material.archive_members"
+          },
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ],
+          "collection": true,
+          "source_policy": "source_inapplicable"
+        }
+      ],
+      "parameters": [
+        "request",
+        "max_batch_bytes",
+        "continue_on_error",
+        "final"
+      ],
+      "summary": "Admit one explicitly scheduled collection member while retaining the cumulative byte cap and qualified prior results.",
+      "composition": true,
+      "required_parameters": [
+        "request"
+      ],
+      "inputs": [
+        {
+          "name": "previous",
+          "contract": {
+            "schema_id": "cbr.file_collector.stored_collection",
+            "role": "originals"
+          },
+          "required": false,
+          "outcomes": [
+            "partial",
+            "succeeded"
+          ]
+        }
+      ]
+    },
+    "method_id": "cbr-file-collect_stored_step",
+    "request_fields": {
+      "request": "parameter",
+      "max_batch_bytes": "parameter",
+      "continue_on_error": "parameter",
+      "final": "parameter",
+      "previous": "input"
+    }
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.collection.steps:collect_stored_step"
+  },
+  "schema": "stratbox.operation"
+}

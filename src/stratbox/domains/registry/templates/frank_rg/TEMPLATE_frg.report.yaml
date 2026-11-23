@@ -1,0 +1,265 @@
+{
+  "schema": "stratbox.source-template",
+  "owner_id": "frank_rg",
+  "template_id": "frg.report",
+  "stages": [
+    "acquire",
+    "calculate",
+    "compare",
+    "discover",
+    "extract",
+    "ingest",
+    "inspect",
+    "integrate",
+    "preserve",
+    "readable",
+    "render",
+    "validate",
+    "view"
+  ],
+  "slots": {
+    "frg_discover": {
+      "formats": [],
+      "operation_id": "frg.discover",
+      "parameters": [],
+      "reason": "",
+      "state": "supported",
+      "context_scope": "catalog"
+    },
+    "frg_inspect": {
+      "formats": [],
+      "operation_id": "frg.inspect",
+      "parameters": [],
+      "reason": "",
+      "state": "supported",
+      "context_scope": "catalog"
+    },
+    "frg_select": {
+      "formats": [],
+      "identity_parameter": "selected_sources",
+      "operation_id": "frg.select",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_scan": {
+      "formats": [],
+      "operation_id": "frg.scan",
+      "parameters": [],
+      "reason": "",
+      "state": "supported",
+      "context_scope": "catalog"
+    },
+    "frg_acquire": {
+      "formats": [],
+      "operation_id": "frg.acquire",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_capture": {
+      "formats": [],
+      "identity_parameter": "source_id",
+      "operation_id": "frg.capture",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_prepare_file": {
+      "formats": [],
+      "operation_id": "frg.prepare_file",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_plan_updates": {
+      "formats": [],
+      "operation_id": "frg.plan_updates",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_assess_material": {
+      "formats": [],
+      "operation_id": "frg.assess_material",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_extract": {
+      "formats": [],
+      "operation_id": "frg.extract",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_extract_snapshot": {
+      "formats": [],
+      "operation_id": "frg.extract_snapshot",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_read_extract": {
+      "formats": [],
+      "operation_id": "frg.read_extract",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_validate": {
+      "formats": [],
+      "operation_id": "frg.validate",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_compare": {
+      "formats": [],
+      "operation_id": "frg.compare",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_readable": {
+      "formats": [],
+      "operation_id": "frg.readable",
+      "parameters": [],
+      "reason": "",
+      "state": "supported"
+    },
+    "frg_build_flake": {
+      "formats": [],
+      "operation_id": "frg.build_flake",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_flake_snapshot": {
+      "formats": [],
+      "operation_id": "frg.flake_snapshot",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_read_flake": {
+      "formats": [],
+      "operation_id": "frg.read_flake",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_integrate": {
+      "formats": [],
+      "operation_id": "frg.integrate",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_align": {
+      "formats": [],
+      "operation_id": "frg.align",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_build_history": {
+      "formats": [],
+      "operation_id": "frg.build_history",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_observation_snapshot": {
+      "formats": [],
+      "operation_id": "frg.observation_snapshot",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_read_observations": {
+      "formats": [],
+      "operation_id": "frg.read_observations",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_calculate": {
+      "formats": [],
+      "operation_id": "frg.calculate",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_prepare_view": {
+      "formats": [],
+      "operation_id": "frg.prepare_view",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_view_snapshot": {
+      "formats": [],
+      "operation_id": "frg.view_snapshot",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_read_view": {
+      "formats": [],
+      "operation_id": "frg.read_view",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "frg_render_view": {
+      "formats": [],
+      "operation_id": "frg.render_view",
+      "parameters": [],
+      "reason": "A caller-supplied byte-bound semantic profile must define coordinates, subject, unit, scale, economic period and perimeter; downstream stages require the admitted result.",
+      "state": "conditional"
+    },
+    "source_save_original": {
+      "formats": [],
+      "operation_id": "source.save_original",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    },
+    "source_read_original": {
+      "formats": [],
+      "operation_id": "source.read_original",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    },
+    "dataset_write_snapshot": {
+      "formats": [],
+      "operation_id": "dataset.write_snapshot",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    },
+    "dataset_read_snapshot": {
+      "formats": [],
+      "operation_id": "dataset.read_snapshot",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    },
+    "material_save_artifact": {
+      "formats": [],
+      "operation_id": "material.save_artifact",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    },
+    "material_read_artifact": {
+      "formats": [],
+      "operation_id": "material.read_artifact",
+      "parameters": [],
+      "reason": "Caller-selected storage preserves the identified material or complete snapshot.",
+      "state": "delegated"
+    }
+  }
+}

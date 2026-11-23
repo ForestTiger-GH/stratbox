@@ -1,6 +1,6 @@
 """Registry, discovery and original-format admission at the publisher boundary."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.domains.cbr.publications.contracts import DiscoverRequest, IdentifiedOriginal, IdentifyRequest, ListSourcesRequest, PublicationInventory

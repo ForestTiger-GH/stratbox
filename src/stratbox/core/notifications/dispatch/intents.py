@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import datetime
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability import JournalRecord, JournalHead, JournalEntry
 from stratbox.core.observability.records.contracts import require_utc
 from stratbox.core.observability.records.schema import ValueRule
@@ -88,7 +89,7 @@ def _metadata(record: JournalRecord, version: int, names: frozenset[str]) -> dic
                             "version_id": record.subject.version_id}
     if "correlation" in names:
         value["correlation"] = {key: getattr(record.correlation, key)
-                                for key in ("run_id", "step_id", "attempt_id", "cause_event_id")}
+                                for key in Correlation.__dataclass_fields__}
     return value
 
 

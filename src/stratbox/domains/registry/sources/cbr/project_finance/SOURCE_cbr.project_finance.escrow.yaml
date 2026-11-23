@@ -1,0 +1,142 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.project_finance",
+  "series_id": "cbr.project_finance.escrow",
+  "title": "Housing project finance and escrow",
+  "issue_model": "dated",
+  "formats": [
+    "xlsx",
+    "html"
+  ],
+  "family_profile": null,
+  "position": 40,
+  "publication": {
+    "acquisition_profile": "cbr.route.escrow",
+    "extraction_profile": "cbr.escrow.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.escrow",
+    "integration_profile": "cbr.project_finance.alignment",
+    "product_profile": "cbr.project_finance.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "project_finance_statistics",
+      "title": "Housing project finance and escrow",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.escrow.parsed_file",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.escrow.original",
+          "version": 1,
+          "role": "originals"
+        }
+      ],
+      "profile_ids": [
+        "cbr.escrow.flake",
+        "cbr.tables.escrow",
+        "cbr.project_finance.alignment",
+        "cbr.project_finance.views"
+      ],
+      "formats": [
+        "xlsx",
+        "html"
+      ],
+      "grain": [
+        "report_date",
+        "territory",
+        "indicator"
+      ],
+      "period_model": "stock_or_metric_specific_flow",
+      "qualification": "conditional",
+      "outputs": [
+        {
+          "operation_id": "cbr.escrow.dataset_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "cbr.escrow.parse",
+          "port": "file"
+        },
+        {
+          "operation_id": "cbr.escrow.render_workbook",
+          "port": "workbook"
+        },
+        {
+          "operation_id": "cbr.escrow.align_observations",
+          "port": "observations"
+        },
+        {
+          "operation_id": "cbr.escrow.build_history",
+          "port": "dataset"
+        },
+        {
+          "operation_id": "cbr.escrow.readable",
+          "port": "readable"
+        },
+        {
+          "operation_id": "cbr.escrow.discover",
+          "port": "sources"
+        },
+        {
+          "operation_id": "cbr.escrow.build_views",
+          "port": "views"
+        },
+        {
+          "operation_id": "cbr.escrow.compare",
+          "port": "comparison"
+        },
+        {
+          "operation_id": "cbr.escrow.validate",
+          "port": "validation"
+        },
+        {
+          "operation_id": "cbr.escrow.flake_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "cbr.escrow.view_snapshot",
+          "port": "snapshot"
+        }
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.escrow": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.escrow"
+      }
+    }
+  },
+  "processing": {
+    "template": "cbr.project_finance.escrow",
+    "bindings": {},
+    "profiles": [
+      "cbr.escrow.flake",
+      "cbr.tables.escrow",
+      "cbr.project_finance.alignment",
+      "cbr.project_finance.views"
+    ],
+    "qualifications": [
+      "Historical publisher inventory is qualified independently of successful processing of selected materials.",
+      "Cross-source geography, subject and metric equivalence require explicit versioned mappings.",
+      "Historical HTML remains original-only; product sheet names, order and style are excluded from source and integrated identities."
+    ]
+  }
+}

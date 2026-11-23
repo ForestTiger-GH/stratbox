@@ -7,7 +7,7 @@ import pytest
 
 from stratbox.core.execution import HandoffError, prepare_input, project_output
 from stratbox.core.execution.value_context import value_context
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.evidence import SourcePayload
 
@@ -124,7 +124,7 @@ def test_auxiliary_source_admission_is_scoped_to_input_and_preserves_primary_out
     def with_auxiliary(input_name):
         binding = replace(original_binding, auxiliary_sources=((input_name,
             ("cbr.corporate_lending.corp_debt_c",)),))
-        from stratbox.core.registry.source_catalog import SourceCatalog
+        from stratbox.domains.registry.catalog import SourceCatalog
         card = replace(foreign.source, operations=(binding,))
         source_catalog = SourceCatalog(tuple(card if source.series_id == card.series_id else source
             for source in catalog.source_catalog().sources), catalog)

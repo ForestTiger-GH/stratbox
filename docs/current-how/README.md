@@ -2,6 +2,8 @@
 
 [Stratbox core operations](universal-business-core.md)
 
+[Executable scenarios, shared resources and the SDK](executable-composition.md)
+
 [Universal material flow and typed operation handoff](universal-data-flow.md)
 
 [Logical dataset snapshots and storage adapters](logical-dataset-snapshots.md)
@@ -36,7 +38,7 @@
 
 [Territory names and reviewed identity resolution](geography-name-resolution.md)
 
-[Automatic domain registration and operation discovery](domain-operation-registry.md)
+[Operation discovery and source templates](domain-operation-registry.md)
 
 [Core operation construction](core-operation-construction.md)
 

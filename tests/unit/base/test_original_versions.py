@@ -13,7 +13,7 @@ from stratbox.shared.source_publications import (
 from stratbox.core.operations.source.version_comparison import (
     CompareOriginalVersionsRequest, OriginalVersion, compare_original_versions,
 )
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 
 def _candidate(asset: SourceAssetIdentity, content: bytes):

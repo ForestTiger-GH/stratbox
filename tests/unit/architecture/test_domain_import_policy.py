@@ -27,7 +27,7 @@ def _package(domain, name, *, manifest=False):
         (current / "__init__.py").write_text("", encoding="utf-8")
     if manifest:
         (current / "_registration.py").write_text("", encoding="utf-8")
-        owner = domain.parent / "registry" / name.replace("/", ".")
+        owner = domain.parent / "operations" / "specifications" / name.replace("/", ".")
         owner.mkdir(parents=True, exist_ok=True)
         (owner / "OWNER.yaml").write_text(json.dumps({"owner_id": name.replace("/", ".")}),
                                           encoding="utf-8")
@@ -64,7 +64,7 @@ def test_legacy_domain_imports_and_dynamic_targets_are_rejected(tmp_path):
         "import importlib\n"
         "from stratbox.domains import cbr_offices\n"
         "importlib.import_module('stratbox.domains.cbr_industries.operations')\n"
-        "from stratbox.core.registry.catalog import OperationRef\n"
+        "from stratbox.operations.catalog import OperationRef\n"
         "ref = OperationRef('test.x', 'stratbox.domains.frg.api:scan')\n",
         encoding="utf-8",
     )
@@ -103,7 +103,7 @@ def test_invalid_intermediate_folder_fails_import_checker(tmp_path):
     (domains / "cbr" / "__init__.py").write_text("", encoding="utf-8")
     (series / "__init__.py").write_text("", encoding="utf-8")
     (series / "_registration.py").write_text("", encoding="utf-8")
-    registry_owner = domains.parent / "registry" / "cbr.family.series"
+    registry_owner = domains.parent / "operations" / "specifications" / "cbr.family.series"
     registry_owner.mkdir(parents=True)
     (registry_owner / "OWNER.yaml").write_text('{"owner_id":"cbr.family.series"}', encoding="utf-8")
     assert any("unreachable_owner" in x for x in checker["check_dependency_direction"]())

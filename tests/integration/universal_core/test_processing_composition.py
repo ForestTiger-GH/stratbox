@@ -14,7 +14,7 @@ from stratbox.core.operations.source.originals import (
 )
 from stratbox.core.storage.filestore import LocalFileStore
 import stratbox.domains.cbr.operations.service_network.bank_offices as bank_offices
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.releases import CompareReleaseRequest
 from stratbox.shared.evidence import SourcePayload
 

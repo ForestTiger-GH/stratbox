@@ -5,7 +5,7 @@ source identities without importing any handler or optional format provider.
 """
 from __future__ import annotations
 from functools import lru_cache
-from stratbox.core.registry.sources import publication_families
+from stratbox.domains.registry.declarations import publication_families
 import json
 import re
 

@@ -313,7 +313,7 @@ def bind_operation(catalog, operation_id, *, inputs=None, parameters=None,
     requirements = catalog.requirements(operation_id)
     names = {requirement.input_name for requirement in requirements}
     if names and set(supplied) & names:
-        from stratbox.core.registry.requirements import bind_requirement_inputs
+        from stratbox.domains.registry.requirements import bind_requirement_inputs
         role_keys = set(supplied) & names
         direct = {name: value for name, value in supplied.items() if name not in role_keys}
         roles = {name: value for name, value in supplied.items() if name in role_keys}
@@ -420,7 +420,7 @@ class SourceBinding:
 
 
 def bind_source(catalog, series_id, *, format=None, group_id=None, edition=None):
-    from stratbox.core.registry.sources import source_route
+    from stratbox.domains.registry.declarations import source_route
     source = catalog.source_catalog().source(series_id)
     if source is None:
         raise HandoffError("source.unknown")

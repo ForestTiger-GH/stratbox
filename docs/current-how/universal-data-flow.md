@@ -187,7 +187,7 @@ schema from a filename or evaluates a serialized Python object.
 ### Catalog calls and source-route admission
 
 ```python
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.core.execution.handoff import prepare_input
 
 catalog = operation_catalog()

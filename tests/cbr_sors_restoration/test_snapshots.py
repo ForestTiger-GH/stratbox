@@ -375,8 +375,8 @@ def test_selected_sors_region_keeps_full_source_vector_through_products_and_repl
 
 def test_explicit_source_binding_extension_replays_sors_with_the_canonical_dependency_vector(monkeypatch):
     """SORS stays a multi-source catalog operation; an extension owns its binding."""
-    from stratbox.core.registry import operation_catalog
-    from stratbox.core.registry.source_catalog import SourceCatalog, SourceOperation
+    from stratbox.operations import operation_catalog
+    from stratbox.domains.registry.catalog import SourceCatalog, SourceOperation
     from stratbox.core.execution import prepare_input, project_output
     from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import source_uses
     catalog = operation_catalog()

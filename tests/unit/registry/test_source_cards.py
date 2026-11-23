@@ -1,7 +1,7 @@
 """One executable registry with uniform source-scoped metadata across publishers."""
 from collections import Counter
 
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.operations import ProcessingFunction, compatible_ports
 
 

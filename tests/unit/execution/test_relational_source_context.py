@@ -6,7 +6,7 @@ import pytest
 from stratbox.core.execution import ExecutionContext, OperationDefinition, run
 from stratbox.core.execution.calls import SourceResultAdmission
 from stratbox.core.execution.value_context import value_context, validate_value_context_links
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.observation_snapshots import observation_snapshot
 from stratbox.shared.data.observations import ObservationBatch
 from stratbox.shared.data.operations import OperationSemantics, OutputPort, ProcessingStage

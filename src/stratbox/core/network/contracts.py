@@ -185,8 +185,13 @@ class HttpResponse:
     route_id: str | None = None
     logical_target_sha256: str | None = None
     transport_assurance: Literal["provider_reported", "tls_host", "peer_bound"] | None = None
+    shared_work_id: str | None = None
+    shared_reused: bool = False
 
     def __post_init__(self) -> None:
+        if (type(self.shared_reused) is not bool or (self.shared_reused and self.shared_work_id is None)
+                or (self.shared_work_id is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", self.shared_work_id))):
+            raise ValueError("Invalid shared HTTP identity")
         if self.target_sha256 is not None and not re.fullmatch(r"[a-f0-9]{64}", self.target_sha256):
             raise ValueError("Invalid target identity")
         if self.wire_size is not None and (type(self.wire_size) is not int or self.wire_size < 0):

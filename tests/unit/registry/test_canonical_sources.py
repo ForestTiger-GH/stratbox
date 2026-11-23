@@ -3,15 +3,28 @@ from copy import deepcopy
 import json
 import subprocess
 import sys
+import os
+from pathlib import Path
 
 import pytest
 
-from stratbox.core.registry.resources import decode_document
-from stratbox.core.registry.sources import (
+from stratbox.core.resources import decode_document
+from stratbox.domains.registry.declarations import (
     decode_route, profile_document, source_cards, source_documents, source_route,
-    validate_source_bindings,
+    validate_source_bindings, template_document,
 )
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
+
+
+def _route_document(owner, route_id):
+    source_id = route_id.removesuffix(".route")
+    source = next(item for item in source_documents(owner) if item["series_id"] == source_id)
+    processing = source["processing"]
+    template = template_document(owner, processing["template"])
+    slots = {**template["slots"], **processing["bindings"]}
+    return {"schema": "stratbox.route", "owner_id": owner, "profile_id": route_id,
+            "stages": template["stages"], "operations": list(slots.values()),
+            "profiles": processing["profiles"], "qualifications": processing["qualifications"]}
 
 
 def test_complete_source_routes_validate_operation_identities_and_parameter_names():
@@ -42,7 +55,7 @@ def test_source_route_declares_applicability_without_a_second_stage_graph():
     route = source_route("fns.sme")
     assert route.binding("fns.sme.extract")
     assert not hasattr(route, "transitions")
-    assert "transitions" not in profile_document("fns", "fns.sme.route")
+    assert "transitions" not in _route_document("fns", "fns.sme.route")
     with pytest.raises(ValueError, match="registry.source_operation_unbound"):
         route.binding("cbr.escrow.parse")
 
@@ -57,7 +70,7 @@ def test_source_route_declares_applicability_without_a_second_stage_graph():
     lambda d: d.update(schema="stratbox.route.v999"),
 ])
 def test_malformed_routes_are_rejected_before_handler_resolution(mutate):
-    document = profile_document("fns", "fns.sme.route")
+    document = _route_document("fns", "fns.sme.route")
     mutate(document)
     with pytest.raises(ValueError):
         decode_route(document, owner="fns")
@@ -76,13 +89,13 @@ def test_returned_declaration_copies_cannot_mutate_future_catalog_reads():
     document = source_documents("fns")[0]
     document["publication"].clear()
     assert source_documents("fns")[0]["publication"]
-    profile = profile_document("fns", "fns.sme.route")
+    profile = _route_document("fns", "fns.sme.route")
     profile["operations"].clear()
     assert source_route("fns.sme").operations
 
 
 def test_route_profile_references_require_metadata_schema_and_exact_identity():
-    route = profile_document("fns", "fns.sme.route")
+    route = _route_document("fns", "fns.sme.route")
     for reference, code in (("fns.missing.metadata", "registry.profile_unknown"),
                             ("fns.sme.publication", "registry.route_profile_schema_invalid")):
         mutated = deepcopy(route)
@@ -92,7 +105,7 @@ def test_route_profile_references_require_metadata_schema_and_exact_identity():
 
 
 def test_profile_metadata_has_one_canonical_record_per_exact_context():
-    from stratbox.core.registry.resources import iter_documents, resource_owners
+    from stratbox.core.resources import iter_documents, resource_owners
     identities = []
     for owner in resource_owners():
         for declaration in iter_documents(owner, "profiles"):
@@ -102,7 +115,7 @@ def test_profile_metadata_has_one_canonical_record_per_exact_context():
 
 
 def test_source_resource_filename_must_match_its_declared_identity(monkeypatch, tmp_path):
-    from stratbox.core.registry import sources
+    from stratbox.domains.registry import declarations as sources
     document = source_documents("fns")[0]
     renamed = tmp_path / "SOURCE_other.yaml"
     renamed.write_text(json.dumps(document))
@@ -120,12 +133,13 @@ def test_source_metadata_discovery_imports_no_domain_implementation():
 import importlib.abc, sys
 class RejectDomain(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith("stratbox.domains."):
+        if fullname.startswith("stratbox.domains.") and not fullname.startswith("stratbox.domains.registry"):
             raise AssertionError("Source metadata imported a domain implementation: " + fullname)
 sys.meta_path.insert(0, RejectDomain())
-from stratbox.core.registry.sources import source_cards, source_route
+from stratbox.domains.registry.declarations import source_cards, source_route
 assert sum(len(source_cards(owner)) for owner in ("cbr","fns","frank_rg","minfin","rosstat")) == 90
 assert source_route("rosstat.short_term_indicators").profile_id
 '''
-    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, "-B", "-c", code], capture_output=True, text=True,
+        env=dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[3] / "src")))
     assert result.returncode == 0, result.stderr

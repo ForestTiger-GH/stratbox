@@ -1,0 +1,64 @@
+{
+  "owner_id": "cbr",
+  "definition": {
+    "operation_id": "cbr.offices.acquire",
+    "request_type": "stratbox.domains.cbr.tables.service_network.bank_offices.contracts:AcquireOfficesRequest",
+    "value_type": "stratbox.domains.cbr.tables.service_network.bank_offices.contracts:AcquiredOffices",
+    "required_capabilities": [
+      "http"
+    ],
+    "processing": {
+      "stages": [
+        "acquire"
+      ],
+      "outputs": [
+        {
+          "name": "source",
+          "contract": {
+            "schema_id": "cbr.offices.original",
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "qualifications": [
+            "source.cbr.offices"
+          ],
+          "source_policy": "source_inapplicable"
+        },
+        {
+          "name": "payload",
+          "contract": {
+            "schema_id": "source.payload",
+            "role": "originals"
+          },
+          "path": "source.payload",
+          "source_policy": "source_inapplicable"
+        },
+        {
+          "name": "capture_date",
+          "contract": {
+            "schema_id": "calendar.date"
+          },
+          "path": "capture_date",
+          "source_policy": "source_inapplicable"
+        }
+      ],
+      "parameters": [
+        "capture_zone",
+        "baseline"
+      ],
+      "summary": "Acquire the selected source material with byte and acquisition evidence.",
+      "required_parameters": [
+        "capture_zone"
+      ]
+    },
+    "method_id": "cbr-offices-http",
+    "request_fields": {
+      "baseline": "parameter",
+      "capture_zone": "parameter"
+    }
+  },
+  "implementation": {
+    "handler_ref": "stratbox.domains.cbr.operations.service_network.bank_offices.operations:acquire"
+  },
+  "schema": "stratbox.operation"
+}

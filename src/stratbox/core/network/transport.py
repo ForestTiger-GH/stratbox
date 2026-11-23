@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -11,6 +12,7 @@ from io import BytesIO
 from math import isfinite
 import re
 from time import monotonic, sleep
+from threading import Condition, RLock
 from typing import BinaryIO, Callable
 from urllib.parse import unquote, urljoin, urlunsplit
 import zlib
@@ -33,6 +35,7 @@ from stratbox.core.network.contracts import (
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 _REDIRECT_STATUS = frozenset({301, 302, 303, 307, 308})
 _CHUNK = 64 * 1024
+_hop_admission = ContextVar("stratbox_http_hop_admission", default=None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,7 +119,8 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
     deadline = monotonic() + request.deadline_seconds
     attempts = (
         retry.attempts
-        if retry and (request.method == "GET" or request.read_only_post)
+        if retry and not getattr(transport, "scheduler_owned_retries", False)
+        and (request.method == "GET" or request.read_only_post)
         else 1
     )
     for attempt in range(attempts):
@@ -128,19 +132,23 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
         observed_decoded = 0
         if budget is not None:
             budget.checkpoint()
-            if not metered:
+            if not metered and not getattr(transport, "shares_http_requests", False):
                 budget.charge("requests", 1)
             remaining = min(remaining, budget.seconds_left())
             observed_decoded = budget.used("decoded_bytes")
         attempt_request = replace(request, deadline_seconds=remaining, budget=budget)
         if sink is None:
-            result = transport.exchange(attempt_request, cancelled=cancelled)
+            identified = getattr(transport, "exchange_identified", None)
+            result = (identified(attempt_request, request, cancelled=cancelled) if callable(identified)
+                      else transport.exchange(attempt_request, cancelled=cancelled))
             response = result
             size = len(result.body) if isinstance(result, HttpResponse) else 0
         else:
             sink.seek(0)
             sink.truncate(0)
-            result = transport.exchange_into(attempt_request, sink, cancelled=cancelled)
+            identified = getattr(transport, "exchange_into_identified", None)
+            result = (identified(attempt_request, request, sink, cancelled=cancelled) if callable(identified)
+                      else transport.exchange_into(attempt_request, sink, cancelled=cancelled))
             response = result.response if isinstance(result, HttpStreamResponse) else None
             size = result.identity.size if isinstance(result, HttpStreamResponse) else 0
         if budget is not None:
@@ -152,7 +160,7 @@ def _exchange(request, transport, retry, cancelled, budget, sink=None):
                 reported = budget.used("decoded_bytes") - observed_decoded
                 if reported < size:
                     budget.charge("decoded_bytes", size - reported)
-            if isinstance(transport, RoutedTransport):
+            if callable(getattr(transport, "accepts_response", None)):
                 admitted = transport.accepts_response(request, response)
             else:
                 effective = public_https_parts(response.effective_locator_safe).hostname
@@ -332,14 +340,114 @@ def _follow(request, open_response, cancelled, assurance, sink=None):
 
 
 class RequestsTransport:
-    """Standard local HTTPS with bounded bodies and validated redirects."""
+    """Reusable HTTPS pool with isolated request state and an explicit lifetime.
+
+    A single Session owns the adapters; only their thread-safe connection pools
+    are shared. Requests are prepared independently and sent through adapters,
+    so cookies and mutable Session headers never leak between consumers.
+    Closing waits for active responses and only closes an owned Session.
+    """
 
     accounts_http_budget = True
 
-    def __init__(self, *, ca_bundle: str | None = None):
+    def __init__(self, *, ca_bundle: str | None = None, session=None,
+                 own_session: bool | None = None, per_origin: int = 2):
         if ca_bundle is not None and (not isinstance(ca_bundle, str) or not ca_bundle.strip()):
             raise ValueError("CA bundle must be a nonempty path")
+        if type(per_origin) is not int or per_origin < 1:
+            raise ValueError("Invalid per-origin capacity")
+        if own_session is not None and type(own_session) is not bool:
+            raise ValueError("Invalid session ownership")
+        if session is None and own_session is False:
+            raise ValueError("An internally created Session must be owned")
         self._tls_options = {"verify": ca_bundle} if ca_bundle is not None else {}
+        self._session = session
+        self._owns_session = session is None if own_session is None else own_session
+        self._condition = Condition(RLock())
+        self._active = 0
+        self._origins = {}
+        self._per_origin = per_origin
+        self._closing = False
+        self._closed = False
+
+    def __enter__(self):
+        with self._condition:
+            if self._closing or self._closed:
+                raise RuntimeError("HTTP transport is closed")
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def close(self):
+        """Finish active leases before releasing the owned connection pool."""
+        with self._condition:
+            if self._closed:
+                return
+            self._closing = True
+            self._condition.notify_all()
+            while self._active:
+                self._condition.wait()
+            if self._closed:
+                return
+            session = self._session
+            self._closed = True
+        if self._owns_session and session is not None:
+            close = getattr(session, "close", None)
+            if callable(close):
+                close()
+            else:
+                session.__exit__(None, None, None)
+
+    @contextmanager
+    def _lease(self):
+        with self._condition:
+            if self._closing or self._closed:
+                raise _ReadFailure("capability_missing")
+            if self._session is None:
+                import requests
+                session = requests.Session()
+                session.trust_env = False
+                self._session = session
+            self._active += 1
+            session = self._session
+        try:
+            yield session
+        finally:
+            with self._condition:
+                self._active -= 1
+                self._condition.notify_all()
+
+    @contextmanager
+    def _origin(self, url, seconds, cancelled):
+        # Every hop leases its own origin after the preceding response was
+        # closed. Cross-origin redirects cannot hold two permits and deadlock.
+        host = public_https_parts(url).hostname
+        deadline = monotonic() + seconds
+        admission = _hop_admission.get()
+        if admission is not None:
+            admission(url, seconds, cancelled)
+        with self._condition:
+            while self._origins.get(host, 0) >= self._per_origin:
+                if cancelled is not None and cancelled():
+                    raise _ReadFailure("cancelled")
+                remaining = deadline - monotonic()
+                if remaining <= 0:
+                    raise _ReadFailure("timeout")
+                self._condition.wait(min(0.05, remaining))
+            if deadline <= monotonic():
+                raise _ReadFailure("timeout")
+            self._origins[host] = self._origins.get(host, 0) + 1
+        try:
+            yield max(0.001, deadline - monotonic())
+        finally:
+            with self._condition:
+                count = self._origins[host] - 1
+                if count:
+                    self._origins[host] = count
+                else:
+                    del self._origins[host]
+                self._condition.notify_all()
 
     def exchange(
         self, request: HttpRequest, *, cancelled: Callable[[], bool] | None = None
@@ -349,7 +457,15 @@ class RequestsTransport:
     def exchange_into(
         self, request: HttpRequest, sink: BinaryIO, *, cancelled: Callable[[], bool] | None = None,
     ) -> HttpStreamResponse | HttpFailure:
-        return self._exchange(request, cancelled, sink)
+        accepted = False
+        try:
+            result = self._exchange(request, cancelled, sink)
+            accepted = isinstance(result, HttpStreamResponse)
+            return result
+        finally:
+            if not accepted:
+                sink.seek(0)
+                sink.truncate(0)
 
     def _exchange(self, request, cancelled, sink=None):
         if not request.permits(request.url):
@@ -361,9 +477,7 @@ class RequestsTransport:
             return HttpFailure("capability_missing", "admission")
 
         try:
-            with requests.Session() as session:
-                session.trust_env = False
-
+            with self._lease() as session:
                 @contextmanager
                 def open_response(url, headers, remaining):
                     prepared = requests.Request(
@@ -372,14 +486,17 @@ class RequestsTransport:
                     ).prepare()
                     if not request.permits(prepared.url):
                         raise _ReadFailure("destination_forbidden")
-                    # Session.send may consume a redirect body even when redirects are disabled.
-                    with session.get_adapter(prepared.url).send(
-                        prepared, timeout=Timeout(total=remaining), stream=True, **self._tls_options,
-                    ) as response:
-                        yield (
-                            response.status_code, response.headers,
-                            lambda size: response.raw.read1(size, decode_content=False),
-                        )
+                    with self._origin(prepared.url, remaining, cancelled) as available:
+                        # Session.send may consume a redirect body even when
+                        # redirects are disabled. Adapter.send leaves it closed
+                        # by this context before the next hop is admitted.
+                        with session.get_adapter(prepared.url).send(
+                            prepared, timeout=Timeout(total=available), stream=True, **self._tls_options,
+                        ) as response:
+                            yield (
+                                response.status_code, response.headers,
+                                lambda size: response.raw.read1(size, decode_content=False),
+                            )
 
                 return _follow(request, open_response, cancelled, "tls_host", sink)
         except _ReadFailure as error:

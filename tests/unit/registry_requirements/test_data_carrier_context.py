@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 
 from stratbox.core.execution.handoff import prepare_input, project_output
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
 from stratbox.shared.evidence import SourcePayload

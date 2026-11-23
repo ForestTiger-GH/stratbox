@@ -1,6 +1,6 @@
 """Canonical Rosstat source declarations independent of parser implementations."""
 from functools import lru_cache
-from stratbox.core.registry.sources import source_documents
+from stratbox.domains.registry.declarations import source_documents
 from .contracts import RosstatSourceSpec
 
 @lru_cache(maxsize=1)

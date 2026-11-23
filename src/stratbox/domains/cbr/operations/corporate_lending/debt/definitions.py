@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.domains.cbr.operations.corporate_lending.industry.limits import TABLE_LIMITS as _TABLE_LIMITS

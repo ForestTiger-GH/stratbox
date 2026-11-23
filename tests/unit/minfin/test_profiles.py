@@ -17,7 +17,7 @@ from stratbox.domains.minfin import (
     bind_family, bind_series, validate_all_profiles,
 )
 from stratbox.domains.minfin.publications.catalog import _decode
-from stratbox.core.registry.sources import publication_families, source_documents
+from stratbox.domains.registry.declarations import publication_families, source_documents
 from stratbox.domains.minfin.publications.profiles import identification_profile
 from stratbox.domains.minfin.publications.discovery import check_asset
 
@@ -147,7 +147,7 @@ def test_profile_based_budget_flake_and_economic_calculation():
 def test_new_root_registry_is_discovered_without_adding_a_python_name(monkeypatch, tmp_path):
     from shutil import copytree
     from stratbox.domains.minfin.publications import catalog
-    from stratbox.core.registry import resources as registry_resources, sources
+    from stratbox.core import resources as registry_resources, sources
     root = Path(str(registry_resources.registry_root()))
     copytree(root, tmp_path / "registry")
     declaration_root = tmp_path / "registry" / "domains" / "minfin"

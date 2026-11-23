@@ -73,8 +73,8 @@ def test_static_checker_rejects_forbidden_core_imports(tmp_path):
 
 
 def test_core_catalog_preserves_logical_operations():
-    from stratbox.core.registry import core_catalog
-    from stratbox.domains.registry import operation_catalog
+    from stratbox.operations import core_catalog
+    from stratbox.operations import operation_catalog
 
     core = core_catalog()
     all_ops = operation_catalog()
@@ -98,7 +98,7 @@ def test_core_catalog_preserves_logical_operations():
     "stratbox.core.formats.spreadsheets.workbook_input",
     "stratbox.core.formats.archives.members",
     "stratbox.core.rendering.excel",
-    "stratbox.core.registry.catalog",
+    "stratbox.operations.catalog",
     "stratbox.core.observability.journal.file_reader",
     "stratbox.core.observability.analysis.exports",
     "stratbox.core.notifications.dispatch.intents",
@@ -191,7 +191,7 @@ def test_nested_domain_analyzer_preserves_owner_and_publisher_isolation(tmp_path
             (current / "__init__.py").write_text("", encoding="utf-8")
             current = current.parent
         (directory / "_registration.py").write_text("", encoding="utf-8")
-        declaration = package / "registry" / path.replace("/", ".")
+        declaration = package / "operations" / "specifications" / path.replace("/", ".")
         declaration.mkdir(parents=True)
         (declaration / "OWNER.yaml").write_text(json.dumps({"owner_id": path.replace("/", ".")}),
                                                 encoding="utf-8")

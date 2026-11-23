@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from stratbox.core.registry import resources
-from stratbox.core.registry.catalog import OperationCatalog, OperationRef
-from stratbox.core.registry.operations import definition, validate_operation_document
+from stratbox.core import resources
+from stratbox.operations.catalog import OperationCatalog, OperationRef
+from stratbox.operations.declarations import definition, validate_operation_document
 
 
 def _write(path, value):
@@ -70,7 +70,7 @@ def test_duplicate_explicit_owner_is_rejected_across_grouping_paths(tmp_path):
 
 
 def test_canonical_definition_is_independent_of_python_projection_and_handler(monkeypatch):
-    from stratbox.core.registry import catalog as catalog_module
+    from stratbox.operations import catalog as catalog_module
     from stratbox.core.operations.processing import definitions as projections
     expected = definition("workbook.extract")
     monkeypatch.setattr(projections, "WORKBOOK", object())
@@ -90,9 +90,9 @@ def test_zip_package_root_and_discovery_are_reused_without_rescanning(monkeypatc
     archive = tmp_path / "registry.zip"
     with ZipFile(archive, "w") as bundle:
         bundle.writestr(package + "/__init__.py", "")
-        bundle.writestr(package + "/core/processing/OWNER.yaml",
+        bundle.writestr(package + "/specifications/core/processing/OWNER.yaml",
                         json.dumps({"owner_id": "core.processing"}))
-        bundle.writestr(package + "/core/processing/operations/OPERATION_example.normalize.yaml",
+        bundle.writestr(package + "/specifications/core/processing/operations/OPERATION_example.normalize.yaml",
                         json.dumps(_minimal()))
     monkeypatch.syspath_prepend(str(archive))
     monkeypatch.setattr(resources, "files", lambda _: package_files(package))
@@ -103,7 +103,7 @@ def test_zip_package_root_and_discovery_are_reused_without_rescanning(monkeypatc
         assert resources.registry_root() is root
         assert resources.resource_owners() == ("core.processing",)
         assert len(resources.iter_resources("core.processing", "operations")) == 1
-        assert len(resources.resource_inventory()) == 2
+        assert len(resources.resource_inventory(root=root)) == 2
         assert resources._discover.cache_info().misses == 1
         assert resources._discover.cache_info().hits >= 2
     finally:

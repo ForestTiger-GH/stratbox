@@ -14,12 +14,12 @@ def _checker(tmp_path):
     check = tool["check_registry_declarations"]
     package = tmp_path / "src/stratbox"
     check.__globals__["PACKAGE"] = package
-    sample = root / "src/stratbox/registry/domains/cbr/operations/OPERATION_cbr.describe_source.yaml"
+    sample = root / "src/stratbox/operations/specifications/domains/cbr/operations/OPERATION_cbr.describe_source.yaml"
     return check, package, json.loads(sample.read_bytes())
 
 
 def _owner(package, name):
-    directory = package / "registry" / name
+    directory = package / "operations" / "specifications" / name
     directory.mkdir(parents=True)
     (directory / "OWNER.yaml").write_text(json.dumps({"owner_id": name}), encoding="utf-8")
     domain = package / "domains"

@@ -1,5 +1,5 @@
 """Reviewed Rosstat interpretation is distinct from physical document reading."""
-from stratbox.core.registry.requirements import DomainAdmission
+from stratbox.domains.registry.requirements import DomainAdmission
 
 
 def admit(requirement, instance, value):

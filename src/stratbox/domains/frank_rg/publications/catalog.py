@@ -6,7 +6,7 @@ callbacks belong to runtime requests and registered profiles respectively.
 from __future__ import annotations
 
 from functools import lru_cache
-from stratbox.core.registry.sources import publication_families
+from stratbox.domains.registry.declarations import publication_families
 import json
 import re
 

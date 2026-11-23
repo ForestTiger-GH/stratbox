@@ -1,0 +1,151 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.debt_0105a",
+  "title": "Regional corporate debt by activity",
+  "issue_model": "dated",
+  "formats": [
+    "xlsx"
+  ],
+  "family_profile": null,
+  "position": 21,
+  "publication": {
+    "acquisition_profile": "cbr.route.debt_0105a",
+    "extraction_profile": "cbr.industries.debt.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.debt_0105a",
+    "integration_profile": "cbr.corporate_lending.alignment",
+    "product_profile": "cbr.corporate_lending.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "regional_debt",
+      "title": "Regional corporate debt by activity",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.workbook.flake",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "cbr.industries.0105a.original",
+          "version": 1,
+          "role": "originals"
+        }
+      ],
+      "profile_ids": [
+        "cbr.industries.debt.flake",
+        "cbr.tables.debt_0105a",
+        "cbr.corporate_lending.alignment",
+        "cbr.corporate_lending.views"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "report_date",
+        "territory",
+        "activity",
+        "currency",
+        "measure"
+      ],
+      "period_model": "credit_debt_stock",
+      "qualification": "conditional",
+      "source_table_code": "01_05_A",
+      "outputs": [
+        {
+          "operation_id": "cbr.industries.0105a.parse",
+          "port": "file"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.build_stream",
+          "port": "stream"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.build_stream",
+          "port": "result"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.calculation_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.build_pivots",
+          "port": "pivots"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.calculate_apk",
+          "port": "result"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.calculate_apk",
+          "port": "stream"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.discover",
+          "port": "sources"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.render_industry",
+          "port": "workbook"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.flake_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.stream_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.render_industries",
+          "port": "workbooks"
+        },
+        {
+          "operation_id": "cbr.industries.0105a.view_snapshot",
+          "port": "snapshot"
+        }
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.debt_0105a": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.debt_0105a"
+      }
+    }
+  },
+  "processing": {
+    "template": "cbr.corporate_lending.debt",
+    "bindings": {},
+    "profiles": [
+      "cbr.industries.debt.flake",
+      "cbr.tables.debt_0105a",
+      "cbr.corporate_lending.alignment",
+      "cbr.corporate_lending.views"
+    ],
+    "qualifications": [
+      "Historical publisher inventory is qualified independently of successful processing of selected materials.",
+      "Cross-source geography, subject and metric equivalence require explicit versioned mappings."
+    ]
+  }
+}

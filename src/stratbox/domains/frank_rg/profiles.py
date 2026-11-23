@@ -1,5 +1,5 @@
 """Physical workbook delivery never substitutes for byte-bound semantic review."""
-from stratbox.core.registry.requirements import DomainAdmission
+from stratbox.domains.registry.requirements import DomainAdmission
 
 
 def admit(requirement, instance, value):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 
 from stratbox.core.formats.archives.store import PathArchiveReceipt
 from stratbox.core.limits import ExecutionBudget

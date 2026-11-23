@@ -10,11 +10,8 @@ def _fixture():
     root = Path(__file__).resolve().parents[3]
     inspector = runpy.run_path(str(root / "scripts/inspect_reference_wheel.py"))
     source = inspector["REGISTRY_SOURCE"]
-    members = {
-        "stratbox/registry/" + path.relative_to(source).as_posix(): path.read_bytes()
-        for path in source.rglob("*") if path.is_file()
-        and (path.suffix in {".yaml", ".yml"} or path.name == "__init__.py")
-    }
+    members = {"stratbox/" + name: (source / name).read_bytes()
+               for name in inspector["_source_registry_inventory"]()}
     return inspector["_verify_registry_members"], members
 
 
@@ -25,7 +22,7 @@ def test_registry_distribution_includes_every_declaration_and_package_boundary()
     assert result["declarations"] > result["owners"]
 
 
-@pytest.mark.parametrize("kind", ["SOURCE_", "OPERATION_", "PROFILE_", "ROUTE_", "FAMILY_", "GROUP_", "OWNER.yaml", "__init__.py"])
+@pytest.mark.parametrize("kind", ["SOURCE_", "OPERATION_", "PROFILE_", "TEMPLATE_", "FAMILY_", "OWNER.yaml", "__init__.py"])
 def test_omitted_registry_resource_is_rejected(kind):
     verify, members = _fixture()
     victim = next(name for name in members if Path(name).name.startswith(kind))
@@ -42,7 +39,7 @@ def test_changed_registry_metadata_and_unexpected_declarations_are_rejected():
     with pytest.raises(ValueError, match="changed=\\['"):
         verify(set(members), "", members.__getitem__)
     members[victim] = original
-    members["stratbox/registry/extra/sources/SOURCE_extra.yaml"] = b"{}"
+    members["stratbox/domains/registry/extra/sources/SOURCE_extra.yaml"] = b"{}"
     with pytest.raises(ValueError, match="extra=\\['"):
         verify(set(members), "", members.__getitem__)
 

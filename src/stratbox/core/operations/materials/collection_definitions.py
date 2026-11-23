@@ -1,6 +1,6 @@
 """Manifest operation metadata, loadable without executable handlers."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.material_collections import CollectionManifest

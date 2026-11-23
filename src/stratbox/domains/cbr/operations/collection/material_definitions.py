@@ -1,6 +1,6 @@
 """Mixed-original collection contracts, independent of acquisition handlers."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from dataclasses import dataclass, field
 from stratbox.core.operations.materials.archive_definitions import ArchiveMember
 

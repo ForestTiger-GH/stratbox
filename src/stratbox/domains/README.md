@@ -7,9 +7,10 @@ Publishers are `cbr`, `fns`, `frank_rg`, `minfin`, and `rosstat`. Publications,
 documents, tables, integration, analytics and products have independent
 responsibilities; operation facades compose them explicitly.
 
-Canonical declarations live under `stratbox.registry.<owner>` as source,
-operation and profile resources. `core.registry` discovers their owners and
-assembles immutable catalogs; `domains.registry` exposes the domain view.
+Canonical source and profile declarations live under `domains.registry`;
+operation declarations and their immutable catalog live under `operations`.
+Supplied source workflows in `composition.builtins` connect independent stages
+and share the same session executor as user-defined scenarios.
 Handlers and lightweight request/result types live in the owning publisher's
 functional packages. Registry admission verifies their ownership and exact
 contract identities. Python package nesting alone creates no operation owner.

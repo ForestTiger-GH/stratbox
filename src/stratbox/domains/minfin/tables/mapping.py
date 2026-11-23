@@ -42,7 +42,7 @@ def map_metrics(request: MapRequest) -> MappedObservations:
     # Attachment inventories have family context; they do not acquire a
     # fabricated atomic-series identity through a manual cell mapping.
     source_id = source.source_id if series is not None else None
-    from stratbox.core.registry.sources import source_cards
+    from stratbox.domains.registry.declarations import source_cards
     card = next((card for card in source_cards("minfin") if card.series_id == source_id), None)
     group_id = card.source_groups[0].group_id if card is not None and len(card.source_groups) == 1 else None
     publication = source.publication

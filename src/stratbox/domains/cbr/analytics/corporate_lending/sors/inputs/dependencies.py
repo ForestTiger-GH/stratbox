@@ -30,7 +30,7 @@ class SorsDependency:
 
 
 def _declared_dependencies():
-    from stratbox.core.registry.requirements import declared_requirements
+    from stratbox.domains.registry.requirements import declared_requirements
     return tuple(SorsDependency(
         item.input_name, item.source_label, item.source_ids[0], item.role,
         required=item.required, accepted_contracts=item.accepted_contracts,
@@ -48,7 +48,7 @@ def dependencies():
 
 def source_uses(inputs):
     """Coordinates of source roles after the SORS loaders admit their content."""
-    from stratbox.core.registry.requirements import declared_requirements
+    from stratbox.domains.registry.requirements import declared_requirements
     from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
     from stratbox.domains.cbr.tables.statistics.profiles import table_profile
     requirements = {item.input_name: item for item in declared_requirements("cbr.sors.prepare_inputs")}

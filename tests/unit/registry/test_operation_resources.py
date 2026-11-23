@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from stratbox.core.registry.catalog import RegistryError
-from stratbox.core.registry.operations import (
+from stratbox.operations.catalog import RegistryError
+from stratbox.operations.declarations import (
     definition, operation_documents, owner_registration, validate_operation_document,
 )
 
@@ -60,12 +60,12 @@ def test_operation_document_preserves_named_role_contract_and_runtime_policy():
 def test_declarative_discovery_never_loads_implementation_or_optional_engines():
     code = '''
 import sys
-from stratbox.core.registry.operations import owner_ids, owner_registration
+from stratbox.operations.declarations import owner_ids, owner_registration
 for owner in owner_ids():
     owner_registration(owner)
 assert not any(name.startswith(("pandas", "openpyxl", "highspy", "requests")) for name in sys.modules)
 assert not any(".handlers" in name for name in sys.modules)
-assert not any(name.startswith("stratbox.domains.") for name in sys.modules)
+assert not any((name.startswith("stratbox.domains.") and not name.startswith("stratbox.domains.registry")) for name in sys.modules)
 '''
     env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[3] / "src"))
     subprocess.run([sys.executable, "-c", code], check=True, env=env)

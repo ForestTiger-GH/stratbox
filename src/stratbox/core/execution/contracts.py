@@ -196,9 +196,22 @@ class Correlation:
     step_id: str | None = None
     attempt_id: str | None = None
     cause_event_id: str | None = None
+    session_id: str | None = None
+    plan_id: str | None = None
+    workflow_scope_id: str | None = None
+    task_id: str | None = None
+    item_key: str | None = None
+    shared_work_id: str | None = None
 
     def __post_init__(self) -> None:
-        for token in (self.run_id, self.step_id, self.attempt_id, self.cause_event_id):
+        # step_id is the operation-boundary spelling of the same task identity.
+        if self.step_id is not None and self.task_id is not None and self.step_id != self.task_id:
+            raise ValueError("correlation.task_identity_conflict")
+        task = self.task_id or self.step_id
+        object.__setattr__(self, "step_id", task)
+        object.__setattr__(self, "task_id", task)
+        for name in self.__dataclass_fields__:
+            token = getattr(self, name)
             if token is not None:
                 safe_token(token)
 
@@ -238,6 +251,7 @@ class ExecutionContext:
     input_source_contexts: tuple[tuple[str, ValueContext], ...] = ()
     input_source_operation: str | None = None
     result_admissions: tuple[ResultAdmission, ...] = field(default=(), repr=False)
+    resource_ledger: object | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:

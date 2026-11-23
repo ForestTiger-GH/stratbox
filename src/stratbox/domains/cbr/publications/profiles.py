@@ -69,7 +69,7 @@ def acquisition_profile(profile_id):
     try:
         return _BY_ID[profile_id]
     except (KeyError, TypeError):
-        from stratbox.core.registry.sources import resolve_domain_profile
+        from stratbox.domains.registry.declarations import resolve_domain_profile
         try:
             profile = resolve_domain_profile("cbr", profile_id)
         except ValueError as error:

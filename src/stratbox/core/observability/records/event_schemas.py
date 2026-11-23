@@ -1,4 +1,5 @@
 """Data schemas for the core events currently eligible for structured output."""
+from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability.records.schema import FieldRule, RecordDataSchema, ValueRule
 
 TOKEN = ValueRule("token", max_length=128)
@@ -26,7 +27,7 @@ OPERATION_FINISHED = RecordDataSchema("execution", "operation.finished", 1, (
     FieldRule("occurred_at_utc", ValueRule("text", max_length=40)),
     FieldRule("correlation", ValueRule("object", fields=tuple(
         FieldRule(name, OPTIONAL_TOKEN, classification="restricted")
-        for name in ("run_id", "step_id", "attempt_id", "cause_event_id")
+        for name in Correlation.__dataclass_fields__
     )), classification="restricted"),
     FieldRule("stage", OPTIONAL_TOKEN, required=False),
     FieldRule("outcome", ValueRule("token", choices=OUTCOMES), classification="public"),
@@ -89,3 +90,28 @@ SOURCE_ORIGINAL_COMMITTED = RecordDataSchema("domain_fact", "source.original_ver
 ))
 
 BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED, SOURCE_ORIGINAL_COMMITTED)
+
+# Scheduler records have their own envelope: a queued run has no invocation.
+from stratbox.core.observability.records.orchestration import COUNTERS, ORCHESTRATION_KINDS
+
+_ORCHESTRATION_FIELDS = (
+    FieldRule("producer_id", TOKEN, classification="restricted"),
+    FieldRule("service", ValueRule("boolean")),
+    FieldRule("state", OPTIONAL_TOKEN, classification="public"),
+    FieldRule("reason", OPTIONAL_TOKEN, classification="public"),
+    FieldRule("outcome", ValueRule("token", nullable=True, choices=OUTCOMES), classification="public"),
+    FieldRule("completed", ValueRule("integer", nullable=True, minimum=0), classification="public"),
+    FieldRule("total", ValueRule("integer", nullable=True, minimum=0), classification="public"),
+    FieldRule("counters", ValueRule("object", fields=tuple(
+        FieldRule(key, COUNT, required=False) for key in COUNTERS)), classification="public"),
+    FieldRule("invocation_id", OPTIONAL_TOKEN, classification="restricted"),
+    FieldRule("operation_id", OPTIONAL_TOKEN, classification="public"),
+)
+ORCHESTRATION_SCHEMAS = tuple(RecordDataSchema("orchestration", kind, 1,
+    _ORCHESTRATION_FIELDS + ((
+        FieldRule("run_id", TOKEN, classification="restricted"),
+        FieldRule("plan_id", OPTIONAL_TOKEN, classification="restricted"),
+        FieldRule("transition_id", TOKEN),
+    ) if kind == "run.finished" else ())) for kind in sorted(ORCHESTRATION_KINDS))
+RUN_FINISHED = next(schema for schema in ORCHESTRATION_SCHEMAS if schema.kind == "run.finished")
+BUILTIN_DATA_SCHEMAS += ORCHESTRATION_SCHEMAS

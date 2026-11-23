@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from stratbox.domains.registry import domain_catalog
+from stratbox.operations import domain_catalog
 from stratbox.domains.cbr.operations.corporate_lending import (
     debt as debt_0105a, issuance as issuance_0104,
 )

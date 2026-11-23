@@ -56,10 +56,13 @@ class Invocation:
                 self._started = sampled
             except Exception:
                 self._timing_degraded = True
-        self.budget = (
-            BudgetMeter(limits, now=context.clock.monotonic, origin=self._started)
-            if limits.seconds is not None else BudgetMeter(limits)
-        )
+        meter_options = ({"now": context.clock.monotonic, "origin": self._started}
+                         if limits.seconds is not None else {})
+        if context.resource_ledger is not None:
+            from stratbox.core.execution.resources import SharedBudgetMeter
+            self.budget = SharedBudgetMeter(limits, context.resource_ledger, **meter_options)
+        else:
+            self.budget = BudgetMeter(limits, **meter_options)
         self._progress_at = float("-inf")
         self._sequence = self._emitted = self._dropped = 0
         self._incidents_dropped = 0
@@ -291,7 +294,7 @@ class Invocation:
         """Capture exhaustive computational fields with bounded signature work."""
         from stratbox.core.execution.arguments import capture_arguments
         if definition.request_fields:
-            from stratbox.core.registry.operations import validate_request_contract
+            from stratbox.operations.declarations import validate_request_contract
             validate_request_contract(definition)
         return capture_arguments(definition, request,
             checkpoint=checkpoint, budget=budget, cache=cache, source_contexts=source_contexts)

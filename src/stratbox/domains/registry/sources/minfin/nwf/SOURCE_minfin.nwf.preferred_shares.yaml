@@ -1,0 +1,80 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.nwf",
+  "series_id": "minfin.nwf.preferred_shares",
+  "title": "Размещение средств ФНБ в привилегированные акции российских кредитных организаций",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "docx"
+  ],
+  "family_profile": "minfin.nwf.publication",
+  "position": 9,
+  "publication": {
+    "slot": "preferred_shares",
+    "periodicity": "unknown",
+    "basis": "unknown",
+    "kind": "document"
+  },
+  "source_groups": [
+    {
+      "group_id": "fund_assets_document",
+      "title": "Размещение средств ФНБ в привилегированные акции российских кредитных организаций",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "minfin.source_cells",
+          "version": 2,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "minfin.nwf.publication_page",
+        "minfin.document_cards",
+        "minfin.nwf_assets.metadata.minfin.nwf.preferred_shares",
+        "minfin.document.blocks"
+      ],
+      "formats": [
+        "docx"
+      ],
+      "grain": [
+        "document",
+        "block",
+        "table",
+        "cell"
+      ],
+      "period_model": "fund_asset_stock_or_qualified_period",
+      "qualification": "source_only",
+      "outputs": [
+        {
+          "operation_id": "minfin.extract_document",
+          "port": "document"
+        }
+      ]
+    }
+  ],
+  "processing": {
+    "template": "minfin.document",
+    "bindings": {},
+    "profiles": [
+      "minfin.nwf.publication_page",
+      "minfin.document_cards",
+      "minfin.nwf_assets.metadata.minfin.nwf.preferred_shares",
+      "minfin.document.blocks"
+    ],
+    "qualifications": [
+      "Historical document branch retains ordered blocks with explicit coverage; no automatic economic table interpretation.",
+      "Legacy DOC decoding is not supplied; exact source bytes remain retainable."
+    ]
+  }
+}

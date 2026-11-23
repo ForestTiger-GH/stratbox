@@ -1,6 +1,6 @@
 """Physical bindings are invocation arguments; requests describe exact values."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from dataclasses import dataclass, field
 
 from stratbox.core.limits import ExecutionBudget

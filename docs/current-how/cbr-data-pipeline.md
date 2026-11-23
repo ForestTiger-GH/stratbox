@@ -10,8 +10,8 @@ source descriptions qualify their actual coverage.
 
 | Owner | Responsibility |
 | --- | --- |
-| `stratbox/registry/cbr/{sources,profiles}` | Atomic logical series, shared family attributes, issue models, format variants, processing profiles and allowed route transitions. |
-| `stratbox/registry/cbr/operations` | Complete versioned contracts, named ports, execution policy and implementation references. |
+| `stratbox/domains/registry/{sources,profiles}/cbr` | Atomic logical series, shared family attributes, issue models, format variants, processing profiles and allowed route transitions. |
+| `stratbox/operations/specifications/domains/cbr/operations` | Complete versioned contracts, named ports, execution policy and implementation references. |
 | `domains.cbr.publications/` | Official routes, discovery and selection, release/date conventions, original admission, update assessment and collection manifests. |
 | `domains.cbr.tables/<family>/` | Physical layouts, source cells or records, table editions, extraction and flake codecs. |
 | `domains.cbr.integration/<family>/` | Versioned subject/metric/period mappings, comparable observations and integrated histories. |
@@ -19,7 +19,7 @@ source descriptions qualify their actual coverage.
 | `domains.cbr.products/<family>/` | Prepared tables, display policies, view codecs and file renderers. |
 | `domains.cbr.operations/<family>/` | Typed request/result classes, metadata projections, handlers and explicit multi-stage compositions. |
 | `domains.cbr.operations/bindings.py` | Source-scoped bindings to the operation catalog: formats, tables, editions, handoffs and missing capabilities. |
-| `core.registry` | Shared resource loading, validation, indexes and catalog assembly. |
+| `operations` | Shared resource loading, validation, indexes and catalog assembly. |
 | `core.execution` | Named value adapters, source binding and independent invocation. |
 
 Dependency direction follows these boundaries. Publication access does not import

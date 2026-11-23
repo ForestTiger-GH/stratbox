@@ -1,6 +1,6 @@
 """Typed declarations for universal archive packaging."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from dataclasses import dataclass
 from stratbox.core.formats.archives.store import ArchiveWriteLimits, PathArchiveReceipt
 from stratbox.core.operations.source.original_definitions import OriginalDestination

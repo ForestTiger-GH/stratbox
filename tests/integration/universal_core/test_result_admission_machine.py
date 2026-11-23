@@ -7,7 +7,7 @@ from io import BytesIO
 
 from stratbox.core.execution import Diagnostic, ExecutionContext, OperationResult, ResultAdmission
 from stratbox.core.execution.machine.references import MemoryValueResolver, invoke_reference
-from stratbox.core.registry import core_catalog
+from stratbox.operations import core_catalog
 from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding
 from stratbox.core.storage.datasets import FileDatasetStore
 from stratbox.core.storage.datasets.definitions import WriteSnapshotRequest
@@ -53,7 +53,7 @@ def test_real_source_policy_refuses_foreign_prepared_snapshot_before_storage(tmp
     from stratbox.core.execution import InMemorySink
     from stratbox.core.execution.calls import SourceResultAdmission
     from stratbox.core.formats.spreadsheets.extracts import extract_workbook
-    from stratbox.core.registry import operation_catalog
+    from stratbox.operations import operation_catalog
     from stratbox.core.storage.datasets.operations import write_snapshot
     from stratbox.shared.data.workbooks import workbook_snapshot
     from stratbox.shared.evidence import SourcePayload
@@ -87,7 +87,7 @@ def test_partial_office_candidates_skip_the_unavailable_success_output(tmp_path,
     from openpyxl import Workbook
     from stratbox.core.execution import InMemorySink
     from stratbox.core.execution.calls import SourceResultAdmission
-    from stratbox.core.registry import operation_catalog
+    from stratbox.operations import operation_catalog
     from stratbox.domains.cbr.operations.service_network.territorial_offices import operations
     from stratbox.domains.cbr.tables.service_network.territorial_offices.contracts import (
         OfficesRegCandidates, ParseOfficesRegRequest,

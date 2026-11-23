@@ -22,7 +22,7 @@ from stratbox.domains.cbr.publications.catalog import all_sources
 from stratbox.domains.cbr.operations.bindings import validate_all_profiles as validate_profiles
 from stratbox.domains.cbr.operations.bindings import processing_profile
 from stratbox.domains.cbr.operations.collection.materials import CollectMaterial, CollectMaterialsRequest, collect_materials
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.processing import DataRole
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.identity import ByteIdentity

@@ -1,0 +1,79 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "minfin",
+  "publisher_id": "minfin",
+  "family_id": "minfin.nwf",
+  "series_id": "minfin.nwf.veb_deposits",
+  "title": "Размещение средств ФНБ на депозитах ВЭБ.РФ",
+  "issue_model": "publisher_document_release",
+  "formats": [
+    "doc"
+  ],
+  "family_profile": "minfin.nwf.publication",
+  "position": 7,
+  "publication": {
+    "slot": "veb_deposits",
+    "periodicity": "unknown",
+    "basis": "unknown",
+    "kind": "document"
+  },
+  "source_groups": [
+    {
+      "group_id": "fund_assets_document",
+      "title": "Размещение средств ФНБ на депозитах ВЭБ.РФ",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "minfin.publisher_document",
+          "version": 1,
+          "role": "extracts"
+        },
+        {
+          "schema_id": "minfin.source_cells",
+          "version": 2,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "minfin.nwf.publication_page",
+        "minfin.document_cards",
+        "minfin.nwf_assets.metadata.minfin.nwf.veb_deposits",
+        "minfin.document.blocks"
+      ],
+      "formats": [
+        "doc"
+      ],
+      "grain": [
+        "document",
+        "block",
+        "table",
+        "cell"
+      ],
+      "period_model": "fund_asset_stock_or_qualified_period",
+      "qualification": "source_only"
+    }
+  ],
+  "processing": {
+    "template": "minfin.nwf.deposits",
+    "bindings": {},
+    "profiles": [
+      "minfin.nwf.publication_page",
+      "minfin.document_cards",
+      "minfin.nwf_assets.metadata.minfin.nwf.veb_deposits",
+      "minfin.document.blocks"
+    ],
+    "qualifications": [
+      "Historical document branch retains ordered blocks with explicit coverage; no automatic economic table interpretation.",
+      "Legacy DOC decoding is not supplied; exact source bytes remain retainable."
+    ]
+  }
+}

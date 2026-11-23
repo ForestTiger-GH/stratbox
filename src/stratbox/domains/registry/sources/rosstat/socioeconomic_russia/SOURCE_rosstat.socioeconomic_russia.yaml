@@ -1,0 +1,83 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "rosstat",
+  "publisher_id": "rosstat",
+  "family_id": "rosstat.socioeconomic_russia",
+  "series_id": "rosstat.socioeconomic_russia",
+  "title": "Социально-экономическое положение России",
+  "issue_model": "publisher_issue_and_asset:monthly",
+  "formats": [
+    "pdf"
+  ],
+  "family_profile": null,
+  "position": 0,
+  "publication": {
+    "schema": "stratbox.rosstat.registry",
+    "landing_url": "https://rosstat.gov.ru/compendium/document/50801",
+    "frequency_hint": "monthly",
+    "profiles": {
+      "discovery": "socioeconomic_russia",
+      "table": "reviewed_document_cells"
+    },
+    "source_scope": "publisher_issue_and_asset",
+    "integration": "explicit_metric_period_unit_geography",
+    "coverage_policy": "reviewed_selection_with_exact_source_lineage"
+  },
+  "source_groups": [
+    {
+      "group_id": "report_content",
+      "title": "Социально-экономическое положение России",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        }
+      ],
+      "profile_ids": [
+        "socioeconomic_russia",
+        "rosstat.reviewed_cells.metadata.rosstat.socioeconomic_russia"
+      ],
+      "formats": [
+        "pdf"
+      ],
+      "grain": [
+        "page",
+        "block",
+        "table",
+        "cell"
+      ],
+      "period_model": "metric_specific_statistical_interval",
+      "qualification": "source_only",
+      "outputs": [
+        {
+          "operation_id": "rosstat.tables.extract_document",
+          "port": "document"
+        }
+      ]
+    }
+  ],
+  "external_profiles": {
+    "reviewed_document_cells": {
+      "kind": "table",
+      "reason": "A caller-supplied reviewed mapping is required for economic interpretation."
+    }
+  },
+  "processing": {
+    "template": "rosstat.russia",
+    "bindings": {},
+    "profiles": [
+      "socioeconomic_russia",
+      "rosstat.reviewed_cells.metadata.rosstat.socioeconomic_russia"
+    ],
+    "qualifications": [
+      "Publisher issue dates and statistical observation periods are separate identities.",
+      "Full physical source evidence, selected source flakes, integrated datasets and presentation products are distinct values."
+    ]
+  }
+}

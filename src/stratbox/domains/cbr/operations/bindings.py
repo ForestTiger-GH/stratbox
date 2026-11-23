@@ -9,8 +9,8 @@ from __future__ import annotations
 from dataclasses import replace
 import re
 
-from stratbox.core.registry.catalog import OperationCatalog, merge_catalogs
-from stratbox.core.registry.sources import source_route, profile_document
+from stratbox.operations.catalog import OperationCatalog, merge_catalogs
+from stratbox.domains.registry.declarations import source_route, profile_document
 from stratbox.shared.data.operations import OperationKey, ProcessingStage, compatible_ports
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.domains.cbr.publications.catalog import all_sources, families, source
@@ -22,9 +22,8 @@ from .catalog.contracts import (BoundOperation, BoundProfile, FamilyDescription,
 
 
 def _catalog():
-    from stratbox.domains.cbr._registration import REGISTRATION
-    from stratbox.core.registry import core_catalog
-    return merge_catalogs(OperationCatalog.from_registrations(REGISTRATION), core_catalog())
+    from stratbox.operations import operation_catalog
+    return operation_catalog()
 
 
 def _key(catalog, operation_id):

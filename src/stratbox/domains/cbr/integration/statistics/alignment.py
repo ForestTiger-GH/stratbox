@@ -584,7 +584,7 @@ def align_statistics(flakes, *, row_bindings=(), period_bindings=(), mapping_ver
             raise ValueError("cbr.statistics.no_admitted_observations: " + codes)
         lineage = (*flake.lineage, UsedInputReceipt("source_flake", identity, "application/vnd.stratbox.dataset+json",
                                                    "inline", flake.series_id, version=identity))
-        from stratbox.core.registry.sources import source_cards
+        from stratbox.domains.registry.declarations import source_cards
         card = next(card for card in source_cards("cbr") if card.series_id == flake.series_id)
         group = card.source_groups[0].group_id if len(card.source_groups) == 1 else None
         uses = (SourceUse(SourceCoordinate(flake.series_id, source_group_id=group, issue_id=flake.issue_id,

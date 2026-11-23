@@ -10,7 +10,7 @@ from typing import Literal
 from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
 from stratbox.core.observability.records.event_schemas import (
-    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED,
+    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED, RUN_FINISHED,
 )
 from stratbox.core.observability.records.schema import ValueRule
 
@@ -91,7 +91,7 @@ class NotificationTopic:
 
 
 def is_service_event(record: JournalRecord) -> bool:
-    return record.kind.startswith(("notification.", "notifications.", "subscription.")) or (
+    return (record.record_type == "orchestration" and record.payload.get("service") is True) or record.kind.startswith(("notification.", "notifications.", "subscription.")) or (
         record.operation_id is not None and record.operation_id.startswith("notifications.")
     )
 
@@ -196,6 +196,21 @@ def _finished(record: JournalRecord, data: Data) -> bool:
     return True
 
 
+def _run_finished(record: JournalRecord, data: Data) -> bool:
+    if (record.correlation.run_id != data["run_id"]
+            or record.correlation.plan_id != data["plan_id"]
+            or record.outcome != data["outcome"]
+            or record.record_id != data["transition_id"]
+            or data["producer_id"] != record.correlation.session_id
+            or data["outcome"] not in {"succeeded", "partial", "failed", "cancelled", "unknown"}):
+        raise ValueError("journal.run_envelope_mismatch")
+    return not data["service"]
+
+
+def _run_failed(record: JournalRecord, data: Data) -> bool:
+    return _run_finished(record, data) and data["outcome"] == "failed"
+
+
 def _failed(record: JournalRecord, data: Data) -> bool:
     return _finished(record, data) and record.outcome == "failed"
 
@@ -260,7 +275,15 @@ def _project(
 
 _operation = _project(OPERATION_FINISHED, "operation_summary", "operation_id", "outcome",
                       "duration_ms", "diagnostic_code")
+_run_summary = _project(RUN_FINISHED, "run_summary", "run_id", "plan_id", "outcome",
+                        "counters", "completed", "total", "reason")
 _builtin_topics = (
+    NotificationTopic("run.completed", 1, (RUN_FINISHED.key,), (_run_summary,),
+                      "transition", ("run_id", "plan_id", "outcome", "counters"),
+                      frozenset({"run_id", "plan_id", "outcome"}), _run_finished),
+    NotificationTopic("run.failed", 1, (RUN_FINISHED.key,), (_run_summary,),
+                      "transition", ("run_id", "plan_id", "outcome", "counters"),
+                      frozenset({"run_id", "plan_id", "outcome"}), _run_failed),
     NotificationTopic("operation.completed", 1, (OPERATION_FINISHED.key,), (_operation,),
                       filter_fields=frozenset({"operation_id", "outcome"}), eligible=_finished),
     NotificationTopic("operation.failed", 1, (OPERATION_FINISHED.key,), (_operation,),

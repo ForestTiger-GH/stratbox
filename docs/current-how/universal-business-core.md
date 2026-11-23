@@ -38,9 +38,9 @@ are relative to `stratbox`; the CBR operation owner is the single root `cbr`.
 | `core.notifications` | `prepare`, `deliver`, `qualify`, `reconcile` | Stable intent from qualified facts and confirmation or reconciliation with the receiving channel. |
 
 Every operation has a canonical `OPERATION_*.yaml` declaration under
-`stratbox/registry/core/<area>/operations` or
-`stratbox/registry/domains/<publisher>/operations`. Source identities and processing routes
-have separate source/profile resources. `stratbox.core.registry` validates these
+`stratbox/operations/specifications/core/<area>/operations` or
+`stratbox/operations/specifications/domains/<publisher>/operations`. Source identities and processing routes
+have separate source/profile resources. `stratbox.operations` validates these
 records and assembles domain and neutral-core catalogs. Python handlers consume
 the same definitions. Publication families and implementation packages remain
 separate from operation ownership. See the [registry interface](domain-operation-registry.md).

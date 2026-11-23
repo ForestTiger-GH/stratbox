@@ -1,9 +1,10 @@
 # Canonical processing contracts and registry admission
 
-Stratbox declares sources, source-content groups, profiles, operations and their
-applicability in `stratbox.registry`. `core.registry` admits those declarations
-and derives exact connections. `core.execution` binds actual values, runs one
-operation and finalizes its outcome with its effects. Domain packages retain
+Stratbox declares operation contracts in `stratbox.operations` and source
+identities, content groups, profiles and template bindings in
+`stratbox.domains.registry`. Their catalogs admit declarations and derive exact
+connections. `core.execution` runs operations and compiled graphs, preserving
+each operation's qualified outcome and effects. Domain packages retain
 publisher layouts, economic interpretation and scientific admission.
 
 Logical operation and registry IDs are unversioned. Content-addressed method
@@ -31,17 +32,18 @@ Contents:
 | G02 | Nested `SourceGroup` | Addressable dataset, contracts, grain, profiles, format and period model within one source. |
 | G03 | `PROFILE` | Applicability and references to actual domain interpretation/admission rules. |
 | G04 | `OPERATION` | Ports, exhaustive request roles, method dependencies, effects and runtime policy. |
-| G05 | `ROUTE` | Source-specific operation bindings and qualifications. |
+| G05 | Source route binding | Template selection and source-specific qualifications, embedded in the source record. |
 | G06 | `GROUP` | Additive reuse of an identical set of transformations. |
 | G07 | `OWNER` | Owner identity, coverage declarations and exact value-context adapters. |
 | G08 | `SourceInstance` | A particular issue/material selection, supplied during a call. |
 | G09 | `SourceUse` | Qualified relationship between a consumed value and its source coordinates. |
 
-Core declarations live under `registry/core`; publisher declarations live under
-`registry/domains`. `OWNER.yaml` establishes ownership; nested folders organize
-substantive areas. Moving a declaration within an admitted owner preserves its
-logical identity. Sources and operations are discovered recursively through the
-same resource inventory used by delivery checks.
+Operation declarations live under `operations/specifications`; sources and
+profiles live under `domains/registry`. `OWNER.yaml` establishes operation
+ownership. Source records reference reusable route templates and keep their
+specific overrides. Moving a declaration within its admitted owner preserves
+its logical identity. Both catalogs use the same neutral resource inventory
+mechanism used by delivery checks.
 
 A source's `family_id` is taxonomy, its content `group_id` addresses data, and a
 processing `GROUP` shares transformations. A publisher table code is retained as
@@ -53,7 +55,7 @@ all its coordinates into YAML.
 ## 2. Catalog admission has explicit proof levels
 
 ```python
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 catalog = operation_catalog()
 page = catalog.page(owner_id="cbr", limit=20)

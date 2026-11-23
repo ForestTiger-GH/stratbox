@@ -1,0 +1,126 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "cbr",
+  "publisher_id": "cbr",
+  "family_id": "cbr.corporate_lending",
+  "series_id": "cbr.corporate_lending.structure_by_benchmark_interest_rate_type",
+  "title": "Corporate debt by benchmark interest rate type",
+  "issue_model": "rolling",
+  "formats": [
+    "xlsx"
+  ],
+  "family_profile": null,
+  "position": 17,
+  "publication": {
+    "acquisition_profile": "cbr.route.structure_by_benchmark_interest_rate_type",
+    "extraction_profile": "cbr.workbook.flake",
+    "normalization_profile": null,
+    "table_profile": "cbr.tables.structure_by_benchmark_interest_rate_type",
+    "integration_profile": "cbr.statistics.observations",
+    "product_profile": "cbr.statistics.views"
+  },
+  "source_groups": [
+    {
+      "group_id": "published_statistics",
+      "title": "Corporate debt by benchmark interest rate type",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "cbr.corporate_lending.source_observations",
+          "version": 1,
+          "role": "extracts"
+        }
+      ],
+      "profile_ids": [
+        "cbr.workbook.flake",
+        "cbr.tables.structure_by_benchmark_interest_rate_type",
+        "cbr.statistics.observations.metadata.cbr.corporate_lending.corp_debt_a",
+        "cbr.statistics.views"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "grain": [
+        "report_date",
+        "territory",
+        "activity",
+        "currency",
+        "measure"
+      ],
+      "period_model": "credit_debt_stock",
+      "qualification": "conditional",
+      "layout_editions": [
+        "published_matrix_v1"
+      ],
+      "outputs": [
+        {
+          "operation_id": "cbr.tables.extract",
+          "port": "flake"
+        }
+      ]
+    }
+  ],
+  "domain_profiles": {
+    "cbr.route.structure_by_benchmark_interest_rate_type": {
+      "kind": "acquisition",
+      "implementation_ref": "stratbox.domains.cbr.publications.profiles:acquisition_profile",
+      "implementation_parameters": {
+        "profile_id": "cbr.route.structure_by_benchmark_interest_rate_type"
+      }
+    }
+  },
+  "processing": {
+    "template": "cbr.statistics.workbook",
+    "bindings": {
+      "cbr_publications_discover": {
+        "operation_id": "cbr.publications.discover",
+        "state": "supported",
+        "reason": "",
+        "parameters": [
+          [
+            "series_id",
+            "cbr.corporate_lending.structure_by_benchmark_interest_rate_type"
+          ]
+        ],
+        "formats": [
+          "xlsx"
+        ],
+        "identity_parameter": "series_id"
+      },
+      "cbr_publications_identify": {
+        "operation_id": "cbr.publications.identify",
+        "state": "supported",
+        "reason": "",
+        "parameters": [
+          [
+            "series_id",
+            "cbr.corporate_lending.structure_by_benchmark_interest_rate_type"
+          ]
+        ],
+        "formats": [
+          "xlsx"
+        ],
+        "identity_parameter": "series_id"
+      }
+    },
+    "profiles": [
+      "cbr.workbook.flake",
+      "cbr.tables.structure_by_benchmark_interest_rate_type",
+      "cbr.statistics.observations.metadata.cbr.corporate_lending.corp_debt_a",
+      "cbr.statistics.views"
+    ],
+    "qualifications": [
+      "Historical publisher inventory is qualified independently of successful processing of selected materials.",
+      "Cross-source geography, subject and metric equivalence require explicit versioned mappings."
+    ]
+  }
+}

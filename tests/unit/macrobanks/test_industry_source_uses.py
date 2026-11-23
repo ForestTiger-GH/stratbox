@@ -5,7 +5,7 @@ import pytest
 
 from stratbox.core.execution import prepare_input
 from stratbox.core.execution.value_context import value_context
-from stratbox.core.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest

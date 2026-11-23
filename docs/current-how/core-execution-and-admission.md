@@ -14,7 +14,7 @@ for the canonical matrix, effect identities, diagnostic precedence and limits.
 
 ## Discover and bind
 
-Use `stratbox.domains.registry.operation_catalog().describe()` to obtain operation IDs,
+Use `stratbox.operations.operation_catalog().describe()` to obtain operation IDs,
 request and result types, method identities, declared eager/optional capability roles,
 scoped runtime dependencies, effect descriptions and limits. The domain registry discovers local declarations from built-in packages.
 Import `wire_schemas` and `invoke_read_only` from

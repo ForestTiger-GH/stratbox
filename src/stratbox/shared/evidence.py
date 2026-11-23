@@ -53,6 +53,7 @@ class AcquisitionReceipt:
     logical_target_sha256: str | None = None
     transport_assurance: Literal["provider_reported", "tls_host", "peer_bound"] | None = None
     route_policy_id: str | None = None
+    shared_work_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

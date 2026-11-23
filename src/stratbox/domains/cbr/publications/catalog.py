@@ -1,6 +1,6 @@
 """Logical publisher declarations, independent of routes and executable code."""
 from functools import lru_cache
-from stratbox.core.registry.sources import source_documents
+from stratbox.domains.registry.declarations import source_documents
 
 from .contracts import SourceSeries
 

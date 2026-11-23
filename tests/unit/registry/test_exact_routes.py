@@ -4,8 +4,8 @@ from dataclasses import dataclass
 import pytest
 
 from stratbox.core.execution import OperationDefinition
-from stratbox.core.registry.catalog import OperationCatalog, OperationRef
-from stratbox.core.registry.routes import connections, explain_route, stage_transitions
+from stratbox.operations.catalog import OperationCatalog, OperationRef
+from stratbox.domains.registry.routes import connections, explain_route, stage_transitions
 from stratbox.shared.data.operations import (
     InputPort, OperationSemantics, OutputPort, ProcessingFunction, ProcessingStage, RequestField,
 )
@@ -196,7 +196,7 @@ def test_same_operation_can_have_a_compatible_exact_port_handoff():
 
 def test_source_qualification_reasons_survive_graph_and_planning_selection(monkeypatch):
     from types import SimpleNamespace
-    from stratbox.core.registry.source_catalog import SourceOperation
+    from stratbox.domains.registry.catalog import SourceOperation
     source = definition("routes.extract", (InputPort("raw", RAW, "value"),), EXTRACT)
     target = definition("routes.view", (InputPort("data", EXTRACT, "value"),), VIEW)
     selected = catalog(source, target)

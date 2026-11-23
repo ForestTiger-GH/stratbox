@@ -35,10 +35,10 @@ classify logical sources. Neither set replaces the root ownership identity.
 
 ## 2. Functional owners across publishers
 
-Each publisher has canonical source, operation and profile declarations under
-`stratbox/registry/domains/<owner>`. Neutral operations live under
-`stratbox/registry/core/<area>`. `core.registry` validates those records and projects
-publication and operation catalogs. Source routes describe stage coverage and applicability; operation declarations
+Each publisher has source and profile declarations under `domains/registry`.
+Canonical domain and neutral operation declarations live under
+`operations/specifications`. The operation and source catalogs validate their
+records. Source routes describe stage coverage and applicability; operation declarations
 define the exact named input/output contracts used to admit value handoffs.
 Typed physical layouts, mappings, models and output profiles have distinct
 domain implementation owners.

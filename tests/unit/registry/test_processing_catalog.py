@@ -6,7 +6,7 @@ import json
 import pytest
 
 from stratbox.core.execution import OperationDefinition
-from stratbox.core.registry.catalog import (
+from stratbox.operations.catalog import (
     OperationCatalog,
     OperationRef,
     OperationRegistration,
@@ -21,7 +21,7 @@ from stratbox.shared.data.operations import (
     StageDeclaration,
 )
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 
 def test_pages_cover_the_catalog_in_stable_order_with_bounded_results():
@@ -173,7 +173,7 @@ def test_every_owner_has_consistent_coverage_and_available_delegations():
 
 
 def _catalog(monkeypatch, producer, consumer, *, stages=()):
-    from stratbox.core.registry import catalog as implementation
+    from stratbox.operations import catalog as implementation
 
     def reference(definition):
         return OperationRef(definition.operation_id, "unavailable.handler:run", definition=definition)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 
 from dataclasses import dataclass
 from stratbox.core.storage.filestore import WriteMode

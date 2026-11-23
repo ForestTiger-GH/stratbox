@@ -1,5 +1,5 @@
 """Fiscal source admission preserves source-specific period and value basis."""
-from stratbox.core.registry.requirements import DomainAdmission
+from stratbox.domains.registry.requirements import DomainAdmission
 
 
 def admit(requirement, instance, value):

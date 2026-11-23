@@ -13,8 +13,8 @@ from stratbox.core.runtime.capabilities import (
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.network import HttpResponse
-from stratbox.domains.registry import operation_catalog
-from stratbox.core.registry.catalog import OperationCatalog
+from stratbox.operations import operation_catalog
+from stratbox.operations.catalog import OperationCatalog
 from stratbox.core.execution.machine import DirectoryMaterial, WireRequestError
 from stratbox.core.execution.machine import invoke_read_only as _invoke_read_only
 from stratbox.core.execution.machine import wire_schemas as _wire_schemas
@@ -38,7 +38,7 @@ def test_catalog_imports_without_extras_and_covers_declared_operations():
     check = """
 import importlib
 import sys
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.core.execution import OperationDefinition
 catalog = operation_catalog()
 descriptions = catalog.describe()

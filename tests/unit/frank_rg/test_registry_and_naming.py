@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from stratbox.core.registry.sources import publication_families
+from stratbox.domains.registry.declarations import publication_families
 from stratbox.domains.frank_rg.operations.bindings import bind_family, bind_source, validate_all_profiles
 from stratbox.domains.frank_rg.publications.catalog import _decode, all_sources, families
 from stratbox.domains.frank_rg.publications.contracts import FileEntry, ReportPeriod, SourceIndex

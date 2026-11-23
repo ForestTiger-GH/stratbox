@@ -36,7 +36,8 @@ version = {attr = "stratbox.__version__"}
 
 [tool.setuptools.package-data]
 "stratbox" = ["py.typed"]
-"stratbox.registry" = ["**/*.yaml"]
+"stratbox.operations" = ["specifications/**/*.yaml"]
+"stratbox.domains.registry" = ["**/*.yaml"]
 "stratbox.shared.reference.banks" = ["_resources/**/*", "_resources/*.json", "_resources/official/*.xlsx", "_resources/aliases/*.csv", "_resources/selections/*.csv"]
 "stratbox.shared.reference.okved2" = ["_resources/**/*", "_resources/*.json", "_resources/data/*.csv"]
 "stratbox.shared.reference.geography" = ["_resources/**/*", "_resources/*.json", "_resources/*.csv"]

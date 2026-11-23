@@ -1,6 +1,6 @@
 """Validated declarations for the two independent FNS publication families."""
 from functools import lru_cache
-from stratbox.core.registry.sources import publication_families
+from stratbox.domains.registry.declarations import publication_families
 
 from .contracts import SourceSeries
 

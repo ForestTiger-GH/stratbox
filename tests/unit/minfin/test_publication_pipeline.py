@@ -21,7 +21,7 @@ from stratbox.domains.minfin import discover
 from stratbox.domains.minfin import DiscoverRequest
 from stratbox.domains.minfin.tables.periods import normalize_period
 from stratbox.domains.minfin.publications.updates import checkpoint_for
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 
 def _publisher_page(source_file="Prilozhenie_3_dannye_109-111_—_mes.xlsx", modified="12.11.2026"):

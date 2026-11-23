@@ -21,7 +21,7 @@ from stratbox.domains.rosstat.operations.publications import discover
 from stratbox.domains.rosstat.publications.download.envelope import detect_bytes
 from stratbox.domains.rosstat.publications.access import allowed_file_url, file_request
 from stratbox.core.execution import OperationFailure
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 
 def _index(series, body):

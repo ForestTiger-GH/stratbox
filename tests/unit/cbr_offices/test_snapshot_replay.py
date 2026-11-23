@@ -20,7 +20,7 @@ from stratbox.core.storage.datasets.files import FileDatasetStore
 from stratbox.core.storage.filestore.local import LocalFileStore
 from stratbox.domains.cbr.operations.service_network import bank_offices as daily
 from stratbox.domains.cbr.operations.service_network import territorial_offices as monthly
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 from stratbox.shared.data.releases import CompareReleaseRequest
 from stratbox.shared.evidence import SourcePayload
 

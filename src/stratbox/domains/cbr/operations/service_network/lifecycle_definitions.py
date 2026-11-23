@@ -1,6 +1,6 @@
 """Source history, reading, semantic alignment, calculation and products."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation

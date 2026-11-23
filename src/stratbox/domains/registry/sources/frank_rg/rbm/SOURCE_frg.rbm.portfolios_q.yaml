@@ -1,0 +1,87 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "frank_rg",
+  "publisher_id": "frank_rg",
+  "family_id": "frg.rbm",
+  "series_id": "frg.rbm.portfolios_q",
+  "title": "Loan portfolios with Q marker",
+  "issue_model": "supplier_snapshot_publication",
+  "formats": [
+    "xls",
+    "xlsb",
+    "xlsm",
+    "xlsx"
+  ],
+  "family_profile": "frg.rbm.publication",
+  "position": 6,
+  "publication": {
+    "slot": "portfolios_q",
+    "periodicity": "snapshot",
+    "kind": "workbook"
+  },
+  "source_groups": [
+    {
+      "group_id": "reported_metrics",
+      "title": "Loan portfolios with Q marker",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        }
+      ],
+      "profile_ids": [
+        "frg.directory",
+        "frg.identification.rbm",
+        "frg.latest_period",
+        "frg.canonical",
+        "frg.workbook.cells"
+      ],
+      "formats": [
+        "xls",
+        "xlsb",
+        "xlsm",
+        "xlsx"
+      ],
+      "grain": [
+        "reporting_period",
+        "territory",
+        "product",
+        "metric"
+      ],
+      "period_model": "profile_declared_statistical_period",
+      "qualification": "conditional",
+      "outputs": [
+        {
+          "operation_id": "frg.extract",
+          "port": "value"
+        },
+        {
+          "operation_id": "frg.build_flake",
+          "port": "value"
+        }
+      ]
+    }
+  ],
+  "processing": {
+    "template": "frg.report",
+    "bindings": {},
+    "profiles": [
+      "frg.directory",
+      "frg.identification.rbm",
+      "frg.latest_period",
+      "frg.canonical",
+      "frg.workbook.cells"
+    ],
+    "qualifications": [
+      "No reviewed business-layout profile is claimed without retained publisher workbook fixtures.",
+      "Source names, snapshot labels and Q markers do not establish economic periods, units or reporting perimeters.",
+      "Calculations compare exact matching semantic keys; period growth and forecast models are not inferred."
+    ]
+  }
+}

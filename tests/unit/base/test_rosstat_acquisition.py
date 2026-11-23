@@ -118,7 +118,7 @@ def test_resolved_public_stream_source_handler_is_executable(tmp_path):
     """The core registry must point to the public operation, not its internal helper."""
     from stratbox.core.operations.source.originals import ReceiveOriginalRequest, ReceiveToStoreRequest
     from stratbox.core.network import HttpRequest, HttpsEndpoint
-    from stratbox.domains.registry import operation_catalog
+    from stratbox.operations import operation_catalog
 
     body = workbook()
     selected = asset()

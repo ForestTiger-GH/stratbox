@@ -1,0 +1,150 @@
+{
+  "schema": "stratbox.source",
+  "owner_id": "fns",
+  "publisher_id": "fns",
+  "family_id": "fns.legal_entities",
+  "series_id": "fns.1yur",
+  "title": "Form 1-YUR: legal entities and registration statistics",
+  "issue_model": "Independent issue key, published observation date, optional publication date and timezone-aware capture timestamp.",
+  "formats": [
+    "xls",
+    "xlsx",
+    "zip",
+    "rar"
+  ],
+  "family_profile": "fns.legal_entities.publication",
+  "position": 1,
+  "publication": {
+    "periodicity": "monthly",
+    "acquisition_profile": "fns.1yur.dated-links",
+    "extract_profile": "fns.1yur.all-workbook-cells",
+    "integration_profile": "fns.1yur.identity-field-alignment",
+    "observation_basis": "published_reporting_date_with_metric_specific_basis"
+  },
+  "source_groups": [
+    {
+      "group_id": "registration_statistics",
+      "title": "Form 1-YUR: legal entities and registration statistics",
+      "contracts": [
+        {
+          "schema_id": "source.payload",
+          "version": 1,
+          "role": "originals"
+        },
+        {
+          "schema_id": "material.payload",
+          "version": 1,
+          "role": null
+        },
+        {
+          "schema_id": "fns.1yur.original",
+          "version": 1,
+          "role": "originals"
+        }
+      ],
+      "profile_ids": [
+        "fns.1yur.dated-links",
+        "fns.1yur.all-workbook-cells",
+        "fns.1yur.identity-field-alignment"
+      ],
+      "formats": [
+        "xls",
+        "xlsx",
+        "zip",
+        "rar"
+      ],
+      "grain": [
+        "reporting_date",
+        "worksheet",
+        "row",
+        "column"
+      ],
+      "period_model": "metric_specific_stock_flow_cumulative",
+      "qualification": "supported",
+      "outputs": [
+        {
+          "operation_id": "fns.1yur.extract",
+          "port": "flake"
+        },
+        {
+          "operation_id": "fns.1yur.discover",
+          "port": "releases"
+        },
+        {
+          "operation_id": "fns.1yur.project",
+          "port": "projection"
+        },
+        {
+          "operation_id": "fns.1yur.align",
+          "port": "dataset"
+        },
+        {
+          "operation_id": "fns.1yur.view",
+          "port": "view"
+        },
+        {
+          "operation_id": "fns.1yur.calculate_changes",
+          "port": "calculation"
+        },
+        {
+          "operation_id": "fns.1yur.parse",
+          "port": "release"
+        },
+        {
+          "operation_id": "fns.1yur.parse",
+          "port": "representation"
+        },
+        {
+          "operation_id": "fns.1yur.dataset_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "fns.1yur.validate",
+          "port": "report"
+        },
+        {
+          "operation_id": "fns.1yur.readable",
+          "port": "readable"
+        },
+        {
+          "operation_id": "fns.1yur.compare",
+          "port": "comparison"
+        },
+        {
+          "operation_id": "fns.1yur.flake_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "fns.1yur.calculation_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "fns.1yur.projection_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "fns.1yur.view_snapshot",
+          "port": "snapshot"
+        },
+        {
+          "operation_id": "fns.1yur.compare_flakes",
+          "port": "comparison"
+        }
+      ]
+    }
+  ],
+  "processing": {
+    "template": "fns.legal_entities",
+    "bindings": {},
+    "profiles": [
+      "fns.1yur.dated-links",
+      "fns.1yur.all-workbook-cells",
+      "fns.1yur.identity-field-alignment"
+    ],
+    "qualifications": [
+      "FNS geographic codes and labels remain in source namespaces; canonical geography requires an explicit external crosswalk.",
+      "Net stock changes do not measure registration entries, business births or exits.",
+      "File storage is independent of source acquisition, database snapshots and prepared views."
+    ]
+  }
+}

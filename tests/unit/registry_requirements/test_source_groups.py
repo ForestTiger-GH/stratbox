@@ -2,9 +2,9 @@
 from dataclasses import replace
 import pytest
 
-from stratbox.core.registry import operation_catalog
-from stratbox.core.registry.requirements import bind_requirement_inputs, SourceInstance
-from stratbox.core.registry.sources import source_group, source_documents
+from stratbox.operations import operation_catalog
+from stratbox.domains.registry.requirements import bind_requirement_inputs, SourceInstance
+from stratbox.domains.registry.declarations import source_group, source_documents
 from stratbox.shared.data.sources import ResolvedSourceInstance
 from stratbox.shared.evidence import SourcePayload
 
@@ -93,7 +93,7 @@ def test_named_sors_roles_bind_the_actual_operation_request_and_config_coordinat
 
 
 def test_source_profile_refs_resolve_canonically_or_through_explicit_owned_factories():
-    from stratbox.core.registry.sources import validate_publication_profiles
+    from stratbox.domains.registry.declarations import validate_publication_profiles
     raw = next(value for value in source_documents("cbr") if value["series_id"] == "cbr.corporate_lending.corp_debt_a")
     validate_publication_profiles(raw, typed=True)
     raw["publication"]["acquisition_profile"] = "cbr.route.undefined"
@@ -111,7 +111,7 @@ def test_source_profile_refs_resolve_canonically_or_through_explicit_owned_facto
 
 
 def test_requirement_group_contract_and_grain_must_match_canonical_source(monkeypatch):
-    from stratbox.core.registry import requirements, sources
+    from stratbox.domains.registry import requirements, declarations as sources
     catalog = operation_catalog()
     declared = catalog.requirements("cbr.sors.prepare_inputs")
     original = requirements.declared_requirements
@@ -124,8 +124,8 @@ def test_requirement_group_contract_and_grain_must_match_canonical_source(monkey
 
 
 def test_single_role_named_like_its_input_port_uses_the_same_checked_bridge(monkeypatch):
-    from stratbox.core.registry import requirements
-    from stratbox.core.registry.requirements import SourceRequirement
+    from stratbox.domains.registry import requirements
+    from stratbox.domains.registry.requirements import SourceRequirement
     from stratbox.shared.data.processing import DataContract, DataRole
     catalog = operation_catalog()
     contract = DataContract("source.payload", role=DataRole.ORIGINALS)
@@ -141,7 +141,7 @@ def test_single_role_named_like_its_input_port_uses_the_same_checked_bridge(monk
 
 
 def test_declared_existing_profile_factory_resolves_new_profile_parameters_without_an_allowlist(monkeypatch):
-    from stratbox.core.registry import sources
+    from stratbox.domains.registry import declarations as sources
     raw = next(value for value in source_documents("cbr") if value["series_id"] == "cbr.corporate_lending.corp_debt_a")
     reference = "cbr.route.declarative_future"
     raw["publication"]["acquisition_profile"] = reference
@@ -162,7 +162,7 @@ def test_declared_existing_profile_factory_resolves_new_profile_parameters_witho
 def test_missing_optional_roles_build_a_typed_empty_bundle_without_invented_guarantees(monkeypatch):
     from dataclasses import dataclass
     from types import SimpleNamespace
-    from stratbox.core.registry import requirements
+    from stratbox.domains.registry import requirements
     from stratbox.shared.data.operations import InputPort
     from stratbox.shared.data.processing import DataContract
     @dataclass(frozen=True)

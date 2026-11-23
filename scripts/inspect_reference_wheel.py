@@ -19,14 +19,14 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.domains._structure import discover_operation_owners  # noqa: E402
+
 
 from stratbox.shared.reference.assets import (  # noqa: E402
     REFERENCE_REQUIRED_ROLES, ReferenceError, parse_reference_manifest,
 )
 
 DOMAIN_SOURCE = SRC / "stratbox" / "domains"
-REGISTRY_SOURCE = SRC / "stratbox" / "registry"
+REGISTRY_SOURCE = SRC / "stratbox"
 DOMAIN_OBSOLETE_DIRS = (
     "cbr_file_collector", "cbr_forms", "cbr_industries",
     "cbr_offices", "cbr_offices_reg", "cbr_sors_restoration",
@@ -55,22 +55,24 @@ def _identity(payload: bytes) -> tuple[int, str]:
 
 def _source_registry_inventory() -> dict[str, tuple[int, str]]:
     """Include every canonical declaration and its package boundary by bytes."""
-    from stratbox.core.registry.resources import resource_inventory
+    from stratbox.core.resources import resource_inventory
     result = {name: (size, digest) for name, size, digest in resource_inventory()}
-    result["__init__.py"] = _identity((REGISTRY_SOURCE / "__init__.py").read_bytes())
+    for package in ("operations", "domains/registry"):
+        result[package + "/__init__.py"] = _identity((REGISTRY_SOURCE / package / "__init__.py").read_bytes())
     return result
 
 
 def _verify_registry_members(names: set[str], prefix: str, read_bytes) -> dict[str, int]:
     """Compare source, wheel and sdist declarations without executing archive code."""
-    base = prefix + "stratbox/registry/"
+    base = prefix + "stratbox/"
     expected = _source_registry_inventory()
-    if "__init__.py" not in expected or not any(name.endswith(".yaml") for name in expected):
+    if "operations/__init__.py" not in expected or not any(name.endswith(".yaml") for name in expected):
         raise ValueError("Canonical registry source declarations are missing")
     actual = {
         name[len(base):]
-        for name in names if name.startswith(base)
-        and (name.endswith((".yaml", ".yml")) or name.endswith("/__init__.py"))
+        for name in names if name.startswith((base + "operations/specifications/", base + "domains/registry/"))
+        and name.endswith((".yaml", ".yml"))
+        or name in {base + "operations/__init__.py", base + "domains/registry/__init__.py"}
     }
     missing = sorted(expected.keys() - actual)
     extra = sorted(actual - expected.keys())
@@ -87,10 +89,9 @@ def _source_domain_inventory() -> tuple[
     dict[str, tuple[int, str]], dict[str, tuple[int, str]]
 ]:
     """Inventory actual manifests and arbitrary packaged data without hand lists."""
-    owners = {}
-    for name in discover_operation_owners(DOMAIN_SOURCE):
-        filename = name.replace(".", "/") + "/_registration.py"
-        owners[filename] = _identity((DOMAIN_SOURCE / filename).read_bytes())
+    owners = {path.relative_to(DOMAIN_SOURCE).as_posix(): _identity(path.read_bytes())
+              for path in sorted(DOMAIN_SOURCE.rglob("__init__.py"))
+              if path != DOMAIN_SOURCE / "__init__.py"}
     data = {}
     for file in sorted(DOMAIN_SOURCE.rglob("*")):
         if not file.is_file() or not _domain_asset(file.relative_to(DOMAIN_SOURCE).as_posix()):
@@ -108,7 +109,7 @@ def _verify_domain_members(
     actual_owners = {
         name[len(base):]
         for name in names
-        if name.startswith(base) and name.endswith("/_registration.py")
+        if name.startswith(base) and name.endswith("/__init__.py") and name != base + "__init__.py"
     }
     missing = sorted(source_owners.keys() - actual_owners)
     extra = sorted(actual_owners - source_owners.keys())

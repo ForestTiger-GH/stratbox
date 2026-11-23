@@ -3,8 +3,8 @@ from dataclasses import replace
 
 import pytest
 
-from stratbox.core.registry import operation_catalog
-from stratbox.core.registry.requirements import (
+from stratbox.operations import operation_catalog
+from stratbox.domains.registry.requirements import (
     SourceInstance, SourceRequirement, assess_requirements, decode_requirement,
 )
 from stratbox.shared.data.processing import DataContract, DataRole
@@ -92,7 +92,7 @@ def test_requirement_declarations_reject_unknown_fields_and_contradictory_multip
 
 def test_inline_extension_descriptions_and_readiness_do_not_require_packaged_records():
     from stratbox.core.execution.contracts import OperationDefinition
-    from stratbox.core.registry.catalog import OperationCatalog, OperationRef
+    from stratbox.operations.catalog import OperationCatalog, OperationRef
     definition = OperationDefinition("extension.inspect", "extension-inspect", object, object)
     catalog = OperationCatalog((OperationRef("extension.inspect", "extension.handlers:inspect", definition=definition),))
     assert catalog.describe()[0]["source_requirements"] == ()

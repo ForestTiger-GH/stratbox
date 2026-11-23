@@ -14,7 +14,7 @@ from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.identifiers import safe_token
 from stratbox.core.execution.contracts import (Correlation)
 
-RecordType = Literal["execution", "domain_fact", "effect", "diagnostic", "result_summary"]
+RecordType = Literal["orchestration", "execution", "domain_fact", "effect", "diagnostic", "result_summary"]
 WriteState = Literal["confirmed", "failed", "unknown"]
 MAX_ENCODED_BYTES = 2 * 1024 * 1024
 
@@ -225,7 +225,7 @@ class JournalRecord:
     sequence: int | None = None
 
     def __post_init__(self) -> None:
-        if self.schema_version != 1 or self.record_type not in {"execution", "domain_fact", "effect", "diagnostic", "result_summary"}:
+        if self.schema_version != 1 or self.record_type not in {"orchestration", "execution", "domain_fact", "effect", "diagnostic", "result_summary"}:
             raise ValueError("Unsupported journal schema or record type")
         for value in (self.record_id, self.kind, self.invocation_id, self.operation_id,
                       self.fact_id, self.outcome, *self.cause_record_ids):
@@ -233,6 +233,10 @@ class JournalRecord:
                 safe_token(value)
         if self.record_type == "execution" and (self.invocation_id is None or self.operation_id is None or self.sequence is None):
             raise ValueError("Execution records require invocation, operation and sequence")
+        if self.record_type == "orchestration" and (
+                self.sequence is None or self.correlation.session_id is None
+                or self.invocation_id is not None or self.operation_id is not None):
+            raise ValueError("Orchestration records require session and sequence without a fictitious invocation")
         if self.record_type == "domain_fact" and (self.fact_id is None or self.subject is None):
             raise ValueError("Domain facts require a subject and fact ID")
         if self.sequence is not None and (type(self.sequence) is not int or not 0 < self.sequence < 2**53):

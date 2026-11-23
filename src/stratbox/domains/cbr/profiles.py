@@ -1,5 +1,5 @@
 """Scientific admission delegates to the CBR owners of each source value."""
-from stratbox.core.registry.requirements import DomainAdmission
+from stratbox.domains.registry.requirements import DomainAdmission
 
 
 def form_layout(profile_id):

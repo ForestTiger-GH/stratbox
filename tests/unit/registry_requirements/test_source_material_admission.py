@@ -4,7 +4,7 @@ from dataclasses import replace
 import pytest
 
 from stratbox.core.execution.handoff import prepare_input
-from stratbox.core.registry.requirements import DomainAdmission, SourceInstance, SourceRequirement, assess_requirements
+from stratbox.domains.registry.requirements import DomainAdmission, SourceInstance, SourceRequirement, assess_requirements
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.sources import ResolvedSourceInstance
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
@@ -115,7 +115,7 @@ def test_matching_source_and_contract_cannot_substitute_another_content_group(mo
     from stratbox.shared.data.source_context import SourceCoordinate, SourceUse, ValueContext
     from importlib import import_module
     contexts = import_module("stratbox.core.execution.value_context")
-    from stratbox.core.registry import sources
+    from stratbox.domains.registry import declarations as sources
     contract = DataContract("example.same_contract")
     groups = {name: SourceGroup(name, name, (contract,), grain=(name,)) for name in ("debt", "issuance")}
     actual_context = ValueContext((SourceUse(SourceCoordinate(source_id="example.statistics", source_group_id="issuance")),))

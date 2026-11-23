@@ -101,7 +101,7 @@ def validate_value_contexts(declarations):
 
 @lru_cache(maxsize=1)
 def _adapters():
-    from stratbox.core.registry.resources import owner_directories, read_document
+    from stratbox.core.resources import owner_directories, read_document
     result = {"types": {}, "tables": {}}
     for _, directory in owner_directories():
         declarations = read_document(directory.joinpath("OWNER.yaml")).get("value_contexts", {})
@@ -120,7 +120,7 @@ def _adapters():
 
 @lru_cache(maxsize=1)
 def _source_facts():
-    from stratbox.core.registry.resources import resource_owners, iter_resources, read_document
+    from stratbox.core.resources import resource_owners, iter_resources, read_document
     result = {}
     for owner in resource_owners():
         for resource in iter_resources(owner, "sources"):
@@ -133,7 +133,7 @@ def _source_facts():
 
 @lru_cache(maxsize=1)
 def _contract_sources():
-    from stratbox.core.registry.resources import resource_owners, iter_resources, read_document
+    from stratbox.core.resources import resource_owners, iter_resources, read_document
     bindings = {}
     for owner in resource_owners():
         for resource in iter_resources(owner, "sources"):
@@ -465,7 +465,7 @@ def validate_value_context_links(catalog=None):
                   for specification in collection.values() if "requirements_ref" in specification}
     if references:
         if catalog is None:
-            from stratbox.core.registry import operation_catalog
+            from stratbox.operations import operation_catalog
             catalog = operation_catalog()
         for reference in references:
             if not catalog.document(reference).get("source_requirements"):

@@ -1,6 +1,6 @@
 """One domain operation surface, with truthful source and stage contracts."""
 
-from stratbox.core.registry.operations import definition as _registry_definition
+from stratbox.operations.declarations import definition as _registry_definition
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.data.processing import DataContract,DataRole as R
 from stratbox.shared.data.snapshots import DatasetSnapshot

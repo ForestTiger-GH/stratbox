@@ -68,7 +68,7 @@ class FamilyOperations(Generic[Flake]):
         self.family = family
 
     def admit(self, requirement, instance, value):
-        from stratbox.core.registry.requirements import DomainAdmission
+        from stratbox.domains.registry.requirements import DomainAdmission
         try:
             if getattr(value, "context", None) is None:
                 return DomainAdmission("conditional", ("fns.profile.typed_source_required",))

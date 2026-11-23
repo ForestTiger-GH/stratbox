@@ -2,15 +2,16 @@
 
 Stratbox exposes processing semantics through the same `OperationDefinition`
 objects used by Python execution. Canonical `OPERATION_*.yaml` records supply
-these objects through `core.registry`; source and route declarations have
+these objects through `operations`; source and route declarations have
 separate canonical resources. The catalog describes source acquisition,
 interpretation, calculations and products without importing their handlers.
 This article documents the implemented library interfaces. Domain coverage
 entries distinguish callable implementations from missing or unassessed work.
 
 Applications can inspect these contracts, select retained inputs and call
-individual operations. Scheduling, durable jobs, protocol servers, physical
-directory naming and artifact retention remain application responsibilities.
+individual operations. The SDK session schedules local graphs with shared
+resource limits. User schedules, durable job recovery, protocol servers,
+physical directory naming and retention policy remain host responsibilities.
 
 Contents:
 
@@ -58,7 +59,7 @@ that same resource for direct handlers and public APIs. They retain the typed
 request/result classes needed by the implementation; they do not maintain a
 second contract description.
 
-`shared.data.operations` owns stage and port invariants. `core.registry` owns
+`shared.data.operations` owns stage and port invariants. `operations` owns
 loading, catalog assembly and discovery projections. `core.execution` consumes
 those definitions for binding, runtime admission and outcomes.
 
@@ -86,7 +87,7 @@ same import boundary.
 ## 3. Bounded discovery for application adapters
 
 ```python
-from stratbox.domains.registry import operation_catalog
+from stratbox.operations import operation_catalog
 
 catalog = operation_catalog()
 page = catalog.page(

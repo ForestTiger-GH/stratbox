@@ -37,7 +37,7 @@ def test_omitted_registration_is_rejected():
     check = _inspector()
     source = check["DOMAIN_SOURCE"]
     members = _real_members(source)
-    manifest = next(name for name in members if name.endswith("/_registration.py"))
+    manifest = next(name for name in members if name.endswith("/__init__.py"))
     members.remove(manifest)
     with pytest.raises(ValueError, match="missing_owners"):
         check["_verify_domain_members"](members, "", _read_from_source(source))
@@ -81,7 +81,7 @@ def test_new_owner_is_automatically_required_from_source(tmp_path):
     for current in (source / "another_publisher",
                     source / "another_publisher" / "family", parent):
         (current / "__init__.py").write_text("", encoding="utf-8")
-    (parent / "_registration.py").write_text("", encoding="utf-8")
+    (parent / "__init__.py").write_text("", encoding="utf-8")
     check["_verify_domain_members"].__globals__["DOMAIN_SOURCE"] = source
     with pytest.raises(ValueError, match="missing_owners"):
         check["_verify_domain_members"](
@@ -98,7 +98,7 @@ def test_new_non_csv_domain_asset_is_included_automatically(tmp_path):
     owner.mkdir(parents=True)
     (source / "publisher" / "__init__.py").write_text("", encoding="utf-8")
     (owner / "__init__.py").write_text("", encoding="utf-8")
-    (owner / "_registration.py").write_text("", encoding="utf-8")
+    (owner / "__init__.py").write_text("", encoding="utf-8")
     data = owner / "raw-series.parquet"
     data.write_bytes(b"future domain binary asset")
     check["_verify_domain_members"].__globals__["DOMAIN_SOURCE"] = source
@@ -118,7 +118,7 @@ def test_changed_owner_manifest_content_is_rejected():
     check = _inspector()
     source = check["DOMAIN_SOURCE"]
     files = _real_members(source)
-    victim = next(name for name in files if name.endswith("/_registration.py"))
+    victim = next(name for name in files if name.endswith("/__init__.py"))
 
     def corrupted(member: str) -> bytes:
         if member == victim:

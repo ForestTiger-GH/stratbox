@@ -72,3 +72,15 @@ def test_inline_lambda_fingerprint_ignores_the_surrounding_callsite():
     first = lambda value, invocation: value * 2
     second = lambda value, invocation: value * 2
     assert methods.callable_fingerprint(first) == methods.callable_fingerprint(second)
+
+
+@pytest.mark.parametrize("module", ["stratbox.operations.declarations", "stratbox.domains.registry.declarations", "stratbox.core.resources"])
+def test_metadata_infrastructure_move_does_not_make_catalog_loading_an_algorithm(monkeypatch, module):
+    contents = sources(monkeypatch)
+    contents["stratbox.fixture"] = ("from " + module + " import resolve\ndef calculate(value):\n    resolve(value)\n    return value * 2\n").encode()
+    contents[module] = b"def resolve(value):\n    return value\n"
+    before = methods.method_descriptor(definition())
+    contents[module] = b"def resolve(value):\n    return str(value)\n"
+    after = methods.method_descriptor(definition())
+    assert before.identity == after.identity
+    assert {name for name, _ in after.algorithms} == {"stratbox.fixture:calculate"}

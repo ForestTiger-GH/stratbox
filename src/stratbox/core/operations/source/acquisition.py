@@ -7,9 +7,9 @@ from email.message import Message
 from typing import BinaryIO, Callable
 
 from stratbox.core.network import (HttpFailure, HttpRequest, HttpTransport, PeerBoundTransport,
-                                   RequestsTransport, RetryPolicy, RoutedTransport, exchange, exchange_into)
+                                   RequestsTransport, RetryPolicy, RoutedTransport, exchange, exchange_into, request_identity)
 from stratbox.shared.evidence import AcquiredSource, AcquisitionReceipt, SourcePayload
-from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.identity import ByteIdentity
 
 from stratbox.core.execution.contracts import OperationFailure
 from stratbox.core.execution.runner import Invocation
@@ -49,16 +49,16 @@ def _request_identity(request: HttpRequest, invocation: Invocation, transport: H
         if len(candidates) > 1:
             raise OperationFailure("provider.binding_conflict")
         binding = candidates[0] if candidates else None
-    return ByteIdentity.of(canonical_manifest_bytes({
-        "method": request.method,
-        "url": request.url,
-        "headers": dict(request.headers),
-        "form": dict(request.form_fields) if request.form_fields is not None else None,
-        "body": ByteIdentity.of(request.body).sha256 if request.body is not None else None,
-        "provider": binding.provider_id if binding else _transport_identity(transport),
-        "profile": invocation.context.profile,
-        "scope": binding.scope_id if binding else None,
-    })).sha256
+    scope = getattr(transport, "scope", None)
+    return request_identity(request,
+        provider_id=binding.provider_id if binding else _transport_identity(transport),
+        profile=invocation.context.profile,
+        scope_id=(binding.scope_id if binding and binding.scope_id is not None
+                  else scope.scope_id if scope else None),
+        generation=scope.generation if scope else 0,
+        route_identity=scope.route_identity if scope else None,
+        configuration_identity=scope.configuration_identity if scope else None,
+    )
 
 
 def receive_source(
@@ -100,7 +100,8 @@ def _receive(
     transport = invocation.provider("http", transport)
     fingerprint = _request_identity(request, invocation, transport)
     managed = invocation.context.profile == "managed"
-    routed = isinstance(transport, RoutedTransport) and request.permits(request.url) and transport.route_for(request) is not None
+    routed = (callable(getattr(transport, "route_for", None)) and request.permits(request.url)
+              and transport.route_for(request) is not None)
     route = transport.route_for(request) if routed else None
     if managed and routed:
         binding = invocation.selected_binding("http")
@@ -157,7 +158,7 @@ def _receive(
         ):
             raise OperationFailure("http.full_representation_required")
         reused = replace(prior, status_code=304, observed_at_utc=response.observed_at_utc,
-                         reused=True, wire_size=response.wire_size)
+                         reused=True, wire_size=response.wire_size, shared_work_id=response.shared_work_id)
         if isinstance(baseline, StreamBaseline):
             try:
                 baseline.copy_to(sink)
@@ -196,5 +197,6 @@ def _receive(
         wire_size=response.wire_size, route_id=response.route_id,
         logical_target_sha256=response.logical_target_sha256, transport_assurance=response.transport_assurance,
         route_policy_id=route.policy_identity if route is not None else None,
+        shared_work_id=response.shared_work_id, reused=response.shared_reused,
     )
     return receipt, metadata.get_content_charset(), response.body

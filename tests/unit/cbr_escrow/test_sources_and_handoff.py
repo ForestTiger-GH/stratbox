@@ -1,7 +1,7 @@
 """Source format coverage and neutral-storage admission stay explicit."""
 from datetime import datetime, timezone
 
-from stratbox.core.registry.catalog import OperationCatalog
+from stratbox.operations.catalog import OperationCatalog
 from stratbox.core.execution.handoff import bind_request, project_output
 from stratbox.core.network import HttpResponse
 from stratbox.core.operations.materials.definitions import ReadLocationRequest
@@ -9,9 +9,7 @@ from stratbox.core.operations.materials.operations import read_location
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr.operations import project_finance as escrow
 from stratbox.domains.cbr.operations.project_finance import definitions
-from stratbox.domains.cbr.operations.project_finance.registration import OPERATIONS
-from stratbox.core.registry.catalog import OperationRegistration
-REGISTRATION = OperationRegistration("cbr", OPERATIONS)
+from stratbox.operations import operation_catalog
 from stratbox.shared.evidence import SourcePayload
 
 from .test_replay import publication, checked
@@ -63,7 +61,8 @@ def test_neutral_byte_read_and_complete_snapshot_handoff(tmp_path):
 
 
 def test_all_escrow_registrations_resolve_to_the_declared_operations():
-    catalog = OperationCatalog.from_registrations(REGISTRATION)
+    catalog = OperationCatalog(tuple(ref for ref in operation_catalog().references
+        if ref.handler_ref.startswith("stratbox.domains.cbr.operations.project_finance.")))
     assert len(catalog.references) == 17
     for reference in catalog.references:
         definition, handler, codec = catalog.resolve(reference.operation_id)

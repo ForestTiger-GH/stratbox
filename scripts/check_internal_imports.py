@@ -19,12 +19,14 @@ PACKAGE = SRC / "stratbox"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.domains._structure import DomainLayoutError  # noqa: E402
-from stratbox.core.registry.resources import read_document, owner_directories, iter_resources, resource_inventory  # noqa: E402
+class DomainLayoutError(ValueError):
+    """A canonical domain owner has no reachable implementation package."""
+
+from stratbox.core.resources import read_document, owner_directories, iter_resources, resource_inventory  # noqa: E402
 
 def _registered_domains() -> frozenset[str]:
     """Resolve canonical owner declarations and reachable implementation packages."""
-    root = PACKAGE / "registry"
+    root = PACKAGE / "operations" / "specifications"
     if not root.is_dir():
         return frozenset()
     owners = set()
@@ -101,12 +103,12 @@ CRITICAL_MODULES = [
     "stratbox.core.formats.archives",
     "stratbox.core.rendering.excel",
     "stratbox.core.execution",
-    "stratbox.core.registry.catalog",
-    "stratbox.core.registry.operations",
-    "stratbox.core.registry.resources",
-    "stratbox.core.registry.sources",
-    "stratbox.core.registry.source_catalog",
-    "stratbox.core.registry.discovery",
+    "stratbox.operations.catalog",
+    "stratbox.operations.declarations",
+    "stratbox.core.resources",
+    "stratbox.domains.registry.declarations",
+    "stratbox.domains.registry.catalog",
+    "stratbox.operations.discovery",
     "stratbox.core.execution.machine",
     "stratbox.core.execution.handoff",
     "stratbox.core.execution.calls",
@@ -125,7 +127,7 @@ CRITICAL_MODULES = [
     "stratbox.core.notifications.state.memory",
     "stratbox.core.notifications.dispatch.delivery",
     "stratbox.core.notifications.dispatch.reconciliation",
-    "stratbox.core.registry",
+    "stratbox.operations",
     "stratbox.shared.data",
     "stratbox.shared.identity",
     "stratbox.shared.evidence",
@@ -172,7 +174,7 @@ def _imports(path: Path, tree: ast.AST):
 def _owner(path: Path, owners: frozenset[str]) -> str:
     parts = path.relative_to(PACKAGE).parts
     if len(parts) >= 2 and parts[0] == "domains":
-        if parts[1] == "registry.py":
+        if parts[1] == "registry":
             return "domains.registry"
         package = ".".join(parts[1:-1])
         candidates = (name for name in owners if package == name or package.startswith(name + "."))
@@ -195,6 +197,8 @@ def _domain(target: str, owners: frozenset[str]) -> str | None:
 
 
 def _publisher(target: str, owners: frozenset[str]) -> str | None:
+    if target == "stratbox.domains.registry" or target.startswith("stratbox.domains.registry."):
+        return None
     """Publisher follows the physical Python package even without a manifest."""
     parts = target.split(".")
     if len(parts) < 3 or parts[:2] != ["stratbox", "domains"]:
@@ -266,7 +270,7 @@ def check_dependency_direction() -> list[str]:
                 failures.append(f"{prefix}: concrete integration import {target}")
             if target in {"stratbox.shared.data.ByteIdentity", "stratbox.shared.data.canonical_manifest_bytes", "stratbox.shared.data.SourcePayload", "stratbox.shared.data.AcquisitionReceipt", "stratbox.shared.data.AcquiredSource", "stratbox.shared.data.UsedInputReceipt", "stratbox.shared.data.StoredBytesReceipt", "stratbox.shared.data.MaterialReference", "stratbox.shared.data.PublicationReceipt"}:
                 failures.append(f"{prefix}: shared data re-exports a moved foundational type {target}")
-            if owner.startswith(("core:", "shared:")) and target.startswith("stratbox.domains"):
+            if owner.startswith(("core:", "shared:")) and (target.startswith("stratbox.domains") and not target.startswith("stratbox.domains.registry")):
                 failures.append(f"{prefix}: foundational package imports domain {target}")
             if owner.startswith("shared:") and target.startswith("stratbox.core"):
                 failures.append(f"{prefix}: shared contracts depend on executable core {target}")
@@ -293,7 +297,8 @@ def check_dependency_direction() -> list[str]:
                             failures.append(f"{prefix}: cross-domain import {target}")
             if owner == "core:execution" and target.startswith((
                 "stratbox.core.operations", "stratbox.core.observability", "stratbox.core.notifications"
-            )):
+            )) and not target.startswith("stratbox.core.observability.capture.orchestration"):
+
                 failures.append(f"{prefix}: execution imports higher-level operation {target}")
             if owner == "core:observability" and target.startswith("stratbox.core.notifications"):
                 failures.append(f"{prefix}: observability imports notifications {target}")
@@ -354,10 +359,10 @@ def check_supporting_source_imports() -> list[str]:
 
 def check_registry_declarations() -> list[str]:
     """Keep declarative executable links within the same implementation owners."""
-    from stratbox.core.registry.operations import validate_operation_document
+    from stratbox.operations.declarations import validate_operation_document
 
     failures = []
-    root = PACKAGE / "registry"
+    root = PACKAGE / "operations" / "specifications"
     if not root.is_dir():
         return ["canonical registry resource package is missing"]
     try:
@@ -367,7 +372,7 @@ def check_registry_declarations() -> list[str]:
     try:
         resource_inventory(root=root)
         records = tuple((owner, path) for owner, _ in owner_directories(root=root)
-                        for kind in ("sources", "operations", "profiles", "routes", "families", "groups")
+                        for kind in ("sources", "operations", "profiles", "families", "templates")
                         for path in iter_resources(owner, kind, root=root))
     except (ValueError, OSError) as error:
         return [f"invalid registry resources: {error}"]

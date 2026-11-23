@@ -9,8 +9,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from stratbox.core.registry.operations import owner_ids, owner_registration  # noqa: E402
-from stratbox.core.registry import operation_catalog  # noqa: E402
+from stratbox.operations.declarations import owner_ids, owner_registration  # noqa: E402
+from stratbox.operations import operation_catalog  # noqa: E402
 
 REQUIRED_FILES = [
     # Knowledge consolidation bootstrap and content-preserved legacy sources.
@@ -69,34 +69,22 @@ REQUIRED_FILES = [
     'src/stratbox/py.typed',
     'src/stratbox/domains/cbr/__init__.py',
     'src/stratbox/domains/cbr/publications/access.py',
-    'src/stratbox/domains/cbr/_registration.py',
-    'src/stratbox/domains/cbr/operations/collection/registration.py',
-    'src/stratbox/domains/cbr/operations/reporting_forms/registration.py',
-    'src/stratbox/domains/cbr/operations/corporate_lending/registration.py',
-    'src/stratbox/domains/cbr/operations/catalog/registration.py',
-    'src/stratbox/domains/cbr/operations/statistics/registration.py',
     'src/stratbox/domains/cbr/tables/statistics/profiles.py',
     'src/stratbox/domains/cbr/operations/service_network/__init__.py',
-    'src/stratbox/domains/cbr/operations/service_network/registration.py',
-    'src/stratbox/domains/cbr/operations/project_finance/registration.py',
     'src/stratbox/domains/fns/__init__.py',
-    'src/stratbox/domains/fns/_registration.py',
-    'src/stratbox/domains/rosstat/_registration.py',
     'docs/current-how/independent-domain-data-routes.md',
     'docs/current-how/fns-data-pipeline.md',
     'docs/current-how/rosstat-data-route.md',
     'docs/current-how/minfin-data-route.md',
     'docs/current-how/frank-rg-data-route.md',
     'src/stratbox/domains/frank_rg/__init__.py',
-    'src/stratbox/domains/frank_rg/_registration.py',
-    'src/stratbox/domains/registry.py',
-    'src/stratbox/core/registry/catalog.py',
-    'src/stratbox/core/registry/source_catalog.py',
-    'src/stratbox/core/registry/operations.py',
-    'src/stratbox/core/registry/sources.py',
-    'src/stratbox/core/registry/resources.py',
-    'src/stratbox/core/registry/discovery.py',
-    'src/stratbox/registry/__init__.py',
+    'src/stratbox/operations/catalog.py',
+    'src/stratbox/domains/registry/catalog.py',
+    'src/stratbox/operations/declarations.py',
+    'src/stratbox/domains/registry/declarations.py',
+    'src/stratbox/core/resources/__init__.py',
+    'src/stratbox/operations/discovery.py',
+    'src/stratbox/domains/registry/__init__.py',
     'src/stratbox/core/execution/runner.py',
     'src/stratbox/core/execution/contracts.py',
     'src/stratbox/core/execution/calls.py',
@@ -112,7 +100,7 @@ REQUIRED_FILES = [
     'tests/unit/execution/test_finalization.py',
     'tests/integration/universal_core/test_execution_effect_pipeline.py',
     'src/stratbox/core/__init__.py',
-    'src/stratbox/core/registry/__init__.py',
+    'src/stratbox/operations/__init__.py',
     'src/stratbox/core/runtime/providers.py',
     'src/stratbox/core/storage/filestore/ports.py',
     'src/stratbox/core/observability/journal/file_reader.py',
@@ -161,7 +149,6 @@ FORBIDDEN_PATHS = [
     'src/stratbox/domains/fns/legal_entities_1yur',
     'src/stratbox/domains/fns/sme_register',
     'src/stratbox/domains/rosstat/_source.py',
-    'src/stratbox/domains/rosstat/publications/_registration.py',
     'src/stratbox/domains/frg',
     'src/stratbox/shared/registries',
     'src/stratbox/shared/text',
@@ -213,9 +200,8 @@ def main() -> int:
         else:
             print(f'OK absent {rel}')
 
-    registry_root = SRC / 'stratbox' / 'registry'
-    declarations = tuple(registry_root.rglob('*.yaml'))
-    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_', 'ROUTE_', 'FAMILY_', 'GROUP_'):
+    declarations = tuple((SRC / 'stratbox' / 'operations' / 'specifications').rglob('*.yaml')) + tuple((SRC / 'stratbox' / 'domains' / 'registry').rglob('*.yaml'))
+    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_', 'TEMPLATE_', 'FAMILY_'):
         if not any(path.name.startswith(prefix) for path in declarations):
             failures.append(f'canonical registry has no {prefix} declarations')
     obsolete_registries = tuple(domains_root.rglob('REGISTRY_*.yaml'))
