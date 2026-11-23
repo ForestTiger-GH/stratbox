@@ -78,6 +78,11 @@ def test_source_and_stock_flow_schemas_cannot_cross_route_by_format_or_role():
         "minfin.discover",
         "minfin.readable",
         "frg.capture",
+        "minfin.extract_document",
+        "rosstat.tables.extract_document",
+        "rosstat.tables.extract_workbook",
+        "rosstat.publications.extract_members",
+        "rosstat.publications.inspect_archive",
     }
     # A shared byte payload can reach explicit admission boundaries, but it
     # does not itself establish another publisher's identity or period.

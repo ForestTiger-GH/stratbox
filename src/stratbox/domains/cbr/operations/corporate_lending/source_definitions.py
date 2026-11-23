@@ -1,4 +1,6 @@
 """Independent source-observation operations for corporate publications."""
+
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
 from dataclasses import dataclass
 from stratbox.core.execution.contracts import OperationDefinition
 from stratbox.core.execution.semantics import InputPort, OutputPort, OperationSemantics, ProcessingStage
@@ -38,17 +40,17 @@ EXTRACT = OperationDefinition("cbr.corporate_lending.extract_observations", 1,
         inputs=(InputPort("flake", DataContract("cbr.workbook.flake", 1, DataRole.EXTRACTS), path="flake"),),
         outputs=(OutputPort("observations", SOURCE),), parameters=("periods",)))
 
-ENCODE = OperationDefinition("cbr.corporate_lending.observation_snapshot", 1,
+ENCODE = technical_operation(OperationDefinition("cbr.corporate_lending.observation_snapshot", 1,
     "cbr-corporate-observation-snapshot-1", CorporateObservationSnapshotRequest, DatasetSnapshot,
     limits=_LIMITS, processing=OperationSemantics(stages=(ProcessingStage.RENDER,),
         summary="Encode a complete source observation result for independent retention.",
         inputs=(InputPort("value", SOURCE, path="value"),),
         outputs=(OutputPort("snapshot", SNAPSHOT), OutputPort("dataset", DataContract("dataset.snapshot"))),
-        parameters=("dataset_id", "version_id",)))
+        parameters=("dataset_id", "version_id",))), ProcessingFunction.ENCODE)
 
-DECODE = OperationDefinition("cbr.corporate_lending.read_observation_snapshot", 1,
+DECODE = technical_operation(OperationDefinition("cbr.corporate_lending.read_observation_snapshot", 1,
     "cbr-corporate-observation-snapshot-1", ReadCorporateObservationSnapshotRequest, CorporateSourceDataset,
     limits=_LIMITS, processing=OperationSemantics(stages=(ProcessingStage.READ_EXTRACT,),
         summary="Restore qualified source observations without reading a workbook or running a model.",
         inputs=(InputPort("snapshot", SNAPSHOT, path="snapshot", alternatives=(DataContract("dataset.snapshot"),)),),
-        outputs=(OutputPort("observations", SOURCE),)))
+        outputs=(OutputPort("observations", SOURCE),))), ProcessingFunction.REPLAY)

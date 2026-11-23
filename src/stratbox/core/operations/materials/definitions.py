@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 
 from stratbox.core.execution.contracts import OperationDefinition
-from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingStage
+from stratbox.core.execution.semantics import ProcessingFunction, InputPort, OperationSemantics, OutputPort, ProcessingStage
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.operations.source.original_definitions import OriginalDestination, StoredOriginal
 from stratbox.shared.data.processing import DataContract, DataRole
@@ -104,7 +104,7 @@ SAVE_ARTIFACT = OperationDefinition(
 READ_ARTIFACT = OperationDefinition(
     "material.read_artifact", 1, "artifact-replay-1", ReadArtifactRequest, MaterialArtifact,
     frozenset({"filestore"}), optional_capabilities=frozenset({"descriptor_filestore"}), limits=LIMITS,
-    processing=OperationSemantics(stages=(ProcessingStage.READ_EXTRACT,),
+    processing=OperationSemantics(stages=(), function=ProcessingFunction.REPLAY,
         inputs=(InputPort("artifact", DataContract("material.artifact_reference"), path="artifact"),),
         outputs=(OutputPort("artifact", DataContract("material.artifact")),), parameters=("limit",),
         summary="Restore and verify a retained artifact's contract, representation and full lineage."))

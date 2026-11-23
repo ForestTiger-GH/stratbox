@@ -15,6 +15,26 @@ from .ports import DatasetReadControls, DatasetStorageError, DatasetWriteControl
 from .definitions import READ, WRITE, LIST, ReadSnapshotRequest, WriteSnapshotRequest, ListVersionsRequest, DatasetVersions
 
 
+def query_snapshot(request, *, context=None):
+    from .definitions import QUERY
+    from stratbox.shared.data.query import query_snapshot as query
+
+    def work(req, invocation):
+        invocation.stage("query_snapshot")
+        try:
+            value = query(req.snapshot, req.query, expected_identity=req.expected_identity,
+                          checkpoint=invocation.check_cancelled)
+        except (ValueError, TypeError, KeyError):
+            raise OperationFailure("dataset.query_invalid") from None
+        invocation.use(UsedInputReceipt("dataset_snapshot", req.snapshot.identity, SNAPSHOT_MEDIA_TYPE,
+                                       "inline", req.snapshot.manifest.dataset_id))
+        invocation.account_output(value.table.identity, key="preview")
+        invocation.record(value.table.identity, parameters={"component": req.query.component,
+            "offset": req.query.offset, "limit": req.query.limit, "has_more": value.has_more})
+        return value
+    return run(QUERY, request, work, context=context)
+
+
 def _selection(request, role, provider, *, reference=False):
     selected = getattr(request, "selection", None)
     if selected is None and reference and provider is None and isinstance(request, ReadSnapshotRequest):

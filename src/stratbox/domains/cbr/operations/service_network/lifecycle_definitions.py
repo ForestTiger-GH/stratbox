@@ -1,4 +1,6 @@
 """Source history, reading, semantic alignment, calculation and products."""
+
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
 from stratbox.core.execution.contracts import OperationDefinition
 from stratbox.core.execution.semantics import InputPort, OutputPort, OperationSemantics, ProcessingStage
 from stratbox.shared.data.processing import DataContract, DataRole
@@ -25,10 +27,10 @@ HISTORY=OperationDefinition("cbr.service_network.build_history",1,"cbr-office-hi
         inputs=(InputPort("releases",DataContract("cbr.service_network.releases",1,DataRole.EXTRACTS),path="releases"),),
         outputs=(OutputPort("snapshot",_SNAPSHOT),),parameters=("dataset_id","version_id"),
         summary="Pin selected office captures or source issues without treating history packing as alignment."))
-RESTORE_HISTORY=OperationDefinition("cbr.service_network.restore_history",1,"cbr-office-history-replay-1",DatasetSnapshot,tuple,
+RESTORE_HISTORY=technical_operation(OperationDefinition("cbr.service_network.restore_history",1,"cbr-office-history-replay-1",DatasetSnapshot,tuple,
     processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),inputs=(InputPort("snapshot",_SNAPSHOT),),
         outputs=(OutputPort("releases",DataContract("cbr.service_network.releases",1,DataRole.EXTRACTS)),),
-        summary="Restore complete source releases and their period, formula and selection evidence."))
+        summary="Restore complete source releases and their period, formula and selection evidence.")), ProcessingFunction.REPLAY)
 ALIGN=OperationDefinition("cbr.service_network.align",1,"cbr-office-observations-1",AlignOfficesRequest,ObservationBatch,
     processing=OperationSemantics((ProcessingStage.INTEGRATE,),
         inputs=(InputPort("release",_RELEASE,path="release",alternatives=(DataContract("cbr.offices_reg.release",1,DataRole.EXTRACTS),)),),

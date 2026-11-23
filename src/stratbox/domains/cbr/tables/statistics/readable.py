@@ -1,7 +1,7 @@
 """Source-readable JSONL retains physical cells independently of interpretation."""
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.identity import canonical_manifest_bytes
-from .scalars import encode_scalar
+from stratbox.shared.data.scalars import encode_scalar
 
 
 def readable_workbook(flake):

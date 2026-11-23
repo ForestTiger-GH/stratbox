@@ -79,6 +79,7 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
         "processing": None
         if processing is None
         else {
+            "function": processing.function.value,
             "stages": [stage.value for stage in processing.stages],
             "inputs": [_port(port) for port in processing.inputs],
             "outputs": [_port(port) for port in processing.outputs],
@@ -106,6 +107,7 @@ def describe_operation(catalog: "OperationCatalog", ref: "OperationRef") -> dict
         "cancellation": "cooperative_at_checkpoints",
         "diagnostic_envelope": 3,
         "machine_read_only": codec is not None,
+        "machine_typed_references": True,
     }
 
 

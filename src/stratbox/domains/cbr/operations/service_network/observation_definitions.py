@@ -1,4 +1,6 @@
 """Portable aligned observation metadata."""
+
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
 from dataclasses import dataclass
 from stratbox.core.execution.contracts import OperationDefinition
 from stratbox.core.execution.semantics import InputPort, OutputPort, OperationSemantics, ProcessingStage
@@ -14,10 +16,10 @@ class SnapshotOfficeObservationsRequest:
 
 _BATCH=DataContract('cbr.service_network.observations',1,DataRole.INTEGRATED)
 _SNAPSHOT=DataContract("dataset.snapshot",1)
-SNAPSHOT=OperationDefinition('cbr.service_network.observations_snapshot',1,"observation-snapshot-1",SnapshotOfficeObservationsRequest,DatasetSnapshot,
+SNAPSHOT=technical_operation(OperationDefinition('cbr.service_network.observations_snapshot',1,"observation-snapshot-1",SnapshotOfficeObservationsRequest,DatasetSnapshot,
     processing=OperationSemantics((ProcessingStage.RENDER,),inputs=(InputPort("batch",_BATCH,path="batch"),),
         outputs=(OutputPort("snapshot",_SNAPSHOT),),parameters=("dataset_id","version_id"),
-        summary="Encode a complete aligned observation batch with exact types, periods, units and lineage."))
-RESTORE=OperationDefinition('cbr.service_network.restore_observations',1,"observation-snapshot-replay-1",DatasetSnapshot,ObservationBatch,
+        summary="Encode a complete aligned observation batch with exact types, periods, units and lineage.")), ProcessingFunction.ENCODE)
+RESTORE=technical_operation(OperationDefinition('cbr.service_network.restore_observations',1,"observation-snapshot-replay-1",DatasetSnapshot,ObservationBatch,
     processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),inputs=(InputPort("snapshot",_SNAPSHOT),),
-        outputs=(OutputPort("batch",_BATCH),),summary="Read a retained observation batch without repeating source extraction or semantic mapping."))
+        outputs=(OutputPort("batch",_BATCH),),summary="Read a retained observation batch without repeating source extraction or semantic mapping.")), ProcessingFunction.REPLAY)

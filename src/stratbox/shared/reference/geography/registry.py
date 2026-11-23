@@ -75,7 +75,7 @@ def read_rules(*, edition_id: str | None = None) -> tuple[tuple[RegionNameRule, 
         end = date.fromisoformat(item["effective_to"]) if item.get("effective_to") else None
         if start and end and start > end:
             raise ReferenceError(f"Invalid geography validity interval on row {number}")
-        if kind not in {"country", "federal_district", "subject", "statistical_aggregate", "other"}:
+        if kind not in GEOGRAPHY_KINDS:
             raise ReferenceError(f"Invalid geography kind on row {number}")
         rules.append(RegionNameRule(ident, alias, canonical, namespace, code, kind,
             item.get("perimeter_id") or None, item.get("source_family") or None,

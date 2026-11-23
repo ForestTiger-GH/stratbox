@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
+
 from stratbox.core.limits import ExecutionBudget
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.shared.data.representation import Representation
@@ -210,18 +212,18 @@ def _read_definition(operation, result_type, name, result_contract, snapshot_con
     )
 
 
-FLAKE_SNAPSHOT = _snapshot_definition("cbr.escrow.flake_snapshot", EscrowFlakeSnapshotRequest, "flake",
-    DataContract("cbr.escrow.parsed_file", 3, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 2, DataRole.EXTRACTS))
-READ_FLAKE_SNAPSHOT = _read_definition("cbr.escrow.read_flake_snapshot", ParsedEscrowFile, "file",
-    DataContract("cbr.escrow.parsed_file", 3, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 2, DataRole.EXTRACTS))
-DATASET_SNAPSHOT = _snapshot_definition("cbr.escrow.dataset_snapshot", EscrowDatasetSnapshotRequest, "dataset",
-    DataContract("cbr.escrow.dataset", 2, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 2, DataRole.INTEGRATED))
-READ_DATASET_SNAPSHOT = _read_definition("cbr.escrow.read_dataset_snapshot", EscrowDataset, "dataset",
-    DataContract("cbr.escrow.dataset", 2, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 2, DataRole.INTEGRATED))
-VIEW_SNAPSHOT = _snapshot_definition("cbr.escrow.view_snapshot", EscrowViewSnapshotRequest, "view",
-    DataContract("cbr.escrow.views", 2, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 2, DataRole.PRODUCTS))
-READ_VIEW_SNAPSHOT = _read_definition("cbr.escrow.read_view_snapshot", EscrowPivotPack, "views",
-    DataContract("cbr.escrow.views", 2, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 2, DataRole.PRODUCTS))
+FLAKE_SNAPSHOT = technical_operation(_snapshot_definition("cbr.escrow.flake_snapshot", EscrowFlakeSnapshotRequest, "flake",
+    DataContract("cbr.escrow.parsed_file", 3, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 2, DataRole.EXTRACTS)), ProcessingFunction.ENCODE)
+READ_FLAKE_SNAPSHOT = technical_operation(_read_definition("cbr.escrow.read_flake_snapshot", ParsedEscrowFile, "file",
+    DataContract("cbr.escrow.parsed_file", 3, DataRole.EXTRACTS), DataContract("cbr.escrow.flake.snapshot", 2, DataRole.EXTRACTS)), ProcessingFunction.REPLAY)
+DATASET_SNAPSHOT = technical_operation(_snapshot_definition("cbr.escrow.dataset_snapshot", EscrowDatasetSnapshotRequest, "dataset",
+    DataContract("cbr.escrow.dataset", 2, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 2, DataRole.INTEGRATED)), ProcessingFunction.ENCODE)
+READ_DATASET_SNAPSHOT = technical_operation(_read_definition("cbr.escrow.read_dataset_snapshot", EscrowDataset, "dataset",
+    DataContract("cbr.escrow.dataset", 2, DataRole.INTEGRATED), DataContract("cbr.escrow.dataset.snapshot", 2, DataRole.INTEGRATED)), ProcessingFunction.REPLAY)
+VIEW_SNAPSHOT = technical_operation(_snapshot_definition("cbr.escrow.view_snapshot", EscrowViewSnapshotRequest, "view",
+    DataContract("cbr.escrow.views", 2, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 2, DataRole.PRODUCTS)), ProcessingFunction.ENCODE)
+READ_VIEW_SNAPSHOT = technical_operation(_read_definition("cbr.escrow.read_view_snapshot", EscrowPivotPack, "views",
+    DataContract("cbr.escrow.views", 2, DataRole.PRODUCTS), DataContract("cbr.escrow.view.snapshot", 2, DataRole.PRODUCTS)), ProcessingFunction.REPLAY)
 
 
 from stratbox.shared.data.observations import ObservationBatch

@@ -37,6 +37,11 @@ def _canonical(value: object) -> object:
     if isinstance(value, date):
         return value.isoformat()
     if isinstance(value, Decimal) and value.is_finite():
+        # Bound fixed-point expansion before allocating it. A compact exponent
+        # token must not become a multi-gigabyte canonical manifest string.
+        parts = value.as_tuple()
+        if len(parts.digits) + abs(parts.exponent) > 100_000:
+            raise ValueError("identity.decimal_expansion_limit")
         return format(value, "f")
     if isinstance(value, (list, tuple)):
         return [_canonical(item) for item in value]

@@ -18,7 +18,7 @@ def encode_scalar(value):
         return type(value).__name__, value.isoformat()
     if type(value) is timedelta:
         return "duration", str((value.days * 86400 + value.seconds) * 1_000_000 + value.microseconds)
-    raise ValueError("cbr.cells.scalar_unsupported")
+    raise ValueError("cells.scalar_unsupported")
 
 
 def decode_scalar(kind, text):
@@ -37,7 +37,7 @@ def decode_scalar(kind, text):
     elif kind == "duration":
         value = timedelta(microseconds=int(text))
     else:
-        raise ValueError("cbr.cells.scalar_invalid")
+        raise ValueError("cells.scalar_invalid")
     if encode_scalar(value) != (kind, text):
-        raise ValueError("cbr.cells.scalar_noncanonical")
+        raise ValueError("cells.scalar_noncanonical")
     return value

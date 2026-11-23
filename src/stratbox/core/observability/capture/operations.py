@@ -80,6 +80,18 @@ def capture_operation_result(result: OperationResult, recorder: RecordCapture, *
     records = [record_from_result(result, occurred_at_utc=instant, finished_event=finished_event,
                                   correlation=correlation)]
     value = result.value
+    # Neutral retained processing values have portable content identities. Emit
+    # artifact evidence without copying their data or source locators to logs.
+    from stratbox.shared.data.snapshots import DatasetSnapshot
+    from stratbox.shared.data.workbooks import WorkbookExtract
+    from stratbox.shared.data.documents import DocumentExtract
+    from stratbox.shared.data.views import ObservationView
+    if result.outcome in {"succeeded", "partial"} and isinstance(value, (
+            DatasetSnapshot, WorkbookExtract, DocumentExtract, ObservationView)):
+        identity = value.identity
+        records.append(record_from_fact(fact_for_artifact(artifact_id=identity.sha256,
+            identity=identity, occurred_at_utc=instant), invocation_id=result.invocation_id,
+            operation_id=result.operation_id))
     # Publisher-domain operations may wrap the neutral source receipt with
     # release/asset context. Project the same underlying evidence only once.
     nested = getattr(value, "source", None) if value is not None else None

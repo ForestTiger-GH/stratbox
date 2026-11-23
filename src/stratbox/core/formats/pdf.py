@@ -1,16 +1,4 @@
-"""
-pdf — чтение PDF поверх FileStore.
-
-Задача:
-- дать простой способ вытащить текст из PDF (для первичного анализа)
-
-Принципы:
-- библиотека опциональна: используется pypdf
-
-Ограничения:
-- извлечение текста из PDF зависит от наличия текстового слоя
-- если PDF — скан, потребуется OCR (здесь не реализовано)
-"""
+"""PDF text reading; extraction failures propagate instead of becoming empty text."""
 
 from __future__ import annotations
 
@@ -51,10 +39,7 @@ def read_pages_text(
 
     for i in range(limit):
         page = reader.pages[i]
-        try:
-            txt = page.extract_text() or ""
-        except Exception:
-            txt = ""
+        txt = page.extract_text() or ""
         out.append(txt)
 
     return out

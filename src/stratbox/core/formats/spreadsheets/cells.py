@@ -22,105 +22,15 @@ _NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 _REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
 
-@dataclass(frozen=True, slots=True)
-class WorkbookCell:
-    row: int
-    column: int
-    coordinate: str
-    value: int | Decimal | str | bool | date | datetime | time | timedelta | None
-    raw_token: str | None
-    kind: str
-    formula: str | None = None
-    number_format: str = "General"
-    indent: int = 0
-    formula_attributes: tuple[tuple[str, str], ...] = ()
+from stratbox.shared.data.workbook_cells import WorkbookCell, SheetCells, WorkbookCells
+from stratbox.shared.data.workbook_cells import validate_sheet_cells as _validate_sheet_cells
 
 
-@dataclass(frozen=True, slots=True)
-class SheetCells:
-    name: str
-    index: int
-    rows: int
-    columns: int
-    cells: tuple[WorkbookCell, ...]
-    merged_ranges: tuple[str, ...] = ()
-
-    def cell(self, row: int, column: int) -> WorkbookCell | None:
-        return next((cell for cell in self.cells if cell.row == row and cell.column == column), None)
-
-    def values(self) -> tuple[tuple[object, ...], ...]:
-        """Materialize the admitted rectangular extent, retaining blank cells."""
-        grid = [[None] * self.columns for _ in range(self.rows)]
-        for cell in self.cells:
-            grid[cell.row - 1][cell.column - 1] = cell.value
-        return tuple(tuple(row) for row in grid)
-
-
-@dataclass(frozen=True, slots=True)
-class WorkbookCells:
-    sheets: tuple[SheetCells, ...]
-    identity: ByteIdentity
-
-
-def validate_sheet_cells(sheet: SheetCells) -> None:
-    """Validate retained cell evidence independently of an Excel decoder."""
-    if (not isinstance(sheet, SheetCells) or not sheet.name or len(sheet.name) > 255
-            or type(sheet.index) is not int or sheet.index < 0 or type(sheet.rows) is not int
-            or type(sheet.columns) is not int or not 0 <= sheet.rows <= 1_048_576
-            or not 0 <= sheet.columns <= 16_384 or sheet.rows * sheet.columns > 5_000_000):
-        raise WorkbookError("workbook.cells.sheet_invalid")
-    def position(coordinate):
-        match = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]{0,6})", coordinate)
-        if match is None:
-            raise WorkbookError("workbook.cells.coordinate_invalid")
-        column = 0
-        for char in match[1]:
-            column = column * 26 + ord(char) - 64
-        row = int(match[2])
-        if row > 1_048_576 or column > 16_384:
-            raise WorkbookError("workbook.cells.coordinate_invalid")
-        return row, column
-    seen = set()
-    previous = (0, 0)
-    for cell in sheet.cells:
-        if (not isinstance(cell, WorkbookCell) or cell.kind not in {"n", "s", "str", "inlineStr", "b", "d", "e"}
-                or type(cell.indent) is not int or not 0 <= cell.indent <= 250
-                or not isinstance(cell.number_format, str) or len(cell.number_format) > 4096
-                or cell.raw_token is not None and not isinstance(cell.raw_token, str)
-                or cell.formula is not None and not isinstance(cell.formula, str)):
-            raise WorkbookError("workbook.cells.invalid_cell")
-        point = (cell.row, cell.column)
-        if (point != position(cell.coordinate) or point in seen or point <= previous
-                or cell.row > sheet.rows or cell.column > sheet.columns):
-            raise WorkbookError("workbook.cells.coordinate_invalid")
-        seen.add(point)
-        previous = point
-        if (not isinstance(cell.formula_attributes, tuple)
-                or any(not isinstance(pair, tuple) or len(pair) != 2 or any(type(x) is not str for x in pair)
-                       for pair in cell.formula_attributes)
-                or len({key for key, _ in cell.formula_attributes}) != len(cell.formula_attributes)
-                or cell.formula is None and cell.formula_attributes):
-            raise WorkbookError("workbook.cells.formula_invalid")
-        if cell.kind == "n" and type(cell.value) in {int, Decimal}:
-            try:
-                if cell.raw_token is None or Decimal(cell.raw_token) != cell.value or not Decimal(cell.raw_token).is_finite():
-                    raise ValueError
-            except (ValueError, InvalidOperation):
-                raise WorkbookError("workbook.cells.numeric_evidence_mismatch") from None
-        if cell.kind == "b" and (cell.raw_token not in {"0", "1"} or type(cell.value) is not bool
-                                  or cell.value != (cell.raw_token == "1")):
-            raise WorkbookError("workbook.cells.boolean_evidence_mismatch")
-        if cell.kind in {"s", "str", "inlineStr", "e"} and cell.value is not None and type(cell.value) is not str:
-            raise WorkbookError("workbook.cells.text_evidence_mismatch")
-        if cell.kind == "s" and (cell.raw_token is None or not cell.raw_token.isdigit()):
-            raise WorkbookError("workbook.cells.string_index_invalid")
-    for reference in sheet.merged_ranges:
-        parts = reference.split(":")
-        if len(parts) != 2:
-            raise WorkbookError("workbook.cells.merge_invalid")
-        first, last = map(position, parts)
-        if first[0] > last[0] or first[1] > last[1]:
-            raise WorkbookError("workbook.cells.merge_invalid")
+def validate_sheet_cells(sheet):
+    try:
+        _validate_sheet_cells(sheet)
+    except ValueError as exc:
+        raise WorkbookError(str(exc)) from None
 
 
 def _text(element):
@@ -131,16 +41,16 @@ def _text(element):
                    if child.tag != _NS + "rPh" for node in child.iter(_NS + "t"))
 
 
-def read_workbook_cells(data: bytes, *, budget=None) -> WorkbookCells:
+def read_workbook_cells(data: bytes, *, budget=None, checkpoint=None, _profile=None) -> WorkbookCells:
     """Read every worksheet of an admitted XLSX without float coercion.
 
     Date serials use the workbook epoch and number format; their exact serial
-    remains in ``raw_token``. Empty cached formula values remain unknown.
+    remains in ``raw_token``. Absent caches remain unknown; an explicit empty
+    cached string remains an empty string.
     """
-    profile = workbook_profile(data, budget=budget)
-    if profile.kind != "xlsx":
-        raise WorkbookError("workbook.cells.xlsx_required")
-    profile.check_materialization(budget)
+    profile = _profile if _profile is not None else workbook_profile(data, budget=budget)
+    if profile.kind not in {"xlsx", "xlsm"}:
+        raise WorkbookError("workbook.cells.ooxml_required")
     require_extra("openpyxl", "excel")
     from openpyxl.styles.numbers import BUILTIN_FORMATS, is_date_format, is_timedelta_format
     from openpyxl.utils.cell import coordinate_to_tuple
@@ -195,12 +105,16 @@ def read_workbook_cells(data: bytes, *, budget=None) -> WorkbookCells:
                         raise ValueError
                     number_format, indent = styles[style_index]
                     kind = node.get("t", "n")
-                    raw = node.findtext(_NS + "v")
+                    raw_node = node.find(_NS + "v")
+                    raw = raw_node.text if raw_node is not None else None
                     formula_node = node.find(_NS + "f")
                     formula = (formula_node.text or "") if formula_node is not None else None
                     attrs = tuple(sorted(formula_node.attrib.items())) if formula_node is not None else ()
                     if kind == "inlineStr":
                         value = _text(node.find(_NS + "is"))
+                    elif kind in {"str", "e"} and raw_node is not None:
+                        raw = raw or ""
+                        value = raw
                     elif raw is None or raw == "":
                         value = None
                     elif kind == "s":
@@ -233,12 +147,27 @@ def read_workbook_cells(data: bytes, *, budget=None) -> WorkbookCells:
                                           formula, number_format, indent, attrs))
                 if budget is not None:
                     budget.checkpoint()
+                if checkpoint is not None:
+                    checkpoint()
             cells.sort(key=lambda cell: (cell.row, cell.column))
             rows = max((cell.row for cell in cells), default=0)
             columns = max((cell.column for cell in cells), default=0)
-            if rows * columns > 5_000_000:
+            if len(cells) > 5_000_000:
                 raise WorkbookError("workbook.materialization_limit")
             merges = tuple(node.get("ref", "") for node in root.findall(_NS + "mergeCells/" + _NS + "mergeCell"))
+            dimension = root.find(_NS + "dimension")
+            extents = (*merges, *((dimension.get("ref", ""),) if dimension is not None else ()))
+            for extent in extents:
+                if not extent:
+                    continue
+                for coordinate in extent.split(":"):
+                    try:
+                        r, c = coordinate_to_tuple(coordinate)
+                        if not 1 <= r <= 1_048_576 or not 1 <= c <= 16_384:
+                            raise ValueError
+                    except (ValueError, TypeError, KeyError):
+                        raise WorkbookError("workbook.cells.extent_invalid") from None
+                    rows, columns = max(rows, r), max(columns, c)
             value = SheetCells(sheet.get("name", ""), index, rows, columns, tuple(cells), merges)
             validate_sheet_cells(value)
             sheets.append(value)

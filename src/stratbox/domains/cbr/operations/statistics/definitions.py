@@ -1,4 +1,6 @@
 """Executable stage and port contracts for statistical workbooks and products."""
+
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
 from stratbox.core.execution import OperationDefinition
 from stratbox.core.execution.semantics import InputPort, OperationSemantics, OutputPort, ProcessingStage as S
 from stratbox.core.limits import ExecutionBudget
@@ -37,12 +39,12 @@ READABLE = _definition("cbr.tables.readable", S.READABLE, C.FlakeRequest, Repres
     (InputPort("flake", FLAKE, "flake"),),
     (OutputPort("readable", DataContract("cbr.workbook.readable", 1, DataRole.READABLE)),),
     summary="Render source-readable JSONL containing every cell without economic interpretation.")
-FLAKE_SNAPSHOT = _definition("cbr.tables.flake_snapshot", S.EXTRACT, C.FlakeRequest, DatasetSnapshot,
+FLAKE_SNAPSHOT = technical_operation(_definition("cbr.tables.flake_snapshot", S.EXTRACT, C.FlakeRequest, DatasetSnapshot,
     (InputPort("flake", FLAKE, "flake"),), (OutputPort("snapshot", _SNAPSHOT),),
-    summary="Encode a complete flake as portable typed tables; this operation performs no persistence.")
-READ_FLAKE_SNAPSHOT = _definition("cbr.tables.read_flake_snapshot", S.READ_EXTRACT, C.ReadSnapshotRequest, WorkbookFlake,
+    summary="Encode a complete flake as portable typed tables; this operation performs no persistence."), ProcessingFunction.ENCODE)
+READ_FLAKE_SNAPSHOT = technical_operation(_definition("cbr.tables.read_flake_snapshot", S.READ_EXTRACT, C.ReadSnapshotRequest, WorkbookFlake,
     (InputPort("snapshot", _SNAPSHOT, "snapshot"),), (OutputPort("flake", FLAKE),),
-    summary="Restore and validate all source cells from a complete retained snapshot.")
+    summary="Restore and validate all source cells from a complete retained snapshot."), ProcessingFunction.REPLAY)
 ALIGN = _definition("cbr.statistics.align", S.INTEGRATE, C.AlignStatisticsRequest, StatisticsDataset,
     (InputPort("flakes", DataContract("cbr.workbook.flake_collection", 1, DataRole.EXTRACTS), "flakes"),),
     (OutputPort("dataset", DATASET),), parameters=("row_bindings", "period_bindings", "mapping_version", "strict"),
@@ -63,15 +65,15 @@ RENDER_VIEW = _definition("cbr.statistics.render_view", S.RENDER, C.RenderViewRe
     (InputPort("view", VIEW, "view"),),
     (OutputPort("representation", DataContract("cbr.statistics.product", 1, DataRole.PRODUCTS)),), parameters=("format",),
     summary="Render a prepared or restored view to CSV or XLSX without reading or calculating source data.")
-DATASET_SNAPSHOT = _definition("cbr.statistics.dataset_snapshot", S.INTEGRATE, C.DatasetRequest, DatasetSnapshot,
+DATASET_SNAPSHOT = technical_operation(_definition("cbr.statistics.dataset_snapshot", S.INTEGRATE, C.DatasetRequest, DatasetSnapshot,
     (InputPort("dataset", DATASET, "dataset"),), (OutputPort("snapshot", _SNAPSHOT),),
-    summary="Encode admitted observations, mapping edition, diagnostics and complete input versions.")
-READ_DATASET_SNAPSHOT = _definition("cbr.statistics.read_dataset_snapshot", S.INTEGRATE, C.ReadSnapshotRequest, StatisticsDataset,
+    summary="Encode admitted observations, mapping edition, diagnostics and complete input versions."), ProcessingFunction.ENCODE)
+READ_DATASET_SNAPSHOT = technical_operation(_definition("cbr.statistics.read_dataset_snapshot", S.INTEGRATE, C.ReadSnapshotRequest, StatisticsDataset,
     (InputPort("snapshot", _SNAPSHOT, "snapshot"),), (OutputPort("dataset", DATASET),),
-    summary="Restore exact integrated observations without original files or parsing dependencies.")
-VIEW_SNAPSHOT = _definition("cbr.statistics.view_snapshot", S.VIEW, C.ViewRequest, DatasetSnapshot,
+    summary="Restore exact integrated observations without original files or parsing dependencies."), ProcessingFunction.REPLAY)
+VIEW_SNAPSHOT = technical_operation(_definition("cbr.statistics.view_snapshot", S.VIEW, C.ViewRequest, DatasetSnapshot,
     (InputPort("view", VIEW, "view"),), (OutputPort("snapshot", _SNAPSHOT),),
-    summary="Expose complete prepared view tables for a caller-selected dataset adapter.")
-READ_VIEW_SNAPSHOT = _definition("cbr.statistics.read_view_snapshot", S.VIEW, C.ReadSnapshotRequest, StatisticsView,
+    summary="Expose complete prepared view tables for a caller-selected dataset adapter."), ProcessingFunction.ENCODE)
+READ_VIEW_SNAPSHOT = technical_operation(_definition("cbr.statistics.read_view_snapshot", S.VIEW, C.ReadSnapshotRequest, StatisticsView,
     (InputPort("snapshot", _SNAPSHOT, "snapshot"),), (OutputPort("view", VIEW),),
-    summary="Restore a prepared view with its exact inputs and rendering profile.")
+    summary="Restore a prepared view with its exact inputs and rendering profile."), ProcessingFunction.REPLAY)

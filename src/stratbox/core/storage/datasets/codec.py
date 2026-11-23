@@ -147,9 +147,10 @@ def manifest_from(value) -> DatasetManifest:
     for c in _list(value["components"]):
         c = _object(c, ("name", "schema", "identity", "row_count"))
         components.append(TableComponent(c["name"], schema_from(c["schema"]), identity_from(c["identity"]), c["row_count"]))
-    coverage = _object(value["coverage"], ("status", "description"))
+    from stratbox.shared.data.snapshots import coverage_from
+    coverage = coverage_from(value["coverage"])
     return DatasetManifest(value["dataset_id"], value["version_id"], contract_from(value["contract"]), tuple(components),
-                           SnapshotCoverage(coverage["status"], coverage["description"]),
+                           coverage,
                            tuple(_input_from(i) for i in _list(value["inputs"])),
                            tuple(identity_from(i) for i in _list(value["parents"])))
 

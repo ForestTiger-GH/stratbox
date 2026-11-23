@@ -17,4 +17,4 @@ REGISTRATION = OperationRegistration("cbr", OPERATIONS, (
         (OperationKey("dataset.write_snapshot", 1),),
         "Encode an admitted source, integrated or product snapshot and ingest it through the selected dataset adapter."),
     StageDeclaration(ProcessingStage.PUBLISH, "missing", "cbr.publication.consumer_owned"),
-))
+), source_catalog_ref="stratbox.domains.cbr.operations.source_catalog:source_cards")

@@ -1,6 +1,6 @@
 """Declarative processing semantics; routing never executes or admits a value."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 from stratbox.shared.data.processing import DataContract
@@ -23,6 +23,23 @@ class ProcessingStage(str, Enum):
     RENDER = "render"
     PUBLISH = "publish"
     VALIDATE = "validate"
+
+
+class ProcessingFunction(str, Enum):
+    """Technical function, independent of an economic processing stage."""
+
+    PROCESS = "process"
+    ENCODE = "encode"
+    REPLAY = "replay"
+    MAINTAIN = "maintain"
+    INSPECT = "inspect"
+
+
+def technical_operation(definition, function: ProcessingFunction):
+    """Declare a technical function without claiming an economic stage."""
+    if not isinstance(function, ProcessingFunction) or function is ProcessingFunction.PROCESS or definition.processing is None:
+        raise ValueError("processing.technical_function_invalid")
+    return replace(definition, processing=replace(definition.processing, stages=(), function=function))
 
 
 def _tokens(values: frozenset[str]) -> None:
@@ -98,15 +115,18 @@ class OperationSemantics:
     parameters: tuple[str, ...] = ()
     summary: str = ""
     composition: bool = False
+    function: ProcessingFunction = ProcessingFunction.PROCESS
 
     def __post_init__(self) -> None:
         if (
             not isinstance(self.stages, tuple)
-            or not self.stages
+            or not self.stages and self.function is ProcessingFunction.PROCESS
             or any(not isinstance(stage, ProcessingStage) for stage in self.stages)
             or len(set(self.stages)) != len(self.stages)
         ):
             raise ValueError("processing.invalid_stages")
+        if not isinstance(self.function, ProcessingFunction):
+            raise ValueError("processing.invalid_function")
         for ports, kind in ((self.inputs, InputPort), (self.outputs, OutputPort)):
             if (
                 not isinstance(ports, tuple)

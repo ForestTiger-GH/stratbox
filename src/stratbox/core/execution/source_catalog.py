@@ -1,0 +1,129 @@
+"""Uniform source metadata bound to the one executable operation catalog.
+
+Publisher adapters own issue models, profiles and applicability. This catalog
+stores no handler callbacks and never implies that a generic parser supplies a
+reviewed economic schema for every source.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from importlib import import_module
+
+from stratbox.core.execution.identifiers import safe_token
+from stratbox.core.execution.semantics import ProcessingStage
+
+
+@dataclass(frozen=True, slots=True)
+class SourceProfile:
+    profile_id: str
+    kind: str
+    edition: str
+    formats: tuple[str, ...] = ()
+    scope: str = ""
+
+    def __post_init__(self):
+        safe_token(self.profile_id)
+        if not self.kind or not self.edition or not isinstance(self.formats, tuple):
+            raise ValueError("catalog.profile_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class SourceOperation:
+    operation_id: str
+    contract_version: int = 1
+    state: str = "supported"
+    reason: str = ""
+    parameters: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self):
+        safe_token(self.operation_id)
+        if (type(self.contract_version) is not int or self.contract_version < 1
+                or self.state not in {"supported", "conditional", "delegated"}
+                or not isinstance(self.reason, str) or self.state != "supported" and not self.reason
+                or not isinstance(self.parameters, tuple) or any(not isinstance(p, tuple)
+                    or len(p) != 2 or any(type(v) is not str for v in p) for p in self.parameters)
+                or len({k for k, _ in self.parameters}) != len(self.parameters)):
+            raise ValueError("catalog.source_binding_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class SourceCard:
+    publisher_id: str
+    family_id: str
+    series_id: str
+    title: str
+    issue_model: str
+    formats: tuple[str, ...]
+    profiles: tuple[SourceProfile, ...] = ()
+    operations: tuple[SourceOperation, ...] = ()
+    qualifications: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        for value in (self.publisher_id, self.family_id, self.series_id):
+            safe_token(value)
+        if (not self.title or not self.issue_model or not isinstance(self.formats, tuple) or not self.formats
+                or not isinstance(self.profiles, tuple) or any(not isinstance(p, SourceProfile) for p in self.profiles)
+                or not isinstance(self.operations, tuple) or any(not isinstance(p, SourceOperation) for p in self.operations)
+                or len({(o.operation_id,o.contract_version) for o in self.operations}) != len(self.operations)
+                or not isinstance(self.qualifications, tuple) or any(type(q) is not str for q in self.qualifications)):
+            raise ValueError("catalog.source_card_invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class SourceCatalog:
+    sources: tuple[SourceCard, ...]
+
+    def __post_init__(self):
+        if (not isinstance(self.sources, tuple) or any(not isinstance(s, SourceCard) for s in self.sources)
+                or len({s.series_id for s in self.sources}) != len(self.sources)):
+            raise ValueError("catalog.sources_invalid")
+
+    def source(self, series_id):
+        return next((s for s in self.sources if s.series_id == series_id), None)
+
+    def select(self, *, publisher_id=None, family_id=None, format=None):
+        return tuple(s for s in self.sources if (publisher_id is None or s.publisher_id == publisher_id)
+                     and (family_id is None or s.family_id == family_id)
+                     and (format is None or format in s.formats))
+
+    @property
+    def families(self):
+        return tuple(sorted({s.family_id for s in self.sources}))
+
+    def describe(self, series_id, *, operations):
+        source = self.source(series_id)
+        if source is None:
+            raise ValueError("catalog.source_unknown")
+        from stratbox.core.execution.discovery import describe_operation
+        descriptions = []
+        stage_map = {stage.value: [] for stage in ProcessingStage}
+        for binding in source.operations:
+            ref = operations.reference(binding.operation_id, binding.contract_version)
+            value = describe_operation(operations, ref)
+            value["source_binding"] = {"state": binding.state, "reason": binding.reason,
+                                       "parameters": dict(binding.parameters)}
+            descriptions.append(value)
+            for stage in value["processing"]["stages"] if value["processing"] else ():
+                stage_map[stage].append(binding.operation_id)
+        return {"source": source, "operations": tuple(descriptions),
+                "stages": tuple({"stage": stage, "operations": tuple(keys),
+                    "state": "bound" if keys else "undeclared",
+                    "qualification": "Operation-level support remains subject to the source binding and runtime input admission."}
+                    for stage, keys in stage_map.items())}
+
+
+def source_catalog(operation_catalog) -> SourceCatalog:
+    cards = []
+    for registration in operation_catalog.registrations:
+        if registration.source_catalog_ref is None:
+            continue
+        module, symbol = registration.source_catalog_ref.split(":")
+        provider = getattr(import_module(module), symbol)
+        supplied = provider()
+        if not isinstance(supplied, tuple) or any(not isinstance(s, SourceCard) for s in supplied):
+            raise ValueError("catalog.source_adapter_invalid")
+        for card in supplied:
+            for binding in card.operations:
+                operation_catalog.reference(binding.operation_id, binding.contract_version)
+        cards.extend(supplied)
+    return SourceCatalog(tuple(sorted(cards, key=lambda c: c.series_id)))

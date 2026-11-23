@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
+
 
 from stratbox.shared.evidence import AcquiredSource
 from stratbox.shared.data.snapshots import DatasetSnapshot
@@ -204,19 +206,19 @@ COMPARE = OperationDefinition(
     ),
 )
 
-SNAPSHOT = OperationDefinition("cbr.offices_reg.snapshot", 1, "cbr-offices-reg-snapshot-1",
+SNAPSHOT = technical_operation(OperationDefinition("cbr.offices_reg.snapshot", 1, "cbr-offices-reg-snapshot-1",
     SnapshotOfficesRegRequest, DatasetSnapshot,
     processing=OperationSemantics((ProcessingStage.RENDER,),
         inputs=(InputPort("release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS),
             path="release", alternatives=(DataContract("cbr.offices_reg.candidates", 1),), outcomes=frozenset({"succeeded", "partial"})),),
         outputs=(OutputPort("snapshot", DataContract("dataset.snapshot", 1)),),
         parameters=("dataset_id", "version_id"),
-        summary="Preserve complete territorial releases or unresolved block candidates, with selection and formula evidence."))
+        summary="Preserve complete territorial releases or unresolved block candidates, with selection and formula evidence.")), ProcessingFunction.ENCODE)
 
-RESTORE = OperationDefinition("cbr.offices_reg.restore", 1, "cbr-offices-reg-replay-1",
+RESTORE = technical_operation(OperationDefinition("cbr.offices_reg.restore", 1, "cbr-offices-reg-replay-1",
     DatasetSnapshot, (ParsedRelease, OfficesRegCandidates), partial_allowed=True,
     processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
         inputs=(InputPort("snapshot", DataContract("dataset.snapshot", 1)),),
         outputs=(OutputPort("release", DataContract("cbr.offices_reg.release", 1, DataRole.EXTRACTS)),
                  OutputPort("candidates", DataContract("cbr.offices_reg.candidates", 1), outcomes=frozenset({"partial"}))),
-        summary="Restore a full territorial release or its still-unresolved source block candidates."))
+        summary="Restore a full territorial release or its still-unresolved source block candidates.")), ProcessingFunction.REPLAY)

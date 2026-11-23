@@ -9,7 +9,7 @@ from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, Scalar
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
 from .contracts import WorkbookFlake
-from .scalars import encode_scalar, decode_scalar
+from stratbox.shared.data.scalars import encode_scalar, decode_scalar
 
 FLAKE = DataContract("cbr.workbook.flake", 1, DataRole.EXTRACTS)
 _T, _I = ScalarType.TEXT, ScalarType.INT64

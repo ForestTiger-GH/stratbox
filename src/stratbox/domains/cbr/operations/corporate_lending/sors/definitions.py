@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
+
 from dataclasses import dataclass
 from stratbox.core.limits import ExecutionBudget
 from stratbox.core.execution.contracts import OperationDefinition
@@ -305,18 +307,18 @@ def _read_snapshot_definition(name, result_type, contract, snapshot_contract):
             outputs=(OutputPort("value", contract),), summary="Validate and reconstruct the complete SORS continuation context."))
 
 
-BUNDLE_SNAPSHOT = _snapshot_definition("bundle_snapshot", SorsBundleSnapshotRequest,
-    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED))
-READ_BUNDLE_SNAPSHOT = _read_snapshot_definition("read_bundle_snapshot", SorsSourceBundle,
-    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED))
-RESTORATION_SNAPSHOT = _snapshot_definition("restoration_snapshot", SorsRestorationSnapshotRequest,
-    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED))
-READ_RESTORATION_SNAPSHOT = _read_snapshot_definition("read_restoration_snapshot", SorsRestorationResult,
-    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED))
-CROSSWALK_SNAPSHOT = _snapshot_definition("crosswalk_snapshot", SorsCrosswalkSnapshotRequest,
-    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED))
-READ_CROSSWALK_SNAPSHOT = _read_snapshot_definition("read_crosswalk_snapshot", SorsCrosswalkResult,
-    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED))
+BUNDLE_SNAPSHOT = technical_operation(_snapshot_definition("bundle_snapshot", SorsBundleSnapshotRequest,
+    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.ENCODE)
+READ_BUNDLE_SNAPSHOT = technical_operation(_read_snapshot_definition("read_bundle_snapshot", SorsSourceBundle,
+    DataContract("cbr.sors.source_bundle", 2, DataRole.INTEGRATED), DataContract("cbr.sors.bundle.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.REPLAY)
+RESTORATION_SNAPSHOT = technical_operation(_snapshot_definition("restoration_snapshot", SorsRestorationSnapshotRequest,
+    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.ENCODE)
+READ_RESTORATION_SNAPSHOT = technical_operation(_read_snapshot_definition("read_restoration_snapshot", SorsRestorationResult,
+    DataContract("cbr.sors.restoration", 2, DataRole.INTEGRATED), DataContract("cbr.sors.restoration.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.REPLAY)
+CROSSWALK_SNAPSHOT = technical_operation(_snapshot_definition("crosswalk_snapshot", SorsCrosswalkSnapshotRequest,
+    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.ENCODE)
+READ_CROSSWALK_SNAPSHOT = technical_operation(_read_snapshot_definition("read_crosswalk_snapshot", SorsCrosswalkResult,
+    DataContract("cbr.sors.crosswalk", 2, DataRole.INTEGRATED), DataContract("cbr.sors.crosswalk.snapshot", 1, DataRole.INTEGRATED)), ProcessingFunction.REPLAY)
 
 
 @dataclass(frozen=True, slots=True)
@@ -325,7 +327,7 @@ class SorsViewSnapshotRequest:
     dataset_id: str = "cbr.sors.views"
     version_id: str | None = None
 
-VIEW_SNAPSHOT = _snapshot_definition("view_snapshot", SorsViewSnapshotRequest,
-    DataContract("cbr.sors.views", 1, DataRole.PRODUCTS), DataContract("cbr.sors.views.snapshot", 1, DataRole.PRODUCTS))
-READ_VIEW_SNAPSHOT = _read_snapshot_definition("read_view_snapshot", SorsViewPack,
-    DataContract("cbr.sors.views", 1, DataRole.PRODUCTS), DataContract("cbr.sors.views.snapshot", 1, DataRole.PRODUCTS))
+VIEW_SNAPSHOT = technical_operation(_snapshot_definition("view_snapshot", SorsViewSnapshotRequest,
+    DataContract("cbr.sors.views", 1, DataRole.PRODUCTS), DataContract("cbr.sors.views.snapshot", 1, DataRole.PRODUCTS)), ProcessingFunction.ENCODE)
+READ_VIEW_SNAPSHOT = technical_operation(_read_snapshot_definition("read_view_snapshot", SorsViewPack,
+    DataContract("cbr.sors.views", 1, DataRole.PRODUCTS), DataContract("cbr.sors.views.snapshot", 1, DataRole.PRODUCTS)), ProcessingFunction.REPLAY)

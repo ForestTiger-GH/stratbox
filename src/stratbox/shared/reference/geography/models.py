@@ -12,6 +12,8 @@ from stratbox.shared.identity import ByteIdentity
 
 GEOGRAPHY_KINDS = frozenset({
     "country", "federal_district", "subject", "statistical_aggregate", "other",
+    "municipality", "municipal_district", "municipal_okrug", "urban_okrug",
+    "urban_settlement", "rural_settlement", "intracity_area",
 })
 
 

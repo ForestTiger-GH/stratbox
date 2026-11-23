@@ -4,7 +4,7 @@ from decimal import Decimal
 from .contracts import (CellChange, SheetChange, SheetLayout, TableDiagnostic,
                         WorkbookComparison, WorkbookFlake, WorkbookValidation)
 from .profiles import table_profile, sheet_variant
-from .scalars import encode_scalar
+from stratbox.shared.data.scalars import encode_scalar
 from .snapshots import flake_snapshot
 
 

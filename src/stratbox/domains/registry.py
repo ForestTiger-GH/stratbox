@@ -50,6 +50,9 @@ def _validated_domain_snapshot() -> tuple[
             )
         if not declaration.operations:
             raise RegistryError(f"registry.empty_owner:{owner}")
+        if declaration.source_catalog_ref is not None and not _within(
+                declaration.source_catalog_ref.split(":", 1)[0], f"stratbox.domains.{owner}"):
+            raise RegistryError(f"registry.source_catalog_ownership:{owner}")
         registrations.append((owner, declaration))
 
     owner_packages = {

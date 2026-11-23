@@ -6,7 +6,7 @@ from stratbox.core.formats.spreadsheets.cells import SheetCells, WorkbookCell
 from stratbox.shared.data.snapshots import SnapshotCoverage
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
-from .scalars import encode_scalar
+from stratbox.shared.data.scalars import encode_scalar
 
 
 @dataclass(frozen=True, slots=True)

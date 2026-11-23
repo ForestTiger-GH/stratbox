@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from stratbox.core.execution.semantics import technical_operation, ProcessingFunction
+
 from stratbox.shared.data.comparison import Comparison
 from stratbox.shared.data.releases import (
     CompareReleaseRequest,
@@ -169,17 +171,17 @@ COMPARE = OperationDefinition(
     ),
 )
 
-SNAPSHOT = OperationDefinition("cbr.offices.snapshot", 1, "cbr-offices-snapshot-1",
+SNAPSHOT = technical_operation(OperationDefinition("cbr.offices.snapshot", 1, "cbr-offices-snapshot-1",
     SnapshotOfficesRequest, DatasetSnapshot,
     processing=OperationSemantics((ProcessingStage.RENDER,),
         inputs=(InputPort("release", DataContract("cbr.offices.release", 1, DataRole.EXTRACTS), path="release"),),
         outputs=(OutputPort("snapshot", DataContract("dataset.snapshot", 1)),),
         parameters=("dataset_id", "version_id"),
-        summary="Preserve observation and capture dates, literal cells, qualifications and complete source evidence."))
+        summary="Preserve observation and capture dates, literal cells, qualifications and complete source evidence.")), ProcessingFunction.ENCODE)
 
-RESTORE = OperationDefinition("cbr.offices.restore", 1, "cbr-offices-replay-1",
+RESTORE = technical_operation(OperationDefinition("cbr.offices.restore", 1, "cbr-offices-replay-1",
     DatasetSnapshot, ParsedRelease,
     processing=OperationSemantics((ProcessingStage.READ_EXTRACT,),
         inputs=(InputPort("snapshot", DataContract("dataset.snapshot", 1)),),
         outputs=(OutputPort("release", DataContract("cbr.offices.release", 1, DataRole.EXTRACTS)),),
-        summary="Restore a complete qualified office release without assigning a new capture or observation date."))
+        summary="Restore a complete qualified office release without assigning a new capture or observation date.")), ProcessingFunction.REPLAY)

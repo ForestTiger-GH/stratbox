@@ -57,8 +57,12 @@ class OperationRegistration:
     owner_id: str
     operations: tuple[OperationRef, ...]
     stages: tuple[StageDeclaration, ...] = ()
+    source_catalog_ref: str | None = None
 
     def __post_init__(self) -> None:
+        if self.source_catalog_ref is not None and (not isinstance(self.source_catalog_ref, str)
+                or self.source_catalog_ref.count(":") != 1 or not all(self.source_catalog_ref.split(":"))):
+            raise RegistryError("registry.invalid_source_catalog")
         if (
             not isinstance(self.owner_id, str)
             or not self.owner_id.strip()
@@ -231,6 +235,10 @@ class OperationCatalog:
 
     def wire_contract(self, operation_id: str, contract_version: int):
         return _wire_contract(self.reference(operation_id, contract_version))
+
+    def source_catalog(self):
+        from stratbox.core.execution.source_catalog import source_catalog
+        return source_catalog(self)
 
     @property
     def definitions(self) -> tuple[OperationDefinition, ...]:
