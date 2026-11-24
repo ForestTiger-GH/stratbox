@@ -10,5 +10,8 @@ corpus environments retain their own role-equivalent names.
 Use the research here to finalize semantic boundaries and operation contracts,
 including the functional engine model: capability resolution, composition,
 shared execution, qualified result acceptance and value lifetime.
+The callable hierarchy covers commands, standard operations, purposeful
+scenarios and cascades, with explicit contracts, domain bindings, direct
+external invocation and preserved logical outcomes during shared execution.
 Implementation and maintained product documentation retain their own owners;
 research proposals describe target behavior until explicitly implemented.
