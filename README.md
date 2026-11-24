@@ -7,9 +7,11 @@ destinations and can choose their own infrastructure providers.
 The package organizes neutral execution and infrastructure under `stratbox.core`,
 shared data contracts and reference resources under `stratbox.shared`,
 business packages and source declarations under `stratbox.domains`, and
-canonical operation definitions under `stratbox.operations`. The public
-`stratbox.sdk.StrategyBox` facade compiles operations, scenarios and cascades
-through `stratbox.composition` and executes them in one bounded session.
+typed command, operation, scenario and cascade definitions under
+`stratbox.capabilities`. Existing domain declarations remain an explicit
+contribution from `stratbox.operations` during their domain migration.
+The public `stratbox.sdk.StrategyBox` facade prepares all four kinds through
+`stratbox.composition` and executes them in one bounded session.
 
 - [Capability definitions, preparation and execution ownership](docs/architecture/capability-execution.md)
 - [Direct capability calls, temporary graphs and retained results](docs/current-how/capability-session.md)
