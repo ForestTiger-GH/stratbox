@@ -18,7 +18,7 @@ from stratbox.core.execution.contracts import Correlation, Diagnostic, Execution
 from stratbox.core.execution.handoff import (PreparedInput, ProjectedOutput, ResultReference,
     collect_inputs, project_output, resolve_output)
 from stratbox.core.execution.resources import ResourceLedger, ScopedResourceLedger
-from stratbox.core.execution.retention import ResultSpillStore, SpilledResult, ResultMapping, AttemptMapping, retained_size
+from stratbox.core.execution.retention import ResultSpillStore, SpilledResult, ResultMapping, AttemptMapping, ValueMapping, retained_size
 
 _TERMINAL = frozenset({"succeeded", "partial", "failed", "cancelled", "unknown", "blocked", "skipped"})
 _GOOD = frozenset({"succeeded", "partial"})
@@ -45,12 +45,17 @@ class ExecutionSettings:
     retained_bytes: int = 256 * 1024 * 1024
     temporary_bytes: int = 1024 * 1024 * 1024
     event_capacity: int = 4096
+    expansion_tasks: int = 4096
+    expansion_items: int = 100000
+    cache_bytes: int = 64 * 1024 * 1024
+    staging_bytes: int = 256 * 1024 * 1024
     expenditure: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         for name in ("max_workers", "active_runs", "pending_runs", "ready_tasks", "map_window",
                      "network", "per_origin", "parsers", "heavy_parsers", "cpu", "notifications",
-                     "retained_bytes", "temporary_bytes", "event_capacity"):
+                     "retained_bytes", "temporary_bytes", "event_capacity", "expansion_tasks",
+                     "expansion_items", "cache_bytes", "staging_bytes"):
             value = getattr(self, name)
             if type(value) is not int or value < 1:
                 raise ValueError("execution.invalid_settings")
@@ -86,6 +91,9 @@ class RunSnapshot:
     task_count: int | None = None
     completed_count: int | None = None
     task_details_complete: bool = True
+    physical_work_count: int = 0
+    logical_use_count: int = 0
+    scopes: Mapping[str, str] = field(default_factory=dict)
 
     @property
     def completed(self):
@@ -122,15 +130,34 @@ class RunResult:
     diagnostics: tuple[str, ...] = ()
     attempts: Mapping[str, tuple[OperationResult, ...]] = field(default_factory=dict)
     _spill: object | None = field(default=None, repr=False, compare=False)
+    _ownership: object | None = field(default=None, repr=False, compare=False)
+    scopes: Mapping[str, str] = field(default_factory=dict)
+    scope_outputs: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
 
     def close(self):
-        """Release temporary intermediate files; selected outputs stay available."""
-        if self._spill is not None:
+        """Release this result's ownership; existing read leases remain valid."""
+        for name in ("outputs", "results", "attempts", "scope_outputs"):
+            object.__setattr__(self, name, MappingProxyType({}))
+        if self._ownership is not None:
+            self._ownership.close()
+        elif self._spill is not None:
             self._spill.close()
 
+    def read(self, name):
+        """Hold a result lease while reading a retained output."""
+        if self._ownership is None:
+            from contextlib import nullcontext
+            return nullcontext(self.output(name))
+        value = self.outputs._owned(name) if isinstance(self.outputs, ValueMapping) else self.outputs[name]
+        value = value.value if isinstance(value, (ProjectedOutput, PreparedInput)) else value
+        return self._ownership.lease(value)
+
     def output(self, name):
+        if self._ownership is not None and self._ownership.closed:
+            raise RuntimeError("result.closed")
         value = self.outputs[name]
-        return value.value if isinstance(value, (ProjectedOutput, PreparedInput)) else value
+        value = value.value if isinstance(value, (ProjectedOutput, PreparedInput)) else value
+        return ExecutionSession._isolate(value)
 
     @property
     def effects(self):
@@ -154,6 +181,8 @@ class _Task:
     attempt_results: list = field(default_factory=list)
     retained_owner: str | None = None
     selected: bool = False
+    shared_work_id: str | None = None
+    physical_key: str | None = None
 
 
 @dataclass
@@ -166,6 +195,7 @@ class _MapState:
     active: dict = field(default_factory=dict)
     completed: dict = field(default_factory=dict)
     order: list = field(default_factory=list)
+    pending: tuple | None = None
 
 
 @dataclass
@@ -190,6 +220,35 @@ class _Run:
     scopes_started: set = field(default_factory=set)
     scope_ledgers: dict = field(default_factory=dict)
     spill: object | None = None
+    scope_states: dict = field(default_factory=dict)
+    scope_outputs: dict = field(default_factory=dict)
+    scopes_finished: set = field(default_factory=set)
+    scope_specs: dict = field(default_factory=dict)
+    physical_work_count: int = 0
+    logical_use_count: int = 0
+    expanded_items: int = 0
+    final_snapshot: object | None = None
+
+
+@dataclass
+class _PhysicalWork:
+    key: str
+    work_id: str
+    consumers: dict = field(default_factory=dict)
+    future: object | None = None
+    result: object | None = None
+    size: int = 0
+    cache_owner: str | None = None
+
+
+class _SharedCancellation:
+    def __init__(self, session, work):
+        self.session, self.work = session, work
+
+    def is_set(self):
+        # A producer remains live while any eligible logical use needs it.
+        return not any(not self.session._cancelled(run, task)
+                       for run, task in tuple(self.work.consumers.values()))
 
 
 class _Cancellation:
@@ -214,13 +273,29 @@ class RunHandle:
 
     def snapshot(self):
         with self._session._condition:
-            return self._session._snapshot_run(self._run)
+            if self._run.final_snapshot is not None:
+                return self._run.final_snapshot
+            return self._session.snapshot(self.run_id)
 
     def cancel(self, scope_id=None):
         return False if self.done() else self._session.cancel(self.run_id, scope_id=scope_id)
 
     def events(self, after=0):
         return self._session.events(after=after, run_id=self.run_id)
+
+    def output(self, name):
+        """Read an already accepted output without waiting for sibling scopes."""
+        with self._session._condition:
+            if self.done():
+                return self.result().output(name)
+            value = self._session._accepted_output(self._run, self._run.plan.outputs[name])
+            if isinstance(value, (PreparedInput, ProjectedOutput)):
+                value = value.value
+            return self._session._isolate(value)
+
+    def scope_states(self):
+        with self._session._condition:
+            return dict(self._run.scope_states)
 
 
 class ExecutionSession:
@@ -248,7 +323,8 @@ class ExecutionSession:
         self.ledger = ResourceLedger({"worker": self.settings.max_workers, "network": self.settings.network,
             "parse": self.settings.parsers, "heavy_parse": self.settings.heavy_parsers,
             "cpu": self.settings.cpu, "notification": self.settings.notifications,
-            "retained_bytes": self.settings.retained_bytes, "temporary_bytes": self.settings.temporary_bytes}, expenditure=self.settings.expenditure,
+            "retained_bytes": self.settings.retained_bytes, "temporary_bytes": self.settings.temporary_bytes,
+            "cache_bytes": self.settings.cache_bytes, "staging_bytes": self.settings.staging_bytes}, expenditure=self.settings.expenditure,
             per_origin=self.settings.per_origin)
         from stratbox.core.observability.capture.orchestration import OrchestrationJournal
         self.journal = OrchestrationJournal(self.session_id, max_records=self.settings.event_capacity,
@@ -263,6 +339,9 @@ class ExecutionSession:
         self._pending = deque()
         self._active = deque()
         self._running = {}
+        self._shared_work = OrderedDict()
+        from stratbox.core.execution.effects import EffectAuthority
+        self.effects = EffectAuthority()
         self._closing = False
         self._closed = False
         self._pool = None
@@ -296,18 +375,11 @@ class ExecutionSession:
             if len(self._pending) >= self.settings.pending_runs:
                 raise RuntimeError("execution.run_queue_full")
             run = _Run(plan, uuid4().hex, context or self.context)
+            self.effects.begin_run(run.run_id)
             run.deadline = None if timeout is None else monotonic() + timeout
             self._add_scopes(run, plan.scopes)
             self._add_tasks(run, plan.tasks)
             self._select_outputs(run, plan.outputs)
-            for task in run.tasks.values():
-                if task.spec.operation_id is not None:
-                    self.ledger.validate(self._requirements(task.spec))
-            if any(task.spec.operation_id is not None and "http" in (
-                    self.catalog.get(task.spec.operation_id).required_capabilities |
-                    self.catalog.get(task.spec.operation_id).optional_capabilities)
-                   for task in run.tasks.values()):
-                self._prepare_network(run.context)
             self.journal.reserve_run(run.run_id)
             self._runs[run.run_id] = run
             self._pending.append(run.run_id)
@@ -319,7 +391,25 @@ class ExecutionSession:
     def run(self, plan, **options):
         return self.submit(plan, **options).result()
 
-    def _add_tasks(self, run, specs, *, item_key=None):
+    def _admit_specs(self, run, specs):
+        """Apply the same ceilings and provider preparation to every expansion."""
+        others = [other for other in self._runs.values() if other is not run]
+        occupied = sum(task.state not in _TERMINAL for other in (*others, run)
+                       for task in other.tasks.values())
+        if occupied + len(specs) > self.settings.expansion_tasks:
+            raise ValueError("execution.expansion_capacity")
+        for spec in specs:
+            if spec.operation_id is None:
+                continue
+            self.ledger.validate(self._requirements(spec))
+            definition = self.catalog.get(spec.operation_id)
+            if "http" in definition.required_capabilities | definition.optional_capabilities:
+                self._prepare_network(run.context)
+
+    def _add_tasks(self, run, specs, *, item_key=None, admitted=False):
+        specs = tuple(specs)
+        if not admitted:
+            self._admit_specs(run, specs)
         for spec in specs:
             if spec.task_id in run.tasks:
                 raise ValueError("execution.duplicate_task")
@@ -346,10 +436,15 @@ class ExecutionSession:
             revision=self.journal.health_snapshot().emitted,
             event_cursor=self.journal.event_cursor,
             total_known=all(task.spec.map is None or (task.map_state is not None and task.map_state.exhausted)
-                            for task in run.tasks.values()))
+                            for task in run.tasks.values()),
+            physical_work_count=run.physical_work_count,
+            logical_use_count=run.logical_use_count,
+            scopes=MappingProxyType(dict(run.scope_states)))
 
     def _add_scopes(self, run, scopes):
         for scope in scopes:
+            run.scope_specs[scope.scope_id] = scope
+            run.scope_states[scope.scope_id] = "waiting"
             parent = run.scope_ledgers.get(scope.parent_id, self.ledger)
             # A dynamic item inherits its enclosing map scope.
             if scope.parent_id is None:
@@ -391,6 +486,11 @@ class ExecutionSession:
                 for task in run.tasks.values():
                     if self._scope_cancelled(run, task):
                         task.token.set()
+            for task in run.tasks.values():
+                if scope_id is None or self._scope_cancelled(run, task):
+                    correlation = self._correlation(run, task)
+                    self.effects.invalidate_attempt(run.run_id, correlation.workflow_scope_id,
+                        correlation.task_id, correlation.attempt_id)
             self._emit(run, "run.cancelling", state="cancelling")
             self._condition.notify_all()
             return True
@@ -402,17 +502,28 @@ class ExecutionSession:
                 for run in self._runs.values():
                     if not run.future.done():
                         run.token.set()
+                        self._invalidate_attempts(run)
             self._condition.notify_all()
         if wait and self._thread is not None and current_thread() is not self._thread:
             self._thread.join()
         if self._thread is None:
             self._finish_close()
 
+    def _invalidate_attempts(self, run):
+        for task in run.tasks.values():
+            correlation = self._correlation(run, task)
+            self.effects.invalidate_attempt(run.run_id, correlation.workflow_scope_id,
+                correlation.task_id, correlation.attempt_id)
+
     def _finish_close(self):
         if self._closed:
             return
         if self._pool:
             self._pool.shutdown(wait=True)
+        for work in self._shared_work.values():
+            if work.cache_owner is not None:
+                self.ledger.release(work.cache_owner)
+        self._shared_work.clear()
         if self._network is not None and self._owns_network:
             self._network.close()
         for network in self._networks.values():
@@ -427,7 +538,8 @@ class ExecutionSession:
         if task:
             fields.update(task_id=_token(task.spec.task_id), step_id=_token(task.spec.task_id),
                 workflow_scope_id=_token(task.spec.scope_id), item_key=_token(task.item_key) if task.item_key else None,
-                attempt_id=_token(f"{run.run_id}:{task.spec.task_id}:{task.attempts}"))
+                attempt_id=_token(f"{run.run_id}:{task.spec.task_id}:{task.attempts}"),
+                shared_work_id=task.shared_work_id)
         return Correlation(**fields)
 
     def _emit(self, run, kind, task=None, **fields):
@@ -468,6 +580,19 @@ class ExecutionSession:
 
     def _requirements(self, spec):
         requirements = dict(spec.resources)
+        dynamic = getattr(self.catalog, "resource_requirements", None)
+        if dynamic is not None:
+            try:
+                claims = dynamic(spec.operation_id, spec.parameters)
+            except ValueError:
+                from stratbox.composition import iter_references
+                if not tuple(iter_references(spec.parameters)):
+                    raise
+                # Deferred references have no concrete amount yet. Every
+                # expanded/resolved task enters this same admission again.
+                claims = {}
+            for resource, amount in claims.items():
+                requirements[resource] = max(requirements.get(resource, 0), amount)
         requirements["worker"] = max(1, requirements.get("worker", 0))
         definition = self.catalog.get(spec.operation_id)
         roles = definition.required_capabilities | definition.optional_capabilities
@@ -511,9 +636,11 @@ class ExecutionSession:
                         run = self._runs[rid]
                         if run.deadline is not None and monotonic() >= run.deadline:
                             run.token.set()
+                            self._invalidate_attempts(run)
                             if "execution.deadline" not in run.diagnostics:
                                 run.diagnostics.append("execution.deadline")
                         progress |= self._advance(run)
+                        self._refresh_scopes(run)
                         if all(task.state in _TERMINAL for task in run.tasks.values()):
                             self._finish(run)
                             progress = True
@@ -548,6 +675,14 @@ class ExecutionSession:
         ready = 0
         for task in tuple(run.tasks.values()):
             if task.state in _TERMINAL or task.state == "running":
+                continue
+            if task.state == "shared_wait":
+                if self._cancelled(run, task):
+                    work = self._shared_work.get(task.physical_key)
+                    if work is not None:
+                        work.consumers.pop((run.run_id, task.spec.task_id), None)
+                    self._terminal(run, task, "cancelled", "execution.cancelled")
+                    progress = True
                 continue
             if task.state == "expanding":
                 progress |= self._advance_map(run, task)
@@ -605,12 +740,36 @@ class ExecutionSession:
                 except Exception:
                     self._terminal(run, task, "failed", "execution.map_input_invalid")
                 continue
+            acceptance_scope = getattr(task.spec, "acceptance_scope", None)
+            if acceptance_scope is not None:
+                self._refresh_scopes(run, accepting=acceptance_scope)
+                outcome = run.scope_states.get(acceptance_scope, "failed")
+                self._terminal(run, task, outcome,
+                    None if outcome in _GOOD else "acceptance.scope_failed")
+                progress = True
+                continue
             if task.spec.collect is not None:
                 try:
                     task.outputs["value"] = self._collect(run, task.spec.collect)
                     self._terminal(run, task, task.outputs["value"].outcome)
                 except Exception:
                     self._terminal(run, task, "failed", "execution.collection_invalid")
+                progress = True
+                continue
+            key = self._work_key(run, task)
+            shared = self._shared_work.get(key) if key is not None else None
+            if shared is not None:
+                self._shared_work.move_to_end(key)
+                shared.consumers[(run.run_id, task.spec.task_id)] = (run, task)
+                task.physical_key, task.shared_work_id = key, shared.work_id
+                task.attempts += 1
+                run.logical_use_count += 1 + len(task.spec.aliases)
+                task.state, task.reason = "shared_wait", "shared_work"
+                self._emit(run, "shared_work.attached", task, state="waiting")
+                if shared.result is not None:
+                    self._emit(run, "shared_work.reused", task, state="reused")
+                    self._accept_completion(run, task, shared.cache_owner, shared.result, shared.size)
+                    shared.consumers.pop((run.run_id, task.spec.task_id), None)
                 progress = True
                 continue
             if len(self._running) >= self.settings.max_workers:
@@ -633,8 +792,19 @@ class ExecutionSession:
             task.attempts += 1
             task.state, task.reason = "running", None
             self._emit(run, "task.started", task, state="running")
-            future = self._pool.submit(self._execute, run, task, owner)
-            self._running[future] = (run.run_id, task.spec.task_id, owner)
+            work = None
+            if key is not None:
+                work = _PhysicalWork(key, "shared-" + uuid4().hex,
+                    {(run.run_id, task.spec.task_id): (run, task)})
+                task.physical_key, task.shared_work_id = key, work.work_id
+                self._shared_work[key] = work
+                self._emit(run, "shared_work.started", task, state="running")
+            run.physical_work_count += 1
+            run.logical_use_count += 1 + len(task.spec.aliases)
+            future = self._pool.submit(self._execute, run, task, owner, work)
+            if work is not None:
+                work.future = future
+            self._running[future] = (run.run_id, task.spec.task_id, owner, work)
             future.add_done_callback(self._completed)
             progress = True
             # Round-robin one admission per run; structural transitions continue
@@ -690,7 +860,42 @@ class ExecutionSession:
                                      for member in fields(value) if member.init})
         return deepcopy(value)
 
-    def _execute(self, run, task, owner):
+    def _work_key(self, run, task):
+        if not getattr(task.spec, "reuse_eligible", False):
+            return None
+        try:
+            from stratbox.core.execution.values import argument_identity
+            definition = self.catalog.get(task.spec.operation_id)
+            # Effectful writes retain their own invocation authority. Read-only
+            # acquisition can share only with an explicitly frozen observation.
+            if definition.possible_effects - {"network.receive"}:
+                return None
+            parameters = self._parameter_values(self._resolve(run, task.spec.parameters))
+            if "network.receive" in definition.possible_effects and (
+                    parameters.get("allow_network", True) is not True or parameters.get("freshness") == "fresh"):
+                return None
+            inputs = self._parameter_values(self._resolve(run, task.spec.inputs))
+            providers = tuple(sorted((binding.capability.role, binding.provider_id,
+                binding.scope_id, id(binding.provider),
+                getattr(getattr(binding.provider, "scope", None), "identity", None))
+                for binding in run.context.bindings))
+            from stratbox.capabilities.model.reuse import WorkIdentity
+            identity = WorkIdentity(task.spec.operation_id, task.spec.method_fingerprint or "",
+                tuple(sorted((name, argument_identity(value).sha256) for name, value in inputs.items())),
+                argument_identity(parameters).sha256,
+                method_fingerprint=task.spec.method_fingerprint or "",
+                access_scope=sha256(repr((providers, run.context.profile,
+                    argument_identity((run.context.budget, run.context.ceiling)).sha256)).encode()).hexdigest(),
+                observation=str((parameters.get("observation_id") or parameters.get("observation") or run.run_id)
+                    if "network.receive" in definition.possible_effects else ""),
+                freshness=str(parameters.get("freshness", "")),
+                state_epoch=str(parameters.get("state_epoch", "")))
+            return sha256((identity.fingerprint + ":" + str(task.attempts + 1)).encode()).hexdigest()
+        except (ValueError, TypeError, AttributeError):
+            # Unsupported values are executable, but cannot promise equality.
+            return None
+
+    def _execute(self, run, task, owner, work=None):
         inputs = self._isolate(self._resolve(run, task.spec.inputs))
         parameters = self._isolate(self._parameter_values(self._resolve(run, task.spec.parameters)))
         from stratbox.core.execution.methods import method_descriptor
@@ -698,20 +903,30 @@ class ExecutionSession:
         fingerprint = method_descriptor(definition, work=None if definition.method_refs else handler).identity.sha256
         if definition.method_id != task.spec.method_id or fingerprint != task.spec.method_fingerprint:
             raise ValueError("execution.method_changed")
-        context = replace(run.context, correlation=self._correlation(run, task),
-            cancellation=_Cancellation(run.token, task.token, run.context.cancellation),
+        correlation = self._correlation(run, task)
+        self.effects.begin_attempt(run.run_id, correlation.workflow_scope_id,
+            correlation.task_id, correlation.attempt_id)
+        context = replace(run.context, correlation=correlation, effect_authority=self.effects,
+            cancellation=(_SharedCancellation(self, work) if work is not None else
+                          _Cancellation(run.token, task.token, run.context.cancellation)),
             resource_ledger=run.scope_ledgers.get(task.spec.scope_id, self.ledger),
             sink=self.journal.operation_sink(run.context.sink))
         from stratbox.core.runtime.capabilities import ProviderBinding, CapabilityRequirement
         from stratbox.core.network import AccessScope
         bindings = []
         has_http = False
+        observation_id = run.run_id
+        if "network.receive" in definition.possible_effects:
+            observation_id = parameters.get("observation_id") or run.run_id
+            if parameters.get("freshness") == "fresh":
+                observation_id = f"{run.run_id}:{task.spec.task_id}:{task.attempts}"
+            observation_id = "observation-" + sha256(str(observation_id).encode()).hexdigest()
         for binding in context.bindings:
             if binding.capability.role == "http":
                 has_http = True
                 network = self._networks.get(id(binding.provider))
                 if network is not None:
-                    transport = network.transport_for(run.run_id,
+                    transport = network.transport_for(observation_id,
                         scope=AccessScope(binding.provider_id, binding.scope_id or
                             getattr(getattr(binding.provider, "scope", None), "scope_id", "public"), profile=context.profile),
                         reservation_owner=owner, ledger=self.ledger,
@@ -719,7 +934,7 @@ class ExecutionSession:
                     binding = replace(binding, provider=transport)
             bindings.append(binding)
         if not has_http and self._network is not None:
-            transport = self._network.transport_for(run.run_id, scope=AccessScope(profile=context.profile),
+            transport = self._network.transport_for(observation_id, scope=AccessScope(profile=context.profile),
                 reservation_owner=owner, ledger=self.ledger,
                         run_id=run.run_id, task_id=_token(task.spec.task_id))
             bindings.append(ProviderBinding("session.http", CapabilityRequirement("http"), "ready", transport))
@@ -739,10 +954,12 @@ class ExecutionSession:
         for binding in http:
             if id(binding.provider) not in self._networks:
                 self._networks[id(binding.provider)] = SessionNetwork(transport=binding.provider, owned=False, journal=self.journal,
-                    per_origin=self.settings.per_origin, max_bytes=self.settings.retained_bytes)
+                    per_origin=self.settings.per_origin, max_bytes=self.settings.cache_bytes,
+                    max_staging_bytes=self.settings.staging_bytes, staging_ledger=self.ledger)
         if not http and self._network is None:
             self._network = SessionNetwork(journal=self.journal, per_origin=self.settings.per_origin,
-                                           max_bytes=self.settings.retained_bytes)
+                                           max_bytes=self.settings.cache_bytes,
+                                           max_staging_bytes=self.settings.staging_bytes, staging_ledger=self.ledger)
 
     @staticmethod
     def _parameter_values(value):
@@ -765,53 +982,118 @@ class ExecutionSession:
                 future = self._completions.get_nowait()
             except Empty:
                 return
-            rid, tid, owner = self._running.pop(future)
+            rid, tid, owner, work = self._running.pop(future)
             self.ledger.release(owner)
-            run, task = self._runs[rid], self._runs[rid].tasks[tid]
+            consumers = (((self._runs[rid], self._runs[rid].tasks[tid]),) if work is None else
+                         tuple(work.consumers.values()))
             try:
                 result, size = future.result()
-                if not isinstance(result, OperationResult):
-                    raise TypeError("execution.result_required")
-                if result.value is not None:
-                    retained_owner = owner + ":retained:" + str(task.attempts)
-                    try:
-                        retained = self.ledger.reserve(retained_owner, {"retained_bytes": size})
-                    except ValueError:
-                        retained = False
-                    if retained:
-                        run.retained_owners.append(retained_owner)
-                        task.retained_owner = retained_owner
-                    else:
-                        result = replace(result, value=None,
-                            outcome="unknown" if result.outcome == "unknown" else "failed",
-                            diagnostics=(*result.diagnostics, Diagnostic("resource.retained_bytes")))
-                task.result = result
-                task.attempt_results.append(result)
-                try:
-                    self.journal.capture_result(result, correlation=self._correlation(run, task))
-                except Exception:
-                    if "execution.observation_degraded" not in run.diagnostics:
-                        run.diagnostics.append("execution.observation_degraded")
-                retry = task.spec.retry
-                codes = {diagnostic.code for diagnostic in result.diagnostics}
-                may_retry = (result.outcome in {"failed", "partial"} and not result.effects
-                    and task.attempts < retry.max_attempts and bool(codes & set(retry.retry_codes))
-                    and not self._cancelled(run, task))
-                if may_retry:
-                    task.state, task.reason = "retry_wait", "retry"
-                    task.next_attempt = monotonic() + retry.delay
-                    self._emit(run, "task.retry", task, state="retry_wait")
+                error = None
+            except BaseException as failure:
+                result, size, error = None, 0, failure
+            if work is not None:
+                work.consumers.clear()
+                if error is None and result.outcome == "succeeded" and all(
+                        effect.kind == "network.receive" and effect.state == "confirmed" for effect in result.effects):
+                    self._cache_work(work, result, size)
                 else:
-                    self._terminal(run, task, result.outcome,
-                        result.diagnostics[0].code if result.diagnostics else None)
-            except BaseException as error:
-                # Handler exceptions are usually qualified by its runner. A
-                # binder or contract failure has no fabricated operation result.
-                code = getattr(error, "code", None)
-                self._terminal(run, task, "failed", code if isinstance(code, str) else "execution.task_error")
-            self._reclaim(run)
-            if run.plan.policy == "fail_fast" and task.spec.required and task.state in {"failed", "unknown"}:
-                run.token.set()
+                    self._shared_work.pop(work.key, None)
+            for run, task in consumers:
+                if task.state in _TERMINAL:
+                    continue
+                self._accept_completion(run, task, owner, result, size, error)
+
+    def _cache_work(self, work, result, size):
+        completed = [key for key, candidate in self._shared_work.items() if candidate.cache_owner is not None]
+        while len(completed) >= self.settings.ready_tasks:
+            retired = self._shared_work.pop(completed.pop(0))
+            self.ledger.release(retired.cache_owner)
+        owner = "cache:" + work.work_id
+        while True:
+            try:
+                reserved = self.ledger.reserve(owner, {"cache_bytes": size})
+            except ValueError:
+                reserved = False
+            if reserved:
+                work.result, work.size, work.cache_owner = result, size, owner
+                work.future = None
+                return
+            self.ledger.release(owner)
+            victim = next((key for key, candidate in self._shared_work.items()
+                           if key != work.key and candidate.cache_owner is not None), None)
+            if victim is None:
+                self._shared_work.pop(work.key, None)
+                return
+            retired = self._shared_work.pop(victim)
+            self.ledger.release(retired.cache_owner)
+
+    def _accept_completion(self, run, task, owner, result, size, error=None):
+        try:
+            if error is not None:
+                raise error
+            logically_cancelled = self._cancelled(run, task) and result.outcome != "unknown"
+            if not isinstance(result, OperationResult):
+                raise TypeError("execution.result_required")
+            if result.value is not None:
+                try:
+                    from stratbox.core.execution.values.ownership import accept_owned_value
+                    from stratbox.shared.data.processing import DataContract
+                    processing = result.definition.processing
+                    contract = (processing.outputs[0].contract if processing and len(processing.outputs) == 1
+                                else DataContract("execution.command-result"))
+                    def validate(value):
+                        snapshot = getattr(self.catalog, "snapshot", None)
+                        if snapshot is not None and getattr(task.spec, "capability_kind", "operation") == "command":
+                            authored = snapshot.definition(task.spec.operation_id)
+                            outputs = ({next(iter(authored.outputs)): value} if len(authored.outputs) == 1 else
+                                {name: value[name] if isinstance(value, Mapping) else getattr(value, name)
+                                 for name in authored.outputs})
+                            for name, port in authored.outputs.items():
+                                port.validate(outputs[name])
+                            authored.acceptance.validate(outputs)
+                        elif processing is not None:
+                            detached = replace(result, value=value)
+                            for port in processing.outputs:
+                                project_output(detached, port.name)
+                    transfer = accept_owned_value(result.value, contract, ledger=self.ledger,
+                        max_resident_bytes=self.settings.retained_bytes,
+                        max_staging_bytes=self.settings.staging_bytes, checks=(validate,))
+                    result = replace(result, value=transfer.value)
+                    run.retained_owners.append(transfer.owner)
+                    task.retained_owner = transfer.owner
+                except (ValueError, TypeError) as error:
+                    code = str(error)
+                    code = code if code.startswith(("resource.", "acceptance.")) else "acceptance.value_rejected"
+                    result = replace(result, value=None,
+                        outcome="unknown" if result.outcome == "unknown" else "failed",
+                        diagnostics=(*result.diagnostics, Diagnostic(code)))
+            task.result = result
+            task.attempt_results.append(result)
+            try:
+                self.journal.capture_result(result, correlation=self._correlation(run, task))
+            except Exception:
+                if "execution.observation_degraded" not in run.diagnostics:
+                    run.diagnostics.append("execution.observation_degraded")
+            retry = task.spec.retry
+            codes = {diagnostic.code for diagnostic in result.diagnostics}
+            may_retry = (result.outcome in {"failed", "partial"} and not result.effects
+                and task.attempts < retry.max_attempts and bool(codes & set(retry.retry_codes))
+                and not self._cancelled(run, task))
+            if logically_cancelled:
+                self._terminal(run, task, "cancelled", "execution.cancelled")
+            elif may_retry:
+                task.state, task.reason = "retry_wait", "retry"
+                task.next_attempt = monotonic() + retry.delay
+                self._emit(run, "task.retry", task, state="retry_wait")
+            else:
+                self._terminal(run, task, result.outcome,
+                    result.diagnostics[0].code if result.diagnostics else None)
+        except BaseException as error:
+            code = getattr(error, "code", None)
+            self._terminal(run, task, "failed", code if isinstance(code, str) else "execution.task_error")
+        self._reclaim(run)
+        if run.plan.policy == "fail_fast" and task.spec.required and task.state in {"failed", "unknown"}:
+            run.token.set()
 
     def _reclaim(self, run):
         # A completed producer can leave memory when every admitted consumer
@@ -842,6 +1124,7 @@ class ExecutionSession:
             task.retained_owner = None
 
     def _terminal(self, run, task, state, reason=None):
+        self.ledger.release(f"{run.run_id}:{task.spec.task_id}")
         task.state, task.reason = state, reason
         self._emit(run, "task.finished", task, state=state,
                    outcome=state if state in {"succeeded", "partial", "failed", "cancelled", "unknown"} else None,
@@ -901,34 +1184,61 @@ class ExecutionSession:
         # shared expansion credit that its descendants would need to progress.
         while not state.exhausted and len(state.active) < state.window:
             try:
-                input_key, value = next(state.iterator)
-            except StopIteration:
-                state.exhausted = True
-                self._emit(run, "map.closed", task, state="expanding", total=len(state.order))
-                break
-            except Exception:
-                state.exhausted = True
-                task.reason = "execution.map_discovery_failed"
-                break
-            try:
-                field = task.spec.map.key_field
-                key = str((value[field] if isinstance(value, Mapping) else getattr(value, field)) if field else input_key)
-                if key in state.keys:
-                    raise ValueError("execution.map_duplicate_key")
-                state.keys.add(key)
-                state.order.append(key)
-                state.next_index += 1
-                selected = replace(task.spec, map=replace(task.spec.map,
-                    inputs=self._resolve(run, task.spec.map.inputs)))
-                plan = expand_map_item(run.plan, selected, key, value, self.catalog)
+                if state.pending is not None:
+                    key, plan = state.pending
+                else:
+                    try:
+                        input_key, value = next(state.iterator)
+                    except StopIteration:
+                        state.exhausted = True
+                        self._emit(run, "map.closed", task, state="expanding", total=len(state.order))
+                        break
+                    except Exception:
+                        state.exhausted = True
+                        task.reason = "execution.map_discovery_failed"
+                        break
+                    maximum = getattr(task.spec.map, "max_items", None)
+                    if run.expanded_items >= self.settings.expansion_items or (
+                            maximum is not None and state.next_index >= maximum):
+                        state.exhausted = True
+                        task.reason = "execution.expansion_items"
+                        break
+                    field = task.spec.map.key_field
+                    key = str((value[field] if isinstance(value, Mapping) else getattr(value, field)) if field else input_key)
+                    if key in state.keys:
+                        raise ValueError("execution.map_duplicate_key")
+                    state.keys.add(key)
+                    state.order.append(key)
+                    state.next_index += 1
+                    run.expanded_items += 1
+                    selected = replace(task.spec, map=replace(task.spec.map,
+                        inputs=self._resolve(run, task.spec.map.inputs)))
+                    plan = expand_map_item(run.plan, selected, key, value, self.catalog)
+                    state.pending = key, plan
+                try:
+                    self._admit_specs(run, plan.tasks)
+                except ValueError as error:
+                    if str(error) != "execution.expansion_capacity":
+                        raise
+                    # Keep this exact item and its selected bindings while
+                    # another admitted item drains. No worker waits for credit.
+                    live = [candidate for other in self._runs.values() for candidate in other.tasks.values()
+                            if candidate.state not in _TERMINAL]
+                    if not self._running and not any(candidate.spec.operation_id is not None for candidate in live):
+                        raise ValueError("execution.expansion_unsatisfiable")
+                    break
                 self._add_scopes(run, plan.scopes)
-                self._add_tasks(run, plan.tasks, item_key=key)
+                self._add_tasks(run, plan.tasks, item_key=key, admitted=True)
                 self._select_outputs(run, plan.outputs)
                 state.active[key] = plan
-                self._emit(run, "map.expanded", task, state="expanding", completed=len(state.order))
-            except Exception:
+                state.pending = None
+                self._emit(run, "map.expanded", task, state="expanding", completed=len(state.order),
+                    total=None, denominator_open=True)
+            except Exception as error:
                 state.exhausted = True
-                task.reason = "execution.map_expansion_failed"
+                state.pending = None
+                code = str(error)
+                task.reason = code if code.startswith(("execution.", "resource.", "capability.")) else "execution.map_expansion_failed"
             progress = True
         if state.exhausted and not state.active:
             names = set(task.spec.map.body.outputs)
@@ -964,7 +1274,7 @@ class ExecutionSession:
                 del run.tasks[key]
         for scope in tuple(run.scope_ledgers):
             if prefix and (scope + "/").startswith(prefix):
-                if scope in run.scopes_started:
+                if scope in run.scopes_started and scope not in run.scopes_finished:
                     self._scope_event(run, scope, "scope.finished", self._outcome(
                         self._task(run, spec.task_id) for spec in plan.tasks))
                     run.scopes_started.remove(scope)
@@ -986,25 +1296,155 @@ class ExecutionSession:
             return "partial"
         return "succeeded"
 
+    def _required_effect_confirmed(self, run, key):
+        root = self._task(run, key)
+        scope_id = getattr(root.spec, "acceptance_scope", None)
+        candidates = ([root] if root.spec.operation_id is not None else
+            [task for task in self._all_tasks(run) if task.spec.operation_id is not None and
+                scope_id is not None and (task.spec.scope_id == scope_id or task.spec.scope_id.startswith(scope_id + "/"))
+                and task.spec.required])
+        effectful = [task for task in candidates if self.catalog.get(task.spec.operation_id).possible_effects]
+        if not effectful:
+            return False
+        for task in effectful:
+            result = task.result.resolve() if isinstance(task.result, SpilledResult) else task.result
+            if result is None or not result.effects or any(effect.state != "confirmed" for effect in result.effects):
+                return False
+        return True
+
+    def _refresh_scopes(self, run, accepting=None):
+        """Accept semantic boundaries independently of unrelated sibling work."""
+        for scope_id, scope in reversed(tuple(run.scope_specs.items())):
+            if scope_id in run.scopes_finished:
+                continue
+            acceptance_tasks = [task for task in run.tasks.values()
+                if getattr(task.spec, "acceptance_scope", None) == scope_id]
+            if acceptance_tasks and accepting != scope_id and any(
+                    task.state not in _TERMINAL for task in acceptance_tasks):
+                continue
+            members = [task for task in self._all_tasks(run)
+                if (task.spec.scope_id == scope_id or task.spec.scope_id.startswith(scope_id + "/"))
+                and not (accepting == scope_id and getattr(task.spec, "acceptance_scope", None) == scope_id)]
+            if any(task.state not in _TERMINAL for task in members):
+                run.scope_states[scope_id] = "running"
+                continue
+            outcome = self._outcome(members)
+            outputs = {}
+            try:
+                for name, reference in getattr(scope, "outputs", {}).items():
+                    port = getattr(scope, "output_contracts", {}).get(name)
+                    try:
+                        projected = self._resolve(run, reference)
+                    except (KeyError, ValueError):
+                        if port is not None and not port.required:
+                            continue
+                        raise
+                    value = projected.value if isinstance(projected, (PreparedInput, ProjectedOutput)) else projected
+                    if port is not None:
+                        port.validate(value)
+                        if port.schema is not None and isinstance(projected, (PreparedInput, ProjectedOutput)) and projected.contract != port.schema:
+                            raise ValueError("acceptance.schema_mismatch")
+                        qualifications = getattr(projected, "qualifications", frozenset())
+                        if not port.qualifications <= qualifications:
+                            raise ValueError("acceptance.qualification_missing")
+                        coverage = getattr(projected, "coverage", frozenset())
+                        if port.expected_coverage and not port.expected_coverage <= coverage:
+                            raise ValueError("acceptance.coverage_missing")
+                    outputs[name] = value
+                checks = getattr(scope, "required_checks", ())
+                effects = getattr(scope, "required_effects", ())
+                if any(self._task(run, key).state != "succeeded" for key in (*checks, *effects)):
+                    raise ValueError("acceptance.obligation_unconfirmed")
+                if any(not self._required_effect_confirmed(run, key) for key in effects):
+                    raise ValueError("acceptance.effect_unconfirmed")
+                acceptance = getattr(scope, "acceptance", None)
+                if acceptance is not None:
+                    acceptance.validate(outputs)
+                    if outcome == "partial" and not acceptance.partial_allowed:
+                        raise ValueError("acceptance.partial_disallowed")
+            except (KeyError, ValueError, TypeError, AttributeError) as error:
+                if outcome not in {"unknown", "cancelled"}:
+                    outcome = "failed"
+                code = str(error)
+                run.diagnostics.append(code if code.startswith("acceptance.") else "acceptance.output_unavailable")
+                outputs = {}
+            run.scope_states[scope_id] = outcome
+            run.scope_outputs[scope_id] = outputs if outcome in _GOOD else {}
+            run.scopes_finished.add(scope_id)
+            if outcome in _GOOD and getattr(scope, "kind", None) == "operation":
+                self._accepted_facts(run, scope, outputs, outcome)
+            self._scope_event(run, scope_id, "scope.finished", outcome)
+
+    def _accepted_facts(self, run, scope, outputs, outcome):
+        from stratbox.core.execution.values import value_identity
+        for name, value in outputs.items():
+            port = getattr(scope, "output_contracts", {}).get(name)
+            role = getattr(getattr(port, "schema", None), "role", None)
+            if role is None:
+                continue
+            try:
+                identity = value_identity(value)
+                acceptance_id = _token(f"{run.run_id}:{scope.scope_id}:{name}")
+                value_id = _token(f"{scope.definition_id}:{name}:{identity.sha256}")
+                qualification = ("derived" if scope.definition_id.startswith("calculate.") else
+                    next(iter(sorted(port.qualifications)), "reported"))
+                coverage = getattr(value, "coverage", None)
+                complete = outcome == "succeeded" and (
+                    getattr(coverage, "status", None) == "complete" or bool(port.expected_coverage))
+                from stratbox.core.execution.value_context import value_context
+                source_ids = value_context(value, port.schema).source_ids
+                source_id = next(iter(source_ids)) if len(source_ids) == 1 else getattr(value, "source_id", None)
+                self.journal.accepted_value(replace(self._correlation(run),
+                    workflow_scope_id=_token(scope.scope_id)), value_id=value_id,
+                    stage=scope.definition_id, role=role.value, identity=identity,
+                    source_id=source_id, qualification=qualification,
+                    complete=complete, acceptance_id=acceptance_id)
+            except Exception:
+                if "execution.observation_degraded" not in run.diagnostics:
+                    run.diagnostics.append("execution.observation_degraded")
+
+    def _accepted_output(self, run, reference):
+        from stratbox.composition import iter_references
+        requested = {(ref.task, ref.port) for ref in iter_references(reference)}
+        for scope_id, scope in run.scope_specs.items():
+            if getattr(scope, "kind", None) != "operation":
+                continue
+            exported = {(ref.task, ref.port) for ref in iter_references(scope.outputs)}
+            if requested & exported and run.scope_states.get(scope_id) not in _GOOD:
+                raise ValueError("acceptance.output_unavailable")
+        return self._resolve(run, reference)
+
     def _finish(self, run):
         all_tasks = tuple(self._all_tasks(run))
         outputs, diagnostics = {}, [*run.diagnostics, *(task.reason for task in all_tasks
             if task.reason and task.state in {"failed", "blocked", "partial", "unknown", "cancelled"})]
         outcome = self._outcome(run.tasks[spec.task_id] for spec in run.plan.tasks)
+        root_scopes = [scope for scope in run.plan.scopes if scope.parent_id is None]
+        if root_scopes:
+            outcome = run.scope_states.get(root_scopes[0].scope_id, outcome)
+        root_contracts = getattr(root_scopes[0], "output_contracts", {}) if root_scopes else {}
         for name, reference in run.plan.outputs.items():
             try:
-                outputs[name] = self._resolve(run, reference)
+                outputs[name] = self._accepted_output(run, reference)
             except (KeyError, ValueError):
+                port = root_contracts.get(name)
+                if port is not None and not port.required:
+                    continue
                 diagnostics.append("execution.output_unavailable")
                 if outcome in _GOOD:
                     outcome = "failed"
         run.state, run.finished_at = outcome, monotonic()
-        result = RunResult(run.run_id, run.plan.plan_id, outcome, MappingProxyType(outputs),
+        from stratbox.core.execution.retention import ResultOwnership
+        ownership = ResultOwnership(self.ledger, tuple(run.retained_owners), run.spill)
+        result = RunResult(run.run_id, run.plan.plan_id, outcome, ValueMapping(outputs),
             ResultMapping({task.spec.task_id: task.result for task in all_tasks if task.result is not None}),
             tuple(self._task_snapshot(task) for task in all_tasks), tuple(dict.fromkeys(diagnostics)),
-            AttemptMapping({task.spec.task_id: tuple(task.attempt_results) for task in all_tasks if task.attempt_results}), run.spill)
+            AttemptMapping({task.spec.task_id: tuple(task.attempt_results) for task in all_tasks if task.attempt_results}), run.spill,
+            ownership, MappingProxyType(dict(run.scope_states)),
+            MappingProxyType({key: ValueMapping(value) for key, value in run.scope_outputs.items()}))
         counters = {state: sum(task.state == state for task in all_tasks) for state in _TERMINAL}
-        for scope in run.scopes_started:
+        counters.update(physical_work=run.physical_work_count, logical_uses=run.logical_use_count)
+        for scope in run.scopes_started - run.scopes_finished:
             scoped = [task for task in all_tasks if task.spec.scope_id == scope or task.spec.scope_id.startswith(scope + "/")]
             try:
                 self.journal.emit("scope.finished", replace(self._correlation(run), workflow_scope_id=_token(scope)),
@@ -1016,10 +1456,6 @@ class ExecutionSession:
                    service=bool([task for task in all_tasks if task.spec.operation_id]) and
                        all(task.spec.operation_id.startswith(("notifications.", "notification.", "subscription."))
                            for task in all_tasks if task.spec.operation_id))
-        for owner in run.retained_owners:
-            self.ledger.release(owner)
-        if run.spill is not None:
-            run.spill.release_capacity()
         snapshot = self._snapshot_run(run)
         detail_limit = self.settings.event_capacity
         self._history[run.run_id] = replace(snapshot, tasks=snapshot.tasks[-detail_limit:],
@@ -1029,4 +1465,13 @@ class ExecutionSession:
                sum(len(item.tasks) for item in self._history.values()) > detail_limit):
             self._history.popitem(last=False)
         self._runs.pop(run.run_id, None)
+        run.final_snapshot = self._history.get(run.run_id, snapshot)
+        # A RunHandle retains its lightweight run record. Payload ownership has
+        # transferred to RunResult, so the handle must not keep a second graph.
+        run.tasks.clear()
+        run.archived.clear()
+        run.order.clear()
+        run.scope_specs.clear()
+        run.scope_outputs.clear()
+        run.plan, run.spill = None, None
         run.future.set_result(result)

@@ -10,7 +10,7 @@ from typing import Literal
 from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
 from stratbox.core.observability.records.event_schemas import (
-    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED, RUN_FINISHED,
+    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED, RUN_FINISHED, VALUE_ACCEPTED, EFFECT_CONFIRMED,
 )
 from stratbox.core.observability.records.schema import ValueRule
 
@@ -230,6 +230,27 @@ def _bytes_changed(record: JournalRecord, data: Data) -> bool:
     return data["old_sha256"] != data["new_sha256"]
 
 
+def _accepted_value(record: JournalRecord, data: Data) -> bool:
+    if (record.subject is None or record.subject.namespace != "value"
+            or record.subject.object_id != data["value_id"]
+            or record.subject.identity is None
+            or record.subject.identity.sha256 != data["identity"]["sha256"]
+            or record.subject.identity.size != data["identity"]["size"]):
+        raise ValueError("journal.acceptance_identity_mismatch")
+    return True
+
+
+def _confirmed_effect(record: JournalRecord, data: Data) -> bool:
+    if (record.subject is None or record.subject.namespace != "effect"
+            or record.subject.object_id != data["effect_id"]
+            or record.correlation.effect_id != data["effect_id"]):
+        raise ValueError("journal.effect_identity_mismatch")
+    identity = record.subject.identity
+    if data["identity"] != (dict(sha256=identity.sha256, size=identity.size) if identity is not None else None):
+        raise ValueError("journal.effect_identity_mismatch")
+    return not data["effect_kind"].startswith(("notification.", "notifications."))
+
+
 def _original_committed(record: JournalRecord, data: Data) -> bool:
     from stratbox.shared.source_publications import SourceAssetIdentity
     try:
@@ -278,6 +299,14 @@ _operation = _project(OPERATION_FINISHED, "operation_summary", "operation_id", "
 _run_summary = _project(RUN_FINISHED, "run_summary", "run_id", "plan_id", "outcome",
                         "counters", "completed", "total", "reason")
 _builtin_topics = (
+    NotificationTopic("effect.confirmed", 1, (EFFECT_CONFIRMED.key,), (
+        _project(EFFECT_CONFIRMED, "confirmed_effect", *(field.name for field in EFFECT_CONFIRMED.fields)),
+    ), "fact", ("effect_id", "effect_kind", "identity", "destination_id", "guarantee"),
+       frozenset({"effect_kind", "destination_id", "guarantee", "stage"}), _confirmed_effect),
+    NotificationTopic("value.accepted", 1, (VALUE_ACCEPTED.key,), (
+        _project(VALUE_ACCEPTED, "accepted_value", *(field.name for field in VALUE_ACCEPTED.fields)),
+    ), "fact", ("value_id", "stage", "role", "identity", "acceptance_id"),
+       frozenset({"stage", "role", "source_id", "qualification", "complete"}), _accepted_value),
     NotificationTopic("run.completed", 1, (RUN_FINISHED.key,), (_run_summary,),
                       "transition", ("run_id", "plan_id", "outcome", "counters"),
                       frozenset({"run_id", "plan_id", "outcome"}), _run_finished),

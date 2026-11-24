@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from hashlib import sha256
 from queue import Empty, Full, Queue
 from threading import Event, RLock, Thread
 
@@ -62,6 +63,11 @@ class OrchestrationJournal:
                                        source_authority_id="execution.session",
                                        max_records=max_pending_runs,
                                        max_bytes=max_pending_runs * 8192)
+        self.facts_stream = StreamKey(session_id, "execution", "accepted")
+        self.facts_source = LiveJournalSource(self.facts_stream, epoch_id=session_id,
+                                             source_authority_id="execution.acceptance",
+                                             max_records=max_pending_runs,
+                                             max_bytes=max_pending_runs * 8192)
         self._max_records, self._max_bytes = max_records, max_bytes
         self._records = deque()
         self._finished_events = OrderedDict()
@@ -172,11 +178,76 @@ class OrchestrationJournal:
         from stratbox.core.observability.capture.operations import capture_operation_result
         with self._lock:
             finished = self._finished_events.pop(result.invocation_id, None)
+        for receipt in result.effects:
+            try:
+                self.confirmed_effect(correlation or (finished.correlation if finished is not None else Correlation()), receipt)
+            except Exception:
+                with self._lock:
+                    self._publication_failures += 1
         return capture_operation_result(result, self, finished_event=finished, correlation=correlation)
 
     def capture_fact(self, fact, *, operation_id=None, invocation_id=None):
         from stratbox.core.observability.capture.adapters import record_from_fact
         return self.capture(record_from_fact(fact, operation_id=operation_id, invocation_id=invocation_id))
+
+    def accepted_value(self, correlation, *, value_id, stage, role, identity,
+                       source_id=None, qualification="reported", complete=True,
+                       acceptance_id=None, occurred_at_utc=None):
+        """Retain accepted state separately from lossy diagnostic observation."""
+        from stratbox.core.observability.capture.adapters import record_from_fact
+        from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id
+        payload = dict(data_version=1, value_id=value_id, stage=stage, role=role,
+                       identity=dict(sha256=identity.sha256, size=identity.size),
+                       source_id=source_id, qualification=qualification, complete=complete,
+                       acceptance_id=acceptance_id or sha256(
+                           f"{correlation.session_id}:{correlation.run_id}:{correlation.workflow_scope_id}:{correlation.task_id}:{value_id}".encode()).hexdigest())
+        subject = ObjectRef("value", value_id, identity=identity)
+        fact_id = make_fact_id("value.accepted", subject, payload)
+        fact = DomainFact("value.accepted", subject, fact_id,
+                          occurred_at_utc or datetime.now(timezone.utc), payload,
+                          observation_id=fact_id, correlation=correlation)
+        record = record_from_fact(fact)
+        return self._publish_fact(record)
+
+    def confirmed_effect(self, correlation, receipt):
+        """Publish a confirmed destination receipt independently of computation."""
+        if receipt.state != "confirmed" or receipt.effect_id is None:
+            return None
+        if receipt.kind.startswith(("notification.", "notifications.")):
+            return None
+        from stratbox.core.observability.capture.adapters import record_from_fact
+        from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id
+        payload = dict(data_version=1, effect_id=receipt.effect_id,
+            effect_kind=receipt.kind, state=receipt.state,
+            identity=(dict(sha256=receipt.identity.sha256, size=receipt.identity.size) if receipt.identity is not None else None),
+            destination_id=sha256(receipt.reference.encode()).hexdigest() if receipt.reference is not None else None,
+            guarantee=receipt.guarantee, stage=receipt.stage)
+        subject = ObjectRef("effect", receipt.effect_id, identity=receipt.identity)
+        fact_id = make_fact_id("effect.confirmed", subject, payload)
+        record = record_from_fact(DomainFact("effect.confirmed", subject, fact_id,
+            datetime.now(timezone.utc), payload, observation_id=fact_id,
+            correlation=replace(correlation, effect_id=receipt.effect_id)))
+        return self._publish_fact(record)
+
+    def _publish_fact(self, record):
+        key = "fact." + record.fact_id
+        with self._lock:
+            existing = self.facts_source.lookup(key)
+            if existing is not None:
+                return existing.record
+            if record.record_id in self._pending_transitions:
+                pending = self._pending_transitions[record.record_id]
+                self.flush_transitions()
+                return pending
+            # Capacity admission happens before publishing a promised fact.
+            # The caller can retain accepted computation even if this separate
+            # observation obligation cannot be admitted.
+            if not self.facts_source.has_reservation(key):
+                self.facts_source.reserve(key)
+            self._pending_transitions[record.record_id] = record
+            self.flush_transitions()
+            self._capture(record)
+        return record
 
     def flush_transitions(self) -> int:
         """Retry the same immutable transition identities without duplicate alerts."""
@@ -184,7 +255,10 @@ class OrchestrationJournal:
             published = 0
             for identity, record in tuple(self._pending_transitions.items()):
                 try:
-                    self.source.append_terminal(record)
+                    if record.kind in {"value.accepted", "effect.confirmed"}:
+                        self.facts_source.append_fact(record)
+                    else:
+                        self.source.append_terminal(record)
                 except Exception:
                     self._publication_failures += 1
                     continue
@@ -255,8 +329,10 @@ class OrchestrationJournal:
         with self._lock:
             return OrchestrationHealth(self._emitted, len(self._records), self._evicted,
                                        self._observer_dropped, self._observer_failed,
-                                       self.source.pending, self.source.reserved,
+                                       self.source.pending + self.facts_source.pending,
+                                       self.source.reserved + self.facts_source.reserved,
                                        "incomplete" if self._evicted or self._observer_dropped or self._observer_failed
+                                       or self._publication_failures or self._pending_transitions
                                        else "complete", len(self._pending_transitions), self._publication_failures)
 
     def close(self, *, timeout: float = 1.0) -> None:

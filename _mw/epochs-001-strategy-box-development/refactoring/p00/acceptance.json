@@ -10,9 +10,30 @@
       "groups": [
         "T01"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_sdk_requests.py::test_exact_goal_and_four_kinds_preserve_the_same_value_and_retention"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC02",
@@ -23,9 +44,30 @@
       "groups": [
         "T01"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_sdk_requests.py::test_exact_goal_and_four_kinds_preserve_the_same_value_and_retention"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC03",
@@ -38,9 +80,57 @@
         "T02",
         "T07"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_sdk_requests.py::test_exact_goal_and_four_kinds_preserve_the_same_value_and_retention"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC04",
@@ -53,7 +143,22 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC05",
@@ -67,7 +172,34 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC06",
@@ -78,9 +210,30 @@
       "groups": [
         "T01"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_catalog_resolution.py::test_operation_cannot_hide_acquisition_effect_or_scenario"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC07",
@@ -91,9 +244,27 @@
       "groups": [
         "T03"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_supplied_material_and_acquisition_have_same_extraction_contract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC08",
@@ -106,9 +277,59 @@
         "T09",
         "T13"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_retained_value_stops_upstream_expansion"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC09",
@@ -119,9 +340,27 @@
       "groups": [
         "T03"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_unused_branch_requires_no_input_or_provider"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC10",
@@ -133,9 +372,45 @@
         "T03",
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_required_effect_is_an_independent_closure_root",
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_cascade_required_save_and_parallel_preview"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC11",
@@ -147,9 +422,48 @@
         "T02",
         "T16"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_minfin_budget_period_columns_same_operation_and_compiler"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T16",
+          "stages": [
+            "P00",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18",
+            "P21"
+          ],
+          "owners": [
+            "scripts/refactoring_inventory.py",
+            "tests/integration/universal_core"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC12",
@@ -160,9 +474,30 @@
       "groups": [
         "T02"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_minfin_budget_period_columns_same_operation_and_compiler"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC13",
@@ -173,9 +508,30 @@
       "groups": [
         "T02"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_catalog_resolution.py::test_equal_applicability_is_ambiguous_and_profile_selects_method"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC14",
@@ -189,7 +545,33 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC15",
@@ -201,9 +583,47 @@
         "T07",
         "T10"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_scope_early_outputs.py::test_unaccepted_nominal_value_cannot_escape_while_accepted_sibling_releases_early"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC16",
@@ -215,9 +635,47 @@
         "T02",
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_catalog_resolution.py::test_operation_cannot_hide_acquisition_effect_or_scenario"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC17",
@@ -231,7 +689,30 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC18",
@@ -246,7 +727,52 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC19",
@@ -257,9 +783,29 @@
       "groups": [
         "T04"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_three_uses_one_decode_different_operation_ids"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC20",
@@ -272,7 +818,21 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC21",
@@ -286,7 +846,39 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC22",
@@ -299,7 +891,21 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC23",
@@ -313,7 +919,37 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC24",
@@ -327,7 +963,38 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC25",
@@ -341,7 +1008,36 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC26",
@@ -355,7 +1051,38 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC27",
@@ -367,9 +1094,41 @@
         "T04",
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_shared_consumer_cancel_preserves_other_extraction"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC28",
@@ -383,7 +1142,33 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC29",
@@ -395,9 +1180,41 @@
         "T04",
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_values_session.py::test_public_result_views_and_leases_preserve_independent_mutable_consumers"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC30",
@@ -411,7 +1228,32 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC31",
@@ -422,9 +1264,28 @@
       "groups": [
         "T05"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_nested_canonical_maps_complete_with_one_worker"
+      ],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC32",
@@ -435,9 +1296,29 @@
       "groups": [
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_stale_save_completion_keeps_new_revision_current"
+      ],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC33",
@@ -448,9 +1329,31 @@
       "groups": [
         "T07"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_missing_member_rejects_extract_without_invalidating_readable"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC34",
@@ -464,7 +1367,35 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC35",
@@ -475,9 +1406,31 @@
       "groups": [
         "T07"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_scope_early_outputs.py::test_unaccepted_nominal_value_cannot_escape_while_accepted_sibling_releases_early"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC36",
@@ -491,7 +1444,33 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC37",
@@ -502,9 +1481,34 @@
       "groups": [
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_lost_save_reply_reconciles_without_reextract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC38",
@@ -516,9 +1520,40 @@
         "T14",
         "T15"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_optional_observer_failure_preserves_business_and_control"
+      ],
+      "verification_plan": [
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC39",
@@ -530,9 +1565,49 @@
         "T07",
         "T12"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_catalog_resolution.py::test_closed_membership_does_not_imply_coverage_and_predicate_rejects_empty"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC40",
@@ -544,9 +1619,42 @@
         "T01",
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_sdk_requests.py::test_exact_goal_and_four_kinds_preserve_the_same_value_and_retention"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC41",
@@ -558,9 +1666,41 @@
         "T04",
         "T14"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_cbr_four_series_share_one_index_and_keep_separate_originals"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "H-AC42",
@@ -574,7 +1714,34 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC43",
@@ -588,7 +1755,36 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "H-AC44",
@@ -601,9 +1797,58 @@
         "T12",
         "T15"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/notifications/test_accepted_values.py::test_stage_facts_survive_diagnostic_eviction_and_independent_subscriber_cursors"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT01",
@@ -614,9 +1859,27 @@
       "groups": [
         "T03"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_supplied_material_and_acquisition_have_same_extraction_contract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT02",
@@ -629,9 +1892,59 @@
         "T09",
         "T13"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_retained_value_stops_upstream_expansion"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT03",
@@ -642,9 +1955,27 @@
       "groups": [
         "T03"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_unused_branch_requires_no_input_or_provider"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT04",
@@ -656,9 +1987,45 @@
         "T03",
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_required_effect_is_an_independent_closure_root",
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_cascade_required_save_and_parallel_preview"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT05",
@@ -669,9 +2036,30 @@
       "groups": [
         "T02"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_minfin_budget_period_columns_same_operation_and_compiler"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT06",
@@ -685,7 +2073,32 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT07",
@@ -698,7 +2111,22 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT08",
@@ -713,7 +2141,47 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT09",
@@ -725,9 +2193,43 @@
         "T01",
         "T04"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_three_uses_one_decode_different_operation_ids",
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_cascade_required_save_and_parallel_preview"
+      ],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT10",
@@ -740,7 +2242,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT11",
@@ -753,7 +2268,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT12",
@@ -765,9 +2293,41 @@
         "T04",
         "T14"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_cbr_four_series_share_one_index_and_keep_separate_originals"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT13",
@@ -779,9 +2339,41 @@
         "T04",
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_shared_consumer_cancel_preserves_other_extraction"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT14",
@@ -795,7 +2387,39 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT15",
@@ -809,7 +2433,32 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT16",
@@ -820,9 +2469,28 @@
       "groups": [
         "T05"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/composition/test_capability_preparation.py::test_nested_canonical_maps_complete_with_one_worker"
+      ],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT17",
@@ -833,9 +2501,29 @@
       "groups": [
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_values_session.py::test_public_result_views_and_leases_preserve_independent_mutable_consumers"
+      ],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT18",
@@ -846,9 +2534,29 @@
       "groups": [
         "T06"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_values_session.py::test_result_and_reader_keep_capacity_after_run_and_session_close"
+      ],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT19",
@@ -861,7 +2569,23 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT20",
@@ -873,9 +2597,49 @@
         "T07",
         "T12"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/capabilities/test_catalog_resolution.py::test_closed_membership_does_not_imply_coverage_and_predicate_rejects_empty"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT21",
@@ -888,7 +2652,25 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT22",
@@ -902,7 +2684,36 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT23",
@@ -916,7 +2727,43 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT24",
@@ -928,9 +2775,52 @@
         "T08",
         "T12"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_stale_save_completion_keeps_new_revision_current"
+      ],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT25",
@@ -942,9 +2832,48 @@
         "T07",
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_lost_save_reply_reconciles_without_reextract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT26",
@@ -956,9 +2885,46 @@
         "T06",
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/unit/execution/test_effect_session_integration.py::test_cancelled_late_commit_retains_physical_evidence_with_saturated_progress"
+      ],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT27",
@@ -969,9 +2935,29 @@
       "groups": [
         "T14"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_optional_observer_failure_preserves_business_and_control"
+      ],
+      "verification_plan": [
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "K-ACCEPT28",
@@ -985,7 +2971,37 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT29",
@@ -999,7 +3015,42 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT30",
@@ -1010,9 +3061,23 @@
       "groups": [
         "T18"
       ],
-      "status": "planned",
+      "status": "external-pending",
       "guarantee_profile": "external_host",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T18",
+          "stages": [
+            "P09",
+            "P19",
+            "H01",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution/test_recovery_ports.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT31",
@@ -1023,9 +3088,22 @@
       "groups": [
         "T17"
       ],
-      "status": "planned",
+      "status": "external-pending",
       "guarantee_profile": "external_host",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "K-ACCEPT32",
@@ -1040,7 +3118,54 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC01",
@@ -1052,9 +3177,44 @@
         "T03",
         "T09"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_supplied_material_and_acquisition_have_same_extraction_contract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC02",
@@ -1069,7 +3229,53 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC03",
@@ -1082,7 +3288,26 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC04",
@@ -1095,9 +3320,60 @@
         "T07",
         "T09"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_three_uses_one_decode_different_operation_ids"
+      ],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC05",
@@ -1111,7 +3387,42 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC06",
@@ -1125,7 +3436,42 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC07",
@@ -1140,7 +3486,44 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC08",
@@ -1155,7 +3538,52 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC09",
@@ -1168,7 +3596,25 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC10",
@@ -1181,7 +3627,25 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC11",
@@ -1195,7 +3659,38 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T01",
+          "stages": [
+            "P02",
+            "P06",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_sdk_requests.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC12",
@@ -1209,7 +3704,42 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC13",
@@ -1223,7 +3753,30 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC14",
@@ -1238,7 +3791,45 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC15",
@@ -1252,7 +3843,34 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC16",
@@ -1267,7 +3885,49 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC17",
@@ -1280,7 +3940,27 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC18",
@@ -1294,7 +3974,42 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates."
     },
     {
       "requirement_id": "D-AC19",
@@ -1308,7 +4023,43 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC20",
@@ -1322,7 +4073,38 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC21",
@@ -1335,7 +4117,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T05",
+          "stages": [
+            "P06",
+            "P08"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py",
+            "tests/unit/execution/test_coordinator_sharing.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC22",
@@ -1347,9 +4142,52 @@
         "T08",
         "T12"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_stale_save_completion_keeps_new_revision_current"
+      ],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC23",
@@ -1364,7 +4202,57 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC24",
@@ -1379,7 +4267,55 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC25",
@@ -1394,7 +4330,47 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T06",
+          "stages": [
+            "P07",
+            "P08",
+            "P09"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_session.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T07",
+          "stages": [
+            "P02",
+            "P05",
+            "P06",
+            "P07",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_scope_early_outputs.py",
+            "tests/unit/capabilities/test_catalog_resolution.py"
+          ]
+        },
+        {
+          "group": "T18",
+          "stages": [
+            "P09",
+            "P19",
+            "H01",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution/test_recovery_ports.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC26",
@@ -1405,9 +4381,34 @@
       "groups": [
         "T08"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_lost_save_reply_reconciles_without_reextract"
+      ],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC27",
@@ -1418,9 +4419,29 @@
       "groups": [
         "T14"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_faults.py::test_optional_observer_failure_preserves_business_and_control"
+      ],
+      "verification_plan": [
+        {
+          "group": "T14",
+          "stages": [
+            "P10",
+            "P11",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/observability",
+            "tests/unit/execution/test_effect_session_integration.py"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC28",
@@ -1431,9 +4452,28 @@
       "groups": [
         "T15"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_shared_workbook.py::test_cascade_required_save_and_parallel_preview"
+      ],
+      "verification_plan": [
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC29",
@@ -1446,7 +4486,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC30",
@@ -1460,7 +4513,37 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC31",
@@ -1473,7 +4556,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC32",
@@ -1486,7 +4582,20 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC33",
@@ -1501,7 +4610,50 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T04",
+          "stages": [
+            "P06",
+            "P08",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/execution/test_coordinator_sharing.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        },
+        {
+          "group": "T12",
+          "stages": [
+            "P08",
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/unit/execution/test_effect_authority.py",
+            "tests/unit/notifications"
+          ]
+        },
+        {
+          "group": "T15",
+          "stages": [
+            "P10",
+            "H01"
+          ],
+          "owners": [
+            "tests/unit/notifications/test_accepted_values.py",
+            "tests/unit/notifications"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC34",
@@ -1514,7 +4666,26 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T09",
+          "stages": [
+            "P04",
+            "P07",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/execution/test_values_codec.py",
+            "tests/integration/capability_pilots/test_shared_workbook.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC35",
@@ -1528,7 +4699,40 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC36",
@@ -1543,7 +4747,51 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T10",
+          "stages": [
+            "P02",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17"
+          ],
+          "owners": [
+            "tests/unit/shared",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T11",
+          "stages": [
+            "P05",
+            "P13"
+          ],
+          "owners": [
+            "tests/cbr_sors_restoration",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T13",
+          "stages": [
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC37",
@@ -1556,7 +4804,27 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T16",
+          "stages": [
+            "P00",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18",
+            "P21"
+          ],
+          "owners": [
+            "scripts/refactoring_inventory.py",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC38",
@@ -1570,7 +4838,40 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T16",
+          "stages": [
+            "P00",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18",
+            "P21"
+          ],
+          "owners": [
+            "scripts/refactoring_inventory.py",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC39",
@@ -1582,9 +4883,48 @@
         "T02",
         "T16"
       ],
-      "status": "planned",
+      "status": "implemented",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [
+        "tests/integration/capability_pilots/test_source_specializations.py::test_minfin_budget_period_columns_same_operation_and_compiler"
+      ],
+      "verification_plan": [
+        {
+          "group": "T02",
+          "stages": [
+            "P03",
+            "P05",
+            "P11",
+            "P19"
+          ],
+          "owners": [
+            "tests/unit/capabilities/test_catalog_resolution.py",
+            "tests/integration/capability_pilots/test_source_specializations.py"
+          ]
+        },
+        {
+          "group": "T16",
+          "stages": [
+            "P00",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18",
+            "P21"
+          ],
+          "owners": [
+            "scripts/refactoring_inventory.py",
+            "tests/integration/universal_core"
+          ]
+        }
+      ],
+      "evidence_kind": "deterministic_fixture",
+      "source_scope": "Controlled local materials; publisher layout coverage is bounded by each fixture.",
+      "limitation": "Case evidence covers this core/pilot slice. Domain migration and external host guarantees retain their own later acceptance gates.",
+      "evidence_scope": "local mechanism/pilot; full original-case discharge remains subject to its stated source and domain scope"
     },
     {
       "requirement_id": "D-AC40",
@@ -1596,9 +4936,40 @@
         "T16",
         "T17"
       ],
-      "status": "planned",
+      "status": "external-pending",
       "guarantee_profile": "external_host",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T16",
+          "stages": [
+            "P00",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18",
+            "P21"
+          ],
+          "owners": [
+            "scripts/refactoring_inventory.py",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC41",
@@ -1612,7 +4983,30 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T03",
+          "stages": [
+            "P05",
+            "P11"
+          ],
+          "owners": [
+            "tests/unit/composition/test_capability_preparation.py"
+          ]
+        },
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC42",
@@ -1624,9 +5018,34 @@
         "T17",
         "T18"
       ],
-      "status": "planned",
+      "status": "external-pending",
       "guarantee_profile": "external_host",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        },
+        {
+          "group": "T18",
+          "stages": [
+            "P09",
+            "P19",
+            "H01",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution/test_recovery_ports.py"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC43",
@@ -1640,7 +5059,37 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T08",
+          "stages": [
+            "P09",
+            "P12",
+            "P13",
+            "P14",
+            "P15",
+            "P16",
+            "P17",
+            "P18"
+          ],
+          "owners": [
+            "tests/integration/capability_pilots/test_effect_recovery.py",
+            "tests/unit/execution/test_effect_authority.py"
+          ]
+        },
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     },
     {
       "requirement_id": "D-AC44",
@@ -1653,7 +5102,270 @@
       ],
       "status": "planned",
       "guarantee_profile": "local_session",
-      "verification": []
+      "verification": [],
+      "verification_plan": [
+        {
+          "group": "T17",
+          "stages": [
+            "P19",
+            "H02"
+          ],
+          "owners": [
+            "tests/unit/execution",
+            "tests/integration/universal_core"
+          ]
+        }
+      ]
     }
-  ]
+  ],
+  "verification_routes": {
+    "T01": {
+      "stages": [
+        "P02",
+        "P06",
+        "P11",
+        "P19"
+      ],
+      "owners": [
+        "tests/unit/capabilities/test_sdk_requests.py",
+        "tests/unit/capabilities/test_catalog_resolution.py"
+      ]
+    },
+    "T02": {
+      "stages": [
+        "P03",
+        "P05",
+        "P11",
+        "P19"
+      ],
+      "owners": [
+        "tests/unit/capabilities/test_catalog_resolution.py",
+        "tests/integration/capability_pilots/test_source_specializations.py"
+      ]
+    },
+    "T03": {
+      "stages": [
+        "P05",
+        "P11"
+      ],
+      "owners": [
+        "tests/unit/composition/test_capability_preparation.py"
+      ]
+    },
+    "T04": {
+      "stages": [
+        "P06",
+        "P08",
+        "P11"
+      ],
+      "owners": [
+        "tests/unit/execution/test_coordinator_sharing.py",
+        "tests/integration/capability_pilots/test_shared_workbook.py"
+      ]
+    },
+    "T05": {
+      "stages": [
+        "P06",
+        "P08"
+      ],
+      "owners": [
+        "tests/unit/composition/test_capability_preparation.py",
+        "tests/unit/execution/test_coordinator_sharing.py"
+      ]
+    },
+    "T06": {
+      "stages": [
+        "P07",
+        "P08",
+        "P09"
+      ],
+      "owners": [
+        "tests/unit/execution/test_values_session.py",
+        "tests/unit/execution/test_effect_authority.py"
+      ]
+    },
+    "T07": {
+      "stages": [
+        "P02",
+        "P05",
+        "P06",
+        "P07",
+        "P18"
+      ],
+      "owners": [
+        "tests/unit/execution/test_scope_early_outputs.py",
+        "tests/unit/capabilities/test_catalog_resolution.py"
+      ]
+    },
+    "T08": {
+      "stages": [
+        "P09",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18"
+      ],
+      "owners": [
+        "tests/integration/capability_pilots/test_effect_recovery.py",
+        "tests/unit/execution/test_effect_authority.py"
+      ]
+    },
+    "T09": {
+      "stages": [
+        "P04",
+        "P07",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17"
+      ],
+      "owners": [
+        "tests/unit/execution/test_values_codec.py",
+        "tests/integration/capability_pilots/test_shared_workbook.py"
+      ]
+    },
+    "T10": {
+      "stages": [
+        "P02",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17"
+      ],
+      "owners": [
+        "tests/unit/shared",
+        "tests/integration/universal_core"
+      ]
+    },
+    "T11": {
+      "stages": [
+        "P05",
+        "P13"
+      ],
+      "owners": [
+        "tests/cbr_sors_restoration",
+        "tests/integration/universal_core"
+      ]
+    },
+    "T12": {
+      "stages": [
+        "P08",
+        "P09",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18"
+      ],
+      "owners": [
+        "tests/unit/execution/test_effect_authority.py",
+        "tests/unit/notifications"
+      ]
+    },
+    "T13": {
+      "stages": [
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18"
+      ],
+      "owners": [
+        "tests/integration/universal_core"
+      ]
+    },
+    "T14": {
+      "stages": [
+        "P10",
+        "P11",
+        "P18"
+      ],
+      "owners": [
+        "tests/unit/observability",
+        "tests/unit/execution/test_effect_session_integration.py"
+      ]
+    },
+    "T15": {
+      "stages": [
+        "P10",
+        "H01"
+      ],
+      "owners": [
+        "tests/unit/notifications/test_accepted_values.py",
+        "tests/unit/notifications"
+      ]
+    },
+    "T16": {
+      "stages": [
+        "P00",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P21"
+      ],
+      "owners": [
+        "scripts/refactoring_inventory.py",
+        "tests/integration/universal_core"
+      ]
+    },
+    "T17": {
+      "stages": [
+        "P19",
+        "H02"
+      ],
+      "owners": [
+        "tests/unit/execution",
+        "tests/integration/universal_core"
+      ]
+    },
+    "T18": {
+      "stages": [
+        "P09",
+        "P19",
+        "H01",
+        "H02"
+      ],
+      "owners": [
+        "tests/unit/execution/test_recovery_ports.py"
+      ]
+    },
+    "T19": {
+      "stages": [
+        "P01",
+        "P20",
+        "P21"
+      ],
+      "owners": [
+        "scripts/check_internal_imports.py",
+        "scripts/check_release_integrity.py",
+        "scripts/inspect_reference_wheel.py"
+      ]
+    },
+    "T20": {
+      "stages": [
+        "P11",
+        "P18",
+        "P21"
+      ],
+      "owners": [
+        "tests/integration/capability_pilots"
+      ]
+    }
+  },
+  "scope": "P00-P11 foundation; complete domain and public-surface acceptance remains P12-P21/H01-H02."
 }

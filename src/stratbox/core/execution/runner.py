@@ -429,6 +429,49 @@ class Invocation:
             raise ValueError("Undeclared effect")
         self._effects.register(receipt)
 
+    def commit_effect(self, kind, effect_id, action, *, resource, identity=None,
+                      expected_revision=None, input_basis=None, source_revision=None):
+        """Run a pinned, fenced provider commit and retain uncertain outcomes.
+
+        ``action`` must apply the receiving provider's conditional write and
+        return an identified EffectReceipt. Reconciliation is explicit; an
+        unknown reply never authorizes a second physical commit.
+        """
+        self._require_open()
+        self.check_cancelled()
+        if kind not in self.definition.possible_effects:
+            raise ValueError("Undeclared effect")
+        from stratbox.core.execution.effects import EffectAuthority, EffectAuthorityError, EffectIntent
+        correlation = self.context.correlation
+        authority = self.context.effect_authority
+        run_id = correlation.run_id or self.id
+        scope_id = correlation.workflow_scope_id or run_id
+        work_id = correlation.work_id or correlation.task_id or self.id
+        attempt_id = correlation.attempt_id or self.id
+        if authority is None:
+            authority = EffectAuthority()
+            authority.begin_attempt(run_id, scope_id, work_id, attempt_id)
+        intent = EffectIntent(run_id, scope_id, work_id, kind, effect_id, resource,
+                              input_basis, expected_revision, source_revision, identity)
+        try:
+            receipt = authority.commit(intent, attempt_id, action)
+        except EffectAuthorityError as error:
+            existing = (authority.lookup(run_id, scope_id, effect_id, kind=kind)
+                        or authority.lookup_effect(resource, effect_id, kind=kind))
+            if existing is not None:
+                self.effect(existing.receipt)
+            raise OperationFailure(Diagnostic(str(error), evidence_ref=effect_id,
+                reconciliation_owner="effect.authority",
+                retry_disposition="reconcile" if existing is not None and existing.receipt.state == "unknown" else "none"),
+                outcome="unknown" if existing is not None and existing.receipt.state == "unknown" else "failed") from None
+        self.effect(receipt)
+        if receipt.state != "confirmed":
+            raise OperationFailure(Diagnostic("effect.outcome_unknown" if receipt.state == "unknown" else "effect.failed",
+                evidence_ref=effect_id, reconciliation_owner=receipt.reconciliation_owner,
+                retry_disposition="reconcile" if receipt.state == "unknown" else "none"),
+                outcome="unknown" if receipt.state == "unknown" else "failed")
+        return receipt
+
     def _emit(self, kind, **fields) -> None:
         sink = self.context.sink
         if sink is None:

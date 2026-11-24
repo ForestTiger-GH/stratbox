@@ -62,6 +62,9 @@ projects authoritative execution facts; optional capture failures preserve the
 business result. Durable recovery is supplied by an external host through the
 declared state, artifact and effect ports.
 
+The [effect and stage-event guide](../current-how/effect-recovery-and-stage-events.md)
+describes reconciliation, retained facts and notification boundaries.
+
 ## Adding capabilities
 
 Add a pure typed definition, an implementation reference for each command and

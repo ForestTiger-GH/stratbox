@@ -202,6 +202,9 @@ class Correlation:
     task_id: str | None = None
     item_key: str | None = None
     shared_work_id: str | None = None
+    command_id: str | None = None
+    work_id: str | None = None
+    effect_id: str | None = None
 
     def __post_init__(self) -> None:
         # step_id is the operation-boundary spelling of the same task identity.
@@ -252,6 +255,7 @@ class ExecutionContext:
     input_source_operation: str | None = None
     result_admissions: tuple[ResultAdmission, ...] = field(default=(), repr=False)
     resource_ledger: object | None = field(default=None, repr=False, compare=False)
+    effect_authority: object | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:

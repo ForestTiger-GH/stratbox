@@ -6,11 +6,13 @@ from enum import Enum
 from hashlib import sha256
 from json import dumps
 from types import MappingProxyType
+from datetime import date, datetime
+from decimal import Decimal
 from typing import ClassVar, Mapping
 
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.identifiers import safe_token
-from .graph import GraphBody, MethodSlot, RetryPolicy, frozen_mapping
+from .graph import GraphBody, MethodSlot, RetryPolicy, frozen_mapping, _freeze
 from .reuse import ReuseContract
 
 
@@ -20,6 +22,12 @@ def declaration_tree(value):
         return {"python_type": value.__module__ + ":" + value.__qualname__}
     if isinstance(value, Enum):
         return value.value
+    if isinstance(value, bytes):
+        return {"bytes_sha256": sha256(value).hexdigest(), "length": len(value)}
+    if isinstance(value, (date, datetime)):
+        return {"type": type(value).__name__, "iso": value.isoformat()}
+    if isinstance(value, Decimal):
+        return {"decimal": str(value)}
     if is_dataclass(value):
         result = {item.name: declaration_tree(getattr(value, item.name)) for item in fields(value)}
         if hasattr(value, "kind"):
@@ -60,6 +68,7 @@ class SemanticPredicate:
         if any(not part.isidentifier() or part.startswith("_") for part in self.path.split(".") if self.path):
             raise ValueError("capability.invalid_predicate_path")
         safe_token(self.code)
+        object.__setattr__(self, "expected", _freeze(self.expected))
 
     def accepts(self, value):
         try:
@@ -105,7 +114,8 @@ class PortContract:
         return self.schema
 
     def validate(self, value):
-        if not isinstance(value, self.value_type):
+        valid = type(value) is self.value_type if self.value_type in {bool, int, float, str, bytes} else isinstance(value, self.value_type)
+        if not valid:
             raise ValueError("acceptance.value_type_mismatch")
         for predicate in self.predicates:
             if not predicate.accepts(value):
@@ -115,7 +125,8 @@ class PortContract:
     def compatible_with(self, producer):
         return (isinstance(producer, PortContract)
                 and (self.schema is None or self.schema == producer.schema)
-                and issubclass(producer.value_type, self.value_type)
+                and (producer.value_type is self.value_type if self.value_type in {bool, int, float, str, bytes}
+                     else issubclass(producer.value_type, self.value_type))
                 and self.qualifications <= producer.qualifications
                 and self.expected_coverage <= producer.expected_coverage
                 and self.collection == producer.collection)
@@ -130,8 +141,12 @@ class CollectionMembership:
     observed_coverage: frozenset[str] = frozenset()
 
     def __post_init__(self):
-        if not isinstance(self.members, tuple) or len(set(self.members)) != len(self.members) or type(self.closed) is not bool:
+        if (not isinstance(self.members, tuple) or any(not isinstance(item, str) for item in self.members)
+                or len(set(self.members)) != len(self.members) or type(self.closed) is not bool):
             raise ValueError("capability.invalid_membership")
+        if any(not isinstance(group, frozenset) or any(not isinstance(item, str) for item in group)
+               for group in (self.expected_coverage, self.observed_coverage)):
+            raise ValueError("capability.invalid_coverage")
 
     @property
     def complete(self):
@@ -165,6 +180,8 @@ class AcceptanceContract:
                 raise ValueError("capability.invalid_acceptance")
         if type(self.partial_allowed) is not bool:
             raise ValueError("capability.invalid_acceptance")
+        if not isinstance(self.predicates, tuple) or any(not isinstance(item, SemanticPredicate) for item in self.predicates):
+            raise ValueError("capability.invalid_predicates")
 
     def validate(self, outputs: Mapping[str, object]):
         if not set(self.coherent_outputs) <= outputs.keys():
@@ -205,6 +222,20 @@ class CapabilityDefinition:
                 safe_token(name)
         if any(type(value) is not int or value < 1 for value in self.resources.values()):
             raise ValueError("capability.invalid_resources")
+        if set(self.inputs) & (self.parameters.keys() | self.fixed.keys() | set(self.required_parameters)):
+            raise ValueError("capability.input_parameter_overlap")
+        if (not isinstance(self.required_parameters, tuple)
+                or len(set(self.required_parameters)) != len(self.required_parameters)):
+            raise ValueError("capability.invalid_required_parameters")
+        for group in (self.required_capabilities, self.effects):
+            if not isinstance(group, frozenset):
+                raise ValueError("capability.invalid_effects_or_providers")
+            for name in group:
+                safe_token(name)
+        for name in (*self.parameters, *self.fixed, *self.required_parameters):
+            safe_token(name)
+        if not isinstance(self.acceptance, AcceptanceContract):
+            raise ValueError("capability.invalid_acceptance")
         if not set(self.acceptance.coherent_outputs) <= self.outputs.keys():
             raise ValueError("capability.unknown_coherent_output")
         if not isinstance(self.reuse, ReuseContract) or not isinstance(self.retry, RetryPolicy):
@@ -223,6 +254,7 @@ class CapabilityDefinition:
 class CommandDefinition(CapabilityDefinition):
     implementation_ref: str
     cancellation_boundary: str = "cooperative"
+    resource_parameters: Mapping[str, str] = field(default_factory=dict, kw_only=True)
     kind: ClassVar[str] = "command"
 
     def __post_init__(self):
@@ -231,6 +263,12 @@ class CommandDefinition(CapabilityDefinition):
             raise ValueError("capability.invalid_implementation_ref")
         if self.cancellation_boundary not in {"cooperative", "atomic", "provider"}:
             raise ValueError("capability.invalid_cancellation_boundary")
+        object.__setattr__(self, "resource_parameters", frozen_mapping(self.resource_parameters))
+        parameters = self.parameters.keys() | self.fixed.keys() | set(self.required_parameters)
+        for resource, parameter in self.resource_parameters.items():
+            safe_token(resource)
+            if not isinstance(parameter, str) or parameter not in parameters:
+                raise ValueError("capability.resource_parameter_undeclared")
 
 
 @dataclass(frozen=True, slots=True)

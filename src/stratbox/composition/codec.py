@@ -8,13 +8,14 @@ from __future__ import annotations
 import base64
 import math
 from dataclasses import fields, is_dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
+from functools import lru_cache
 from pathlib import PurePath, Path
 from typing import Mapping
 
-from stratbox.core.execution.handoff import PreparedInput, ResultReference
+from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput, ResultReference
 from stratbox.shared.data.operations import OperationKey
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.identity import ByteIdentity
@@ -22,6 +23,32 @@ from . import models
 from .models import CompositionError
 
 
+@lru_cache(maxsize=1)
+def _value_types():
+    """Closed portable shared-value registry; documents never select imports."""
+    from stratbox.shared.evidence import SourcePayload, AcquisitionReceipt, AcquiredSource, UsedInputReceipt, StoredBytesReceipt
+    from stratbox.shared.data.observations import SubjectRef, MetricRef, PeriodRef, Observation, ObservationBatch
+    from stratbox.shared.data.views import ObservationView
+    from stratbox.shared.data.representation import Representation
+    from stratbox.shared.data.workbook_cells import WorkbookCells, SheetCells, WorkbookCell
+    from stratbox.shared.data.source_context import SourceCoordinate, SourceUse, ValueContext
+    from stratbox.shared.data.datasets import DatasetVersion, ComputationReceipt
+    from stratbox.shared.data.snapshots import (
+        ColumnSchema, TableSchema, TypedTable, TableComponent, CoverageDimension,
+        SnapshotCoverage, DatasetManifest, DatasetSnapshot,
+    )
+    from stratbox.core.execution.contracts import EffectReceipt
+    return {kind.__name__:kind for kind in (
+        object,str,bool,int,float,bytes,dict,list,tuple,
+        SourcePayload,AcquisitionReceipt,AcquiredSource,UsedInputReceipt,StoredBytesReceipt,
+        SubjectRef,MetricRef,PeriodRef,Observation,ObservationBatch,ObservationView,
+        Representation,WorkbookCells,SheetCells,WorkbookCell,SourceCoordinate,SourceUse,ValueContext,
+        DatasetVersion,ComputationReceipt,ColumnSchema,TableSchema,TypedTable,TableComponent,
+        CoverageDimension,SnapshotCoverage,DatasetManifest,DatasetSnapshot,EffectReceipt,
+    )}
+
+
+@lru_cache(maxsize=1)
 def _types():
     names = (
         "PlanOutputRef", "InputRef", "SourceSelection", "Condition", "RetryPolicy",
@@ -30,7 +57,12 @@ def _types():
         "CompiledTask", "ExecutionPlan",
     )
     kinds = [getattr(models, name) for name in names]
-    kinds.extend((DataContract, ByteIdentity, PreparedInput, ResultReference, OperationKey))
+    from .plan import CanonicalMapTemplate
+    kinds.append(CanonicalMapTemplate)
+    kinds.extend((DataContract, ByteIdentity, PreparedInput, ProjectedOutput, ResultReference, OperationKey))
+    kinds.extend(kind for kind in _value_types().values() if is_dataclass(kind))
+    from stratbox.capabilities.model import PortContract, AcceptanceContract, SemanticPredicate, CollectionMembership
+    kinds.extend((PortContract, AcceptanceContract, SemanticPredicate, CollectionMembership))
     try:
         from .templates import TemplateDefinition, TemplateSlot
         kinds.extend((TemplateDefinition, TemplateSlot))
@@ -40,9 +72,14 @@ def _types():
 
 
 def encode(value):
+    if isinstance(value, type):
+        if value not in _value_types().values():
+            raise CompositionError("composition.value_not_portable")
+        return {"$type": "python_type", "value": value.__name__}
     if isinstance(value, Enum):
-        if isinstance(value, DataRole):
-            return {"$type": "DataRole", "value": value.value}
+        from stratbox.shared.data.snapshots import ScalarType
+        if isinstance(value,(DataRole,ScalarType)):
+            return {"$type":type(value).__name__,"value":value.value}
         raise CompositionError("composition.value_not_portable")
     if value is None or type(value) in {str, bool, int}:
         return value
@@ -52,7 +89,7 @@ def encode(value):
         return value
     if isinstance(value, bytes):
         return {"$type": "bytes", "value": base64.b64encode(value).decode("ascii")}
-    if isinstance(value, (datetime, date)):
+    if isinstance(value, (datetime, date, time)):
         return {"$type": type(value).__name__, "value": value.isoformat()}
     if isinstance(value, timedelta):
         return {"$type": "timedelta", "days": value.days, "seconds": value.seconds, "microseconds": value.microseconds}
@@ -87,7 +124,15 @@ def decode(value):
             kind = _types()[tag]
             if set(value) != {"$type", "fields"} or not isinstance(value["fields"], dict) or set(value["fields"]) != {field.name for field in fields(kind)}:
                 raise CompositionError("composition.invalid_document")
-            return kind(**{key: decode(item) for key, item in value["fields"].items()})
+            decoded = {key:decode(item) for key,item in value["fields"].items()}
+            result = kind(**{item.name:decoded[item.name] for item in fields(kind) if item.init})
+            if any(getattr(result,item.name) != decoded[item.name] for item in fields(kind) if not item.init):
+                raise CompositionError("composition.value_identity_mismatch")
+            if kind.__name__ == "WorkbookCells":
+                from stratbox.shared.data.workbook_cells import validate_sheet_cells
+                for sheet in result.sheets:
+                    validate_sheet_cells(sheet)
+            return result
         if tag in {"tuple", "list", "frozenset", "mapping"}:
             if set(value) != {"$type", "items"}:
                 raise CompositionError("composition.invalid_document")
@@ -105,7 +150,14 @@ def decode(value):
         if set(value) != {"$type", "value"} or not isinstance(value["value"], str):
             raise CompositionError("composition.invalid_document")
         literal = value["value"]
-        factories = {"DataRole": DataRole, "date": date.fromisoformat, "datetime": datetime.fromisoformat,
+        if tag == "python_type":
+            kinds = _value_types()
+            if literal not in kinds:
+                raise CompositionError("composition.unknown_type")
+            return kinds[literal]
+        from stratbox.shared.data.snapshots import ScalarType
+        factories = {"DataRole":DataRole,"ScalarType":ScalarType,"date":date.fromisoformat,
+                     "datetime":datetime.fromisoformat,"time":time.fromisoformat,
                      "Decimal": Decimal, "Path": Path,
                      "bytes": lambda text: base64.b64decode(text, validate=True)}
         if tag not in factories:

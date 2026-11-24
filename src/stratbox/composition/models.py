@@ -13,21 +13,7 @@ import re
 from stratbox.shared.data.processing import DataContract
 
 
-class CompositionError(ValueError):
-    @property
-    def code(self):
-        return self.args[0]
-
-
-def _name(value):
-    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]*", value):
-        raise CompositionError("composition.invalid_name")
-
-
-def _mapping(value):
-    if not isinstance(value, Mapping) or any(not isinstance(k, str) for k in value):
-        raise CompositionError("composition.invalid_mapping")
-    return MappingProxyType(dict(value))
+from ._validation import CompositionError, _mapping, _name
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +122,8 @@ class ScenarioDefinition:
     inputs: Mapping[str, DataContract | None] = field(default_factory=dict)
     policy: str = "continue"
     expenditure: Mapping[str, int] = field(default_factory=dict)
+    required_checks: tuple[str, ...] = ()
+    required_effects: tuple[str, ...] = ()
 
     def __post_init__(self):
         _name(self.scenario_id)
@@ -178,8 +166,11 @@ class CascadeDefinition:
     policy: str = "continue"
     expenditure: Mapping[str, int] = field(default_factory=dict)
 
+    required_checks: tuple[str, ...] = ()
+    required_effects: tuple[str, ...] = ()
+
     def as_scenario(self):
-        return ScenarioDefinition(self.cascade_id, self.scenarios, self.outputs, self.inputs, self.policy, self.expenditure)
+        return ScenarioDefinition(self.cascade_id, self.scenarios, self.outputs, self.inputs, self.policy, self.expenditure, self.required_checks, self.required_effects)
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,20 +200,21 @@ class MapStep:
 
 @dataclass(frozen=True, slots=True)
 class CollectSpec:
-    inputs: tuple[PlanOutputRef, ...]
+    inputs: tuple[object, ...]
     contract: DataContract
     element_contract: DataContract
     allow_partial: bool = False
     allow_empty: bool = False
 
     def __post_init__(self):
-        if not isinstance(self.inputs, tuple) or any(not isinstance(v, PlanOutputRef) for v in self.inputs):
+        if not isinstance(self.inputs, tuple):
             raise CompositionError("composition.invalid_collection")
         if not isinstance(self.contract, DataContract) or not isinstance(self.element_contract, DataContract):
             raise CompositionError("composition.invalid_collection_contract")
         if not self.inputs and not self.allow_empty:
             raise CompositionError("composition.collection_empty")
-        if len(set(self.inputs)) != len(self.inputs):
+        refs = tuple(value for value in self.inputs if isinstance(value,PlanOutputRef))
+        if len(set(refs)) != len(refs):
             raise CompositionError("composition.collection_duplicate")
 
 
@@ -239,88 +231,7 @@ class CollectStep:
             raise CompositionError("composition.invalid_collection")
 
 
-@dataclass(frozen=True, slots=True)
-class CompiledMap:
-    body: ScenarioDefinition
-    items: object
-    item_input: str = "item"
-    key_field: str | None = None
-    window: int | None = None
-    inputs: Mapping[str, object] = field(default_factory=dict)
-    allow_partial: bool = False
-    body_fingerprint: str | None = None
-
-    def __post_init__(self):
-        object.__setattr__(self, "inputs", _mapping(self.inputs))
-
-
-@dataclass(frozen=True, slots=True)
-class PlanScope:
-    scope_id: str
-    definition_id: str
-    parent_id: str | None = None
-    expenditure: Mapping[str, int] = field(default_factory=dict)
-
-    def __post_init__(self):
-        object.__setattr__(self, "expenditure", _mapping(self.expenditure))
-        if any(type(value) is not int or value < 0 for value in self.expenditure.values()):
-            raise CompositionError("composition.invalid_expenditure")
-
-
-@dataclass(frozen=True, slots=True)
-class CompiledTask:
-    task_id: str
-    operation_id: str | None
-    inputs: Mapping[str, object]
-    parameters: Mapping[str, object]
-    dependencies: tuple[str, ...]
-    scope_id: str
-    required: bool = True
-    condition: Condition | None = None
-    source: SourceSelection | None = None
-    map: CompiledMap | None = None
-    collect: CollectSpec | None = None
-    resources: Mapping[str, int] = field(default_factory=dict)
-    retry: RetryPolicy = field(default_factory=RetryPolicy)
-    aliases: tuple[str, ...] = ()
-    method_id: str | None = None
-    method_fingerprint: str | None = None
-    share_key: str | None = None
-
-    def __post_init__(self):
-        for name in ("inputs", "parameters", "resources"):
-            object.__setattr__(self, name, _mapping(getattr(self, name)))
-
-
-@dataclass(frozen=True, slots=True)
-class ExecutionPlan:
-    plan_id: str
-    definition_id: str
-    tasks: tuple[CompiledTask, ...]
-    outputs: Mapping[str, object]
-    scopes: tuple[PlanScope, ...]
-    policy: str = "continue"
-
-    def __post_init__(self):
-        object.__setattr__(self, "outputs", _mapping(self.outputs))
-
-    def task(self, task_id):
-        for task in self.tasks:
-            if task.task_id == task_id or task_id in task.aliases:
-                return task
-        raise CompositionError("composition.task_unknown")
-
-    def to_dict(self):
-        from .codec import encode
-        return encode(self)
-
-    @classmethod
-    def from_dict(cls, value):
-        from .codec import decode
-        result = decode(value)
-        if not isinstance(result, cls):
-            raise CompositionError("composition.plan_required")
-        return result
+from .plan import CompiledMap, PlanScope, CompiledTask, ExecutionPlan
 
 
 OutputRef = PlanOutputRef

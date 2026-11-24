@@ -9,3 +9,7 @@ from .compiler import Compiler, compile_workflow, expand_map_item, iter_referenc
 from .templates import TemplateDefinition, TemplateSlot, bind_template
 from .codec import definition_from_dict, definition_to_dict
 from .compiler import validate_plan
+
+from .requests import InvocationRequest, GoalRequest
+from .prepare import prepare_invocation, prepare_goal
+from .explain import explain_plan

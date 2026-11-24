@@ -5,10 +5,11 @@ from dataclasses import dataclass, field
 from json import dumps
 from types import MappingProxyType
 from typing import Mapping
+from types import SimpleNamespace
 
 from stratbox.capabilities.model import (
     CapabilityDefinition, CommandDefinition, OperationDefinition, ScenarioDefinition,
-    CascadeDefinition, GraphBody, InputRef, OutputRef, ParameterRef,
+    CascadeDefinition, GraphBody, InputRef, OutputRef, ParameterRef, Call, CollectCall, MapCall, PortContract,
     declaration_fingerprint, declaration_tree,
 )
 from stratbox.capabilities.model.graph import MethodSlot, frozen_mapping
@@ -214,6 +215,21 @@ class CatalogSnapshot:
             raise CatalogError("catalog.overlay_replacement_missing")
         return CatalogSnapshot(**values)
 
+    def _declared_effects(self, definition, visited=None):
+        """Inspect declared physical effects rather than trusting a scope label."""
+        visited = set() if visited is None else visited
+        if definition.capability_id in visited:
+            return frozenset()
+        visited.add(definition.capability_id)
+        if isinstance(definition, CommandDefinition):
+            return definition.effects
+        body = getattr(definition, "body", None)
+        bodies = (body,) if body is not None else tuple(method.body for method in self.methods
+            if method.operation_id == definition.capability_id)
+        return frozenset(effect for candidate in bodies for step in candidate.steps
+            if hasattr(step, "capability_id")
+            for effect in self._declared_effects(self.definition(step.capability_id), visited))
+
     def _validate_body(self, owner, body):
         if not isinstance(body, GraphBody):
             raise CatalogError("catalog.body_required")
@@ -221,27 +237,54 @@ class CatalogSnapshot:
         steps = {step.step_id: step for step in body.steps}
         children = {}
         for step in body.steps:
-            child = self.definition(step.capability_id)
-            children[step.step_id] = child
-            if child.kind not in allowed:
-                raise CatalogError("catalog.invalid_body_kind")
-            if not set(step.inputs) <= child.inputs.keys():
-                raise CatalogError("catalog.unknown_input_port")
+            if isinstance(step, CollectCall):
+                children[step.step_id] = SimpleNamespace(inputs={}, outputs={"value": step.contract}, effects=frozenset())
+            elif isinstance(step, MapCall):
+                child = self.definition(step.capability_id)
+                if child.kind not in allowed or child.kind != "scenario":
+                    raise CatalogError("catalog.invalid_map_body_kind")
+                if step.item_input not in child.inputs or step.item_input in step.inputs:
+                    raise CatalogError("catalog.invalid_map_item_input")
+                if not set(step.inputs) <= child.inputs.keys():
+                    raise CatalogError("catalog.unknown_input_port")
+                if set(child.outputs) != {"value"}:
+                    raise CatalogError("catalog.map_value_output_required")
+                element = child.outputs["value"]
+                contract = step.contract or PortContract(element.schema, value_type=object, collection=True,
+                    qualifications=element.qualifications, expected_coverage=element.expected_coverage)
+                children[step.step_id] = SimpleNamespace(inputs=child.inputs, outputs={"value": contract}, effects=child.effects)
+            else:
+                child = self.definition(step.capability_id)
+                children[step.step_id] = child
+                if child.kind not in allowed:
+                    raise CatalogError("catalog.invalid_body_kind")
+                if not set(step.inputs) <= child.inputs.keys():
+                    raise CatalogError("catalog.unknown_input_port")
             if not set(step.depends_on) <= steps.keys():
                 raise CatalogError("catalog.unknown_dependency")
         dependencies = {step.step_id: set(step.depends_on) for step in body.steps}
         for step in body.steps:
-            if step.condition is not None:
-                if step.condition.step not in steps:
+            condition = getattr(step, "condition", None)
+            if condition is not None:
+                if condition.step not in steps:
                     raise CatalogError("catalog.unknown_condition_step")
-                dependencies[step.step_id].add(step.condition.step)
-            for ref in _walk_refs((step.inputs, step.parameters)):
+                dependencies[step.step_id].add(condition.step)
+            values = (step.inputs, getattr(step, "parameters", {}), getattr(step, "items", None))
+            for ref in _walk_refs(values):
                 if isinstance(ref, InputRef) and ref.name not in owner.inputs:
                     raise CatalogError("catalog.unknown_graph_input")
                 if isinstance(ref, OutputRef):
                     if ref.step not in children or ref.port not in children[ref.step].outputs:
                         raise CatalogError("catalog.unknown_output_port")
                     dependencies[step.step_id].add(ref.step)
+            if isinstance(step, CollectCall):
+                for ref in step.inputs:
+                    producer_step = steps[ref.step]
+                    producer_contract = (self.definition(producer_step.capability_id).outputs["value"]
+                        if isinstance(producer_step, MapCall) else children[ref.step].outputs[ref.port])
+                    if not step.element_contract.compatible_with(producer_contract):
+                        raise CatalogError("catalog.collection_element_contract_mismatch")
+                continue
             for name, value in step.inputs.items():
                 if isinstance(value, OutputRef) and not children[step.step_id].inputs[name].compatible_with(children[value.step].outputs[value.port]):
                     raise CatalogError("catalog.port_contract_mismatch")
@@ -253,6 +296,18 @@ class CatalogSnapshot:
                 raise CatalogError("catalog.method_effect_escalation")
         if set(body.outputs) != set(owner.outputs):
             raise CatalogError("catalog.body_output_contract_mismatch")
+        for roots in (owner.acceptance.required_checks, owner.acceptance.required_effects):
+            if not set(roots) <= steps.keys():
+                raise CatalogError("catalog.unknown_acceptance_root")
+        effect_roots = (*body.required_effects, *owner.acceptance.required_effects)
+        for name in effect_roots:
+            step = steps[name]
+            if not hasattr(step, "capability_id") or not self._declared_effects(self.definition(step.capability_id)):
+                raise CatalogError("catalog.required_effect_without_effect")
+        if isinstance(owner, CascadeDefinition) and owner.membership.closed:
+            scenario_members = {step.step_id for step in body.steps if not isinstance(step, CollectCall)}
+            if set(owner.membership.members) != scenario_members:
+                raise CatalogError("catalog.cascade_membership_mismatch")
         for ref in _walk_refs(body.outputs):
             if isinstance(ref, InputRef) and ref.name not in owner.inputs:
                 raise CatalogError("catalog.unknown_graph_input")
@@ -260,8 +315,6 @@ class CatalogSnapshot:
                 raise CatalogError("catalog.unknown_output_port")
         for name, value in body.outputs.items():
             if isinstance(value, OutputRef):
-                if value.step not in children or value.port not in children[value.step].outputs:
-                    raise CatalogError("catalog.unknown_output_port")
                 if not owner.outputs[name].compatible_with(children[value.step].outputs[value.port]):
                     raise CatalogError("catalog.port_contract_mismatch")
         visited, visiting = set(), set()
@@ -291,7 +344,7 @@ class CatalogSnapshot:
             if not isinstance(owner, OperationDefinition) or owner.method_slot is None:
                 raise CatalogError("catalog.method_slot_unavailable")
             self._validate_body(owner, method.body)
-            used_effects = frozenset(effect for step in method.body.steps for effect in self.definition(step.capability_id).effects)
+            used_effects = frozenset(effect for step in method.body.steps if hasattr(step, "capability_id") for effect in self.definition(step.capability_id).effects)
             allowed_effects = owner.effects
             if isinstance(owner.method_slot, MethodSlot):
                 allowed_effects &= owner.method_slot.allowed_effects
@@ -324,7 +377,8 @@ class CatalogSnapshot:
             visiting.add(identifier)
             body = getattr(self.definition(identifier), "body", None)
             for step in body.steps if body else ():
-                visit(step.capability_id)
+                if hasattr(step, "capability_id"):
+                    visit(step.capability_id)
             visiting.remove(identifier)
             visited.add(identifier)
         for definition in self.definitions:
@@ -340,20 +394,23 @@ class CatalogSnapshot:
             if len(groups) > 1:
                 raise CatalogError("catalog.ambiguous_group")
             group = groups[0] if groups else None
-        if group is not None and selection and not group.applies(selection):
-            raise CatalogError("catalog.group_inapplicable")
-        if group:
-            method_id = method_id or group.methods.get(capability_id)
-            profile_id = profile_id or group.profiles.get(capability_id)
+        # An explicit profile may identify its group. Apply exactly the same
+        # applicability and fixed-condition checks to inferred and explicit groups.
+        if profile_id is None and group is not None:
+            profile_id = group.profiles.get(capability_id)
         profile = self.profile(profile_id) if profile_id else None
         if profile and group is None and profile.group_id:
             group = self.group(profile.group_id)
+        if group is not None and selection and not group.applies(selection):
+            raise CatalogError("catalog.group_inapplicable")
         if profile:
             if group and profile.group_id and profile.group_id != group.group_id:
                 raise CatalogError("catalog.profile_group_mismatch")
             if method_id and profile.method_id and profile.method_id != method_id:
                 raise CatalogError("catalog.profile_method_mismatch")
             method_id = method_id or profile.method_id
+        if group:
+            method_id = method_id or group.methods.get(capability_id)
         method = None
         body = getattr(definition, "body", None)
         if isinstance(definition, OperationDefinition) and definition.method_slot is not None:
@@ -391,7 +448,18 @@ class CatalogSnapshot:
                     if key in fixed and fixed[key] != value:
                         raise CatalogError("catalog.conflicting_fixed_parameter")
                     fixed[key] = value
+        if parameters is not None and not isinstance(parameters, Mapping):
+            raise CatalogError("catalog.parameters_mapping_required")
         supplied = dict(parameters or {})
+        allowed_parameters = set(definition.parameters) | set(definition.fixed) | set(definition.required_parameters)
+        for item in (group, method):
+            if item:
+                allowed_parameters.update(item.defaults)
+                allowed_parameters.update(item.fixed)
+        if profile:
+            allowed_parameters.add("profile")
+        if set(supplied) - allowed_parameters:
+            raise CatalogError("catalog.parameter_unknown")
         if any(key in fixed and value != fixed[key] for key, value in supplied.items()):
             raise CatalogError("catalog.fixed_parameter_override")
         if profile and "profile" in supplied and supplied["profile"] != profile.data:
@@ -440,6 +508,7 @@ class CatalogSnapshot:
                 needed.add("method:" + value.capability_id)
             for body in bodies:
                 for step in body.steps:
-                    visit(self.definition(step.capability_id))
+                    if hasattr(step, "capability_id"):
+                        visit(self.definition(step.capability_id))
         visit(definition)
         return Readiness(capability_id, True, True, not needed, not needed and capability_id in machine_ids, tuple(sorted(needed)))

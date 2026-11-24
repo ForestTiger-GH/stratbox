@@ -14,6 +14,8 @@ from dataclasses import dataclass, field, fields, is_dataclass, replace
 from hashlib import sha256
 from threading import RLock
 from time import monotonic, sleep
+from tempfile import TemporaryFile
+from os import pread
 from typing import Callable, Mapping
 from uuid import uuid4
 
@@ -254,7 +256,15 @@ class SharedWorkRegistry:
         return work
 
     def _discard(self, key):
-        self._bytes -= self._work.pop(key).size
+        work = self._work.pop(key)
+        self._bytes -= work.size
+        if work.future.done() and not work.future.cancelled():
+            try:
+                cleanup = getattr(work.future.result(), "_shared_cleanup", None)
+                if cleanup is not None:
+                    cleanup()
+            except BaseException:
+                pass
 
     def _evict(self):
         for key, work in tuple(self._work.items()):
@@ -317,15 +327,92 @@ class AccessScopes:
         return replace(scope, generation=0).identity
 
 
+class _StagedTransfer:
+    """Disk-backed immutable bytes; readers use private offsets and small chunks."""
+    def __init__(self, network, covered_owner=None):
+        self.network = network
+        requirements = (network.staging_ledger.requirements(covered_owner)
+            if network.staging_ledger is not None and covered_owner is not None else {})
+        self.covered_limit = requirements.get("staging_bytes")
+        self.file = TemporaryFile(mode="w+b")
+        self.owner = "network-stage:" + uuid4().hex
+        self.size = 0
+        self.response = None
+        self.identity = None
+        self.closed = False
+
+    def write(self, chunk):
+        size = max(self.size, self.file.tell() + len(chunk))
+        with self.network._stage_lock:
+            delta = size - self.size
+            if self.network._stage_bytes + delta > self.network.max_staging_bytes:
+                raise OSError("resource.staging_bytes")
+            ledger = self.network.staging_ledger
+            if self.covered_limit is not None:
+                if size > self.covered_limit:
+                    raise OSError("resource.staging_bytes")
+            elif ledger is not None and not ledger.replace(self.owner, {"staging_bytes": size}):
+                raise OSError("resource.staging_bytes")
+            written = self.file.write(chunk)
+            self.network._stage_bytes += delta
+            self.size = size
+            return written
+
+    def seek(self, offset, whence=0):
+        return self.file.seek(offset, whence)
+
+    def tell(self):
+        return self.file.tell()
+
+    def truncate(self, size=None):
+        size = self.file.tell() if size is None else size
+        with self.network._stage_lock:
+            self.file.truncate(size)
+            self.network._stage_bytes -= self.size - size
+            self.size = size
+            if self.network.staging_ledger is not None and self.covered_limit is None:
+                self.network.staging_ledger.replace(self.owner, {"staging_bytes": size})
+
+    def copy_into(self, sink, *, cancelled=None, deadline=None):
+        self.file.flush()
+        offset = 0
+        while offset < self.size:
+            if cancelled is not None and cancelled():
+                return HttpFailure("cancelled", "body")
+            if deadline is not None and monotonic() >= deadline:
+                return HttpFailure("timeout", "body")
+            chunk = pread(self.file.fileno(), min(65536, self.size - offset), offset)
+            if not chunk or sink.write(chunk) != len(chunk):
+                return HttpFailure("staging_failed", "body")
+            offset += len(chunk)
+        return None
+
+    def _shared_cleanup(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.file.close()
+        with self.network._stage_lock:
+            self.network._stage_bytes -= self.size
+            if self.network.staging_ledger is not None and self.covered_limit is None:
+                self.network.staging_ledger.release(self.owner)
+            self.size = 0
+
+
 class SessionNetwork:
     """Own session-created pools and scope shared work to explicit observations."""
     def __init__(self, transport=None, *, owned: bool | None = None,
                  per_origin: int = 2, max_entries: int = 64,
-                 max_bytes: int = 256 * 1024 * 1024, journal=None):
+                 max_bytes: int = 256 * 1024 * 1024, journal=None,
+                 max_staging_bytes: int | None = None, staging_ledger=None):
         from stratbox.core.network.transport import RequestsTransport
         self.transport = transport if transport is not None else RequestsTransport(per_origin=per_origin)
         self.owned = transport is None if owned is None else owned
         self.acquisitions = SharedWorkRegistry(max_entries=max_entries, max_bytes=max_bytes)
+        self.staging = SharedWorkRegistry(max_entries=max_entries, max_bytes=max_bytes)
+        self.max_staging_bytes = max_bytes if max_staging_bytes is None else max_staging_bytes
+        self.staging_ledger = staging_ledger
+        self._stage_lock, self._stage_bytes = RLock(), 0
         self.scopes = AccessScopes()
         self._closed = False
         self.journal = journal
@@ -365,6 +452,7 @@ class SessionNetwork:
             return
         self._closed = True
         self.acquisitions.close()
+        self.staging.close()
         self.scopes.preparations.close()
         if self.owned:
             close = getattr(self.transport, "close", None)
@@ -478,27 +566,94 @@ class SharedHttpTransport:
         return self._exchange_into(request, request, sink, cancelled=cancelled)
 
     def _exchange_into(self, request, identity_request, sink, *, cancelled=None):
-        # Sharing a staging destination would combine independent effects.
-        # Each consumer copies immutable bytes into its own private staging.
-        accepted = False
+        if not request.permits(request.url):
+            return HttpFailure("destination_forbidden", "admission")
+        if self.network._closed:
+            return HttpFailure("capability_missing", "admission")
+        registry = self.network.staging
+        key = "stage:" + acquisition_key(identity_request, self.scope, self.observation_id,
+            immutable_identity=self.immutable_identity)
+        if request.method != "GET" and not request.read_only_post:
+            key += ":" + uuid4().hex
+        claim = registry.claim(key, uuid4().hex, cancelled=cancelled)
+        deadline, accepted = monotonic() + request.deadline_seconds, False
+        self._emit("shared_work.attached", claim)
         try:
-            result = self._exchange(request, identity_request, cancelled=cancelled)
-            if isinstance(result, HttpFailure):
-                return result
-            for start in range(0, len(result.body), 65536):
+            if claim.producer:
+                stage = _StagedTransfer(self.network, self.reservation_owner)
+                self._emit("shared_work.started", claim, state="running")
+                try:
+                    response = self._perform_into(request, stage,
+                        lambda: registry.should_cancel(claim))
+                    if isinstance(response, HttpStreamResponse):
+                        if self.immutable_identity is not None and response.identity != self.immutable_identity:
+                            response = HttpFailure("invalid_http", "body")
+                    if isinstance(response, HttpStreamResponse):
+                        stage.response = replace(response.response, shared_work_id=claim.shared_work_id)
+                        stage.identity = response.identity
+                        stage.file.flush()
+                        registry.complete(claim, stage,
+                            cache=stage.response.status_code == 200 and stage.covered_limit is None,
+                            size=stage.size)
+                        self._emit("shared_work.finished", claim, state="finished", outcome="succeeded")
+                    else:
+                        stage._shared_cleanup()
+                        registry.complete(claim, response, cache=False)
+                        self._emit("shared_work.finished", claim, state="finished", outcome="failed")
+                except BaseException as error:
+                    stage._shared_cleanup()
+                    if not claim.future.done():
+                        registry.fail(claim, error)
+                    raise
+            while not claim.future.done():
                 if cancelled is not None and cancelled():
-                    return HttpFailure("cancelled", "body")
-                chunk = result.body[start:start + 65536]
-                if sink.write(chunk) != len(chunk):
-                    return HttpFailure("staging_failed", "body")
+                    return HttpFailure("cancelled", "admission")
+                remaining = deadline - monotonic()
+                if remaining <= 0:
+                    return HttpFailure("timeout", "admission")
+                try:
+                    claim.future.result(timeout=min(0.05, remaining))
+                except FutureTimeout:
+                    pass
+            value = claim.future.result()
+            if isinstance(value, HttpFailure):
+                return value
+            failure = value.copy_into(sink, cancelled=cancelled, deadline=deadline)
+            if failure is not None:
+                return failure
             accepted = True
-            return HttpStreamResponse(replace(result, body=b""), ByteIdentity.of(result.body))
+            response = value.response if claim.producer else replace(value.response, shared_reused=True, wire_size=0)
+            return HttpStreamResponse(response, value.identity)
         except OSError:
             return HttpFailure("staging_failed", "body")
         finally:
+            registry.detach(claim)
+            self._emit("shared_work.detached", claim)
             if not accepted:
                 sink.seek(0)
                 sink.truncate(0)
+
+    def _perform_into(self, request, sink, cancelled):
+        from stratbox.core.network.transport import _hop_admission
+        token = _hop_admission.set(self._admit_hop if self.ledger is not None else None)
+        try:
+            if request.budget is not None and not self.accounts_http_budget:
+                request.budget.charge("requests", 1)
+            stream = getattr(self.network.transport, "exchange_into", None)
+            if stream is not None:
+                return stream(request, sink, cancelled=cancelled)
+            # A bytes-only injected provider still has its declared bound. The
+            # shipped transport streams directly into shared disk staging.
+            response = self.network.transport.exchange(request, cancelled=cancelled)
+            if isinstance(response, HttpFailure):
+                return response
+            for start in range(0, len(response.body), 65536):
+                chunk = response.body[start:start + 65536]
+                if sink.write(chunk) != len(chunk):
+                    return HttpFailure("staging_failed", "body")
+            return HttpStreamResponse(replace(response, body=b""), ByteIdentity.of(response.body))
+        finally:
+            _hop_admission.reset(token)
 
     def _emit(self, kind, claim, **fields):
         journal = self.network.journal

@@ -4,5 +4,5 @@ from .definitions import (
     CommandDefinition, OperationDefinition, PortContract, ScenarioDefinition,
     SemanticPredicate, ValueSemantics, declaration_fingerprint, declaration_tree,
 )
-from .graph import Call, Condition, GraphBody, InputRef, MethodSlot, OutputRef, ParameterRef, RetryPolicy
+from .graph import Call, CollectCall, Condition, GraphBody, MapCall, InputRef, MethodSlot, OutputRef, ParameterRef, RetryPolicy
 from .reuse import ConsumerEligibility, ReuseContract, WorkIdentity, fingerprint

@@ -91,12 +91,36 @@ SOURCE_ORIGINAL_COMMITTED = RecordDataSchema("domain_fact", "source.original_ver
 
 BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED, SOURCE_ORIGINAL_COMMITTED)
 
+VALUE_ACCEPTED = RecordDataSchema("domain_fact", "value.accepted", 1, (
+    FieldRule("value_id", TOKEN, classification="public"),
+    FieldRule("stage", TOKEN, classification="public"),
+    FieldRule("role", ValueRule("token", choices=("originals", "readable", "extracts", "integrated", "products")), classification="public"),
+    FieldRule("identity", IDENTITY, classification="public"),
+    FieldRule("source_id", OPTIONAL_TOKEN, classification="public"),
+    FieldRule("qualification", TOKEN, classification="public"),
+    FieldRule("complete", ValueRule("boolean"), classification="public"),
+    FieldRule("acceptance_id", TOKEN, classification="public"),
+))
+BUILTIN_DATA_SCHEMAS += (VALUE_ACCEPTED,)
+
+EFFECT_CONFIRMED = RecordDataSchema("domain_fact", "effect.confirmed", 1, (
+    FieldRule("effect_id", TOKEN, classification="public"),
+    FieldRule("effect_kind", TOKEN, classification="public"),
+    FieldRule("state", ValueRule("token", choices=("confirmed",)), classification="public"),
+    FieldRule("identity", ValueRule("object", nullable=True, fields=IDENTITY.fields), classification="public"),
+    FieldRule("destination_id", OPTIONAL_TOKEN, classification="public"),
+    FieldRule("guarantee", OPTIONAL_TOKEN, classification="public"),
+    FieldRule("stage", OPTIONAL_TOKEN, classification="public"),
+))
+BUILTIN_DATA_SCHEMAS += (EFFECT_CONFIRMED,)
+
 # Scheduler records have their own envelope: a queued run has no invocation.
 from stratbox.core.observability.records.orchestration import COUNTERS, ORCHESTRATION_KINDS
 
 _ORCHESTRATION_FIELDS = (
     FieldRule("producer_id", TOKEN, classification="restricted"),
     FieldRule("service", ValueRule("boolean")),
+    FieldRule("denominator_open", ValueRule("boolean"), required=False),
     FieldRule("state", OPTIONAL_TOKEN, classification="public"),
     FieldRule("reason", OPTIONAL_TOKEN, classification="public"),
     FieldRule("outcome", ValueRule("token", nullable=True, choices=OUTCOMES), classification="public"),

@@ -74,16 +74,19 @@ class ReuseContract:
     mutation: str = "isolated"
     effects: frozenset[str] = frozenset()
     significant_parameters: tuple[str, ...] = ()
+    observation_scoped: bool = False
 
     def __post_init__(self):
         if self.mutation not in {"isolated", "immutable", "exclusive"}:
             raise ValueError("reuse.invalid_mutation_contract")
-        if any(type(value) is not bool for value in (self.deterministic, self.shareable, self.completed)):
+        if any(type(value) is not bool for value in (self.deterministic, self.shareable, self.completed, self.observation_scoped)):
             raise ValueError("reuse.invalid_contract")
 
     @property
     def eligible(self):
-        return self.deterministic and self.shareable and self.mutation != "exclusive" and not self.effects
+        return ((self.deterministic or self.observation_scoped) and self.shareable
+                and self.mutation != "exclusive"
+                and (not self.effects or self.observation_scoped and self.effects <= {"network.receive"}))
 
 
 @dataclass(frozen=True, slots=True)

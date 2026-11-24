@@ -12,6 +12,7 @@ canonical operation definitions under `stratbox.operations`. The public
 through `stratbox.composition` and executes them in one bounded session.
 
 - [Capability definitions, preparation and execution ownership](docs/architecture/capability-execution.md)
+- [Direct capability calls, temporary graphs and retained results](docs/current-how/capability-session.md)
 - [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
 - [Geography name matching](docs/current-how/geography-name-resolution.md)

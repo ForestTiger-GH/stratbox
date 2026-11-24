@@ -282,3 +282,32 @@ def test_expanded_domain_operation_nests_as_an_ordinary_scenario():
     assert [task.operation_id for task in plan.tasks] == ["frg.discover", "frg.inspect", "frg.select"]
     assert plan.outputs["selection"].task == "nested/scan/select"
     assert all(task.scope_id == "nested/scan" for task in plan.tasks)
+
+
+def test_selected_closure_precedes_unused_input_and_parameter_binding(catalog):
+    scenario = ScenarioDefinition("preview", (
+        OperationStep("useful", "test.produce", parameters={"value": 5}),
+        OperationStep("unused", "test.transform", inputs={"number": InputRef("unavailable")}),
+    ), {"preview":Ref("useful","number"),"extra":Ref("unused","number")},
+       {"unavailable":NUMBER})
+    plan = compile_workflow(scenario,catalog,outputs=("preview",))
+    assert tuple(task.operation_id for task in plan.tasks) == ("test.produce",)
+
+
+def test_required_effect_closure_survives_selected_output(catalog):
+    scenario = ScenarioDefinition("delivery", (
+        OperationStep("preview","test.produce",parameters={"value":5}),
+        OperationStep("save","test.write",parameters={"value":6}),
+    ), {"preview":Ref("preview","number"),"receipt":Ref("save","number")},
+        required_effects=("save",))
+    plan = compile_workflow(scenario,catalog,outputs=("preview",))
+    assert {task.operation_id for task in plan.tasks} == {"test.produce","test.write"}
+    assert plan.scopes[0].required_effects == ("delivery/save",)
+
+
+def test_cascade_kind_and_nested_output_scopes_remain_inspectable(catalog):
+    plan = compile_workflow(CascadeDefinition("cascade",(ScenarioStep("one",chain()),),
+                            {"answer":Ref("one","answer")}),catalog)
+    assert plan.root_kind == "cascade" and plan.scopes[0].kind == "cascade"
+    assert plan.scopes[1].kind == "scenario"
+    assert plan.scopes[0].outputs["answer"] == Ref("cascade/one/double","number")

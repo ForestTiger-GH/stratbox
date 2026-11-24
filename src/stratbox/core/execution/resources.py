@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import RLock
+from time import monotonic
 from types import MappingProxyType
 from typing import Mapping
 
@@ -24,7 +25,7 @@ class ResourceLedger:
     by the invocation's budget meter, never again by parent result summaries.
     """
 
-    def __init__(self, capacities=None, *, expenditure=None, per_origin=2):
+    def __init__(self, capacities=None, *, expenditure=None, per_origin=2, starvation_seconds=0.1):
         self.capacities = dict(capacities or {})
         self.expenditure = dict(expenditure or {})
         self.per_origin = per_origin
@@ -36,6 +37,8 @@ class ResourceLedger:
         self._occupied = {}
         self._spent = {}
         self._peak = {}
+        self._waiting = {}
+        self.starvation_seconds = starvation_seconds
 
     def capacity(self, resource):
         if resource in self.capacities:
@@ -57,7 +60,25 @@ class ResourceLedger:
         with self._lock:
             if owner in self._reservations:
                 raise ValueError("resource.reservation_exists")
-            return self.replace(owner, requirements)
+            self.validate(requirements)
+            if "worker" not in requirements:
+                return self.replace(owner, requirements)
+            now = monotonic()
+            # An aged multi-unit claim reserves its conflicting capacity vector.
+            # Independent resources remain usable while occupied units drain.
+            for other, (since, claim) in self._waiting.items():
+                if other != owner and now - since >= self.starvation_seconds and any(
+                    amount and claim.get(name, 0) for name, amount in requirements.items()
+                    if name != "worker"
+                ):
+                    self._waiting.setdefault(owner, (now, dict(requirements)))
+                    return False
+            admitted = self.replace(owner, requirements)
+            if admitted:
+                self._waiting.pop(owner, None)
+            else:
+                self._waiting.setdefault(owner, (now, dict(requirements)))
+            return admitted
 
     def replace(self, owner, requirements):
         self.validate(requirements)
@@ -80,6 +101,7 @@ class ResourceLedger:
 
     def release(self, owner):
         with self._lock:
+            self._waiting.pop(owner, None)
             for name, amount in self._reservations.pop(owner, {}).items():
                 self._occupied[name] -= amount
 

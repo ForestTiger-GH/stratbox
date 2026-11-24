@@ -69,10 +69,16 @@ class StrategyBox:
     """
 
     def __init__(self, *, settings=None, providers=None, context=None, catalog=None,
-                 observer=None, result_resolver=None, operation_options=None):
+                 capabilities=None, observer=None, result_resolver=None, operation_options=None):
         from stratbox.operations import operation_catalog
         from stratbox.core.execution.session import ExecutionSettings
-        self.operations = catalog if catalog is not None else operation_catalog()
+        from .bootstrap import CapabilityRuntimeCatalog, default_snapshot
+        self.capabilities = capabilities if capabilities is not None else default_snapshot()
+        domains = catalog if catalog is not None else operation_catalog()
+        self.operations = CapabilityRuntimeCatalog(self.capabilities, domains)
+        self.commands = self.capabilities.commands
+        self.scenarios = self.capabilities.scenarios
+        self.cascades = self.capabilities.cascades
         self.sources = SourceAPI(self.operations)
         self.settings = settings if settings is not None else ExecutionSettings()
         self.context = _context(context, providers)
@@ -101,9 +107,48 @@ class StrategyBox:
                 self._session = ExecutionSession(self.operations, **options)
             return self._session
 
+    def prepare(self, capability, *, inputs=None, parameters=None, outputs=None,
+                supplied_outputs=None, method_id=None, profile_id=None, group_id=None):
+        """Resolve a canonical exact invocation and its complete obligations."""
+        from stratbox.composition.prepare import prepare_invocation
+        self._check_open()
+        from stratbox.capabilities.model import CapabilityDefinition
+        if isinstance(capability, CapabilityDefinition):
+            self.operations.admit_local(capability)
+            self.capabilities = self.operations.snapshot
+            self.commands = self.capabilities.commands
+            self.scenarios = self.capabilities.scenarios
+            self.cascades = self.capabilities.cascades
+        return prepare_invocation(capability, self.capabilities, self.operations,
+            inputs=inputs, parameters=parameters, outputs=outputs,
+            supplied_outputs=supplied_outputs, method_id=method_id,
+            profile_id=profile_id, group_id=group_id)
+
+    def discover(self, **filters):
+        """Browse one metadata projection with explicit migration readiness."""
+        self._check_open()
+        return self.operations.discover(**filters)
+
+    def describe(self, capability_id):
+        self._check_open()
+        return self.operations.describe(capability_id)
+
+    def prepare_goal(self, goal, **options):
+        from stratbox.composition.prepare import prepare_goal
+        self._check_open()
+        return prepare_goal(goal, self.capabilities, self.operations, **options)
+
     def compile(self, definition, *, inputs=None, parameters=None, outputs=None):
         from stratbox.composition import compile_workflow
+        from stratbox.capabilities.model import CapabilityDefinition
+        from stratbox.composition.requests import InvocationRequest, GoalRequest
         self._check_open()
+        if isinstance(definition, GoalRequest):
+            if inputs is not None or parameters is not None or outputs is not None:
+                raise ValueError("composition.request_already_bound")
+            return self.prepare_goal(definition)
+        if isinstance(definition, (str, CapabilityDefinition, InvocationRequest)):
+            return self.prepare(definition, inputs=inputs, parameters=parameters, outputs=outputs)
         return compile_workflow(definition, self.operations, inputs=inputs,
                                 parameters=parameters, outputs=outputs)
 
@@ -138,8 +183,26 @@ class StrategyBox:
             ), outputs=outputs)
         return workflow
 
-    def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None):
-        """Compile an operation or expand its supplied composition, then run it."""
+    def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None,
+               outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None):
+        """Invoke any canonical kind through the common session service."""
+        from stratbox.capabilities.model import CapabilityDefinition
+        from stratbox.composition.requests import InvocationRequest, GoalRequest
+        if isinstance(operation_id, GoalRequest):
+            if any(value is not None for value in (inputs, parameters, outputs, supplied_outputs, method_id, profile_id, group_id)):
+                raise ValueError("composition.request_already_bound")
+            return self.run(self.prepare_goal(operation_id), timeout=timeout)
+        canonical = isinstance(operation_id, (CapabilityDefinition, InvocationRequest))
+        if isinstance(operation_id, str):
+            try:
+                self.capabilities.definition(operation_id)
+                canonical = True
+            except (KeyError, ValueError):
+                pass
+        if canonical:
+            plan = self.prepare(operation_id, inputs=inputs, parameters=parameters, outputs=outputs,
+                supplied_outputs=supplied_outputs, method_id=method_id, profile_id=profile_id, group_id=group_id)
+            return self.run(plan, timeout=timeout)
         return self.run(self.workflow(operation_id, inputs=inputs, parameters=parameters),
                         timeout=timeout)
 

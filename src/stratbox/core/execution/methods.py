@@ -310,10 +310,54 @@ def semantic_contract(definition):
             "function": semantics.function.value}
 
 
+def _external_algorithm_fingerprints(references):
+    """Fingerprint explicit trusted contributions, never import plan-supplied code.
+
+    The runtime catalog admits implementation references before this function is
+    called. A serialized execution plan contains only selected catalog IDs and
+    fingerprints; it cannot introduce a new reference through this path.
+    """
+    from importlib import import_module
+    from stratbox.core.execution.values import argument_identity
+    algorithms = {}
+    seen = set()
+
+    def visit(reference, value):
+        if id(value) in seen:
+            return
+        seen.add(id(value))
+        algorithms[reference] = callable_fingerprint(value)
+        if not inspect.isfunction(value):
+            return
+        closure = inspect.getclosurevars(value)
+        for name, item in {**closure.globals, **closure.nonlocals}.items():
+            if inspect.isfunction(item) and item.__module__ == value.__module__:
+                visit(reference + "." + name,item)
+            elif not inspect.ismodule(item) and not callable(item):
+                try:
+                    algorithms[reference + ".binding." + name] = argument_identity(item)
+                except (TypeError,ValueError):
+                    raise MethodError("method.external_binding_not_identifiable") from None
+
+    for reference in references:
+        module,name = reference.split(":",1)
+        try:
+            value = import_module(module)
+            for part in name.split("."):
+                value = getattr(value,part)
+        except (ImportError,AttributeError):
+            raise MethodError("method.external_algorithm_unavailable") from None
+        visit(reference,value)
+    return algorithms
+
+
 def method_descriptor(definition, *, work=None):
     """Resolve one admitted, content-addressed method without API revisions."""
     references = tuple(getattr(definition, "method_refs", ()))
-    algorithms = algorithm_fingerprints(references)
+    internal = tuple(reference for reference in references if reference.split(":",1)[0] == "stratbox" or reference.startswith("stratbox."))
+    external = tuple(reference for reference in references if reference not in internal)
+    algorithms = algorithm_fingerprints(internal)
+    algorithms.update(_external_algorithm_fingerprints(external))
     if not algorithms:
         algorithms["callable"] = callable_fingerprint(work)
     resources = resource_fingerprints(tuple(getattr(definition, "method_resources", ())))

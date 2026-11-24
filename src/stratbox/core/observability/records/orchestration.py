@@ -19,7 +19,8 @@ ORCHESTRATION_KINDS = frozenset({
 })
 OUTCOMES = frozenset({"succeeded", "partial", "failed", "cancelled", "unknown"})
 COUNTERS = ("discovered", "admitted", "waiting", "running", "succeeded", "partial",
-            "failed", "cancelled", "unknown", "blocked", "skipped", "retries", "reused")
+            "failed", "cancelled", "unknown", "blocked", "skipped", "retries", "reused",
+            "physical_work", "logical_uses", "physical_transfers", "running_physical")
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,8 +40,13 @@ class OrchestrationEvent:
     operation_id: str | None = None
     references: tuple[ObjectRef, ...] = ()
     service: bool = False
+    denominator_open: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.denominator_open) is not bool:
+            raise ValueError("orchestration.denominator_invalid")
+        if self.denominator_open and self.total is not None:
+            raise ValueError("orchestration.open_denominator_has_total")
         if type(self.service) is not bool:
             raise ValueError("orchestration.service_invalid")
         if self.kind not in ORCHESTRATION_KINDS:
@@ -90,6 +96,7 @@ def record_from_orchestration_event(event: OrchestrationEvent) -> JournalRecord:
         "completed": event.completed, "total": event.total,
         "counters": dict(event.counters), "invocation_id": event.invocation_id,
         "operation_id": event.operation_id, "service": event.service,
+        "denominator_open": event.denominator_open,
     }
     if event.kind == "run.finished":
         payload.update(run_id=event.correlation.run_id, plan_id=event.correlation.plan_id,

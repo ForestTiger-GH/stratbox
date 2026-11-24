@@ -142,3 +142,62 @@ assert not catalog.readiness("decode").executable
 assert not any(name == "numpy" or name == "pandas" or name.startswith("stratbox.core.execution") for name in sys.modules)
 '''
     subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_map_collection_admission_preserves_element_schema_and_membership():
+    from stratbox.capabilities.model import MapCall, CollectCall
+    number = PortContract(DataContract("number"), int)
+    numbers = PortContract(DataContract("numbers"), tuple, collection=True)
+    command = CommandDefinition("identity", "example:identity", inputs={"item": number}, outputs={"value": number})
+    operation = OperationDefinition("identity.op", GraphBody((Call("leaf", "identity", {"item": InputRef("item")}),), {"value": OutputRef("leaf")}), inputs={"item": number}, outputs={"value": number})
+    scenario = ScenarioDefinition("identity.scenario", GraphBody((Call("op", "identity.op", {"item": InputRef("item")}),), {"value": OutputRef("op")}), inputs={"item": number}, outputs={"value": number})
+    cascade = CascadeDefinition("mapped", GraphBody((
+        MapCall("items", "identity.scenario", InputRef("items"), contract=PortContract(number.schema, collection=True), max_items=10),
+        CollectCall("values", (OutputRef("items"),), numbers, number),
+    ), {"value": OutputRef("values")}), inputs={"items": PortContract(value_type=tuple)}, outputs={"value": numbers},
+        membership=CollectionMembership(("items",), closed=True, expected_coverage=frozenset({"all"})))
+    catalog = CatalogSnapshot((command, operation, scenario, cascade))
+    assert catalog.cascades.get("mapped").membership.closed
+    assert not catalog.cascades.get("mapped").membership.complete
+    assert catalog.resolve("mapped").body.steps[0].max_items == 10
+    broken = PortContract(DataContract("unrelated"), int)
+    from dataclasses import replace
+    bad_collect = replace(cascade.body.steps[1], element_contract=broken)
+    invalid = replace(cascade, body=replace(cascade.body, steps=(cascade.body.steps[0], bad_collect)))
+    with pytest.raises(CatalogError, match="collection_element_contract_mismatch"):
+        CatalogSnapshot((command, operation, scenario, invalid))
+
+
+def test_inferred_profile_group_gets_the_same_applicability_checks():
+    catalog = layout_catalog()
+    group = ProcessingGroup("sheets", source_ids=("allowed.series",), representations=("xlsx",), methods={"extract": "rows"})
+    profile = ProfileDefinition("restricted", {"header": 1}, method_id="rows", group_id="sheets")
+    catalog = CatalogSnapshot(catalog.definitions, catalog.methods, (*catalog.profiles, profile), (group,))
+    with pytest.raises(CatalogError, match="group_inapplicable"):
+        catalog.resolve("extract", profile_id="restricted", selection={"source_id": "wrong.series", "representation": "csv"})
+    assert catalog.resolve("extract", profile_id="restricted",
+        selection={"source_id": "allowed.series", "representation": "xlsx"}).group == group
+
+
+def test_unknown_semantic_parameter_is_rejected_at_selected_binding():
+    catalog = layout_catalog()
+    with pytest.raises(CatalogError, match="parameter_unknown"):
+        catalog.resolve("extract", parameters={"curreny": "RUB"})
+    with pytest.raises(CatalogError, match="parameter_unknown"):
+        catalog.resolve("read", parameters={"unused": 99})
+
+
+def test_required_effect_root_must_reach_an_effectful_command():
+    command = CommandDefinition("pure", "example:pure")
+    scope = OperationDefinition("false.save", GraphBody((Call("pure", "pure"),),
+        {"value": OutputRef("pure")}, required_effects=("pure",)))
+    with pytest.raises(CatalogError, match="required_effect_without_effect"):
+        CatalogSnapshot((command, scope))
+    # Giving the intermediate operation an effect label cannot fabricate a
+    # physical effect in a parent's required-effect closure.
+    intermediate = OperationDefinition("labelled", GraphBody((Call("pure", "pure"),),
+        {"value": OutputRef("pure")}), effects=frozenset({"storage.write"}))
+    scenario = ScenarioDefinition("false.delivery", GraphBody((Call("save", "labelled"),),
+        {"value": OutputRef("save")}, required_effects=("save",)))
+    with pytest.raises(CatalogError, match="required_effect_without_effect"):
+        CatalogSnapshot((command, intermediate, scenario))

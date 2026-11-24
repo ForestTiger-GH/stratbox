@@ -36,6 +36,7 @@ class LiveJournalSource:
         self._entries: OrderedDict[int, JournalEntry] = OrderedDict()
         self._reserved: set[str] = set()
         self._by_run: dict[str, int] = {}
+        self._entry_keys: dict[int, str] = {}
         self._tail = 0
         self._first = 1
         self._lock = RLock()
@@ -53,6 +54,11 @@ class LiveJournalSource:
         with self._lock:
             return run_id in self._reserved
 
+    def lookup(self, reservation_id: str) -> JournalEntry | None:
+        with self._lock:
+            offset = self._by_run.get(reservation_id)
+            return self._entries.get(offset) if offset is not None else None
+
     def release(self, run_id: str) -> None:
         with self._lock:
             self._reserved.discard(run_id)
@@ -60,7 +66,16 @@ class LiveJournalSource:
     def append_terminal(self, record: JournalRecord) -> JournalEntry:
         if record.kind != "run.finished" or record.record_type != "orchestration":
             raise ValueError("journal.terminal_transition_required")
-        run_id = record.correlation.run_id
+        return self._append(record, record.correlation.run_id)
+
+    def append_fact(self, record: JournalRecord) -> JournalEntry:
+        """Publish an accepted execution fact using its reserved stable identity."""
+        if (record.record_type != "domain_fact" or record.kind not in {"value.accepted", "effect.confirmed"}
+                or record.fact_id is None or record.subject is None):
+            raise ValueError("journal.accepted_fact_required")
+        return self._append(record, "fact." + record.fact_id)
+
+    def _append(self, record, run_id):
         with self._lock:
             if run_id in self._by_run:
                 old = self._entries[self._by_run[run_id]]
@@ -73,6 +88,7 @@ class LiveJournalSource:
                 raise ValueError("journal.terminal_record_too_large")
             entry = JournalEntry.from_record(self._tail + 1, record, self.epoch_id)
             self._entries[entry.offset] = entry
+            self._entry_keys[entry.offset] = run_id
             self._by_run[run_id] = entry.offset
             self._reserved.remove(run_id)
             self._tail = entry.offset
@@ -84,8 +100,8 @@ class LiveJournalSource:
             if type(through_offset) is not int or not self._first - 1 <= through_offset <= self._tail:
                 raise ValueError("journal.acknowledgement_invalid")
             while self._entries and next(iter(self._entries)) <= through_offset:
-                _, entry = self._entries.popitem(last=False)
-                self._by_run.pop(entry.record.correlation.run_id, None)
+                offset, entry = self._entries.popitem(last=False)
+                self._by_run.pop(self._entry_keys.pop(offset), None)
             self._first = through_offset + 1
 
     def head(self, stream: StreamKey) -> JournalHead:

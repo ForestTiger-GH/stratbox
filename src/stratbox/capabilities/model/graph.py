@@ -65,6 +65,7 @@ class Condition:
     def __post_init__(self):
         safe_token(self.step)
         safe_token(self.port)
+        object.__setattr__(self, "equals", _freeze(self.equals))
         if any(not part.isidentifier() or part.startswith("_") for part in self.field.split(".") if self.field):
             raise ValueError("capability.invalid_condition")
 
@@ -108,13 +109,13 @@ class Call:
 
 @dataclass(frozen=True, slots=True)
 class GraphBody:
-    steps: tuple[Call, ...]
+    steps: tuple[Call | MapCall | CollectCall, ...]
     outputs: Mapping[str, object] = field(default_factory=dict)
     required_checks: tuple[str, ...] = ()
     required_effects: tuple[str, ...] = ()
 
     def __post_init__(self):
-        if not isinstance(self.steps, tuple) or any(not isinstance(step, Call) for step in self.steps):
+        if not isinstance(self.steps, tuple) or any(not isinstance(step, (Call, MapCall, CollectCall)) for step in self.steps):
             raise ValueError("capability.invalid_graph")
         names = {step.step_id for step in self.steps}
         if len(names) != len(self.steps):
@@ -132,3 +133,67 @@ class MethodSlot:
 
     def __post_init__(self):
         safe_token(self.slot_id)
+
+
+@dataclass(frozen=True, slots=True)
+class MapCall:
+    """Bounded expansion over a frozen item source; the coordinator owns waiting."""
+    step_id: str
+    capability_id: str
+    items: object
+    item_input: str = "item"
+    inputs: Mapping[str, object] = field(default_factory=dict)
+    parameters: Mapping[str, object] = field(default_factory=dict)
+    window: int | None = None
+    key_field: str | None = None
+    required: bool = True
+    allow_partial: bool = False
+    depends_on: tuple[str, ...] = ()
+    contract: object | None = None
+    max_items: int | None = None
+
+    def __post_init__(self):
+        safe_token(self.step_id)
+        safe_token(self.capability_id)
+        safe_token(self.item_input)
+        object.__setattr__(self, "inputs", frozen_mapping(self.inputs))
+        object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
+        object.__setattr__(self, "items", _freeze(self.items))
+        if self.window is not None and (type(self.window) is not int or self.window < 1):
+            raise ValueError("capability.invalid_map_window")
+        if self.max_items is not None and (type(self.max_items) is not int or self.max_items < 0):
+            raise ValueError("capability.invalid_map_limit")
+        if type(self.required) is not bool or type(self.allow_partial) is not bool or not isinstance(self.depends_on, tuple):
+            raise ValueError("capability.invalid_map")
+        if self.key_field is not None and (not self.key_field.isidentifier() or self.key_field.startswith("_")):
+            raise ValueError("capability.invalid_map_key")
+        from .definitions import PortContract
+        if self.contract is not None and (not isinstance(self.contract, PortContract) or not self.contract.collection):
+            raise ValueError("capability.map_collection_contract_required")
+
+
+@dataclass(frozen=True, slots=True)
+class CollectCall:
+    """Structural collection preserves membership without semantic aggregation."""
+    step_id: str
+    inputs: tuple[OutputRef, ...]
+    contract: object
+    element_contract: object
+    allow_partial: bool = False
+    allow_empty: bool = False
+    depends_on: tuple[str, ...] = ()
+    required: bool = True
+
+    def __post_init__(self):
+        safe_token(self.step_id)
+        from .definitions import PortContract
+        if (not isinstance(self.inputs, tuple) or any(not isinstance(ref, OutputRef) for ref in self.inputs)
+                or not isinstance(self.contract, PortContract) or not self.contract.collection
+                or not isinstance(self.element_contract, PortContract)):
+            raise ValueError("capability.invalid_collection")
+        if not self.inputs and not self.allow_empty:
+            raise ValueError("capability.empty_collection")
+        if any(type(value) is not bool for value in (self.allow_partial, self.allow_empty, self.required)):
+            raise ValueError("capability.invalid_collection")
+        if not isinstance(self.depends_on, tuple):
+            raise ValueError("capability.invalid_collection")
