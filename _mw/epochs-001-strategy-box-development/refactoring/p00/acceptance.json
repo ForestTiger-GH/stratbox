@@ -1,0 +1,1659 @@
+{
+  "schema": "stratbox.refactoring.acceptance.v1",
+  "cases": [
+    {
+      "requirement_id": "H-AC01",
+      "source_case": {
+        "trigger": "Invoke one public command from a clean Python session.",
+        "expected": "It accepts declared inputs and returns its technical result without a GUI or dummy permanent higher-level definitions."
+      },
+      "groups": [
+        "T01"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC02",
+      "source_case": {
+        "trigger": "Build a temporary custom operation from commands.",
+        "expected": "The local definition can be prepared and run without repository registration."
+      },
+      "groups": [
+        "T01"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC03",
+      "source_case": {
+        "trigger": "Invoke the same operation directly and inside a scenario.",
+        "expected": "Effective input/output semantics, method selection and acceptance are equivalent."
+      },
+      "groups": [
+        "T01",
+        "T02",
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC04",
+      "source_case": {
+        "trigger": "Put one scenario in two cascades.",
+        "expected": "Both reference the same definition while maintaining separate call occurrences."
+      },
+      "groups": [
+        "T01"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC05",
+      "source_case": {
+        "trigger": "Invoke one scenario twice with different parameters.",
+        "expected": "Its occurrences remain distinct; definition identity alone does not merge them."
+      },
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC06",
+      "source_case": {
+        "trigger": "Attempt an operation body containing a scenario call.",
+        "expected": "Kind-specific composition rules reject the invalid hierarchy."
+      },
+      "groups": [
+        "T01"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC07",
+      "source_case": {
+        "trigger": "Supply a valid material to extraction.",
+        "expected": "No undeclared acquisition fallback appears."
+      },
+      "groups": [
+        "T03"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC08",
+      "source_case": {
+        "trigger": "Supply a retained view for rerendering.",
+        "expected": "Unchanged extraction and calculation are absent from the required closure."
+      },
+      "groups": [
+        "T03",
+        "T09",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC09",
+      "source_case": {
+        "trigger": "Select one output while an unrelated branch lacks an input.",
+        "expected": "The unused branch imposes no concrete runtime requirement."
+      },
+      "groups": [
+        "T03"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC10",
+      "source_case": {
+        "trigger": "Request a save whose receipt is not read by later dataflow.",
+        "expected": "The save remains a completion obligation."
+      },
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC11",
+      "source_case": {
+        "trigger": "Bind two source layouts to one standard operation.",
+        "expected": "Exact schemas and profiles resolve without duplicating the operation's functional promise."
+      },
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC12",
+      "source_case": {
+        "trigger": "Replace an admissible method binding.",
+        "expected": "The prepared command body changes without an SDK or compiler publisher switch."
+      },
+      "groups": [
+        "T02"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC13",
+      "source_case": {
+        "trigger": "Supply equally applicable conflicting methods.",
+        "expected": "Preparation returns explicit ambiguity unless a declared precedence resolves it."
+      },
+      "groups": [
+        "T02"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC14",
+      "source_case": {
+        "trigger": "Discover a layout only after material inspection.",
+        "expected": "An admitted continuation resolves dynamically through the same contract and resource checks."
+      },
+      "groups": [
+        "T02",
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC15",
+      "source_case": {
+        "trigger": "A method returns the right Python type but wrong units or coverage.",
+        "expected": "Operation or receiving-input admission catches the semantic mismatch."
+      },
+      "groups": [
+        "T07",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC16",
+      "source_case": {
+        "trigger": "A specialized method adds a hidden save or network action.",
+        "expected": "Its declared operation/effect contract does not admit that change."
+      },
+      "groups": [
+        "T02",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC17",
+      "source_case": {
+        "trigger": "Request a narrow projection of a coupled model.",
+        "expected": "Required computational inputs remain intact."
+      },
+      "groups": [
+        "T03",
+        "T11"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC18",
+      "source_case": {
+        "trigger": "Use a custom operation with structurally valid but incorrect analysis.",
+        "expected": "The system reports structural validity without claiming scientific correctness."
+      },
+      "groups": [
+        "T01",
+        "T07",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC19",
+      "source_case": {
+        "trigger": "Two distinct operations use an identical immutable workbook decode.",
+        "expected": "One eligible physical producer serves both logical uses."
+      },
+      "groups": [
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC20",
+      "source_case": {
+        "trigger": "Two requests use the same URL but different significant headers or bodies.",
+        "expected": "They remain distinct unless an explicit provider equivalence applies."
+      },
+      "groups": [
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC21",
+      "source_case": {
+        "trigger": "Two calls require different fresh observations.",
+        "expected": "An earlier response is not silently reused."
+      },
+      "groups": [
+        "T04",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC22",
+      "source_case": {
+        "trigger": "A cache-tolerant offline call accompanies a fresh online call.",
+        "expected": "Sharing preserves the offline call's action restrictions."
+      },
+      "groups": [
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC23",
+      "source_case": {
+        "trigger": "The same bytes have two source origins.",
+        "expected": "Physical storage can be shared while logical source uses remain distinct."
+      },
+      "groups": [
+        "T04",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC24",
+      "source_case": {
+        "trigger": "A read appears before and after a state-changing write.",
+        "expected": "Optimization preserves the observation-order distinction."
+      },
+      "groups": [
+        "T04",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC25",
+      "source_case": {
+        "trigger": "A command occurs only under an unselected condition.",
+        "expected": "Optimization does not introduce its otherwise absent effect."
+      },
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC26",
+      "source_case": {
+        "trigger": "Shared acquisition feeds two destination saves.",
+        "expected": "The transfer can be shared; both effects and receipts remain accountable."
+      },
+      "groups": [
+        "T04",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC27",
+      "source_case": {
+        "trigger": "One shared consumer is cancelled.",
+        "expected": "Remaining consumers retain the producer and values they need."
+      },
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC28",
+      "source_case": {
+        "trigger": "Consumers have incompatible retry policies.",
+        "expected": "Policies remain independent or work is separated explicitly."
+      },
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC29",
+      "source_case": {
+        "trigger": "A shared result is a mutable reader or single-use stream.",
+        "expected": "Consumption follows its lease/replay contract instead of assuming immutable sharing."
+      },
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC30",
+      "source_case": {
+        "trigger": "A large source body is shared.",
+        "expected": "Declared memory/staging limits still apply."
+      },
+      "groups": [
+        "T04",
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC31",
+      "source_case": {
+        "trigger": "Nested maps expand new work.",
+        "expected": "Aggregate limits and shared access preparation apply to all admitted tasks."
+      },
+      "groups": [
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC32",
+      "source_case": {
+        "trigger": "A command finishes after cancellation or supersession.",
+        "expected": "It cannot overwrite a current accepted result without valid attempt authority."
+      },
+      "groups": [
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC33",
+      "source_case": {
+        "trigger": "A decoder succeeds but required extraction content is missing.",
+        "expected": "Technical success does not become operation success."
+      },
+      "groups": [
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC34",
+      "source_case": {
+        "trigger": "One consumer accepts a partial dataset and another requires completeness.",
+        "expected": "The shared value keeps one factual qualification; logical outcomes differ."
+      },
+      "groups": [
+        "T04",
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC35",
+      "source_case": {
+        "trigger": "A scenario exposes an early output and later fails another required obligation.",
+        "expected": "Downstream output use follows the contract, while scenario/cascade failure remains visible."
+      },
+      "groups": [
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC36",
+      "source_case": {
+        "trigger": "A common prerequisite fails.",
+        "expected": "One physical root cause is related to all blocked uses without invented executions."
+      },
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC37",
+      "source_case": {
+        "trigger": "A save reply is lost.",
+        "expected": "Effect uncertainty is retained and reconciled independently of produced data."
+      },
+      "groups": [
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC38",
+      "source_case": {
+        "trigger": "An optional observer or notification consumer fails.",
+        "expected": "Business results remain qualified by their own contracts."
+      },
+      "groups": [
+        "T14",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC39",
+      "source_case": {
+        "trigger": "Discovery finishes with fewer periods than requested.",
+        "expected": "Closed membership does not imply complete analytical coverage."
+      },
+      "groups": [
+        "T07",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC40",
+      "source_case": {
+        "trigger": "A completed result is returned from a convenience call.",
+        "expected": "Its promised lifetime survives the call or its session-bound limit is explicit."
+      },
+      "groups": [
+        "T01",
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC41",
+      "source_case": {
+        "trigger": "One transfer serves three logical uses.",
+        "expected": "Physical traffic is counted once and three satisfied dependencies remain visible."
+      },
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC42",
+      "source_case": {
+        "trigger": "The user performs eager calls with undeclared future work.",
+        "expected": "The system promises only reuse and coordination it can actually observe."
+      },
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC43",
+      "source_case": {
+        "trigger": "A catalog selector changes after a cascade run starts.",
+        "expected": "The admitted scenario membership remains identifiable."
+      },
+      "groups": [
+        "T02",
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "H-AC44",
+      "source_case": {
+        "trigger": "A source transitions from A to B and later back to A.",
+        "expected": "Reusable bytes do not erase the distinct source transitions or notification semantics."
+      },
+      "groups": [
+        "T04",
+        "T12",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT01",
+      "source_case": {
+        "trigger": "Extract from a supplied valid material.",
+        "expected": "The plan requires no new acquisition."
+      },
+      "groups": [
+        "T03"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT02",
+      "source_case": {
+        "trigger": "Render from a retained compatible view.",
+        "expected": "Unchanged extraction and calculation stay outside the plan."
+      },
+      "groups": [
+        "T03",
+        "T09",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT03",
+      "source_case": {
+        "trigger": "Select one output from a definition whose unrelated branch lacks a solver or input.",
+        "expected": "Only the selected closure's runtime requirements apply."
+      },
+      "groups": [
+        "T03"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT04",
+      "source_case": {
+        "trigger": "Request a saved product whose receipt is unused by later calculations.",
+        "expected": "Pruning preserves the save obligation."
+      },
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT05",
+      "source_case": {
+        "trigger": "Replace a source's admitted method binding.",
+        "expected": "The prepared graph visibly uses that method without an SDK/compiler edit."
+      },
+      "groups": [
+        "T02"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT06",
+      "source_case": {
+        "trigger": "Replace a slot with a compatible subgraph.",
+        "expected": "External ports and inherited source/effect/resource policies remain valid."
+      },
+      "groups": [
+        "T02",
+        "T03"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT07",
+      "source_case": {
+        "trigger": "Resolve two equally applicable methods without a precedence rule.",
+        "expected": "Preparation reports ambiguity."
+      },
+      "groups": [
+        "T02"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT08",
+      "source_case": {
+        "trigger": "Discover an unsupported layout at runtime.",
+        "expected": "The member receives an explicit diagnostic; an unrelated parser is not selected silently."
+      },
+      "groups": [
+        "T02",
+        "T05",
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT09",
+      "source_case": {
+        "trigger": "Execute nested scenarios with one worker.",
+        "expected": "Structural orchestration completes without waiting-worker deadlock."
+      },
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT10",
+      "source_case": {
+        "trigger": "Run a large backfill and a small preview together.",
+        "expected": "Shared limits hold and the small request receives bounded admission opportunity."
+      },
+      "groups": [
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT11",
+      "source_case": {
+        "trigger": "Add HTTP tasks solely through a dynamic map.",
+        "expected": "They receive the same shared provider preparation and limits as initial tasks."
+      },
+      "groups": [
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT12",
+      "source_case": {
+        "trigger": "Join two compatible consumers to one acquisition.",
+        "expected": "One physical transfer is recorded; both logical dependencies are satisfied."
+      },
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT13",
+      "source_case": {
+        "trigger": "Cancel one shared consumer.",
+        "expected": "Remaining consumers retain the producer and accepted material they need."
+      },
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT14",
+      "source_case": {
+        "trigger": "Request a fresh observation at a mutable URL.",
+        "expected": "An incompatible old observation is not reused merely because the URL matches."
+      },
+      "groups": [
+        "T04",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT15",
+      "source_case": {
+        "trigger": "Acquire a large shared material.",
+        "expected": "Bounded staging/backpressure remains effective under the declared profile."
+      },
+      "groups": [
+        "T04",
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT16",
+      "source_case": {
+        "trigger": "Expand nested maps.",
+        "expected": "Aggregate task/material limits hold across the whole session."
+      },
+      "groups": [
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT17",
+      "source_case": {
+        "trigger": "Mutate data in one downstream branch.",
+        "expected": "Another consumer's accepted input remains unchanged."
+      },
+      "groups": [
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT18",
+      "source_case": {
+        "trigger": "Close a producing scope while a valid reader remains.",
+        "expected": "Its promised material stays readable until the reader releases it."
+      },
+      "groups": [
+        "T06"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT19",
+      "source_case": {
+        "trigger": "Return a completed partial collection.",
+        "expected": "Membership, failures and usable scope remain inspectable."
+      },
+      "groups": [
+        "T07"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT20",
+      "source_case": {
+        "trigger": "Discover fewer periods than the requested expected history.",
+        "expected": "Closed discovery does not claim full historical coverage."
+      },
+      "groups": [
+        "T07",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT21",
+      "source_case": {
+        "trigger": "Encounter dash, zero, withheld and missing values.",
+        "expected": "The source-specific distinctions survive interpretation and calculation admission."
+      },
+      "groups": [
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT22",
+      "source_case": {
+        "trigger": "Combine overlapping aggregate rows.",
+        "expected": "The analytical method rejects or explicitly accounts for overlap."
+      },
+      "groups": [
+        "T10",
+        "T11"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT23",
+      "source_case": {
+        "trigger": "A source revises a prior period.",
+        "expected": "Revision comparison and period change retain separate meanings."
+      },
+      "groups": [
+        "T10",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT24",
+      "source_case": {
+        "trigger": "An older run completes after a newer current edition.",
+        "expected": "Conditional publication and revision policy prevent accidental regression."
+      },
+      "groups": [
+        "T08",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT25",
+      "source_case": {
+        "trigger": "A save outcome becomes unknown after a valid calculation.",
+        "expected": "Calculation outputs remain usable; the exact save obligation enters reconciliation."
+      },
+      "groups": [
+        "T07",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT26",
+      "source_case": {
+        "trigger": "Cancel or time out a running write.",
+        "expected": "The system preserves actual worker occupancy and effect knowledge until settled."
+      },
+      "groups": [
+        "T06",
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT27",
+      "source_case": {
+        "trigger": "Fail an optional observer.",
+        "expected": "Business truth remains intact and capture degradation is visible."
+      },
+      "groups": [
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT28",
+      "source_case": {
+        "trigger": "Fail a required notification handoff after successful data publication.",
+        "expected": "Delivery can be retried or reconciled without repeating the data transformation."
+      },
+      "groups": [
+        "T08",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT29",
+      "source_case": {
+        "trigger": "Change only the rendering profile.",
+        "expected": "Numerical results and their source basis remain reusable."
+      },
+      "groups": [
+        "T12",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT30",
+      "source_case": {
+        "trigger": "Lose the process under a durable-host promise.",
+        "expected": "Retained state permits qualified recovery; unsupported guarantees are reported explicitly."
+      },
+      "groups": [
+        "T18"
+      ],
+      "status": "planned",
+      "guarantee_profile": "external_host",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT31",
+      "source_case": {
+        "trigger": "A machine tool returns a run handle.",
+        "expected": "Later inspection exposes the same qualified state and result as the human interface."
+      },
+      "groups": [
+        "T17"
+      ],
+      "status": "planned",
+      "guarantee_profile": "external_host",
+      "verification": []
+    },
+    {
+      "requirement_id": "K-ACCEPT32",
+      "source_case": {
+        "trigger": "An analyst changes a document while its prior revision is calculating.",
+        "expected": "The late result stays attached to its input revision and cannot silently replace the new revision's current result."
+      },
+      "groups": [
+        "T06",
+        "T12",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC01",
+      "source_case": {
+        "trigger": "Parse a caller-supplied local workbook.",
+        "expected": "No source discovery or network request is required by the parsing contract."
+      },
+      "groups": [
+        "T03",
+        "T09"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC02",
+      "source_case": {
+        "trigger": "Request only original preservation.",
+        "expected": "Acquire and confirm stored source material without fabricated extracts or readable files."
+      },
+      "groups": [
+        "T03",
+        "T08",
+        "T09"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC03",
+      "source_case": {
+        "trigger": "Request readable conversion only.",
+        "expected": "Return a faithful, coverage-qualified publication representation."
+      },
+      "groups": [
+        "T09"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC04",
+      "source_case": {
+        "trigger": "Extract directly from native XLSX while also requesting readable output.",
+        "expected": "Both operations reuse the admitted material and retain independent outcomes."
+      },
+      "groups": [
+        "T04",
+        "T07",
+        "T09"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC05",
+      "source_case": {
+        "trigger": "Admit a source-native CSV that already satisfies a series contract.",
+        "expected": "Validate its role without requiring a duplicate converted file."
+      },
+      "groups": [
+        "T09",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC06",
+      "source_case": {
+        "trigger": "Process two extracts with very different schemas.",
+        "expected": "Both remain valid series-local datasets; integration uses their explicit adapters."
+      },
+      "groups": [
+        "T09",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC07",
+      "source_case": {
+        "trigger": "Request only one industry while validating an entire workbook.",
+        "expected": "Output selection and validation scope remain separately recorded."
+      },
+      "groups": [
+        "T03",
+        "T07",
+        "T11"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC08",
+      "source_case": {
+        "trigger": "Encounter a new schema edition.",
+        "expected": "Explicitly admit, qualify or reject the edition; preserve source differences."
+      },
+      "groups": [
+        "T02",
+        "T07",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC09",
+      "source_case": {
+        "trigger": "Encounter missing, withheld, dash and zero values.",
+        "expected": "Preserve the contract's distinctions through extraction and integration."
+      },
+      "groups": [
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC10",
+      "source_case": {
+        "trigger": "Integrate two similarly named but incompatible measures.",
+        "expected": "Retain distinct meanings or an explicitly qualified mapping."
+      },
+      "groups": [
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC11",
+      "source_case": {
+        "trigger": "Align data in a notebook with no database.",
+        "expected": "Return a usable integrated batch satisfying the same semantic contract."
+      },
+      "groups": [
+        "T01",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC12",
+      "source_case": {
+        "trigger": "Ingest an already aligned version twice.",
+        "expected": "Avoid duplicate logical observations under the destination's idempotency contract."
+      },
+      "groups": [
+        "T08",
+        "T10"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC13",
+      "source_case": {
+        "trigger": "Run SORS for one output cut.",
+        "expected": "Admit the full required constraint scope and qualify inferred results."
+      },
+      "groups": [
+        "T03",
+        "T11"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC14",
+      "source_case": {
+        "trigger": "Stop SORS on resource exhaustion or unavailable solver capability.",
+        "expected": "Return the method's honest incomplete/status result; avoid fabricated successful inference."
+      },
+      "groups": [
+        "T05",
+        "T07",
+        "T11"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC15",
+      "source_case": {
+        "trigger": "Render a workbook from an existing qualified dataset.",
+        "expected": "Reuse data/calculations and apply only the required view/render operations."
+      },
+      "groups": [
+        "T03",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC16",
+      "source_case": {
+        "trigger": "A source validator says unchanged but its baseline bytes are unavailable.",
+        "expected": "Acquire full material when downstream work requires those bytes."
+      },
+      "groups": [
+        "T03",
+        "T04",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC17",
+      "source_case": {
+        "trigger": "Source bytes are unchanged but the extraction method changes.",
+        "expected": "Recompute affected extracts and dependent outputs."
+      },
+      "groups": [
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC18",
+      "source_case": {
+        "trigger": "A source check fails.",
+        "expected": "Preserve failed-check/indeterminate semantics rather than returning unchanged."
+      },
+      "groups": [
+        "T12",
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC19",
+      "source_case": {
+        "trigger": "A byte revision leaves compared facts equal.",
+        "expected": "Retain both layer assessments and the actual facts comparison scope."
+      },
+      "groups": [
+        "T10",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC20",
+      "source_case": {
+        "trigger": "Initial local observation or historical backfill occurs.",
+        "expected": "Keep its meaning distinct from newly published live data."
+      },
+      "groups": [
+        "T12",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC21",
+      "source_case": {
+        "trigger": "Acquire many independent issues concurrently.",
+        "expected": "Respect global/per-source limits and bounded downstream capacity."
+      },
+      "groups": [
+        "T05"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC22",
+      "source_case": {
+        "trigger": "An older revision finishes after a newer revision.",
+        "expected": "The current-selection policy prevents accidental regression."
+      },
+      "groups": [
+        "T08",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC23",
+      "source_case": {
+        "trigger": "Several required issue assets are acquired across a source revision.",
+        "expected": "Qualify or reject a mixed bundle under its declared consistency rule."
+      },
+      "groups": [
+        "T07",
+        "T10",
+        "T12"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC24",
+      "source_case": {
+        "trigger": "Several workers construct a shared report.",
+        "expected": "Fan-in verifies expected coverage and one owner confirms the final publication boundary."
+      },
+      "groups": [
+        "T07",
+        "T08",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC25",
+      "source_case": {
+        "trigger": "A process or worker fails after successful independent partitions.",
+        "expected": "Preserve reusable confirmed results and identify remaining work."
+      },
+      "groups": [
+        "T06",
+        "T07",
+        "T18"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC26",
+      "source_case": {
+        "trigger": "A destination write has an uncertain result.",
+        "expected": "Reconcile the exact effect before an unsafe repetition."
+      },
+      "groups": [
+        "T08"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC27",
+      "source_case": {
+        "trigger": "An optional event collector fails.",
+        "expected": "Keep the business result and expose degraded observation coverage."
+      },
+      "groups": [
+        "T14"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC28",
+      "source_case": {
+        "trigger": "No notifications are configured.",
+        "expected": "Every requested business operation still returns its normal result."
+      },
+      "groups": [
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC29",
+      "source_case": {
+        "trigger": "Subscribe only to a source-local update.",
+        "expected": "Prepare an eligible alert without waiting for unrelated integration."
+      },
+      "groups": [
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC30",
+      "source_case": {
+        "trigger": "Subscribe to product readiness.",
+        "expected": "Require evidence at the promised product publication boundary."
+      },
+      "groups": [
+        "T08",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC31",
+      "source_case": {
+        "trigger": "A message handoff succeeds but final external delivery is unknown.",
+        "expected": "Report the two stages separately."
+      },
+      "groups": [
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC32",
+      "source_case": {
+        "trigger": "Several subscribers consume one qualified event.",
+        "expected": "Maintain independent progress, selection and handoff state."
+      },
+      "groups": [
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC33",
+      "source_case": {
+        "trigger": "A source transitions A to B to A.",
+        "expected": "Reuse material where appropriate while preserving distinct source transitions."
+      },
+      "groups": [
+        "T04",
+        "T12",
+        "T15"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC34",
+      "source_case": {
+        "trigger": "Use different directory names for the same roles.",
+        "expected": "Operation contracts remain portable across `scrolls`/`flakes` and technical catalogs."
+      },
+      "groups": [
+        "T09"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC35",
+      "source_case": {
+        "trigger": "Construct a multi-query report during database updates.",
+        "expected": "Use a pinned version/snapshot policy and record the actual input-version vector."
+      },
+      "groups": [
+        "T10",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC36",
+      "source_case": {
+        "trigger": "A derived result is ingested alongside reported data.",
+        "expected": "Preserve its method, input lineage and inference qualification in later views."
+      },
+      "groups": [
+        "T10",
+        "T11",
+        "T13"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC37",
+      "source_case": {
+        "trigger": "A consumer never requests an applicable stage.",
+        "expected": "The stage remains part of the domain's target contour; usage does not redefine completeness."
+      },
+      "groups": [
+        "T16"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC38",
+      "source_case": {
+        "trigger": "An applicable domain stage has no implementation.",
+        "expected": "Expose it as an engineering gap, rather than an executable capability or inapplicable stage."
+      },
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC39",
+      "source_case": {
+        "trigger": "A domain stage is supplied by a shared operation.",
+        "expected": "Resolve the exact owner, compatible contract and required domain binding without duplicate business code."
+      },
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC40",
+      "source_case": {
+        "trigger": "An AI client inspects a domain through MCP.",
+        "expected": "Discover actual callable stage operations, typed inputs/outputs and runtime conditions."
+      },
+      "groups": [
+        "T16",
+        "T17"
+      ],
+      "status": "planned",
+      "guarantee_profile": "external_host",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC41",
+      "source_case": {
+        "trigger": "An AI client reuses an existing extract.",
+        "expected": "Invoke calculation/view/render stages independently without mandatory reacquisition."
+      },
+      "groups": [
+        "T03",
+        "T17"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC42",
+      "source_case": {
+        "trigger": "A long-running AI-initiated task outlives its request connection.",
+        "expected": "Obtain status/results through the application task contract when that recovery profile is promised."
+      },
+      "groups": [
+        "T17",
+        "T18"
+      ],
+      "status": "planned",
+      "guarantee_profile": "external_host",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC43",
+      "source_case": {
+        "trigger": "A protocol call returns a business result with unknown effects.",
+        "expected": "Preserve the unknown business/effect qualification in the machine result."
+      },
+      "groups": [
+        "T08",
+        "T17"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    },
+    {
+      "requirement_id": "D-AC44",
+      "source_case": {
+        "trigger": "The AI requests a preview of a very large result.",
+        "expected": "Return bounded selected data and material references with coverage rather than an unbounded context dump."
+      },
+      "groups": [
+        "T17"
+      ],
+      "status": "planned",
+      "guarantee_profile": "local_session",
+      "verification": []
+    }
+  ]
+}

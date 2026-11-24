@@ -91,6 +91,8 @@ def _literal_module_refs(tree: ast.AST):
 
 CRITICAL_MODULES = [
     "stratbox",
+    "stratbox.capabilities.model",
+    "stratbox.capabilities.catalog",
     "stratbox.core",
     "stratbox.core.runtime",
     "stratbox.core.runtime.providers",
@@ -250,6 +252,21 @@ def check_dependency_direction() -> list[str]:
         source = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         for line, target in (*_imports(path, source), *_literal_module_refs(source)):
             prefix = f"{relative}:{line}"
+            if relative.startswith("capabilities/") and target.startswith("stratbox."):
+                allowed = ("stratbox.shared", "stratbox.capabilities")
+                if not target.startswith(allowed):
+                    failures.append(f"{prefix}: capability metadata imports executable owner {target}")
+                if relative.startswith("capabilities/model/") and target.startswith("stratbox.capabilities.") and not target.startswith("stratbox.capabilities.model"):
+                    failures.append(f"{prefix}: pure capability model imports higher owner {target}")
+                if relative.startswith("capabilities/catalog/") and target.startswith("stratbox.capabilities.") and not target.startswith(("stratbox.capabilities.model", "stratbox.capabilities.catalog")):
+                    failures.append(f"{prefix}: catalog imports concrete definitions {target}")
+            if relative.startswith("shared/") and target.startswith(("stratbox.capabilities", "stratbox.composition", "stratbox.sdk")):
+                failures.append(f"{prefix}: shared contracts import higher owner {target}")
+            # Existing source workflow contributions move with the P18 domain
+            # composition migration. Canonical preparation and lowering already
+            # enforce the final neutral boundary.
+            if relative.startswith("composition/") and not relative.startswith("composition/builtins/") and target.startswith(("stratbox.sdk", "stratbox.domains.cbr", "stratbox.domains.fns", "stratbox.domains.minfin", "stratbox.domains.rosstat", "stratbox.domains.frank_rg")):
+                failures.append(f"{prefix}: composition imports publisher or SDK implementation {target}")
             if target == "INVALID_RELATIVE_IMPORT":
                 failures.append(f"{prefix}: invalid relative import")
                 continue
