@@ -29,28 +29,7 @@ BaselineState = Literal["initial", "available", "absent_proven", "unavailable"]
 _HASH = re.compile(r"[0-9a-f]{64}\Z")
 
 
-@dataclass(frozen=True, slots=True)
-class OriginalVersion:
-    """Confirmed logical asset version. The transition chain is durable owner state."""
-
-    source_id: str
-    identity: ByteIdentity
-    transition_id: str | None = None
-
-    def __post_init__(self):
-        if (
-            not isinstance(self.source_id, str)
-            or not self.source_id
-            or len(self.source_id) > 128
-        ):
-            raise ValueError("source.version_identity_invalid")
-        if not isinstance(self.identity, ByteIdentity):
-            raise ValueError("source.version_identity_invalid")
-        if self.transition_id is not None and (
-            not isinstance(self.transition_id, str)
-            or not _HASH.fullmatch(self.transition_id)
-        ):
-            raise ValueError("source.transition_invalid")
+from stratbox.shared.source_versions import OriginalVersion, OriginalVersionComparison
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,21 +87,6 @@ class CompareOriginalVersionsRequest:
                 raise ValueError("source.inventory_out_of_order")
         elif self.absence is not None or self.presence is not None:
             raise ValueError("source.absence_unexpected")
-
-
-@dataclass(frozen=True, slots=True)
-class OriginalVersionComparison:
-    source_id: str
-    state: Change
-    reason: str
-    old_identity: ByteIdentity | None
-    new_identity: ByteIdentity
-    transition_id: str | None = None
-    previous_transition_id: str | None = None
-
-    @property
-    def changed(self) -> bool:
-        return self.state in {"first_seen", "new_release", "new_asset", "revised"}
 
 
 COMPARE = _registry_definition('source.compare_original_versions')

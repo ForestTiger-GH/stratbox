@@ -1,25 +1,15 @@
-"""Retain and restore aligned data through the shared observation codec."""
-from stratbox.core.execution import OperationFailure,run
-from stratbox.shared.data.observation_snapshots import observation_snapshot,observations_from_snapshot
-from stratbox.shared.evidence import UsedInputReceipt
-from .observation_definitions import SNAPSHOT,RESTORE
+"""Execution facades for direct domain methods."""
+from __future__ import annotations
+import stratbox.domains.cbr.methods.service_network.observation_operations as _methods
+from stratbox.domains.cbr.methods.service_network.observation_operations import *
+from stratbox.core.execution import run
+from stratbox.operations.declarations import definition as _definition
 
-def snapshot_observations(request,*,context=None):
-    def work(req,invocation):
-        invocation.stage("encode_observations")
-        try:result=observation_snapshot(req.batch,dataset_id=req.dataset_id,version_id=req.version_id)
-        except (ValueError,TypeError) as error:raise OperationFailure(str(error)) from None
-        for receipt in req.batch.lineage:invocation.use(receipt)
-        invocation.record(result.identity)
-        return result
-    return run(SNAPSHOT,request,work,context=context)
+def __getattr__(name):
+    return getattr(_methods, name)
 
-def restore_observations(request,*,context=None):
-    def work(req,invocation):
-        invocation.stage("restore_observations")
-        try:result=observations_from_snapshot(req)
-        except (ValueError,TypeError) as error:raise OperationFailure(str(error)) from None
-        invocation.use(UsedInputReceipt("retained_observations",req.identity,"application/vnd.stratbox.dataset+json","inline",req.manifest.dataset_id))
-        for receipt in result.lineage:invocation.use(receipt)
-        return result
-    return run(RESTORE,request,work,context=context)
+def snapshot_observations(request, *, context=None):
+    return run(_definition('cbr.service_network.observations_snapshot'), request, lambda req, invocation: _methods.snapshot_observations(req, invocation=invocation), context=context)
+
+def restore_observations(request, *, context=None):
+    return run(_definition('cbr.service_network.restore_observations'), request, lambda req, invocation: _methods.restore_observations(req, invocation=invocation), context=context)

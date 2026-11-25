@@ -144,6 +144,13 @@ def _contract_sources():
                 # same contracts; inference must use the canonical resolved group.
                 group = decode_source_group(declaration)
                 for contract in group.contracts:
+                    # A shared physical schema does not become source-specific
+                    # merely because only one registered source uses it today.
+                    # Source inference is confined to its declared namespace;
+                    # generic values carry their actual explicit source uses.
+                    namespace = source["series_id"].split(".", 1)[0] + "."
+                    if not contract.schema_id.startswith(namespace):
+                        continue
                     bindings.setdefault(contract, set()).add((source["series_id"], source["family_id"], group.group_id))
     return {contract: next(iter(values)) for contract, values in bindings.items() if len(values) == 1}
 

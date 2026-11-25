@@ -8,12 +8,15 @@ The package organizes neutral execution and infrastructure under `stratbox.core`
 shared data contracts and reference resources under `stratbox.shared`,
 business packages and source declarations under `stratbox.domains`, and
 typed command, operation, scenario and cascade definitions under
-`stratbox.capabilities`. Existing domain declarations remain an explicit
-contribution from `stratbox.operations` during their domain migration.
+`stratbox.capabilities`. Each domain contributes typed command, operation and
+scenario metadata from its own capability owner. Source goals select those
+contributions through exact recipes and processing groups.
 The public `stratbox.sdk.StrategyBox` facade prepares all four kinds through
 `stratbox.composition` and executes them in one bounded session.
 
 - [Capability definitions, preparation and execution ownership](docs/architecture/capability-execution.md)
+- [Independent standard processing stages and semantic replay](docs/current-how/standard-data-stages.md)
+- [Supplied tasks, pinned membership and coherent releases](docs/current-how/supplied-tasks-and-releases.md)
 - [Direct capability calls, temporary graphs and retained results](docs/current-how/capability-session.md)
 - [Extraction evidence, exact coverage and analytical pairs](docs/current-how/extraction-assessments-and-analytical-pairs.md)
 - [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
@@ -43,6 +46,7 @@ python -m pip install -e ".[test]"
 python -B scripts/check_release_integrity.py
 python -B scripts/check_internal_imports.py
 python -B scripts/admit_registry.py --level executable
+python -B scripts/check_capability_migration.py
 python -B scripts/reference_editions.py verify --reference all
 python -B -m pytest -q
 # Offline regression and distribution admission (requires build, pytest, wheel):

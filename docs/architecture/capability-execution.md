@@ -2,9 +2,9 @@
 
 The canonical capability path separates authored definitions, prepared command
 work and accepted results. Four kinds share one catalog and one execution
-session: command, operation, scenario and cascade. This architecture covers
-the core foundation and vertical pilot. The existing domain operation corpus
-remains an explicit migration contribution until its domain migration stages.
+session: command, operation, scenario and cascade. The neutral stages and all
+five domain contributions use this path within their explicitly supported
+source formats, reviewed profiles and analytical contracts.
 
 ## Ownership and dependencies
 
@@ -31,7 +31,7 @@ individual acceptance scopes. Structural nodes organize work; they do not
 replace analytical operations.
 
 Exact preparation resolves the selected method and profile, then builds the
-dependency closure from requested outputs, required checks and required effects.
+dependency closure from requested outputs, required completions, checks and effects.
 Supplied accepted values cut their upstream prerequisites. Concrete input and
 provider admission applies to the selected closure. Unused branches impose no
 runtime requirement. A required save remains required when its receipt has no
@@ -94,7 +94,19 @@ Use a local snapshot overlay for temporary notebook definitions. Keep source
 selection in registered groups and recipes. The generic compiler contains no
 publisher-specific dispatch.
 
+The SDK bootstrap assembles neutral metadata and the five independent domain
+contributions. Port contracts retain alternative schemas, accepted outcomes and
+optional provider declarations. A generic input explicitly accepts arbitrary
+schema identities while preserving outcome, qualification and coverage checks;
+it never weakens an enclosing operation's declared input contract.
+
+Finite ordered folds lower to ordinary scenario occurrences. Each member has
+its own attempt history and receives the previous accepted state. Shared limits
+and retries remain visible to the coordinator. Required completion roots keep
+independent goals in the closure without turning them into output guards.
+
 The import checker enforces pure capability metadata ownership and shared
-dependency direction. Deterministic vertical fixtures distinguish synthetic
-execution evidence from publisher-layout evidence. Complete domain migration
-and machine facade migration have their own later acceptance gates.
+dependency direction. The migration audit checks all declared routes separately
+from scientific publisher-edition evidence. Deterministic fixtures establish
+their bounded layouts; unavailable publisher originals remain explicit evidence
+obligations. Direct facade and machine-surface migration have their own gates.

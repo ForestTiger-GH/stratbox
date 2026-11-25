@@ -270,18 +270,23 @@ def test_graph_convenience_operation_requires_an_explicit_scenario():
         compile_workflow(definition, operations)
 
 
-def test_expanded_domain_operation_nests_as_an_ordinary_scenario():
-    from stratbox.operations import operation_catalog
-    from stratbox.composition.builtins import expand_operation
-    from stratbox.domains.frank_rg.publications.contracts import DiscoveryRequest
-    operations = operation_catalog()
-    expanded = expand_operation("frg.scan", DiscoveryRequest("fixture-directory"))
-    definition = ScenarioDefinition("nested", (ScenarioStep("scan", expanded),),
-                                    {"selection": Ref("scan", "selections")})
-    plan = compile_workflow(definition, operations)
-    assert [task.operation_id for task in plan.tasks] == ["frg.discover", "frg.inspect", "frg.select"]
-    assert plan.outputs["selection"].task == "nested/scan/select"
-    assert all(task.scope_id == "nested/scan" for task in plan.tasks)
+def test_supplied_domain_scenario_nests_with_explicit_discovery_inspection_and_selection():
+    from stratbox.capabilities.model import ScenarioDefinition as CapabilityScenario, GraphBody, Call, OutputRef
+    from stratbox.sdk import StrategyBox
+    from stratbox.sdk.bootstrap import default_snapshot
+    snapshot = default_snapshot()
+    definition = CapabilityScenario("nested", GraphBody((
+        Call("scan", "frg.scan", parameters={"directory": "fixture-directory"}),
+    ), {"selection": OutputRef("scan", "selections")}),
+        outputs={"selection": snapshot.definition("frg.scan").outputs["selections"]})
+    with StrategyBox(capabilities=snapshot) as box:
+        plan = box.prepare(definition)
+    physical = tuple(task for task in plan.tasks if task.operation_id is not None)
+    assert [task.operation_id for task in physical] == ["frg.discover.command", "frg.inspect.command", "frg.select.command"]
+    assert {scope.definition_id for scope in plan.scopes if scope.parent_id == "nested/scan"} >= {
+        "frg.discover", "frg.inspect", "frg.select"}
+    assert "selection" in plan.outputs
+    assert "frg.catalog.compose" not in {scope.definition_id for scope in plan.scopes}
 
 
 def test_selected_closure_precedes_unused_input_and_parameter_binding(catalog):

@@ -41,8 +41,7 @@
       ],
       "profile_ids": [
         "short_term_indicators",
-        "rosstat.kep2",
-        "rosstat.reviewed_cells.metadata.rosstat.population_municipalities"
+        "rosstat.kep2"
       ],
       "formats": [
         "xlsx"
@@ -76,8 +75,7 @@
     "bindings": {},
     "profiles": [
       "short_term_indicators",
-      "rosstat.kep2",
-      "rosstat.reviewed_cells.metadata.rosstat.population_municipalities"
+      "rosstat.kep2"
     ],
     "qualifications": [
       "Publisher issue dates and statistical observation periods are separate identities.",

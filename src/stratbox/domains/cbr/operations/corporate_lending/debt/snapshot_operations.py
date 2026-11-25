@@ -1,46 +1,36 @@
-"""Portable results and independent flake integration for this publication family."""
-import stratbox.domains.cbr.operations.corporate_lending.debt.definitions as D
-import stratbox.domains.cbr.operations.corporate_lending.industry.snapshot_operations as shared
-from stratbox.domains.cbr.operations.corporate_lending.industry.integration import integrate
-from stratbox.domains.cbr.integration.corporate_lending.industry.integration import reference_period
-from stratbox.domains.cbr.operations.corporate_lending.debt.snapshot_profile import TYPES
-from stratbox.domains.cbr.integration.corporate_lending.industry.geography import normalize_cbr_0105a_debt_corp_regions_to_latest
-from stratbox.domains.cbr.publications.corporate_lending.contracts import Cbr0105ADebtCorpSourceLink
-from stratbox.domains.cbr.integration.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
+"""Execution facades for direct domain methods."""
+from __future__ import annotations
+import stratbox.domains.cbr.methods.corporate_lending.debt.snapshot_operations as _methods
+from stratbox.domains.cbr.methods.corporate_lending.debt.snapshot_operations import *
+from stratbox.core.execution import run
+from stratbox.operations.declarations import definition as _definition
 
-FAMILY = "0105a"
-
-def _result(original, shared):
-    links = tuple(Cbr0105ADebtCorpSourceLink(item.source_id, item.source_url, item.source_name, item.report_date)
-                  for item in original if item.source_url is not None)
-    return Cbr0105ADebtCorpStreamResult(source_links=links, **shared)
-
+def __getattr__(name):
+    return getattr(_methods, name)
 
 def integrate_flakes(request, *, context=None):
-    return integrate(request, family=FAMILY, definition=D.INTEGRATE_FLAKES, types=TYPES,
-        normalize_geography=normalize_cbr_0105a_debt_corp_regions_to_latest, result_factory=_result, context=context)
-
+    return run(_definition('cbr.industries.0105a.integrate_flakes'), request, lambda req, invocation: _methods.integrate_flakes(req, invocation=invocation), context=context)
 
 def build_flake_snapshot(request, *, context=None):
-    return shared.build_snapshot(request, family=FAMILY, kind="flake", definition=D.FLAKE_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.flake_snapshot'), request, lambda req, invocation: _methods.build_flake_snapshot(req, invocation=invocation), context=context)
 
 def read_flake_snapshot(request, *, context=None):
-    return shared.read_snapshot(request, family=FAMILY, kind="flake", definition=D.READ_FLAKE_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.read_flake_snapshot'), request, lambda req, invocation: _methods.read_flake_snapshot(req, invocation=invocation), context=context)
 
 def build_stream_snapshot(request, *, context=None):
-    return shared.build_snapshot(request, family=FAMILY, kind="stream", definition=D.STREAM_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.stream_snapshot'), request, lambda req, invocation: _methods.build_stream_snapshot(req, invocation=invocation), context=context)
 
 def read_stream_snapshot(request, *, context=None):
-    return shared.read_snapshot(request, family=FAMILY, kind="stream", definition=D.READ_STREAM_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.read_stream_snapshot'), request, lambda req, invocation: _methods.read_stream_snapshot(req, invocation=invocation), context=context)
 
 def build_calculation_snapshot(request, *, context=None):
-    return shared.build_snapshot(request, family=FAMILY, kind="calculation", definition=D.CALCULATION_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.calculation_snapshot'), request, lambda req, invocation: _methods.build_calculation_snapshot(req, invocation=invocation), context=context)
 
 def read_calculation_snapshot(request, *, context=None):
-    return shared.read_snapshot(request, family=FAMILY, kind="calculation", definition=D.READ_CALCULATION_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.read_calculation_snapshot'), request, lambda req, invocation: _methods.read_calculation_snapshot(req, invocation=invocation), context=context)
 
 def build_view_snapshot(request, *, context=None):
-    return shared.build_snapshot(request, family=FAMILY, kind="view", definition=D.VIEW_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.view_snapshot'), request, lambda req, invocation: _methods.build_view_snapshot(req, invocation=invocation), context=context)
 
 def read_view_snapshot(request, *, context=None):
-    return shared.read_snapshot(request, family=FAMILY, kind="view", definition=D.READ_VIEW_SNAPSHOT, types=TYPES, context=context)
+    return run(_definition('cbr.industries.0105a.read_view_snapshot'), request, lambda req, invocation: _methods.read_view_snapshot(req, invocation=invocation), context=context)

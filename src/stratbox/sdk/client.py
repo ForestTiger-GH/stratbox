@@ -55,7 +55,7 @@ class SourceAPI:
         return self.operations.bind_source(series_id, **options)
 
     def workflow(self, series_id, **options):
-        from stratbox.composition.builtins import source_workflow
+        from stratbox.composition.source import source_workflow
         options.setdefault("catalog", self.operations)
         return source_workflow(series_id, **options)
 
@@ -172,19 +172,23 @@ class StrategyBox:
 
     def workflow(self, operation_id, *, inputs=None, parameters=None):
         """Bind a callable capability as a reusable explicit scenario."""
+        from stratbox.composition.requests import InvocationRequest
+        self._check_open()
+        try:
+            self.capabilities.definition(operation_id)
+        except (KeyError, ValueError):
+            pass
+        else:
+            return InvocationRequest(operation_id, inputs=inputs or {}, parameters=parameters or {})
         from stratbox.composition import OperationStep, PlanOutputRef, ScenarioDefinition
-        from stratbox.composition.builtins import expand_operation
         self._check_open()
         call = self.operations.bind(operation_id, inputs=inputs, parameters=parameters)
-        workflow = expand_operation(operation_id, call.request)
-        if workflow is None:
-            processing = call.definition.processing
-            outputs = {port.name: PlanOutputRef("call", port.name)
-                       for port in processing.outputs} if processing else {}
-            workflow = ScenarioDefinition("invoke", (
-                OperationStep("call", operation_id, inputs=inputs or {}, parameters=parameters or {}),
-            ), outputs=outputs)
-        return workflow
+        processing = call.definition.processing
+        outputs = {port.name: PlanOutputRef("call", port.name)
+                   for port in processing.outputs} if processing else {}
+        return ScenarioDefinition("invoke", (
+            OperationStep("call", operation_id, inputs=inputs or {}, parameters=parameters or {}),
+        ), outputs=outputs)
 
     def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None, execution_timeout=None,
                outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):

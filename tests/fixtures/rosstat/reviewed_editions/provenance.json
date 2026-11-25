@@ -1,0 +1,37 @@
+{
+  "schema": "stratbox.test.publisher_fixtures.v1",
+  "files": [
+    {
+      "fixture": "population-2022.json",
+      "origin": "https://raw.githubusercontent.com/ForestTiger-GH/Tabularium/586306b7611451eb13ae4a3d982890aa706cfa7d/originals/russia/authorities/rosstat/population-by-municipality/BUL_MO_2022.xlsx",
+      "git_blob_sha": "bc571bda08213e512b210eccfa47049731b06910",
+      "original_sha256": "bfbf55cfb81ee7a31a4d2700878548cb0ab70a464c15c3c94ecb8636bb2bcd33",
+      "original_size": 1530207,
+      "scope": "Only explicitly retained source cells; original identity identifies the archived publisher original, not fixture bytes."
+    },
+    {
+      "fixture": "population-2023.json",
+      "origin": "https://raw.githubusercontent.com/ForestTiger-GH/Tabularium/586306b7611451eb13ae4a3d982890aa706cfa7d/originals/russia/authorities/rosstat/population-by-municipality/BUL_MO_2023.xlsx",
+      "git_blob_sha": "becfadbcafa4f27770474213ab8127d111882a06",
+      "original_sha256": "6759601d7a94dd16c11cb8ef1173e94c5edba10149c4e38c9f10cc4198c2c443",
+      "original_size": 1232883,
+      "scope": "Only explicitly retained source cells; original identity identifies the archived publisher original, not fixture bytes."
+    },
+    {
+      "fixture": "population-2024.json",
+      "origin": "https://raw.githubusercontent.com/ForestTiger-GH/Tabularium/586306b7611451eb13ae4a3d982890aa706cfa7d/originals/russia/authorities/rosstat/population-by-municipality/BUL_MO_2024.xlsx",
+      "git_blob_sha": "916ddbcd9b8fd1e06c1c9ef4e94e04b3e72c1530",
+      "original_sha256": "25f020e9a4662d27a06ce7f87b9771004abd9c172a651da62c5be1090f70dcfe",
+      "original_size": 1502221,
+      "scope": "Only explicitly retained source cells; original identity identifies the archived publisher original, not fixture bytes."
+    },
+    {
+      "fixture": "regional-industrial-2026-06.json",
+      "origin": "https://raw.githubusercontent.com/ForestTiger-GH/Tabularium/586306b7611451eb13ae4a3d982890aa706cfa7d/originals/russia/authorities/rosstat/social-economic-position-regions/info-stat-06-2026.zip",
+      "git_blob_sha": "6aa137e5b921b5a7a35bac3c13c3fecb1701679a",
+      "original_sha256": "41b14bacf461249945a79ab60594bc459edd1e222d084452fcb258746f318d52",
+      "original_size": 246095,
+      "scope": "Only explicitly retained source cells; original identity identifies the archived publisher original, not fixture bytes."
+    }
+  ]
+}

@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from stratbox.capabilities.model import (
     CapabilityDefinition, CommandDefinition, OperationDefinition, ScenarioDefinition,
     CascadeDefinition, GraphBody, InputRef, OutputRef, ParameterRef, Call, CollectCall, MapCall, PortContract,
-    declaration_fingerprint, declaration_tree,
+    declaration_fingerprint, declaration_tree, FoldCall,
 )
 from stratbox.capabilities.model.graph import MethodSlot, frozen_mapping
 from .descriptors import (
@@ -258,7 +258,7 @@ class CatalogSnapshot:
         for step in body.steps:
             if isinstance(step, CollectCall):
                 children[step.step_id] = SimpleNamespace(inputs={}, outputs={"value": step.contract}, effects=frozenset())
-            elif isinstance(step, MapCall):
+            elif isinstance(step, (MapCall, FoldCall)):
                 child = self.definition(step.capability_id)
                 if child.kind not in allowed or child.kind != "scenario":
                     raise CatalogError("catalog.invalid_map_body_kind")
@@ -266,15 +266,34 @@ class CatalogSnapshot:
                     raise CatalogError("catalog.invalid_map_item_input")
                 if not set(step.inputs) <= child.inputs.keys():
                     raise CatalogError("catalog.unknown_input_port")
-                if set(child.outputs) != {"value"}:
-                    raise CatalogError("catalog.map_value_output_required")
-                element = child.outputs["value"]
-                contract = step.contract or PortContract(element.schema, value_type=object, collection=True,
-                    qualifications=element.qualifications, expected_coverage=element.expected_coverage)
+                if isinstance(step, FoldCall):
+                    if step.state_input not in child.inputs or step.state_output not in child.outputs:
+                        raise CatalogError("catalog.fold_state_port_required")
+                    element = child.outputs[step.state_output]
+                    if not child.inputs[step.state_input].compatible_with(element):
+                        raise CatalogError("catalog.fold_state_contract_mismatch")
+                    contract = step.contract
+                    if not contract.compatible_with(element):
+                        raise CatalogError("catalog.fold_output_contract_mismatch")
+                else:
+                    if set(child.outputs) != {"value"}:
+                        raise CatalogError("catalog.map_value_output_required")
+                    element = child.outputs["value"]
+                    contract = step.contract or PortContract(element.schema, value_type=object, collection=True,
+                        qualifications=element.qualifications, expected_coverage=element.expected_coverage)
                 children[step.step_id] = SimpleNamespace(inputs=child.inputs, outputs={"value": contract}, effects=child.effects)
             else:
                 child = self.definition(step.capability_id)
                 children[step.step_id] = child
+                if step.reference is not None and (
+                        step.reference.revision is not None and step.reference.revision != child.revision
+                        or step.reference.fingerprint is not None and step.reference.fingerprint != child.fingerprint):
+                    raise CatalogError("catalog.definition_reference_changed")
+                if step.binding_identities:
+                    pinned = self.resolve(child.id, method_id=step.method_id,
+                        profile_id=step.profile_id, group_id=step.group_id, selection=step.selection)
+                    if any(pinned.identities.get(name) != identity for name, identity in step.binding_identities.items()):
+                        raise CatalogError("catalog.binding_reference_changed")
                 if child.kind not in allowed:
                     raise CatalogError("catalog.invalid_body_kind")
                 if not set(step.inputs) <= child.inputs.keys():
@@ -290,7 +309,8 @@ class CatalogSnapshot:
                 if not condition.statuses and condition.port not in children[condition.step].outputs:
                     raise CatalogError("catalog.unknown_condition_output")
                 dependencies[step.step_id].add(condition.step)
-            values = (step.inputs, getattr(step, "parameters", {}), getattr(step, "selection", {}), getattr(step, "items", None))
+            values = (step.inputs, getattr(step, "parameters", {}), getattr(step, "selection", {}),
+                      getattr(step, "items", None), getattr(step, "initial", None), getattr(step, "retry", None))
             for ref in _walk_refs(values):
                 if isinstance(ref, InputRef) and ref.name not in owner.inputs:
                     raise CatalogError("catalog.unknown_graph_input")

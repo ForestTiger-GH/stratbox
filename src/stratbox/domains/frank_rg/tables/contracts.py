@@ -72,6 +72,9 @@ class SemanticProfile:
     version: int
     original_identity: ByteIdentity
     bindings: tuple[CellBinding, ...]
+    layout_identity: ByteIdentity | None = None
+    reviewed_originals: tuple[ByteIdentity, ...] = ()
+    review_qualification: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

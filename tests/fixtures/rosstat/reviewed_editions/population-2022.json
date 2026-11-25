@@ -1,0 +1,1159 @@
+{
+  "schema": "stratbox.test.physical_excerpt.v1",
+  "series_id": "rosstat.population_municipalities",
+  "issue_id": "2022",
+  "asset_id": "population_workbook",
+  "source_identity": {
+    "sha256": "bfbf55cfb81ee7a31a4d2700878548cb0ab70a464c15c3c94ecb8636bb2bcd33",
+    "size": 1530207
+  },
+  "format": "xlsx",
+  "selected_rows": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "sheets": [
+    {
+      "name": "Титул",
+      "index": 0,
+      "rows": 38,
+      "columns": 13,
+      "cells": [
+        {
+          "row": 14,
+          "column": 2,
+          "coordinate": "B14",
+          "value": [
+            "text",
+            "НА 1 ЯНВАРЯ  2022 года"
+          ],
+          "raw_token": "5",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        }
+      ],
+      "merged_ranges": [
+        "B25:K25",
+        "A1:M1",
+        "D2:G2",
+        "B10:K10",
+        "B12:K12",
+        "B14:K14",
+        "B18:K18"
+      ]
+    },
+    {
+      "name": "Таб_27",
+      "index": 1,
+      "rows": 22344,
+      "columns": 8,
+      "cells": [
+        {
+          "row": 1,
+          "column": 2,
+          "coordinate": "B1",
+          "value": [
+            "text",
+            "Содержание"
+          ],
+          "raw_token": "20761",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 2,
+          "column": 1,
+          "coordinate": "A2",
+          "value": [
+            "text",
+            "Выбрать субъект: -->  К перечню субъектов РФ "
+          ],
+          "raw_token": "4244",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 2,
+          "column": 4,
+          "coordinate": "D2",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 3,
+          "column": 1,
+          "coordinate": "A3",
+          "value": [
+            "text",
+            "27. ЧИСЛЕННОСТЬ ПОСТОЯННОГО НАСЕЛЕНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ"
+          ],
+          "raw_token": "4245",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 3,
+          "column": 2,
+          "coordinate": "B3",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 3,
+          "column": 3,
+          "coordinate": "C3",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "coordinate": "D3",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 4,
+          "column": 1,
+          "coordinate": "A4",
+          "value": [
+            "text",
+            "ПО МУНИЦИПАЛЬНЫМ ОБРАЗОВАНИЯМ на 1 января 2022 года"
+          ],
+          "raw_token": "4246",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 4,
+          "column": 2,
+          "coordinate": "B4",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 4,
+          "column": 3,
+          "coordinate": "C4",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "coordinate": "D4",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 5,
+          "column": 1,
+          "coordinate": "A5",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-    \";0\"    \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 5,
+          "column": 2,
+          "coordinate": "B5",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 5,
+          "column": 3,
+          "coordinate": "C5",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 5,
+          "column": 4,
+          "coordinate": "D5",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 5,
+          "column": 5,
+          "coordinate": "E5",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 6,
+          "column": 1,
+          "coordinate": "A6",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 6,
+          "column": 2,
+          "coordinate": "B6",
+          "value": [
+            "text",
+            "Все"
+          ],
+          "raw_token": "234",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 6,
+          "column": 3,
+          "coordinate": "C6",
+          "value": [
+            "text",
+            "в том числе:"
+          ],
+          "raw_token": "4247",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 6,
+          "column": 4,
+          "coordinate": "D6",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 6,
+          "column": 5,
+          "coordinate": "E6",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 7,
+          "column": 1,
+          "coordinate": "A7",
+          "value": [
+            "text",
+            "Оценка численности постоянного населения на 1 января 2022 г."
+          ],
+          "raw_token": "4248",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 7,
+          "column": 2,
+          "coordinate": "B7",
+          "value": [
+            "text",
+            "население"
+          ],
+          "raw_token": "237",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 7,
+          "column": 3,
+          "coordinate": "C7",
+          "value": [
+            "text",
+            "городское"
+          ],
+          "raw_token": "135",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "coordinate": "D7",
+          "value": [
+            "text",
+            "сельское"
+          ],
+          "raw_token": "136",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 7,
+          "column": 5,
+          "coordinate": "E7",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 8,
+          "column": 1,
+          "coordinate": "A8",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 8,
+          "column": 2,
+          "coordinate": "B8",
+          "value": [
+            "text",
+            "(человек)"
+          ],
+          "raw_token": "27",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 8,
+          "column": 3,
+          "coordinate": "C8",
+          "value": [
+            "text",
+            "население"
+          ],
+          "raw_token": "237",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 8,
+          "column": 4,
+          "coordinate": "D8",
+          "value": [
+            "text",
+            "население"
+          ],
+          "raw_token": "237",
+          "kind": "s",
+          "formula": null,
+          "number_format": "0.0",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 8,
+          "column": 5,
+          "coordinate": "E8",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 1,
+          "coordinate": "A9",
+          "value": [
+            "text",
+            "Республика Адыгея"
+          ],
+          "raw_token": "68",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 2,
+          "coordinate": "B9",
+          "value": [
+            "integer",
+            "468340"
+          ],
+          "raw_token": "468340",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 3,
+          "coordinate": "C9",
+          "value": [
+            "integer",
+            "220298"
+          ],
+          "raw_token": "220298",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 4,
+          "coordinate": "D9",
+          "value": [
+            "integer",
+            "248042"
+          ],
+          "raw_token": "248042",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 5,
+          "coordinate": "E9",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 6,
+          "coordinate": "F9",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 9,
+          "column": 7,
+          "coordinate": "G9",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 10,
+          "column": 1,
+          "coordinate": "A10",
+          "value": [
+            "text",
+            "Городской округ г Майкоп"
+          ],
+          "raw_token": "4249",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 10,
+          "column": 2,
+          "coordinate": "B10",
+          "value": [
+            "integer",
+            "161825"
+          ],
+          "raw_token": "161825",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 10,
+          "column": 3,
+          "coordinate": "C10",
+          "value": [
+            "integer",
+            "139076"
+          ],
+          "raw_token": "139076",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 10,
+          "column": 4,
+          "coordinate": "D10",
+          "value": [
+            "integer",
+            "22749"
+          ],
+          "raw_token": "22749",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 10,
+          "column": 5,
+          "coordinate": "E10",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 11,
+          "column": 1,
+          "coordinate": "A11",
+          "value": [
+            "text",
+            "г Майкоп"
+          ],
+          "raw_token": "3006",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 3,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 11,
+          "column": 2,
+          "coordinate": "B11",
+          "value": [
+            "integer",
+            "139076"
+          ],
+          "raw_token": "139076",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 11,
+          "column": 3,
+          "coordinate": "C11",
+          "value": [
+            "integer",
+            "139076"
+          ],
+          "raw_token": "139076",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "coordinate": "D11",
+          "value": [
+            "integer",
+            "0"
+          ],
+          "raw_token": "0",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 11,
+          "column": 5,
+          "coordinate": "E11",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 12,
+          "column": 1,
+          "coordinate": "A12",
+          "value": [
+            "text",
+            "Городской округ г Адыгейск"
+          ],
+          "raw_token": "4250",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 12,
+          "column": 2,
+          "coordinate": "B12",
+          "value": [
+            "integer",
+            "15360"
+          ],
+          "raw_token": "15360",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 12,
+          "column": 3,
+          "coordinate": "C12",
+          "value": [
+            "integer",
+            "12910"
+          ],
+          "raw_token": "12910",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 12,
+          "column": 4,
+          "coordinate": "D12",
+          "value": [
+            "integer",
+            "2450"
+          ],
+          "raw_token": "2450",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 12,
+          "column": 5,
+          "coordinate": "E12",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 13,
+          "column": 1,
+          "coordinate": "A13",
+          "value": [
+            "text",
+            "г Адыгейск"
+          ],
+          "raw_token": "3008",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 3,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 13,
+          "column": 2,
+          "coordinate": "B13",
+          "value": [
+            "integer",
+            "12910"
+          ],
+          "raw_token": "12910",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 13,
+          "column": 3,
+          "coordinate": "C13",
+          "value": [
+            "integer",
+            "12910"
+          ],
+          "raw_token": "12910",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 13,
+          "column": 4,
+          "coordinate": "D13",
+          "value": [
+            "integer",
+            "0"
+          ],
+          "raw_token": "0",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 13,
+          "column": 5,
+          "coordinate": "E13",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 14,
+          "column": 1,
+          "coordinate": "A14",
+          "value": [
+            "text",
+            "Гиагинский муниципальный район"
+          ],
+          "raw_token": "4251",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 14,
+          "column": 2,
+          "coordinate": "B14",
+          "value": [
+            "integer",
+            "32083"
+          ],
+          "raw_token": "32083",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 14,
+          "column": 3,
+          "coordinate": "C14",
+          "value": [
+            "integer",
+            "0"
+          ],
+          "raw_token": "0",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 14,
+          "column": 4,
+          "coordinate": "D14",
+          "value": [
+            "integer",
+            "32083"
+          ],
+          "raw_token": "32083",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 14,
+          "column": 5,
+          "coordinate": "E14",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 15,
+          "column": 1,
+          "coordinate": "A15",
+          "value": [
+            "text",
+            "Айрюмовское сельское поселение"
+          ],
+          "raw_token": "4252",
+          "kind": "s",
+          "formula": null,
+          "number_format": "General",
+          "indent": 2,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 15,
+          "column": 2,
+          "coordinate": "B15",
+          "value": [
+            "integer",
+            "3109"
+          ],
+          "raw_token": "3109",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 15,
+          "column": 3,
+          "coordinate": "C15",
+          "value": [
+            "integer",
+            "0"
+          ],
+          "raw_token": "0",
+          "kind": "n",
+          "formula": null,
+          "number_format": "[=0]\"-   \";0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 15,
+          "column": 4,
+          "coordinate": "D15",
+          "value": [
+            "integer",
+            "3109"
+          ],
+          "raw_token": "3109",
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        },
+        {
+          "row": 15,
+          "column": 5,
+          "coordinate": "E15",
+          "value": [
+            "null",
+            ""
+          ],
+          "raw_token": null,
+          "kind": "n",
+          "formula": null,
+          "number_format": "0\"   \"",
+          "indent": 0,
+          "formula_attributes": [],
+          "evidence_kind": "source_lexeme"
+        }
+      ],
+      "merged_ranges": [
+        "A3:D3",
+        "A4:D4",
+        "C6:D6"
+      ]
+    }
+  ],
+  "origin": "https://raw.githubusercontent.com/ForestTiger-GH/Tabularium/586306b7611451eb13ae4a3d982890aa706cfa7d/originals/russia/authorities/rosstat/population-by-municipality/BUL_MO_2022.xlsx",
+  "git_blob_sha": "bc571bda08213e512b210eccfa47049731b06910",
+  "scope": "Only explicitly retained source cells; original identity identifies the archived publisher original, not fixture bytes."
+}

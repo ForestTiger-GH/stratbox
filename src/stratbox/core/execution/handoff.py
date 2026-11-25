@@ -191,6 +191,11 @@ def prepare_input(
         computation = computation or value.computation
     if contract is None:
         raise HandoffError("handoff.explicit_contract_required")
+    from stratbox.shared.data.assessment import value_evidence
+    evidence = value_evidence(value)
+    qualifications = qualifications | evidence.qualifications
+    if evidence.coverage is not None:
+        coverage = coverage | evidence.coverage.facts
     return PreparedInput(contract, value, qualifications=qualifications, coverage=coverage,
         used_inputs=tuple(dict.fromkeys(receipts)), computation=computation, identity=_identity(value, computation),
         source_context=source_context)

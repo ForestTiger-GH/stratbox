@@ -10,8 +10,17 @@ def admit(requirement, instance, value):
         return DomainAdmission("conditional", ("rosstat.profile.reviewed_mapping_required",))
     if value.series_id != instance.source_id or instance.issue_id and value.issue_id != instance.issue_id:
         return DomainAdmission("rejected", ("rosstat.profile.source_context_mismatch",))
-    if value.profile_id != KEP2_PROFILE_ID or value.profile_version != 1:
+    supported = {KEP2_PROFILE_ID: "rosstat.short_term_indicators",
+        "rosstat.population.bulletin": "rosstat.population_municipalities",
+        "rosstat.regional.industrial_indices": "rosstat.socioeconomic_regions"}
+    if value.profile_id not in supported or value.profile_version != 1:
         return DomainAdmission("conditional", ("rosstat.profile.external_mapping_admission_required",))
+    if value.series_id != supported[value.profile_id]:
+        return DomainAdmission("rejected", ("rosstat.profile.family_mismatch",))
+    if value.profile_id == "rosstat.population.bulletin" and any(
+            row.period_kind != "as_of" or row.quantity_kind != "count" or not dict(row.dimensions).get("geography_edition")
+            for row in value.values):
+        return DomainAdmission("rejected", ("rosstat.profile.population_semantics_invalid",))
     if instance.semantic_profile_edition and instance.semantic_profile_edition not in {
             str(value.profile_version), value.profile_id + ":" + str(value.profile_version)}:
         return DomainAdmission("rejected", ("rosstat.profile.semantic_edition_mismatch",))
@@ -24,4 +33,6 @@ def admit(requirement, instance, value):
         integrate_flakes((value,), dataset_id="rosstat.profile_admission", release_id=value.issue_id)
     except (TypeError, ValueError) as error:
         return DomainAdmission("rejected", (str(error),))
-    return DomainAdmission("admitted", ("rosstat.profile.reviewed_kep2_periods_and_units",))
+    return DomainAdmission("admitted", ("rosstat.profile.reviewed_kep2_periods_and_units" if value.profile_id == KEP2_PROFILE_ID
+        else "rosstat.profile.reviewed_population_layout" if value.profile_id == "rosstat.population.bulletin"
+        else "rosstat.profile.reviewed_regional_index_layout",))

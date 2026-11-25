@@ -119,7 +119,7 @@ def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[IndustryVa
 
 def parse_workbook(content: bytes, *, source_name: str, source_url: str | None = None,
                    source_sha256: str | None = None, checkpoint=None,
-                   selection: IndustrySelection = IndustrySelection()) -> ParsedIssuanceFile:
+                   selection: IndustrySelection = IndustrySelection(), decoded=None) -> ParsedIssuanceFile:
     selected_codes = resolve_industry_codes(selection)
     selected_set = set(selected_codes) if selected_codes is not None else None
     report_date = report_date_from_filename(source_name)
@@ -128,9 +128,15 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
     if source_sha256 is not None and source_sha256 != digest:
         raise ValueError("Source content digest mismatch")
     source_id = f"{SERIES_CODE}_{report_date.replace('-', '')}"
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message="Workbook contains no default style.*", category=UserWarning)
-        workbook = open_ooxml_workbook(content, reset_dimensions=True)
+    workbook = None
+    if decoded is None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Workbook contains no default style.*", category=UserWarning)
+            workbook = open_ooxml_workbook(content, reset_dimensions=True)
+        sheets = tuple((worksheet.title, worksheet.iter_rows(values_only=True)) for worksheet in workbook.worksheets)
+    else:
+        from stratbox.domains.cbr.tables.decoded_workbooks import decoded_sheets
+        sheets = decoded_sheets(decoded, content, checkpoint=checkpoint)
     try:
         seen: set[str] = set()
         records: list[dict[str, object]] = []
@@ -138,10 +144,10 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
         regions = None
         industries = None
         unmapped_headers = []
-        for worksheet in workbook.worksheets:
+        for sheet_name, source_rows in sheets:
             if checkpoint is not None:
                 checkpoint()
-            row_iterator = iter(worksheet.iter_rows(values_only=True))
+            row_iterator = iter(source_rows)
             first = next(row_iterator, ())
             title = first[0] if first else None
             spec = _recognize_sheet(title)
@@ -149,7 +155,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                 continue
             rows = _sheet_rows(row_iterator, first, checkpoint=checkpoint)
             if len(rows) < 4:
-                raise ValueError(f"Issuance worksheet is too short: {worksheet.title!r}")
+                raise ValueError(f"Issuance worksheet is too short: {sheet_name!r}")
             if spec.code in seen:
                 raise ValueError(f"Duplicate issuance indicator: {spec.code}")
             seen.add(spec.code)
@@ -158,12 +164,12 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                 raise ValueError("Inconsistent issuance reference month")
             _check_published_unit(title)
             headers, current_industries, unmapped = select_industry_headers(
-                _non_empty_industry_headers(rows, sheet_name=worksheet.title)
+                _non_empty_industry_headers(rows, sheet_name=sheet_name)
             )
-            unmapped_headers.extend((worksheet.title, label) for label in unmapped)
+            unmapped_headers.extend((sheet_name, label) for label in unmapped)
             if industries is None:
                 industries = tuple(sorted(current_industries, key=lambda item: item.order))
-            region_rows, names = _region_names(rows, sheet_name=worksheet.title)
+            region_rows, names = _region_names(rows, sheet_name=sheet_name)
             if regions is None:
                 regions = build_cbr_0105a_debt_corp_region_specs(names)
             matching_regions = _match_sheet_regions(regions, names)
@@ -172,7 +178,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                 for (source_column, header), industry in zip(headers, current_industries, strict=True):
                     cell = f"{get_column_letter(source_column)}{source_row}"
                     raw = row_values[source_column - 1] if source_column - 1 < len(row_values) else None
-                    value = _coerce_numeric_value(raw, coordinate=cell, sheet_name=worksheet.title)
+                    value = _coerce_numeric_value(raw, coordinate=cell, sheet_name=sheet_name)
                     if validation_rows is not None:
                         validation_rows.append((region.code, industry.code, spec.currency_scope, value))
                     if selected_set is not None and industry.code not in selected_set:
@@ -198,7 +204,7 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                         "industry_order": industry.order, "value": value,
                         "source_id": source_id, "source_url": source_url,
                         "source_name": source_name, "source_sha256": digest,
-                        "source_sheet_name": worksheet.title,
+                        "source_sheet_name": sheet_name,
                         "source_sheet_title": str(title), "source_row": source_row,
                         "source_column": get_column_letter(source_column),
                     })
@@ -216,4 +222,5 @@ def parse_workbook(content: bytes, *, source_name: str, source_url: str | None =
                                   unmapped_headers=tuple(unmapped_headers),
                                   selection=selection)
     finally:
-        workbook.close()
+        if workbook is not None:
+            workbook.close()

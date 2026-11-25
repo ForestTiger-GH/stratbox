@@ -96,10 +96,12 @@ class InputPort:
     outcomes: frozenset[str] = frozenset({"succeeded"})
     alternatives: tuple[DataContract, ...] = ()
     collection: bool = False
+    accepts_any_contract: bool = False
 
     def __post_init__(self) -> None:
         _port(self.name, self.contract, self.path)
-        if type(self.required) is not bool or type(self.collection) is not bool:
+        if (type(self.required) is not bool or type(self.collection) is not bool
+                or type(self.accepts_any_contract) is not bool):
             raise ValueError("processing.invalid_required")
         for group in (self.qualifications, self.coverage, self.outcomes):
             _tokens(group)
@@ -269,7 +271,7 @@ class OperationConnection:
 
 def compatible_ports(output: OutputPort, input: InputPort) -> bool:
     """Exact editioned contract match, with at least one usable outcome."""
-    return output.contract in (input.contract, *input.alternatives) and bool(
+    return (input.accepts_any_contract or output.contract in (input.contract, *input.alternatives)) and bool(
         output.outcomes & input.outcomes
     )
 
@@ -298,7 +300,7 @@ def assess_input(
     if outcome not in {"succeeded", "partial", "failed", "cancelled", "unknown"}:
         raise ValueError("processing.invalid_outcome")
     reasons = []
-    if contract not in (port.contract, *port.alternatives):
+    if not port.accepts_any_contract and contract not in (port.contract, *port.alternatives):
         reasons.append("processing.schema_mismatch")
     if outcome not in port.outcomes:
         reasons.append("processing.outcome_not_accepted")

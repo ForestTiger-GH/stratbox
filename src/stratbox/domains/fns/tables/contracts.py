@@ -72,6 +72,15 @@ class ValidationReport:
 
 
 @dataclass(frozen=True, slots=True)
+class FlakeComparison:
+    before_identity: ByteIdentity
+    after_identity: ByteIdentity
+    state: str
+    changed: tuple[str, ...]
+    qualifications: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SourceProjection:
     context: ReleaseContext
     source_identity: ByteIdentity

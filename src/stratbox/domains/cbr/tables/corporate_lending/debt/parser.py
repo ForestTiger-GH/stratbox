@@ -161,6 +161,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
     source_sha256: str | None = None,
     checkpoint=None,
     selection: IndustrySelection = IndustrySelection(),
+    decoded=None,
 ) -> ParsedCbr0105ADebtCorpFile:
     """Разбирает одну исходную книгу в полный нормализованный поток."""
     selected_codes = resolve_industry_codes(selection)
@@ -173,16 +174,21 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
     if source_sha256 is not None and source_sha256 != digest:
         raise ValueError("Source workbook digest mismatch")
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="Workbook contains no default style.*",
-            category=UserWarning,
-        )
-        workbook = open_ooxml_workbook(file_bytes, reset_dimensions=True)
-
+    workbook = None
+    if decoded is None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Workbook contains no default style.*",
+                category=UserWarning,
+            )
+            workbook = open_ooxml_workbook(file_bytes, reset_dimensions=True)
+        sheets = tuple((worksheet.title, worksheet.iter_rows(values_only=True)) for worksheet in workbook.worksheets)
+    else:
+        from stratbox.domains.cbr.tables.decoded_workbooks import decoded_sheets
+        sheets = decoded_sheets(decoded, file_bytes, checkpoint=checkpoint)
     try:
-        if not workbook.sheetnames:
+        if not sheets:
             raise ValueError("01_05_A_Debt_corp workbook has no worksheets")
 
         records: list[dict[str, object]] = []
@@ -193,10 +199,10 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
         industries = None
         unmapped_headers = []
 
-        for worksheet in workbook.worksheets:
+        for sheet_name, source_rows in sheets:
             if checkpoint is not None:
                 checkpoint()
-            rows = iter(worksheet.iter_rows(values_only=True))
+            rows = iter(source_rows)
             first = next(rows, ())
             sheet_title = first[0] if first else None
             sheet_spec = resolve_cbr_0105a_debt_corp_sheet_spec(sheet_title, allow_unrelated=True)
@@ -204,11 +210,11 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                 continue
             sheet_rows = _sheet_rows(rows, first, checkpoint=checkpoint)
             if len(sheet_rows) < 4:
-                raise ValueError(f"01_05_A_Debt_corp sheet is too short: {worksheet.title!r}")
+                raise ValueError(f"01_05_A_Debt_corp sheet is too short: {sheet_name!r}")
             if sheet_spec.code in seen_sheet_codes:
                 raise ValueError(
                     "Duplicate semantic sheet in 01_05_A_Debt_corp workbook: "
-                    f"code={sheet_spec.code!r}, sheet={worksheet.title!r}"
+                    f"code={sheet_spec.code!r}, sheet={sheet_name!r}"
                 )
             seen_sheet_codes.add(sheet_spec.code)
             parsed_sheet_specs.append(sheet_spec)
@@ -218,18 +224,18 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                 raise ValueError(
                     "01_05_A_Debt_corp date mismatch between filename and sheet: "
                     f"source_name={source_name!r}, filename_date={filename_date}, "
-                    f"sheet={worksheet.title!r}, sheet_date={sheet_date}"
+                    f"sheet={sheet_name!r}, sheet_date={sheet_date}"
                 )
 
             _check_published_unit(sheet_title)
             header_cells, current_industries, unmapped = select_industry_headers(
-                _non_empty_industry_headers(sheet_rows, sheet_name=worksheet.title)
+                _non_empty_industry_headers(sheet_rows, sheet_name=sheet_name)
             )
-            unmapped_headers.extend((worksheet.title, label) for label in unmapped)
+            unmapped_headers.extend((sheet_name, label) for label in unmapped)
             if industries is None:
                 industries = tuple(sorted(current_industries, key=lambda item: item.order))
 
-            region_rows, region_names = _region_names(sheet_rows, sheet_name=worksheet.title)
+            region_rows, region_names = _region_names(sheet_rows, sheet_name=sheet_name)
             if common_regions is None:
                 common_regions = build_cbr_0105a_debt_corp_region_specs(region_names)
             matching_regions = _match_sheet_regions(common_regions, region_names)
@@ -249,7 +255,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                     value = _coerce_numeric_value(
                         raw_value,
                         coordinate=coordinate,
-                        sheet_name=worksheet.title,
+                        sheet_name=sheet_name,
                     )
                     if validation_rows is not None:
                         validation_rows.append((region.code, industry.code, sheet_spec.measure,
@@ -285,7 +291,7 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
                             "source_url": source_url,
                             "source_name": source_name,
                             "source_sha256": digest,
-                            "source_sheet_name": worksheet.title,
+                            "source_sheet_name": sheet_name,
                             "source_sheet_title": str(sheet_title or "").strip(),
                             "source_row": source_row,
                             "source_column": get_column_letter(source_column),
@@ -347,4 +353,5 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
             selection=selection,
         )
     finally:
-        workbook.close()
+        if workbook is not None:
+            workbook.close()

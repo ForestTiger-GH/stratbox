@@ -98,6 +98,8 @@ class PortContract:
     expected_coverage: frozenset[str] = frozenset()
     collection: bool = False
     predicates: tuple[SemanticPredicate, ...] = ()
+    outcomes: frozenset[str] = frozenset({"succeeded"})
+    alternatives: tuple[DataContract, ...] = ()
 
     def __post_init__(self):
         if self.schema is not None and not isinstance(self.schema, DataContract):
@@ -109,6 +111,13 @@ class PortContract:
             raise ValueError("capability.invalid_port_qualification")
         if not isinstance(self.predicates, tuple) or any(not isinstance(item, SemanticPredicate) for item in self.predicates):
             raise ValueError("capability.invalid_predicates")
+        if not isinstance(self.outcomes, frozenset) or not self.outcomes or not self.outcomes <= {"succeeded", "partial"}:
+            raise ValueError("capability.invalid_port_outcomes")
+        if (not isinstance(self.alternatives, tuple)
+                or any(not isinstance(item, DataContract) for item in self.alternatives)
+                or len(set(self.alternatives)) != len(self.alternatives)
+                or self.schema in self.alternatives):
+            raise ValueError("capability.invalid_port_alternatives")
 
     @property
     def contract(self):
@@ -125,7 +134,7 @@ class PortContract:
 
     def compatible_with(self, producer):
         return (isinstance(producer, PortContract)
-                and (self.schema is None or self.schema == producer.schema)
+                and (self.schema is None or producer.schema in (self.schema, *self.alternatives))
                 and (producer.value_type is self.value_type if self.value_type in {bool, int, float, str, bytes}
                      else issubclass(producer.value_type, self.value_type))
                 and self.qualifications <= producer.qualifications
@@ -250,6 +259,7 @@ class CapabilityDefinition:
     fixed: Mapping[str, object] = field(default_factory=dict, kw_only=True)
     required_parameters: tuple[str, ...] = field(default=(), kw_only=True)
     required_capabilities: frozenset[str] = field(default=frozenset(), kw_only=True)
+    optional_capabilities: frozenset[str] = field(default=frozenset(), kw_only=True)
     effects: frozenset[str] = field(default=frozenset(), kw_only=True)
     resources: Mapping[str, int] = field(default_factory=dict, kw_only=True)
     reuse: ReuseContract = field(default_factory=ReuseContract, kw_only=True)
@@ -277,11 +287,13 @@ class CapabilityDefinition:
         if (not isinstance(self.required_parameters, tuple)
                 or len(set(self.required_parameters)) != len(self.required_parameters)):
             raise ValueError("capability.invalid_required_parameters")
-        for group in (self.required_capabilities, self.effects):
+        for group in (self.required_capabilities, self.optional_capabilities, self.effects):
             if not isinstance(group, frozenset):
                 raise ValueError("capability.invalid_effects_or_providers")
             for name in group:
                 safe_token(name)
+        if self.required_capabilities & self.optional_capabilities:
+            raise ValueError("capability.provider_role_overlap")
         for name in (*self.parameters, *self.fixed, *self.required_parameters):
             safe_token(name)
         for dependencies in (self.schema_ids, self.reference_ids):

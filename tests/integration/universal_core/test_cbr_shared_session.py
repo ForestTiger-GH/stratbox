@@ -6,10 +6,14 @@ from io import BytesIO
 from threading import Lock
 from time import sleep
 
-from stratbox.composition.builtins import CbrSelection, multi_cbr_workflow
+from stratbox.capabilities.catalog import CatalogContribution
+from stratbox.capabilities.model import (
+    ScenarioDefinition, CascadeDefinition, CollectionMembership, GraphBody, Call, OutputRef,
+)
 from stratbox.core.execution.session import ExecutionSettings
 from stratbox.core.network import HttpResponse, RequestsTransport
 from stratbox.sdk import StrategyBox
+from stratbox.sdk.bootstrap import default_snapshot
 
 
 SERIES = (
@@ -31,6 +35,32 @@ def workbook_bytes():
     workbook.save(data)
     workbook.close()
     return data.getvalue()
+
+
+def capture_scenarios(snapshot):
+    """Compose the actual publication stages without a publisher dispatcher."""
+    scenarios = []
+    selected = (*SERIES, SERIES[0])
+    for number, (series, _) in enumerate(selected):
+        scenarios.append(ScenarioDefinition("fixture.cbr_source" + str(number), GraphBody((
+            Call("discover", "cbr.publications.discover", parameters={"series_id": series, "page_url": INDEX}),
+            Call("select", "cbr.publications.select", {"inventory": OutputRef("discover", "inventory")},
+                {"issue_id": "2026-10-01", "format": "xlsx"}),
+            Call("acquire", "cbr.publications.acquire", {"asset": OutputRef("select", "asset")}),
+            Call("admit", "accept.original", {"material": OutputRef("acquire", "payload")}, {"source_id": series}),
+            Call("extract", "workbook.extract", {"material": OutputRef("admit", "original")},
+                {"series_id": series, "issue_id": "2026-10-01", "asset_id": "main"}),
+        ), {"original": OutputRef("acquire", "original"), "flake": OutputRef("extract")}),
+            outputs={"original": snapshot.definition("cbr.publications.acquire").outputs["original"],
+                     "flake": snapshot.definition("workbook.extract").outputs["value"]},
+            effects=frozenset({"network.receive"}), purpose="Acquire and physically extract one explicitly selected publication edition."))
+    members = tuple("source" + str(number) for number in range(len(scenarios)))
+    cascade = CascadeDefinition("fixture.cbr_sources", GraphBody(tuple(
+        Call(member, scenario.id) for member, scenario in zip(members, scenarios)),
+        {member + "." + name: OutputRef(member, name) for member, scenario in zip(members, scenarios) for name in scenario.outputs}),
+        outputs={member + "." + name: port for member, scenario in zip(members, scenarios) for name, port in scenario.outputs.items()},
+        effects=frozenset({"network.receive"}), membership=CollectionMembership(members, True))
+    return snapshot.overlay(CatalogContribution(definitions=(*scenarios, cascade))), cascade
 
 
 def test_default_sdk_cbr_groups_share_index_and_originals_and_refresh_next_run(monkeypatch):
@@ -57,27 +87,32 @@ def test_default_sdk_cbr_groups_share_index_and_originals_and_refresh_next_run(m
             "https://www.cbr.ru", "tls_host", sha256(request.url.encode()).hexdigest(), len(body))
 
     monkeypatch.setattr(RequestsTransport, "exchange", receive)
-    selections = [CbrSelection(series, "2026-10-01", extract=False) for series, _ in SERIES]
-    selections.append(selections[0])
-    workflow = multi_cbr_workflow(selections)
-    with StrategyBox(settings=ExecutionSettings(max_workers=3, network=3, per_origin=1)) as box:
+    catalog, workflow = capture_scenarios(default_snapshot())
+    selections = (*SERIES, SERIES[0])
+    with StrategyBox(capabilities=catalog, settings=ExecutionSettings(max_workers=3, network=3, per_origin=1)) as box:
         box_ref.append(box)
         first = box.run(workflow, timeout=15)
         assert first.outcome == "succeeded", ([(key, item.outcome, item.diagnostics) for key, item in first.results.items() if item.outcome != "succeeded"], first.tasks)
         assert counts[INDEX] == 1
         assert sum(counts.values()) == 5
         assert box.session.ledger.snapshot().spent["requests"] == 5
-        for number, selected in enumerate(selections):
+        for number, (series, _) in enumerate(selections):
             original = first.output(f"source{number}.original")
-            assert original.payload.source_id == selected.series_id
-            assert original.acquisition.source_id == selected.series_id
+            assert original.payload.source_id == series
+            assert original.acquisition.source_id == series
             assert original.asset.issue_id == "2026-10-01"
+            flake = first.output(f"source{number}.flake")
+            assert flake.series_id == series and flake.issue_id == original.asset.issue_id
+            assert flake.source_identity == original.payload.identity
         original_receipt = first.output("source0.original").acquisition
         duplicate_receipt = first.output("source4.original").acquisition
         assert original_receipt.request_sha256 == duplicate_receipt.request_sha256
         assert original_receipt.shared_work_id == duplicate_receipt.shared_work_id
         assert duplicate_receipt.reused and duplicate_receipt.wire_size == 0
-        shared = [record for record in box.session.journal.records if record.kind.startswith("shared_work.")]
+        # Network transfers and reusable command work both publish sharing
+        # records. Network records identify their run as a physical consumer.
+        shared = [record for record in box.session.journal.records if record.kind.startswith("shared_work.")
+            and any(reference.namespace == "run" and reference.relation == "consumer" for reference in record.references)]
         assert sum(record.kind == "shared_work.started" for record in shared) == 5
         assert sum(record.kind == "shared_work.reused" for record in shared) >= 1
         second = box.run(workflow, timeout=15)

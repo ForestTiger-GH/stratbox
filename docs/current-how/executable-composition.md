@@ -31,26 +31,26 @@ from stratbox.core.storage.filestore import LocalFileStore
 settings = ExecutionSettings(max_workers=4, active_runs=2, per_origin=2)
 with StrategyBox(settings=settings,
                  providers={"filestore": LocalFileStore("data")}) as box:
-    page = box.operations.page(limit=20)
-    result = box.invoke("material.read_location", parameters={
-        "locator": "original.csv", "media_type": "text/csv",
+    page = box.discover(limit=20)
+    result = box.invoke("read.material_file", parameters={
+        "path": "original.csv", "media_type": "text/csv",
     })
     if result.outcome == "succeeded":
-        payload = result.output("source")
+        payload = result.output("material")
 ```
 
-`invoke`, `run` and `submit` use the same compiler and session. `invoke` expands
-a supplied composition where the operation has an expansion rule. Otherwise
-it creates a single operation task. `submit` returns a handle with `result`,
+`invoke`, `run` and `submit` use the same preparation and session service.
+`invoke` resolves the selected command, operation, scenario or cascade and
+lowers its authored body to command tasks. `submit` returns a handle with `result`,
 `snapshot`, `events` and `cancel`; `run` waits for that result. Catalog discovery
 starts no worker threads and imports no optional table or HTTP libraries.
 
-`box.workflow(operation_id, inputs=..., parameters=...)` returns that scenario
-without executing it, so it can be embedded with `ScenarioStep`. A capability
-classified as a graph cannot be inserted as an opaque `OperationStep`; the
-compiler reports `composition.scenario_required`. This keeps every constituent
-task in the shared plan. Integral numerical and streaming transaction boundaries
-remain ordinary operation tasks.
+`box.workflow(capability_id, inputs=..., parameters=...)` returns a bound
+`InvocationRequest` without executing it. For reusable authored definitions,
+`operation_scenario` wraps an exact operation and `cascade_definition` composes
+scenario references. Constituent commands and acceptance boundaries remain
+visible. Integral numerical and streaming transaction boundaries retain their
+explicit functional contracts.
 
 Applications pass an `ExecutionContext` for explicit capability bindings,
 cancellation, admission and evidence policies. The `providers` convenience
@@ -68,21 +68,21 @@ selects local processing; a missing local input is an error.
 
 | Code | Model | Responsibility |
 | --- | --- | --- |
-| C01 | `OperationStep` | One named call with inputs, parameters, resource requirements and retry policy. |
-| C02 | `ScenarioDefinition` | A reusable graph with named inputs and outputs. |
-| C03 | `ScenarioStep` / `CascadeDefinition` | Scoped composition using the same task and execution model. |
-| C04 | `PlanOutputRef` / `InputRef` | A named upstream output or supplied workflow argument. |
-| C05 | `MapStep` / `CollectStep` | Bounded per-item subgraphs and explicit typed collection. |
+| C01 | `CommandDefinition` / `OperationDefinition` | Technical work and an exact functional transition with an inspectable command body. |
+| C02 | `ScenarioDefinition` | An independently useful graph with named inputs and outputs. |
+| C03 | `Call` / `CascadeDefinition` | Scoped calls and coordinated scenario references. |
+| C04 | `OutputRef` / `InputRef` / `ParameterRef` | Upstream outputs, supplied inputs and explicit parameters. |
+| C05 | `MapCall` / `FoldCall` / `CollectCall` | Bounded expansion, ordered state transitions and typed collection. |
 | C06 | `Condition` | Selection by terminal state or a declared output field. |
 | C07 | `ExecutionPlan` | Concrete task identities, dependencies, scopes and method fingerprints. |
-| C08 | `TemplateDefinition` / `TemplateSlot` | Typed substitution of an operation or a declared subgraph. |
+| C08 | `MethodDefinition` / `ProfileDefinition` / `ProcessingGroup` | Exact source-specific specialization and semantic identities. |
 
 The compiler resolves operation definitions and source bindings, validates
 required inputs and port contracts, rejects cycles and pins method identities.
 Multiple calls of the same operation remain distinct tasks. Explicit sharing
 requires equal computational inputs and policy and excludes effectful calls.
-Selected outputs retain their dependency closure; effects that belong to that
-output must be declared in its dependencies.
+Selected outputs retain their dependency closure and separately declared
+required completions, checks and effects.
 
 Nested scenarios flatten into scopes. A scenario has no worker of its own.
 Map bodies are compiled templates; runtime expansion preserves that admitted

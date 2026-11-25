@@ -164,24 +164,34 @@ def workbook_from_snapshot(snapshot: DatasetSnapshot) -> WorkbookExtract:
     return value
 
 
-def readable_workbook(value: WorkbookExtract) -> Representation:
+def readable_workbook(value: WorkbookExtract, *, max_bytes=32 * 1024 * 1024, checkpoint=None) -> Representation:
     value.__post_init__()
-    records = [{"kind": "workbook", "series_id": value.series_id, "issue_id": value.issue_id,
-        "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
-        "profile_id": value.profile_id, "profile_version": value.profile_version,
-        "coverage": coverage_value(value.coverage),
-        "qualifications": value.qualifications}]
-    for sheet in value.sheets:
-        records.append({"kind": "sheet", "index": sheet.index, "name": sheet.name,
-            "rows": sheet.rows, "columns": sheet.columns, "merged_ranges": sheet.merged_ranges})
-        for cell in sheet.cells:
-            scalar, text = encode_scalar(cell.value)
-            records.append({"kind": "cell", "sheet": sheet.name, "coordinate": cell.coordinate,
-                "value_type": scalar, "value": text, "raw_token": cell.raw_token,
-                "source_type": cell.kind, "formula": cell.formula, "formula_attributes": cell.formula_attributes,
-                "number_format": cell.number_format, "indent": cell.indent, "evidence_kind": cell.evidence_kind})
-    return Representation("workbook.readable.jsonl", 1, "application/x-ndjson",
-        b"\n".join(canonical_manifest_bytes(r) for r in records) + b"\n", "utf-8")
+    if type(max_bytes) is not int or max_bytes < 1:
+        raise ValueError("workbook.readable_limit_invalid")
+    def records():
+        yield {"kind": "workbook", "series_id": value.series_id, "issue_id": value.issue_id,
+            "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
+            "profile_id": value.profile_id, "profile_version": value.profile_version,
+            "coverage": coverage_value(value.coverage), "qualifications": value.qualifications}
+        for sheet in value.sheets:
+            yield {"kind": "sheet", "index": sheet.index, "name": sheet.name,
+                "rows": sheet.rows, "columns": sheet.columns, "merged_ranges": sheet.merged_ranges}
+            for cell in sheet.cells:
+                scalar, text = encode_scalar(cell.value)
+                yield {"kind": "cell", "sheet": sheet.name, "coordinate": cell.coordinate,
+                    "value_type": scalar, "value": text, "raw_token": cell.raw_token,
+                    "source_type": cell.kind, "formula": cell.formula, "formula_attributes": cell.formula_attributes,
+                    "number_format": cell.number_format, "indent": cell.indent, "evidence_kind": cell.evidence_kind}
+    chunks, size = [], 0
+    for record in records():
+        if checkpoint is not None:
+            checkpoint()
+        chunk = canonical_manifest_bytes(record) + b"\n"
+        size += len(chunk)
+        if size > max_bytes:
+            raise ValueError("workbook.readable_size_limit")
+        chunks.append(chunk)
+    return Representation("workbook.readable.jsonl", 1, "application/x-ndjson", b"".join(chunks), "utf-8")
 
 
 @dataclass(frozen=True, slots=True)

@@ -34,3 +34,20 @@ class ReadDocumentRequest:
 @dataclass(frozen=True, slots=True)
 class RenderDocumentRequest:
     document: PublisherDocument
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentValidation:
+    family_id: str
+    source_id: str
+    blocks: int
+    tables: int
+    cells: int
+    text_characters: int
+    findings: tuple[str, ...]
+    coverage_status: str
+    level: str = "physical_structure_only"
+
+    @property
+    def valid(self):
+        return not self.findings

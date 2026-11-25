@@ -101,11 +101,7 @@ def _source_parameters(catalog, source, definition, parameters):
 def _require_atomic(definition):
     if definition.processing is None or not definition.processing.composition:
         return
-    from .builtins.expansion import composition_dispositions
-    disposition = next((item for item in composition_dispositions()
-                        if item.operation_id == definition.operation_id), None)
-    if disposition is None or disposition.strategy != "integral":
-        raise CompositionError("composition.scenario_required")
+    raise CompositionError("composition.scenario_required")
 
 
 def _authoring_references(value):
@@ -772,7 +768,7 @@ def validate_plan(plan, catalog):
             contract = scope.output_contracts[ref.port]
             return OutputPort(ref.port,contract.schema or DataContract("capability.value"),
                 qualifications=contract.qualifications,coverage=contract.expected_coverage,
-                collection=contract.collection)
+                collection=contract.collection,outcomes=contract.outcomes)
         if ref.task not in index:
             raise CompositionError("composition.task_unknown")
         task = index[ref.task]

@@ -1189,13 +1189,21 @@ class ExecutionSession:
                             outputs = ({next(iter(authored.outputs)): value} if len(authored.outputs) == 1 else
                                 {name: value[name] if isinstance(value, Mapping) else getattr(value, name)
                                  for name in authored.outputs})
+                            active = {}
                             for name, port in authored.outputs.items():
+                                if result.outcome not in port.outcomes:
+                                    continue
+                                if outputs[name] is None and not port.required:
+                                    continue
                                 port.validate(outputs[name])
-                            authored.acceptance.validate(outputs)
+                                active[name] = outputs[name]
+                            if result.outcome in {"succeeded", "partial"}:
+                                authored.acceptance.validate(active)
                         elif processing is not None:
                             detached = replace(result, value=value)
                             for port in processing.outputs:
-                                project_output(detached, port.name)
+                                if result.outcome in port.outcomes:
+                                    project_output(detached, port.name)
                     transfer = accept_owned_value(result.value, contract, ledger=self.ledger,
                         max_resident_bytes=self.settings.retained_bytes,
                         max_staging_bytes=self.settings.staging_bytes, checks=(validate,))
@@ -1594,7 +1602,10 @@ class ExecutionSession:
                     value = projected.value if isinstance(projected, (PreparedInput, ProjectedOutput)) else projected
                     if port is not None:
                         port.validate(value)
-                        if port.schema is not None and isinstance(projected, (PreparedInput, ProjectedOutput)) and projected.contract != port.schema:
+                        if isinstance(projected, (PreparedInput, ProjectedOutput)) and projected.outcome not in port.outcomes:
+                            raise ValueError("acceptance.outcome_not_accepted")
+                        if (port.schema is not None and isinstance(projected, (PreparedInput, ProjectedOutput))
+                                and projected.contract not in (port.schema, *port.alternatives)):
                             raise ValueError("acceptance.schema_mismatch")
                         if not port.qualifications <= getattr(projected, "qualifications", frozenset()):
                             raise ValueError("acceptance.qualification_missing")

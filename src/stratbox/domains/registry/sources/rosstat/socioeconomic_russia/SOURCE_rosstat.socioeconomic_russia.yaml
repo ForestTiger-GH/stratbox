@@ -58,6 +58,10 @@
         {
           "operation_id": "rosstat.tables.extract_document",
           "port": "document"
+        },
+        {
+          "operation_id": "rosstat.tables.map_reviewed_cells",
+          "port": "flake"
         }
       ]
     }

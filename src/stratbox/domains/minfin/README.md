@@ -2,7 +2,7 @@
 
 The domain owns four publisher families and thirteen logical series: ten budget
 and NWF workbook series, plus three historical NWF document series. Canonical
-source, operation and profile resources live under `stratbox/registry/minfin`;
+source and profile resources live under `stratbox.domains.registry`;
 typed Python profiles own source
 recognition, table interpretation and reviewed calculations.
 
@@ -15,6 +15,7 @@ recognition, table interpretation and reviewed calculations.
 | [analytics](analytics/) | Reviewed headlines and independently retained calculation results |
 | [products](products/) | Prepared selections, replay and portable rendering |
 | [operations](operations/) | Runtime admission, evidence, source cards and one operation owner |
+| [Capability contribution](capabilities.py) | Exact command graphs, source recipes and processing groups |
 
 Monthly and quarterly budget values retain cumulative YTD periods. NWF units and
 basis are row-specific. Publication dates remain release evidence. Integration
@@ -23,11 +24,13 @@ headline admission verifies the monetary unit and scale. Source, integrated,
 calculated and prepared values have independent persistence/replay boundaries.
 
 - [Complete data route and contracts](../../../../docs/current-how/minfin-data-route.md)
+- [Canonical fiscal capabilities](../../../../docs/current-how/minfin-capability-migration.md)
 - [Executable offline route](../../../../examples/minfin_portable_route.py)
 - [Source and operation metadata](operations/source_catalog.py)
 - [Publication and table profiles](operations/bindings.py)
 
 Storage, scheduling, provider selection and delivery are consumer-owned. The
 same typed snapshots work with any admitted logical dataset store. Legacy DOC
-assets remain retainable originals; ordered document extraction supports
-PDF/DOCX with explicit coverage qualifications.
+conversion uses an explicit versioned provider and retains original/converted
+identities. Ordered PDF/DOCX extraction retains explicit coverage qualifications;
+economic document fields require a reviewed source-qualified profile.

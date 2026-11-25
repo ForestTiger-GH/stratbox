@@ -262,10 +262,7 @@ def check_dependency_direction() -> list[str]:
                     failures.append(f"{prefix}: catalog imports concrete definitions {target}")
             if relative.startswith("shared/") and target.startswith(("stratbox.capabilities", "stratbox.composition", "stratbox.sdk")):
                 failures.append(f"{prefix}: shared contracts import higher owner {target}")
-            # Existing source workflow contributions move with the P18 domain
-            # composition migration. Canonical preparation and lowering already
-            # enforce the final neutral boundary.
-            if relative.startswith("composition/") and not relative.startswith("composition/builtins/") and target.startswith(("stratbox.sdk", "stratbox.domains.cbr", "stratbox.domains.fns", "stratbox.domains.minfin", "stratbox.domains.rosstat", "stratbox.domains.frank_rg")):
+            if relative.startswith("composition/") and target.startswith(("stratbox.sdk", "stratbox.domains.cbr", "stratbox.domains.fns", "stratbox.domains.minfin", "stratbox.domains.rosstat", "stratbox.domains.frank_rg")):
                 failures.append(f"{prefix}: composition imports publisher or SDK implementation {target}")
             if target == "INVALID_RELATIVE_IMPORT":
                 failures.append(f"{prefix}: invalid relative import")

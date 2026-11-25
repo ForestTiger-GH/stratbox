@@ -11,7 +11,7 @@ from graphlib import TopologicalSorter, CycleError
 from typing import Mapping
 
 from stratbox.capabilities.model import (
-    CommandDefinition, InputRef, ParameterRef, OutputRef, WorkIdentity, MapCall, CollectCall,
+    CommandDefinition, InputRef, ParameterRef, OutputRef, WorkIdentity, MapCall, CollectCall, FoldCall,
 )
 from stratbox.capabilities.model.definitions import declaration_fingerprint
 from stratbox.capabilities.model.reuse import build_work_identity
@@ -44,13 +44,25 @@ def _parameter_names(value):
     elif isinstance(value,Mapping):
         for item in value.values():
             yield from _parameter_names(item)
+
+
+def _input_names(value):
+    if isinstance(value, InputRef):
+        yield value.name
+    elif isinstance(value, Mapping):
+        for item in value.values():
+            yield from _input_names(item)
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            yield from _input_names(item)
     elif isinstance(value,(tuple,list)):
         for item in value:
             yield from _parameter_names(item)
 
 
 def _node_values(call):
-    return (call.inputs,getattr(call,"parameters",{}),getattr(call,"items",()),getattr(call,"selection",{}))
+    return (call.inputs,getattr(call,"parameters",{}),getattr(call,"items",()),getattr(call,"selection",{}),
+            getattr(call,"initial",None),getattr(call,"retry",None))
 
 
 def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=None,
@@ -114,13 +126,15 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
         return _MISSING
 
     def lower(definition, scope, arguments, semantic_parameters, chosen_outputs, *, parent=None,
-              required=True, method=None, profile=None, group=None, ancestry=(), external_dependencies=(), inherited_conditions=(),selection_context=None,recipe=None,binding_context=None):
+              required=True, method=None, profile=None, group=None, ancestry=(), external_dependencies=(), inherited_conditions=(),selection_context=None,recipe=None,binding_context=None,retry_override=None,expected_binding=None):
         if definition.capability_id in ancestry:
             raise CompositionError("composition.cycle")
         if set(arguments) - set(definition.inputs):
             raise CompositionError("composition.input_unknown")
         binding = snapshot.resolve(definition.capability_id, method_id=method, profile_id=profile,
                                    group_id=group, parameters=semantic_parameters,selection=selection_context,recipe_id=recipe)
+        if expected_binding and any(binding.identities.get(name) != identity for name, identity in expected_binding.items()):
+            raise CompositionError("composition.binding_reference_changed")
         chosen_outputs = tuple(dict.fromkeys((*chosen_outputs,*definition.acceptance.coherent_outputs)))
         parameters_bound = dict(binding.parameters)
         identities = dict(binding.identities)
@@ -138,6 +152,8 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
                 raise CompositionError("composition.parameter_required")
             concrete_inputs = dict(arguments)
             for name, port in definition.inputs.items():
+                if not port.required and concrete_inputs.get(name, _MISSING) is None:
+                    concrete_inputs.pop(name, None)
                 if port.required and name not in concrete_inputs:
                     raise CompositionError("composition.input_required")
                 if name in concrete_inputs and not tuple(iter_references(concrete_inputs[name])):
@@ -169,7 +185,7 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
                     binding_identities=leaf_identities,
                     schema_fingerprint=declaration_fingerprint(definition.outputs))
                 work_id = reuse_identity.fingerprint
-            retry = definition.retry
+            retry = retry_override or definition.retry
             task = CompiledTask(task_id, definition.capability_id, concrete_inputs, parameters_bound,
                 dependencies, scope, required, inherited_conditions[0] if len(inherited_conditions) == 1 else None,
                 resources=definition.resources,
@@ -234,7 +250,7 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
         roots = {ref.step for ref in _refs(selected_values) if cached_ref(ref) is _MISSING}
         check_roots = tuple(dict.fromkeys((*body.required_checks,*definition.acceptance.required_checks)))
         effect_roots = tuple(dict.fromkeys((*body.required_effects,*definition.acceptance.required_effects)))
-        roots.update((*check_roots,*effect_roots))
+        roots.update((*check_roots,*effect_roots,*body.required_completions))
         if roots - call_index.keys():
             raise CompositionError("composition.task_unknown")
         keep, pending = set(), list(roots)
@@ -248,17 +264,60 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
             pending.extend(ref.step for ref in _refs(_node_values(call)) if cached_ref(ref) is _MISSING)
             if getattr(call,"condition",None) is not None:
                 pending.append(call.condition.step)
+        # Validate the selected functional boundary before a permissive child
+        # can consume it. Unused branches create no input obligations.
+        from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput
+        used_inputs = set(_input_names((selected_values,
+            tuple(_node_values(call_index[key]) for key in keep))))
+        for name in used_inputs:
+            port = definition.inputs[name]
+            if name not in arguments:
+                if port.required:
+                    raise CompositionError("composition.input_required")
+                continue
+            incoming = arguments[name]
+            if incoming is None and not port.required:
+                continue
+            if tuple(iter_references(incoming)):
+                continue
+            if isinstance(incoming, (PreparedInput, ProjectedOutput)):
+                if port.schema is not None and incoming.contract not in (port.schema, *port.alternatives):
+                    raise CompositionError("processing.schema_mismatch")
+                if incoming.outcome not in port.outcomes:
+                    raise CompositionError("processing.outcome_not_accepted")
+                if not port.qualifications <= incoming.qualifications:
+                    raise CompositionError("processing.qualification_missing")
+                if not port.expected_coverage <= incoming.coverage:
+                    raise CompositionError("processing.coverage_missing")
+                incoming = incoming.value
+            else:
+                from stratbox.shared.data.assessment import value_evidence
+                evidence = value_evidence(incoming)
+                if not port.qualifications <= evidence.qualifications:
+                    raise CompositionError("processing.qualification_missing")
+                facts = evidence.coverage.facts if evidence.coverage is not None else frozenset()
+                if not port.expected_coverage <= facts:
+                    raise CompositionError("processing.coverage_missing")
+            port.validate(incoming)
         resolved, completions, members = {}, {}, {}
 
         def value_of(value):
             if isinstance(value, InputRef):
                 if value.name not in arguments:
+                    if value.name in definition.inputs and not definition.inputs[value.name].required:
+                        return None
                     raise CompositionError("composition.input_required")
                 return arguments[value.name]
             if isinstance(value, ParameterRef):
                 if value.name not in parameters_bound:
                     raise CompositionError("composition.parameter_required")
-                return parameters_bound[value.name]
+                result = parameters_bound[value.name]
+                for field in value.path.split(".") if value.path else ():
+                    try:
+                        result = result[field] if isinstance(result, Mapping) else getattr(result, field)
+                    except (KeyError, AttributeError, TypeError):
+                        raise CompositionError("composition.parameter_path_unavailable") from None
+                return result
             if isinstance(value, OutputRef):
                 cached = cached_ref(value)
                 if cached is not _MISSING:
@@ -308,6 +367,42 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
                 *(condition.task for condition in conditions))))
             condition = conditions[0] if len(conditions) == 1 else None
             call_selection = {**(selection_context or {}),**value_of(getattr(call,"selection",{}))}
+            if isinstance(call, FoldCall):
+                items = value_of(call.items)
+                if not isinstance(items, (tuple, list)):
+                    raise CompositionError("composition.fold_frozen_items_required")
+                if len(items) > call.max_items:
+                    raise CompositionError("composition.fold_item_limit")
+                state = value_of(call.initial)
+                previous = extra
+                folded_children = []
+                override = value_of(call.retry)
+                if override is not None:
+                    from stratbox.capabilities.model.graph import RetryPolicy as AuthoredRetry
+                    if isinstance(override, Mapping):
+                        if set(override) - {"max_attempts", "delay", "retry_codes"}:
+                            raise CompositionError("composition.fold_retry_invalid")
+                        override = AuthoredRetry(**dict(override))
+                    if not isinstance(override, AuthoredRetry):
+                        raise CompositionError("composition.fold_retry_invalid")
+                override = override or retry_override
+                for index, item in enumerate(items):
+                    child_inputs = {**value_of(call.inputs), call.item_input: item, call.state_input: state}
+                    folded, completion, descendants = lower(child, scope + "/" + key + "/item_" + str(index),
+                        child_inputs, value_of(call.parameters), (call.state_output,), parent=scope,
+                        required=required and call.required, ancestry=(*ancestry, definition.capability_id),
+                        external_dependencies=previous, inherited_conditions=conditions,
+                        selection_context=call_selection, binding_context=binding_context,
+                        retry_override=override)
+                    state = folded[call.state_output]
+                    previous = (completion,)
+                    folded_children.extend(descendants)
+                if not items:
+                    if not isinstance(state, (PlanOutputRef, ScopeOutputRef)):
+                        raise CompositionError("composition.fold_empty_requires_initial_producer")
+                    completion = state.task
+                resolved[key],completions[key],members[key] = {"value": state},completion,tuple(folded_children)
+                continue
             if isinstance(call,MapCall):
                 if call.item_input in call.inputs:
                     raise CompositionError("composition.map_item_conflict")
@@ -342,13 +437,15 @@ def prepare_invocation(definition_or_id, snapshot, runtime_catalog, *, inputs=No
                 parent=scope,required=required and call.required,method=call.method_id,
                 profile=call.profile_id,group=call.group_id,ancestry=(*ancestry,definition.capability_id),
                 external_dependencies=extra,inherited_conditions=conditions,selection_context=call_selection,
-                binding_context=significant_context)
+                binding_context=significant_context,retry_override=retry_override,
+                expected_binding=call.binding_identities)
             resolved[key],completions[key],members[key] = named,completed,children
         named = {name:value_of(value) for name,value in selected_values.items()}
         checks = tuple(completions[key] for key in check_roots)
         effects = tuple(completions[key] for key in effect_roots)
         scopes[position] = replace(scopes[position], outputs=named,required_checks=checks,required_effects=effects)
         dependencies = tuple(dict.fromkeys((*external_dependencies,*checks,*effects,
+            *(completions[key] for key in body.required_completions),
             *(completions[key] for key in call_index if key in keep and call_index[key].required),
             *(ref.task for ref in iter_references(named)))))
         accept_id = scope + "/accept"

@@ -1,19 +1,6 @@
 """Source changes are distinct from comparisons of integrated economic measures."""
-from dataclasses import dataclass
-
-from stratbox.shared.identity import ByteIdentity
-
-from .contracts import JsonFlake
-from .legal_entities.extraction import WorkbookBundle
-
-
-@dataclass(frozen=True, slots=True)
-class FlakeComparison:
-    before_identity: ByteIdentity
-    after_identity: ByteIdentity
-    state: str
-    changed: tuple[str, ...]
-    qualifications: tuple[str, ...]
+from .contracts import JsonFlake, FlakeComparison
+from .legal_entities.contracts import WorkbookBundle
 
 
 def compare_flakes(before, after):

@@ -6,6 +6,7 @@ from hashlib import sha256
 from importlib import import_module
 from typing import Mapping
 from threading import RLock
+from functools import lru_cache
 
 
 def _symbol(reference):
@@ -147,23 +148,27 @@ class CapabilityRuntimeCatalog:
         output_names = tuple(command.outputs)
         if len(output_names) > 1:
             output_type = make_dataclass("CommandOutputs_" + suffix,
-                [(name, object) for name in output_names], frozen=True, namespace={"__module__": __name__})
+                [(name, object, field(default=None)) for name in output_names],
+                frozen=True, namespace={"__module__": __name__})
             globals()[output_type.__name__] = output_type
             self._results[capability_id] = output_type
         schema = lambda port: port.schema or DataContract("capability.value")
         semantics = OperationSemantics((),
             inputs=tuple(InputPort(name, schema(port), path=name, required=port.required,
-                qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection)
+                qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection,
+                outcomes=port.outcomes, alternatives=port.alternatives,
+                accepts_any_contract=port.schema is None)
                 for name, port in command.inputs.items()),
             outputs=tuple(OutputPort(name, schema(port), path=name if len(output_names) > 1 else "",
                 qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection,
-                evidence_policy="value")
+                evidence_policy="value", outcomes=port.outcomes)
                 for name, port in command.outputs.items()),
             parameters=tuple(sorted(names - set(command.inputs))),
             required_parameters=command.required_parameters,
             summary=command.summary or command.capability_id, function=ProcessingFunction.INSPECT)
         definition = OperationDefinition(command.capability_id, "command." + suffix, request_type,
             self._results.get(capability_id, object), required_capabilities=command.required_capabilities,
+            optional_capabilities=command.optional_capabilities,
             possible_effects=command.effects, partial_allowed=command.acceptance.partial_allowed,
             processing=semantics, method_refs=(command.implementation_ref,),
             request_fields=tuple(RequestField(name, "input" if name in command.inputs else "parameter") for name in sorted(names)))
@@ -210,22 +215,30 @@ class CapabilityRuntimeCatalog:
                 answer = implementation(values, invocation)
                 from stratbox.core.execution.runner import Completion
                 value = answer.value if isinstance(answer, Completion) else answer
+                outcome = answer.outcome if isinstance(answer, Completion) else "succeeded"
                 if len(command.outputs) == 1:
                     outputs = {next(iter(command.outputs)): value}
                 elif isinstance(value, Mapping):
                     outputs = dict(value)
                 else:
-                    outputs = {name: getattr(value, name) for name in command.outputs}
+                    outputs = {name: getattr(value, name) for name in command.outputs if hasattr(value, name)}
                 try:
                     if set(outputs) - command.outputs.keys():
                         raise ValueError("acceptance.output_unknown")
                     for name, port in command.outputs.items():
+                        if outcome not in port.outcomes:
+                            continue
                         if name not in outputs:
                             if port.required:
                                 raise ValueError("acceptance.output_missing")
                             continue
+                        if outputs[name] is None and not port.required:
+                            continue
                         port.validate(outputs[name])
-                    command.acceptance.validate(outputs)
+                    if outcome in {"succeeded", "partial"}:
+                        command.acceptance.validate({name: value for name, value in outputs.items()
+                            if outcome in command.outputs[name].outcomes
+                            and (value is not None or command.outputs[name].required)})
                 except ValueError as error:
                     raise OperationFailure(str(error)) from None
                 if capability_id in self._results:
@@ -277,6 +290,13 @@ class CapabilityRuntimeCatalog:
         return bind_operation(self, capability_id, inputs=inputs, parameters=bound_parameters, **options)
 
 
+@lru_cache(maxsize=1)
 def default_snapshot():
+    """Compose independent metadata contributions at the SDK bootstrap boundary."""
     from stratbox.capabilities.manifest import catalog_snapshot
-    return catalog_snapshot()
+    from stratbox.domains.cbr.capabilities import contribution as cbr
+    from stratbox.domains.fns.capabilities import contribution as fns
+    from stratbox.domains.minfin.capabilities import contribution as minfin
+    from stratbox.domains.frank_rg.capabilities import contribution as frank
+    from stratbox.domains.rosstat.capabilities import contribution as rosstat
+    return catalog_snapshot().overlay(cbr(), fns(), minfin(), frank(), rosstat())

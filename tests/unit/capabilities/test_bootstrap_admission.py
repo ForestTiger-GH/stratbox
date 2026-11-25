@@ -57,7 +57,8 @@ def test_multi_output_completion_keeps_partial_diagnostics(monkeypatch):
     monkeypatch.setattr(bootstrap, "_symbol", lambda reference:
         lambda request, invocation: Completion({"data": (1,), "findings": ("partial",)}, "partial", "source.coverage_partial"))
     command = CommandDefinition("local.partial", IMPLEMENTATION,
-        outputs={"data": PortContract(value_type=tuple), "findings": PortContract(value_type=tuple)},
+        outputs={"data": PortContract(value_type=tuple, outcomes=frozenset({"succeeded", "partial"})),
+                 "findings": PortContract(value_type=tuple, outcomes=frozenset({"succeeded", "partial"}))},
         acceptance=AcceptanceContract(coherent_outputs=("data", "findings"), partial_allowed=True))
     catalog = CapabilityRuntimeCatalog(CatalogSnapshot((command,)))
     result = catalog.bind(command.capability_id).invoke()

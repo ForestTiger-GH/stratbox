@@ -1,4 +1,5 @@
 """Single lightweight assembly point for the built-in typed capability catalog."""
+from functools import lru_cache
 from stratbox.capabilities.catalog import CatalogSnapshot, MethodDefinition, ProcessingGroup, RecipeDefinition
 from stratbox.capabilities.commands import definitions as commands
 from stratbox.capabilities.operations import definitions as operations, extraction_body
@@ -8,9 +9,10 @@ from stratbox.capabilities.commands.notifications import definitions as notifica
 from stratbox.capabilities.operations.notifications import definitions as notification_operations
 
 
+@lru_cache(maxsize=1)
 def catalog_snapshot():
     """Construct metadata without importing handlers or optional data backends."""
-    return CatalogSnapshot(
+    foundation = CatalogSnapshot(
         definitions=(*commands(), *notification_commands(), *operations(), *notification_operations(), *scenarios(), *cascades()),
         methods=(MethodDefinition("extract.rows", "extract.observations", extraction_body(), priority=1),
             MethodDefinition("extract.minfin_budget", "extract.observations",
@@ -21,3 +23,8 @@ def catalog_snapshot():
             RecipeDefinition("recipe.ratio_product", "ratio.product", "scenario.observation_ratio"),
             RecipeDefinition("recipe.observation_package", "observation.package", "cascade.observation_package")),
     )
+    from stratbox.capabilities.operations.stages import contribution as stages
+    from stratbox.capabilities.scenarios.routes import contribution as routes
+    snapshot = foundation.overlay(stages(), routes())
+    from stratbox.capabilities.cascades.releases import contribution as releases
+    return snapshot.overlay(releases(snapshot))

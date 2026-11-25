@@ -113,13 +113,25 @@ def document_from_snapshot(snapshot: DatasetSnapshot):
     return value
 
 
-def readable_document(value: DocumentExtract):
+def readable_document(value: DocumentExtract, *, max_bytes=32 * 1024 * 1024, checkpoint=None):
     value.__post_init__()
-    records = [{"kind": "document", "series_id": value.series_id, "issue_id": value.issue_id,
-        "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
-        "profile_id": value.profile_id, "profile_version": value.profile_version,
-        "coverage": coverage_value(value.coverage), "qualifications": value.qualifications}]
-    records.extend({"ordinal": b.ordinal, "kind": b.kind, "text": b.text, "page": b.page,
-                    "rows": b.rows, "locator": b.locator} for b in value.blocks)
-    return Representation("document.readable.jsonl", 1, "application/x-ndjson",
-        b"\n".join(canonical_manifest_bytes(r) for r in records) + b"\n", "utf-8")
+    if type(max_bytes) is not int or max_bytes < 1:
+        raise ValueError("document.readable_limit_invalid")
+    def records():
+        yield {"kind": "document", "series_id": value.series_id, "issue_id": value.issue_id,
+            "asset_id": value.asset_id, "source_sha256": value.source_identity.sha256, "format": value.format,
+            "profile_id": value.profile_id, "profile_version": value.profile_version,
+            "coverage": coverage_value(value.coverage), "qualifications": value.qualifications}
+        for block in value.blocks:
+            yield {"ordinal": block.ordinal, "kind": block.kind, "text": block.text, "page": block.page,
+                "rows": block.rows, "locator": block.locator}
+    chunks, size = [], 0
+    for record in records():
+        if checkpoint is not None:
+            checkpoint()
+        chunk = canonical_manifest_bytes(record) + b"\n"
+        size += len(chunk)
+        if size > max_bytes:
+            raise ValueError("document.readable_size_limit")
+        chunks.append(chunk)
+    return Representation("document.readable.jsonl", 1, "application/x-ndjson", b"".join(chunks), "utf-8")

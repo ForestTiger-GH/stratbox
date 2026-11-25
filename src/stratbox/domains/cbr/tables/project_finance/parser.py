@@ -81,7 +81,18 @@ def _find_header_row(sheet_df: pd.DataFrame) -> tuple[int, list[object]]:
     raise ValueError(f"Escrow header is unresolved: {HEADER_SUBJECT_REQUIRED_TOKENS}")
 
 
-def _select_sheet_with_header(file_bytes: bytes) -> tuple[str, pd.DataFrame, int, list[object]]:
+def _select_sheet_with_header(file_bytes: bytes, *, decoded=None) -> tuple[str, pd.DataFrame, int, list[object]]:
+    if decoded is not None:
+        from stratbox.domains.cbr.tables.decoded_workbooks import decoded_sheets
+        sheets = decoded_sheets(decoded, file_bytes, formulas=True)
+        for name, source_rows in sorted(sheets, key=lambda item: (0 if 'регион' in item[0].lower() else 1, item[0].lower())):
+            frame = pd.DataFrame(tuple(source_rows), dtype=object)
+            try:
+                header_row, values = _find_header_row(frame)
+            except ValueError:
+                continue
+            return name, frame, header_row, values
+        raise ValueError('Escrow sheet with a supported header is not found')
     workbook = load_workbook(BytesIO(file_bytes), read_only=True, data_only=False)
     try:
         for name in sorted(workbook.sheetnames, key=lambda value: (0 if "регион" in value.lower() else 1, value.lower())):
@@ -104,12 +115,12 @@ def _build_rows_frame(rows) -> pd.DataFrame:
     ], columns=ROW_COLUMNS, dtype=object)
 
 
-def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str, as_of: str | None = None) -> ParsedEscrowFile:
+def parse_escrow_excel_bytes(file_bytes: bytes, *, source_name: str, as_of: str | None = None, decoded=None) -> ParsedEscrowFile:
     file_date = as_of if as_of is not None else extract_date_from_filename(source_name)
     if file_date is None:
         raise ValueError("Escrow observation date is required")
     date.fromisoformat(file_date)
-    sheet_name, sheet_df, header_row, headers = _select_sheet_with_header(file_bytes)
+    sheet_name, sheet_df, header_row, headers = _select_sheet_with_header(file_bytes, decoded=decoded)
     columns, unknown = probe_indicator_columns(headers, allow_unknown=True)
     data = sheet_df.iloc[header_row + 1:].reset_index(drop=True)
     rows = parse_escrow_rows(data)

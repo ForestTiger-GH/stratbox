@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from calendar import monthrange
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 import re
 from urllib.parse import quote
 
@@ -12,6 +12,7 @@ from stratbox.shared.data.observations import MetricRef, Observation, Observatio
 from stratbox.shared.evidence import UsedInputReceipt
 from ..tables.flake_codec import serialize_flake, validate_flake
 from ..tables.contracts import SerializeFlakeRequest
+from ..tables.numbers import numeric_value
 from .contracts import IntegrateRequest, RowBinding
 
 _KINDS = {"stock": "stock", "ytd": "flow", "annual": "flow", "period_flow": "flow", "ratio": "ratio", "index": "index", "count": "count"}
@@ -62,26 +63,6 @@ def reviewed_bindings(flake) -> tuple[RowBinding, ...]:
         bindings.append(RowBinding(code, MetricRef(metric_id, "RUB", _KINDS[basis], "1", Decimal("1e9")),
                                    SubjectRef("geography", "RU"), perimeter, basis))
     return tuple(bindings)
-
-
-def numeric_value(raw: str | None):
-    if raw is None:
-        return None, "missing"
-    token = raw.strip()
-    if not token:
-        return None, "blank"
-    if token in {"-", "—", "–"}:
-        return None, "dash"
-    normalized = token.replace("\u00a0", "").replace("\u202f", "").replace(" ", "").replace(",", ".")
-    if not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?", normalized):
-        raise ValueError("minfin.integration.numeric_value_invalid")
-    try:
-        value = Decimal(normalized)
-    except InvalidOperation:
-        raise ValueError("minfin.integration.numeric_value_invalid") from None
-    if not value.is_finite():
-        raise ValueError("minfin.integration.numeric_value_invalid")
-    return value, "reported"
 
 
 def integrate(request: IntegrateRequest) -> ObservationBatch:

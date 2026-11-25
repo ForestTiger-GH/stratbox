@@ -77,6 +77,14 @@ def build_flake(request):
             or type(profile.version) is not int or profile.version < 1
             or not isinstance(profile.bindings, tuple) or not profile.bindings):
         raise ValueError("frg.profile.original_binding_mismatch")
+    if profile.layout_identity is not None and (
+            not isinstance(profile.layout_identity, ByteIdentity) or not profile.reviewed_originals
+            or not isinstance(profile.reviewed_originals, tuple)
+            or any(not isinstance(item, ByteIdentity) for item in profile.reviewed_originals)
+            or not isinstance(profile.review_qualification, str) or not profile.review_qualification):
+        raise ValueError("frg.profile.layout_evidence_required")
+    if profile.layout_identity is None and (profile.reviewed_originals or profile.review_qualification is not None):
+        raise ValueError("frg.profile.layout_evidence_required")
     physical = {sheet.name: sheet for sheet in extract.sheets}
     indexes = {name: {(cell.row, cell.column): cell for cell in sheet.cells} for name, sheet in physical.items()}
     positions, semantics, observations = set(), set(), []
@@ -108,6 +116,9 @@ def build_flake(request):
             asset_id=extract.asset_id, material_identity=extract.source_identity,
             semantic_profile_edition=profile.profile_id + ":" + str(profile.version)), "extract", "byte_bound_profile_validated"),))
     observation_snapshot(batch)
+    qualifications = ("caller_supplied_byte_bound_semantics", *extract.qualifications)
+    if profile.layout_identity is not None:
+        qualifications += ("externally_reviewed_layout", profile.review_qualification)
     return SemanticFlake(extract.series_id, extract.issue_id, extract.asset_id, extract.source_identity,
                          extract.identity, profile.profile_id, profile.version, profile_digest, batch,
-                         ("caller_supplied_byte_bound_semantics", *extract.qualifications))
+                         qualifications)

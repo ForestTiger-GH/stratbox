@@ -41,6 +41,7 @@ _EXPORTS = {
 _EXPORTS.update({
     ".tables.contracts": ("ExtractRequest", "ExtractSnapshotRequest", "ReadExtractRequest", "ValidateExtractRequest", "ExtractValidation", "CompareExtractRequest", "ReadableRequest", "CellBinding", "SemanticProfile", "BuildFlakeRequest", "SemanticFlake", "FlakeSnapshotRequest", "ReadFlakeRequest"),
     ".tables.profiles": ("ProfileAvailability", "profile_availability", "all_profile_availability"),
+    ".tables.layouts": ("CellAnchor", "LayoutBinding", "LayoutProfile", "bind_layout"),
     ".integration.contracts": ("IntegrateRequest", "AlignRequest", "HistoryRequest", "ObservationSnapshotRequest", "ReadObservationsRequest"),
     ".analytics.contracts": ("CalculateRequest",),
     ".products.contracts": ("PrepareViewRequest", "ViewSnapshotRequest", "ReadViewRequest", "RenderViewRequest"),

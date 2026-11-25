@@ -12,6 +12,7 @@ import json
 from stratbox.shared.data.datasets import ComputationReceipt, DatasetVersion, computation_identity
 from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.assessment import assessment_value, evidence_from
 from stratbox.shared.evidence import MaterialReference, SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -195,9 +196,10 @@ class MaterialArtifact:
         rep = self.representation
         asset = self.source_asset
         data = canonical_manifest_bytes({
-            "schema": "stratbox.material.v1", "contract": _contract(self.contract),
+            "schema": "stratbox.material.v2", "contract": _contract(self.contract),
             "representation": {"profile_id": rep.profile_id, "version": rep.version,
-                "media_type": rep.media_type, "encoding": rep.encoding, "identity": _identity(rep.identity)},
+                "media_type": rep.media_type, "encoding": rep.encoding, "identity": _identity(rep.identity),
+                "evidence": assessment_value(rep.evidence)},
             "series_id": self.series_id,
             "source_asset": None if asset is None else {"series_id": asset.series_id,
                 "issue_id": asset.issue_id, "asset_id": asset.asset_id},
@@ -217,12 +219,13 @@ def restore_artifact(descriptor: bytes, data: bytes) -> MaterialArtifact:
     """Decode a bounded descriptor and verify its complete representation."""
     try:
         obj = _json(descriptor)
-        if set(obj) != {"schema", "contract", "representation", "series_id", "source_asset", "inputs", "computation"} or obj["schema"] != "stratbox.material.v1":
+        if set(obj) != {"schema", "contract", "representation", "series_id", "source_asset", "inputs", "computation"} or obj["schema"] != "stratbox.material.v2":
             raise ValueError("material.descriptor_schema_invalid")
         rep = obj["representation"]
-        if set(rep) != {"profile_id", "version", "media_type", "encoding", "identity"}:
+        if set(rep) != {"profile_id", "version", "media_type", "encoding", "identity", "evidence"}:
             raise ValueError("material.representation_invalid")
-        value = Representation(rep["profile_id"], rep["version"], rep["media_type"], data, rep["encoding"])
+        value = Representation(rep["profile_id"], rep["version"], rep["media_type"], data, rep["encoding"],
+            evidence_from(rep["evidence"]) if rep["evidence"] is not None else None)
         if value.identity != _read_identity(rep["identity"]):
             raise ValueError("material.identity_mismatch")
         result = MaterialArtifact(_read_contract(obj["contract"]), value,

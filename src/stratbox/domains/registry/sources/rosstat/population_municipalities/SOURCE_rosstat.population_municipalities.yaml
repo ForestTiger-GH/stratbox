@@ -57,6 +57,10 @@
         {
           "operation_id": "rosstat.tables.extract_workbook",
           "port": "workbook"
+        },
+        {
+          "operation_id": "rosstat.tables.map_reviewed_cells",
+          "port": "flake"
         }
       ]
     }
