@@ -1684,6 +1684,14 @@ class ExecutionSession:
                 source_id = next(iter(source_ids)) if len(source_ids) == 1 else getattr(value, "source_id", None)
             except Exception:
                 source_id = None
+            if source_id is not None:
+                from stratbox.shared.identifiers import safe_token
+                try:
+                    safe_token(source_id)
+                except ValueError:
+                    # Public source coordinates are logical identifiers. The
+                    # owned result retains opaque locators and full provenance.
+                    source_id = None
             try:
                 self.journal.accepted_value(replace(self._correlation(run), workflow_scope_id=_token(scope.scope_id)),
                     value_id=value_id, stage=scope.definition_id, role=role.value if role is not None else None,

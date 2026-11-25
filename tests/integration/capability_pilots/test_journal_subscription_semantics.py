@@ -11,12 +11,31 @@ from stratbox.capabilities.model import (
 from stratbox.core.execution import OperationFailure
 from stratbox.core.notifications import CapabilitySelector
 from stratbox.sdk import StrategyBox
+from stratbox.shared.evidence import SourcePayload
 from .test_capability_subscriptions import definitions, runtime_for
 from .test_required_notification import Inbox
 
 
 def fail(request, invocation):
     raise OperationFailure("fixture.intentional_failure")
+
+
+def test_material_locator_does_not_block_acceptance_journaling_or_subscriptions():
+    inbox = Inbox()
+    locator = "https://example.test/source"
+    with StrategyBox() as box:
+        _, key = runtime_for(box, inbox, selector=CapabilitySelector("material.read", "command", output_name="value"))
+        result = box.invoke("material.read", inputs={"material": SourcePayload(b"abc", "application/octet-stream", locator)}, timeout=5)
+        assert result.outcome == "succeeded" and result.output("value").source_id == locator
+        assert "execution.publication_pending" not in result.diagnostics
+        notified = box.invoke("notify.accepted", parameters={"key": key, "source_run_id": result.run_id}, timeout=5)
+        assert notified.outcome == "succeeded", notified.diagnostics
+        assert len(inbox.calls) == 1
+        data = json.loads(inbox.calls[0].intent.envelope_bytes)["data"]
+        assert data["source_id"] is None and data["capability_id"] == "material.read"
+        assert data["identity"]
+        result.close()
+        notified.close()
 
 
 @pytest.mark.parametrize("completed", (False, True))
