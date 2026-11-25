@@ -73,7 +73,16 @@ def test_cbr_four_series_share_one_index_and_keep_separate_originals(profiled_ca
         for series, filename in SERIES:
             replay = box.invoke("extract.observations", inputs={"material": content[root + filename]},
                 profile_id="fixture." + series, timeout=10)
-            assert replay.output("observations") == result.output(series)
+            local, acquired = replay.output("observations"), result.output(series)
+            assert (local.dataset_id, local.schema_version, local.release_id, local.observations, local.lineage) == (
+                acquired.dataset_id, acquired.schema_version, acquired.release_id, acquired.observations, acquired.lineage)
+            assert local.source_uses[0].qualification == "declared"
+            assert acquired.source_uses[0].qualification == "observed"
+            assert local.source_uses[0].coordinate.material_identity == acquired.source_uses[0].coordinate.material_identity
+            expected_profile = catalog.profile("fixture." + series).fingerprint
+            assert local.source_uses[0].coordinate.semantic_profile_edition == expected_profile
+            assert acquired.source_uses[0].coordinate.semantic_profile_edition == expected_profile
+            assert local.evidence.profile_fingerprints == acquired.evidence.profile_fingerprints == (expected_profile,)
 
 
 def test_minfin_budget_period_columns_same_operation_and_compiler(profiled_catalog):

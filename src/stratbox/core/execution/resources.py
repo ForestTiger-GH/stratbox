@@ -62,22 +62,30 @@ class ResourceLedger:
                 raise ValueError("resource.reservation_exists")
             self.validate(requirements)
             if "worker" not in requirements:
-                return self.replace(owner, requirements)
+                admitted = self.replace(owner, requirements)
+                if admitted:
+                    self._waiting.pop(owner, None)
+                return admitted
             now = monotonic()
-            # An aged multi-unit claim reserves its conflicting capacity vector.
-            # Independent resources remain usable while occupied units drain.
+            # Insertion order is a strict priority: only older requests can
+            # withhold capacity from this owner. Retrying never changes rank.
+            # This makes the wait-for relation acyclic even after every waiter
+            # has aged. A fresh request may use capacity left after reserving
+            # an older claim's full vector, including multi-worker claims.
+            previous = self._waiting.get(owner)
+            self._waiting[owner] = (previous[0] if previous else now, dict(requirements))
             for other, (since, claim) in self._waiting.items():
-                if other != owner and now - since >= self.starvation_seconds and any(
-                    amount and claim.get(name, 0) for name, amount in requirements.items()
-                    if name != "worker"
-                ):
-                    self._waiting.setdefault(owner, (now, dict(requirements)))
+                if other == owner:
+                    break
+                if now - since < self.starvation_seconds:
+                    continue
+                if any(amount and claim.get(name, 0) and
+                       self._occupied.get(name, 0) + amount + claim[name] > self.capacity(name)
+                       for name, amount in requirements.items()):
                     return False
             admitted = self.replace(owner, requirements)
             if admitted:
                 self._waiting.pop(owner, None)
-            else:
-                self._waiting.setdefault(owner, (now, dict(requirements)))
             return admitted
 
     def replace(self, owner, requirements):

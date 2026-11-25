@@ -12,6 +12,7 @@ from stratbox.shared.data.processing import DataContract, DataRole
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
+from stratbox.shared.data.assessment import selected_evidence, value_evidence
 
 OBSERVATION_VIEW = DataContract("observations.prepared_view", 1, DataRole.PRODUCTS)
 OBSERVATION_VIEW_SNAPSHOT = DataContract("observations.prepared_view.snapshot", 1, DataRole.PRODUCTS)
@@ -55,6 +56,7 @@ def prepare_observation_view(batch: ObservationBatch, *, view_id, metric_ids=(),
     scope = coverage or SnapshotCoverage("unknown", "Caller-supplied observation batch; publisher-wide coverage is unspecified.")
     if len(selected) != len(batch.observations):
         scope = replace(scope, status="partial", description="Explicitly selected observations from the supplied batch.")
+        batch = replace(batch, evidence=selected_evidence(value_evidence(batch), selected))
     return ObservationView(view_id, replace(batch, observations=selected), source.identity, scope, tuple(qualifications))
 
 

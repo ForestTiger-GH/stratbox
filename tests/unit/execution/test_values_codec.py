@@ -94,3 +94,26 @@ def test_collection_materialization_enforces_one_aggregate_cell_ceiling():
     with pytest.raises(ValueError, match="cell_limit"):
         decode_value(encoded, max_cells=1)
     assert decode_value(encoded, max_cells=2).value == (table, table)
+
+
+def test_actual_coverage_findings_and_calculation_basis_have_explicit_portable_codecs():
+    from stratbox.shared.data.assessment import (
+        CoverageCoordinate, CoverageAssessment, ProcessingFinding, CalculationEvidence, ValueEvidence,
+    )
+    source = ByteIdentity.of(b"source workbook")
+    coordinate = CoverageCoordinate("regions", "A", "debt", "as_of", "2026-09-01", "resident", (("currency", "RUB"),))
+    missing = CoverageCoordinate("regions", "B", "debt", "as_of", "2026-09-01", "resident", (("currency", "RUB"),))
+    coverage = CoverageAssessment("selected.sheet", (coordinate.identity,), True, ("region:A",),
+        None, source, ("data", 1, 1, 3, 2), expected_coordinates=(coordinate, missing))
+    finding = ProcessingFinding("source.missing", "warning", 1, "One declared observation is absent.")
+    calculation = CalculationEvidence("ratio", "1", "fingerprint-1", (("numerator", source, "2026-09"),),
+        "same_period", "same_source", "pinned_release", "Compute the qualified share for the selected region.")
+    evidence = ValueEvidence(frozenset({"reported", "partial"}), coverage, (finding,), (calculation,),
+        ("method-1",), ("profile-1",), ("reference-1",))
+    for value in (coordinate, coverage, finding, calculation, evidence, (finding,)):
+        result = decode_value(encode_value(value, DataContract("test.value-assessment")))
+        assert result.value == value
+    rendered = Representation("qualified.csv", 1, "text/csv", b"a,b\n1,2\n", "utf-8", evidence)
+    restored = decode_value(encode_value(rendered, DataContract("test.qualified-product", role=DataRole.PRODUCTS)))
+    assert restored.value.evidence == evidence
+    assert coverage.status == "partial"

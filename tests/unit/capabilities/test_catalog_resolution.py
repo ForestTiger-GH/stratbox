@@ -201,3 +201,85 @@ def test_required_effect_root_must_reach_an_effectful_command():
         {"value": OutputRef("save")}, required_effects=("save",)))
     with pytest.raises(CatalogError, match="required_effect_without_effect"):
         CatalogSnapshot((command, intermediate, scenario))
+
+
+def test_binding_projection_pins_group_recipe_and_only_used_semantics():
+    from dataclasses import replace
+    from stratbox.capabilities.catalog import ReferenceDefinition, SchemaDefinition
+    from stratbox.capabilities.model import declaration_fingerprint
+    source = PortContract(DataContract("source.table"), bytes)
+    result = PortContract(DataContract("result.table"), tuple)
+    command = CommandDefinition("decode.bound", "example:decode", inputs={"source": source}, outputs={"value": result})
+    operation = OperationDefinition("extract.bound", method_slot="layout", inputs={"source": source}, outputs={"value": result}, parameters={"profile": {}})
+    body = GraphBody((Call("decode", command.capability_id, {"source": InputRef("source")}),), {"value": OutputRef("decode")})
+    method = MethodDefinition("decode.csv", operation.capability_id, body,
+        selection={"representation": "csv"}, group_ids=("publisher.table",), reference_ids=("units",))
+    profile = ProfileDefinition("layout.v1", {"columns": 2}, method_id=method.method_id, group_id="publisher.table")
+    group = ProcessingGroup("publisher.table", source_ids=("source.series",), representations=("csv",),
+        editions=("1",), methods={operation.capability_id: method.method_id}, profiles={operation.capability_id: profile.profile_id})
+    recipe = RecipeDefinition("extract.recipe", "extract.goal", operation.capability_id, selection={"edition": "1"})
+    schema = SchemaDefinition("result.table", data={"columns": 2})
+    unused_schema = SchemaDefinition("unused.schema", data={"ignored": True})
+    units = ReferenceDefinition("units", "1", "units-content")
+    unused_ref = ReferenceDefinition("unused.reference", "1", "irrelevant")
+    catalog = CatalogSnapshot((command, operation), (method,), (profile,), (group,), (recipe,),
+        (schema, unused_schema), (units, unused_ref))
+    selection = {"source_id": "source.series", "representation": "csv", "edition": "1"}
+    resolved = catalog.resolve(operation.capability_id, selection=selection, recipe_id=recipe.recipe_id)
+    assert resolved.identities["group"] == group.fingerprint
+    assert resolved.identities["recipe"] == recipe.fingerprint
+    assert resolved.identities["reference:units"] == declaration_fingerprint(units)
+    assert "reference:unused.reference" not in resolved.identities
+    assert "schema:unused.schema" not in resolved.identities
+    projection = resolved.projection()
+    assert catalog.validate_binding(projection) == resolved
+    with pytest.raises(TypeError):
+        projection["resolve_inputs"]["selection"]["edition"] = "2"
+    for changed in (
+        replace(catalog, groups=(replace(group, fixed={"profile": {"columns": 3}}),)),
+        replace(catalog, recipes=(replace(recipe, revision="2"),)),
+        replace(catalog, references=(replace(units, revision="2"), unused_ref)),
+        replace(catalog, schemas=(replace(schema, revision="2"), unused_schema)),
+    ):
+        with pytest.raises(CatalogError, match="binding_changed"):
+            changed.validate_binding(projection)
+    unrelated = replace(catalog, schemas=(schema, replace(unused_schema, revision="2")),
+        references=(units, replace(unused_ref, revision="2")))
+    assert unrelated.validate_binding(projection) == resolved
+
+
+def test_authoring_reference_types_participate_in_definition_identity():
+    from dataclasses import replace
+    from stratbox.capabilities.model import declaration_fingerprint, ParameterRef
+    assert declaration_fingerprint(InputRef("source")) != declaration_fingerprint(ParameterRef("source"))
+    call = Call("extract", "extract", selection={"edition": {"name": "first"}})
+    with pytest.raises(TypeError):
+        call.selection["edition"]["name"] = "second"
+    assert declaration_fingerprint(call) != declaration_fingerprint(replace(call, selection={"edition": "second"}))
+
+
+def test_per_output_predicates_and_coherent_groups_reject_only_owned_outputs():
+    acceptance = AcceptanceContract(predicates=(SemanticPredicate("left", "minimum", 10),))
+    assert dict(acceptance.output_errors({"left": 2, "right": 20})) == {
+        "left": ("acceptance.semantic_predicate_failed",)}
+    coherent = AcceptanceContract(coherent_outputs=("left", "findings"),
+        predicates=(SemanticPredicate("left", "minimum", 10),))
+    assert set(coherent.output_errors({"left": 2, "right": 20, "findings": ()})) == {"left", "findings"}
+    errors = coherent.output_errors({"right": 20}, names=("left", "findings", "right"))
+    assert set(errors) == {"left", "findings"}
+
+
+def test_global_acceptance_predicates_wait_for_all_dependencies():
+    acceptance = AcceptanceContract(predicates=(SemanticPredicate("", "equals", {"left": 1}),))
+    errors, pending = acceptance.assess_outputs({"left": 1}, names=("left", "right"))
+    assert not errors and pending == {"left", "right"}
+    errors, pending = acceptance.assess_outputs({"left": 1, "right": 2}, names=("left", "right"))
+    assert set(errors) == {"left", "right"} and not pending
+    named = AcceptanceContract(predicates=(SemanticPredicate("left", "minimum", 1),))
+    errors, pending = named.assess_outputs({"left": 1}, names=("left", "right"))
+    assert not errors and not pending
+    coherent = AcceptanceContract(coherent_outputs=("left", "right"))
+    errors, pending = coherent.assess_outputs({"left": 1}, names=("left", "right"))
+    assert not errors and pending == {"left", "right"}
+    errors, pending = coherent.assess_outputs({"left": 1}, names=("left", "right"), settled=("right",))
+    assert set(errors) == {"left", "right"} and not pending

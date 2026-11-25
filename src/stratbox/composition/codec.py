@@ -29,6 +29,7 @@ def _value_types():
     from stratbox.shared.evidence import SourcePayload, AcquisitionReceipt, AcquiredSource, UsedInputReceipt, StoredBytesReceipt
     from stratbox.shared.data.observations import SubjectRef, MetricRef, PeriodRef, Observation, ObservationBatch
     from stratbox.shared.data.views import ObservationView
+    from stratbox.shared.data.assessment import CoverageCoordinate,CoverageAssessment,ProcessingFinding,CalculationEvidence,ValueEvidence
     from stratbox.shared.data.representation import Representation
     from stratbox.shared.data.workbook_cells import WorkbookCells, SheetCells, WorkbookCell
     from stratbox.shared.data.source_context import SourceCoordinate, SourceUse, ValueContext
@@ -45,6 +46,7 @@ def _value_types():
         Representation,WorkbookCells,SheetCells,WorkbookCell,SourceCoordinate,SourceUse,ValueContext,
         DatasetVersion,ComputationReceipt,ColumnSchema,TableSchema,TypedTable,TableComponent,
         CoverageDimension,SnapshotCoverage,DatasetManifest,DatasetSnapshot,EffectReceipt,
+        CoverageCoordinate,CoverageAssessment,ProcessingFinding,CalculationEvidence,ValueEvidence,
     )}
 
 
@@ -57,12 +59,14 @@ def _types():
         "CompiledTask", "ExecutionPlan",
     )
     kinds = [getattr(models, name) for name in names]
-    from .plan import CanonicalMapTemplate
-    kinds.append(CanonicalMapTemplate)
+    from .plan import CanonicalMapTemplate, ScopeOutputRef
+    kinds.extend((CanonicalMapTemplate,ScopeOutputRef))
     kinds.extend((DataContract, ByteIdentity, PreparedInput, ProjectedOutput, ResultReference, OperationKey))
     kinds.extend(kind for kind in _value_types().values() if is_dataclass(kind))
     from stratbox.capabilities.model import PortContract, AcceptanceContract, SemanticPredicate, CollectionMembership
     kinds.extend((PortContract, AcceptanceContract, SemanticPredicate, CollectionMembership))
+    from stratbox.capabilities.model.reuse import ReuseContract,WorkIdentity
+    kinds.extend((ReuseContract,WorkIdentity))
     try:
         from .templates import TemplateDefinition, TemplateSlot
         kinds.extend((TemplateDefinition, TemplateSlot))

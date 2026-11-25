@@ -9,7 +9,7 @@ from stratbox.core.execution.session import ExecutionSettings
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.shared.data.representation import Representation
 from stratbox.sdk import StrategyBox
-from .conftest import row_profile
+from .conftest import row_profile, ratio_pair
 
 
 def test_shared_consumer_cancel_preserves_other_extraction(profiled_catalog, two_tables, monkeypatch):
@@ -75,7 +75,7 @@ def test_lost_save_reply_reconciles_without_reextract(profiled_catalog, two_tabl
     with StrategyBox(capabilities=profiled_catalog, providers={"output_filestore": store}) as box:
         result = box.invoke("scenario.observation_ratio", inputs={"numerator": two_tables, "denominator": two_tables},
             parameters={"numerator_profile": row_profile(), "denominator_profile": row_profile("Total", "fixture.total"),
-                        "destination": "ratio.csv"}, timeout=15)
+                        "destination": "ratio.csv", "pair": ratio_pair()}, timeout=15)
         assert result.outcome == "unknown", result.scopes
         assert (tmp_path / "ratio.csv").exists()
         representation = result.output("representation")
@@ -115,10 +115,10 @@ def test_stale_save_completion_keeps_new_revision_current(profiled_catalog, tmp_
     with StrategyBox(capabilities=profiled_catalog, providers={"output_filestore": store},
                      settings=ExecutionSettings(max_workers=2, active_runs=2)) as box:
         parameters = {"destination": "report.csv", "mode": "replace_expected_revision", "expected_revision": revision}
-        earlier = box.submit(box.prepare("save.product", inputs={"material": old}, parameters={**parameters, "source_revision": "1"}))
+        earlier = box.submit(box.prepare("save.product", inputs={"material": old}, parameters={**parameters, "input_basis": "earlier-input"}))
         assert entered.wait(5)
         try:
-            later = box.invoke("save.product", inputs={"material": new}, parameters={**parameters, "source_revision": "2"}, timeout=10)
+            later = box.invoke("save.product", inputs={"material": new}, parameters={**parameters, "input_basis": "later-input"}, timeout=10)
             assert later.outcome == "succeeded"
         finally:
             release.set()
@@ -126,5 +126,5 @@ def test_stale_save_completion_keeps_new_revision_current(profiled_catalog, tmp_
         assert stale.outcome == "failed"
         assert store.read_bytes("report.csv") == b"new\n"
         records = box.session.effects.snapshot()
-        assert next(r for r in records if r.intent.source_revision == "2").current
-        assert not next(r for r in records if r.intent.source_revision == "1").current
+        assert next(r for r in records if r.intent.input_basis == "later-input").current
+        assert not next(r for r in records if r.intent.input_basis == "earlier-input").current

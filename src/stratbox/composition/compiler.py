@@ -9,6 +9,7 @@ from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput, prep
 from stratbox.core.execution.methods import method_descriptor
 from stratbox.core.execution.values import argument_identity
 from stratbox.shared.data.operations import OutputPort, compatible_ports, assess_input
+from .plan import ScopeOutputRef, task_conditions
 from .models import (
     CascadeDefinition, CollectStep, CompiledMap, CompiledTask, CompositionError,
     ExecutionPlan, InputRef, MapStep, OperationStep, PlanOutputRef, PlanScope,
@@ -18,7 +19,7 @@ from .models import (
 
 def iter_references(value):
     """Visit symbolic output references, without traversing data payloads."""
-    if isinstance(value, PlanOutputRef):
+    if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
         yield value
     elif isinstance(value, Mapping):
         for item in value.values():
@@ -29,7 +30,7 @@ def iter_references(value):
 
 
 def replace_references(value, transform):
-    if isinstance(value, PlanOutputRef):
+    if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
         return transform(value)
     if isinstance(value, Mapping):
         return {key: replace_references(item, transform) for key, item in value.items()}
@@ -109,7 +110,7 @@ def _require_atomic(definition):
 def _authoring_references(value):
     if isinstance(value, InputRef):
         yield value
-    elif isinstance(value, PlanOutputRef):
+    elif isinstance(value, (PlanOutputRef,ScopeOutputRef)):
         yield value
     elif isinstance(value, Mapping):
         for item in value.values():
@@ -221,7 +222,7 @@ def compile_workflow(definition, catalog, *, inputs=None, parameters=None, outpu
             if value.name not in arguments:
                 raise CompositionError("composition.input_required")
             return arguments[value.name]
-        if isinstance(value, PlanOutputRef):
+        if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
             return qualify(value, scope)
         if isinstance(value, Mapping):
             return {k: resolve(v, arguments, scope) for k, v in value.items()}
@@ -310,10 +311,10 @@ def compile_workflow(definition, catalog, *, inputs=None, parameters=None, outpu
         if key in trail:
             raise CompositionError("composition.cycle")
         value = aliases[key]
-        if isinstance(value, PlanOutputRef):
+        if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
             value = unalias(value, (*trail, key))
             if ref.item is not None:
-                if not isinstance(value, PlanOutputRef) or value.item is not None:
+                if not isinstance(value, (PlanOutputRef,ScopeOutputRef)) or value.item is not None:
                     raise CompositionError("composition.invalid_item")
                 value = replace(value, item=ref.item)
         elif ref.item is not None:
@@ -383,7 +384,7 @@ def compile_workflow(definition, catalog, *, inputs=None, parameters=None, outpu
                 raise CompositionError("handoff.input_required")
             for name, value in task.inputs.items():
                 target = ports[name]
-                if isinstance(value, PlanOutputRef):
+                if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
                     output_port = port(value)
                     if index[value.task].map is not None and value.item is None:
                         raise CompositionError("composition.map_collect_required")
@@ -523,7 +524,7 @@ def expand_map_item(plan, task, key, value, catalog):
         parameters = arguments.pop("$parameters",{})
         arguments[task.map.item_input] = value
         return prepare_invocation(task.map.body.capability_id,catalog.snapshot,catalog,
-            inputs=arguments,parameters=parameters,outputs=task.map.body.outputs,
+            inputs=arguments,parameters=parameters,outputs=task.map.body.outputs,selection=task.map.body.selection,
             _prefix=task.task_id + "/" + encoded)
     probe = compile_workflow(task.map.body, catalog,
         inputs={name: _DeferredInput(name, contract) for name, contract in task.map.body.inputs.items()}, _defer=True)
@@ -538,7 +539,7 @@ def expand_map_item(plan, task, key, value, catalog):
     return compile_workflow(task.map.body, catalog, inputs=arguments, prefix=prefix)
 
 
-def _validate_condition(condition, index, catalog):
+def _validate_condition(condition, index, catalog, scopes=None):
     """Check declared value paths; conditions never evaluate Python code."""
     if condition.port is None:
         return
@@ -546,20 +547,31 @@ def _validate_condition(condition, index, catalog):
     from types import UnionType
     from collections.abc import Mapping as MappingABC
     from stratbox.core.execution.handoff import request_type_hints, _matches
+    reference = getattr(condition,"reference",None)
+    if isinstance(reference,ScopeOutputRef):
+        scope = (scopes or {}).get(reference.scope_id)
+        if scope is None or reference.port not in scope.output_contracts:
+            raise CompositionError("composition.output_unknown")
+        contract = scope.output_contracts[reference.port]
+        candidates = [contract.value_type]
+        path = tuple(part for part in condition.field.split(".") if part)
+    else:
+        candidates = None
     producer = index[condition.task]
-    if producer.operation_id is None:
+    if candidates is None and producer.operation_id is None:
         # A map aggregate has per-item states and must be explicitly collected.
         if producer.map is not None:
             raise CompositionError("composition.condition_requires_operation")
         if condition.field:
             raise CompositionError("composition.condition_field_unknown")
         return
-    definition = catalog.get(producer.operation_id)
-    output = next((p for p in definition.processing.outputs if p.name == condition.port), None)
-    if output is None:
-        raise CompositionError("composition.output_unknown")
-    candidates = list(definition.value_type if isinstance(definition.value_type, tuple) else (definition.value_type,))
-    path = tuple(p for p in (output.path + "." + condition.field).split(".") if p)
+    if candidates is None:
+        definition = catalog.get(producer.operation_id)
+        output = next((p for p in definition.processing.outputs if p.name == condition.port), None)
+        if output is None:
+            raise CompositionError("composition.output_unknown")
+        candidates = list(definition.value_type if isinstance(definition.value_type, tuple) else (definition.value_type,))
+        path = tuple(p for p in (output.path + "." + condition.field).split(".") if p)
     for segment in path:
         next_candidates = []
         for kind in candidates:
@@ -638,6 +650,8 @@ def validate_plan(plan, catalog):
                 raise CompositionError("composition.schema_changed")
             if key.startswith("reference:") and snapshot.reference(key[len("reference:"):]).fingerprint != fingerprint:
                 raise CompositionError("composition.reference_changed")
+    for binding in plan.selected_bindings.values():
+        snapshot.validate_binding(binding)
     definitions = {}
     for task in plan.tasks:
         if task.scope_id not in scopes or not task.task_id.startswith(task.scope_id + "/"):
@@ -651,8 +665,8 @@ def validate_plan(plan, catalog):
                       *iter_references(task.map.inputs if task.map else ()),
                       *iter_references(task.collect.inputs if task.collect else ()))
         required_dependencies = {ref.task for ref in references}
-        if task.condition:
-            required_dependencies.add(task.condition.task)
+        for condition in task_conditions(task):
+            required_dependencies.add(condition.task)
         if not required_dependencies <= set(task.dependencies):
             raise CompositionError("composition.dependency_missing")
         if task.acceptance_scope is not None and task.acceptance_scope not in scopes:
@@ -679,16 +693,59 @@ def validate_plan(plan, catalog):
             if set(semantics.required_parameters) - set(task.parameters):
                 raise CompositionError("handoff.parameter_required")
             _validate_parameters(task, index, catalog)
+            if task.capability_kind == "command" and task.scope_id in plan.selected_bindings:
+                from stratbox.capabilities.model.definitions import declaration_fingerprint
+                authored = snapshot.definition(task.operation_id)
+                selected_binding = plan.selected_bindings[task.scope_id]
+                if (task.reuse_contract != authored.reuse
+                        or argument_identity(task.parameters) != argument_identity(selected_binding["parameters"])):
+                    raise CompositionError("composition.command_policy_changed")
+                basis = task.reuse_identity
+                if basis is not None:
+                    exact = dict(basis.binding_fingerprints)
+                    if (task.work_identity != basis.fingerprint
+                            or basis.command_id != authored.capability_id
+                            or basis.implementation_revision != authored.revision + ":" + authored.implementation_ref
+                            or basis.schema_fingerprint != declaration_fingerprint(authored.outputs)
+                            or exact.get("implementation") != task.method_fingerprint
+                            or any(exact.get(key) != value for key,value in selected_binding["identities"].items())):
+                        raise CompositionError("composition.work_identity_changed")
+                    ancestors = []
+                    parent_id = scope_index[task.scope_id].parent_id
+                    while parent_id is not None:
+                        if parent_id in plan.selected_bindings:
+                            ancestors.append(plan.selected_bindings[parent_id]["identities"])
+                        parent_id = scope_index[parent_id].parent_id
+                    for key,value in exact.items():
+                        if key.startswith("specialization.") and not any(
+                                ancestor.get(key[len("specialization."):]) == value for ancestor in ancestors):
+                            raise CompositionError("composition.work_identity_changed")
+                elif task.work_identity is not None or task.reuse_eligible:
+                    raise CompositionError("composition.work_identity_changed")
         if task.map:
             _map_ports(task.map,catalog)
-        if task.condition:
-            _validate_condition(task.condition, index, catalog)
+        for condition in task_conditions(task):
+            if condition.task not in index:
+                raise CompositionError("composition.task_unknown")
+            _validate_condition(condition,index,catalog,scope_index)
     try:
         tuple(TopologicalSorter({task.task_id: task.dependencies for task in plan.tasks}).static_order())
     except CycleError:
         raise CompositionError("composition.cycle") from None
 
     def output_port(ref):
+        if isinstance(ref,ScopeOutputRef):
+            scope = scope_index.get(ref.scope_id)
+            if scope is None or ref.port not in scope.output_contracts:
+                raise CompositionError("composition.output_unknown")
+            expected_task = scope.scope_id + ("/work" if scope.kind == "command" else "/accept")
+            if ref.task != expected_task or ref.task not in index:
+                raise CompositionError("composition.scope_output_owner_mismatch")
+            from stratbox.shared.data.processing import DataContract
+            contract = scope.output_contracts[ref.port]
+            return OutputPort(ref.port,contract.schema or DataContract("capability.value"),
+                qualifications=contract.qualifications,coverage=contract.expected_coverage,
+                collection=contract.collection)
         if ref.task not in index:
             raise CompositionError("composition.task_unknown")
         task = index[ref.task]
@@ -714,7 +771,7 @@ def validate_plan(plan, catalog):
             definition = definitions[task.operation_id]
             inputs = {port.name: port for port in definition.processing.inputs}
             for name, value in task.inputs.items():
-                if isinstance(value, PlanOutputRef):
+                if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
                     if index[value.task].map is not None and value.item is None:
                         raise CompositionError("composition.map_collect_required")
                     if not compatible_ports(output_port(value), inputs[name]):
@@ -726,12 +783,28 @@ def validate_plan(plan, catalog):
                     if not assessment.compatible:
                         raise CompositionError(assessment.reasons[0])
         if task.collect:
-            if any((output_port(value).contract if isinstance(value,PlanOutputRef) else adapt_input(value).contract)
+            if any((output_port(value).contract if isinstance(value,(PlanOutputRef,ScopeOutputRef)) else adapt_input(value).contract)
                    != task.collect.element_contract for value in task.collect.inputs):
                 raise CompositionError("processing.schema_mismatch")
+    for task in plan.tasks:
+        for condition in task_conditions(task):
+            reference = getattr(condition,"reference",None)
+            if reference is not None:
+                if not isinstance(reference,(PlanOutputRef,ScopeOutputRef)) or reference.task != condition.task:
+                    raise CompositionError("composition.condition_reference_mismatch")
+                if condition.port is not None and reference.port != condition.port:
+                    raise CompositionError("composition.condition_reference_mismatch")
+                output_port(reference)
+    scope_output_graph = {}
     for scope in plan.scopes:
+        scope_output_graph[scope.scope_id] = tuple(ref.scope_id for ref in iter_references(scope.outputs)
+                                                   if isinstance(ref,ScopeOutputRef))
         for ref in iter_references(scope.outputs):
             output_port(ref)
+    try:
+        tuple(TopologicalSorter(scope_output_graph).static_order())
+    except CycleError:
+        raise CompositionError("composition.scope_output_cycle") from None
     for ref in iter_references(plan.outputs):
         output_port(ref)
     return plan
@@ -766,7 +839,7 @@ def _validate_parameters(task, index, catalog):
         annotation = hints.get(name, Any)
         if isinstance(value, _DeferredInput):
             continue
-        if isinstance(value, PlanOutputRef):
+        if isinstance(value, (PlanOutputRef,ScopeOutputRef)):
             producer = index[value.task]
             if producer.operation_id is None:
                 continue

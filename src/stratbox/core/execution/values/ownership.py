@@ -46,7 +46,8 @@ def _immutable(value, active=None):
 def isolate_value(value):
     """Detach mutable payloads while preserving core sealed immutable tables."""
     from stratbox.core.execution.retention import SpilledResult
-    if isinstance(value, SpilledResult):
+    from .placement import ManagedResult, ManagedProjection, ManagedCollection
+    if isinstance(value, (SpilledResult, ManagedResult, ManagedProjection, ManagedCollection)):
         # A descriptor is immutable and retains its owning store. Copying the
         # store would split locks and ownership without creating new content.
         return value

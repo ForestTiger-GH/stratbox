@@ -54,10 +54,29 @@ class ResolvedBinding:
     profile: ProfileDefinition | None = None
     group: ProcessingGroup | None = None
     identities: Mapping[str, str] = field(default_factory=dict)
+    selection: Mapping[str, object] = field(default_factory=dict)
+    supplied_parameters: Mapping[str, object] = field(default_factory=dict)
+    recipe: RecipeDefinition | None = None
 
     def __post_init__(self):
-        object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
-        object.__setattr__(self, "identities", frozen_mapping(self.identities))
+        for name in ("parameters", "identities", "selection", "supplied_parameters"):
+            object.__setattr__(self, name, frozen_mapping(getattr(self, name)))
+
+    def projection(self):
+        method_id = self.method.method_id if self.method else None
+        profile_id = self.profile.profile_id if self.profile else None
+        group_id = self.group.group_id if self.group else None
+        recipe_id = self.recipe.recipe_id if self.recipe else None
+        return frozen_mapping({
+            "capability_id": self.definition.capability_id, "kind": self.definition.kind,
+            "identities": self.identities, "body": declaration_tree(self.body),
+            "parameters": self.parameters, "supplied_parameters": self.supplied_parameters,
+            "selection": self.selection, "method_id": method_id,
+            "profile_id": profile_id, "group_id": group_id, "recipe_id": recipe_id,
+            "resolve_inputs": {"method_id": method_id, "profile_id": profile_id,
+                "group_id": group_id, "recipe_id": recipe_id,
+                "parameters": self.supplied_parameters, "selection": self.selection},
+        })
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,8 +287,10 @@ class CatalogSnapshot:
             if condition is not None:
                 if condition.step not in steps:
                     raise CatalogError("catalog.unknown_condition_step")
+                if not condition.statuses and condition.port not in children[condition.step].outputs:
+                    raise CatalogError("catalog.unknown_condition_output")
                 dependencies[step.step_id].add(condition.step)
-            values = (step.inputs, getattr(step, "parameters", {}), getattr(step, "items", None))
+            values = (step.inputs, getattr(step, "parameters", {}), getattr(step, "selection", {}), getattr(step, "items", None))
             for ref in _walk_refs(values):
                 if isinstance(ref, InputRef) and ref.name not in owner.inputs:
                     raise CatalogError("catalog.unknown_graph_input")
@@ -365,6 +386,11 @@ class CatalogSnapshot:
             for operation_id, profile_id in group.profiles.items():
                 self.definition(operation_id)
                 self.profile(profile_id)
+        for owner in (*self.definitions, *self.methods, *self.profiles):
+            for schema_id in owner.schema_ids:
+                self.schema(schema_id)
+            for reference_id in owner.reference_ids:
+                self.reference(reference_id)
         for recipe in self.recipes:
             self.definition(recipe.capability_id)
         # Detect recursive scenario definitions independently of step graph cycles.
@@ -385,12 +411,26 @@ class CatalogSnapshot:
             visit(definition.capability_id)
         return self
 
-    def resolve(self, capability_id, *, method_id=None, profile_id=None, group_id=None, parameters=None, selection=None):
+    def resolve(self, capability_id, *, method_id=None, profile_id=None, group_id=None,
+                parameters=None, selection=None, recipe_id=None):
         definition = self.definition(capability_id)
+        if selection is not None and not isinstance(selection, Mapping):
+            raise CatalogError("catalog.selection_mapping_required")
         selection = dict(selection or {})
+        recipe = None
+        if recipe_id is not None:
+            try:
+                recipe = self._recipes[recipe_id]
+            except (KeyError, TypeError):
+                raise CatalogError("catalog.recipe_unavailable") from None
+            if recipe.capability_id != capability_id:
+                raise CatalogError("catalog.recipe_capability_mismatch")
+            if not all(selection.get(key) == value for key, value in recipe.selection.items()):
+                raise CatalogError("catalog.recipe_inapplicable")
         group = self.group(group_id) if group_id is not None else None
         if group is None and selection:
-            groups = [item for item in self.groups if item.applies(selection)]
+            groups = [item for item in self.groups if (capability_id in item.methods or capability_id in item.profiles)
+                      and item.applies(selection)]
             if len(groups) > 1:
                 raise CatalogError("catalog.ambiguous_group")
             group = groups[0] if groups else None
@@ -437,6 +477,8 @@ class CatalogSnapshot:
             raise CatalogError("catalog.method_slot_unavailable")
         fixed = {}
         values = dict(definition.parameters)
+        if recipe:
+            values.update(recipe.defaults)
         for item in (group, method):
             if item:
                 values.update(item.defaults)
@@ -471,11 +513,39 @@ class CatalogSnapshot:
             identities["method"] = method.fingerprint
         if profile:
             identities["profile"] = profile.fingerprint
-        for schema in self.schemas:
-            identities["schema:" + schema.schema_id] = schema.fingerprint
-        for reference in self.references:
-            identities["reference:" + reference.reference_id] = reference.fingerprint
-        return ResolvedBinding(definition, body, values, method, profile, group, identities)
+        if group:
+            identities["group"] = group.fingerprint
+        if recipe:
+            identities["recipe"] = recipe.fingerprint
+        schema_ids = {port.schema.schema_id for port in (*definition.inputs.values(), *definition.outputs.values())
+                      if port.schema is not None and port.schema.schema_id in self._schemas}
+        reference_ids = set()
+        for owner in (definition, method, profile):
+            if owner is not None:
+                schema_ids.update(owner.schema_ids)
+                reference_ids.update(owner.reference_ids)
+        for schema_id in sorted(schema_ids):
+            identities["schema:" + schema_id] = self.schema(schema_id).fingerprint
+        for reference_id in sorted(reference_ids):
+            identities["reference:" + reference_id] = declaration_fingerprint(self.reference(reference_id))
+        return ResolvedBinding(definition, body, values, method, profile, group, identities,
+                               selection, supplied, recipe)
+
+    def validate_binding(self, projection):
+        """Readmit the pinned resolution rather than trusting copied ID labels."""
+        if not isinstance(projection, Mapping) or not isinstance(projection.get("resolve_inputs"), Mapping):
+            raise CatalogError("catalog.binding_projection_invalid")
+        required = {"method_id", "profile_id", "group_id", "recipe_id", "parameters", "selection"}
+        inputs = projection["resolve_inputs"]
+        if set(inputs) != required or not isinstance(projection.get("capability_id"), str):
+            raise CatalogError("catalog.binding_projection_invalid")
+        try:
+            current = self.resolve(projection["capability_id"], **dict(inputs))
+        except (KeyError, ValueError, TypeError):
+            raise CatalogError("catalog.binding_changed") from None
+        if current.projection() != projection:
+            raise CatalogError("catalog.binding_changed")
+        return current
 
     def resolve_goal(self, goal, *, selection=None, recipe_id=None):
         selection = dict(selection or {})

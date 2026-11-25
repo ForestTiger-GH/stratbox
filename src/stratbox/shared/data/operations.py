@@ -125,9 +125,11 @@ class OutputPort:
     source_policy: str = "source_optional"
     collection: bool = False
     source_context_path: str | None = None
+    evidence_policy: str = "contract"
 
     def __post_init__(self) -> None:
-        if self.source_policy not in SOURCE_POLICIES or type(self.collection) is not bool:
+        if (self.source_policy not in SOURCE_POLICIES or type(self.collection) is not bool
+                or self.evidence_policy not in {"contract", "value"}):
             raise ValueError("processing.invalid_source_policy")
         _port(self.name, self.contract, self.path)
         if self.source_context_path is not None:

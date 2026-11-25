@@ -39,6 +39,18 @@ Profiles describe sheet selection, source axes, periods, units and cell
 coordinates. `method_id`, `profile_id` and `group_id` select registered
 specializations explicitly. Missing or ambiguous bindings fail preparation.
 
+`extract.observations` has three coherent outputs: `observations`, `coverage`
+and `findings`. Selecting observations keeps the complete assessment in the
+required closure. `convert.readable` returns a READABLE artifact; rendered
+analytical representations have the PRODUCTS role. The
+[assessment and calculation guide](extraction-assessments-and-analytical-pairs.md)
+describes actual evidence, exact-coordinate coverage and explicit ratio pairs.
+
+Use `selection={...}` on exact invocations or `GoalRequest` to carry source,
+representation and edition constraints through group, method and recipe
+resolution. Prepared plans pin all used bindings, including processing groups
+and goal recipes, and recheck those identities before execution.
+
 ## Local definitions and goal requests
 
 An `OperationDefinition` contains a `GraphBody` of command calls. Scenarios

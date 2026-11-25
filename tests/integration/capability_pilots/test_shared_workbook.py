@@ -2,11 +2,11 @@
 from decimal import Decimal
 
 from stratbox.capabilities.model import ScenarioDefinition, GraphBody, Call, InputRef, OutputRef, PortContract
-from stratbox.capabilities.commands import MATERIAL_INPUT, OBSERVATIONS, REPRESENTATION
+from stratbox.capabilities.commands import MATERIAL_INPUT, OBSERVATIONS, REPRESENTATION, READABLE
 from stratbox.core.execution.session import ExecutionSettings
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.sdk import StrategyBox
-from .conftest import row_profile, FixtureHttp, workbook
+from .conftest import row_profile, ratio_pair, FixtureHttp, workbook
 
 
 def three_uses():
@@ -15,9 +15,9 @@ def three_uses():
         Call("total", "extract.observations", {"material": InputRef("material")}, profile_id="fixture.total"),
         Call("readable", "convert.readable", {"material": InputRef("material")}),
         Call("ratio", "calculate.ratio", {"numerator": OutputRef("debt", "observations"),
-            "denominator": OutputRef("total", "observations")}),
+            "denominator": OutputRef("total", "observations")}, {"pair": ratio_pair()}),
     ), {"ratio": OutputRef("ratio", "observations"), "readable": OutputRef("readable", "readable")}),
-        inputs={"material": MATERIAL_INPUT}, outputs={"ratio": OBSERVATIONS, "readable": REPRESENTATION})
+        inputs={"material": MATERIAL_INPUT}, outputs={"ratio": OBSERVATIONS, "readable": READABLE})
 
 
 def test_three_uses_one_decode_different_operation_ids(profiled_catalog, two_tables, monkeypatch):
@@ -49,7 +49,7 @@ def test_cascade_required_save_and_parallel_preview(profiled_catalog, two_tables
                      settings=ExecutionSettings(max_workers=1, active_runs=2)) as box:
         plan = box.prepare("cascade.observation_package", inputs={"material": two_tables}, parameters={
             "numerator_profile": row_profile(), "denominator_profile": row_profile("Total", "fixture.total"),
-            "destination": "ratio.csv"}, outputs=("ratio", "readable"))
+            "destination": "ratio.csv", "pair": ratio_pair()}, outputs=("ratio", "readable"))
         assert any(task.operation_id == "store.commit" for task in plan.tasks)
         package = box.submit(plan)
         preview = box.submit(box.prepare("convert.readable", inputs={"material": two_tables}))

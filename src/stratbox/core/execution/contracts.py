@@ -256,6 +256,8 @@ class ExecutionContext:
     result_admissions: tuple[ResultAdmission, ...] = field(default=(), repr=False)
     resource_ledger: object | None = field(default=None, repr=False, compare=False)
     effect_authority: object | None = field(default=None, repr=False, compare=False)
+    binding_identities: tuple[tuple[str, str], ...] = ()
+    effect_admitter: object | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.profile not in {"local", "managed"}:

@@ -1,9 +1,11 @@
 """Independent view preparation and bounded representation encoding."""
 from typing import Mapping
+from dataclasses import replace
 
 from stratbox.core.execution.contracts import OperationFailure
 from stratbox.shared.data.views import ObservationView, prepare_observation_view, render_observation_view
 from stratbox.shared.data.observations import ObservationBatch
+from stratbox.shared.data.assessment import value_evidence
 
 
 def view_prepare(request: Mapping, invocation):
@@ -22,4 +24,9 @@ def representation_encode(request: Mapping, invocation):
     if len(representation.data) > request.get("max_bytes", 32 * 1024 * 1024):
         raise OperationFailure("render.size_limit")
     invocation.account_output(representation.identity)
-    return representation
+    evidence = value_evidence(value)
+    admitted = dict(getattr(invocation.context, "binding_identities", ()))
+    methods = tuple(sorted({*evidence.method_fingerprints, *(fingerprint for key, fingerprint in admitted.items()
+        if key == "method" or key.startswith(("method:", "implementation:")))}))
+    return replace(representation, evidence=replace(evidence,
+        qualifications=evidence.qualifications | {"representation.encoded"}, method_fingerprints=methods))

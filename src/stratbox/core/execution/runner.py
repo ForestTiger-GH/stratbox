@@ -441,6 +441,12 @@ class Invocation:
         self.check_cancelled()
         if kind not in self.definition.possible_effects:
             raise ValueError("Undeclared effect")
+        admit_effect = getattr(self.context, "effect_admitter", None)
+        if admit_effect is not None and not kind.startswith(("notification.", "notifications.")):
+            try:
+                admit_effect(kind, effect_id)
+            except ValueError as error:
+                raise OperationFailure(Diagnostic(str(error), stage="admission", evidence_ref=effect_id)) from None
         from stratbox.core.execution.effects import EffectAuthority, EffectAuthorityError, EffectIntent
         correlation = self.context.correlation
         authority = self.context.effect_authority

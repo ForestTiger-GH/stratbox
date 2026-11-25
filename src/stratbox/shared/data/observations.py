@@ -7,6 +7,7 @@ from typing import Literal
 
 from stratbox.shared.evidence import UsedInputReceipt
 from stratbox.shared.data.source_context import SourceUse
+from stratbox.shared.data.assessment import ValueEvidence
 
 _VALUE_STATUSES = frozenset({
     "reported", "blank", "dash", "missing", "not_applicable",
@@ -120,7 +121,10 @@ class ObservationBatch:
     observations: tuple[Observation, ...]
     lineage: tuple[UsedInputReceipt, ...]
     source_uses: tuple[SourceUse, ...] = ()
+    evidence: ValueEvidence | None = None
 
     def __post_init__(self):
         if not isinstance(self.source_uses, tuple) or any(not isinstance(use, SourceUse) for use in self.source_uses):
             raise ValueError("observations.source_uses_invalid")
+        if self.evidence is not None and not isinstance(self.evidence, ValueEvidence):
+            raise ValueError("observations.evidence_invalid")

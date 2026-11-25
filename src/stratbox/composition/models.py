@@ -54,6 +54,7 @@ class Condition:
     port: str | None = None
     field: str = ""
     equals: object = True
+    reference: object | None = None
 
     def __post_init__(self):
         if bool(self.statuses) == (self.port is not None):
@@ -231,7 +232,7 @@ class CollectStep:
             raise CompositionError("composition.invalid_collection")
 
 
-from .plan import CompiledMap, PlanScope, CompiledTask, ExecutionPlan
+from .plan import CompiledMap, PlanScope, CompiledTask, ExecutionPlan, ScopeOutputRef, task_conditions
 
 
 OutputRef = PlanOutputRef

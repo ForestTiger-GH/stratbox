@@ -29,7 +29,8 @@ def declaration_tree(value):
     if isinstance(value, Decimal):
         return {"decimal": str(value)}
     if is_dataclass(value):
-        result = {item.name: declaration_tree(getattr(value, item.name)) for item in fields(value)}
+        result = {"$type": type(value).__module__ + ":" + type(value).__qualname__,
+                  **{item.name: declaration_tree(getattr(value, item.name)) for item in fields(value)}}
         if hasattr(value, "kind"):
             result["kind"] = value.kind
         return result
@@ -183,6 +184,53 @@ class AcceptanceContract:
         if not isinstance(self.predicates, tuple) or any(not isinstance(item, SemanticPredicate) for item in self.predicates):
             raise ValueError("capability.invalid_predicates")
 
+    def assess_outputs(self, outputs: Mapping[str, object], *, names=None, settled=()):
+        """Return definite rejections and outputs awaiting predicate dependencies.
+
+        Named predicates depend on that named output. A predicate over the
+        output map waits for every named output to settle, so a partial map
+        never grants an acceptance that a later member can revoke.
+        """
+        names = tuple(dict.fromkeys((*outputs, *self.coherent_outputs))) if names is None else tuple(names)
+        settled = frozenset(settled)
+        errors = {name: [] for name in names}
+        pending = set()
+        coherent = tuple(name for name in self.coherent_outputs if name in errors)
+        ready = lambda dependencies: all(name in outputs or name in settled for name in dependencies)
+        def reject(targets, code):
+            for name in targets:
+                if name in errors and code not in errors[name]:
+                    errors[name].append(code)
+        if coherent:
+            if not ready(coherent):
+                pending.update(coherent)
+            elif not set(self.coherent_outputs) <= outputs.keys():
+                reject(coherent, "acceptance.coherent_outputs_missing")
+        for predicate in self.predicates:
+            first = predicate.path.split(".", 1)[0] if predicate.path else None
+            named = first in errors
+            dependencies = (first,) if named else names
+            targets = (coherent if first in coherent else (first,)) if named else coherent or names
+            if not ready(dependencies):
+                pending.update(targets)
+                continue
+            if not predicate.accepts(outputs):
+                reject(targets, predicate.code)
+        # A coherent group is indivisible even for a predicate naming one
+        # member. Definitive errors take precedence over waiting dependencies.
+        group_errors = tuple(dict.fromkeys(code for name in coherent for code in errors[name]))
+        for code in group_errors:
+            reject(coherent, code)
+        rejected = {name: tuple(values) for name, values in errors.items() if values}
+        pending.difference_update(rejected)
+        return MappingProxyType(rejected), frozenset(pending)
+
+    def output_errors(self, outputs: Mapping[str, object], *, names=None):
+        """Assess a finalized group whose named outputs have all settled."""
+        names = tuple(dict.fromkeys((*outputs, *self.coherent_outputs))) if names is None else tuple(names)
+        errors, _ = self.assess_outputs(outputs, names=names, settled=names)
+        return errors
+
     def validate(self, outputs: Mapping[str, object]):
         if not set(self.coherent_outputs) <= outputs.keys():
             raise ValueError("acceptance.coherent_outputs_missing")
@@ -207,6 +255,8 @@ class CapabilityDefinition:
     reuse: ReuseContract = field(default_factory=ReuseContract, kw_only=True)
     retry: RetryPolicy = field(default_factory=RetryPolicy, kw_only=True)
     acceptance: AcceptanceContract = field(default_factory=AcceptanceContract, kw_only=True)
+    schema_ids: tuple[str, ...] = field(default=(), kw_only=True)
+    reference_ids: tuple[str, ...] = field(default=(), kw_only=True)
     kind: ClassVar[str] = "capability"
 
     def __post_init__(self):
@@ -234,6 +284,11 @@ class CapabilityDefinition:
                 safe_token(name)
         for name in (*self.parameters, *self.fixed, *self.required_parameters):
             safe_token(name)
+        for dependencies in (self.schema_ids, self.reference_ids):
+            if not isinstance(dependencies, tuple) or len(set(dependencies)) != len(dependencies):
+                raise ValueError("capability.invalid_semantic_dependencies")
+            for dependency in dependencies:
+                safe_token(dependency)
         if not isinstance(self.acceptance, AcceptanceContract):
             raise ValueError("capability.invalid_acceptance")
         if not set(self.acceptance.coherent_outputs) <= self.outputs.keys():

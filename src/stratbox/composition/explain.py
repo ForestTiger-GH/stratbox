@@ -27,7 +27,7 @@ def explain_plan(plan, *, task_limit=1000):
                         "kind":task.capability_kind,"scope_id":task.scope_id,
                         "acceptance_scope":task.acceptance_scope,"dependencies":task.dependencies,
                         "logical_uses":(task.task_id,*task.aliases),"work_identity":task.work_identity,
-                        "reuse_eligible":task.reuse_eligible} for task in plan.tasks[:task_limit]),
+                        "reuse_eligible":task.reuse_eligible,"conditions":task.conditions} for task in plan.tasks[:task_limit]),
         "logical_to_physical": dict(plan.logical_to_physical),
         "physical_to_logical": dict(plan.physical_to_logical),
     }

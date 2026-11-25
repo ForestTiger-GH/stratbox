@@ -156,7 +156,8 @@ class CapabilityRuntimeCatalog:
                 qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection)
                 for name, port in command.inputs.items()),
             outputs=tuple(OutputPort(name, schema(port), path=name if len(output_names) > 1 else "",
-                qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection)
+                qualifications=port.qualifications, coverage=port.expected_coverage, collection=port.collection,
+                evidence_policy="value")
                 for name, port in command.outputs.items()),
             parameters=tuple(sorted(names - set(command.inputs))),
             required_parameters=command.required_parameters,

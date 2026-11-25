@@ -1,6 +1,6 @@
 """Exact functional transitions with inspectable command bodies."""
 from stratbox.capabilities.model import AcceptanceContract, OperationDefinition, PortContract, GraphBody, Call, InputRef, OutputRef, ParameterRef
-from stratbox.capabilities.commands import ANY, MATERIAL_INPUT, URL, MATERIAL, OBSERVATIONS, VIEW, REPRESENTATION, RECEIPT
+from stratbox.capabilities.commands import ANY, MATERIAL_INPUT, URL, MATERIAL, OBSERVATIONS, EXTRACTED_OBSERVATIONS, CALCULATED_OBSERVATIONS, VIEW, REPRESENTATION, READABLE, COVERAGE, FINDINGS, RECEIPT
 from stratbox.shared.data.processing import DataContract
 
 
@@ -11,26 +11,28 @@ def extraction_body(interpreter="fields.interpret"):
         Call("select", "table.select", {"workbook": OutputRef("decode")}, {"profile": ParameterRef("profile")}),
         Call("interpret", interpreter, {"table": OutputRef("select")}, {"profile": ParameterRef("profile")}),
         Call("check", "schema.check", {"value": OutputRef("interpret")}),
-    ), {"observations": OutputRef("check")}, required_checks=("check",))
+        Call("assess", "extraction.assess", {"observations": OutputRef("check"), "table": OutputRef("select")},
+            {"profile": ParameterRef("profile")}),
+    ), {"observations": OutputRef("assess", "observations"), "coverage": OutputRef("assess", "coverage"),
+        "findings": OutputRef("assess", "findings")}, required_checks=("check", "assess"))
 
 
 def definitions():
     return (
         OperationDefinition("extract.observations", method_slot="interpretation", inputs={"material": MATERIAL_INPUT},
-            outputs={"observations": OBSERVATIONS}, parameters={"profile": {}},
-            acceptance=AcceptanceContract(coherent_outputs=("observations",))),
+            outputs={"observations": EXTRACTED_OBSERVATIONS, "coverage": COVERAGE, "findings": FINDINGS}, parameters={"profile": {}},
+            acceptance=AcceptanceContract(coherent_outputs=("observations", "coverage", "findings"))),
         OperationDefinition("convert.readable", GraphBody((
             Call("read", "material.read", {"material": InputRef("material")}),
             Call("decode", "workbook.decode", {"material": OutputRef("read")}),
             Call("readable", "workbook.readable", {"workbook": OutputRef("decode")}),
-        ), {"readable": OutputRef("readable")}), inputs={"material": MATERIAL_INPUT}, outputs={"readable": REPRESENTATION}),
+        ), {"readable": OutputRef("readable")}), inputs={"material": MATERIAL_INPUT}, outputs={"readable": READABLE}),
         OperationDefinition("calculate.ratio", GraphBody((
-            Call("evaluate", "numbers.evaluate", {"numerator": InputRef("numerator"), "denominator": InputRef("denominator")},
-                {name: ParameterRef(name) for name in ("metric_id", "unit", "multiplier", "dataset_id")}),
-            Call("check", "schema.check", {"value": OutputRef("evaluate")}),
-        ), {"observations": OutputRef("check")}, required_checks=("check",)),
-            inputs={"numerator": OBSERVATIONS, "denominator": OBSERVATIONS}, outputs={"observations": OBSERVATIONS},
-            parameters={"metric_id": "ratio", "unit": "ratio", "multiplier": 1, "dataset_id": None}),
+            Call("evaluate", "ratio.evaluate", {"numerator": InputRef("numerator"), "denominator": InputRef("denominator")},
+                {"pair": ParameterRef("pair"), "dataset_id": ParameterRef("dataset_id")}),
+        ), {"observations": OutputRef("evaluate")}, required_checks=("evaluate",)),
+            inputs={"numerator": OBSERVATIONS, "denominator": OBSERVATIONS}, outputs={"observations": CALCULATED_OBSERVATIONS},
+            parameters={"dataset_id": None}, required_parameters=("pair",)),
         OperationDefinition("view.table", GraphBody((
             Call("prepare", "view.prepare", {"observations": InputRef("observations")},
                 {name: ParameterRef(name) for name in ("view_id", "metric_ids", "subject_ids")}),

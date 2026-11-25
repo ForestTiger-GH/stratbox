@@ -6,6 +6,7 @@ from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.views import ObservationView
 from stratbox.shared.data.workbook_cells import WorkbookCells
 from stratbox.shared.evidence import SourcePayload, StoredBytesReceipt
+from stratbox.shared.data.assessment import CoverageAssessment
 
 MATERIAL = PortContract(DataContract("material.bytes", 1, DataRole.ORIGINALS), SourcePayload)
 MATERIAL_INPUT = PortContract(MATERIAL.schema)
@@ -13,8 +14,14 @@ URL = PortContract(DataContract("index.url", 1), str)
 WORKBOOK = PortContract(DataContract("workbook.cells", 1), WorkbookCells)
 SELECTION = PortContract(DataContract("workbook.selection", 1))
 OBSERVATIONS = PortContract(DataContract("observations.batch", 1, DataRole.EXTRACTS), ObservationBatch)
+EXTRACTED_OBSERVATIONS = PortContract(OBSERVATIONS.schema, ObservationBatch, qualifications=frozenset({"extraction.validated"}))
+CALCULATED_OBSERVATIONS = PortContract(OBSERVATIONS.schema, ObservationBatch, qualifications=frozenset({"calculation.admitted"}))
 VIEW = PortContract(DataContract("observations.view", 1, DataRole.PRODUCTS), ObservationView)
 REPRESENTATION = PortContract(DataContract("product.representation", 1, DataRole.PRODUCTS), Representation)
+READABLE = PortContract(DataContract("readable.representation", 1, DataRole.READABLE), Representation,
+    qualifications=frozenset({"readable.physical"}))
+COVERAGE = PortContract(DataContract("extraction.coverage", 2, DataRole.EXTRACTS), CoverageAssessment)
+FINDINGS = PortContract(DataContract("processing.findings", 1, DataRole.EXTRACTS), tuple)
 RECEIPT = PortContract(DataContract("storage.receipt", 1), StoredBytesReceipt)
 ANY = PortContract()
 PURE = ReuseContract(mutation="immutable")
@@ -43,7 +50,7 @@ def definitions():
         CommandDefinition("workbook.decode", prefix + "workbooks:workbook_decode", inputs={"material": MATERIAL},
             outputs={"value": WORKBOOK}, resources={"parse": 1}, reuse=PURE),
         CommandDefinition("workbook.readable", prefix + "workbooks:workbook_readable", inputs={"workbook": WORKBOOK},
-            outputs={"value": REPRESENTATION}, parameters={"max_bytes": 32 * 1024 * 1024}, reuse=PURE),
+            outputs={"value": READABLE}, parameters={"max_bytes": 32 * 1024 * 1024}, reuse=PURE),
         CommandDefinition("table.select", prefix + "tables:table_select", inputs={"workbook": WORKBOOK},
             outputs={"value": SELECTION}, parameters={"profile": {}}, reuse=PURE),
         CommandDefinition("table.reshape", prefix + "tables:table_reshape", inputs={"table": SELECTION},
@@ -54,9 +61,16 @@ def definitions():
             inputs={"table": SELECTION}, outputs={"value": OBSERVATIONS}, parameters={"profile": {}}, reuse=PURE),
         CommandDefinition("schema.check", prefix + "tables:schema_check", inputs={"value": OBSERVATIONS},
             outputs={"value": OBSERVATIONS}, parameters={"min_rows": 1, "require_reported": False}, reuse=PURE),
+        CommandDefinition("extraction.assess", prefix + "tables:extraction_assess",
+            inputs={"observations": OBSERVATIONS, "table": SELECTION},
+            outputs={"observations": EXTRACTED_OBSERVATIONS, "coverage": COVERAGE, "findings": FINDINGS},
+            parameters={"profile": {}}, reuse=ReuseContract(shareable=False)),
         CommandDefinition("numbers.evaluate", prefix + "tables:numbers_evaluate",
             inputs={"numerator": OBSERVATIONS, "denominator": OBSERVATIONS}, outputs={"value": OBSERVATIONS},
             parameters={"metric_id": "ratio", "unit": "ratio", "multiplier": 1, "dataset_id": None}, reuse=PURE),
+        CommandDefinition("ratio.evaluate", prefix + "ratios:ratio_evaluate",
+            inputs={"numerator": OBSERVATIONS, "denominator": OBSERVATIONS}, outputs={"value": CALCULATED_OBSERVATIONS},
+            parameters={"dataset_id": None}, required_parameters=("pair",), reuse=ReuseContract(shareable=False)),
         CommandDefinition("view.prepare", prefix + "products:view_prepare", inputs={"observations": OBSERVATIONS},
             outputs={"value": VIEW}, parameters={"view_id": None, "metric_ids": (), "subject_ids": ()}, reuse=PURE),
         CommandDefinition("representation.encode", prefix + "products:representation_encode", inputs={"view": VIEW},

@@ -13,3 +13,5 @@ from .compiler import validate_plan
 from .requests import InvocationRequest, GoalRequest
 from .prepare import prepare_invocation, prepare_goal
 from .explain import explain_plan
+
+from .plan import ScopeOutputRef, task_conditions

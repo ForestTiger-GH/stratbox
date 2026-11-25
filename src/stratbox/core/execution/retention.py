@@ -75,6 +75,8 @@ class ResultSpillStore:
         self._total_size = 0
         self._owners = []
         self._closed = False
+        self._close_requested = False
+        self._pins = 0
         self._store_id = uuid4().hex
         self._directory = TemporaryDirectory(prefix="stratbox-results-")
         self._lock = RLock()
@@ -85,7 +87,7 @@ class ResultSpillStore:
             raise TypeError("execution.result_required")
         key = result.invocation_id
         with self._lock:
-            if self._closed:
+            if self._closed or self._close_requested:
                 raise ValueError("execution.retention_closed")
             # A private result may be requested repeatedly while several readers
             # still hold its immutable reference. Never replace their file.
@@ -129,11 +131,23 @@ class ResultSpillStore:
 
     def close(self):
         with self._lock:
-            if self._closed:
-                return
-            self.release_capacity()
-            self._directory.cleanup()
-            self._closed = True
+            self._close_requested = True
+            self._collect()
+
+    def pin(self):
+        """Keep temporary placement available to its accepted owner/readers."""
+        with self._lock:
+            if self._closed or self._close_requested:
+                raise ValueError("execution.retention_closed")
+            self._pins += 1
+        return _SpillPin(self)
+
+    def _collect(self):
+        if self._closed or not self._close_requested or self._pins:
+            return
+        self.release_capacity()
+        self._directory.cleanup()
+        self._closed = True
 
     def resolve(self, reference):
         with self._lock:
@@ -144,11 +158,24 @@ class ResultSpillStore:
             path = Path(self._directory.name, reference.key)
             if path.stat().st_size != self._sizes[reference.key]:
                 raise ValueError("execution.retained_content_changed")
-            with path.open("rb") as stream:
-                data = stream.read(self._sizes[reference.key] + 1)
-            if sha256(data).hexdigest() != reference.digest:
-                raise ValueError("execution.retained_content_changed")
-            result = pickle.loads(data)
+            staging_owner = "spill-read:" + uuid4().hex
+            staged = self.ledger is not None and "staging_bytes" in self.ledger.capacities
+            if staged and not self.ledger.reserve(staging_owner, {"staging_bytes": self._sizes[reference.key]}):
+                raise ValueError("resource.staging_bytes")
+            try:
+                with path.open("rb") as stream:
+                    digest = sha256()
+                    while data := stream.read(65536):
+                        digest.update(data)
+                    if digest.hexdigest() != reference.digest:
+                        raise ValueError("execution.retained_content_changed")
+                    stream.seek(0)
+                    # Decode only this instance's integrity-checked private
+                    # stream. No whole serialized copy remains beside payload.
+                    result = pickle.load(stream)
+            finally:
+                if staged:
+                    self.ledger.release(staging_owner)
         if not isinstance(result, OperationResult) or result.invocation_id != reference.invocation_id:
             raise ValueError("execution.retained_result_invalid")
         return result
@@ -160,7 +187,10 @@ class ResultMapping(Mapping):
         self._entries = MappingProxyType(dict(entries))
 
     def __getitem__(self, key):
+        from stratbox.core.execution.values.placement import ManagedResult
         value = self._entries[key]
+        if isinstance(value, ManagedResult):
+            return value.copy()
         value = value.resolve() if isinstance(value, SpilledResult) else value
         return _detached_result(value)
 
@@ -180,7 +210,8 @@ class AttemptMapping(Mapping):
         self._entries = MappingProxyType(dict(entries))
 
     def __getitem__(self, key):
-        return tuple(_detached_result(value.resolve() if isinstance(value, SpilledResult) else value)
+        from stratbox.core.execution.values.placement import ManagedResult
+        return tuple(value.copy() if isinstance(value, ManagedResult) else _detached_result(value.resolve() if isinstance(value, SpilledResult) else value)
                      for value in self._entries[key])
 
     def __iter__(self):
@@ -198,12 +229,19 @@ def _detached_result(value):
 
 class ValueMapping(Mapping):
     """Named accepted outputs expose independent mutable consumer values."""
-    def __init__(self, entries):
+    def __init__(self, entries, *, unwrap=False):
         self._entries = MappingProxyType(dict(entries))
+        self._unwrap = unwrap
 
     def __getitem__(self, key):
         from stratbox.core.execution.values.ownership import isolate_value
-        return isolate_value(self._entries[key])
+        from stratbox.core.execution.values.placement import resolve_managed
+        value = resolve_managed(self._entries[key])
+        if self._unwrap:
+            from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput
+            if isinstance(value, (PreparedInput, ProjectedOutput)):
+                value = value.value
+        return isolate_value(value)
 
     def _owned(self, key):
         """Core-only projection before obtaining an accounted read lease."""
@@ -261,8 +299,11 @@ class ResultOwnership:
     closes, so accounting follows the promised result rather than the executor.
     """
 
-    def __init__(self, ledger, owners=(), spill=None):
-        self._ledger, self._owners, self._spill = ledger, tuple(owners), spill
+    def __init__(self, ledger, owners=(), spill=None, *, managed=(), on_close=None):
+        self._managed = tuple(dict.fromkeys(managed))
+        managed_owners = {item.reservation_owner for item in self._managed}
+        self._ledger, self._owners, self._spill = ledger, tuple(owner for owner in owners if owner not in managed_owners), spill
+        self._on_close = on_close
         self._readers = 0
         self._closed = False
         self._released = False
@@ -275,14 +316,22 @@ class ResultOwnership:
 
     def lease(self, value=None):
         from stratbox.core.execution.values.ownership import isolate_value, _immutable
+        from stratbox.core.execution.values.placement import ManagedResult, ManagedProjection, ManagedCollection
         with self._lock:
             if self._closed:
                 raise ValueError("execution.retention_closed")
+            managed_lease = None
+            if isinstance(value, (ManagedResult, ManagedProjection, ManagedCollection)):
+                managed_lease = value.read()
+                value = managed_lease.value
+                from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput
+                if isinstance(value, (PreparedInput, ProjectedOutput)):
+                    value = value.value
             owner = "result-reader:" + uuid4().hex
             size = 0 if isinstance(value, SpilledResult) or _immutable(value) else retained_size(value)
-            if self._ledger is not None and not self._ledger.reserve(owner, {"retained_bytes": size}):
-                raise ValueError("resource.retained_bytes")
             try:
+                if self._ledger is not None and not self._ledger.reserve(owner, {"retained_bytes": size}):
+                    raise ValueError("resource.retained_bytes")
                 isolated = isolate_value(value)
                 actual_size = 0 if isolated is value else retained_size(isolated)
                 if self._ledger is not None and actual_size != size and not self._ledger.replace(owner, {"retained_bytes": actual_size}):
@@ -290,9 +339,11 @@ class ResultOwnership:
             except BaseException:
                 if self._ledger is not None:
                     self._ledger.release(owner)
+                if managed_lease is not None:
+                    managed_lease.close()
                 raise
             self._readers += 1
-        return ResultReadLease(self, isolated, owner)
+        return ResultReadLease(self, isolated, owner, managed_lease)
 
     def close(self):
         with self._lock:
@@ -311,6 +362,9 @@ class ResultOwnership:
     def _cleanup(self):
         if not self._closed or self._readers or self._released:
             return
+        for managed in self._managed:
+            managed.close()
+        self._managed = ()
         if self._spill is not None:
             self._spill.close()
         if self._ledger is not None:
@@ -318,6 +372,9 @@ class ResultOwnership:
                 self._ledger.release(owner)
         self._owners, self._ledger, self._spill = (), None, None
         self._released = True
+        callback, self._on_close = self._on_close, None
+        if callback is not None:
+            callback()
 
     def __del__(self):
         # GC is a fallback; explicit close gives deterministic capacity release.
@@ -328,9 +385,10 @@ class ResultOwnership:
 
 
 class ResultReadLease:
-    def __init__(self, owner, value, reservation):
+    def __init__(self, owner, value, reservation, managed_lease=None):
         self._owner, self._value = owner, value
         self._reservation = reservation
+        self._managed_lease = managed_lease
         self._closed = False
         self._lock = RLock()
 
@@ -347,6 +405,9 @@ class ResultReadLease:
                 return
             self._closed = True
             self._value = None
+            if self._managed_lease is not None:
+                self._managed_lease.close()
+                self._managed_lease = None
             self._owner._reader_closed(self._reservation)
             self._owner = None
 
@@ -355,6 +416,28 @@ class ResultReadLease:
 
     def __exit__(self, *exc):
         self.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class _SpillPin:
+    def __init__(self, store):
+        self._store = store
+
+    def close(self):
+        store = self._store
+        if store is None:
+            return
+        with store._lock:
+            if self._store is None:
+                return
+            self._store = None
+            store._pins -= 1
+            store._collect()
 
     def __del__(self):
         try:

@@ -55,12 +55,33 @@ cleanup. Completing a run releases its active-run slot; live returned results
 remain charged until their owner releases them. Process-private spill remains
 local temporary storage.
 
+All task, attempt, scope, map and collection projections address the same
+managed result placement. Moving a result to temporary storage clears its
+resident payload through that owner. Reads reserve materialization capacity;
+mutable worker copies hold their own reservations until consumption finishes.
+
+Every capability owns its named output promises. A scenario predicate can
+reject its exported output while the successful nested operation remains
+available separately. Named predicates can release independent outputs early.
+Predicates over multiple outputs wait for their full input group to settle.
+Inherited activation conditions compose as a conjunction throughout the graph.
+
+In-flight sharing and completed reuse have separate permissions. The shared
+work identity includes the selected semantic basis and actual input evidence.
+Content equality alone cannot transfer another consumer's source ancestry.
+
 Effects have their own authority, expected revision and confirmation state.
 Computation success, committed storage and notification delivery are separate
 facts. A lost effect reply remains unknown until reconciliation. Observability
 projects authoritative execution facts; optional capture failures preserve the
 business result. Durable recovery is supplied by an external host through the
 declared state, artifact and effect ports.
+
+Promised publication capacity is reserved before work is admitted. Immutable
+fact obligations enter the bounded outbox before journal publication; a full
+journal delays their transfer while preserving their identities. Variable-size
+effect producers reserve additional receipt capacity before each mutation.
+Impossible claims fail admission; temporary pressure suspends dynamic expansion.
 
 The [effect and stage-event guide](../current-how/effect-recovery-and-stage-events.md)
 describes reconciliation, retained facts and notification boundaries.

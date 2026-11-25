@@ -19,6 +19,7 @@ from stratbox.core.execution.handoff import (PreparedInput, ProjectedOutput, Res
     collect_inputs, project_output, resolve_output)
 from stratbox.core.execution.resources import ResourceLedger, ScopedResourceLedger
 from stratbox.core.execution.retention import ResultSpillStore, SpilledResult, ResultMapping, AttemptMapping, ValueMapping, retained_size
+from stratbox.core.execution.values.placement import ManagedResult, ManagedProjection, ManagedCollection, ValueReadScope, resolve_managed
 
 _TERMINAL = frozenset({"succeeded", "partial", "failed", "cancelled", "unknown", "blocked", "skipped"})
 _GOOD = frozenset({"succeeded", "partial"})
@@ -49,13 +50,14 @@ class ExecutionSettings:
     expansion_items: int = 100000
     cache_bytes: int = 64 * 1024 * 1024
     staging_bytes: int = 256 * 1024 * 1024
+    publication_capacity: int = 4096
     expenditure: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         for name in ("max_workers", "active_runs", "pending_runs", "ready_tasks", "map_window",
                      "network", "per_origin", "parsers", "heavy_parsers", "cpu", "notifications",
                      "retained_bytes", "temporary_bytes", "event_capacity", "expansion_tasks",
-                     "expansion_items", "cache_bytes", "staging_bytes"):
+                     "expansion_items", "cache_bytes", "staging_bytes", "publication_capacity"):
             value = getattr(self, name)
             if type(value) is not int or value < 1:
                 raise ValueError("execution.invalid_settings")
@@ -222,6 +224,9 @@ class _Run:
     spill: object | None = None
     scope_states: dict = field(default_factory=dict)
     scope_outputs: dict = field(default_factory=dict)
+    scope_output_states: dict = field(default_factory=dict)
+    scope_output_errors: dict = field(default_factory=dict)
+    published_outputs: set = field(default_factory=set)
     scopes_finished: set = field(default_factory=set)
     scope_specs: dict = field(default_factory=dict)
     physical_work_count: int = 0
@@ -239,6 +244,7 @@ class _PhysicalWork:
     result: object | None = None
     size: int = 0
     cache_owner: str | None = None
+    assessment: object | None = None
 
 
 class _SharedCancellation:
@@ -288,10 +294,11 @@ class RunHandle:
         with self._session._condition:
             if self.done():
                 return self.result().output(name)
-            value = self._session._accepted_output(self._run, self._run.plan.outputs[name])
-            if isinstance(value, (PreparedInput, ProjectedOutput)):
-                value = value.value
-            return self._session._isolate(value)
+            with ValueReadScope():
+                value = self._session._accepted_output(self._run, self._run.plan.outputs[name])
+                if isinstance(value, (PreparedInput, ProjectedOutput)):
+                    value = value.value
+                return self._session._isolate(value)
 
     def scope_states(self):
         with self._session._condition:
@@ -328,7 +335,7 @@ class ExecutionSession:
             per_origin=self.settings.per_origin)
         from stratbox.core.observability.capture.orchestration import OrchestrationJournal
         self.journal = OrchestrationJournal(self.session_id, max_records=self.settings.event_capacity,
-                                             telemetry_sink=observer)
+            max_pending_runs=self.settings.publication_capacity, telemetry_sink=observer)
         self._network = network
         self._networks = {}
         self._owns_network = network is None
@@ -375,18 +382,31 @@ class ExecutionSession:
             if len(self._pending) >= self.settings.pending_runs:
                 raise RuntimeError("execution.run_queue_full")
             run = _Run(plan, uuid4().hex, context or self.context)
-            self.effects.begin_run(run.run_id)
             run.deadline = None if timeout is None else monotonic() + timeout
-            self._add_scopes(run, plan.scopes)
-            self._add_tasks(run, plan.tasks)
-            self._select_outputs(run, plan.outputs)
-            self.journal.reserve_run(run.run_id)
+            try:
+                self._add_scopes(run, plan.scopes)
+                self._add_tasks(run, plan.tasks)
+                self._select_outputs(run, plan.outputs)
+                self.journal.reserve_run(run.run_id, publications=self._publication_budget(plan.tasks, plan.scopes))
+                self.effects.begin_run(run.run_id)
+            except Exception:
+                self.journal.release_run(run.run_id)
+                raise
             self._runs[run.run_id] = run
             self._pending.append(run.run_id)
             self._emit(run, "run.queued", state="queued")
             self._start()
             self._condition.notify_all()
             return RunHandle(self, run)
+
+    def _publication_budget(self, tasks, scopes):
+        values = sum(getattr(scope, "kind", None) == "operation" and
+            getattr(getattr(port, "schema", None), "role", None) is not None
+            for scope in scopes for port in getattr(scope, "output_contracts", {}).values())
+        effects = sum(len({kind for kind in self.catalog.get(task.operation_id).possible_effects
+            if not kind.startswith(("notification.", "notifications."))})
+            for task in tasks if task.operation_id is not None)
+        return values + effects
 
     def run(self, plan, **options):
         return self.submit(plan, **options).result()
@@ -445,6 +465,7 @@ class ExecutionSession:
         for scope in scopes:
             run.scope_specs[scope.scope_id] = scope
             run.scope_states[scope.scope_id] = "waiting"
+            run.scope_output_states[scope.scope_id] = {name: "waiting" for name in scope.outputs}
             parent = run.scope_ledgers.get(scope.parent_id, self.ledger)
             # A dynamic item inherits its enclosing map scope.
             if scope.parent_id is None:
@@ -697,9 +718,11 @@ class ExecutionSession:
             if any(dep.state not in _TERMINAL for dep in dependencies):
                 self._waiting(run, task, "waiting", "dependencies")
                 continue
-            if task.spec.condition is not None:
+            from stratbox.composition.plan import task_conditions
+            conditions = task_conditions(task.spec)
+            if conditions:
                 try:
-                    selected = self._condition_matches(run, task.spec.condition)
+                    selected = all(self._condition_matches(run, condition) for condition in conditions)
                 except (ValueError, KeyError, TypeError, AttributeError):
                     self._terminal(run, task, "failed", "execution.condition_invalid")
                     progress = True
@@ -708,11 +731,13 @@ class ExecutionSession:
                     self._terminal(run, task, "skipped", "execution.condition_false")
                     progress = True
                     continue
+            self._refresh_scopes(run)
             failed = [dep for dep in dependencies if dep.state not in _GOOD and dep.state != "skipped"]
-            if task.spec.condition is not None and task.spec.condition.statuses:
+            guarded_states = {condition.task for condition in conditions if condition.statuses}
+            if guarded_states:
                 from stratbox.composition.compiler import iter_references
                 data_deps = {ref.task for ref in iter_references((task.spec.inputs, task.spec.parameters))}
-                failed = [dep for dep in failed if dep.spec.task_id != task.spec.condition.task
+                failed = [dep for dep in failed if dep.spec.task_id not in guarded_states
                           or dep.spec.task_id in data_deps]
             partial_collection = task.spec.collect is not None and task.spec.collect.allow_partial
             if failed and not partial_collection:
@@ -735,7 +760,7 @@ class ExecutionSession:
                         iterator = enumerate(iter(value))
                     task.map_state = _MapState(iterator, min(task.spec.map.window or self.settings.map_window,
                                                             self.settings.map_window))
-                    task.state = "expanding"
+                    task.state, task.reason = "expanding", None
                     progress = True
                 except Exception:
                     self._terminal(run, task, "failed", "execution.map_input_invalid")
@@ -756,8 +781,14 @@ class ExecutionSession:
                     self._terminal(run, task, "failed", "execution.collection_invalid")
                 progress = True
                 continue
-            key = self._work_key(run, task)
+            assessment = self._work_assessment(run, task)
+            key = assessment.key if assessment.inflight_allowed else None
             shared = self._shared_work.get(key) if key is not None else None
+            if shared is not None and (shared.assessment is None or not assessment.can_consume(
+                    shared.assessment, completed=shared.result is not None)):
+                # This consumer executes separately without displacing an
+                # independently eligible producer or completed cache entry.
+                shared, key = None, None
             if shared is not None:
                 self._shared_work.move_to_end(key)
                 shared.consumers[(run.run_id, task.spec.task_id)] = (run, task)
@@ -795,7 +826,7 @@ class ExecutionSession:
             work = None
             if key is not None:
                 work = _PhysicalWork(key, "shared-" + uuid4().hex,
-                    {(run.run_id, task.spec.task_id): (run, task)})
+                    {(run.run_id, task.spec.task_id): (run, task)}, assessment=assessment)
                 task.physical_key, task.shared_work_id = key, work.work_id
                 self._shared_work[key] = work
                 self._emit(run, "shared_work.started", task, state="running")
@@ -817,7 +848,7 @@ class ExecutionSession:
         if condition.statuses:
             return task.state in condition.statuses
         from stratbox.composition.models import PlanOutputRef
-        value = self._resolve(run, PlanOutputRef(condition.task, condition.port))
+        value = self._resolve(run, getattr(condition, "reference", None) or PlanOutputRef(condition.task, condition.port))
         if isinstance(value, (ProjectedOutput, PreparedInput)):
             value = value.value
         for name in condition.field.split(".") if condition.field else ():
@@ -826,15 +857,23 @@ class ExecutionSession:
 
     def _resolve(self, run, value):
         from stratbox.composition.models import PlanOutputRef
+        from stratbox.composition.plan import ScopeOutputRef
+        if isinstance(value, (ManagedResult, ManagedProjection, ManagedCollection)):
+            return resolve_managed(value)
+        if isinstance(value, ScopeOutputRef):
+            if run.scope_output_states.get(value.scope_id, {}).get(value.port) != "accepted":
+                raise ValueError("acceptance.output_unavailable")
+            return self._resolve(run, run.scope_outputs[value.scope_id][value.port])
         if isinstance(value, PlanOutputRef):
             task = self._task(run, value.task)
-            result = task.result.resolve() if isinstance(task.result, SpilledResult) else task.result
+            result = resolve_managed(task.result) if isinstance(task.result, ManagedResult) else (
+                task.result.resolve() if isinstance(task.result, SpilledResult) else task.result)
             projected = project_output(result, value.port) if result else task.outputs[value.port]
             if value.item is not None:
                 if not isinstance(projected, MapOutput):
                     raise ValueError("execution.item_reference_requires_map")
                 projected = dict(projected.items)[value.item]
-            return projected
+            return resolve_managed(projected)
         if isinstance(value, ResultReference):
             if self.result_resolver is None:
                 raise ValueError("execution.result_resolver_required")
@@ -849,6 +888,8 @@ class ExecutionSession:
 
     @staticmethod
     def _isolate(value):
+        if isinstance(value, (ManagedResult, ManagedProjection, ManagedCollection)):
+            return value
         if isinstance(value, (ProjectedOutput, PreparedInput)):
             return replace(value, value=deepcopy(value.value))
         if isinstance(value, Mapping):
@@ -860,43 +901,35 @@ class ExecutionSession:
                                      for member in fields(value) if member.init})
         return deepcopy(value)
 
+    def _work_assessment(self, run, task):
+        from stratbox.core.execution.sharing import assess_work
+        with ValueReadScope():
+            try:
+                inputs = self._resolve(run, task.spec.inputs)
+                parameters = self._resolve(run, task.spec.parameters)
+            except (KeyError, ValueError, TypeError, AttributeError):
+                return assess_work(replace(task.spec, reuse_eligible=False), inputs={}, parameters={},
+                    context=run.context, run_id=run.run_id)
+            return assess_work(task.spec, inputs=inputs, parameters=parameters,
+                context=run.context, run_id=run.run_id,
+                effects=self.catalog.get(task.spec.operation_id).possible_effects,
+                attempt=task.attempts + 1)
+
     def _work_key(self, run, task):
-        if not getattr(task.spec, "reuse_eligible", False):
-            return None
-        try:
-            from stratbox.core.execution.values import argument_identity
-            definition = self.catalog.get(task.spec.operation_id)
-            # Effectful writes retain their own invocation authority. Read-only
-            # acquisition can share only with an explicitly frozen observation.
-            if definition.possible_effects - {"network.receive"}:
-                return None
-            parameters = self._parameter_values(self._resolve(run, task.spec.parameters))
-            if "network.receive" in definition.possible_effects and (
-                    parameters.get("allow_network", True) is not True or parameters.get("freshness") == "fresh"):
-                return None
-            inputs = self._parameter_values(self._resolve(run, task.spec.inputs))
-            providers = tuple(sorted((binding.capability.role, binding.provider_id,
-                binding.scope_id, id(binding.provider),
-                getattr(getattr(binding.provider, "scope", None), "identity", None))
-                for binding in run.context.bindings))
-            from stratbox.capabilities.model.reuse import WorkIdentity
-            identity = WorkIdentity(task.spec.operation_id, task.spec.method_fingerprint or "",
-                tuple(sorted((name, argument_identity(value).sha256) for name, value in inputs.items())),
-                argument_identity(parameters).sha256,
-                method_fingerprint=task.spec.method_fingerprint or "",
-                access_scope=sha256(repr((providers, run.context.profile,
-                    argument_identity((run.context.budget, run.context.ceiling)).sha256)).encode()).hexdigest(),
-                observation=str((parameters.get("observation_id") or parameters.get("observation") or run.run_id)
-                    if "network.receive" in definition.possible_effects else ""),
-                freshness=str(parameters.get("freshness", "")),
-                state_epoch=str(parameters.get("state_epoch", "")))
-            return sha256((identity.fingerprint + ":" + str(task.attempts + 1)).encode()).hexdigest()
-        except (ValueError, TypeError, AttributeError):
-            # Unsupported values are executable, but cannot promise equality.
-            return None
+        return self._work_assessment(run, task).key
 
     def _execute(self, run, task, owner, work=None):
-        inputs = self._isolate(self._resolve(run, task.spec.inputs))
+        try:
+            with ValueReadScope():
+                return self._execute_owned(run, task, owner, work)
+        finally:
+            correlation = self._correlation(run, task)
+            self.effects.finish_attempt(run.run_id, correlation.workflow_scope_id,
+                correlation.task_id, correlation.attempt_id)
+
+    def _execute_owned(self, run, task, owner, work=None):
+        from stratbox.core.execution.values.placement import isolate_managed
+        inputs = isolate_managed(self._resolve(run, task.spec.inputs), self.ledger)
         parameters = self._isolate(self._parameter_values(self._resolve(run, task.spec.parameters)))
         from stratbox.core.execution.methods import method_descriptor
         definition, handler, _ = self.catalog.resolve(task.spec.operation_id)
@@ -906,7 +939,24 @@ class ExecutionSession:
         correlation = self._correlation(run, task)
         self.effects.begin_attempt(run.run_id, correlation.workflow_scope_id,
             correlation.task_id, correlation.attempt_id)
+        enclosing = [(name, binding) for name, binding in run.plan.selected_bindings.items()
+            if task.spec.scope_id.startswith(name + "/") or task.spec.scope_id == name]
+        semantic = [item for item in enclosing if item[1].get("kind") == "operation"]
+        selected_scope, selected = max(semantic or enclosing, key=lambda item: len(item[0]), default=(None, {}))
+        actual = dict(selected.get("identities", {}))
+        if selected_scope is not None:
+            actual.update(("implementation:" + member.spec.task_id, member.spec.method_fingerprint)
+                for member in tuple(self._all_tasks(run))
+                if member.spec.method_fingerprint is not None and member.state in _GOOD
+                and (member.spec.scope_id == selected_scope or member.spec.scope_id.startswith(selected_scope + "/")))
+        if task.spec.method_fingerprint is not None:
+            actual["implementation:" + task.spec.task_id] = task.spec.method_fingerprint
+        identities = tuple(sorted(actual.items()))
         context = replace(run.context, correlation=correlation, effect_authority=self.effects,
+            binding_identities=identities,
+            effect_admitter=lambda kind, effect_id: self.journal.admit_effect(correlation, kind, effect_id,
+                allowance=len({item for item in definition.possible_effects
+                    if not item.startswith(("notification.", "notifications."))})),
             cancellation=(_SharedCancellation(self, work) if work is not None else
                           _Cancellation(run.token, task.token, run.context.cancellation)),
             resource_ledger=run.scope_ledgers.get(task.spec.scope_id, self.ledger),
@@ -1004,6 +1054,10 @@ class ExecutionSession:
                 self._accept_completion(run, task, owner, result, size, error)
 
     def _cache_work(self, work, result, size):
+        if work.assessment is None or not work.assessment.completed_allowed:
+            self._shared_work.pop(work.key, None)
+            work.future = None
+            return
         completed = [key for key, candidate in self._shared_work.items() if candidate.cache_owner is not None]
         while len(completed) >= self.settings.ready_tasks:
             retired = self._shared_work.pop(completed.pop(0))
@@ -1034,6 +1088,7 @@ class ExecutionSession:
             logically_cancelled = self._cancelled(run, task) and result.outcome != "unknown"
             if not isinstance(result, OperationResult):
                 raise TypeError("execution.result_required")
+            task.retained_owner = None
             if result.value is not None:
                 try:
                     from stratbox.core.execution.values.ownership import accept_owned_value
@@ -1067,8 +1122,9 @@ class ExecutionSession:
                     result = replace(result, value=None,
                         outcome="unknown" if result.outcome == "unknown" else "failed",
                         diagnostics=(*result.diagnostics, Diagnostic(code)))
-            task.result = result
-            task.attempt_results.append(result)
+            managed = ManagedResult(result, ledger=self.ledger, reservation_owner=task.retained_owner)
+            task.result = managed
+            task.attempt_results.append(managed)
             try:
                 self.journal.capture_result(result, correlation=self._correlation(run, task))
             except Exception:
@@ -1091,6 +1147,7 @@ class ExecutionSession:
         except BaseException as error:
             code = getattr(error, "code", None)
             self._terminal(run, task, "failed", code if isinstance(code, str) else "execution.task_error")
+        self._refresh_scopes(run)
         self._reclaim(run)
         if run.plan.policy == "fail_fast" and task.spec.required and task.state in {"failed", "unknown"}:
             run.token.set()
@@ -1104,24 +1161,23 @@ class ExecutionSession:
                 pending.update(candidate.spec.dependencies)
         for task in run.tasks.values():
             if (task.state not in _TERMINAL or task.selected or task.spec.task_id in pending
-                    or task.retained_owner is None or not isinstance(task.result, OperationResult)
-                    or task.result.value is None):
+                    or task.retained_owner is None or not isinstance(task.result, ManagedResult)
+                    or not task.result.has_value):
                 continue
             try:
                 if run.spill is None:
                     run.spill = ResultSpillStore(max_bytes=self.settings.temporary_bytes, ledger=self.ledger)
-                retained = run.spill.put(task.result)
+                task.result.spill(run.spill)
             except Exception as error:
                 if str(error) == "resource.temporary_bytes" and "resource.temporary_bytes" not in run.diagnostics:
                     run.diagnostics.append("resource.temporary_bytes")
                 # Values without a local codec continue to consume their real
                 # quota; they are never discarded or counted as released.
                 continue
-            task.attempt_results = [retained if result is task.result else result for result in task.attempt_results]
-            task.result = retained
-            self.ledger.release(task.retained_owner)
-            run.retained_owners.remove(task.retained_owner)
-            task.retained_owner = None
+            if task.result.reservation_owner is None:
+                if task.retained_owner in run.retained_owners:
+                    run.retained_owners.remove(task.retained_owner)
+                task.retained_owner = None
 
     def _terminal(self, run, task, state, reason=None):
         self.ledger.release(f"{run.run_id}:{task.spec.task_id}")
@@ -1132,11 +1188,10 @@ class ExecutionSession:
                    operation_id=task.spec.operation_id)
 
     def _collect(self, run, spec):
-        members = []
-        missing = False
+        members, missing = [], False
         for reference in spec.inputs:
             try:
-                value = self._resolve(run, reference)
+                value = self._value_reference(run, reference)
                 if isinstance(value, MapOutput):
                     missing |= value.outcome == "partial"
                     members.extend(value.values)
@@ -1148,14 +1203,15 @@ class ExecutionSession:
                 missing = True
         if missing and not spec.allow_partial:
             raise ValueError("execution.collection_incomplete")
-        if not members:
-            if not spec.allow_empty:
-                raise ValueError("execution.collection_empty")
-            return PreparedInput(spec.contract, (), outcome="partial" if missing else "succeeded")
-        result = collect_inputs(tuple(members), contract=spec.contract, element_contract=spec.element_contract)
-        if result.outcome == "partial" and not spec.allow_partial:
-            raise ValueError("execution.collection_incomplete")
-        return replace(result, outcome="partial") if missing else result
+        collection = ManagedCollection(tuple(members), spec.contract, spec.element_contract,
+            outcome="partial" if missing else "succeeded", allow_empty=spec.allow_empty)
+        with ValueReadScope():
+            accepted = resolve_managed(collection)
+            if accepted.outcome == "partial":
+                if not spec.allow_partial:
+                    raise ValueError("execution.collection_incomplete")
+                collection = replace(collection, outcome="partial")
+        return collection
 
     def _advance_map(self, run, task):
         from stratbox.composition.compiler import expand_map_item
@@ -1168,7 +1224,7 @@ class ExecutionSession:
                 outputs = {}
                 for name, reference in plan.outputs.items():
                     try:
-                        outputs[name] = self._resolve(run, reference)
+                        outputs[name] = self._value_reference(run, reference)
                     except (KeyError, ValueError):
                         outcome = "failed"
                 state.completed[key] = (outcome, outputs)
@@ -1227,6 +1283,14 @@ class ExecutionSession:
                     if not self._running and not any(candidate.spec.operation_id is not None for candidate in live):
                         raise ValueError("execution.expansion_unsatisfiable")
                     break
+                try:
+                    self.journal.reserve_publications(run.run_id, self._publication_budget(plan.tasks, plan.scopes))
+                except ValueError as error:
+                    if str(error) != "orchestration.publication_capacity":
+                        raise
+                    # An acknowledged journal transition frees credit on the
+                    # next coordinator pass. No worker waits for publication.
+                    break
                 self._add_scopes(run, plan.scopes)
                 self._add_tasks(run, plan.tasks, item_key=key, admitted=True)
                 self._select_outputs(run, plan.outputs)
@@ -1238,7 +1302,7 @@ class ExecutionSession:
                 state.exhausted = True
                 state.pending = None
                 code = str(error)
-                task.reason = code if code.startswith(("execution.", "resource.", "capability.")) else "execution.map_expansion_failed"
+                task.reason = code if code.startswith(("execution.", "resource.", "capability.", "orchestration.")) else "execution.map_expansion_failed"
             progress = True
         if state.exhausted and not state.active:
             names = set(task.spec.map.body.outputs)
@@ -1307,72 +1371,159 @@ class ExecutionSession:
         if not effectful:
             return False
         for task in effectful:
-            result = task.result.resolve() if isinstance(task.result, SpilledResult) else task.result
+            result = task.result
             if result is None or not result.effects or any(effect.state != "confirmed" for effect in result.effects):
                 return False
         return True
 
+    def _value_reference(self, run, value):
+        """Retain a placement owner instead of an independently held payload."""
+        from stratbox.composition.models import PlanOutputRef
+        from stratbox.composition.plan import ScopeOutputRef
+        if isinstance(value, ScopeOutputRef):
+            if run.scope_output_states.get(value.scope_id, {}).get(value.port) != "accepted":
+                raise ValueError("acceptance.output_unavailable")
+            return run.scope_outputs[value.scope_id][value.port]
+        if isinstance(value, PlanOutputRef):
+            task = self._task(run, value.task)
+            if isinstance(task.result, ManagedResult) and value.item is None:
+                ports = tuple(port for port in getattr(task.result.definition.processing, "outputs", ())
+                    if port.name == value.port)
+                if (task.state not in _GOOD or not task.result.has_value or len(ports) != 1
+                        or task.result.outcome not in ports[0].outcomes):
+                    raise ValueError("acceptance.output_unavailable")
+                return task.result.project(value.port)
+            result = task.outputs[value.port] if task.result is None else self._resolve(run, value)
+            return dict(result.items)[value.item] if value.item is not None else result
+        if isinstance(value, Mapping):
+            return {name: self._value_reference(run, item) for name, item in value.items()}
+        if isinstance(value, (tuple, list)):
+            return type(value)(self._value_reference(run, item) for item in value)
+        return value
+
+    @staticmethod
+    def _public_scope_value(value):
+        if isinstance(value, ManagedProjection):
+            return value.owner.project(value.port, unwrap=True)
+        if isinstance(value, (PreparedInput, ProjectedOutput)):
+            return value.value
+        return value
+
     def _refresh_scopes(self, run, accepting=None):
-        """Accept semantic boundaries independently of unrelated sibling work."""
+        if getattr(run, "refreshing_scopes", False):
+            return
+        run.refreshing_scopes = True
+        try:
+            with ValueReadScope():
+                self._refresh_scopes_owned(run, accepting)
+        finally:
+            run.refreshing_scopes = False
+
+    def _refresh_scopes_owned(self, run, accepting=None):
+        """Named output acceptance and aggregate completion are separate facts."""
         for scope_id, scope in reversed(tuple(run.scope_specs.items())):
             if scope_id in run.scopes_finished:
                 continue
-            acceptance_tasks = [task for task in run.tasks.values()
-                if getattr(task.spec, "acceptance_scope", None) == scope_id]
-            if acceptance_tasks and accepting != scope_id and any(
-                    task.state not in _TERMINAL for task in acceptance_tasks):
-                continue
             members = [task for task in self._all_tasks(run)
                 if (task.spec.scope_id == scope_id or task.spec.scope_id.startswith(scope_id + "/"))
-                and not (accepting == scope_id and getattr(task.spec, "acceptance_scope", None) == scope_id)]
-            if any(task.state not in _TERMINAL for task in members):
+                and getattr(task.spec, "acceptance_scope", None) != scope_id]
+            finished = all(task.state in _TERMINAL for task in members)
+            states = run.scope_output_states.setdefault(scope_id, {})
+            errors = run.scope_output_errors.setdefault(scope_id, {})
+            outputs = run.scope_outputs.setdefault(scope_id, {})
+            activation = getattr(scope, "conditions", ())
+            if activation:
+                try:
+                    conditions_ready = all(self._task(run, condition.task).state in _TERMINAL for condition in activation)
+                    active = conditions_ready and all(self._condition_matches(run, condition) for condition in activation)
+                except (KeyError, ValueError, TypeError, AttributeError):
+                    active, conditions_ready = False, False
+                if not active:
+                    if conditions_ready and finished:
+                        for name in scope.outputs:
+                            states[name] = "skipped"
+                        run.scope_states[scope_id] = "skipped"
+                        run.scopes_finished.add(scope_id)
+                        self._scope_event(run, scope_id, "scope.finished", "skipped")
+                    continue
+            checks = tuple(getattr(scope, "required_checks", ()))
+            checks_ready = all(self._task(run, key).state in _TERMINAL for key in checks)
+            checks_good = checks_ready and all(self._task(run, key).state == "succeeded" for key in checks)
+            if not checks_ready:
                 run.scope_states[scope_id] = "running"
                 continue
-            outcome = self._outcome(members)
-            outputs = {}
-            try:
-                for name, reference in getattr(scope, "outputs", {}).items():
-                    port = getattr(scope, "output_contracts", {}).get(name)
-                    try:
-                        projected = self._resolve(run, reference)
-                    except (KeyError, ValueError):
-                        if port is not None and not port.required:
-                            continue
-                        raise
+            values, candidates = {}, {}
+            for name, reference in scope.outputs.items():
+                port = scope.output_contracts.get(name)
+                try:
+                    from stratbox.composition import iter_references
+                    if any(self._task(run, ref.task).state not in _TERMINAL for ref in iter_references(reference)):
+                        continue
+                    projected = self._resolve(run, reference)
                     value = projected.value if isinstance(projected, (PreparedInput, ProjectedOutput)) else projected
                     if port is not None:
                         port.validate(value)
                         if port.schema is not None and isinstance(projected, (PreparedInput, ProjectedOutput)) and projected.contract != port.schema:
                             raise ValueError("acceptance.schema_mismatch")
-                        qualifications = getattr(projected, "qualifications", frozenset())
-                        if not port.qualifications <= qualifications:
+                        if not port.qualifications <= getattr(projected, "qualifications", frozenset()):
                             raise ValueError("acceptance.qualification_missing")
-                        coverage = getattr(projected, "coverage", frozenset())
-                        if port.expected_coverage and not port.expected_coverage <= coverage:
+                        if not port.expected_coverage <= getattr(projected, "coverage", frozenset()):
                             raise ValueError("acceptance.coverage_missing")
-                    outputs[name] = value
-                checks = getattr(scope, "required_checks", ())
-                effects = getattr(scope, "required_effects", ())
-                if any(self._task(run, key).state != "succeeded" for key in (*checks, *effects)):
-                    raise ValueError("acceptance.obligation_unconfirmed")
-                if any(not self._required_effect_confirmed(run, key) for key in effects):
-                    raise ValueError("acceptance.effect_unconfirmed")
-                acceptance = getattr(scope, "acceptance", None)
-                if acceptance is not None:
-                    acceptance.validate(outputs)
-                    if outcome == "partial" and not acceptance.partial_allowed:
-                        raise ValueError("acceptance.partial_disallowed")
-            except (KeyError, ValueError, TypeError, AttributeError) as error:
-                if outcome not in {"unknown", "cancelled"}:
-                    outcome = "failed"
-                code = str(error)
-                run.diagnostics.append(code if code.startswith("acceptance.") else "acceptance.output_unavailable")
-                outputs = {}
+                    if not checks_good:
+                        raise ValueError("acceptance.obligation_unconfirmed")
+                    values[name] = value
+                    candidates[name] = self._value_reference(run, reference)
+                except (KeyError, ValueError, TypeError, AttributeError) as error:
+                    if finished or not checks_good:
+                        states[name] = "rejected"
+                        outputs.pop(name, None)
+                        code = str(error)
+                        errors[name] = (code if code.startswith("acceptance.") else "acceptance.output_unavailable",)
+            acceptance = getattr(scope, "acceptance", None)
+            if acceptance is not None:
+                settled = set(values) | {name for name, state in states.items() if state in {"rejected", "skipped"}}
+                if finished:
+                    settled.update(scope.outputs)
+                predicate_errors, pending_outputs = acceptance.assess_outputs(values,
+                    names=tuple(scope.outputs), settled=settled)
+                for name in pending_outputs:
+                    states[name] = "waiting"
+                    candidates.pop(name, None)
+                    values.pop(name, None)
+                    outputs.pop(name, None)
+                for name, codes in predicate_errors.items():
+                    states[name] = "rejected"
+                    errors[name] = codes
+                    outputs.pop(name, None)
+                    values.pop(name, None)
+                    candidates.pop(name, None)
+            for name, reference in candidates.items():
+                states[name] = "accepted"
+                outputs[name] = reference
+                errors.pop(name, None)
+            if getattr(scope, "kind", None) == "operation":
+                fresh = {name: values[name] for name in candidates if (scope_id, name) not in run.published_outputs}
+                if fresh:
+                    self._accepted_facts(run, scope, fresh, "succeeded")
+                    run.published_outputs.update((scope_id, name) for name in fresh)
+            if not finished:
+                run.scope_states[scope_id] = "running"
+                continue
+            outcome = self._outcome(members)
+            required_missing = [name for name, port in scope.output_contracts.items()
+                if port.required and states.get(name) != "accepted"]
+            effects = tuple(getattr(scope, "required_effects", ()))
+            effect_good = all(self._task(run, key).state == "succeeded" and self._required_effect_confirmed(run, key) for key in effects)
+            if (required_missing or not checks_good or not effect_good) and outcome not in {"unknown", "cancelled"}:
+                outcome = "failed"
+            if outcome == "partial" and acceptance is not None and not acceptance.partial_allowed:
+                outcome = "failed"
+            for codes in errors.values():
+                run.diagnostics.extend(code for code in codes if code not in run.diagnostics)
+            if not effect_good and "acceptance.effect_unconfirmed" not in run.diagnostics:
+                run.diagnostics.append("acceptance.effect_unconfirmed")
             run.scope_states[scope_id] = outcome
-            run.scope_outputs[scope_id] = outputs if outcome in _GOOD else {}
             run.scopes_finished.add(scope_id)
-            if outcome in _GOOD and getattr(scope, "kind", None) == "operation":
-                self._accepted_facts(run, scope, outputs, outcome)
             self._scope_event(run, scope_id, "scope.finished", outcome)
 
     def _accepted_facts(self, run, scope, outputs, outcome):
@@ -1386,11 +1537,11 @@ class ExecutionSession:
                 identity = value_identity(value)
                 acceptance_id = _token(f"{run.run_id}:{scope.scope_id}:{name}")
                 value_id = _token(f"{scope.definition_id}:{name}:{identity.sha256}")
-                qualification = ("derived" if scope.definition_id.startswith("calculate.") else
-                    next(iter(sorted(port.qualifications)), "reported"))
-                coverage = getattr(value, "coverage", None)
-                complete = outcome == "succeeded" and (
-                    getattr(coverage, "status", None) == "complete" or bool(port.expected_coverage))
+                from stratbox.shared.data.assessment import value_evidence
+                actual = value_evidence(value)
+                qualification = next(iter(sorted(actual.qualifications)), "unqualified")
+                coverage = actual.coverage
+                complete = getattr(coverage, "status", None) == "complete"
                 from stratbox.core.execution.value_context import value_context
                 source_ids = value_context(value, port.schema).source_ids
                 source_id = next(iter(source_ids)) if len(source_ids) == 1 else getattr(value, "source_id", None)
@@ -1404,14 +1555,10 @@ class ExecutionSession:
                     run.diagnostics.append("execution.observation_degraded")
 
     def _accepted_output(self, run, reference):
-        from stratbox.composition import iter_references
-        requested = {(ref.task, ref.port) for ref in iter_references(reference)}
-        for scope_id, scope in run.scope_specs.items():
-            if getattr(scope, "kind", None) != "operation":
-                continue
-            exported = {(ref.task, ref.port) for ref in iter_references(scope.outputs)}
-            if requested & exported and run.scope_states.get(scope_id) not in _GOOD:
-                raise ValueError("acceptance.output_unavailable")
+        from stratbox.composition.plan import ScopeOutputRef
+        if isinstance(reference, ScopeOutputRef):
+            return self._resolve(run, reference)
+        # Transitional physical references have no separate public scope owner.
         return self._resolve(run, reference)
 
     def _finish(self, run):
@@ -1425,7 +1572,7 @@ class ExecutionSession:
         root_contracts = getattr(root_scopes[0], "output_contracts", {}) if root_scopes else {}
         for name, reference in run.plan.outputs.items():
             try:
-                outputs[name] = self._accepted_output(run, reference)
+                outputs[name] = self._value_reference(run, reference)
             except (KeyError, ValueError):
                 port = root_contracts.get(name)
                 if port is not None and not port.required:
@@ -1435,13 +1582,18 @@ class ExecutionSession:
                     outcome = "failed"
         run.state, run.finished_at = outcome, monotonic()
         from stratbox.core.execution.retention import ResultOwnership
-        ownership = ResultOwnership(self.ledger, tuple(run.retained_owners), run.spill)
+        managed = tuple(dict.fromkeys(result for task in all_tasks
+            for result in (task.result, *task.attempt_results) if isinstance(result, ManagedResult)))
+        ownership = ResultOwnership(self.ledger, tuple(run.retained_owners), run.spill, managed=managed,
+            on_close=lambda: self.effects.release_run(run.run_id))
+        self.effects.finish_run(run.run_id)
+        self.journal.release_publications(run.run_id)
         result = RunResult(run.run_id, run.plan.plan_id, outcome, ValueMapping(outputs),
             ResultMapping({task.spec.task_id: task.result for task in all_tasks if task.result is not None}),
             tuple(self._task_snapshot(task) for task in all_tasks), tuple(dict.fromkeys(diagnostics)),
             AttemptMapping({task.spec.task_id: tuple(task.attempt_results) for task in all_tasks if task.attempt_results}), run.spill,
             ownership, MappingProxyType(dict(run.scope_states)),
-            MappingProxyType({key: ValueMapping(value) for key, value in run.scope_outputs.items()}))
+            MappingProxyType({key: ValueMapping(value, unwrap=True) for key, value in run.scope_outputs.items()}))
         counters = {state: sum(task.state == state for task in all_tasks) for state in _TERMINAL}
         counters.update(physical_work=run.physical_work_count, logical_uses=run.logical_use_count)
         for scope in run.scopes_started - run.scopes_finished:

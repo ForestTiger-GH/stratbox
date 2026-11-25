@@ -10,6 +10,7 @@ from decimal import Decimal
 import json
 
 from stratbox.shared.data.observations import MetricRef, Observation, ObservationBatch, PeriodRef, SubjectRef
+from stratbox.shared.data.assessment import assessment_value, evidence_from
 from stratbox.shared.data.processing import DataContract
 from stratbox.shared.data.source_context import source_use_value, source_use_from
 from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
@@ -18,9 +19,10 @@ from stratbox.shared.identity import canonical_manifest_bytes
 
 OBSERVATION_SNAPSHOT = DataContract("observations.batch.snapshot", 1)
 _T, _I, _D, _N = ScalarType.TEXT, ScalarType.INTEGER, ScalarType.DATE, ScalarType.DECIMAL
-_METADATA = TableSchema(DataContract("observations.batch.metadata", 2), (
+_METADATA = TableSchema(DataContract("observations.batch.metadata", 3), (
     ColumnSchema("dataset_id", _T), ColumnSchema("schema_version", _I), ColumnSchema("release_id", _T),
     ColumnSchema("source_uses", _T),
+    ColumnSchema("evidence", _T),
 ))
 _OBSERVATIONS = TableSchema(DataContract("observations.batch.rows", 1), tuple(ColumnSchema(*spec) for spec in (
     ("ordinal", _I), ("subject_namespace", _T), ("subject_id", _T), ("metric_id", _T), ("unit", _T),
@@ -72,7 +74,8 @@ def observation_snapshot(batch: ObservationBatch, *, dataset_id=None, version_id
     return DatasetSnapshot.build(dataset_id if dataset_id is not None else batch.dataset_id,
         version_id if version_id is not None else batch.release_id, OBSERVATION_SNAPSHOT,
         (("metadata", TypedTable(_METADATA, ((batch.dataset_id, batch.schema_version, batch.release_id,
-            canonical_manifest_bytes({"uses": [source_use_value(use) for use in batch.source_uses]}).decode("utf-8")),))),
+            canonical_manifest_bytes({"uses": [source_use_value(use) for use in batch.source_uses]}).decode("utf-8"),
+            canonical_manifest_bytes({"evidence": assessment_value(batch.evidence)}).decode("utf-8")),))),
          ("observations", TypedTable(_OBSERVATIONS, tuple(rows)))),
         coverage=_COVERAGE, inputs=batch.lineage)
 
@@ -121,7 +124,7 @@ def observations_from_snapshot(snapshot: DatasetSnapshot) -> ObservationBatch:
         records.append(Observation(SubjectRef(namespace,subject_id),
             MetricRef(metric_id,unit,quantity,definition,scale), PeriodRef(period_kind,as_of,start,end),
             _dimensions(dimensions),perimeter,value,status,evidence,raw))
-    dataset, schema_version, release, context=snapshot.table("metadata").rows[0]
+    dataset, schema_version, release, context, assessment=snapshot.table("metadata").rows[0]
     try:
         source_uses=json.loads(context)
         if not isinstance(source_uses, dict) or set(source_uses) != {"uses"} or not isinstance(source_uses["uses"], list):
@@ -129,7 +132,14 @@ def observations_from_snapshot(snapshot: DatasetSnapshot) -> ObservationBatch:
         uses=tuple(source_use_from(use) for use in source_uses["uses"])
     except (ValueError, TypeError, KeyError):
         raise ValueError("observations.source_uses_invalid") from None
-    batch=ObservationBatch(dataset,schema_version,release,tuple(records),snapshot.manifest.inputs,uses)
+    try:
+        assessment = json.loads(assessment)
+        if not isinstance(assessment, dict) or set(assessment) != {"evidence"}:
+            raise ValueError
+        evidence = evidence_from(assessment["evidence"]) if assessment["evidence"] is not None else None
+    except (ValueError, TypeError, KeyError):
+        raise ValueError("observations.evidence_invalid") from None
+    batch=ObservationBatch(dataset,schema_version,release,tuple(records),snapshot.manifest.inputs,uses,evidence)
     rebuilt=observation_snapshot(batch,dataset_id=snapshot.manifest.dataset_id,version_id=snapshot.manifest.version_id)
     if rebuilt.identity != snapshot.identity:
         raise ValueError("observations.snapshot_identity_mismatch")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Mapping, TYPE_CHECKING
-from ._validation import CompositionError, _mapping
+from ._validation import CompositionError, _mapping, _name
 if TYPE_CHECKING:
     from .models import ScenarioDefinition, Condition, SourceSelection, CollectSpec, RetryPolicy
 
@@ -12,10 +12,46 @@ def _retry_policy():
     return RetryPolicy()
 
 @dataclass(frozen=True, slots=True)
+class ScopeOutputRef:
+    """A named promise owned by one capability acceptance boundary."""
+    scope_id: str
+    port: str = "value"
+    task_id: str | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.scope_id,str) or not self.scope_id or any(part in {"",".",".."} for part in self.scope_id.split("/")):
+            raise CompositionError("composition.invalid_scope")
+        _name(self.port)
+        if self.task_id is not None and (not isinstance(self.task_id,str) or not self.task_id):
+            raise CompositionError("composition.invalid_reference")
+
+    @property
+    def task(self):
+        return self.task_id or self.scope_id + "/accept"
+
+    @property
+    def item(self):
+        return None
+
+
+def task_conditions(task):
+    """Return the conjunction retained by canonical and transitional tasks."""
+    result = []
+    for condition in ((task.condition,) if task.condition is not None else ()) + task.conditions:
+        if condition not in result:
+            result.append(condition)
+    return tuple(result)
+
+
+@dataclass(frozen=True, slots=True)
 class CanonicalMapTemplate:
     capability_id: str
     outputs: tuple[str, ...]
     catalog_fingerprint: str
+    selection: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self):
+        object.__setattr__(self,"selection",_mapping(self.selection))
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +84,7 @@ class PlanScope:
     output_contracts: Mapping[str, object] = field(default_factory=dict)
     acceptance: object | None = None
     membership: object | None = None
+    conditions: tuple[Condition, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "expenditure", _mapping(self.expenditure))
@@ -82,6 +119,9 @@ class CompiledTask:
     work_identity: str | None = None
     reuse_eligible: bool = False
     acceptance_scope: str | None = None
+    conditions: tuple[Condition, ...] = ()
+    reuse_contract: object | None = None
+    reuse_identity: object | None = None
 
     def __post_init__(self):
         for name in ("inputs", "parameters", "resources"):

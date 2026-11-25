@@ -75,6 +75,9 @@ class OrchestrationJournal:
         self._observer_dropped = self._observer_failed = 0
         self._observer_bytes = 0
         self._pending_transitions = {}
+        self._publication_capacity = max_pending_runs
+        self._publication_credits = {}
+        self._effect_claims = {}
         self._publication_failures = 0
         self._sink = telemetry_sink
         self._queue = Queue(maxsize=observer_queue_size)
@@ -120,12 +123,57 @@ class OrchestrationJournal:
                 self._thread = Thread(target=self._observe, name="stratbox-observer", daemon=True)
                 self._thread.start()
 
-    def reserve_run(self, run_id: str) -> None:
+    def reserve_publications(self, owner: str, count: int) -> None:
+        """Reserve bounded outbox capacity before admitting promised work."""
+        from stratbox.shared.identifiers import safe_token
+        safe_token(owner)
+        if type(count) is not int or count < 0:
+            raise ValueError("orchestration.publication_claim_invalid")
+        if count > self._publication_capacity:
+            raise ValueError("orchestration.publication_unsatisfiable")
+        with self._lock:
+            self.flush_transitions()
+            facts = sum(record.kind in {"value.accepted", "effect.confirmed"}
+                        for record in self._pending_transitions.values())
+            if facts + sum(self._publication_credits.values()) + count > self._publication_capacity:
+                raise ValueError("orchestration.publication_capacity")
+            if count:
+                self._publication_credits[owner] = self._publication_credits.get(owner, 0) + count
+
+    def release_publications(self, owner: str) -> None:
+        """Unused credits expire; committed immutable obligations remain."""
+        with self._lock:
+            self._publication_credits.pop(owner, None)
+            for key in tuple(self._effect_claims):
+                if key[0] == owner:
+                    del self._effect_claims[key]
+
+    def admit_effect(self, correlation, kind, effect_id, *, allowance=0):
+        """Admit additional receipts before a variable-size provider mutation."""
+        if kind.startswith(("notification.", "notifications.")):
+            return
+        key = correlation.run_id, correlation.task_id
+        identity = kind, effect_id
+        with self._lock:
+            claims = self._effect_claims.setdefault(key, set())
+            if identity in claims:
+                return
+            if len(claims) >= allowance:
+                self.reserve_publications(correlation.run_id, 1)
+            claims.add(identity)
+
+    def reserve_run(self, run_id: str, *, publications: int = 0) -> None:
         self.flush_transitions()
-        self.source.reserve(run_id)
+        self.reserve_publications(run_id, publications)
+        try:
+            self.source.reserve(run_id)
+        except Exception:
+            self.release_publications(run_id)
+            raise
 
     def release_run(self, run_id: str) -> None:
         self.source.release(run_id)
+        self.release_publications(run_id)
 
     def acknowledge(self, through_offset: int) -> None:
         self.source.acknowledge(through_offset)
@@ -239,11 +287,23 @@ class OrchestrationJournal:
                 pending = self._pending_transitions[record.record_id]
                 self.flush_transitions()
                 return pending
-            # Capacity admission happens before publishing a promised fact.
-            # The caller can retain accepted computation even if this separate
-            # observation obligation cannot be admitted.
-            if not self.facts_source.has_reservation(key):
-                self.facts_source.reserve(key)
+            if len(encode_record(record)) > 8192:
+                raise ValueError("journal.terminal_record_too_large")
+            # Commit the publication obligation before touching the journal.
+            # Its pre-admitted outbox credit survives a full journal or failed
+            # append; acknowledgement later allows the same fact to flush.
+            owner = record.correlation.run_id
+            credits = self._publication_credits.get(owner, 0)
+            if not credits:
+                # Direct producers reserve before changing their own accepted
+                # state. Session producers reserve their whole admitted slice.
+                self.reserve_publications(owner or key, 1)
+                owner = owner or key
+                credits = self._publication_credits[owner]
+            if credits == 1:
+                self._publication_credits.pop(owner, None)
+            else:
+                self._publication_credits[owner] = credits - 1
             self._pending_transitions[record.record_id] = record
             self.flush_transitions()
             self._capture(record)
@@ -256,6 +316,9 @@ class OrchestrationJournal:
             for identity, record in tuple(self._pending_transitions.items()):
                 try:
                     if record.kind in {"value.accepted", "effect.confirmed"}:
+                        key = "fact." + record.fact_id
+                        if not self.facts_source.has_reservation(key) and self.facts_source.lookup(key) is None:
+                            self.facts_source.reserve(key)
                         self.facts_source.append_fact(record)
                     else:
                         self.source.append_terminal(record)
@@ -330,7 +393,7 @@ class OrchestrationJournal:
             return OrchestrationHealth(self._emitted, len(self._records), self._evicted,
                                        self._observer_dropped, self._observer_failed,
                                        self.source.pending + self.facts_source.pending,
-                                       self.source.reserved + self.facts_source.reserved,
+                                       self.source.reserved + self.facts_source.reserved + sum(self._publication_credits.values()),
                                        "incomplete" if self._evicted or self._observer_dropped or self._observer_failed
                                        or self._publication_failures or self._pending_transitions
                                        else "complete", len(self._pending_transitions), self._publication_failures)

@@ -8,6 +8,13 @@ from stratbox.capabilities.model import CapabilityDefinition, GraphBody, declara
 from stratbox.capabilities.model.graph import frozen_mapping
 
 
+def _tokens(values):
+    if not isinstance(values, tuple) or len(set(values)) != len(values):
+        raise ValueError("catalog.invalid_dependencies")
+    for value in values:
+        safe_token(value)
+
+
 @dataclass(frozen=True, slots=True)
 class MethodDefinition:
     method_id: str
@@ -20,6 +27,8 @@ class MethodDefinition:
     fixed: Mapping[str, object] = field(default_factory=dict)
     selection: Mapping[str, object] = field(default_factory=dict)
     priority: int = 0
+    schema_ids: tuple[str, ...] = ()
+    reference_ids: tuple[str, ...] = ()
 
     def __post_init__(self):
         safe_token(self.method_id)
@@ -28,6 +37,8 @@ class MethodDefinition:
             raise ValueError("catalog.invalid_method")
         for name in ("defaults", "fixed", "selection"):
             object.__setattr__(self, name, frozen_mapping(getattr(self, name)))
+        for values in (self.group_ids, self.profile_ids, self.schema_ids, self.reference_ids):
+            _tokens(values)
 
     @property
     def fingerprint(self):
@@ -41,12 +52,16 @@ class ProfileDefinition:
     revision: str = "1"
     method_id: str | None = None
     group_id: str | None = None
+    schema_ids: tuple[str, ...] = ()
+    reference_ids: tuple[str, ...] = ()
 
     def __post_init__(self):
         safe_token(self.profile_id)
         if not self.revision:
             raise ValueError("catalog.profile_revision_required")
         object.__setattr__(self, "data", frozen_mapping(self.data))
+        for values in (self.schema_ids, self.reference_ids):
+            _tokens(values)
 
     @property
     def fingerprint(self):
@@ -67,6 +82,8 @@ class ProcessingGroup:
 
     def __post_init__(self):
         safe_token(self.group_id)
+        for values in (self.source_ids, self.representations, self.editions):
+            _tokens(values)
         for name in ("methods", "profiles", "defaults", "fixed", "selection"):
             object.__setattr__(self, name, frozen_mapping(getattr(self, name)))
 
@@ -77,6 +94,10 @@ class ProcessingGroup:
                 return False
         return all(selection.get(key) == value for key, value in self.selection.items())
 
+    @property
+    def fingerprint(self):
+        return declaration_fingerprint(self)
+
 
 @dataclass(frozen=True, slots=True)
 class RecipeDefinition:
@@ -86,12 +107,19 @@ class RecipeDefinition:
     selection: Mapping[str, object] = field(default_factory=dict)
     defaults: Mapping[str, object] = field(default_factory=dict)
     priority: int = 0
+    revision: str = "1"
 
     def __post_init__(self):
         for value in (self.recipe_id, self.goal, self.capability_id):
             safe_token(value)
         object.__setattr__(self, "selection", frozen_mapping(self.selection))
         object.__setattr__(self, "defaults", frozen_mapping(self.defaults))
+        if not isinstance(self.revision, str) or not self.revision or type(self.priority) is not int:
+            raise ValueError("catalog.invalid_recipe")
+
+    @property
+    def fingerprint(self):
+        return declaration_fingerprint(self)
 
 
 @dataclass(frozen=True, slots=True)

@@ -30,8 +30,20 @@ def row_profile(sheet="Debt", dataset="fixture.debt", **overrides):
     return {"sheet": sheet, "dataset_id": dataset, "release_id": "2026-10-01",
         "subject_column": 0, "value_column": 1, "header_rows": 1,
         "metric_id": dataset, "unit": "RUB", "quantity_kind": "stock",
+        "definition_version": "fixture.v1", "scale": "1",
         "period_kind": "as_of", "as_of": "2026-10-01", "perimeter": "banking",
         "expected_headers": {"0": "Region", "1": "Value"}, **overrides}
+
+
+def ratio_pair(**overrides):
+    def operand(dataset):
+        return {"dataset_id": dataset, "metric_id": dataset, "unit": "RUB", "quantity_kind": "stock",
+            "definition_version": "fixture.v1", "scale": "1"}
+    return {"id": "fixture.debt_share", "revision": "1",
+        "rationale": "Debt divided by the matching regional total on the same source basis.",
+        "numerator": operand("fixture.debt"), "denominator": operand("fixture.total"),
+        "result": {"metric_id": "fixture.debt_share", "unit": "ratio", "quantity_kind": "ratio", "scale": "1"},
+        "period_policy": "equal", "origin_policy": "common_material", "release_policy": "same", **overrides}
 
 
 @pytest.fixture

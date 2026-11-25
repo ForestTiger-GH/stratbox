@@ -108,7 +108,7 @@ class StrategyBox:
             return self._session
 
     def prepare(self, capability, *, inputs=None, parameters=None, outputs=None,
-                supplied_outputs=None, method_id=None, profile_id=None, group_id=None):
+                supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):
         """Resolve a canonical exact invocation and its complete obligations."""
         from stratbox.composition.prepare import prepare_invocation
         self._check_open()
@@ -122,7 +122,7 @@ class StrategyBox:
         return prepare_invocation(capability, self.capabilities, self.operations,
             inputs=inputs, parameters=parameters, outputs=outputs,
             supplied_outputs=supplied_outputs, method_id=method_id,
-            profile_id=profile_id, group_id=group_id)
+            profile_id=profile_id, group_id=group_id, selection=selection, recipe_id=recipe_id)
 
     def discover(self, **filters):
         """Browse one metadata projection with explicit migration readiness."""
@@ -138,34 +138,36 @@ class StrategyBox:
         self._check_open()
         return prepare_goal(goal, self.capabilities, self.operations, **options)
 
-    def compile(self, definition, *, inputs=None, parameters=None, outputs=None):
+    def compile(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None):
         from stratbox.composition import compile_workflow
         from stratbox.capabilities.model import CapabilityDefinition
         from stratbox.composition.requests import InvocationRequest, GoalRequest
         self._check_open()
         if isinstance(definition, GoalRequest):
-            if inputs is not None or parameters is not None or outputs is not None:
+            if any(value is not None for value in (inputs, parameters, outputs, selection)):
                 raise ValueError("composition.request_already_bound")
             return self.prepare_goal(definition)
         if isinstance(definition, (str, CapabilityDefinition, InvocationRequest)):
-            return self.prepare(definition, inputs=inputs, parameters=parameters, outputs=outputs)
+            return self.prepare(definition, inputs=inputs, parameters=parameters, outputs=outputs, selection=selection)
+        if selection is not None:
+            raise ValueError("composition.canonical_selection_required")
         return compile_workflow(definition, self.operations, inputs=inputs,
                                 parameters=parameters, outputs=outputs)
 
-    def submit(self, definition, *, inputs=None, parameters=None, outputs=None):
+    def submit(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None):
         from stratbox.composition import ExecutionPlan
         self._check_open()
         if isinstance(definition, ExecutionPlan):
-            if inputs is not None or parameters is not None or outputs is not None:
+            if any(value is not None for value in (inputs, parameters, outputs, selection)):
                 raise ValueError("sdk.compiled_plan_already_bound")
             plan = definition
         else:
-            plan = self.compile(definition, inputs=inputs, parameters=parameters, outputs=outputs)
+            plan = self.compile(definition, inputs=inputs, parameters=parameters, outputs=outputs, selection=selection)
         return self.session.submit(plan)
 
-    def run(self, definition, *, inputs=None, parameters=None, outputs=None, timeout=None):
+    def run(self, definition, *, inputs=None, parameters=None, outputs=None, timeout=None, selection=None):
         return self.submit(definition, inputs=inputs, parameters=parameters,
-                           outputs=outputs).result(timeout)
+                           outputs=outputs, selection=selection).result(timeout)
 
     def workflow(self, operation_id, *, inputs=None, parameters=None):
         """Bind a callable capability as a reusable explicit scenario."""
@@ -184,12 +186,12 @@ class StrategyBox:
         return workflow
 
     def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None,
-               outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None):
+               outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):
         """Invoke any canonical kind through the common session service."""
         from stratbox.capabilities.model import CapabilityDefinition
         from stratbox.composition.requests import InvocationRequest, GoalRequest
         if isinstance(operation_id, GoalRequest):
-            if any(value is not None for value in (inputs, parameters, outputs, supplied_outputs, method_id, profile_id, group_id)):
+            if any(value is not None for value in (inputs, parameters, outputs, supplied_outputs, method_id, profile_id, group_id, selection, recipe_id)):
                 raise ValueError("composition.request_already_bound")
             return self.run(self.prepare_goal(operation_id), timeout=timeout)
         canonical = isinstance(operation_id, (CapabilityDefinition, InvocationRequest))
@@ -201,8 +203,11 @@ class StrategyBox:
                 pass
         if canonical:
             plan = self.prepare(operation_id, inputs=inputs, parameters=parameters, outputs=outputs,
-                supplied_outputs=supplied_outputs, method_id=method_id, profile_id=profile_id, group_id=group_id)
+                supplied_outputs=supplied_outputs, method_id=method_id, profile_id=profile_id, group_id=group_id,
+                selection=selection, recipe_id=recipe_id)
             return self.run(plan, timeout=timeout)
+        if any(value is not None for value in (selection, recipe_id, method_id, profile_id, group_id, supplied_outputs, outputs)):
+            raise ValueError("composition.canonical_binding_required")
         return self.run(self.workflow(operation_id, inputs=inputs, parameters=parameters),
                         timeout=timeout)
 

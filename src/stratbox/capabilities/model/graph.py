@@ -66,6 +66,12 @@ class Condition:
         safe_token(self.step)
         safe_token(self.port)
         object.__setattr__(self, "equals", _freeze(self.equals))
+        if (not isinstance(self.statuses, tuple) or any(status not in {
+                "succeeded", "partial", "failed", "cancelled", "unknown", "blocked", "skipped"
+                } for status in self.statuses)):
+            raise ValueError("capability.invalid_condition_status")
+        if not isinstance(self.field, str):
+            raise ValueError("capability.invalid_condition")
         if any(not part.isidentifier() or part.startswith("_") for part in self.field.split(".") if self.field):
             raise ValueError("capability.invalid_condition")
 
@@ -93,12 +99,14 @@ class Call:
     method_id: str | None = None
     profile_id: str | None = None
     group_id: str | None = None
+    selection: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self):
         safe_token(self.step_id)
         safe_token(self.capability_id)
         object.__setattr__(self, "inputs", frozen_mapping(self.inputs))
         object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
+        object.__setattr__(self, "selection", frozen_mapping(self.selection))
         if not isinstance(self.depends_on, tuple) or type(self.required) is not bool:
             raise ValueError("capability.invalid_call")
         for dependency in self.depends_on:
@@ -151,6 +159,8 @@ class MapCall:
     depends_on: tuple[str, ...] = ()
     contract: object | None = None
     max_items: int | None = None
+    selection: Mapping[str, object] = field(default_factory=dict)
+    condition: Condition | None = None
 
     def __post_init__(self):
         safe_token(self.step_id)
@@ -159,10 +169,13 @@ class MapCall:
         object.__setattr__(self, "inputs", frozen_mapping(self.inputs))
         object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
         object.__setattr__(self, "items", _freeze(self.items))
+        object.__setattr__(self, "selection", frozen_mapping(self.selection))
         if self.window is not None and (type(self.window) is not int or self.window < 1):
             raise ValueError("capability.invalid_map_window")
         if self.max_items is not None and (type(self.max_items) is not int or self.max_items < 0):
             raise ValueError("capability.invalid_map_limit")
+        if self.condition is not None and not isinstance(self.condition, Condition):
+            raise ValueError("capability.invalid_condition")
         if type(self.required) is not bool or type(self.allow_partial) is not bool or not isinstance(self.depends_on, tuple):
             raise ValueError("capability.invalid_map")
         if self.key_field is not None and (not self.key_field.isidentifier() or self.key_field.startswith("_")):
@@ -183,6 +196,7 @@ class CollectCall:
     allow_empty: bool = False
     depends_on: tuple[str, ...] = ()
     required: bool = True
+    condition: Condition | None = None
 
     def __post_init__(self):
         safe_token(self.step_id)
@@ -197,3 +211,5 @@ class CollectCall:
             raise ValueError("capability.invalid_collection")
         if not isinstance(self.depends_on, tuple):
             raise ValueError("capability.invalid_collection")
+        if self.condition is not None and not isinstance(self.condition, Condition):
+            raise ValueError("capability.invalid_condition")

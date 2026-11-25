@@ -4,7 +4,7 @@ from stratbox.core.execution.session import ExecutionSettings
 from stratbox.core.storage.bytes import file_identity
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.sdk import StrategyBox
-from .conftest import row_profile
+from .conftest import row_profile, ratio_pair
 
 
 def test_lost_save_reply_reconciles_from_retained_product_without_reextract(profiled_catalog, two_tables, tmp_path, monkeypatch):
@@ -27,7 +27,7 @@ def test_lost_save_reply_reconciles_from_retained_product_without_reextract(prof
                      settings=ExecutionSettings(max_workers=1)) as box:
         failed = box.invoke('cascade.observation_package', inputs={'material': two_tables}, parameters={
             'numerator_profile': row_profile(), 'denominator_profile': row_profile('Total', 'fixture.total'),
-            'destination': 'ratio.csv'}, timeout=15)
+            'destination': 'ratio.csv', 'pair': ratio_pair()}, timeout=15)
         assert failed.outcome == 'unknown'
         assert (tmp_path / 'ratio.csv').exists()
         assert failed.scope_outputs['cascade.observation_package/ratio/calculate']['observations'].observations

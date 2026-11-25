@@ -285,13 +285,25 @@ def project_output(result: OperationResult, output_name: str) -> ProjectedOutput
         )
         if not written and not read_back:
             raise HandoffError("handoff.storage_confirmation_missing")
+    qualifications, coverage = port.qualifications, port.coverage
+    if port.evidence_policy == "value":
+        from stratbox.shared.data.assessment import value_evidence
+        assessment = value_evidence(value)
+        qualifications = assessment.qualifications
+        if "storage.confirmed" in port.qualifications and (written or read_back):
+            qualifications = qualifications | {"storage.confirmed"}
+        coverage = assessment.coverage.facts if assessment.coverage is not None else frozenset()
+        if not port.qualifications <= qualifications:
+            raise HandoffError("acceptance.qualification_missing")
+        if not port.coverage <= coverage:
+            raise HandoffError("acceptance.coverage_missing")
     from stratbox.core.execution.value_context import value_context
     carrier = (_project(result.value, port.source_context_path)
         if port.source_context_path is not None else value)
     return ProjectedOutput(
         OperationKey(result.operation_id),
         result.invocation_id, port.name, port.contract, result.outcome, value,
-        port.qualifications, port.coverage, result.used_inputs, result.effects,
+        qualifications, coverage, result.used_inputs, result.effects,
         result.computation, identity,
         value_context(carrier, port.contract if port.source_context_path is None else None),
     )

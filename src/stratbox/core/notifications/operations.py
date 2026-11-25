@@ -47,54 +47,55 @@ def _combine(prior: PreparationReport | None, page: PreparationReport) -> Prepar
     )
 
 
-def prepare(request: PrepareRequest, *, runtime: NotificationRuntime, context: ExecutionContext | None = None):
-    def work(req, invocation):
-        if runtime.paused:
-            raise OperationFailure("notification.processing_paused")
-        invocation.stage("load_checkpoint")
-        initial = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
-        report = None
-        for _ in range(req.max_pages):
-            invocation.check_cancelled()
-            for _ in range(3):
-                current = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
-                try:
-                    initial.head.check(current.cursor)
-                except JournalDecodeError as error:
-                    raise OperationFailure(error.code) from None
-                if current.cursor.last_offset > initial.target:
-                    raise OperationFailure("notification.checkpoint_conflict")
-                scope = replace(current, head=initial.head, target=initial.target)
-                invocation.stage("plan_page")
-                page, receipt = prepare_page(req, runtime, invocation, scope)
-                if receipt is None or receipt.state != "conflict":
-                    break
-            if receipt is not None and receipt.state in {"confirmed", "unknown"}:
-                invocation.effect(EffectReceipt(
-                    "notification.state_commit", receipt.state, effect_id=receipt.command_id,
-                    guarantee="atomic_state", reconciliation_owner="notification_state",
-                ))
-            if receipt is not None and receipt.state != "confirmed":
-                code = receipt.reason_code or "notification.state_commit_failed"
-                blocked = replace(page, checkpoint=scope.cursor, examined=0, matched=0, prepared=0,
-                                  duplicate=0, skipped=0, reasons=(), blocked_at=scope.cursor.last_offset + 1,
-                                  reason_code=code)
-                value = _combine(report, blocked)
-                outcome = "unknown" if receipt.state == "unknown" else "partial" if value.examined else "failed"
-                return Completion(value, outcome, code)
-            # A final no-op read needs no additional coverage claim.
-            if report is not None and page.examined == 0 and page.reason_code is None:
-                return report
-            report = _combine(report, page)
-            if report.reason_code is not None:
-                if report.reason_code == "notification.authority_unavailable" and not report.examined:
-                    return Completion(report, "unknown", report.reason_code)
-                return Completion(report, "partial" if report.examined else "failed", report.reason_code)
-            if report.caught_up:
+def prepare_work(req, runtime, invocation):
+    if runtime.paused:
+        raise OperationFailure("notification.processing_paused")
+    invocation.stage("load_checkpoint")
+    initial = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
+    report = None
+    for _ in range(req.max_pages):
+        invocation.check_cancelled()
+        for _ in range(3):
+            current = _load_scope(req, runtime, invocation.context, preview=False, invocation=invocation)
+            try:
+                initial.head.check(current.cursor)
+            except JournalDecodeError as error:
+                raise OperationFailure(error.code) from None
+            if current.cursor.last_offset > initial.target:
+                raise OperationFailure("notification.checkpoint_conflict")
+            scope = replace(current, head=initial.head, target=initial.target)
+            invocation.stage("plan_page")
+            page, receipt = prepare_page(req, runtime, invocation, scope)
+            if receipt is None or receipt.state != "conflict":
                 break
-        return report
+        if receipt is not None and receipt.state in {"confirmed", "unknown"}:
+            invocation.effect(EffectReceipt(
+                "notification.state_commit", receipt.state, effect_id=receipt.command_id,
+                guarantee="atomic_state", reconciliation_owner="notification_state",
+            ))
+        if receipt is not None and receipt.state != "confirmed":
+            code = receipt.reason_code or "notification.state_commit_failed"
+            blocked = replace(page, checkpoint=scope.cursor, examined=0, matched=0, prepared=0,
+                              duplicate=0, skipped=0, reasons=(), blocked_at=scope.cursor.last_offset + 1,
+                              reason_code=code)
+            value = _combine(report, blocked)
+            outcome = "unknown" if receipt.state == "unknown" else "partial" if value.examined else "failed"
+            return Completion(value, outcome, code)
+        # A final no-op read needs no additional coverage claim.
+        if report is not None and page.examined == 0 and page.reason_code is None:
+            return report
+        report = _combine(report, page)
+        if report.reason_code is not None:
+            if report.reason_code == "notification.authority_unavailable" and not report.examined:
+                return Completion(report, "unknown", report.reason_code)
+            return Completion(report, "partial" if report.examined else "failed", report.reason_code)
+        if report.caught_up:
+            break
+    return report
 
-    return run(PREPARE, request, work, context=context)
+
+def prepare(request: PrepareRequest, *, runtime: NotificationRuntime, context: ExecutionContext | None = None):
+    return run(PREPARE, request, lambda req, invocation: prepare_work(req, runtime, invocation), context=context)
 
 
 def deliver(

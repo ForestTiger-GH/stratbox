@@ -27,12 +27,47 @@ The session exposes `session.effects.lookup(run_id, scope_id, effect_id)` and
 receipt, ledger revision and current qualification. After competent provider
 read-back, `reconcile(..., expected_revision=record.revision)` accepts an exact
 confirmed or failed receipt. Reconciliation checks the effect kind, identity and
-ledger revision. `release_run(run_id)` releases known evidence after its owners
-finish; unresolved effects retain their obligation and capacity reservation.
+ledger revision. Finishing a physical attempt releases its attempt token.
+Closing `RunResult` releases that result's effect pins. Known unowned receipts
+move to bounded history; unknown effects retain independent recovery ownership.
+Reconciliation after the result closes can resolve and reclaim that obligation.
+`retain_run(run_id, owner)` and `release_owner(owner)` cover an independent
+cache/host owner that needs a receipt beyond the original result lifetime.
+`retention_snapshot()` reports live records, history, attempts, runs, unresolved
+effects and owner pins.
 
 Computation and saving have separate command results. A failed save can be
 prepared again from a retained representation. Extraction and calculation remain
 available through their accepted values and do not need to run again.
+
+## Explicit source revision policy
+
+Destination CAS and source freshness have separate contracts. Opaque source
+edition strings are compared for equality only. Run submission order and edition
+spelling establish no source ordering.
+
+A revisioned publication requires a registered `PublicationRevisionPolicy` for
+its receiving resource. The built-in `ExactCurrentRevisionPolicy` admits exactly
+one source revision and pinned input basis, selected by their domain/host owner:
+
+```python
+from stratbox.core.execution.effects import ExactCurrentRevisionPolicy
+from stratbox.core.storage.staging import storage_scope
+
+resource = storage_scope(store, "current.csv") + ":current.csv"
+policy = ExactCurrentRevisionPolicy(
+    "official.editions", source_revision="edition-Q", input_basis="basis-current"
+)
+box.session.effects.register_revision_policy(resource, policy)
+```
+
+A later invocation carrying another edition cannot replace the product even
+with a valid current storage revision. The policy guards source admission and
+the conditional provider callback together. The source owner advances the
+admitted pair with `admit_current(..., expected_revision=policy.revision)` after
+resolving edition semantics. A custom policy can supply a different explicit
+rule under the same atomic admission contract. Source admission also applies to
+reuse of an earlier confirmed receipt.
 
 ## Host replay contracts
 
@@ -81,6 +116,25 @@ Preparing an intent, accepting a handoff and observing channel delivery remain
 separate steps. Preparation neither sends a message nor advances another
 subscriber's cursor. An unknown handoff uses receipt reconciliation instead of a
 second handoff. Explicit replay and backfill retain their subscription policies.
+
+A graph can call `notify.saved` with the actual receipt from `save.product`
+and include that call in its `required_effects`. Preparation selects the exact
+retained confirmed-effect ID and content identity. `notify.accepted` selects the
+current run's accepted facts and can follow a producing scope through an explicit
+`depends_on` edge. A previous unrelated fact cannot satisfy a new required
+handoff. `source_run_id` explicitly selects a retained earlier run when needed.
+Both operations prepare persisted intents and execute `notification.handoff`
+through the same session and invocation infrastructure. Their `key` parameter
+selects the configured subscription checkpoint. An unknown required handoff keeps accepted
+computation and save outputs available. `notify.reconcile` consults the existing
+attempt receipt without a second send. Consumer acceptance and external channel
+delivery retain separate evidence.
+
+Notification dispatch scanning uses a bounded window controlled by
+`max_dispatches` and `after_position`. The independent `prepared` output carries
+`next_position` for explicit continuation. A strict required handoff with no
+matching intent fails visibly instead of claiming delivery. Intent and
+checkpoint transactions remain in their existing notification state store.
 
 ## Bounded observation and execution control
 

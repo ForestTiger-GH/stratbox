@@ -9,6 +9,7 @@ from stratbox.core.formats.spreadsheets.workbook_input import WorkbookError
 from stratbox.shared.data.workbook_cells import WorkbookCells
 from stratbox.shared.data.representation import Representation
 from stratbox.shared.data.scalars import encode_scalar
+from stratbox.shared.data.assessment import CoverageAssessment, ValueEvidence
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.identity import canonical_manifest_bytes
 
@@ -49,4 +50,12 @@ def workbook_readable(request: Mapping, invocation):
             raise OperationFailure("workbook.readable_size_limit")
         invocation.budget.check("output_bytes", size)
         chunks.append(chunk)
-    return Representation("workbook.readable.jsonl", 1, "application/x-ndjson", b"".join(chunks), "utf-8")
+    coverage = CoverageAssessment("workbook.physical:" + workbook.identity.sha256,
+        tuple(sheet.name for sheet in workbook.sheets), True,
+        tuple("sheet:" + sheet.name for sheet in workbook.sheets), source_identity=workbook.identity)
+    admitted = dict(getattr(invocation.context, "binding_identities", ()))
+    methods = tuple(sorted({value for key, value in admitted.items()
+        if key == "method" or key.startswith(("method:", "implementation:"))}))
+    evidence = ValueEvidence(frozenset({"readable.physical", "workbook.decoded", "formulas.unevaluated"}), coverage,
+        method_fingerprints=methods)
+    return Representation("workbook.readable.jsonl", 1, "application/x-ndjson", b"".join(chunks), "utf-8", evidence)

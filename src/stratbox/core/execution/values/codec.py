@@ -30,8 +30,13 @@ class PortableValue:
 
 def _encode(value, depth=0):
     from . import snapshot_of
+    from stratbox.shared.data.assessment import (
+        CoverageCoordinate, CoverageAssessment, ProcessingFinding, CalculationEvidence, ValueEvidence, assessment_value,
+    )
     if depth > 64:
         raise ValueError("value.snapshot_depth")
+    if isinstance(value, (CoverageCoordinate, CoverageAssessment, ProcessingFinding, CalculationEvidence, ValueEvidence)):
+        return ["assessment", {"kind": type(value).__name__, "value": assessment_value(value)}]
     if value is None or type(value) in {str, bool, int}:
         return ["scalar", value]
     if type(value) is float:
@@ -48,9 +53,11 @@ def _encode(value, depth=0):
         return ["source", {"data": base64.b64encode(value.data).decode("ascii"),
             "media_type": value.media_type, "source_id": value.source_id, "charset": value.charset}]
     if isinstance(value, Representation):
+        from stratbox.shared.data.assessment import assessment_value
         return ["representation", {"profile_id": value.profile_id, "version": value.version,
             "media_type": value.media_type, "encoding": value.encoding,
-            "data": base64.b64encode(value.data).decode("ascii")}]
+            "data": base64.b64encode(value.data).decode("ascii"),
+            "evidence": assessment_value(value.evidence) if value.evidence is not None else None}]
     if isinstance(value, WorkbookCells):
         for sheet in value.sheets:
             validate_sheet_cells(sheet)
@@ -83,6 +90,11 @@ def _decode(value, max_bytes, max_cells, depth=0, budget=None):
     if depth > 64 or not isinstance(value, list) or len(value) != 2:
         raise ValueError("value.snapshot_encoding_invalid")
     kind, data = value
+    if kind == "assessment":
+        from stratbox.shared.data.assessment import assessment_from
+        if not isinstance(data, dict) or set(data) != {"kind", "value"}:
+            raise ValueError("value.snapshot_encoding_invalid")
+        return assessment_from(data["kind"], data["value"])
     if kind == "scalar" and (data is None or type(data) in {str, bool, int}):
         return data
     if kind == "float" and isinstance(data, str):
@@ -98,9 +110,11 @@ def _decode(value, max_bytes, max_cells, depth=0, budget=None):
     if kind == "source" and isinstance(data, dict) and set(data) == {"data", "media_type", "source_id", "charset"}:
         return SourcePayload(base64.b64decode(data["data"], validate=True), data["media_type"],
             data["source_id"], charset=data["charset"])
-    if kind == "representation" and isinstance(data, dict) and set(data) == {"profile_id", "version", "media_type", "encoding", "data"}:
+    if kind == "representation" and isinstance(data, dict) and set(data) == {"profile_id", "version", "media_type", "encoding", "data", "evidence"}:
+        from stratbox.shared.data.assessment import evidence_from
         return Representation(data["profile_id"], data["version"], data["media_type"],
-            base64.b64decode(data["data"], validate=True), data["encoding"])
+            base64.b64decode(data["data"], validate=True), data["encoding"],
+            None if data["evidence"] is None else evidence_from(data["evidence"]))
     if kind == "workbook-cells":
         if not isinstance(data, dict) or set(data) != {"source_identity", "sheets"} or not isinstance(data["sheets"], list):
             raise ValueError("value.snapshot_encoding_invalid")

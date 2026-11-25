@@ -104,7 +104,8 @@ def test_retained_value_stops_upstream_expansion(snapshot):
     runtime = CapabilityRuntimeCatalog(snapshot)
     plan = prepare_invocation("calculate.double",snapshot,runtime,supplied_outputs={"value":12})
     assert len(plan.tasks) == 1 and plan.tasks[0].acceptance_scope == "calculate.double"
-    assert plan.outputs["value"] == 12
+    assert plan.outputs["value"].scope_id == "calculate.double"
+    assert plan.scopes[0].outputs["value"] == 12
     assert not runtime._definitions
 
 
@@ -114,7 +115,9 @@ def test_local_definition_and_goal_use_same_lowering(snapshot):
     runtime = CapabilityRuntimeCatalog(snapshot)
     exact = prepare_invocation("local.preview",snapshot,runtime)
     goal = prepare_goal(GoalRequest("preview.goal"),snapshot,runtime)
-    assert exact == goal
+    assert exact.tasks == goal.tasks and exact.outputs == goal.outputs
+    assert exact.selected_bindings["local.preview"]["recipe_id"] is None
+    assert goal.selected_bindings["local.preview"]["recipe_id"] == "preview.recipe"
     temporary = replace(local,capability_id="temporary.preview")
     assert prepare_invocation(temporary,snapshot,runtime).definition_id == temporary.capability_id
 
