@@ -64,3 +64,7 @@ The exact built wheel and sdist are inspected with scripts/inspect_reference_whe
 The final P11-R2 local suite passed in 322.77 seconds: 1,950 passed and 7 skipped. Import direction, release integrity, executable catalog admission, reference editions and maintained README checks passed. Exact wheel and sdist implementation/resource inventories were verified. The installed wheel ran the public offline example in a separate minimal environment outside the checkout; metadata discovery imported no numerical/workbook backend. No GitHub Actions were used.
 
 Validation identity, distribution digests and external scope limits are retained in validation.json. The implementation commit identifies the tested code; the subsequent report-only commit adds the updated validation records. The P11-R and P11-R2 reports map each confirmed audit item to its implementation and regression evidence. Journal-first subscriptions cover all four capability kinds, exact named outputs, aggregate completion and confirmed effects. The original 120 acceptance cases retain their scoped status: 49 implemented local slices, 67 planned and 4 external-pending.
+
+## 7. Canonical data-route checkpoint
+
+The P12-P18 implementation and its qualified publisher scope are recorded in [the route checkpoint](p12-p18/REPORT.md). All original declarations, source-stage cells, profiles and templates have canonical route dispositions. Publisher-edition evidence, absent financial models and later public/machine surfaces retain separate completion obligations.

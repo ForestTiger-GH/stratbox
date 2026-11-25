@@ -1,0 +1,1985 @@
+{
+  "schema": "stratbox.refactoring.acceptance-evidence.v1",
+  "scope": "P12-P18 supplemental local-session evidence; case-level review, not group-level discharge",
+  "baseline": "p00/acceptance.json",
+  "baseline_sha256": "53e1160f2b972eef0a29d56cec9b670706ae28922ecf27f874ad41f7d23294c5",
+  "baseline_changed": false,
+  "execution_verification": {
+    "status": "passed_final_frozen_code_tree",
+    "suite": "Complete repository pytest suite, independently confirmed by the root agent and its final run log.",
+    "result": {
+      "passed": 2075,
+      "skipped": 7,
+      "warnings": 7,
+      "duration_seconds": 521.92
+    },
+    "tested_code_tree": "98cb13bd803fb04161eaafbf4e76397166f5c3d8",
+    "local_implementation_commit": "d8383b0630ad78b144a6837f1bdc8d15e2da12b6",
+    "public_implementation_commit": "5c378dff57103c0f4655cbbc13e34ef87cb72bf1",
+    "test_log_sha256": "c1b5e5985771a7930c4f1f4ea7aab243218f1962b1a49e6d77cbffef353c9d78",
+    "test_log_summary": "2075 passed, 7 skipped, 7 warnings in 521.92s (0:08:41)",
+    "referenced_test_owner_hashes": {
+      "tests/integration/universal_core/test_fns_capabilities.py": {
+        "sha256": "4d40d5a77627daf7388a0e60a395230dcceed1e15cd21922a68e9710c1be8f64",
+        "size_bytes": 16042
+      },
+      "tests/unit/capabilities/test_generic_admission.py": {
+        "sha256": "9ec9591b2fcb3b4a0f8a93d2f3dc0d8d29ea5618c7e55c0cca23b30376d50ecd",
+        "size_bytes": 8320
+      },
+      "tests/unit/capabilities/test_standard_stages.py": {
+        "sha256": "547dc700c70060f40af9c97b0648eca46e3087bbb12d632a1a01abf2f15d1680",
+        "size_bytes": 19649
+      },
+      "tests/unit/cbr_capabilities/test_catalog_and_replay.py": {
+        "sha256": "c8d459393686ec38a582af5101a4026dcd7cc9f0e3bbb5247267c590c984d78c",
+        "size_bytes": 14326
+      },
+      "tests/unit/cbr_capabilities/test_sors_canonical.py": {
+        "sha256": "6892deafeb4f72081e559b96a9ab935b350363c965af5438eb27425877683a53",
+        "size_bytes": 11075
+      },
+      "tests/unit/composition/test_supplied_hierarchy.py": {
+        "sha256": "c1e84550dcd79975ab1f918f9b5498131317479c1bc8f771813afcf86321eb92",
+        "size_bytes": 11157
+      },
+      "tests/unit/execution/test_canonical_partial_ports.py": {
+        "sha256": "932cdf7ea2b6207559ae95abdb9a85cb85eb8e69cc24a079338932f7a75a9479",
+        "size_bytes": 2489
+      },
+      "tests/unit/frank_rg/test_capabilities.py": {
+        "sha256": "ac4c58a8ba9c51302d96625001049e8fb0dfbd4de8fb442a68dda094b3f82588",
+        "size_bytes": 17704
+      },
+      "tests/unit/minfin/test_canonical_capabilities.py": {
+        "sha256": "96f03c12a7f9089d0ab22f21850b0705c304e12f09cc3822a6d9520e7f5600e8",
+        "size_bytes": 17753
+      },
+      "tests/unit/rosstat/test_capability_routes.py": {
+        "sha256": "08ff7a2a3a258506fcca5bfbaf0e4a1abf6a91505c8be3faeba8bfeea1be6679",
+        "size_bytes": 15738
+      },
+      "tests/unit/rosstat/test_reviewed_editions.py": {
+        "sha256": "aff4271207583bde84864d7e506a7dbed560d52ade9b67b346308db8dcfba41d",
+        "size_bytes": 11286
+      }
+    },
+    "test_owners_equal_frozen_commit": true,
+    "publisher_online_execution": false,
+    "meaning": "verified_scoped confirms the cited assertions in the final frozen implementation tree, within each case-specific fixture/provider scope. It does not discharge publisher evidence, external surfaces or final P19-P21 obligations.",
+    "post_suite_distribution_confirmation": {
+      "status": "passed_as_reported_by_root",
+      "checks": [
+        "internal imports",
+        "release integrity",
+        "documentation links",
+        "executable registry admission",
+        "reference editions",
+        "wheel resources",
+        "sdist resources",
+        "installed cold catalog",
+        "ZIP cold catalog"
+      ],
+      "cold_catalog_definitions": 930,
+      "scope_limit": "Distribution smoke evidence does not by itself discharge all P20 obligations."
+    }
+  },
+  "status_definitions": {
+    "partial_evidence": "A new test exercises only a proper subset of the source case; the case remains open.",
+    "baseline_only": "Earlier scoped evidence remains authoritative; this review adds no new case-level assertion.",
+    "pending": "No direct new case-specific evidence establishes the requirement.",
+    "external_pending": "An external durable-host or actual MCP/application promise remains outside this local core evidence.",
+    "verified_scoped": "The cited regression assertions passed in the final frozen code tree and directly exercise the stated mechanism within the recorded local/fixture scope; full publisher or external guarantees are not inferred."
+  },
+  "counts": {
+    "total": 120,
+    "baseline": {
+      "implemented": 49,
+      "planned": 67,
+      "external-pending": 4
+    },
+    "supplemental": {
+      "baseline_only": 35,
+      "verified_scoped": 33,
+      "pending": 32,
+      "partial_evidence": 16,
+      "external_pending": 4
+    },
+    "new_planned_cases_with_direct_scoped_tests": 19,
+    "referenced_test_owners": 11
+  },
+  "publisher_scope": [
+    {
+      "domain": "cbr",
+      "evidence": "All 57 source IDs and 156 declaration dispositions resolve. Controlled tests cover a monetary workbook, escrow history and DBF field geometry for 134/803. The finite canonical SORS fixture retains ten required source publications and three portfolio constraint-variable sets through narrow projection; unavailable solver capability remains a qualified failure.",
+      "open": "Publisher historical layouts and economic/financial models for 134/803 remain separately unclosed. The SORS fixture uses a controlled physical-to-observation adapter and does not establish actual publisher parsing or broad publication-model coverage."
+    },
+    {
+      "domain": "fns",
+      "evidence": "SME literal JSON evidence, several constructed 1-YUR column epochs/formula evidence, source-local projections and retained replay use canonical commands.",
+      "open": "Deterministic historical-format fixtures establish their declared epochs; a universal proof of all publisher editions is not asserted."
+    },
+    {
+      "domain": "minfin",
+      "evidence": "Ten fiscal table identities and three NWF document routes execute against controlled fixtures; mixed units, YTD/stock semantics and explicit conversion provider contracts are retained.",
+      "open": "Actual reviewed economic fields across the three NWF publisher document series and a real external historical DOC conversion engine remain publisher/provider obligations."
+    },
+    {
+      "domain": "frank_rg",
+      "evidence": "All fourteen source IDs run the controlled workbook/profile route; exact geometry, anchors, periods, provenance and independent archive/cleanup effects are tested.",
+      "open": "The tests explicitly mark publisher_layouts_verified false. The fourteen licensed publisher semantic layouts are not established by source cards or synthetic workbooks."
+    },
+    {
+      "domain": "rosstat",
+      "evidence": "KEP2 eleven-indicator mixed-frequency and monthly product routes use a controlled workbook. Publisher-derived retained cell excerpts cover municipal population 2022/2023/2024 and selected industrial indices from the 2026-06 regional archive.",
+      "open": "Retained excerpts cover only the stated rows/years and preserve original identities by provenance; they are not complete publisher originals. Other regional tables and national-report PDF geometry require their own reviewed layouts."
+    }
+  ],
+  "later_phase_scope": {
+    "P19": "Final public SDK/ad-hoc/machine surface migration and protocol acceptance remain separately owned.",
+    "P20": "Distribution smoke checks are recorded separately in the release validation; full P20 packaging, documentation and optional-dependency acceptance remains separately owned.",
+    "P21": "Removal of all transitional owners and final full-inventory gate remain separately owned.",
+    "H01": "Actual durable host restart/recovery guarantees remain external.",
+    "H02": "Actual deployed MCP/application task service guarantees remain external."
+  },
+  "full_plan_closure": false,
+  "cases": [
+    {
+      "requirement_id": "H-AC01",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC02",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC03",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T02",
+        "T07"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_all_series_run_product_and_portable_replay_through_canonical_session"
+      ],
+      "claim": "A directly built source flake equals the flake produced inside its product scenario under the same explicit semantic profile.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled workbook and explicit fixture profile across the fourteen source identities; no publisher-layout verification is claimed.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC04",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/composition/test_supplied_hierarchy.py::test_same_scenario_definition_is_reused_by_two_live_cascades"
+      ],
+      "claim": "Two concurrent cascades reference one scenario definition and retain separate occurrences and logical source identities.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "In-process session with two explicitly authored cascade definitions.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "H-AC05",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/composition/test_supplied_hierarchy.py::test_reused_scenario_retains_occurrences_and_exact_input_version_vector"
+      ],
+      "claim": "Repeated scenario calls retain distinct scopes, parameters and input-version-dependent plan identities.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Two deterministic original-material occurrences in one cascade.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "H-AC06",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC07",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_supplied_kep2_flake_prunes_physical_read_and_retains_operation_scope",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_original_extract_and_snapshot_replay_use_one_canonical_session"
+      ],
+      "claim": "Supplied retained data bypasses physical decoding; local originals and retained source snapshots run through the canonical executor without acquisition.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled CBR and KEP2 materials; this does not establish every publisher edition.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC08",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T09",
+        "T13"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/integration/universal_core/test_fns_capabilities.py::test_sme_commands_preserve_literal_types_and_independent_projections",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_saved_layers_replay_without_reacquisition_or_decoding",
+        "tests/unit/capabilities/test_standard_stages.py::test_observations_and_view_roundtrip_preserves_all_semantic_properties"
+      ],
+      "claim": "A retained view reduces the selected closure to rendering and preserves observations and source/evidence metadata.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled FNS SME and generic observation/view contracts.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC09",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC10",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC11",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/minfin/test_canonical_capabilities.py::test_reviewed_layout_profile_changes_column_interpretation_and_pins_computation_identity"
+      ],
+      "claim": "One interpretation operation binds an alternate column layout through an explicit profile and pins that profile in preparation.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Reviewed deterministic budget fixture; the test does not claim coverage of unseen publication layouts.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC12",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC13",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC14",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC15",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_alignment_requires_exact_conversion_and_maps_coverage_coordinates",
+        "tests/unit/frank_rg/test_capabilities.py::test_reusable_layout_requires_exact_scope_geometry_anchors_and_explicit_periods",
+        "tests/unit/capabilities/test_generic_admission.py::test_operation_input_schema_is_enforced_before_a_wildcard_child"
+      ],
+      "claim": "Typed boundary admission and exact layout anchors reject wrong schemas or implicit unit/scale relabeling; declared conversion remaps coverage coordinates.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Explicit deterministic mappings and fixtures; no automatic scientific validation of arbitrary caller mappings.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC16",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T08"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC17",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T11"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/cbr_capabilities/test_sors_canonical.py::test_narrow_canonical_pivot_keeps_ten_sources_and_all_auxiliary_portfolio_constraints"
+      ],
+      "scope_limit": "One controlled region/class model. Ten XLSX identities are admitted through a monkeypatched physical-to-observation adapter; actual publisher parsing, unseen layouts and full publication-model coverage are outside this fixture.",
+      "proposal": "implemented_with_explicit_local_scope",
+      "claim": "A narrow canonical SORS pivot keeps all ten required source tables and the corporate, SME and SME_IE constraint-variable sets; the production strict compiler and solver retain the complete admitted finite model.",
+      "evidence_kind": "controlled_source_adapter_with_production_numerical_algorithms",
+      "later_scope": []
+    },
+    {
+      "requirement_id": "H-AC18",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T07",
+        "T10"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_complete_callable_scope_is_metadata_only_and_semantic_evidence_remains_qualified",
+        "tests/unit/frank_rg/test_capabilities.py::test_reusable_layout_requires_exact_scope_geometry_anchors_and_explicit_periods"
+      ],
+      "claim": "Semantic profiles retain synthetic-review qualifications and an unreviewed workbook receives no automatic publisher interpretation.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The exact case of a structurally valid but scientifically wrong custom analytical operation is not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "H-AC19",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC20",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC21",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T12"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC22",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC23",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T10"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC24",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T08"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC25",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC26",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T08"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC27",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC28",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC29",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC30",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC31",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC32",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC33",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/minfin/test_canonical_capabilities.py::test_document_routes_preserve_order_and_reviewed_mixed_units_without_source_reacquisition",
+        "tests/unit/rosstat/test_capability_routes.py::test_document_canonical_structure_is_required_for_reviewed_cells"
+      ],
+      "claim": "Decoded document text alone cannot pass a reviewed semantic mapping with missing anchors or table structure.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled DOCX and structured page-text fixtures, not publisher PDF geometry reconstruction.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC34",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T07"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_generic_admission.py::test_wildcard_preserves_qualification_and_outcome_requirements",
+        "tests/unit/capabilities/test_generic_admission.py::test_partial_command_value_cannot_escape_success_only_operation_output",
+        "tests/unit/execution/test_canonical_partial_ports.py::test_missing_success_only_port_does_not_destroy_qualified_partial_data"
+      ],
+      "claim": "Partial values remain inspectable while success-only outputs and stricter receiving outcome contracts reject their use.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Two simultaneous consumers of one shared partial dataset with different completeness policies are not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "H-AC35",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/composition/test_supplied_hierarchy.py::test_required_completion_survives_output_projection_without_blocking_early_output",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_product_keeps_accepted_extract_and_dataset_when_rendering_fails"
+      ],
+      "claim": "Independent accepted values remain usable after another required in-process worker fails; the parent run exposes the failure and absent outputs.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "In-process worker failure only. Process-loss durability remains outside this evidence.",
+      "later_scope": [
+        "H01"
+      ],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC36",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC37",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_stream_archive_reconciles_unknown_commit_without_repeating_extraction"
+      ],
+      "claim": "A provider that commits then loses acknowledgement leaves an unknown archive result with exact identity; a later verified attempt observes the already-present bytes.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled local staged-write provider. Economic extraction is outside this archive command; this is not process-loss recovery.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "H-AC38",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T14",
+        "T15"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC39",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T12"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC40",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC41",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC42",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "H-AC43",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T07"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/composition/test_supplied_hierarchy.py::test_live_catalog_addition_cannot_widen_frozen_selector_membership",
+        "tests/unit/composition/test_supplied_hierarchy.py::test_frozen_member_reference_survives_cascade_authoring_and_rejects_later_replacement"
+      ],
+      "claim": "A running cascade retains frozen member identities while the live SDK admits another matching scenario; stale member revisions are rejected.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "In-process live catalog mutation and deterministic gate.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "H-AC44",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T12",
+        "T15"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_original_transition_chain_preserves_return_to_previous_bytes"
+      ],
+      "claim": "A to B to A preserves a distinct transition chain while the final candidate reuses the initial byte identity.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Logical source-version transitions. Notification handoff semantics rely on their separate baseline evidence and are not reverified by this test.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT01",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_supplied_kep2_flake_prunes_physical_read_and_retains_operation_scope",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_original_extract_and_snapshot_replay_use_one_canonical_session"
+      ],
+      "claim": "Supplied retained data bypasses physical decoding; local originals and retained source snapshots run through the canonical executor without acquisition.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled CBR and KEP2 materials; this does not establish every publisher edition.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT02",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T09",
+        "T13"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/integration/universal_core/test_fns_capabilities.py::test_sme_commands_preserve_literal_types_and_independent_projections",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_saved_layers_replay_without_reacquisition_or_decoding",
+        "tests/unit/capabilities/test_standard_stages.py::test_observations_and_view_roundtrip_preserves_all_semantic_properties"
+      ],
+      "claim": "A retained view reduces the selected closure to rendering and preserves observations and source/evidence metadata.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled FNS SME and generic observation/view contracts.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT03",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT04",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T08"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT05",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT06",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T03"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT07",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT08",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T05",
+        "T07"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_reusable_layout_requires_exact_scope_geometry_anchors_and_explicit_periods",
+        "tests/unit/rosstat/test_reviewed_editions.py::test_population_unreviewed_header_and_issue_date_cannot_claim_supported_layout",
+        "tests/unit/rosstat/test_reviewed_editions.py::test_regional_edition_and_comparison_basis_are_reviewed_not_guessed"
+      ],
+      "claim": "Runtime geometry, unit-anchor, edition, source-code-system and comparison-basis mismatches receive explicit rejection instead of parser substitution.",
+      "evidence_kind": "controlled_layout_and_publisher_excerpt",
+      "scope_limit": "Specific reviewed fixture editions; future publisher formats remain unsupported until admitted.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "K-ACCEPT09",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T04"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT10",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT11",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT12",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T14"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT13",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT14",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T12"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT15",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT16",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT17",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT18",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT19",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT20",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T12"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT21",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_observations_and_view_roundtrip_preserves_all_semantic_properties",
+        "tests/unit/minfin/test_canonical_capabilities.py::test_document_routes_preserve_order_and_reviewed_mixed_units_without_source_reacquisition",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_all_member_form_fields_have_explicit_semantics_and_replay"
+      ],
+      "claim": "Zero, dash, withheld, blank, reported and reconstructed statuses and raw tokens survive the tested codecs and domain interpretations.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "No new single source-to-calculation fixture jointly covers every required source-specific missing/withheld/dash/zero policy across all migrated domains.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT22",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10",
+        "T11"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_alignment_rejects_colliding_grains_and_reference_editions_change_identity"
+      ],
+      "claim": "Alignment rejects exact target-grain collisions rather than silently adding records.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Exact grain collision is narrower than detection of overlapping national/district/subject aggregate populations in arbitrary analytical sums.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT23",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10",
+        "T12"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_comparison_distinguishes_source_revision_from_period_change"
+      ],
+      "claim": "Revision comparison and explicit period comparison retain distinct comparison kinds and observation differences.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled observation batches; source-specific publication revision policies retain their own scopes.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "K-ACCEPT24",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T12"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT25",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T08"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT26",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06",
+        "T08"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT27",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T14"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT28",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T15"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT29",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T12",
+        "T13"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/integration/universal_core/test_fns_capabilities.py::test_saved_layers_replay_without_reacquisition_or_decoding",
+        "tests/unit/rosstat/test_capability_routes.py::test_kep2_canonical_product_replays_all_frequencies_then_monthly_product"
+      ],
+      "claim": "Retained views or datasets support standalone rendering without original decoding and preserve numerical/source data.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The tests do not isolate a rendering-profile-only change and assert cross-run numerical computation reuse.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "K-ACCEPT30",
+      "baseline_status": "external-pending",
+      "guarantee_profile": "external_host",
+      "groups": [
+        "T18"
+      ],
+      "status": "external_pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT31",
+      "baseline_status": "external-pending",
+      "guarantee_profile": "external_host",
+      "groups": [
+        "T17"
+      ],
+      "status": "external_pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "K-ACCEPT32",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06",
+        "T12",
+        "T13"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC01",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T09"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_supplied_kep2_flake_prunes_physical_read_and_retains_operation_scope",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_original_extract_and_snapshot_replay_use_one_canonical_session"
+      ],
+      "claim": "Supplied retained data bypasses physical decoding; local originals and retained source snapshots run through the canonical executor without acquisition.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled CBR and KEP2 materials; this does not establish every publisher edition.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "D-AC02",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T08",
+        "T09"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_asset_admission_transfer_and_preservation_are_explicit_command_effects",
+        "tests/unit/capabilities/test_standard_stages.py::test_preserve_and_coherent_release_use_confirmed_bytes_and_effects"
+      ],
+      "claim": "Original acquisition/preservation has explicit command effects and verified stored bytes independently of extraction or products.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Deterministic publisher transport and local file provider.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC03",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T09"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_document_and_workbook_physical_replay_preserve_evidence",
+        "tests/unit/rosstat/test_capability_routes.py::test_document_canonical_structure_is_required_for_reviewed_cells"
+      ],
+      "claim": "Readable physical representations preserve tested text, cells, formula evidence and explicit document extraction scope.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "XLSX, TXT and controlled document blocks; PDF page text does not establish table geometry.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC04",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T07",
+        "T09"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC05",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T09",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_native_csv_roles_are_independent_and_portable_without_conversion",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_native_csv_admission_preserves_partial_scope_and_enables_independent_calculation"
+      ],
+      "claim": "Native CSV bytes receive independent declared roles without conversion; FNS CSV replay remains partial and supports a separate calculation run.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Generic structural schema admission and FNS qualified convenience CSV; no blanket claim that official publisher sources are native CSV.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC06",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T09",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/integration/universal_core/test_fns_capabilities.py::test_sme_commands_preserve_literal_types_and_independent_projections",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_historical_1yur_epochs_decode_and_align_through_command_bodies",
+        "tests/unit/minfin/test_canonical_capabilities.py::test_document_routes_preserve_order_and_reviewed_mixed_units_without_source_reacquisition"
+      ],
+      "claim": "Different source-local JSON, form-workbook and document schemas remain valid physical evidence and use explicit semantic adapters for integration.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled FNS epochs and Minfin document profiles, rather than all historical publisher layouts.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC07",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T07",
+        "T11"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC08",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T07",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_reusable_layout_requires_exact_scope_geometry_anchors_and_explicit_periods",
+        "tests/unit/rosstat/test_reviewed_editions.py::test_population_unreviewed_header_and_issue_date_cannot_claim_supported_layout",
+        "tests/unit/rosstat/test_reviewed_editions.py::test_regional_edition_and_comparison_basis_are_reviewed_not_guessed"
+      ],
+      "claim": "Runtime geometry, unit-anchor, edition, source-code-system and comparison-basis mismatches receive explicit rejection instead of parser substitution.",
+      "evidence_kind": "controlled_layout_and_publisher_excerpt",
+      "scope_limit": "Specific reviewed fixture editions; future publisher formats remain unsupported until admitted.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC09",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_observations_and_view_roundtrip_preserves_all_semantic_properties",
+        "tests/unit/minfin/test_canonical_capabilities.py::test_document_routes_preserve_order_and_reviewed_mixed_units_without_source_reacquisition",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_all_member_form_fields_have_explicit_semantics_and_replay"
+      ],
+      "claim": "Zero, dash, withheld, blank, reported and reconstructed statuses and raw tokens survive the tested codecs and domain interpretations.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "No new single source-to-calculation fixture jointly covers every required source-specific missing/withheld/dash/zero policy across all migrated domains.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC10",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_alignment_requires_exact_conversion_and_maps_coverage_coordinates",
+        "tests/unit/minfin/test_canonical_capabilities.py::test_document_routes_preserve_order_and_reviewed_mixed_units_without_source_reacquisition"
+      ],
+      "claim": "Explicit conversion and reviewed field mappings preserve measurement scale and mixed currencies.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The complete same-name/incompatible-definition analytical compatibility case is not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC11",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T01",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_alignment_retention_and_store_ingestion_are_independent"
+      ],
+      "claim": "Alignment returns an in-memory integrated batch independently of storage and preserves its mapping and reference editions through replay.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled generic mapping; memory and local file snapshot providers are tested, not an external database.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC12",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T10"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_generic_admission.py::test_source_specific_snapshot_flows_through_generic_ingestion_without_schema_loss"
+      ],
+      "claim": "Repeated ingestion of one already-retained logical snapshot returns the same immutable version identity.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "MemoryDatasetStore immutable-version idempotency. External database row-upsert policies are outside this test.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC13",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T11"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/cbr_capabilities/test_sors_canonical.py::test_narrow_canonical_pivot_keeps_ten_sources_and_all_auxiliary_portfolio_constraints"
+      ],
+      "scope_limit": "One controlled region/class model. Ten XLSX identities are admitted through a monkeypatched physical-to-observation adapter; actual publisher parsing, unseen layouts and full publication-model coverage are outside this fixture.",
+      "proposal": "implemented_with_explicit_local_scope",
+      "claim": "A narrow canonical SORS pivot keeps all ten required source tables and the corporate, SME and SME_IE constraint-variable sets; the production strict compiler and solver retain the complete admitted finite model.",
+      "evidence_kind": "controlled_source_adapter_with_production_numerical_algorithms",
+      "later_scope": []
+    },
+    {
+      "requirement_id": "D-AC14",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05",
+        "T07",
+        "T11"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/cbr_capabilities/test_sors_canonical.py::test_solver_backend_failure_is_qualified_and_keeps_full_nonaccepted_model"
+      ],
+      "scope_limit": "The unavailable-backend branch is exercised. Numerical resource exhaustion, interruption during an active solver and actual publisher parsing are outside this fixture.",
+      "proposal": "implemented_with_explicit_local_scope",
+      "claim": "An unavailable official solver backend returns failed/SOLVER_UNAVAILABLE, retains the ten-source nonaccepted model and all three portfolio scopes, marks no LP-certified inferred rows and exposes no successful result output.",
+      "evidence_kind": "controlled_backend_failure_with_production_model_preparation",
+      "later_scope": []
+    },
+    {
+      "requirement_id": "D-AC15",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T13"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_kep2_canonical_product_replays_all_frequencies_then_monthly_product"
+      ],
+      "claim": "A retained KEP2 integrated dataset produces the separate monthly XLSX product while original decoding is forbidden.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled eleven-indicator mixed-frequency KEP2 fixture.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC16",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T04",
+        "T12"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC17",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T12"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC18",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T12",
+        "T14"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC19",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10",
+        "T12"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC20",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T12",
+        "T15"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/integration/universal_core/test_fns_capabilities.py::test_capture_stamp_remains_independent_of_observation_and_publication_dates",
+        "tests/unit/capabilities/test_standard_stages.py::test_original_transition_chain_preserves_return_to_previous_bytes"
+      ],
+      "claim": "Capture, publication, observation dates and initial logical transition state remain distinct.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Historical-backfill versus live-publication notification selection is not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC21",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T05"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC22",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T12"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC23",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T10",
+        "T12"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_preserve_and_coherent_release_use_confirmed_bytes_and_effects"
+      ],
+      "claim": "A release rejects mismatched member version vectors, stale member revisions and wrong expected identities.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The tested barrier is product publication; acquisition of multiple required source assets while the publisher changes revision is not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC24",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T07",
+        "T08",
+        "T13"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_shared_preserve_ingest_query_and_publish_routes_accept_actual_frank_types",
+        "tests/unit/capabilities/test_standard_stages.py::test_preserve_and_coherent_release_use_confirmed_bytes_and_effects"
+      ],
+      "claim": "A named two-member release checks declared identities/version vectors before one confirmed manifest publication boundary.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Concurrent report builders and analytical expected-coverage fan-in are not directly exercised.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC25",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T06",
+        "T07",
+        "T18"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/composition/test_supplied_hierarchy.py::test_required_completion_survives_output_projection_without_blocking_early_output",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_product_keeps_accepted_extract_and_dataset_when_rendering_fails"
+      ],
+      "claim": "Independent accepted values remain usable after another required in-process worker fails; the parent run exposes the failure and absent outputs.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "In-process worker failure only. Process-loss durability remains outside this evidence.",
+      "later_scope": [
+        "H01"
+      ],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC26",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_stream_archive_reconciles_unknown_commit_without_repeating_extraction"
+      ],
+      "claim": "A provider that commits then loses acknowledgement leaves an unknown archive result with exact identity; a later verified attempt observes the already-present bytes.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Controlled local staged-write provider. Economic extraction is outside this archive command; this is not process-loss recovery.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "D-AC27",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T14"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC28",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T15"
+      ],
+      "status": "baseline_only",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC29",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T15"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC30",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T15"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC31",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T15"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC32",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T15"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC33",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T04",
+        "T12",
+        "T15"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_original_transition_chain_preserves_return_to_previous_bytes"
+      ],
+      "claim": "A to B to A preserves a distinct transition chain while the final candidate reuses the initial byte identity.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Logical source-version transitions. Notification handoff semantics rely on their separate baseline evidence and are not reverified by this test.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC34",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T09"
+      ],
+      "status": "pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC35",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10",
+        "T13"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_snapshot_query_is_typed_bounded_and_requires_the_pinned_identity",
+        "tests/unit/capabilities/test_standard_stages.py::test_preserve_and_coherent_release_use_confirmed_bytes_and_effects"
+      ],
+      "claim": "Typed queries require the pinned snapshot identity and publication checks an explicit member input-version vector.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The tests do not run a multi-query report concurrently with database updates; external snapshot/transaction guarantees remain provider-specific.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC36",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T10",
+        "T11",
+        "T13"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_observations_and_view_roundtrip_preserves_all_semantic_properties",
+        "tests/unit/capabilities/test_standard_stages.py::test_alignment_retention_and_store_ingestion_are_independent",
+        "tests/unit/rosstat/test_capability_routes.py::test_kep2_canonical_product_replays_all_frequencies_then_monthly_product"
+      ],
+      "claim": "Retained codecs preserve method/source evidence and reconstructed status; KEP2 derived growth remains distinct from unchanged reported observations.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "A new single end-to-end test does not ingest reported and derived results together and then assert every later-view inference qualification.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC37",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T16"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_all_neutral_declarations_have_resolving_dispositions",
+        "tests/unit/cbr_capabilities/test_catalog_and_replay.py::test_complete_source_and_method_inventory_has_canonical_routes",
+        "tests/unit/frank_rg/test_capabilities.py::test_complete_callable_scope_is_metadata_only_and_semantic_evidence_remains_qualified",
+        "tests/unit/rosstat/test_capability_routes.py::test_domain_catalog_is_lazy_complete_and_has_exact_source_recipes"
+      ],
+      "claim": "Source and stage obligations remain declared regardless of the selected execution closure.",
+      "evidence_kind": "metadata_and_deterministic_fixture",
+      "scope_limit": "Metadata/stage availability is separately qualified from publisher semantic-layout evidence.",
+      "later_scope": [],
+      "proposal": "implemented_with_explicit_local_scope"
+    },
+    {
+      "requirement_id": "D-AC38",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/frank_rg/test_capabilities.py::test_complete_callable_scope_is_metadata_only_and_semantic_evidence_remains_qualified",
+        "tests/unit/frank_rg/test_capabilities.py::test_reusable_layout_requires_exact_scope_geometry_anchors_and_explicit_periods"
+      ],
+      "claim": "Unverified publisher layouts remain explicitly marked and require a reviewed profile; callable infrastructure is not asserted to prove publisher semantics.",
+      "evidence_kind": "metadata_and_deterministic_fixture",
+      "scope_limit": "Coverage qualification is tested, but the exact missing-stage/readiness case is not. Generic profile-driven execution and publisher-specific semantic implementation remain separate claims; publisher-layout obligations stay open.",
+      "later_scope": [],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC39",
+      "baseline_status": "implemented",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T02",
+        "T16"
+      ],
+      "status": "verified_scoped",
+      "verification": [
+        "tests/unit/capabilities/test_generic_admission.py::test_source_specific_snapshot_flows_through_generic_ingestion_without_schema_loss",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_generic_dataset_query_connects_to_exact_fns_replay_and_validates_the_manifest",
+        "tests/unit/frank_rg/test_capabilities.py::test_stored_query_flows_to_exact_domain_replay_and_rejects_wrong_manifest",
+        "tests/unit/rosstat/test_reviewed_editions.py::test_stored_dataset_query_replays_through_generic_envelope_and_validates_family"
+      ],
+      "claim": "Shared ingestion/query and domain replay preserve exact source-specific manifests; wrong-domain manifests are rejected by the owning codec.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Generic typed snapshot envelope over local providers; all scientific publisher-layout claims remain separate.",
+      "later_scope": [],
+      "proposal": "retain_baseline_and_add_scoped_evidence"
+    },
+    {
+      "requirement_id": "D-AC40",
+      "baseline_status": "external-pending",
+      "guarantee_profile": "external_host",
+      "groups": [
+        "T16",
+        "T17"
+      ],
+      "status": "external_pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC41",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T03",
+        "T17"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/rosstat/test_capability_routes.py::test_supplied_kep2_flake_prunes_physical_read_and_retains_operation_scope",
+        "tests/integration/universal_core/test_fns_capabilities.py::test_native_csv_admission_preserves_partial_scope_and_enables_independent_calculation"
+      ],
+      "claim": "Core SDK consumers reuse retained extracts for independent integration, calculation or rendering without acquisition.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "A deployed autonomous AI/MCP tool surface is not exercised.",
+      "later_scope": [
+        "P19",
+        "H02"
+      ],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC42",
+      "baseline_status": "external-pending",
+      "guarantee_profile": "external_host",
+      "groups": [
+        "T17",
+        "T18"
+      ],
+      "status": "external_pending",
+      "verification": [],
+      "scope_limit": "No new case-specific P12-P18 evidence is asserted by this supplemental review.",
+      "proposal": "retain_baseline_status"
+    },
+    {
+      "requirement_id": "D-AC43",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T08",
+        "T17"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/execution/test_canonical_partial_ports.py::test_unknown_result_retains_prepared_value_without_successful_output_claim",
+        "tests/unit/frank_rg/test_capabilities.py::test_stream_archive_reconciles_unknown_commit_without_repeating_extraction"
+      ],
+      "claim": "Canonical in-process results retain unknown effect knowledge and prepared evidence without claiming successful usable outputs.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "Actual machine protocol serialization and external client handling are outside these tests.",
+      "later_scope": [
+        "P19",
+        "H02"
+      ],
+      "proposal": "remain_open_with_partial_evidence"
+    },
+    {
+      "requirement_id": "D-AC44",
+      "baseline_status": "planned",
+      "guarantee_profile": "local_session",
+      "groups": [
+        "T17"
+      ],
+      "status": "partial_evidence",
+      "verification": [
+        "tests/unit/capabilities/test_standard_stages.py::test_snapshot_query_is_typed_bounded_and_requires_the_pinned_identity"
+      ],
+      "claim": "A bounded selected table preview exposes source rows, continuation state and the pinned source snapshot identity.",
+      "evidence_kind": "deterministic_fixture",
+      "scope_limit": "The test does not exercise a machine tool response or result-reference delivery to an AI client.",
+      "later_scope": [
+        "P19",
+        "H02"
+      ],
+      "proposal": "remain_open_with_partial_evidence"
+    }
+  ]
+}

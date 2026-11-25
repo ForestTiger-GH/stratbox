@@ -1,0 +1,57 @@
+{
+  "schema": "stratbox.refactoring.validation.v1",
+  "date": "2026-11-25",
+  "scope": "P12-P18",
+  "implementation_commit": "5c378dff57103c0f4655cbbc13e34ef87cb72bf1",
+  "tested_local_commit": "d8383b0630ad78b144a6837f1bdc8d15e2da12b6",
+  "implementation_tree": "98cb13bd803fb04161eaafbf4e76397166f5c3d8",
+  "full_suite": {
+    "status": "passed",
+    "passed": 2075,
+    "skipped": 7,
+    "warnings": 7,
+    "seconds": 521.92,
+    "command": "python -B -m pytest -q",
+    "tree_unchanged_during_suite": true,
+    "log_sha256": "c1b5e5985771a7930c4f1f4ea7aab243218f1962b1a49e6d77cbffef353c9d78"
+  },
+  "checks": {
+    "canonical_migration": "passed",
+    "internal_imports": "passed",
+    "readme_links": "passed",
+    "executable_declaration_admission": "passed",
+    "reference_editions": "passed",
+    "wheel_and_sdist_inspection": "passed",
+    "installed_cold_catalog_and_direct_command": "passed",
+    "zip_cold_catalog": "passed",
+    "release_integrity": "passed"
+  },
+  "catalog_fingerprint": "c6b3f680826a163788e4352f54fb8c6735344cddff88da003302b15f771125a1",
+  "catalog_definitions": 930,
+  "optional_backends_imported_during_cold_metadata": [],
+  "distributions": [
+    {
+      "filename": "stratbox-0.24.0-py3-none-any.whl",
+      "sha256": "82b0308553d53c152f6cec6cfcdb9d07d2a2544f23cc85e9c783e1cef080376c",
+      "size": 2197791
+    },
+    {
+      "filename": "stratbox-0.24.0.tar.gz",
+      "sha256": "18ab3cd21718ae93534bf7b88491de042166aa32782cdcb21beb5eb3ca712f10",
+      "size": 1871307
+    }
+  ],
+  "github_actions_used": false,
+  "full_plan_closure": false,
+  "limits": [
+    "territorial-office lexical OOXML decoder consolidation remains qualified separately",
+    "publisher editions and financial models specified in REPORT.md",
+    "P19-P21 public/machine and transition-owner packages remain separate",
+    "H01 durable host and H02 external protocol adapter remain external"
+  ],
+  "publication": {
+    "implementation_branch": "main",
+    "implementation_commit": "5c378dff57103c0f4655cbbc13e34ef87cb72bf1",
+    "same_tree_verified": true
+  }
+}
