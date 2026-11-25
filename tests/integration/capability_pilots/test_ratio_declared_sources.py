@@ -2,16 +2,23 @@
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+import json
 
 import pytest
 
 from stratbox.capabilities.commands import OBSERVATIONS
 from stratbox.core.execution.values.codec import encode_value, decode_value
+from stratbox.core.execution.value_context import value_context, validate_retained_context
 from stratbox.sdk import StrategyBox
+from stratbox.shared.data.observation_snapshots import (
+    observation_snapshot, observations_from_snapshot, observations_from_components,
+)
 from stratbox.shared.data.observations import ObservationBatch, Observation, SubjectRef, MetricRef, PeriodRef
 from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
+from stratbox.shared.data.processing import DataContract
+from stratbox.shared.data.snapshots import DatasetSnapshot, TypedTable
 from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from .conftest import ratio_pair
 
 
@@ -66,6 +73,42 @@ def test_declared_cross_source_pair_preserves_qualified_operand_basis_portably(d
         restored = decode_value(encode_value(batch, OBSERVATIONS.schema)).value
         assert restored.evidence.calculations == batch.evidence.calculations
         assert restored.source_uses == batch.source_uses
+
+
+def test_calculation_source_basis_has_an_exact_metadata_edition_and_context_route(declared_pair_inputs):
+    left, right, pair = declared_pair_inputs
+    with StrategyBox() as box:
+        result = invoke(box, left, right, pair)
+        assert result.outcome == "succeeded", result.diagnostics
+        batch = result.output("observations")
+        snapshot = observation_snapshot(batch)
+        metadata = snapshot.table("metadata")
+        assert metadata.schema.contract == DataContract("observations.batch.metadata", 4)
+        restored = observations_from_snapshot(snapshot)
+        assert restored == batch
+        assert restored.evidence.calculations[0].source_uses == (
+            ("numerator", left.source_uses[0]), ("denominator", right.source_uses[0]))
+        assert value_context(batch) == value_context(snapshot) == value_context(restored)
+        assert value_context(snapshot).uses == (*left.source_uses, *right.source_uses)
+        validate_retained_context(snapshot)
+
+        legacy_schema = replace(metadata.schema, contract=replace(metadata.schema.contract, version=3))
+        row = list(metadata.rows[0])
+        encoded = json.loads(row[-1])
+        del encoded["evidence"]["calculations"][0]["source_uses"]
+        row[-1] = canonical_manifest_bytes(encoded).decode("utf-8")
+        legacy_metadata = TypedTable(legacy_schema, (tuple(row),))
+        legacy = DatasetSnapshot.build(snapshot.manifest.dataset_id, snapshot.manifest.version_id,
+            snapshot.manifest.contract, (("metadata", legacy_metadata),
+                ("observations", snapshot.table("observations"))),
+            coverage=snapshot.manifest.coverage, inputs=snapshot.manifest.inputs)
+        with pytest.raises(ValueError, match="^observations.snapshot_invalid$"):
+            observations_from_snapshot(legacy)
+        with pytest.raises(ValueError, match="^observations.metadata_invalid$"):
+            observations_from_components(legacy_metadata, snapshot.table("observations"),
+                inputs=snapshot.manifest.inputs)
+        with pytest.raises(ValueError, match="^source.context_schema_mismatch$"):
+            validate_retained_context(legacy)
 
 
 @pytest.mark.parametrize("role", ("numerator", "denominator"))

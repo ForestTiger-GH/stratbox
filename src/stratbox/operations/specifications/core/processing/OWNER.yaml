@@ -139,7 +139,7 @@
       {
         "contract": {
           "schema_id": "observations.batch.metadata",
-          "version": 3,
+          "version": 4,
           "role": null
         },
         "schema_ref": "stratbox.shared.data.observation_snapshots:_METADATA",

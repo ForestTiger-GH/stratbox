@@ -19,7 +19,7 @@ from stratbox.shared.identity import canonical_manifest_bytes
 
 OBSERVATION_SNAPSHOT = DataContract("observations.batch.snapshot", 1)
 _T, _I, _D, _N = ScalarType.TEXT, ScalarType.INTEGER, ScalarType.DATE, ScalarType.DECIMAL
-_METADATA = TableSchema(DataContract("observations.batch.metadata", 3), (
+_METADATA = TableSchema(DataContract("observations.batch.metadata", 4), (
     ColumnSchema("dataset_id", _T), ColumnSchema("schema_version", _I), ColumnSchema("release_id", _T),
     ColumnSchema("source_uses", _T),
     ColumnSchema("evidence", _T),
