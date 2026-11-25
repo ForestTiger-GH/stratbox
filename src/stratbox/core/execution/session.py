@@ -1428,6 +1428,10 @@ class ExecutionSession:
                 if (task.spec.scope_id == scope_id or task.spec.scope_id.startswith(scope_id + "/"))
                 and getattr(task.spec, "acceptance_scope", None) != scope_id]
             finished = all(task.state in _TERMINAL for task in members)
+            acceptance_dependencies = {key for task in run.tasks.values()
+                if getattr(task.spec, "acceptance_scope", None) == scope_id
+                for key in task.spec.dependencies}
+            finished &= all(self._task(run, key).state in _TERMINAL for key in acceptance_dependencies)
             states = run.scope_output_states.setdefault(scope_id, {})
             errors = run.scope_output_errors.setdefault(scope_id, {})
             outputs = run.scope_outputs.setdefault(scope_id, {})

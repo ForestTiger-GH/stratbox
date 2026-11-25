@@ -2,9 +2,9 @@
 import json
 from dataclasses import replace
 
-from stratbox.shared.data.observation_snapshots import observation_snapshot, observations_from_snapshot, OBSERVATION_SNAPSHOT
+from stratbox.shared.data.observation_snapshots import observation_snapshot, observations_from_components
 from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, SnapshotCoverage, TableSchema, TypedTable
+from stratbox.shared.data.snapshots import ColumnSchema, DatasetSnapshot, ScalarType, TableSchema, TypedTable
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 from ..publications.contracts import ReleaseContext
@@ -92,15 +92,13 @@ def read_layer(snapshot, contract):
             or tuple(name for name, _ in snapshot.tables) != ("context", "batch_metadata", "observations")):
         raise ValueError("fns.observation_layer_snapshot_invalid")
     context, identity, profile, qualifications, dispositions, details = read_context(snapshot.table("context"))
-    metadata = snapshot.table("batch_metadata")
-    if len(metadata.rows) != 1 or len(metadata.rows[0]) != 4:
-        raise ValueError("fns.batch_metadata_invalid")
-    dataset_id, _, release_id = metadata.rows[0][:3]
-    batch_snapshot = DatasetSnapshot.build(dataset_id, release_id, OBSERVATION_SNAPSHOT,
-        (("metadata", snapshot.table("batch_metadata")), ("observations", snapshot.table("observations"))),
-        coverage=SnapshotCoverage("unknown", "Exactly the supplied observation batch; source-wide coverage is not inferred."),
-        inputs=snapshot.manifest.inputs)
-    batch = observations_from_snapshot(batch_snapshot)
+    try:
+        batch = observations_from_components(snapshot.table("batch_metadata"), snapshot.table("observations"),
+            inputs=snapshot.manifest.inputs)
+    except ValueError as error:
+        if str(error) == "observations.metadata_invalid":
+            raise ValueError("fns.batch_metadata_invalid") from None
+        raise
     if batch.dataset_id.split(".")[:2] != context.series_id.split("."):
         raise ValueError("fns.observation_context_mismatch")
     return context, identity, batch, profile, snapshot.manifest.coverage, qualifications, dispositions, details

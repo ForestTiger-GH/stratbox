@@ -68,3 +68,20 @@ def test_independent_output_survives_its_siblings_named_rejection():
         assert result.scope_outputs["record.independent/bad"]["value"] == 3
         assert "acceptance.bad_rejected" in result.diagnostics
         result.close()
+
+
+def test_pass_through_scope_waits_for_its_external_input_acceptance():
+    from stratbox.capabilities.catalog import CatalogContribution
+    from stratbox.capabilities.model import InputRef
+    identity = OperationDefinition("record.identity", GraphBody((), {"value": InputRef("input")}),
+        inputs={"input": NUMBER}, outputs={"value": NUMBER})
+    scenario = ScenarioDefinition("record.forward", GraphBody((
+        Call("source", "record.operation"),
+        Call("forward", identity.capability_id, inputs={"input": OutputRef("source")}),
+    ), {"value": OutputRef("forward")}), outputs={"value": NUMBER})
+    snapshot = catalog().overlay(CatalogContribution(definitions=(identity, scenario)))
+    with StrategyBox(capabilities=snapshot) as box:
+        result = box.invoke(scenario.capability_id, timeout=5)
+        assert result.outcome == "succeeded", result.diagnostics
+        assert result.output("value") == 3
+        result.close()

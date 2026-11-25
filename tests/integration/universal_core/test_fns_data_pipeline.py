@@ -152,6 +152,49 @@ def test_every_semantic_boundary_roundtrips_without_original_or_excel_engine(mon
         assert all(cell.data_type != "f" for sheet in book for row in sheet for cell in row)
 
 
+def test_embedded_shared_observation_metadata_preserves_added_evidence_across_fns_layers():
+    from stratbox.shared.data.assessment import CoverageAssessment, ProcessingFinding, ValueEvidence, observation_scope
+    processed = success(sme.process(sme.ProcessRequest(SourcePayload(encoded(sme_source())), context("fns.sme", SME_DAY))))
+    calculated = success(sme.calculate_shares(sme.SharesRequest(processed.dataset, "ul_micro", "ul_total",
+        (("geographic_level", "0"),), (("geographic_level", "0"),))))
+    for layer, value, request in (
+        ("projection", processed.projection, sme.ProjectionRequest),
+        ("dataset", processed.dataset, sme.DatasetRequest),
+        ("view", processed.view, sme.ViewValueRequest),
+        ("calculation", calculated, sme.CalculationRequest),
+    ):
+        members, observed = observation_scope(value.batch.observations)
+        scope_id = value.batch.dataset_id + ":" + value.batch.release_id
+        evidence = ValueEvidence(frozenset({"retained.test_fact"}),
+            CoverageAssessment(scope_id, tuple(dict.fromkeys(members)), True, observed),
+            (ProcessingFinding("retained.test_finding", "information", 1,
+                "Controlled evidence survives the embedded generic metadata component.", scope_id=scope_id),))
+        qualified = replace(value, batch=replace(value.batch, evidence=evidence))
+        snapshot = success(getattr(sme, layer + "_snapshot")(request(qualified)))
+        replayed = success(getattr(sme, "read_" + layer + "_snapshot")(sme.SnapshotRequest(retained(snapshot))))
+        assert type(replayed) is type(qualified)
+        assert replayed.batch.evidence == evidence
+        assert replayed.batch.source_uses == qualified.batch.source_uses
+        assert replayed.context == qualified.context
+        assert replayed == qualified
+
+
+def test_embedded_observation_metadata_rejects_unsupported_schema_edition():
+    from stratbox.shared.data.snapshots import TypedTable
+    processed = success(sme.process(sme.ProcessRequest(SourcePayload(encoded(sme_source())), context("fns.sme", SME_DAY))))
+    snapshot = success(sme.projection_snapshot(sme.ProjectionRequest(processed.projection)))
+    metadata = snapshot.table("batch_metadata")
+    future_schema = replace(metadata.schema, contract=replace(metadata.schema.contract,
+        version=metadata.schema.contract.version + 1))
+    modified = DatasetSnapshot.build(snapshot.manifest.dataset_id, snapshot.manifest.version_id,
+        snapshot.manifest.contract, tuple((name, TypedTable(future_schema, table.rows) if name == "batch_metadata" else table)
+            for name, table in snapshot.tables), coverage=snapshot.manifest.coverage,
+        inputs=snapshot.manifest.inputs, parents=snapshot.manifest.parents)
+    rejected = sme.read_projection_snapshot(sme.SnapshotRequest(modified))
+    assert rejected.outcome == "failed"
+    assert rejected.diagnostics[0].code == "fns.batch_metadata_invalid"
+
+
 @pytest.mark.parametrize("day,epoch,indicators,kinds", FORM_EPOCHS, ids=[item[1] for item in FORM_EPOCHS])
 def test_1yur_dated_mapping_uses_retained_cells_with_original_geography(day, epoch, indicators, kinds, monkeypatch):
     source = SourcePayload(form_workbook(indicators, kinds, legacy=epoch == "A"))

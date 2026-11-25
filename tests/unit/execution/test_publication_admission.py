@@ -60,3 +60,28 @@ def test_full_fact_journal_retains_real_confirmed_write_obligation_after_result_
         assert entry.record.kind == "effect.confirmed"
         assert entry.record.payload["effect_id"] == "write.0"
         assert journal.health_snapshot().unpublished_transitions == 0
+
+
+def test_dynamic_slice_larger_than_total_publication_capacity_fails_without_waiting():
+    from stratbox.capabilities.model import (
+        AcceptanceContract, Call, GraphBody, InputRef, MapCall, OperationDefinition, OutputRef, ScenarioDefinition,
+    )
+    from stratbox.shared.data.processing import DataRole
+    number = PortContract(DataContract("publication.extract", role=DataRole.EXTRACTS), int)
+    pair = OperationDefinition("publication.pair", GraphBody((),
+        {"left": InputRef("item"), "right": InputRef("item")}),
+        inputs={"item": number}, outputs={"left": number, "right": number},
+        acceptance=AcceptanceContract(coherent_outputs=("left", "right")))
+    item = ScenarioDefinition("publication.item", GraphBody((
+        Call("pair", pair.capability_id, {"item": InputRef("item")}),
+    ), {"value": OutputRef("pair", "left")}), inputs={"item": number}, outputs={"value": number})
+    scenario = ScenarioDefinition("publication.map", GraphBody((
+        MapCall("items", item.capability_id, (1,), window=1),
+    ), {"values": OutputRef("items")}),
+        outputs={"values": PortContract(number.schema, collection=True)})
+    catalog = CatalogSnapshot(definitions=(pair, item, scenario))
+    with StrategyBox(capabilities=catalog, settings=ExecutionSettings(publication_capacity=1)) as box:
+        result = box.invoke(scenario.capability_id, timeout=5)
+        assert result.outcome == "failed"
+        assert "orchestration.publication_unsatisfiable" in result.diagnostics
+        result.close()

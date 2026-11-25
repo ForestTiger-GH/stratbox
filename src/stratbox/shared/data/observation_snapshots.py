@@ -146,4 +146,21 @@ def observations_from_snapshot(snapshot: DatasetSnapshot) -> ObservationBatch:
     return batch
 
 
-__all__ = ("OBSERVATION_SNAPSHOT", "observation_snapshot", "observations_from_snapshot")
+def observations_from_components(metadata: TypedTable, observations: TypedTable, *, inputs=()) -> ObservationBatch:
+    """Restore embedded components using this codec's exact schema edition.
+
+    Domain layer wrappers own their publication and layer context. They pass
+    the embedded tables here rather than reproducing the metadata's field
+    count, column positions, source-use decoding or evidence serialization.
+    """
+    if not isinstance(metadata, TypedTable) or metadata.schema != _METADATA or len(metadata.rows) != 1:
+        raise ValueError("observations.metadata_invalid")
+    if not isinstance(observations, TypedTable) or observations.schema != _OBSERVATIONS:
+        raise ValueError("observations.snapshot_invalid")
+    values = dict(zip((column.name for column in metadata.schema.columns), metadata.rows[0]))
+    snapshot = DatasetSnapshot.build(values["dataset_id"], values["release_id"], OBSERVATION_SNAPSHOT,
+        (("metadata", metadata), ("observations", observations)), coverage=_COVERAGE, inputs=inputs)
+    return observations_from_snapshot(snapshot)
+
+
+__all__ = ("OBSERVATION_SNAPSHOT", "observation_snapshot", "observations_from_snapshot", "observations_from_components")
