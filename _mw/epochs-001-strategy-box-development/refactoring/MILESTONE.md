@@ -1,6 +1,6 @@
 # Capability execution foundation: P00-P11
 
-Date: 2026-11-25. Scope: local library foundation and controlled vertical pilots. Status: verified local foundation. Source checkpoint: 76d8e58b444283709becc1e486d1e8f22a0a64d7. Audit resolution: [P11-R](reviews/2026-11-25-foundation/REPORT.md).
+Date: 2026-11-25. Scope: local library foundation and controlled vertical pilots. Status: verified local foundation. Source checkpoint: c40f4827fd84d0af000933721063302bb3a8efc3. Audit resolutions: [P11-R](reviews/2026-11-25-foundation/REPORT.md) and [P11-R2](reviews/2026-11-25-foundation-r2/REPORT.md).
 
 The foundation provides one catalog-to-plan-to-session route for four capability kinds. The initial domain corpus remains a migration contribution. This checkpoint completes M0/M1 within the authorized P00-P11 slice; it does not claim the later full-domain or public-machine migration.
 
@@ -25,9 +25,9 @@ The foundation provides one catalog-to-plan-to-session route for four capability
 
 - Starting inventory: 785 library Python files, 356 operation declarations, 90 sources and source groups, 144 profiles, 19 route templates, 181 test files, 3,336 callables and 1,350 source/group-stage cells.
 - All starting objects retain disposition candidates; reference assets and fixture identities are pinned.
-- Canonical catalog: 22 commands, 12 exact operations, 2 scenarios, 1 cascade, 2 interpretation methods, 1 processing group and 3 goal recipes.
-- Test files: 219, an increase of 38 from the initial inventory. Library Python files: 821.
-- Full regression: 1,874 passed, 7 skipped; baseline 1,675 passed, 7 skipped. Added passing tests: 199; 95 were added during P11-R.
+- Canonical catalog: 22 commands, 13 exact operations, 2 scenarios, 1 cascade, 2 interpretation methods, 1 processing group and 3 goal recipes.
+- Test files: 229, an increase of 48 from the initial inventory. Library Python files: 822.
+- Full regression: 1,950 passed, 7 skipped; baseline 1,675 passed, 7 skipped. Added passing tests: 275; 95 were added during P11-R and 76 during P11-R2.
 - All 120 original acceptance cases retain verification routes. Local fixture evidence is mapped separately; later domain/host outcomes remain explicit obligations. A mapped mechanism test alone does not discharge an entire publisher or historical-edition claim.
 
 ## 3. Pilot evidence and limits
@@ -61,6 +61,6 @@ The exact built wheel and sdist are inspected with scripts/inspect_reference_whe
 
 ## 6. Final validation
 
-The final P11-R local suite passed in 315.29 seconds: 1,874 passed and 7 skipped. Import direction, release integrity, executable catalog admission, reference editions and maintained README checks passed. Exact wheel and sdist implementation/resource inventories were verified. The installed wheel ran the public offline example in a separate minimal environment outside the checkout; metadata discovery imported no numerical/workbook backend. No GitHub Actions were used.
+The final P11-R2 local suite passed in 322.77 seconds: 1,950 passed and 7 skipped. Import direction, release integrity, executable catalog admission, reference editions and maintained README checks passed. Exact wheel and sdist implementation/resource inventories were verified. The installed wheel ran the public offline example in a separate minimal environment outside the checkout; metadata discovery imported no numerical/workbook backend. No GitHub Actions were used.
 
-Validation identity, distribution digests and external scope limits are retained in validation.json. The implementation commit identifies the tested code; the subsequent report-only commit adds the updated validation records. The P11-R report maps each confirmed audit item to its implementation and regression evidence. The original 120 acceptance cases retain their scoped status: 49 implemented local slices, 67 planned and 4 external-pending.
+Validation identity, distribution digests and external scope limits are retained in validation.json. The implementation commit identifies the tested code; the subsequent report-only commit adds the updated validation records. The P11-R and P11-R2 reports map each confirmed audit item to its implementation and regression evidence. Journal-first subscriptions cover all four capability kinds, exact named outputs, aggregate completion and confirmed effects. The original 120 acceptance cases retain their scoped status: 49 implemented local slices, 67 planned and 4 external-pending.

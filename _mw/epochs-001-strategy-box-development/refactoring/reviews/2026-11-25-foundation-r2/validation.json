@@ -1,0 +1,189 @@
+{
+  "schema": "stratbox.refactoring.validation.v1",
+  "date": "2026-11-25",
+  "milestone": "M1",
+  "packages": [
+    "P00",
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11"
+  ],
+  "status": "verified_local_foundation",
+  "implementation_commit": "c40f4827fd84d0af000933721063302bb3a8efc3",
+  "implementation_tree": "1deacff2262ed54b4cb9135e8af3e57da55fb7a1",
+  "baseline": {
+    "commit": "c1a07bb438825e539ce1260ed2aacb6ecd63f9c3",
+    "passed": 1675,
+    "skipped": 7
+  },
+  "pytest": {
+    "passed": 1950,
+    "skipped": 7,
+    "warnings": 7,
+    "seconds": 322.77,
+    "added_passing_tests": 275,
+    "added_since_previous_checkpoint": 76
+  },
+  "catalog": {
+    "commands": 22,
+    "operations": 13,
+    "scenarios": 2,
+    "cascades": 1,
+    "interpretation_methods": 2,
+    "processing_groups": 1,
+    "goal_recipes": 3,
+    "transitional_domain_declarations": 356
+  },
+  "checks": {
+    "internal_imports": "passed",
+    "release_integrity": "passed",
+    "registry_executable_admission": "passed",
+    "reference_editions": "passed",
+    "readme_links": "passed",
+    "diff_whitespace": "passed",
+    "wheel": "verified",
+    "sdist": "verified",
+    "installed_minimal_wheel": "passed"
+  },
+  "distributions": {
+    "wheel": {
+      "sha256": "95d92698dc5acc0af4e8dd285fefd714646d54685b0b219859c8d8d516e419b7",
+      "size": 2073527
+    },
+    "sdist": {
+      "sha256": "480e66cd907535c5d9dc9424cbbfdc848db53930937c3645d0fe78cbaf432f62",
+      "size": 1711289
+    }
+  },
+  "evidence_limits": {
+    "live_publisher_smoke": "not_claimed; controlled fixture pilot as specified by P11",
+    "durable_host": "H01 external-pending",
+    "protocol_adapter": "H02 external-pending",
+    "full_domain_migration": "P12-P18 pending",
+    "full_machine_surface_and_transition_removal": "P19-P21 pending",
+    "standalone_transport": "bounded synchronous contract; canonical command followers wait in coordinator"
+  },
+  "review": "P11-R2",
+  "prior_checkpoint": {
+    "commit": "cb1408ba3ad65fcbbcd3b6c759c74468d60fcb73",
+    "implementation_commit": "76d8e58b444283709becc1e486d1e8f22a0a64d7",
+    "pytest": {
+      "passed": 1874,
+      "skipped": 7,
+      "warnings": 7,
+      "seconds": 315.29,
+      "added_passing_tests": 199,
+      "added_since_previous_checkpoint": 95
+    },
+    "catalog": {
+      "commands": 22,
+      "operations": 12,
+      "scenarios": 2,
+      "cascades": 1,
+      "interpretation_methods": 2,
+      "processing_groups": 1,
+      "goal_recipes": 3,
+      "transitional_domain_declarations": 356
+    },
+    "distributions": {
+      "wheel": {
+        "sha256": "5df44acca2beb4c8773e3a66b40f703ee0c8090d85065b2030d9003187f61b63",
+        "size": 2063969
+      },
+      "sdist": {
+        "sha256": "278b9e8388da4ffca4931a4f63c60625e09649ff6f1e9b5b63049b3b305de824",
+        "size": 1685373
+      }
+    }
+  },
+  "implementation_inventory": {
+    "files": 823,
+    "identity": "db0681a781bc22f0a1b7fbd3e71031b1c7f575b4cc724484f5148e53b158c3d7"
+  },
+  "acceptance": {
+    "total": 120,
+    "statuses": {
+      "implemented": 49,
+      "planned": 67,
+      "external-pending": 4
+    },
+    "scope": "Original scoped case statuses are preserved; R12-R18 and four-kind journal subscriptions have separate local regression evidence."
+  },
+  "review_items": {
+    "R12": "implemented_and_locally_verified",
+    "R13": "implemented_and_locally_verified",
+    "R14": "implemented_and_locally_verified",
+    "R15": "implemented_and_locally_verified",
+    "R16": "implemented_and_locally_verified",
+    "R17": "implemented_and_locally_verified",
+    "R18": "implemented_and_locally_verified"
+  },
+  "report": "_mw/epochs-001-strategy-box-development/refactoring/reviews/2026-11-25-foundation-r2/REPORT.md",
+  "earlier_checkpoint": {
+    "commit": "b764c77caf6dcb422acaa5a6b7bed057f488d208",
+    "implementation_commit": "54922ff193f838d0b435542393cd424eae6ed0f9",
+    "pytest": {
+      "passed": 1779,
+      "skipped": 7,
+      "warnings": 7,
+      "seconds": 288.35,
+      "added_passing_tests": 104
+    },
+    "catalog": {
+      "commands": 17,
+      "operations": 9,
+      "scenarios": 2,
+      "cascades": 1,
+      "interpretation_methods": 2,
+      "processing_groups": 1,
+      "goal_recipes": 3,
+      "transitional_domain_declarations": 356
+    },
+    "distributions": {
+      "wheel": {
+        "sha256": "a1e1b39aa95f8d7513bd5405b62e33b778bb669bb48d0d966ebca94721871916",
+        "size": 2033448
+      },
+      "sdist": {
+        "sha256": "f607eed6acc91759b6f833bdde48ba40307283f400c1f6498b784a2f9af1f48d",
+        "size": 1634473
+      }
+    }
+  },
+  "observation_metadata_edition": 4,
+  "notification_semantics": {
+    "source": "retained_positioned_journal_records",
+    "kinds": [
+      "command",
+      "operation",
+      "scenario",
+      "cascade"
+    ],
+    "selectors": [
+      "capability_id",
+      "capability_kind",
+      "scope_id",
+      "output_name"
+    ],
+    "schemas": {
+      "value.accepted": 2,
+      "effect.confirmed": 2,
+      "capability.finished": 1
+    },
+    "required_handoff": "complete_fixed_head_dispatch_set",
+    "operations": [
+      "notify.required",
+      "notify.accepted",
+      "notify.saved",
+      "notify.reconcile"
+    ]
+  }
+}
