@@ -17,23 +17,24 @@
     "P11"
   ],
   "status": "verified_local_foundation",
-  "implementation_commit": "54922ff193f838d0b435542393cd424eae6ed0f9",
-  "implementation_tree": "076f928b0d4ee5f76a64675bfd8f78ef8aa445c4",
+  "implementation_commit": "76d8e58b444283709becc1e486d1e8f22a0a64d7",
+  "implementation_tree": "91e6f3ff1d9da4ab9afbe366d004a2f1aea68f2a",
   "baseline": {
     "commit": "c1a07bb438825e539ce1260ed2aacb6ecd63f9c3",
     "passed": 1675,
     "skipped": 7
   },
   "pytest": {
-    "passed": 1779,
+    "passed": 1874,
     "skipped": 7,
     "warnings": 7,
-    "seconds": 288.35,
-    "added_passing_tests": 104
+    "seconds": 315.29,
+    "added_passing_tests": 199,
+    "added_since_previous_checkpoint": 95
   },
   "catalog": {
-    "commands": 17,
-    "operations": 9,
+    "commands": 22,
+    "operations": 12,
     "scenarios": 2,
     "cascades": 1,
     "interpretation_methods": 2,
@@ -54,12 +55,12 @@
   },
   "distributions": {
     "wheel": {
-      "sha256": "a1e1b39aa95f8d7513bd5405b62e33b778bb669bb48d0d966ebca94721871916",
-      "size": 2033448
+      "sha256": "5df44acca2beb4c8773e3a66b40f703ee0c8090d85065b2030d9003187f61b63",
+      "size": 2063969
     },
     "sdist": {
-      "sha256": "f607eed6acc91759b6f833bdde48ba40307283f400c1f6498b784a2f9af1f48d",
-      "size": 1634473
+      "sha256": "278b9e8388da4ffca4931a4f63c60625e09649ff6f1e9b5b63049b3b305de824",
+      "size": 1685373
     }
   },
   "evidence_limits": {
@@ -69,5 +70,64 @@
     "full_domain_migration": "P12-P18 pending",
     "full_machine_surface_and_transition_removal": "P19-P21 pending",
     "standalone_transport": "bounded synchronous contract; canonical command followers wait in coordinator"
-  }
+  },
+  "review": "P11-R",
+  "prior_checkpoint": {
+    "commit": "b764c77caf6dcb422acaa5a6b7bed057f488d208",
+    "implementation_commit": "54922ff193f838d0b435542393cd424eae6ed0f9",
+    "pytest": {
+      "passed": 1779,
+      "skipped": 7,
+      "warnings": 7,
+      "seconds": 288.35,
+      "added_passing_tests": 104
+    },
+    "catalog": {
+      "commands": 17,
+      "operations": 9,
+      "scenarios": 2,
+      "cascades": 1,
+      "interpretation_methods": 2,
+      "processing_groups": 1,
+      "goal_recipes": 3,
+      "transitional_domain_declarations": 356
+    },
+    "distributions": {
+      "wheel": {
+        "sha256": "a1e1b39aa95f8d7513bd5405b62e33b778bb669bb48d0d966ebca94721871916",
+        "size": 2033448
+      },
+      "sdist": {
+        "sha256": "f607eed6acc91759b6f833bdde48ba40307283f400c1f6498b784a2f9af1f48d",
+        "size": 1634473
+      }
+    }
+  },
+  "implementation_inventory": {
+    "files": 822,
+    "identity": "759ce483d23cdecec54eddf6026dfb8b9d5a1151602244ae99111eec732ff4a0"
+  },
+  "acceptance": {
+    "total": 120,
+    "statuses": {
+      "implemented": 49,
+      "planned": 67,
+      "external-pending": 4
+    },
+    "scope": "Original case statuses remain unchanged; audit regressions verify their named local mechanisms."
+  },
+  "review_items": {
+    "R01": "implemented_and_locally_verified",
+    "R02": "implemented_and_locally_verified",
+    "R03": "implemented_and_locally_verified",
+    "R04": "implemented_and_locally_verified",
+    "R05": "implemented_and_locally_verified",
+    "R06": "implemented_and_locally_verified",
+    "R07": "implemented_and_locally_verified",
+    "R08": "implemented_and_locally_verified",
+    "R09": "implemented_and_locally_verified",
+    "R10": "implemented_and_locally_verified",
+    "R11": "implemented_and_locally_verified"
+  },
+  "report": "_mw/epochs-001-strategy-box-development/refactoring/reviews/2026-11-25-foundation/REPORT.md"
 }
