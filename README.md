@@ -15,6 +15,7 @@ The public `stratbox.sdk.StrategyBox` facade prepares all four kinds through
 
 - [Capability definitions, preparation and execution ownership](docs/architecture/capability-execution.md)
 - [Direct capability calls, temporary graphs and retained results](docs/current-how/capability-session.md)
+- [Extraction evidence, exact coverage and analytical pairs](docs/current-how/extraction-assessments-and-analytical-pairs.md)
 - [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
 - [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
 - [Geography name matching](docs/current-how/geography-name-resolution.md)

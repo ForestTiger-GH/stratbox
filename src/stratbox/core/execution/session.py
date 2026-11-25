@@ -1432,6 +1432,11 @@ class ExecutionSession:
                 if getattr(task.spec, "acceptance_scope", None) == scope_id
                 for key in task.spec.dependencies}
             finished &= all(self._task(run, key).state in _TERMINAL for key in acceptance_dependencies)
+            # Acceptance may release independent internal outputs early, but
+            # the invocation's external prerequisites must have settled first.
+            external_dependencies = [self._task(run, key) for key in acceptance_dependencies
+                if self._task(run, key).spec.scope_id != scope_id
+                and not self._task(run, key).spec.scope_id.startswith(scope_id + "/")]
             states = run.scope_output_states.setdefault(scope_id, {})
             errors = run.scope_output_errors.setdefault(scope_id, {})
             outputs = run.scope_outputs.setdefault(scope_id, {})
@@ -1451,8 +1456,12 @@ class ExecutionSession:
                         self._scope_event(run, scope_id, "scope.finished", "skipped")
                     continue
             checks = tuple(getattr(scope, "required_checks", ()))
-            checks_ready = all(self._task(run, key).state in _TERMINAL for key in checks)
-            checks_good = checks_ready and all(self._task(run, key).state == "succeeded" for key in checks)
+            external_ready = all(task.state in _TERMINAL for task in external_dependencies)
+            guarded_states = {condition.task for condition in activation if condition.statuses}
+            external_good = all(task.state in _GOOD or task.state == "skipped"
+                or task.spec.task_id in guarded_states for task in external_dependencies)
+            checks_ready = external_ready and all(self._task(run, key).state in _TERMINAL for key in checks)
+            checks_good = checks_ready and external_good and all(self._task(run, key).state == "succeeded" for key in checks)
             if not checks_ready:
                 run.scope_states[scope_id] = "running"
                 continue
