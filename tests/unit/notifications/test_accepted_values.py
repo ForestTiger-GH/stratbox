@@ -12,7 +12,7 @@ def test_stage_facts_survive_diagnostic_eviction_and_independent_subscriber_curs
     journal = OrchestrationJournal('public', max_records=1)
     runtime = replace(runtime, sources=(SourceBinding(journal.facts_stream, 'execution.acceptance',
                                                      'local_snapshot', journal.facts_source),))
-    fields = frozenset({'value_id', 'stage', 'role', 'identity', 'source_id', 'qualification', 'complete', 'acceptance_id'})
+    fields = frozenset({'value_id', 'stage', 'role', 'identity', 'source_id', 'qualification', 'complete', 'acceptance_id', 'identity_status'})
     runtime.authority.fields = fields
     for subscription_id in ('a', 'b'):
         spec = replace(old_spec, subscription_id=subscription_id, streams=(journal.facts_stream,),

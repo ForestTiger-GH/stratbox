@@ -91,19 +91,42 @@ SOURCE_ORIGINAL_COMMITTED = RecordDataSchema("domain_fact", "source.original_ver
 
 BUILTIN_DATA_SCHEMAS = (OPERATION_FINISHED, MATERIAL_STORED, SOURCE_BYTES_CHANGED, PUBLICATION_COMMITTED, SOURCE_ORIGINAL_COMMITTED)
 
-VALUE_ACCEPTED = RecordDataSchema("domain_fact", "value.accepted", 1, (
+CAPABILITY_KIND = ValueRule("token", choices=("command", "operation", "scenario", "cascade"))
+_CAPABILITY_COORDINATES = (
+    FieldRule("capability_id", OPTIONAL_TOKEN, required=False, classification="public"),
+    FieldRule("capability_kind", ValueRule("token", nullable=True, choices=CAPABILITY_KIND.choices),
+              required=False, classification="public"),
+    FieldRule("scope_id", ValueRule("text", nullable=True, max_length=2048),
+              required=False, classification="public"),
+    FieldRule("output_name", OPTIONAL_TOKEN, required=False, classification="public"),
+)
+
+class _AcceptedValueSchema(RecordDataSchema):
+    def validate(self, record):
+        data = super().validate(record)
+        expected = "available" if data["identity"] is not None else "unavailable"
+        if data["identity_status"] != expected:
+            raise ValueError("journal.value_identity_status_mismatch")
+        coordinates = tuple(data.get(name) for name in ("capability_id", "capability_kind", "scope_id", "output_name"))
+        if any(value is not None for value in coordinates) and any(value is None or value == "" for value in coordinates):
+            raise ValueError("journal.capability_coordinates_incomplete")
+        return data
+
+
+VALUE_ACCEPTED = _AcceptedValueSchema("domain_fact", "value.accepted", 2, (
     FieldRule("value_id", TOKEN, classification="public"),
     FieldRule("stage", TOKEN, classification="public"),
-    FieldRule("role", ValueRule("token", choices=("originals", "readable", "extracts", "integrated", "products")), classification="public"),
-    FieldRule("identity", IDENTITY, classification="public"),
+    FieldRule("role", ValueRule("token", nullable=True, choices=("originals", "readable", "extracts", "integrated", "products")), classification="public"),
+    FieldRule("identity", ValueRule("object", nullable=True, fields=IDENTITY.fields), classification="public"),
+    FieldRule("identity_status", ValueRule("token", choices=("available", "unavailable")), classification="public"),
     FieldRule("source_id", OPTIONAL_TOKEN, classification="public"),
     FieldRule("qualification", TOKEN, classification="public"),
     FieldRule("complete", ValueRule("boolean"), classification="public"),
     FieldRule("acceptance_id", TOKEN, classification="public"),
-))
+)+_CAPABILITY_COORDINATES)
 BUILTIN_DATA_SCHEMAS += (VALUE_ACCEPTED,)
 
-EFFECT_CONFIRMED = RecordDataSchema("domain_fact", "effect.confirmed", 1, (
+EFFECT_CONFIRMED = RecordDataSchema("domain_fact", "effect.confirmed", 2, (
     FieldRule("effect_id", TOKEN, classification="public"),
     FieldRule("effect_kind", TOKEN, classification="public"),
     FieldRule("state", ValueRule("token", choices=("confirmed",)), classification="public"),
@@ -111,8 +134,17 @@ EFFECT_CONFIRMED = RecordDataSchema("domain_fact", "effect.confirmed", 1, (
     FieldRule("destination_id", OPTIONAL_TOKEN, classification="public"),
     FieldRule("guarantee", OPTIONAL_TOKEN, classification="public"),
     FieldRule("stage", OPTIONAL_TOKEN, classification="public"),
-))
+)+_CAPABILITY_COORDINATES)
 BUILTIN_DATA_SCHEMAS += (EFFECT_CONFIRMED,)
+
+CAPABILITY_FINISHED = RecordDataSchema("domain_fact", "capability.finished", 1, (
+    FieldRule("capability_id", TOKEN, classification="public"),
+    FieldRule("capability_kind", CAPABILITY_KIND, classification="public"),
+    FieldRule("scope_id", ValueRule("text", max_length=2048), classification="public"),
+    FieldRule("outcome", ValueRule("token", choices=(*OUTCOMES, "skipped")), classification="public"),
+    FieldRule("completion_id", TOKEN, classification="public"),
+))
+BUILTIN_DATA_SCHEMAS += (CAPABILITY_FINISHED,)
 
 # Scheduler records have their own envelope: a queued run has no invocation.
 from stratbox.core.observability.records.orchestration import COUNTERS, ORCHESTRATION_KINDS

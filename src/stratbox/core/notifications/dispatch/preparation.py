@@ -80,14 +80,16 @@ def _disposition(
         evidence.add("authority_decision", {"offset": entry.offset, "grant": grant})
     if grant.state == "unknown":
         raise ValueError("notification.authority_unavailable")
-    if grant.state == "denied" or any(condition.field not in grant.fields for condition in sub.spec.filters):
+    selector_fields = sub.spec.selector.fields if sub.spec.selector is not None else frozenset()
+    if grant.state == "denied" or not selector_fields <= grant.fields or any(condition.field not in grant.fields for condition in sub.spec.filters):
         return _Decision(entry.offset, "notification.access_denied", proof)
     schema = runtime.catalog.input_schema(topic, record)
     if evidence is not None:
         evidence.add("input_schema", schema)
     data = schema.validate(record)
     if ((topic.eligible is not None and not topic.eligible(record, data))
-            or not topic.permits_mode(data, sub.spec.filters) or not match_conditions(sub.spec.filters, data)):
+            or not topic.permits_mode(data, sub.spec.filters) or not match_conditions(sub.spec.filters, data)
+            or sub.spec.selector is not None and not sub.spec.selector.matches(data)):
         return _Decision(entry.offset, "notification.not_matched", proof)
 
     event_key = topic.event_key(record, data)

@@ -10,7 +10,7 @@ from typing import Literal
 from stratbox.shared.identifiers import safe_token
 from stratbox.core.observability import FieldRule, FieldSchemaRegistry, JournalRecord, RecordDataSchema
 from stratbox.core.observability.records.event_schemas import (
-    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED, RUN_FINISHED, VALUE_ACCEPTED, EFFECT_CONFIRMED,
+    MATERIAL_STORED, OPERATION_FINISHED, PUBLICATION_COMMITTED, SOURCE_BYTES_CHANGED, SOURCE_ORIGINAL_COMMITTED, RUN_FINISHED, VALUE_ACCEPTED, EFFECT_CONFIRMED, CAPABILITY_FINISHED,
 )
 from stratbox.core.observability.records.schema import ValueRule
 
@@ -159,6 +159,11 @@ class TopicCatalog:
                     rule.validate(value)
             except ValueError:
                 raise ValueError("subscription.filter_invalid") from None
+        if spec.selector is not None:
+            for schema_key in topic.schemas:
+                fields = {field.name for field in self._registry.data_schema(schema_key).fields}
+                if not spec.selector.fields <= fields:
+                    raise ValueError("subscription.selector_field_unavailable")
         return topic, projection
 
     def input_schema(self, topic: NotificationTopic, record: JournalRecord) -> RecordDataSchema:
@@ -232,11 +237,23 @@ def _bytes_changed(record: JournalRecord, data: Data) -> bool:
 
 def _accepted_value(record: JournalRecord, data: Data) -> bool:
     if (record.subject is None or record.subject.namespace != "value"
-            or record.subject.object_id != data["value_id"]
-            or record.subject.identity is None
-            or record.subject.identity.sha256 != data["identity"]["sha256"]
-            or record.subject.identity.size != data["identity"]["size"]):
+            or record.subject.object_id != data["value_id"]):
         raise ValueError("journal.acceptance_identity_mismatch")
+    expected = data["identity"]
+    actual = record.subject.identity
+    if expected is None:
+        if actual is not None or data.get("identity_status") != "unavailable":
+            raise ValueError("journal.acceptance_identity_mismatch")
+    elif (actual is None or actual.sha256 != expected["sha256"] or actual.size != expected["size"]
+            or data.get("identity_status", "available") != "available"):
+        raise ValueError("journal.acceptance_identity_mismatch")
+    return True
+
+
+def _capability_finished(record: JournalRecord, data: Data) -> bool:
+    if (record.subject is None or record.subject.namespace != "capability"
+            or record.subject.object_id != data["capability_id"]):
+        raise ValueError("journal.capability_identity_mismatch")
     return True
 
 
@@ -299,14 +316,18 @@ _operation = _project(OPERATION_FINISHED, "operation_summary", "operation_id", "
 _run_summary = _project(RUN_FINISHED, "run_summary", "run_id", "plan_id", "outcome",
                         "counters", "completed", "total", "reason")
 _builtin_topics = (
+    NotificationTopic("capability.completed", 1, (CAPABILITY_FINISHED.key,), (
+        _project(CAPABILITY_FINISHED, "capability_summary", *(field.name for field in CAPABILITY_FINISHED.fields)),
+    ), "fact", ("capability_id", "capability_kind", "scope_id", "outcome", "completion_id"),
+       frozenset({"capability_id", "capability_kind", "scope_id", "outcome"}), _capability_finished),
     NotificationTopic("effect.confirmed", 1, (EFFECT_CONFIRMED.key,), (
         _project(EFFECT_CONFIRMED, "confirmed_effect", *(field.name for field in EFFECT_CONFIRMED.fields)),
     ), "fact", ("effect_id", "effect_kind", "identity", "destination_id", "guarantee"),
-       frozenset({"effect_kind", "destination_id", "guarantee", "stage"}), _confirmed_effect),
+       frozenset({"effect_kind", "destination_id", "guarantee", "stage", "capability_id", "capability_kind", "scope_id", "output_name"}), _confirmed_effect),
     NotificationTopic("value.accepted", 1, (VALUE_ACCEPTED.key,), (
         _project(VALUE_ACCEPTED, "accepted_value", *(field.name for field in VALUE_ACCEPTED.fields)),
     ), "fact", ("value_id", "stage", "role", "identity", "acceptance_id"),
-       frozenset({"stage", "role", "source_id", "qualification", "complete"}), _accepted_value),
+       frozenset({"stage", "role", "source_id", "qualification", "complete", "capability_id", "capability_kind", "scope_id", "output_name", "identity_status"}), _accepted_value),
     NotificationTopic("run.completed", 1, (RUN_FINISHED.key,), (_run_summary,),
                       "transition", ("run_id", "plan_id", "outcome", "counters"),
                       frozenset({"run_id", "plan_id", "outcome"}), _run_finished),

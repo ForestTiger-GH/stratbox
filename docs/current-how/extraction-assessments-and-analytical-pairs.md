@@ -103,6 +103,50 @@ division primitive. It does not grant `calculation.admitted` and does not replac
 the analytical pair contract. The supplied ratio scenario and package cascade
 require `pair` explicitly and pass it through to `calculate.ratio`.
 
+## Declared source requirements for each operand
+
+`origin_policy="declared_sources"` requires a nonempty `source_requirements`
+array inside both `numerator` and `denominator`. Each entry names a `source_id`
+and explicitly lists acceptable `qualifications`; for example:
+
+```python
+"source_requirements": ({
+    "source_id": "publisher.bank",
+    "source_group_id": "loans",
+    "input_role": "primary",
+    "qualifications": ("observed",),
+},)
+```
+
+The policy compares the requirements with actual `batch.source_uses`.
+Dataset and metric names, lineage source IDs and general value qualifications
+do not substitute for a qualified source use. All constraints of an entry must
+match the same use; a source ID from one record cannot be combined with a group
+or qualification from another.
+
+An entry can additionally pin `family_id`, `issue_id`, `asset_id`,
+`layout_edition`, `semantic_profile_edition`, exact `evidence_ref`, and
+`material_identity={"sha256": ..., "size": ...}`. Omitted fields are
+unconstrained. Explicit coordinate constraints contain known values rather
+than null placeholders.
+
+Every actual use must match a declared allowance. Each entry is required by
+default. An optional auxiliary allowance uses `required=False`; an absent
+optional source is never added to the result's evidence. At least one required
+entry exists for each operand. Required evidence defaults to either a nonempty
+source-use evidence reference or a source material identity present in that
+operand's lineage. A caller can explicitly choose `require_evidence=False`
+and accept a weaker qualification such as `declared`; its recorded qualification
+remains unchanged.
+
+The calculation basis preserves the actual qualified source uses separately
+for `numerator` and `denominator`, alongside their exact snapshot identities and
+release identifiers. Portable observation and representation codecs retain
+this association. `calculation.admitted` is produced after both operand source
+policies pass; source qualification is never upgraded by the calculation.
+The existing `common_material` and `same_source` policies retain their separate
+contracts.
+
 See [the shared capability session](capability-session.md) for preparation and
 execution, and [effect recovery and stage events](effect-recovery-and-stage-events.md)
 for independent save and notification obligations.

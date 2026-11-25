@@ -46,6 +46,64 @@ class FilterCondition:
 
 
 @dataclass(frozen=True, slots=True)
+class CapabilitySelector:
+    """Exact coordinates of journaled capability outputs or completion facts."""
+    capability_id: str | None = None
+    capability_kind: Literal["command", "operation", "scenario", "cascade"] | None = None
+    scope_id: str | None = None
+    output_name: str | None = None
+
+    def __post_init__(self):
+        if all(value is None for value in (self.capability_id, self.capability_kind, self.scope_id, self.output_name)):
+            raise ValueError("subscription.selector_empty")
+        if self.capability_id is not None:
+            safe_token(self.capability_id)
+        if self.output_name is not None:
+            safe_token(self.output_name)
+        if self.capability_kind is not None and self.capability_kind not in {"command", "operation", "scenario", "cascade"}:
+            raise ValueError("subscription.selector_kind_invalid")
+        if self.scope_id is not None and (not isinstance(self.scope_id, str) or not self.scope_id
+                or len(self.scope_id) > 2048 or any(part in {"", ".", ".."} for part in self.scope_id.split("/"))):
+            raise ValueError("subscription.selector_scope_invalid")
+
+    @property
+    def fields(self):
+        return frozenset(name for name in ("capability_id", "capability_kind", "scope_id", "output_name")
+                         if getattr(self, name) is not None)
+
+    def matches(self, data):
+        return all(name in data and data[name] == getattr(self, name) for name in self.fields)
+
+
+@dataclass(frozen=True, slots=True)
+class DispatchSelectionEvidence:
+    """Minimal immutable coordinates pinned from a verified source record."""
+    record_kind: str
+    run_id: str | None = None
+    capability_id: str | None = None
+    capability_kind: str | None = None
+    scope_id: str | None = None
+    output_name: str | None = None
+    effect_id: str | None = None
+    identity: ByteIdentity | None = None
+
+    @classmethod
+    def from_record(cls, record):
+        data = record.payload
+        identity = data.get("identity")
+        if isinstance(identity, dict) or hasattr(identity, "keys"):
+            identity = ByteIdentity(identity["sha256"], identity["size"])
+        else:
+            identity = None
+        return cls(record.kind, record.correlation.run_id,
+            *(data.get(name) for name in ("capability_id", "capability_kind", "scope_id", "output_name")),
+            data.get("effect_id"), identity)
+
+    def matches(self, selector):
+        return selector is None or selector.matches({name: getattr(self, name) for name in selector.fields})
+
+
+@dataclass(frozen=True, slots=True)
 class SubscriptionSpec:
     scope_id: str
     subscription_id: str
@@ -57,6 +115,7 @@ class SubscriptionSpec:
     projection_id: str
     projection_version: int
     filters: tuple[FilterCondition, ...] = ()
+    selector: CapabilitySelector | None = None
 
     def __post_init__(self) -> None:
         for value in (self.scope_id, self.subscription_id, self.owner_id, self.topic_id, self.projection_id):
@@ -73,6 +132,8 @@ class SubscriptionSpec:
             raise ValueError("subscription.filter_invalid")
         if not isinstance(self.route, NotificationRoute):
             raise ValueError("subscription.route_invalid")
+        if self.selector is not None and not isinstance(self.selector, CapabilitySelector):
+            raise ValueError("subscription.selector_invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,6 +234,7 @@ class NotificationIntent:
     prepared_at_utc: datetime
     payload_identity: ByteIdentity
     envelope_bytes: bytes = field(repr=False)
+    selection_evidence: DispatchSelectionEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)

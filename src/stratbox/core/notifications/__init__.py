@@ -2,7 +2,9 @@
 
 from importlib import import_module
 
-_SYMBOL_MODULES = {'AccessDecision': 'stratbox.core.notifications.contracts',
+_SYMBOL_MODULES = {'CapabilitySelector': 'stratbox.core.notifications.contracts',
+ 'DispatchSelectionEvidence': 'stratbox.core.notifications.contracts',
+ 'AccessDecision': 'stratbox.core.notifications.contracts',
  'AccessRequest': 'stratbox.core.notifications.contracts',
  'AdmittedHandoff': 'stratbox.core.notifications.contracts',
  'Attempt': 'stratbox.core.notifications.state.contracts',

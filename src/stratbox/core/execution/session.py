@@ -19,7 +19,7 @@ from stratbox.core.execution.handoff import (PreparedInput, ProjectedOutput, Res
     collect_inputs, project_output, resolve_output)
 from stratbox.core.execution.resources import ResourceLedger, ScopedResourceLedger
 from stratbox.core.execution.retention import ResultSpillStore, SpilledResult, ResultMapping, AttemptMapping, ValueMapping, retained_size
-from stratbox.core.execution.values.placement import ManagedResult, ManagedProjection, ManagedCollection, ValueReadScope, resolve_managed
+from stratbox.core.execution.values.placement import ManagedResult, ManagedProjection, ManagedCollection, ValueReadScope, LeasedIterator, isolate_plan, isolate_managed, resolve_managed
 
 _TERMINAL = frozenset({"succeeded", "partial", "failed", "cancelled", "unknown", "blocked", "skipped"})
 _GOOD = frozenset({"succeeded", "partial"})
@@ -51,6 +51,8 @@ class ExecutionSettings:
     cache_bytes: int = 64 * 1024 * 1024
     staging_bytes: int = 256 * 1024 * 1024
     publication_capacity: int = 4096
+    publication_wait_policy: str = "bounded"
+    external_wait_seconds: float = 1.0
     expenditure: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -61,6 +63,10 @@ class ExecutionSettings:
             value = getattr(self, name)
             if type(value) is not int or value < 1:
                 raise ValueError("execution.invalid_settings")
+        if self.publication_wait_policy not in {"bounded", "managed"} or (
+                type(self.external_wait_seconds) not in {int, float} or not isfinite(self.external_wait_seconds)
+                or self.external_wait_seconds < 0):
+            raise ValueError("execution.invalid_wait_policy")
         object.__setattr__(self, "expenditure", MappingProxyType(dict(self.expenditure)))
 
 
@@ -96,6 +102,11 @@ class RunSnapshot:
     physical_work_count: int = 0
     logical_use_count: int = 0
     scopes: Mapping[str, str] = field(default_factory=dict)
+    waiting_for_ack: bool = False
+    waiting_reason: str | None = None
+    waiting_since: float | None = None
+    wait_policy: str = "bounded"
+    execution_deadline: float | None = None
 
     @property
     def completed(self):
@@ -198,6 +209,8 @@ class _MapState:
     completed: dict = field(default_factory=dict)
     order: list = field(default_factory=list)
     pending: tuple | None = None
+    item_readers: dict = field(default_factory=dict)
+    waiting_since: float | None = None
 
 
 @dataclass
@@ -227,12 +240,17 @@ class _Run:
     scope_output_states: dict = field(default_factory=dict)
     scope_output_errors: dict = field(default_factory=dict)
     published_outputs: set = field(default_factory=set)
+    published_finishes: set = field(default_factory=set)
     scopes_finished: set = field(default_factory=set)
     scope_specs: dict = field(default_factory=dict)
     physical_work_count: int = 0
     logical_use_count: int = 0
     expanded_items: int = 0
     final_snapshot: object | None = None
+    admitted_bindings: dict = field(default_factory=dict)
+    admitted_fragments: dict = field(default_factory=dict)
+    input_reader: object | None = None
+    result_readers: list = field(default_factory=list)
 
 
 @dataclass
@@ -367,13 +385,15 @@ class ExecutionSession:
             self._thread = Thread(target=self._coordinate, name="stratbox-coordinator", daemon=True)
             self._thread.start()
 
-    def submit(self, plan, *, context=None, timeout=None):
+    def submit(self, plan, *, context=None, timeout=None, execution_timeout=None):
         from stratbox.composition.models import ExecutionPlan
         if not isinstance(plan, ExecutionPlan):
             raise TypeError("execution.plan_required")
         from stratbox.composition import validate_plan
         validate_plan(plan, self.catalog)
-        plan = self._isolate(plan)
+        if timeout is not None and execution_timeout is not None:
+            raise ValueError("execution.deadline_conflict")
+        timeout = execution_timeout if execution_timeout is not None else timeout
         if timeout is not None and (not isinstance(timeout, (int, float)) or not isfinite(timeout) or timeout < 0):
             raise ValueError("execution.invalid_timeout")
         with self._condition:
@@ -381,16 +401,15 @@ class ExecutionSession:
                 raise RuntimeError("execution.session_closed")
             if len(self._pending) >= self.settings.pending_runs:
                 raise RuntimeError("execution.run_queue_full")
-            run = _Run(plan, uuid4().hex, context or self.context)
-            run.deadline = None if timeout is None else monotonic() + timeout
+            reader = ValueReadScope()
             try:
-                self._add_scopes(run, plan.scopes)
-                self._add_tasks(run, plan.tasks)
-                self._select_outputs(run, plan.outputs)
-                self.journal.reserve_run(run.run_id, publications=self._publication_budget(plan.tasks, plan.scopes))
-                self.effects.begin_run(run.run_id)
-            except Exception:
-                self.journal.release_run(run.run_id)
+                with reader.activate():
+                    plan = isolate_plan(plan, self.ledger)
+                run = _Run(plan, uuid4().hex, context or self.context, input_reader=reader)
+                run.deadline = None if timeout is None else monotonic() + timeout
+                self._admit_plan(run, plan, initial=True)
+            except BaseException:
+                reader.close()
                 raise
             self._runs[run.run_id] = run
             self._pending.append(run.run_id)
@@ -399,14 +418,58 @@ class ExecutionSession:
             self._condition.notify_all()
             return RunHandle(self, run)
 
+    def _service_scope(self, tasks, scope_id):
+        effects = [self.catalog.get(task.operation_id).possible_effects for task in tasks
+            if task.operation_id is not None and (task.scope_id == scope_id or task.scope_id.startswith(scope_id + "/"))]
+        return bool(effects) and all(bool(group) and all(kind.startswith(("notification.", "notifications."))
+            for kind in group) for group in effects)
+
     def _publication_budget(self, tasks, scopes):
-        values = sum(getattr(scope, "kind", None) == "operation" and
-            getattr(getattr(port, "schema", None), "role", None) is not None
-            for scope in scopes for port in getattr(scope, "output_contracts", {}).values())
+        tasks = tuple(tasks)
+        values_and_finishes = sum(len(scope.outputs) + 1 for scope in scopes
+            if not self._service_scope(tasks, scope.scope_id))
         effects = sum(len({kind for kind in self.catalog.get(task.operation_id).possible_effects
             if not kind.startswith(("notification.", "notifications."))})
             for task in tasks if task.operation_id is not None)
-        return values + effects
+        return values_and_finishes + effects
+
+    def _admit_plan(self, run, plan, *, initial=False, item_key=None):
+        """Admit a complete immutable fragment before any part becomes runnable."""
+        from stratbox.composition import validate_plan
+        validate_plan(plan, self.catalog)
+        from stratbox.shared.identifiers import safe_token
+        for scope in plan.scopes:
+            safe_token(scope.definition_id)
+            if scope.kind not in {"command", "operation", "scenario", "cascade"} or (
+                    not isinstance(scope.scope_id, str) or not scope.scope_id or len(scope.scope_id) > 2048):
+                raise ValueError("execution.publication_coordinates_invalid")
+            for name in scope.outputs:
+                safe_token(name)
+        task_ids = {task.task_id for task in plan.tasks}
+        scope_ids = {scope.scope_id for scope in plan.scopes}
+        if task_ids & (run.tasks.keys() | run.archived.keys()):
+            raise ValueError("execution.duplicate_task")
+        if scope_ids & run.scope_specs.keys() or set(plan.selected_bindings) - scope_ids:
+            raise ValueError("execution.duplicate_scope")
+        with ValueReadScope():
+            self._admit_specs(run, plan.tasks)
+        count = self._publication_budget(plan.tasks, plan.scopes)
+        if initial:
+            try:
+                self.journal.reserve_run(run.run_id, publications=count)
+                self.effects.begin_run(run.run_id)
+            except BaseException:
+                self.journal.release_run(run.run_id)
+                raise
+        else:
+            self.journal.reserve_publications(run.run_id, count)
+        # Everything below installs already-validated metadata under the
+        # coordinator lock. No worker or external publication can see a prefix.
+        self._add_scopes(run, plan.scopes)
+        self._add_tasks(run, plan.tasks, item_key=item_key, admitted=True)
+        run.admitted_bindings.update(plan.selected_bindings)
+        run.admitted_fragments[plan.scopes[0].scope_id if plan.scopes else plan.plan_id] = plan.plan_id
+        self._select_outputs(run, plan.outputs)
 
     def run(self, plan, **options):
         return self.submit(plan, **options).result()
@@ -459,7 +522,12 @@ class ExecutionSession:
                             for task in run.tasks.values()),
             physical_work_count=run.physical_work_count,
             logical_use_count=run.logical_use_count,
-            scopes=MappingProxyType(dict(run.scope_states)))
+            scopes=MappingProxyType(dict(run.scope_states)),
+            waiting_for_ack=any(task.reason == "publication_ack" for task in run.tasks.values()),
+            waiting_reason="publication_ack" if any(task.reason == "publication_ack" for task in run.tasks.values()) else None,
+            waiting_since=min((task.map_state.waiting_since for task in run.tasks.values()
+                if task.map_state is not None and task.map_state.waiting_since is not None), default=None),
+            wait_policy=self.settings.publication_wait_policy, execution_deadline=run.deadline)
 
     def _add_scopes(self, run, scopes):
         for scope in scopes:
@@ -572,6 +640,16 @@ class ExecutionSession:
                 run.diagnostics.append("execution.observation_degraded")
 
     def _scope_event(self, run, scope_id, kind, state):
+        if kind == "scope.finished" and scope_id not in run.published_finishes:
+            scope = run.scope_specs.get(scope_id)
+            if scope is not None and not self._service_scope((task.spec for task in self._all_tasks(run)), scope_id):
+                try:
+                    self.journal.capability_finished(replace(self._correlation(run), workflow_scope_id=_token(scope_id)),
+                        capability_id=scope.definition_id, capability_kind=scope.kind, scope_id=scope_id, outcome=state)
+                    run.published_finishes.add(scope_id)
+                except Exception:
+                    if "execution.publication_pending" not in run.diagnostics:
+                        run.diagnostics.append("execution.publication_pending")
         try:
             self.journal.emit(kind, replace(self._correlation(run), workflow_scope_id=_token(scope_id)),
                 state=state, outcome=state if state in {"succeeded", "partial", "failed", "cancelled", "unknown"} else None)
@@ -661,6 +739,9 @@ class ExecutionSession:
                             if "execution.deadline" not in run.diagnostics:
                                 run.diagnostics.append("execution.deadline")
                         progress |= self._advance(run)
+                        awaiting = any(task.reason == "publication_ack" for task in run.tasks.values())
+                        if not run.token.is_set():
+                            run.state = "waiting_ack" if awaiting and not any(task.state == "running" for task in run.tasks.values()) else "running"
                         self._refresh_scopes(run)
                         if all(task.state in _TERMINAL for task in run.tasks.values()):
                             self._finish(run)
@@ -748,21 +829,21 @@ class ExecutionSession:
                 continue
             ready += 1
             if task.spec.map is not None:
+                reader = ValueReadScope()
                 try:
-                    value = self._resolve(run, task.spec.map.items)
-                    if isinstance(value, (ProjectedOutput, PreparedInput)):
-                        value = value.value
-                    if isinstance(value, MapOutput):
-                        value = value.values
-                    if isinstance(value, Mapping):
-                        iterator = iter(value.items())
-                    else:
-                        iterator = enumerate(iter(value))
-                    task.map_state = _MapState(iterator, min(task.spec.map.window or self.settings.map_window,
-                                                            self.settings.map_window))
+                    with reader.activate():
+                        value = self._resolve(run, task.spec.map.items)
+                        if isinstance(value, (ProjectedOutput, PreparedInput)):
+                            value = value.value
+                        if isinstance(value, MapOutput):
+                            value = value.values
+                        iterator = iter(value.items()) if isinstance(value, Mapping) else enumerate(iter(value))
+                        task.map_state = _MapState(LeasedIterator(iterator, reader),
+                            min(task.spec.map.window or self.settings.map_window, self.settings.map_window))
                     task.state, task.reason = "expanding", None
                     progress = True
                 except Exception:
+                    reader.close()
                     self._terminal(run, task, "failed", "execution.map_input_invalid")
                 continue
             acceptance_scope = getattr(task.spec, "acceptance_scope", None)
@@ -808,9 +889,10 @@ class ExecutionSession:
                 continue
             owner = f"{run.run_id}:{task.spec.task_id}"
             try:
-                requirements = self._requirements(replace(task.spec,
-                    parameters=self._parameter_values(self._resolve(run, task.spec.parameters)),
-                    inputs=self._resolve(run, task.spec.inputs)))
+                with ValueReadScope():
+                    requirements = self._requirements(replace(task.spec,
+                        parameters=self._parameter_values(self._resolve(run, task.spec.parameters)),
+                        inputs=self._resolve(run, task.spec.inputs)))
                 reserved = self.ledger.reserve(owner, requirements)
             except (ValueError, KeyError, TypeError) as error:
                 code = str(error) if isinstance(error, ValueError) else "execution.input_unavailable"
@@ -844,6 +926,10 @@ class ExecutionSession:
         return progress
 
     def _condition_matches(self, run, condition):
+        with ValueReadScope():
+            return self._condition_matches_owned(run, condition)
+
+    def _condition_matches_owned(self, run, condition):
         task = self._task(run, condition.task)
         if condition.statuses:
             return task.state in condition.statuses
@@ -930,7 +1016,7 @@ class ExecutionSession:
     def _execute_owned(self, run, task, owner, work=None):
         from stratbox.core.execution.values.placement import isolate_managed
         inputs = isolate_managed(self._resolve(run, task.spec.inputs), self.ledger)
-        parameters = self._isolate(self._parameter_values(self._resolve(run, task.spec.parameters)))
+        parameters = isolate_managed(self._parameter_values(self._resolve(run, task.spec.parameters)), self.ledger)
         from stratbox.core.execution.methods import method_descriptor
         definition, handler, _ = self.catalog.resolve(task.spec.operation_id)
         fingerprint = method_descriptor(definition, work=None if definition.method_refs else handler).identity.sha256
@@ -939,7 +1025,7 @@ class ExecutionSession:
         correlation = self._correlation(run, task)
         self.effects.begin_attempt(run.run_id, correlation.workflow_scope_id,
             correlation.task_id, correlation.attempt_id)
-        enclosing = [(name, binding) for name, binding in run.plan.selected_bindings.items()
+        enclosing = [(name, binding) for name, binding in run.admitted_bindings.items()
             if task.spec.scope_id.startswith(name + "/") or task.spec.scope_id == name]
         semantic = [item for item in enclosing if item[1].get("kind") == "operation"]
         selected_scope, selected = max(semantic or enclosing, key=lambda item: len(item[0]), default=(None, {}))
@@ -1126,7 +1212,9 @@ class ExecutionSession:
             task.result = managed
             task.attempt_results.append(managed)
             try:
-                self.journal.capture_result(result, correlation=self._correlation(run, task))
+                self.journal.capture_result(result, correlation=self._correlation(run, task),
+                    capability_id=task.spec.operation_id, capability_kind=task.spec.capability_kind,
+                    scope_id=task.spec.scope_id)
             except Exception:
                 if "execution.observation_degraded" not in run.diagnostics:
                     run.diagnostics.append("execution.observation_degraded")
@@ -1230,9 +1318,22 @@ class ExecutionSession:
                 state.completed[key] = (outcome, outputs)
                 del state.active[key]
                 self._archive_item(run, plan)
+                reader = state.item_readers.pop(key, None)
+                if reader is not None:
+                    if any(self._borrows_payload(value) for value in outputs.values()):
+                        run.result_readers.append(reader)
+                    else:
+                        reader.close()
                 progress = True
         if self._cancelled(run, task):
             state.exhausted = True
+            if state.pending is not None:
+                pending_key, _ = state.pending
+                reader = state.item_readers.pop(pending_key, None)
+                state.pending = None
+                if reader is not None:
+                    reader.close()
+            state.waiting_since = None
             for plan in state.active.values():
                 for spec in plan.tasks:
                     self._task(run, spec.task_id).token.set()
@@ -1267,33 +1368,34 @@ class ExecutionSession:
                     state.order.append(key)
                     state.next_index += 1
                     run.expanded_items += 1
-                    selected = replace(task.spec, map=replace(task.spec.map,
-                        inputs=self._resolve(run, task.spec.map.inputs)))
-                    plan = expand_map_item(run.plan, selected, key, value, self.catalog)
+                    reader = state.iterator.read_scope.fork()
+                    state.item_readers[key] = reader
+                    with reader.activate():
+                        plan = expand_map_item(run.plan, task.spec, key, value, self.catalog,
+                            resolve_value=lambda item: self._resolve(run, item))
                     state.pending = key, plan
                 try:
-                    self._admit_specs(run, plan.tasks)
+                    reader = state.item_readers[key]
+                    with reader.activate():
+                        self._admit_plan(run, plan, item_key=key)
                 except ValueError as error:
-                    if str(error) != "execution.expansion_capacity":
-                        raise
-                    # Keep this exact item and its selected bindings while
-                    # another admitted item drains. No worker waits for credit.
-                    live = [candidate for other in self._runs.values() for candidate in other.tasks.values()
-                            if candidate.state not in _TERMINAL]
-                    if not self._running and not any(candidate.spec.operation_id is not None for candidate in live):
-                        raise ValueError("execution.expansion_unsatisfiable")
-                    break
-                try:
-                    self.journal.reserve_publications(run.run_id, self._publication_budget(plan.tasks, plan.scopes))
-                except ValueError as error:
+                    if str(error) == "execution.expansion_capacity":
+                        live = [candidate for other in self._runs.values() for candidate in other.tasks.values()
+                                if candidate.state not in _TERMINAL]
+                        if not self._running and not any(candidate.spec.operation_id is not None for candidate in live):
+                            raise ValueError("execution.expansion_unsatisfiable")
+                        break
                     if str(error) != "orchestration.publication_capacity":
                         raise
-                    # An acknowledged journal transition frees credit on the
-                    # next coordinator pass. No worker waits for publication.
+                    if state.waiting_since is None:
+                        state.waiting_since = monotonic()
+                    task.reason = "publication_ack"
+                    if self.settings.publication_wait_policy == "bounded" and (
+                            monotonic() - state.waiting_since >= self.settings.external_wait_seconds):
+                        raise ValueError("execution.publication_ack_timeout")
                     break
-                self._add_scopes(run, plan.scopes)
-                self._add_tasks(run, plan.tasks, item_key=key, admitted=True)
-                self._select_outputs(run, plan.outputs)
+                state.waiting_since = None
+                task.reason = None
                 state.active[key] = plan
                 state.pending = None
                 self._emit(run, "map.expanded", task, state="expanding", completed=len(state.order),
@@ -1301,6 +1403,10 @@ class ExecutionSession:
             except Exception as error:
                 state.exhausted = True
                 state.pending = None
+                state.waiting_since = None
+                for pending_key in tuple(state.item_readers):
+                    if pending_key not in state.active:
+                        state.item_readers.pop(pending_key).close()
                 code = str(error)
                 task.reason = code if code.startswith(("execution.", "resource.", "capability.", "orchestration.")) else "execution.map_expansion_failed"
             progress = True
@@ -1320,9 +1426,21 @@ class ExecutionSession:
                 outcome = "partial"
             else:
                 outcome = "succeeded"
+            state.iterator.close()
+            for reader in state.item_readers.values():
+                reader.close()
+            state.item_readers.clear()
             self._terminal(run, task, outcome, task.reason)
             return True
         return progress
+
+    @staticmethod
+    def _borrows_payload(value):
+        if isinstance(value, (ManagedResult, ManagedProjection, ManagedCollection)):
+            return False
+        if isinstance(value, MapOutput):
+            return any(ExecutionSession._borrows_payload(item) for _, item in value.items)
+        return True
 
     def _archive_item(self, run, plan):
         self._reclaim(run)
@@ -1514,11 +1632,11 @@ class ExecutionSession:
                 states[name] = "accepted"
                 outputs[name] = reference
                 errors.pop(name, None)
-            if getattr(scope, "kind", None) == "operation":
+            if not self._service_scope((task.spec for task in self._all_tasks(run)), scope_id):
                 fresh = {name: values[name] for name in candidates if (scope_id, name) not in run.published_outputs}
                 if fresh:
-                    self._accepted_facts(run, scope, fresh, "succeeded")
-                    run.published_outputs.update((scope_id, name) for name in fresh)
+                    published = self._accepted_facts(run, scope, fresh, "succeeded")
+                    run.published_outputs.update((scope_id, name) for name in published)
             if not finished:
                 run.scope_states[scope_id] = "running"
                 continue
@@ -1541,31 +1659,42 @@ class ExecutionSession:
 
     def _accepted_facts(self, run, scope, outputs, outcome):
         from stratbox.core.execution.values import value_identity
+        from stratbox.shared.data.assessment import value_evidence
+        from stratbox.core.execution.value_context import value_context
+        published = []
         for name, value in outputs.items():
             port = getattr(scope, "output_contracts", {}).get(name)
-            role = getattr(getattr(port, "schema", None), "role", None)
-            if role is None:
-                continue
+            schema = getattr(port, "schema", None)
+            role = getattr(schema, "role", None)
+            acceptance_id = _token(f"{run.run_id}:{scope.scope_id}:{name}")
             try:
                 identity = value_identity(value)
-                acceptance_id = _token(f"{run.run_id}:{scope.scope_id}:{name}")
-                value_id = _token(f"{scope.definition_id}:{name}:{identity.sha256}")
-                from stratbox.shared.data.assessment import value_evidence
+            except (ValueError, TypeError, AttributeError):
+                identity = None
+            value_id = (_token(f"{scope.definition_id}:{name}:{identity.sha256}")
+                        if identity is not None else "accepted-" + acceptance_id)
+            try:
                 actual = value_evidence(value)
                 qualification = next(iter(sorted(actual.qualifications)), "unqualified")
-                coverage = actual.coverage
-                complete = getattr(coverage, "status", None) == "complete"
-                from stratbox.core.execution.value_context import value_context
-                source_ids = value_context(value, port.schema).source_ids
-                source_id = next(iter(source_ids)) if len(source_ids) == 1 else getattr(value, "source_id", None)
-                self.journal.accepted_value(replace(self._correlation(run),
-                    workflow_scope_id=_token(scope.scope_id)), value_id=value_id,
-                    stage=scope.definition_id, role=role.value, identity=identity,
-                    source_id=source_id, qualification=qualification,
-                    complete=complete, acceptance_id=acceptance_id)
+                complete = getattr(actual.coverage, "status", None) == "complete"
             except Exception:
-                if "execution.observation_degraded" not in run.diagnostics:
-                    run.diagnostics.append("execution.observation_degraded")
+                qualification, complete = "unqualified", False
+            try:
+                source_ids = value_context(value, schema).source_ids
+                source_id = next(iter(source_ids)) if len(source_ids) == 1 else getattr(value, "source_id", None)
+            except Exception:
+                source_id = None
+            try:
+                self.journal.accepted_value(replace(self._correlation(run), workflow_scope_id=_token(scope.scope_id)),
+                    value_id=value_id, stage=scope.definition_id, role=role.value if role is not None else None,
+                    identity=identity, identity_status="available" if identity is not None else "unavailable",
+                    source_id=source_id, qualification=qualification, complete=complete, acceptance_id=acceptance_id,
+                    capability_id=scope.definition_id, capability_kind=scope.kind, scope_id=scope.scope_id, output_name=name)
+                published.append(name)
+            except Exception:
+                if "execution.publication_pending" not in run.diagnostics:
+                    run.diagnostics.append("execution.publication_pending")
+        return tuple(published)
 
     def _accepted_output(self, run, reference):
         from stratbox.composition.plan import ScopeOutputRef
@@ -1598,7 +1727,8 @@ class ExecutionSession:
         managed = tuple(dict.fromkeys(result for task in all_tasks
             for result in (task.result, *task.attempt_results) if isinstance(result, ManagedResult)))
         ownership = ResultOwnership(self.ledger, tuple(run.retained_owners), run.spill, managed=managed,
-            on_close=lambda: self.effects.release_run(run.run_id))
+            on_close=lambda: self.effects.release_run(run.run_id),
+            readers=tuple(run.result_readers) + ((run.input_reader,) if run.input_reader is not None else ()))
         self.effects.finish_run(run.run_id)
         self.journal.release_publications(run.run_id)
         result = RunResult(run.run_id, run.plan.plan_id, outcome, ValueMapping(outputs),
@@ -1618,9 +1748,8 @@ class ExecutionSession:
                 pass
         self._emit(run, "run.finished", state=outcome, outcome=outcome,
                    completed=len(all_tasks), total=len(all_tasks), counters=counters,
-                   service=bool([task for task in all_tasks if task.spec.operation_id]) and
-                       all(task.spec.operation_id.startswith(("notifications.", "notification.", "subscription."))
-                           for task in all_tasks if task.spec.operation_id))
+                   service=self._service_scope((task.spec for task in all_tasks), run.plan.scopes[0].scope_id)
+                       if run.plan.scopes else False)
         snapshot = self._snapshot_run(run)
         detail_limit = self.settings.event_capacity
         self._history[run.run_id] = replace(snapshot, tasks=snapshot.tasks[-detail_limit:],
@@ -1638,5 +1767,9 @@ class ExecutionSession:
         run.order.clear()
         run.scope_specs.clear()
         run.scope_outputs.clear()
+        run.admitted_bindings.clear()
+        run.admitted_fragments.clear()
         run.plan, run.spill = None, None
+        run.input_reader = None
+        run.result_readers.clear()
         run.future.set_result(result)

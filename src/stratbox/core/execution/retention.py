@@ -235,8 +235,8 @@ class ValueMapping(Mapping):
 
     def __getitem__(self, key):
         from stratbox.core.execution.values.ownership import isolate_value
-        from stratbox.core.execution.values.placement import resolve_managed
-        value = resolve_managed(self._entries[key])
+        from stratbox.core.execution.values.placement import detach_managed
+        value = detach_managed(self._entries[key])
         if self._unwrap:
             from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput
             if isinstance(value, (PreparedInput, ProjectedOutput)):
@@ -299,8 +299,9 @@ class ResultOwnership:
     closes, so accounting follows the promised result rather than the executor.
     """
 
-    def __init__(self, ledger, owners=(), spill=None, *, managed=(), on_close=None):
+    def __init__(self, ledger, owners=(), spill=None, *, managed=(), readers=(), on_close=None):
         self._managed = tuple(dict.fromkeys(managed))
+        self._owned_readers = tuple(dict.fromkeys(readers))
         managed_owners = {item.reservation_owner for item in self._managed}
         self._ledger, self._owners, self._spill = ledger, tuple(owner for owner in owners if owner not in managed_owners), spill
         self._on_close = on_close
@@ -365,6 +366,9 @@ class ResultOwnership:
         for managed in self._managed:
             managed.close()
         self._managed = ()
+        for reader in self._owned_readers:
+            reader.close()
+        self._owned_readers = ()
         if self._spill is not None:
             self._spill.close()
         if self._ledger is not None:

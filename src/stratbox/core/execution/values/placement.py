@@ -7,6 +7,7 @@ hold an explicitly accounted materialization lease for their complete use.
 from __future__ import annotations
 
 from contextvars import ContextVar
+from contextlib import contextmanager
 from collections.abc import Mapping
 from dataclasses import dataclass, fields, is_dataclass, replace
 from threading import RLock
@@ -25,21 +26,74 @@ class ValueReadScope:
         self._results = {}
         self._collections = {}
         self._token = None
+        self._closed = False
+        self._released = False
+        self._children = 0
+        self._parent = None
+        self._lock = RLock()
 
     def __enter__(self):
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
         self._token = _read_scope.set(self)
         return self
 
+    @contextmanager
+    def activate(self):
+        """Bind a long-lived consumer scope without ending its owned leases."""
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
+        token = _read_scope.set(self)
+        try:
+            yield self
+        finally:
+            _read_scope.reset(token)
+
+    def resolve(self, value):
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
+        return _resolve_with_scope(value, self)
+
+    def fork(self):
+        """Retain an existing materialization for an admitted dynamic plan.
+
+        The child shares already opened read leases rather than decoding a
+        second copy. Its later reads and isolated values belong to the child.
+        Parent close waits for every descendant that still uses its payloads.
+        """
+        with self._lock:
+            if self._closed:
+                raise ValueError("value.read_scope_closed")
+            child = ValueReadScope()
+            child._results = dict(self._results)
+            child._collections = dict(self._collections)
+            child._parent = self
+            self._children += 1
+            return child
+
     def hold(self, lease):
-        self._leases.append(lease)
+        self.own(lease)
         return lease.value
 
+    def own(self, lease):
+        """Adopt one owned allocation, refusing admission after close."""
+        with self._lock:
+            if self._closed:
+                lease.close()
+                raise ValueError("value.read_scope_closed")
+            self._leases.append(lease)
+        return lease
+
     def result(self, owner):
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
         if owner not in self._results:
             self._results[owner] = self.hold(owner.read())
         return self._results[owner]
 
     def collection(self, value):
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
         from stratbox.core.execution.handoff import collect_inputs, PreparedInput
         key = id(value)
         if key not in self._collections:
@@ -58,7 +112,11 @@ class ValueReadScope:
     def isolate(self, value, ledger, *, resource="retained_bytes"):
         """Admit a mutable worker copy before allocating its payload buffers."""
         from .ownership import isolate_value
+        if self._closed:
+            raise ValueError("value.read_scope_closed")
         size = _copy_size(value)
+        if not size:
+            return isolate_value(value)
         owner = "consumer-copy:" + uuid4().hex
         if ledger is not None and not ledger.reserve(owner, {resource: size}):
             raise ValueError("resource." + resource)
@@ -68,15 +126,39 @@ class ValueReadScope:
             if ledger is not None:
                 ledger.release(owner)
             raise
-        self._leases.append(_CapacityLease(ledger, owner))
+        self.own(_CapacityLease(ledger, owner))
         return isolated
 
     def close(self):
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            self._collect()
+
+    def _child_closed(self):
+        with self._lock:
+            self._children -= 1
+            self._collect()
+
+    def _collect(self):
+        if not self._closed or self._children or self._released:
+            return
         self._results.clear()
         self._collections.clear()
         for lease in reversed(self._leases):
             lease.close()
         self._leases.clear()
+        self._released = True
+        parent, self._parent = self._parent, None
+        if parent is not None:
+            parent._child_closed()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def __exit__(self, *exc):
         try:
@@ -86,8 +168,16 @@ class ValueReadScope:
 
 
 def resolve_managed(value):
-    """Resolve into the active core read scope, or hand a detached copy out."""
-    return _resolve_with_scope(value, _read_scope.get())
+    """Resolve an internal read only under an explicit accounted owner."""
+    scope = _read_scope.get()
+    if scope is None:
+        raise ValueError("value.read_scope_required")
+    return scope.resolve(value)
+
+
+def detach_managed(value):
+    """Explicitly transfer a detached value to a public caller."""
+    return _resolve_with_scope(value, None)
 
 
 def _resolve_with_scope(value, scope):
@@ -115,9 +205,76 @@ def _resolve_with_scope(value, scope):
 
 def isolate_managed(value, ledger, *, resource="retained_bytes"):
     """Use the active handler read scope for worker-owned mutable copies."""
-    from .ownership import isolate_value
     scope = _read_scope.get()
-    return isolate_value(value) if scope is None else scope.isolate(value, ledger, resource=resource)
+    if scope is None:
+        raise ValueError("value.read_scope_required")
+    return scope.isolate(value, ledger, resource=resource)
+
+
+def isolate_plan(plan, ledger):
+    """Isolate bound materials while reusing graph-control metadata."""
+    from .plan_inputs import isolate_plan as isolate
+    return isolate(plan, ledger)
+
+
+class LeasedIterator:
+    """Keep the source materialization owned through all dynamic consumers.
+
+    Exhaustion does not release a map's material while admitted child plans
+    still hold its elements. The coordinator closes this owner after those
+    consumers drain, including cancellation and failed expansion.
+    """
+    def __init__(self, iterator, scope):
+        if not isinstance(scope, ValueReadScope):
+            raise TypeError("value.read_scope_required")
+        self._iterator, self._scope = iter(iterator), scope
+        self._lock = RLock()
+        self._closed = False
+
+    @property
+    def read_scope(self):
+        if self._closed:
+            raise ValueError("value.iterator_closed")
+        return self._scope
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        with self._lock:
+            if self._closed:
+                raise StopIteration
+            with self._scope.activate():
+                return next(self._iterator)
+
+    def close(self):
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            iterator, self._iterator = self._iterator, None
+            try:
+                close = getattr(iterator, "close", None)
+                if close is not None:
+                    close()
+            finally:
+                # Drop the iterator's own element references before releasing
+                # the materialization that served its admitted descendants.
+                del iterator
+                scope, self._scope = self._scope, None
+                scope.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 def _copy_size(value, *, root=True):

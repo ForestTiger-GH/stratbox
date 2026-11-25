@@ -5,11 +5,12 @@ from dataclasses import dataclass, fields, replace, is_dataclass
 from graphlib import TopologicalSorter, CycleError
 from typing import Mapping
 
+from stratbox.capabilities.model.definitions import declaration_fingerprint
 from stratbox.core.execution.handoff import PreparedInput, ProjectedOutput, prepare_input, adapt_input
 from stratbox.core.execution.methods import method_descriptor
 from stratbox.core.execution.values import argument_identity
 from stratbox.shared.data.operations import OutputPort, compatible_ports, assess_input
-from .plan import ScopeOutputRef, task_conditions
+from .plan import ScopeOutputRef, task_conditions, ExpansionValueResolver
 from .models import (
     CascadeDefinition, CollectStep, CompiledMap, CompiledTask, CompositionError,
     ExecutionPlan, InputRef, MapStep, OperationStep, PlanOutputRef, PlanScope,
@@ -508,7 +509,32 @@ def _plan_ports(plan, catalog):
     return tuple(ports)
 
 
-def expand_map_item(plan, task, key, value, catalog):
+def _resolve_expansion_value(value, resolver):
+    if resolver is None:
+        if tuple(iter_references(value)):
+            raise CompositionError("composition.expansion_resolution_required")
+        return value
+    resolved = resolver(value)
+    if tuple(iter_references(resolved)):
+        raise CompositionError("composition.expansion_reference_unresolved")
+    return resolved
+
+
+def _selector_values(value):
+    """Unwrap control values only; data and parameter evidence stays typed."""
+    if isinstance(value,(PreparedInput,ProjectedOutput)):
+        return _selector_values(value.value)
+    if isinstance(value,Mapping):
+        return {key:_selector_values(item) for key,item in value.items()}
+    if isinstance(value,tuple):
+        return tuple(_selector_values(item) for item in value)
+    if isinstance(value,list):
+        return [_selector_values(item) for item in value]
+    return value
+
+
+def expand_map_item(plan, task, key, value, catalog, *,
+                    resolve_value: ExpansionValueResolver | None = None) -> ExecutionPlan:
     """Materialize one admitted map item; the runtime owns its window credit."""
     if task.map is None:
         raise CompositionError("composition.map_required")
@@ -520,11 +546,12 @@ def expand_map_item(plan, task, key, value, catalog):
         from urllib.parse import quote
         from .prepare import prepare_invocation
         encoded = quote(key,safe="") if key not in {".",".."} else key.replace(".","%2E")
-        arguments = dict(task.map.inputs)
+        arguments = dict(_resolve_expansion_value(task.map.inputs,resolve_value))
         parameters = arguments.pop("$parameters",{})
-        arguments[task.map.item_input] = value
+        arguments[task.map.item_input] = _resolve_expansion_value(value,resolve_value)
+        selection = _selector_values(_resolve_expansion_value(task.map.body.selection,resolve_value))
         return prepare_invocation(task.map.body.capability_id,catalog.snapshot,catalog,
-            inputs=arguments,parameters=parameters,outputs=task.map.body.outputs,selection=task.map.body.selection,
+            inputs=arguments,parameters=parameters,outputs=task.map.body.outputs,selection=selection,
             _prefix=task.task_id + "/" + encoded)
     probe = compile_workflow(task.map.body, catalog,
         inputs={name: _DeferredInput(name, contract) for name, contract in task.map.body.inputs.items()}, _defer=True)
@@ -534,8 +561,8 @@ def expand_map_item(plan, task, key, value, catalog):
     from urllib.parse import quote
     encoded_key = quote(key, safe="") if key not in {".", ".."} else key.replace(".", "%2E")
     prefix = task.task_id + "/" + encoded_key
-    arguments = dict(task.map.inputs)
-    arguments[task.map.item_input] = value
+    arguments = dict(_resolve_expansion_value(task.map.inputs,resolve_value))
+    arguments[task.map.item_input] = _resolve_expansion_value(value,resolve_value)
     return compile_workflow(task.map.body, catalog, inputs=arguments, prefix=prefix)
 
 
@@ -648,7 +675,7 @@ def validate_plan(plan, catalog):
         for key, fingerprint in identities.items():
             if key.startswith("schema:") and snapshot.schema(key[len("schema:"):]).fingerprint != fingerprint:
                 raise CompositionError("composition.schema_changed")
-            if key.startswith("reference:") and snapshot.reference(key[len("reference:"):]).fingerprint != fingerprint:
+            if key.startswith("reference:") and declaration_fingerprint(snapshot.reference(key[len("reference:"):])) != fingerprint:
                 raise CompositionError("composition.reference_changed")
     for binding in plan.selected_bindings.values():
         snapshot.validate_binding(binding)
@@ -663,6 +690,7 @@ def validate_plan(plan, catalog):
         references = (*iter_references(task.inputs), *iter_references(task.parameters),
                       *iter_references(task.map.items if task.map else ()),
                       *iter_references(task.map.inputs if task.map else ()),
+                      *iter_references(getattr(task.map.body,"selection",{}) if task.map else ()),
                       *iter_references(task.collect.inputs if task.collect else ()))
         required_dependencies = {ref.task for ref in references}
         for condition in task_conditions(task):
@@ -694,7 +722,6 @@ def validate_plan(plan, catalog):
                 raise CompositionError("handoff.parameter_required")
             _validate_parameters(task, index, catalog)
             if task.capability_kind == "command" and task.scope_id in plan.selected_bindings:
-                from stratbox.capabilities.model.definitions import declaration_fingerprint
                 authored = snapshot.definition(task.operation_id)
                 selected_binding = plan.selected_bindings[task.scope_id]
                 if (task.reuse_contract != authored.reuse
@@ -765,7 +792,8 @@ def validate_plan(plan, catalog):
     for task in plan.tasks:
         for ref in (*iter_references(task.inputs), *iter_references(task.parameters),
                     *iter_references(task.map.items if task.map else ()),
-                    *iter_references(task.map.inputs if task.map else ())):
+                    *iter_references(task.map.inputs if task.map else ()),
+                    *iter_references(getattr(task.map.body,"selection",{}) if task.map else ())):
             output_port(ref)
         if task.operation_id:
             definition = definitions[task.operation_id]

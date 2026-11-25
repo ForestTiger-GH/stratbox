@@ -15,3 +15,5 @@ from .prepare import prepare_invocation, prepare_goal
 from .explain import explain_plan
 
 from .plan import ScopeOutputRef, task_conditions
+
+from .plan import ExpansionValueResolver

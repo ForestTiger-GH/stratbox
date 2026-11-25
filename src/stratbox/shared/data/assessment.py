@@ -11,6 +11,7 @@ from datetime import date
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.identifiers import safe_token
+from stratbox.shared.data.source_context import SourceUse, source_use_from, source_use_value
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +138,7 @@ class CalculationEvidence:
     origin_policy: str
     release_policy: str
     rationale: str
+    source_uses: tuple[tuple[str, SourceUse], ...] = ()
 
     def __post_init__(self):
         safe_token(self.rule_id)
@@ -145,6 +147,11 @@ class CalculationEvidence:
                 or any(not isinstance(item, tuple) or len(item) != 3 or not isinstance(item[0], str)
                        or not isinstance(item[1], ByteIdentity) or not isinstance(item[2], str) for item in self.inputs)):
             raise ValueError("assessment.calculation_evidence_invalid")
+        roles = {role for role, _, _ in self.inputs}
+        if (not isinstance(self.source_uses, tuple)
+                or any(not isinstance(item, tuple) or len(item) != 2 or item[0] not in roles
+                    or not isinstance(item[1], SourceUse) for item in self.source_uses)):
+            raise ValueError("assessment.calculation_source_evidence_invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,6 +224,8 @@ def selected_evidence(evidence, observations):
 def assessment_value(value):
     if isinstance(value, ByteIdentity):
         return {"sha256": value.sha256, "size": value.size}
+    if isinstance(value, SourceUse):
+        return source_use_value(value)
     if isinstance(value, (ProcessingFinding, CoverageCoordinate, CoverageAssessment, CalculationEvidence, ValueEvidence)):
         return {field.name: assessment_value(getattr(value, field.name)) for field in fields(value)}
     if isinstance(value, (tuple, frozenset)):
@@ -258,10 +267,11 @@ def assessment_from(kind, value):
             data["expected_coordinates"] = tuple(assessment_from("CoverageCoordinate", item) for item in data["expected_coordinates"])
         return CoverageAssessment(**data)
     if kind == "CalculationEvidence":
-        if not isinstance(value["inputs"], list):
+        if not isinstance(value["inputs"], list) or not isinstance(value["source_uses"], list):
             raise ValueError("assessment.encoding_invalid")
         return CalculationEvidence(**{**value,
-            "inputs": tuple((role, ByteIdentity(**identity), release) for role, identity, release in value["inputs"])})
+            "inputs": tuple((role, ByteIdentity(**identity), release) for role, identity, release in value["inputs"]),
+            "source_uses": tuple((role, source_use_from(use)) for role, use in value["source_uses"])})
     raise ValueError("assessment.kind_unsupported")
 
 

@@ -71,6 +71,8 @@ def test_cancel_after_physical_start_retains_fact_but_revokes_current_promotion(
     assert not worker.is_alive()
     record = authority.lookup('run', 'scope', 'save')
     assert record.receipt.state == 'confirmed'
+    assert record.destination_current is True
+    assert record.attempt_authorized is False
     assert record.current is False
 
 

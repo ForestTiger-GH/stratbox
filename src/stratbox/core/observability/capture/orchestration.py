@@ -17,6 +17,8 @@ from stratbox.core.observability.journal.sources import StreamKey
 from stratbox.core.observability.records.field_policy import validate_builtin_fields
 from stratbox.core.observability.records.orchestration import OrchestrationEvent, record_from_orchestration_event
 
+_FACT_KINDS = frozenset({"value.accepted", "effect.confirmed", "capability.finished"})
+
 
 @dataclass(frozen=True, slots=True)
 class OrchestrationHealth:
@@ -133,7 +135,7 @@ class OrchestrationJournal:
             raise ValueError("orchestration.publication_unsatisfiable")
         with self._lock:
             self.flush_transitions()
-            facts = sum(record.kind in {"value.accepted", "effect.confirmed"}
+            facts = sum(record.kind in _FACT_KINDS
                         for record in self._pending_transitions.values())
             if facts + sum(self._publication_credits.values()) + count > self._publication_capacity:
                 raise ValueError("orchestration.publication_capacity")
@@ -222,13 +224,15 @@ class OrchestrationJournal:
     def capture(self, record):
         return self.capture_disposition(record).accepted
 
-    def capture_result(self, result, *, correlation=None):
+    def capture_result(self, result, *, correlation=None, capability_id=None,
+                       capability_kind=None, scope_id=None):
         from stratbox.core.observability.capture.operations import capture_operation_result
         with self._lock:
             finished = self._finished_events.pop(result.invocation_id, None)
         for receipt in result.effects:
             try:
-                self.confirmed_effect(correlation or (finished.correlation if finished is not None else Correlation()), receipt)
+                self.confirmed_effect(correlation or (finished.correlation if finished is not None else Correlation()), receipt,
+                    capability_id=capability_id, capability_kind=capability_kind, scope_id=scope_id)
             except Exception:
                 with self._lock:
                     self._publication_failures += 1
@@ -240,15 +244,22 @@ class OrchestrationJournal:
 
     def accepted_value(self, correlation, *, value_id, stage, role, identity,
                        source_id=None, qualification="reported", complete=True,
-                       acceptance_id=None, occurred_at_utc=None):
+                       acceptance_id=None, occurred_at_utc=None, capability_id=None,
+                       capability_kind=None, scope_id=None, output_name=None, identity_status=None):
         """Retain accepted state separately from lossy diagnostic observation."""
         from stratbox.core.observability.capture.adapters import record_from_fact
         from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id
-        payload = dict(data_version=1, value_id=value_id, stage=stage, role=role,
-                       identity=dict(sha256=identity.sha256, size=identity.size),
+        actual_status = "available" if identity is not None else "unavailable"
+        if identity_status is not None and identity_status != actual_status:
+            raise ValueError("journal.value_identity_status_mismatch")
+        payload = dict(data_version=2, value_id=value_id, stage=stage, role=role,
+                       identity=dict(sha256=identity.sha256, size=identity.size) if identity is not None else None,
+                       identity_status=actual_status,
                        source_id=source_id, qualification=qualification, complete=complete,
                        acceptance_id=acceptance_id or sha256(
-                           f"{correlation.session_id}:{correlation.run_id}:{correlation.workflow_scope_id}:{correlation.task_id}:{value_id}".encode()).hexdigest())
+                           f"{correlation.session_id}:{correlation.run_id}:{correlation.workflow_scope_id}:{correlation.task_id}:{value_id}".encode()).hexdigest(),
+                       capability_id=capability_id, capability_kind=capability_kind,
+                       scope_id=scope_id, output_name=output_name)
         subject = ObjectRef("value", value_id, identity=identity)
         fact_id = make_fact_id("value.accepted", subject, payload)
         fact = DomainFact("value.accepted", subject, fact_id,
@@ -257,7 +268,28 @@ class OrchestrationJournal:
         record = record_from_fact(fact)
         return self._publish_fact(record)
 
-    def confirmed_effect(self, correlation, receipt):
+    def capability_finished(self, correlation, *, capability_id, capability_kind,
+                            scope_id, outcome, occurred_at_utc=None):
+        """Retain the terminal state of one logical invocation at any level.
+
+        Completion is separate from accepted named outputs and confirmed
+        external writes. The journal is the sole subscription source.
+        """
+        from stratbox.core.observability.capture.adapters import record_from_fact
+        from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id
+        completion_id = sha256(
+            f"{correlation.session_id}:{correlation.run_id}:{scope_id}".encode()).hexdigest()
+        payload = dict(data_version=1, capability_id=capability_id, capability_kind=capability_kind,
+                       scope_id=scope_id, outcome=outcome, completion_id=completion_id)
+        subject = ObjectRef("capability", capability_id)
+        fact_id = make_fact_id("capability.finished", subject, payload)
+        record = record_from_fact(DomainFact("capability.finished", subject, fact_id,
+            occurred_at_utc or datetime.now(timezone.utc), payload, observation_id=fact_id,
+            correlation=correlation))
+        return self._publish_fact(record)
+
+    def confirmed_effect(self, correlation, receipt, *, capability_id=None,
+                         capability_kind=None, scope_id=None):
         """Publish a confirmed destination receipt independently of computation."""
         if receipt.state != "confirmed" or receipt.effect_id is None:
             return None
@@ -265,11 +297,13 @@ class OrchestrationJournal:
             return None
         from stratbox.core.observability.capture.adapters import record_from_fact
         from stratbox.core.observability.records.contracts import DomainFact, ObjectRef, make_fact_id
-        payload = dict(data_version=1, effect_id=receipt.effect_id,
+        payload = dict(data_version=2, effect_id=receipt.effect_id,
             effect_kind=receipt.kind, state=receipt.state,
             identity=(dict(sha256=receipt.identity.sha256, size=receipt.identity.size) if receipt.identity is not None else None),
             destination_id=sha256(receipt.reference.encode()).hexdigest() if receipt.reference is not None else None,
-            guarantee=receipt.guarantee, stage=receipt.stage)
+            guarantee=receipt.guarantee, stage=receipt.stage,
+            capability_id=capability_id, capability_kind=capability_kind,
+            scope_id=scope_id, output_name=None)
         subject = ObjectRef("effect", receipt.effect_id, identity=receipt.identity)
         fact_id = make_fact_id("effect.confirmed", subject, payload)
         record = record_from_fact(DomainFact("effect.confirmed", subject, fact_id,
@@ -315,7 +349,7 @@ class OrchestrationJournal:
             published = 0
             for identity, record in tuple(self._pending_transitions.items()):
                 try:
-                    if record.kind in {"value.accepted", "effect.confirmed"}:
+                    if record.kind in _FACT_KINDS:
                         key = "fact." + record.fact_id
                         if not self.facts_source.has_reservation(key) and self.facts_source.lookup(key) is None:
                             self.facts_source.reserve(key)

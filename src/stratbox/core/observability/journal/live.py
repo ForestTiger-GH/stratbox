@@ -70,7 +70,7 @@ class LiveJournalSource:
 
     def append_fact(self, record: JournalRecord) -> JournalEntry:
         """Publish an accepted execution fact using its reserved stable identity."""
-        if (record.record_type != "domain_fact" or record.kind not in {"value.accepted", "effect.confirmed"}
+        if (record.record_type != "domain_fact" or record.kind not in {"value.accepted", "effect.confirmed", "capability.finished"}
                 or record.fact_id is None or record.subject is None):
             raise ValueError("journal.accepted_fact_required")
         return self._append(record, "fact." + record.fact_id)

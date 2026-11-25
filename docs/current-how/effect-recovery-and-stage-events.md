@@ -91,13 +91,14 @@ The orchestration journal exposes two independent sources:
 | Source | Retained evidence | Notification topics |
 | --- | --- | --- |
 | `journal.stream` / `journal.source` | Terminal run transitions | `run.completed`, `run.failed` |
-| `journal.facts_stream` / `journal.facts_source` | Accepted named values and confirmed physical receipts | `value.accepted`, `effect.confirmed` |
+| `journal.facts_stream` / `journal.facts_source` | Accepted named outputs, capability completion and confirmed physical receipts | `value.accepted`, `capability.completed`, `effect.confirmed` |
 
-Accepted stage facts are emitted after semantic scope acceptance, including
-required checks and effects. A successful decoder alone does not establish a
-successful extraction. Each accepted value records its role, content identity,
-source, qualification, completeness and stable acceptance identity. Independent
-A→B→A acceptances remain three transitions.
+Accepted output facts follow that output's semantic acceptance and required
+checks. Aggregate scope completion and external effect confirmation have their
+own journal facts. A successful decoder alone does not establish successful
+extraction. Each accepted value records its exact capability occurrence and output
+name, optional role, qualified content identity, source, completeness and stable
+acceptance identity. Independent A→B→A acceptances remain three transitions.
 
 Confirmed effect facts carry their exact effect ID, kind, identity and receiving
 guarantee. Destination references are projected as digests. Unknown or failed
@@ -105,8 +106,8 @@ receipts cannot become confirmed-effect facts. Notification handoff receipts
 produce no recursive notification triggers.
 
 Bind `journal.facts_source` as a `SourceBinding` with authority
-`execution.acceptance`, then configure a subscription for `value.accepted` or
-`effect.confirmed`. Value subscriptions support stage, role, source,
+`execution.acceptance`, then configure a subscription for `value.accepted`,
+`capability.completed` or `effect.confirmed`. Value subscriptions support stage, role, source,
 qualification and completeness filters. Effect subscriptions support kind,
 destination digest, guarantee and stage filters. Each subscriber retains its own
 checkpoint, revision and replay policy through the existing notification state
@@ -130,11 +131,16 @@ computation and save outputs available. `notify.reconcile` consults the existing
 attempt receipt without a second send. Consumer acceptance and external channel
 delivery retain separate evidence.
 
-Notification dispatch scanning uses a bounded window controlled by
-`max_dispatches` and `after_position`. The independent `prepared` output carries
-`next_position` for explicit continuation. A strict required handoff with no
-matching intent fails visibly instead of claiming delivery. Intent and
-checkpoint transactions remain in their existing notification state store.
+Required handoffs use `notify.required` for any configured journal topic;
+`notify.accepted` fixes the accepted-output topic and `notify.saved` fixes the
+confirmed-effect topic. Preparation freezes a journal head and selects the whole
+required dispatch set across bounded pages. `max_dispatches` is page size;
+`max_pages`, `max_scan_pages` and `max_selected_dispatches` bound the complete
+selection. Incomplete selection fails before handoff. Required batches report
+`complete=True` and `next_position=None`; history browsing retains its separate
+paginated APIs. Intent and checkpoint transactions remain in the existing state
+store. Exact capability, kind, scope and output selectors are documented in
+[Journal subscriptions for capability results](capability-notifications.md).
 
 ## Bounded observation and execution control
 

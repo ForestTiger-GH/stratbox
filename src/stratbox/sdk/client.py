@@ -154,7 +154,7 @@ class StrategyBox:
         return compile_workflow(definition, self.operations, inputs=inputs,
                                 parameters=parameters, outputs=outputs)
 
-    def submit(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None):
+    def submit(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None, execution_timeout=None):
         from stratbox.composition import ExecutionPlan
         self._check_open()
         if isinstance(definition, ExecutionPlan):
@@ -163,11 +163,12 @@ class StrategyBox:
             plan = definition
         else:
             plan = self.compile(definition, inputs=inputs, parameters=parameters, outputs=outputs, selection=selection)
-        return self.session.submit(plan)
+        return self.session.submit(plan, execution_timeout=execution_timeout)
 
-    def run(self, definition, *, inputs=None, parameters=None, outputs=None, timeout=None, selection=None):
+    def run(self, definition, *, inputs=None, parameters=None, outputs=None, timeout=None, selection=None, execution_timeout=None):
+        """Wait up to timeout; execution_timeout separately bounds the live run."""
         return self.submit(definition, inputs=inputs, parameters=parameters,
-                           outputs=outputs, selection=selection).result(timeout)
+                           outputs=outputs, selection=selection, execution_timeout=execution_timeout).result(timeout)
 
     def workflow(self, operation_id, *, inputs=None, parameters=None):
         """Bind a callable capability as a reusable explicit scenario."""
@@ -185,7 +186,7 @@ class StrategyBox:
             ), outputs=outputs)
         return workflow
 
-    def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None,
+    def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None, execution_timeout=None,
                outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):
         """Invoke any canonical kind through the common session service."""
         from stratbox.capabilities.model import CapabilityDefinition
@@ -193,7 +194,7 @@ class StrategyBox:
         if isinstance(operation_id, GoalRequest):
             if any(value is not None for value in (inputs, parameters, outputs, supplied_outputs, method_id, profile_id, group_id, selection, recipe_id)):
                 raise ValueError("composition.request_already_bound")
-            return self.run(self.prepare_goal(operation_id), timeout=timeout)
+            return self.run(self.prepare_goal(operation_id), timeout=timeout, execution_timeout=execution_timeout)
         canonical = isinstance(operation_id, (CapabilityDefinition, InvocationRequest))
         if isinstance(operation_id, str):
             try:
@@ -205,11 +206,11 @@ class StrategyBox:
             plan = self.prepare(operation_id, inputs=inputs, parameters=parameters, outputs=outputs,
                 supplied_outputs=supplied_outputs, method_id=method_id, profile_id=profile_id, group_id=group_id,
                 selection=selection, recipe_id=recipe_id)
-            return self.run(plan, timeout=timeout)
+            return self.run(plan, timeout=timeout, execution_timeout=execution_timeout)
         if any(value is not None for value in (selection, recipe_id, method_id, profile_id, group_id, supplied_outputs, outputs)):
             raise ValueError("composition.canonical_binding_required")
         return self.run(self.workflow(operation_id, inputs=inputs, parameters=parameters),
-                        timeout=timeout)
+                        timeout=timeout, execution_timeout=execution_timeout)
 
     def close(self, *, wait=True, cancel=False):
         with self._lock:

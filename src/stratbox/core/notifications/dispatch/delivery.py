@@ -197,9 +197,13 @@ def _admit(row, sub, runtime: NotificationRuntime, invocation: Invocation):
         raise OperationFailure("notification.route_revision_required")
     schema = runtime.catalog.input_schema(topic, record)
     data = schema.validate(record)
+    from stratbox.core.notifications.contracts import DispatchSelectionEvidence
+    if intent.selection_evidence is not None and intent.selection_evidence != DispatchSelectionEvidence.from_record(record):
+        raise ValueError("notification.selection_evidence_conflict")
     if (is_service_event(record) or any(condition.field not in grant.fields for condition in spec.filters)
             or (topic.eligible is not None and not topic.eligible(record, data))
-            or not topic.permits_mode(data, spec.filters) or not match_conditions(spec.filters, data)):
+            or not topic.permits_mode(data, spec.filters) or not match_conditions(spec.filters, data)
+            or spec.selector is not None and (not spec.selector.fields <= grant.fields or not spec.selector.matches(data))):
         raise PermissionError("notification.subscription_changed")
     _verify_payload(intent, sub, topic, profile, record, data, schema.version, grant)
     return consumer, grant, record

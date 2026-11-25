@@ -78,6 +78,8 @@ def configure_subscription(
         raise OperationFailure("subscription.action_invalid" if isinstance(error, KeyError) else str(error)) from None
     if {condition.field for condition in spec.filters} - decision.fields:
         raise OperationFailure("subscription.filter_access_denied")
+    if spec.selector is not None and not spec.selector.fields <= decision.fields:
+        raise OperationFailure("subscription.selector_access_denied")
     current = runtime.state.get_subscription(spec.scope_id, spec.subscription_id)
     if (current.revision if current else None) != change.expected_revision:
         raise OperationFailure("subscription.revision_conflict")

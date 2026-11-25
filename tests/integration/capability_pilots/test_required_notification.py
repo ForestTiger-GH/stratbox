@@ -3,7 +3,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 from stratbox.capabilities.model import ScenarioDefinition, GraphBody, Call, InputRef, OutputRef
-from stratbox.capabilities.commands import MATERIAL_INPUT, REPRESENTATION
+from stratbox.capabilities.commands import MATERIAL_INPUT, REPRESENTATION, RECEIPT
 from stratbox.capabilities.commands.notifications import HANDOFFS
 from stratbox.core.execution import ExecutionContext
 from stratbox.core.execution.session import ExecutionSettings
@@ -117,7 +117,7 @@ def test_prior_unrelated_fact_cannot_satisfy_current_run_required_handoff(profil
         material = Representation('csv', 1, 'text/csv', b'value\n1')
         saved = box.invoke('save.product', inputs={'material': material}, parameters={'destination': 'prior.csv'}, timeout=5)
         assert saved.outcome == 'succeeded'
-        unrelated = box.invoke('notify.accepted', parameters={'key': key}, timeout=5)
+        unrelated = box.invoke('notify.required', parameters={'key': key}, timeout=5)
         assert unrelated.outcome == 'failed'
         assert 'notification.required_intent_missing' in unrelated.diagnostics
         assert inbox.calls == []
@@ -126,7 +126,7 @@ def test_prior_unrelated_fact_cannot_satisfy_current_run_required_handoff(profil
         assert len(inbox.calls) == 1
 
 
-def test_retained_dispatch_window_has_explicit_continuation(profiled_catalog, tmp_path):
+def test_required_dispatch_selection_scans_all_history_pages(profiled_catalog, tmp_path):
     from stratbox.shared.data.representation import Representation
     inbox = Inbox()
     with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
@@ -136,12 +136,147 @@ def test_retained_dispatch_window_has_explicit_continuation(profiled_catalog, tm
             material = Representation('csv', 1, 'text/csv', ('value\n' + str(i)).encode())
             results.append(box.invoke('save.product', inputs={'material': material},
                 parameters={'destination': 'saved.' + str(i) + '.csv'}, timeout=5))
-        first = box.invoke('notify.accepted', parameters={'key': key, 'source_run_id': results[0].run_id,
+        first = box.invoke('notify.required', parameters={'key': key, 'source_run_id': results[0].run_id,
             'max_dispatches': 1}, timeout=5)
         assert first.outcome == 'succeeded', first.diagnostics
-        assert first.output('prepared').next_position == 1
-        second = box.invoke('notify.accepted', parameters={'key': key, 'source_run_id': results[1].run_id,
-            'max_dispatches': 1, 'after_position': first.output('prepared').next_position}, timeout=5)
+        assert first.output('prepared').next_position is None
+        assert first.output('prepared').complete
+        second = box.invoke('notify.required', parameters={'key': key, 'source_run_id': results[1].run_id,
+            'max_dispatches': 1}, timeout=5)
         assert second.outcome == 'succeeded', second.diagnostics
         assert second.output('prepared').next_position is None
         assert len(inbox.calls) == 2
+
+
+def test_completed_dispatch_evidence_survives_acknowledged_source_release(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        runtime, key = notification_runtime(box, inbox)
+        for i in range(3):
+            material = Representation('csv', 1, 'text/csv', ('value\n' + str(i)).encode())
+            saved = box.invoke('save.product', inputs={'material': material},
+                parameters={'destination': 'saved.' + str(i) + '.csv'}, timeout=5)
+            delivered = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')},
+                parameters={'key': key, 'max_dispatches': 1}, timeout=5)
+            assert delivered.outcome == 'succeeded', delivered.diagnostics
+            assert len(inbox.calls) == i + 1
+            facts = box.session.journal.facts_source
+            facts.acknowledge(facts.head(box.session.journal.facts_stream).tail_offset)
+            saved.close()
+            delivered.close()
+        assert all(row.state == 'consumer_accepted' for row in runtime.state.scan_dispatches(
+            key.scope_id, key.subscription_id, limit=10))
+
+
+def test_required_set_larger_than_page_is_complete_and_small_scan_budget_never_succeeds(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        runtime, key = notification_runtime(box, inbox)
+        material = Representation('csv', 1, 'text/csv', b'value\n1')
+        definition = ScenarioDefinition('fixture.multiple_saves', GraphBody(tuple(
+            Call('save' + str(i), 'save.product', {'material': material}, {'destination': 'batch.' + str(i) + '.csv'})
+            for i in range(3)), {str(i): OutputRef('save' + str(i), 'receipt') for i in range(3)}),
+            outputs={str(i): RECEIPT for i in range(3)},
+            effects=frozenset({'storage.write'}))
+        saved = box.invoke(definition, timeout=5)
+        assert saved.outcome == 'succeeded'
+        incomplete = box.invoke('notify.required', parameters={'key': key, 'source_run_id': saved.run_id,
+            'max_dispatches': 1, 'max_scan_pages': 1}, timeout=5)
+        assert incomplete.outcome == 'failed'
+        assert not inbox.calls
+        assert any(d.code == 'notification.required_selection_incomplete'
+            for result in incomplete.results.values() for d in result.diagnostics)
+        delivered = box.invoke('notify.required', parameters={'key': key, 'source_run_id': saved.run_id,
+            'max_dispatches': 1}, timeout=5)
+        assert delivered.outcome == 'succeeded', delivered.diagnostics
+        assert len(delivered.output('prepared').dispatch_ids) == 3
+        assert len(delivered.output('handoffs')) == len(inbox.calls) == 3
+        rows = runtime.state.scan_dispatches(key.scope_id, key.subscription_id, limit=10)
+        assert len(rows) == 3 and all(row.state == 'consumer_accepted' for row in rows)
+
+
+def test_explicit_required_dispatch_set_cannot_succeed_when_one_identity_is_missing(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        _, key = notification_runtime(box, inbox)
+        saved = box.invoke('save.product', inputs={'material': Representation('csv', 1, 'text/csv', b'1')},
+            parameters={'destination': 'exact.csv'}, timeout=5)
+        prepared = box.invoke('notification.prepare_intents', parameters={'key': key, 'source_run_id': saved.run_id}, timeout=5)
+        dispatch_id, = prepared.output('value').dispatch_ids
+        incomplete = box.invoke('notify.required', parameters={'key': key, 'source_run_id': saved.run_id,
+            'dispatch_ids': (dispatch_id, 'missing-dispatch'), 'max_dispatches': 1}, timeout=5)
+        assert incomplete.outcome == 'failed' and not inbox.calls
+        assert any(d.code == 'notification.required_intent_missing'
+            for result in incomplete.results.values() for d in result.diagnostics)
+        delivered = box.invoke('notify.required', parameters={'key': key, 'source_run_id': saved.run_id,
+            'dispatch_ids': (dispatch_id,), 'max_dispatches': 1}, timeout=5)
+        assert delivered.outcome == 'succeeded' and len(inbox.calls) == 1
+        repeated = box.invoke('notify.required', parameters={'key': key, 'source_run_id': saved.run_id,
+            'dispatch_ids': (dispatch_id,)}, timeout=5)
+        assert repeated.outcome == 'succeeded' and len(inbox.calls) == 1
+
+
+def test_unknown_handoff_reconciles_after_source_acknowledgement_without_resend(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox(lost=True)
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        runtime, key = notification_runtime(box, inbox)
+        saved = box.invoke('save.product', inputs={'material': Representation('csv', 1, 'text/csv', b'1')},
+            parameters={'destination': 'unknown.csv'}, timeout=5)
+        unknown = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')}, parameters={'key': key}, timeout=5)
+        assert unknown.outcome == 'unknown' and len(inbox.calls) == 1
+        facts = box.session.journal.facts_source
+        checkpoint = runtime.state.get_checkpoint(key)
+        facts.acknowledge(checkpoint.last_offset)
+        recovered = box.invoke('notify.reconcile', parameters={'key': key, 'max_dispatches': 1}, timeout=5)
+        assert recovered.outcome == 'succeeded', recovered.diagnostics
+        assert len(inbox.calls) == 1
+        row, = runtime.state.scan_dispatches(key.scope_id, key.subscription_id, limit=10)
+        assert row.state == 'consumer_accepted'
+
+
+def test_explicit_run_selection_intersects_exact_saved_receipt(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        _, key = notification_runtime(box, inbox)
+        saved = box.invoke('save.product', inputs={'material': Representation('csv', 1, 'text/csv', b'1')},
+            parameters={'destination': 'intersection.csv'}, timeout=5)
+        rejected = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')},
+            parameters={'key': key, 'source_run_id': 'different-run'}, timeout=5)
+        assert rejected.outcome == 'failed' and not inbox.calls
+        delivered = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')},
+            parameters={'key': key, 'source_run_id': saved.run_id}, timeout=5)
+        assert delivered.outcome == 'succeeded' and len(inbox.calls) == 1
+
+
+def test_required_preparation_budget_never_hands_off_a_caught_up_prefix(profiled_catalog, tmp_path):
+    from stratbox.shared.data.representation import Representation
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog, providers={'output_filestore': LocalFileStore(str(tmp_path))}) as box:
+        _, key = notification_runtime(box, inbox)
+        saved = box.invoke('save.product', inputs={'material': Representation('csv', 1, 'text/csv', b'1')},
+            parameters={'destination': 'preparation-bound.csv'}, timeout=5)
+        incomplete = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')},
+            parameters={'key': key, 'max_dispatches': 1, 'max_pages': 1}, timeout=5)
+        assert incomplete.outcome == 'failed' and not inbox.calls
+        assert any(d.code == 'notification.required_preparation_incomplete'
+            for result in incomplete.results.values() for d in result.diagnostics)
+        completed = box.invoke('notify.saved', inputs={'effect': saved.output('receipt')},
+            parameters={'key': key, 'max_dispatches': 1}, timeout=5)
+        assert completed.outcome == 'succeeded' and len(inbox.calls) == 1
+
+
+def test_accepted_operation_rejects_a_confirmed_effect_subscription_before_preparation(profiled_catalog):
+    inbox = Inbox()
+    with StrategyBox(capabilities=profiled_catalog) as box:
+        runtime, key = notification_runtime(box, inbox)
+        before = runtime.state.get_checkpoint(key)
+        result = box.invoke('notify.accepted', parameters={'key': key}, timeout=5)
+        assert result.outcome == 'failed' and not inbox.calls
+        assert runtime.state.get_checkpoint(key) == before
+        assert any(d.code == 'notification.required_topic_mismatch'
+            for value in result.results.values() for d in value.diagnostics)

@@ -59,3 +59,43 @@ def test_result_read_lease_keeps_effect_evidence_until_reader_releases(tmp_path)
         assert reader.value.identity == material.identity
         reader.close()
         assert box.session.effects.retention_snapshot().records == 0
+
+
+def test_actual_competing_save_callbacks_restore_confirmed_current_after_cas_loss(tmp_path):
+    from threading import Event
+    entered_a, entered_b, release_a, release_b = (Event() for _ in range(4))
+    class CompetingStore(LocalFileStore):
+        def replace_if_revision(self, path, data, expected_revision):
+            entered, release = (entered_a, release_a) if data == b'A' else (entered_b, release_b)
+            entered.set()
+            assert release.wait(5)
+            return super().replace_if_revision(path, data, expected_revision)
+    store = CompetingStore(str(tmp_path))
+    assert store.create_if_absent('report.csv', b'baseline')
+    revision = store.current_revision('report.csv')
+    material_a = Representation('fixture.csv', 1, 'text/csv', b'A')
+    material_b = Representation('fixture.csv', 1, 'text/csv', b'B')
+    with StrategyBox(providers={'output_filestore': store},
+                     settings=ExecutionSettings(max_workers=2, active_runs=2)) as box:
+        parameters = dict(destination='report.csv', mode='replace_expected_revision', expected_revision=revision)
+        first = box.submit(box.prepare('save.product', inputs={'material': material_a}, parameters=parameters))
+        assert entered_a.wait(2)
+        second = box.submit(box.prepare('save.product', inputs={'material': material_b}, parameters=parameters))
+        try:
+            assert entered_b.wait(2)
+            release_a.set()
+            assert first.result(3).outcome == 'succeeded'
+            pending = next(record for record in box.session.effects.snapshot() if record.intent.identity == material_a.identity)
+            assert pending.destination_current is None
+        finally:
+            release_a.set()
+            release_b.set()
+        assert second.result(3).outcome == 'failed'
+        records = box.session.effects.snapshot()
+        actual = next(record for record in records if record.intent.identity == material_a.identity)
+        rejected = next(record for record in records if record.intent.identity == material_b.identity)
+        assert store.read_bytes('report.csv') == material_a.data
+        assert actual.receipt.state == 'confirmed'
+        assert actual.destination_current is True and actual.current is True
+        assert rejected.receipt.state == 'failed'
+        assert rejected.destination_current is False and rejected.current is False

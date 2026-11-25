@@ -10,7 +10,7 @@ from stratbox.core.observability import JournalCursor, JournalHead, JournalRecor
 from stratbox.core.observability.records.contracts import require_utc
 
 from stratbox.core.notifications.contracts import (
-    EventPointer, FilterCondition, HandoffLookup, HandoffReceipt, NotificationIntent,
+    CapabilitySelector, DispatchSelectionEvidence, EventPointer, FilterCondition, HandoffLookup, HandoffReceipt, NotificationIntent,
     NotificationRoute, Subscription, SubscriptionSpec,
 )
 from stratbox.core.notifications.state.contracts import (
@@ -21,7 +21,7 @@ from stratbox.core.notifications.state.contracts import (
 _MAX_BYTES = 32 * 1024**2
 _TYPES = {
     item.__name__: item for item in (
-        Attempt, ByteIdentity, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, EventPointer,
+        Attempt, ByteIdentity, CapabilitySelector, DispatchSelectionEvidence, CheckpointKey, CheckpointUpdate, Dispatch, DispatchUpdate, EventPointer,
         FilterCondition, HandoffLookup, HandoffReceipt, JournalCursor, JournalHead, NotificationIntent,
         NotificationRoute, RecordIdentity, Replay, StateMutation, StreamKey, Subscription, SubscriptionSpec,
     )

@@ -74,6 +74,20 @@ class EffectRecord:
     current: bool
     publication_policy_id: str | None = None
     publication_policy_revision: str | None = None
+    contender: bool = False
+    destination_current: bool | None = None
+    basis_current: bool | None = None
+    attempt_authorized: bool = True
+
+
+@dataclass(slots=True)
+class _DestinationEvidence:
+    """Admitted writers and observed destination candidates are separate axes."""
+
+    contenders: set
+    uncertain: set
+    confirmed: set
+    ambiguous: bool = False
 
 
 class EffectAuthorityError(ValueError):
@@ -167,7 +181,8 @@ class EffectAuthority:
         self._lock = RLock()
         self._attempts = {}
         self._runs = set()
-        self._resources = {}
+        self._destinations = {}
+        self._intervals = {}
         self._records = {}
         self._physical = {}
         self._owners = {}
@@ -224,7 +239,7 @@ class EffectAuthority:
                     intent = record.intent
                     if ((intent.run_id, intent.scope_id, intent.work_id) == key
                             and (attempt_id is None or record.attempt_id == attempt_id)):
-                        self._records[identity] = replace(record, current=False)
+                        self._records[identity] = replace(record, current=False, attempt_authorized=False)
 
     def register_revision_policy(self, resource, policy: PublicationRevisionPolicy):
         if not isinstance(resource, str) or not resource:
@@ -246,10 +261,64 @@ class EffectAuthority:
 
     def _observed(self, record):
         policy = self._revision_policies.get(record.intent.resource)
-        current = (record.current
-                   and self._resources.get(record.intent.resource) == record.intent.key
-                   and (policy is None or policy.is_current(record.intent)))
-        return replace(record, current=current)
+        basis = policy.is_current(record.intent) if policy is not None else None
+        state = self._destinations.get(record.intent.resource)
+        contender = state is not None and record.intent.key in state.contenders
+        if record.receipt.state == "failed":
+            destination = False
+        elif record.receipt.state == "unknown":
+            destination = None
+        elif state is None or record.intent.key not in state.confirmed:
+            destination = False
+        elif state.contenders or state.uncertain or state.ambiguous:
+            destination = None
+        else:
+            destination = True
+        current = (record.receipt.state == "confirmed" and destination is True
+                   and basis is not False and record.attempt_authorized)
+        return replace(record, current=current, contender=contender,
+                       destination_current=destination, basis_current=basis)
+
+    def _start_destination(self, intent):
+        state = self._destinations.setdefault(intent.resource, _DestinationEvidence(set(), set(), set()))
+        self._intervals[intent.key] = self._revision, None
+        state.contenders.add(intent.key)
+
+    def _settle_destination(self, record, *, observation=False):
+        state = self._destinations.setdefault(record.intent.resource, _DestinationEvidence(set(), set(), set()))
+        key = record.intent.key
+        started, _ = self._intervals.get(key, (record.revision, None))
+        self._intervals[key] = started, record.revision
+        state.contenders.discard(key)
+        state.uncertain.discard(key)
+        if record.receipt.state == "unknown":
+            state.uncertain.add(key)
+        elif record.receipt.state == "confirmed":
+            # Completion order cannot establish the physical ordering of two
+            # overlapping successful callbacks. A competent reconciliation
+            # supplies a fresh observation instead of guessing from arrival.
+            competing = set() if observation else {
+                candidate for candidate in state.confirmed
+                if candidate != key and self._intervals.get(candidate, (0, 0))[1] >= started}
+            state.confirmed = competing | {key}
+            state.ambiguous = bool(competing)
+
+    def _needed_destination_evidence(self, record):
+        state = self._destinations.get(record.intent.resource)
+        return (state is not None and record.intent.key in state.confirmed
+                and bool(state.contenders or state.uncertain))
+
+    def _prune_destination_evidence(self):
+        retained = self._records.keys() | self._history.keys()
+        for resource, state in tuple(self._destinations.items()):
+            state.contenders.intersection_update(retained)
+            state.uncertain.intersection_update(retained)
+            state.confirmed.intersection_update(retained)
+            if not (state.contenders or state.uncertain or state.confirmed):
+                del self._destinations[resource]
+        for key in tuple(self._intervals):
+            if key not in retained:
+                del self._intervals[key]
 
     def lookup(self, run_id, scope_id, effect_id, *, kind=None):
         with self._lock:
@@ -322,7 +391,8 @@ class EffectAuthority:
 
     def _collect(self):
         for key, record in tuple(self._records.items()):
-            if self._owners.get(key) or record.receipt.state == "unknown":
+            if (self._owners.get(key) or record.receipt.state == "unknown"
+                    or self._needed_destination_evidence(record)):
                 continue
             physical = record.intent.resource, record.intent.kind, record.intent.effect_id
             if self._physical.get(physical) == key:
@@ -339,13 +409,7 @@ class EffectAuthority:
             physical = record.intent.resource, record.intent.kind, record.intent.effect_id
             if self._history_physical.get(physical) == key:
                 self._history_physical.pop(physical, None)
-            if self._resources.get(record.intent.resource) == key:
-                self._resources.pop(record.intent.resource, None)
-        if not self.history_limit:
-            retained = set(self._records)
-            for resource, key in tuple(self._resources.items()):
-                if key not in retained:
-                    del self._resources[resource]
+        self._prune_destination_evidence()
 
     def _restore_history(self, record):
         if len(self._records) >= self.max_records:
@@ -385,13 +449,12 @@ class EffectAuthority:
                     raise EffectAuthorityError("effect.reconciliation_required")
             if len(self._records) >= self.max_records and intent.key not in self._records:
                 raise EffectAuthorityError("effect.retention_capacity")
-            previous_resource = self._resources.get(intent.resource)
-            self._resources[intent.resource] = intent.key
             self._revision += 1
+            self._start_destination(intent)
             receipt = EffectReceipt(intent.kind, "unknown", effect_id=intent.effect_id,
                                     stage="commit", identity=intent.identity,
                                     reconciliation_owner="effect.authority")
-            self._records[intent.key] = EffectRecord(intent, attempt_id, receipt, self._revision, True,
+            self._records[intent.key] = EffectRecord(intent, attempt_id, receipt, self._revision, False,
                 policy.policy_id if policy is not None else None,
                 policy.revision if policy is not None else None)
             self._physical[physical] = intent.key
@@ -425,16 +488,12 @@ class EffectAuthority:
                                     reconciliation_owner="effect.authority")
         with self._lock:
             self._revision += 1
-            if receipt.state == "failed" and self._resources.get(intent.resource) == intent.key:
-                if previous_resource is None:
-                    self._resources.pop(intent.resource, None)
-                else:
-                    self._resources[intent.resource] = previous_resource
-            current = (self._attempt_current(intent, attempt_id)
-                       and self._resources.get(intent.resource) == intent.key
-                       and (policy is None or policy.is_current(intent)))
-            self._records[intent.key] = EffectRecord(intent, attempt_id, receipt, self._revision, current,
-                policy.policy_id if policy is not None else None, policy_revision)
+            record = EffectRecord(intent, attempt_id, receipt, self._revision, False,
+                policy.policy_id if policy is not None else None, policy_revision,
+                attempt_authorized=self._attempt_current(intent, attempt_id))
+            self._records[intent.key] = record
+            self._settle_destination(record)
+            self._collect()
         if rejected is not None:
             raise rejected
         return receipt
@@ -453,6 +512,7 @@ class EffectAuthority:
             self._revision += 1
             record = replace(previous, receipt=receipt, revision=self._revision)
             self._records[previous.intent.key] = record
+            self._settle_destination(record, observation=receipt.state == "confirmed")
             observed = self._observed(record)
             self._collect()
             return observed

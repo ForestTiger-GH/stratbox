@@ -7,7 +7,7 @@ from stratbox.core.execution.contracts import Correlation
 from stratbox.core.observability import JournalRecord, JournalHead, JournalEntry
 from stratbox.core.observability.records.contracts import require_utc
 from stratbox.core.observability.records.schema import ValueRule
-from stratbox.core.notifications.contracts import AccessDecision, EventPointer, NotificationIntent, Subscription
+from stratbox.core.notifications.contracts import AccessDecision, DispatchSelectionEvidence, EventPointer, NotificationIntent, Subscription
 from stratbox.core.notifications.topics import NotificationTopic, Projection
 
 MAX_ENVELOPE_BYTES = 64 * 1024
@@ -120,5 +120,5 @@ def _intent(
                                            entry.record.record_id, entry.identity, entry.evidence_ref),
         topic.event_key_kind, event_key, semantic, topic.topic_id, topic.version, projection.projection_id,
         projection.version, frozenset(selected), frozenset(metadata), grant.grant_ref, now,
-        ByteIdentity.of(payload), payload,
+        ByteIdentity.of(payload), payload, DispatchSelectionEvidence.from_record(entry.record),
     )

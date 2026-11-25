@@ -2,6 +2,9 @@
 
 The Python API is available in `stratbox.core.notifications`. It works with a closed in-process collector or with a registered resumable source, transactional state and durable consumer selected by the host. The offline example exercises a real acquisition, save, parse, journal snapshot and in-process handoff.
 
+For exact subscriptions to any command, operation, scenario, cascade or named
+result, see [Journal subscriptions for capability results](capability-notifications.md).
+
 ## Choose the source and the topic
 
 Use `RecordMemorySink` with ordinary execution calls for local capture. When the collector is finalized, bind a `SnapshotJournalSource` to its stream and epoch. For archive-backed use, pass a pinned `JournalHead` and `IndexedSegment` descriptors to `FileJournalSource`. External sources can implement `JournalSource` directly. The provider returns `JournalPage` with contiguous offsets, entry identities and a positioned problem when applicable.
@@ -10,6 +13,9 @@ The initial catalog includes the following topics.
 
 | Topic | Source | Projection v1 |
 | --- | --- | --- |
+| `value.accepted` | Accepted named output at any capability level, including roleless technical results | `accepted_value` |
+| `capability.completed` | Terminal logical capability outcome at any of the four kinds | `capability_summary` |
+| `effect.confirmed` | Confirmed external effect receipt | `confirmed_effect` |
 | `operation.completed` | Actual terminal execution event, including failed and cancelled outcomes | `operation_summary` |
 | `operation.failed` | Actual terminal execution event with a failed outcome | `operation_summary` |
 | `material.stored` | Confirmed new storage effect with its effect ID | `stored_material` |

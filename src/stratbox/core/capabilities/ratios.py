@@ -9,6 +9,7 @@ from stratbox.core.execution.contracts import OperationFailure
 from stratbox.shared.data.assessment import CalculationEvidence, CoverageAssessment, ValueEvidence, value_evidence, observation_coordinate
 from stratbox.shared.data.observations import MetricRef, ObservationBatch
 from stratbox.shared.data.observation_snapshots import observation_snapshot
+from stratbox.shared.data.source_context import SourceCoordinate
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 
 
@@ -45,6 +46,66 @@ def _operand(batch, declared):
     return scale
 
 
+def _source_requirement(value):
+    """Normalize one portable, relational source-use requirement."""
+    coordinate_fields = set(SourceCoordinate.__dataclass_fields__)
+    allowed = coordinate_fields | {"qualifications", "input_role", "evidence_ref", "required", "require_evidence"}
+    if (not isinstance(value, Mapping) or set(value) - allowed
+            or not {"source_id", "qualifications"} <= value.keys()
+            or not isinstance(value["source_id"], str) or not value["source_id"]):
+        _fail("pair_source_requirement_invalid")
+    qualifications = value["qualifications"]
+    if (not isinstance(qualifications, (tuple, list)) or not qualifications
+            or any(not isinstance(item, str) or not item for item in qualifications)
+            or any(type(value.get(name, True)) is not bool for name in ("required", "require_evidence"))):
+        _fail("pair_source_requirement_invalid")
+    coordinate = {name: value[name] for name in coordinate_fields if name in value}
+    try:
+        if any(item is None for item in coordinate.values()):
+            raise ValueError
+        if "material_identity" in coordinate:
+            identity = coordinate["material_identity"]
+            if not isinstance(identity, Mapping) or set(identity) != {"sha256", "size"}:
+                raise ValueError
+            coordinate["material_identity"] = ByteIdentity(identity["sha256"], identity["size"])
+        SourceCoordinate(**coordinate)
+        for name in ("input_role", "evidence_ref"):
+            if name in value and (not isinstance(value[name], str) or not value[name]):
+                raise ValueError
+    except (ValueError, TypeError):
+        _fail("pair_source_requirement_invalid")
+    return coordinate, frozenset(qualifications), value.get("input_role"), value.get("evidence_ref"), value.get("required", True), value.get("require_evidence", True)
+
+
+def _declared_sources(batch, declared):
+    requirements = declared.get("source_requirements")
+    if not isinstance(requirements, (tuple, list)) or not requirements:
+        _fail("pair_source_requirements_required")
+    parsed = tuple(_source_requirement(value) for value in requirements)
+    if not any(item[4] for item in parsed):
+        _fail("pair_source_requirements_required")
+    if not batch.source_uses:
+        _fail("pair_origin_unavailable")
+    matched = set()
+    lineage = {item.identity for item in batch.lineage}
+    for use in batch.source_uses:
+        candidates = [index for index, (coordinate, _, role, reference, _, _) in enumerate(parsed)
+            if all(getattr(use.coordinate, name) == expected for name, expected in coordinate.items())
+            and (role is None or use.input_role == role) and (reference is None or use.evidence_ref == reference)]
+        if not candidates:
+            _fail("pair_origin_mismatch")
+        qualified = [index for index in candidates if use.qualification in parsed[index][1]]
+        if not qualified:
+            _fail("pair_origin_qualification_mismatch")
+        evidenced = [index for index in qualified if not parsed[index][5]
+            or use.evidence_ref is not None or use.coordinate.material_identity in lineage]
+        if not evidenced:
+            _fail("pair_origin_evidence_required")
+        matched.update(evidenced)
+    if any(required and index not in matched for index, (_, _, _, _, required, _) in enumerate(parsed)):
+        _fail("pair_origin_missing")
+
+
 def ratio_evaluate(request, invocation):
     pair = request.get("pair")
     if not isinstance(pair, Mapping):
@@ -71,6 +132,9 @@ def ratio_evaluate(request, invocation):
                    for batch in (numerator, denominator)]
         if not sources[0] or sources[0] != sources[1]:
             _fail("pair_origin_mismatch")
+    if origin_policy == "declared_sources":
+        _declared_sources(numerator, pair["numerator"])
+        _declared_sources(denominator, pair["denominator"])
     def key(item):
         period = item.period if period_policy == "equal" else (item.period.as_of or item.period.end)
         return item.subject, period, tuple(sorted(item.dimensions)), item.perimeter
@@ -113,7 +177,8 @@ def ratio_evaluate(request, invocation):
     receipts = tuple((role, observation_snapshot(batch).identity, batch.release_id)
         for role, batch in (("numerator", numerator), ("denominator", denominator)))
     evidence = CalculationEvidence(pair["id"], pair["revision"], rule_fingerprint, receipts,
-        period_policy, origin_policy, release_policy, pair["rationale"])
+        period_policy, origin_policy, release_policy, pair["rationale"],
+        tuple((role, use) for role, batch in (("numerator", numerator), ("denominator", denominator)) for use in batch.source_uses))
     expected = None
     if all(item.coverage is not None and item.coverage.expected is not None for item in input_evidence):
         expected = tuple(sorted({f"metric:{metric.id}" if value.startswith("metric:") else value

@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Mapping, TYPE_CHECKING
+from typing import Mapping, TYPE_CHECKING, Protocol
 from ._validation import CompositionError, _mapping, _name
 if TYPE_CHECKING:
     from .models import ScenarioDefinition, Condition, SourceSelection, CollectSpec, RetryPolicy
@@ -10,6 +10,16 @@ if TYPE_CHECKING:
 def _retry_policy():
     from .models import RetryPolicy
     return RetryPolicy()
+
+class ExpansionValueResolver(Protocol):
+    """Resolve promises without discarding typed input evidence.
+
+    The execution owner retains any required read leases until the admitted
+    child fragment has finished. Control selector unwrapping is separate from
+    material/data input resolution.
+    """
+    def __call__(self, value: object) -> object: ...
+
 
 @dataclass(frozen=True, slots=True)
 class ScopeOutputRef:
