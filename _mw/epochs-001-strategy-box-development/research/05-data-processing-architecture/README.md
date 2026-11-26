@@ -15,3 +15,9 @@ scenarios and cascades, with explicit contracts, domain bindings, direct
 external invocation and preserved logical outcomes during shared execution.
 Implementation and maintained product documentation retain their own owners;
 research proposals describe target behavior until explicitly implemented.
+
+Operational-readiness research connects those contracts to launch priorities:
+truthful completion, historical evidence, exact effect fulfillment, execution
+lifetimes, efficient value ownership and qualified persistent operation.
+Use its functional and technical models together when preparing coherent
+implementation packages and application adoption through the common SDK.
