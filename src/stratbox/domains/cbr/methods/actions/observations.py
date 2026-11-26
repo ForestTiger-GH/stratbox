@@ -29,6 +29,8 @@ def align(inputs, settings, context):
         raise ValueError("cbr.dataset_source_mismatch")
     subjects = {(namespace, source): target for namespace, source, target in settings.subjects}
     metrics = dict(settings.metrics)
+    if len(subjects) != len(settings.subjects) or len(metrics) != len(settings.metrics):
+        raise ValueError("cbr.subject_mapping_ambiguous")
     rows, unresolved = [], set()
     for item in dataset.rows:
         context.checkpoint()

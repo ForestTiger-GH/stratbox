@@ -1,6 +1,7 @@
 """Static coupled SORS model; standard definitions own all executable graphs."""
 from stratbox.capabilities.model.domains import CalculationSpec, CommandSpec, Applicability, ProductSpec
 from stratbox.capabilities.model.methods import MethodRef
+from .inputs.dependencies import DEPENDENCIES
 
 
 SORS = CalculationSpec(
@@ -9,19 +10,8 @@ SORS = CalculationSpec(
     settings={"primary_portfolio_scope": "CORPORATE_TOTAL", "publication_unit": "million_rubles"},
     semantics={"measure_kind": "stock", "input_scope": "full_coupled_model",
                "evidence": "publication_intervals_and_global_feasibility"},
-    inputs={
-        "regional_traditional": {"source_id": "cbr.corporate_lending.debt_0105a", "required": True},
-        "national_traditional": {"source_id": "cbr.corporate_lending.corp_debt_a", "required": True},
-        "national_okved2": {"source_id": "cbr.corporate_lending.corp_debt_c", "required": True},
-        "federal_district_okved2": {"source_id": "cbr.corporate_lending.fd_okved2", "required": True},
-        "sme_national_totals": {"source_id": "cbr.corporate_lending.sme_debt", "required": True},
-        "sme_national_okved2": {"source_id": "cbr.corporate_lending.sme_debt_activity", "required": True},
-        "sme_ie_national_okved2": {"source_id": "cbr.corporate_lending.sme_ie_debt_activity", "required": True},
-        "sme_federal_district_okved2": {"source_id": "cbr.corporate_lending.sme_fd_okved2", "required": True},
-        "sme_regional_totals": {"source_id": "cbr.corporate_lending.sme_debt_subj_f", "required": True},
-        "sme_ie_regional_totals": {"source_id": "cbr.corporate_lending.sme_debt_subj_i", "required": True},
-        "regional_totals_history": {"source_id": "cbr.corporate_lending.corp_debt_subj", "required": False},
-    },
+    inputs={item.input_name: {"source_id": item.series_id, "required": item.required,
+                              "purpose": item.source_role} for item in DEPENDENCIES},
     commands={
         "command.value.encode": CommandSpec(
             MethodRef("stratbox.domains.cbr.calculations.sors.serialization:value_encode"),

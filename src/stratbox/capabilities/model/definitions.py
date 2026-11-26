@@ -37,12 +37,15 @@ class CommandDefinition(CapabilityDefinition):
     effects: frozenset[str] = frozenset()
     required_providers: frozenset[str] = frozenset()
     reuse: ReuseContract = field(default_factory=ReuseContract)
+    optional_providers: frozenset[str] = frozenset()
     kind = 'command'
 
     def __post_init__(self):
         CapabilityDefinition.__post_init__(self)
         if self.method is None and not self.specification_required: raise ValueError('command.method_required')
         object.__setattr__(self, 'resources', freeze(self.resources))
+        for name in ('effects','required_providers','optional_providers'):
+            object.__setattr__(self,name,frozenset(getattr(self,name)))
         if any(type(n) is not int or n < 1 for n in self.resources.values()): raise ValueError('command.invalid_resources')
 
 @dataclass(frozen=True, slots=True)

@@ -16,6 +16,7 @@ class Publication:
     kind: str
     locator: str
     filename_pattern: str | None = None
+    archive_mode: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

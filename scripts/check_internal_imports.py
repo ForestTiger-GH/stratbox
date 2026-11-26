@@ -12,7 +12,7 @@ SRC = ROOT / 'src'
 PACKAGE = SRC / 'stratbox'
 FORBIDDEN = (
     'stratbox.operations', 'stratbox.composition', 'stratbox.domains.registry',
-    'stratbox.core.operations', 'stratbox.core.capabilities',
+    'stratbox.core.operations', 'stratbox.core.capabilities', 'stratbox.core.resources',
 )
 PURE_CAPABILITIES = ('model', 'route', 'commands', 'operations', 'scenarios', 'cascades', 'plan')
 METADATA_MODULES = (
@@ -61,6 +61,8 @@ def check_source(root: Path = PACKAGE) -> list[str]:
                     reason = 'standard definitions must be independent of implementations'
             if relative.parts[0] == 'shared' and module.startswith(('stratbox.core', 'stratbox.domains', 'stratbox.capabilities', 'stratbox.sdk')):
                 reason = 'shared values must be independent of implementation'
+            if relative.parts[0] == 'core' and module.startswith('stratbox.domains'):
+                reason = 'technical core cannot select publishers'
             if relative.parts[0] == 'domains' and module.startswith('stratbox.sdk'):
                 reason = 'domain cannot depend on application facade'
             if reason:

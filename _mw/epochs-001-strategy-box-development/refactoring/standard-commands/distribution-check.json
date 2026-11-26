@@ -1,0 +1,43 @@
+{
+  "started_at": "2026-11-26T14:51:55.858521+00:00",
+  "steps": [
+    {
+      "name": "check_release_integrity",
+      "exit_code": 0
+    },
+    {
+      "name": "check_internal_imports",
+      "exit_code": 0
+    },
+    {
+      "name": "check_readme_links",
+      "exit_code": 0
+    },
+    {
+      "name": "build",
+      "exit_code": 0
+    },
+    {
+      "name": "archive:stratbox-0.25.0-py3-none-any.whl",
+      "exit_code": 0
+    },
+    {
+      "name": "archive:stratbox-0.25.0.tar.gz",
+      "exit_code": 0
+    },
+    {
+      "name": "install",
+      "exit_code": 0
+    },
+    {
+      "name": "installed_metadata",
+      "exit_code": 0
+    },
+    {
+      "name": "zip_metadata",
+      "exit_code": 0
+    }
+  ],
+  "result": "passed",
+  "finished_at": "2026-11-26T14:52:01.836880+00:00"
+}

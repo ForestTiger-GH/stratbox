@@ -54,3 +54,11 @@ def test_archive_packing_has_an_exact_output_byte_limit():
     with StrategyBox() as box:
         result = box.invoke('command.archive.pack',inputs={'members':members},parameters={'max_bytes':1})
     assert result.outcome == 'failed' and 'material' not in result.outputs
+
+
+def test_retained_content_identity_rejects_boolean_byte_size():
+    import json
+    envelope={'type':'stratbox.shared.identity:ByteIdentity','fields':{'sha256':'0'*64,'size':True}}
+    with StrategyBox() as box:
+        result=box.invoke('command.value.decode',inputs={'representation':json.dumps(envelope).encode()})
+    assert result.outcome=='failed'

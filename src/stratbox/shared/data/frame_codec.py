@@ -4,9 +4,10 @@ The vocabulary is explicit data. Descriptors never import classes or select a
 component release. The Stratbox repository build owns this encoding.
 """
 from __future__ import annotations
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import re
+import struct
 
 
 _DTYPES = frozenset({
@@ -16,6 +17,62 @@ _DTYPES = frozenset({
     "Float32", "Float64", "datetime64[ns]", "datetime64[us]", "datetime64[ms]",
     "datetime64[s]", "timedelta64[ns]", "timedelta64[us]", "timedelta64[ms]", "timedelta64[s]",
 })
+
+
+def _temporal_value(value):
+    """Preserve wall time, actual offset, named-zone rules and fold separately."""
+    tz = value.tzinfo
+    zone = None
+    if tz is not None:
+        key = getattr(tz, "key", None) or getattr(tz, "zone", None)
+        if isinstance(key, str) and key:
+            zone = {"kind": "named", "key": key}
+        else:
+            offset = value.utcoffset()
+            if offset is None:
+                raise ValueError("dataframe.timezone_unsupported")
+            micros = (offset.days * 86400 + offset.seconds) * 1_000_000 + offset.microseconds
+            zone = {"kind": "fixed", "offset_us": micros, "name": value.tzname()}
+    return {"iso": value.isoformat(), "zone": zone, "fold": value.fold}
+
+
+def _temporal_from(value, *, kind="datetime"):
+    import pandas as pd
+    from zoneinfo import ZoneInfo
+    if (not isinstance(value, dict) or set(value) != {"iso", "zone", "fold"}
+            or not isinstance(value["iso"], str) or type(value["fold"]) is not int
+            or value["fold"] not in {0, 1}):
+        raise ValueError("dataframe.temporal_invalid")
+    zone = value["zone"]
+    tz = None
+    if zone is not None:
+        if not isinstance(zone, dict):
+            raise ValueError("dataframe.timezone_invalid")
+        if set(zone) == {"kind", "key"} and zone["kind"] == "named":
+            if not isinstance(zone["key"], str) or not 0 < len(zone["key"]) <= 512:
+                raise ValueError("dataframe.timezone_invalid")
+            tz = ZoneInfo(zone["key"])
+        elif set(zone) == {"kind", "offset_us", "name"} and zone["kind"] == "fixed":
+            if (type(zone["offset_us"]) is not int or not isinstance(zone["name"], str)
+                    or not 0 < len(zone["name"]) <= 512):
+                raise ValueError("dataframe.timezone_invalid")
+            tz = timezone(timedelta(microseconds=zone["offset_us"]), zone["name"])
+        else:
+            raise ValueError("dataframe.timezone_invalid")
+    if kind == "timestamp":
+        result = pd.Timestamp(value["iso"])
+        result = result.tz_convert(tz) if tz is not None and result.tzinfo is not None else result.replace(tzinfo=tz)
+    elif kind == "datetime":
+        result = datetime.fromisoformat(value["iso"])
+        result = result.astimezone(tz) if tz is not None and result.tzinfo is not None else result.replace(tzinfo=tz)
+    elif kind == "time":
+        result = time.fromisoformat(value["iso"]).replace(tzinfo=tz)
+    else:
+        raise ValueError("dataframe.temporal_kind_invalid")
+    result = result.replace(fold=value["fold"])
+    if _temporal_value(result) != value:
+        raise ValueError("dataframe.temporal_noncanonical")
+    return result
 
 
 def _atom(value):
@@ -39,17 +96,17 @@ def _atom(value):
     if type(value) is int:
         return ["int", str(value)]
     if type(value) is float:
-        return ["float", value.hex()]
+        return ["float_bits", struct.pack(">d", value).hex()]
     if isinstance(value, Decimal) and value.is_finite():
         return ["decimal", str(value)]
     if isinstance(value, pd.Timestamp):
-        return ["timestamp", value.isoformat()]
+        return ["timestamp", _temporal_value(value)]
     if isinstance(value, datetime):
-        return ["datetime", value.isoformat()]
+        return ["datetime", _temporal_value(value)]
     if isinstance(value, date):
         return ["date", value.isoformat()]
     if isinstance(value, time):
-        return ["time", value.isoformat()]
+        return ["time", _temporal_value(value)]
     if isinstance(value, pd.Timedelta):
         return ["timedelta_ns", str(value.value)]
     if isinstance(value, timedelta):
@@ -76,20 +133,20 @@ def _unatom(value):
         result = item
     elif tag == "int" and isinstance(item, str):
         result = int(item)
-    elif tag == "float" and isinstance(item, str):
-        result = float.fromhex(item)
+    elif tag == "float_bits" and isinstance(item, str) and len(item) == 16:
+        result = struct.unpack(">d", bytes.fromhex(item))[0]
     elif tag == "decimal" and isinstance(item, str):
         result = Decimal(item)
     elif tag == "text" and isinstance(item, str):
         result = item
     elif tag == "date" and isinstance(item, str):
         result = date.fromisoformat(item)
-    elif tag == "time" and isinstance(item, str):
-        result = time.fromisoformat(item)
-    elif tag == "datetime" and isinstance(item, str):
-        result = datetime.fromisoformat(item)
-    elif tag == "timestamp" and isinstance(item, str):
-        result = pd.Timestamp(item)
+    elif tag == "time" and isinstance(item, dict):
+        result = _temporal_from(item, kind="time")
+    elif tag == "datetime" and isinstance(item, dict):
+        result = _temporal_from(item, kind="datetime")
+    elif tag == "timestamp" and isinstance(item, dict):
+        result = _temporal_from(item, kind="timestamp")
     elif tag == "timedelta_ns" and isinstance(item, str):
         result = pd.Timedelta(int(item), unit="ns")
     elif tag == "timedelta_us" and isinstance(item, str):

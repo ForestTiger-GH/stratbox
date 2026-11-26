@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from collections.abc import Mapping
 from ..model import PortContract, AcceptanceContract, SourceRequirement, MethodRef, ReuseContract
-from ..model.immutable import freeze
+from ..model.immutable import freeze, freeze_bindings
 
 @dataclass(frozen=True, slots=True)
 class OutputGuard:
@@ -38,6 +38,8 @@ class BoundCommand:
     reuse: ReuseContract = field(default_factory=ReuseContract)
     source_requirements: tuple[SourceRequirement, ...] = ()
     acceptance: AcceptanceContract = field(default_factory=AcceptanceContract)
+    optional_providers: frozenset[str] = frozenset()
+    target: object = None
 
     def __post_init__(self):
         for name in ('settings','inputs','outputs','parameters','resources'):
@@ -59,7 +61,7 @@ class CommandTask:
     input_guards: tuple[InputGuard, ...] = ()
     kind = 'command'
 
-    def __post_init__(self): object.__setattr__(self, 'inputs', freeze(self.inputs))
+    def __post_init__(self): object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
     @property
     def dependencies(self): return self.deps
 
@@ -133,9 +135,11 @@ class PreparedScope:
     required: bool = True
     required_checks: tuple[str, ...] = ()
     required_effects: tuple[str, ...] = ()
+    condition: object = None
 
     def __post_init__(self):
-        for name in ('outputs','output_contracts'): object.__setattr__(self, name, freeze(getattr(self, name)))
+        object.__setattr__(self, 'outputs', freeze_bindings(self.outputs))
+        object.__setattr__(self, 'output_contracts', freeze(self.output_contracts))
 
 @dataclass(frozen=True, slots=True)
 class PreparedPlan:
@@ -147,7 +151,7 @@ class PreparedPlan:
     build_identity: str
     target: object = None
 
-    def __post_init__(self): object.__setattr__(self, 'outputs', freeze(self.outputs))
+    def __post_init__(self): object.__setattr__(self, 'outputs', freeze_bindings(self.outputs))
 
 
 @dataclass(frozen=True, slots=True)

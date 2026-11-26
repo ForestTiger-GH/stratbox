@@ -42,3 +42,21 @@ def test_future_binary_asset_is_admitted_and_cache_excluded(tmp_path):
     assert check['inspect_archive'](archive,source=source)['members']==2
     write_archive(archive,source,inventory,missing=('new-model.parquet',))
     with pytest.raises(ValueError,match='archive.mismatch'):check['inspect_archive'](archive,source=source)
+
+
+def test_source_archive_ignores_directories_and_rejects_linked_executables(tmp_path):
+    import tarfile
+    check=tool();source=tmp_path/'source';source.mkdir()
+    (source/'__init__.py').write_text('')
+    (source/'nested').mkdir();(source/'nested'/'method.py').write_text('value = 1\n')
+    archive=tmp_path/'stratbox-test.tar.gz'
+    with tarfile.open(archive,'w:gz') as handle:
+        handle.add(source,arcname='stratbox-test/src/stratbox')
+    assert check['inspect_archive'](archive,source=source)['members']==2
+    with tarfile.open(archive,'w:gz') as handle:
+        handle.add(source,arcname='stratbox-test/src/stratbox')
+        link=tarfile.TarInfo('stratbox-test/src/stratbox/linked.py')
+        link.type=tarfile.SYMTYPE;link.linkname='../../../external.py'
+        handle.addfile(link)
+    with pytest.raises(ValueError,match='archive.mismatch'):
+        check['inspect_archive'](archive,source=source)

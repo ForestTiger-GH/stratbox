@@ -56,9 +56,21 @@ def _rows(dataset):
     return dataset.rows
 
 
+def _grain_key(row,names):
+    values = []
+    for name in names:
+        value = row.get(name)
+        try: hash(value)
+        except TypeError: value = fingerprint(value)
+        values.append(value)
+    return tuple(values)
+
+
 def _derived(dataset, rows, *, sources=(), semantics=None):
+    assessment = Assessment(dataset.assessment.status, dataset.assessment.findings,
+        qualifications=dataset.assessment.qualifications | frozenset({"derived_coordinates"}))
     return DerivedDataset(dataset.source_id, tuple(rows), semantics or dataset.semantics,
-        dataset.issue_id, (*dataset.lineage, dataset.identity, *sources), dataset.assessment, source_uses=dataset.source_uses)
+        dataset.issue_id, (*dataset.lineage, dataset.identity, *sources), assessment, source_uses=dataset.source_uses)
 
 
 def request_prepare(inputs, settings, context):
@@ -77,6 +89,8 @@ def request_prepare(inputs, settings, context):
 
 def material_fetch(inputs, settings, context):
     request = inputs["request"]
+    if request.method not in {"GET", "POST"} or request.method == "POST" and not request.read_only:
+        raise ExecutionFailure("http.read_only_request_required")
     provider = context.provider("http")
     context.checkpoint()
     budget = getattr(context, "budget", None)
@@ -128,11 +142,84 @@ def material_fetch(inputs, settings, context):
         getattr(response, "effective_locator_safe", request.url), getattr(response, "origin_assurance", "provider_reported"),
         getattr(response, "transport_assurance", None), getattr(response, "route_id", None),
         getattr(response, "target_sha256", None), getattr(response, "logical_target_sha256", None))
+    from dataclasses import replace
+    material = replace(material, lineage=(*material.lineage, evidence))
     return {"material": material, "evidence": evidence}
 
 
 def _request_identity(request):
     return request_identity(request)
+
+
+def material_receive(inputs, settings, context):
+    """Receive an original into bounded staging without materializing its body."""
+    from stratbox.core.network.contracts import HttpRequest, HttpsEndpoint, HttpStreamResponse
+    from urllib.parse import urlsplit
+    request, destination = inputs["request"], inputs["destination"]
+    if request.method not in {"GET", "POST"} or request.method == "POST" and not request.read_only:
+        raise ExecutionFailure("http.read_only_request_required")
+    if not isinstance(destination, str) or not destination: raise ExecutionFailure("storage.destination_required")
+    transport, store = context.provider("http"), context.provider("filestore")
+    if not callable(getattr(transport, "exchange_into", None)) or not callable(getattr(store, "stage_content", None)) or not getattr(store, "immutable_content", False):
+        raise ExecutionFailure("streaming.provider_capability_required")
+    parts = urlsplit(request.url)
+    exchange = HttpRequest(request.method, request.url,
+        (HttpsEndpoint(parts.hostname, parts.path or "/", allow_query=True),), headers=request.headers,
+        form_fields=request.form, body=request.body, deadline_seconds=min(request.timeout, context.remaining_seconds()),
+        max_response_bytes=request.max_bytes, read_only_post=request.method == "POST", budget=context.budget)
+    scope = _provider_scope(store, destination)
+    effect_id = fingerprint(("material.receive", scope, destination, request_identity(request), request.observation_id or context.run_id))
+    accepted = context.accepted_input("request")
+    def action():
+        before = dict(context.budget.usage())
+        if not getattr(transport, "accounts_http_budget", False): context.budget.charge("requests", 1)
+        with store.stage_content(destination) as stage:
+            class BoundedSink:
+                def __init__(self): self.size = 0
+                def write(self, data):
+                    context.checkpoint()
+                    if self.size + len(data) > request.max_bytes: raise ExecutionFailure("http.response_limit")
+                    context.budget.charge("temporary_bytes", len(data))
+                    result = stage.stream.write(data); self.size += len(data); return result
+                def seek(self, *args): return stage.stream.seek(*args)
+                def tell(self): return stage.stream.tell()
+                def truncate(self, *args): return stage.stream.truncate(*args)
+                def flush(self): return stage.stream.flush()
+            response = transport.exchange_into(exchange, BoundedSink(), cancelled=lambda: bool(context.run.cancel.is_set() and not context.service._producer_needed(context.task)))
+            if not isinstance(response, HttpStreamResponse) or not 200 <= response.response.status_code < 300:
+                from stratbox.core.storage.filestore import MutationRejected
+                raise MutationRejected("No accepted streamed response", code="http.streaming_response_failed")
+            identity, observed = response.identity, response.response
+            for resource, amount in (("wire_bytes", observed.wire_size or identity.size), ("decoded_bytes", identity.size)):
+                spent = context.budget.used(resource) - before.get(resource, 0)
+                if amount > spent: context.budget.charge(resource, amount - spent)
+            evidence = FetchEvidence(request_identity(request), observed.observed_at_utc, observed.status_code, identity,
+                observed.headers, request.observation_id or context.run_id, observed.effective_locator_safe,
+                observed.origin_assurance, observed.transport_assurance, observed.route_id, observed.target_sha256, observed.logical_target_sha256)
+            context.budget.account_output(effect_id, identity)
+            if not callable(getattr(stage, "location", None)):
+                raise ExecutionFailure("streaming.exact_stage_location_required")
+            location = stage.location(identity)
+            uses = ()
+            if request.source_id:
+                from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
+                uses = (SourceUse(SourceCoordinate(request.source_id, issue_id=request.metadata.get("issue_id"),
+                    asset_id=request.metadata.get("asset_id"), material_identity=identity), "material", "identified"),)
+            reference = ImmutableMaterialRef(location, identity, str(getattr(store, "provider_id", "filestore")),
+                (*(accepted["basis"] if accepted else ()), request_identity(request), evidence),
+                accepted_value_id=accepted["id"] if accepted else None, effect_id=effect_id,
+                provider_scope=_provider_scope(store, location), source_uses=uses,
+                metadata={**dict(request.metadata), "url":request.url, "filename":Path(parts.path).name,
+                    "media_type":observed.headers.get("content-type","application/octet-stream").split(";")[0], "source_id":request.source_id})
+            context.update_effect_intent(effect_id, reference)
+            if stage.commit(identity, checkpoint=context.checkpoint) != location:
+                raise ExecutionFailure("streaming.retained_location_conflict")
+            return reference
+    receipt = context.effect("storage.write", effect_id, action, resource=str(destination),
+        intent={"request_identity":request_identity(request),"provider_scope":scope,"destination":destination})
+    if receipt.status != "confirmed": raise ExecutionFailure("streaming."+receipt.status, outcome="unknown" if receipt.status == "unknown" else "failed")
+    evidence = next(item for item in reversed(receipt.value.lineage) if isinstance(item, FetchEvidence))
+    return {"reference": receipt.value, "evidence": evidence, "receipt": receipt}
 
 
 def _read(store, location, limit):
@@ -154,14 +241,18 @@ def material_read(inputs, settings, context):
     path = getattr(location, "location", getattr(location, "locator", location))
     data = _read(context.provider("filestore"), path, _option(context, settings, "max_bytes", 128 * 1024 * 1024))
     if getattr(context, "budget", None): context.budget.charge("input_bytes", len(data))
-    source_id = getattr(location, "source_id", _get(settings, "source_id"))
-    metadata = {"location": str(path), "filename": Path(str(path)).name}
+    source_id = getattr(location, "source_id", _get(settings, "source_id", getattr(location, "metadata", {}).get("source_id")))
+    metadata = {**dict(getattr(location, "metadata", {})), "location": str(path)}
+    metadata.setdefault("filename", Path(str(path)).name)
     if isinstance(location, PublicationAsset):
         metadata.update(dict(location.metadata), issue_id=location.issue_id, asset_id=location.asset_id, format=location.format)
-    value = Material(data, _get(settings, "media_type", "application/octet-stream"), source_id, metadata=metadata)
+    value = Material(data, _get(settings, "media_type", metadata.get("media_type", "application/octet-stream")), source_id, metadata=metadata,
+        lineage=tuple(getattr(location, "lineage", ())))
     if expected is not None and expected != value.identity:
         raise ExecutionFailure("storage.identity_mismatch")
-    return {"material": value, "evidence": {"location": str(path), "identity": value.identity}}
+    evidence = ReadEvidence(str(path), value.identity, datetime.now(timezone.utc), _provider_scope(context.provider("filestore"), path))
+    from dataclasses import replace
+    return {"material": replace(value, lineage=(*value.lineage, evidence)), "evidence": evidence}
 
 
 def material_list(inputs, settings, context):
@@ -207,6 +298,11 @@ def material_identify(inputs, settings, context):
             claim = SourceClaim(asset.source_id, asset.issue_id, asset.asset_id, "recognized")
         elif request.source_id:
             claim = SourceClaim(request.source_id, str(request.metadata.get("issue_id", "")), str(request.metadata.get("asset_id", "main")), "recognized")
+    if claim is None and isinstance(inputs.get("evidence"), ReadEvidence) and isinstance(inputs.get("asset"), PublicationAsset):
+        evidence, asset = inputs["evidence"], inputs["asset"]
+        if evidence.location != asset.locator or evidence.material_identity != original.identity or original.source_id not in {None, asset.source_id}:
+            raise ExecutionFailure("source.selected_asset_conflict")
+        claim = SourceClaim(asset.source_id, asset.issue_id, asset.asset_id, "recognized")
     if claim is None:
         raise ExecutionFailure("source.claim_required")
     if original.source_id is not None and original.source_id != claim.source_id:
@@ -261,7 +357,7 @@ def source_assess(inputs, settings, context):
             ("Evidence is incomplete or establishes only a publication listing, not actual asset content.",), evidence=(candidate, previous))}
     current = fingerprint(candidate)
     baseline = fingerprint(previous) if previous is not None else None
-    return {"assessment": UpdateAssessment("new_issue" if previous is None else "unchanged" if current == baseline else "changed",
+    return {"assessment": UpdateAssessment("first_seen" if previous is None else "unchanged" if current == baseline else "changed",
         _get(settings, "basis", "provided_evidence"), predecessor=baseline, candidate=current)}
 
 
@@ -336,10 +432,12 @@ def csv_decode(inputs, settings, context):
 def dbf_decode(inputs, settings, context):
     from stratbox.core.formats.dbf_lossless import decode_dbf
     material = _material(inputs["material"])
-    value = decode_dbf(material.data, encoding=_option(context, settings, "encoding", "cp866"), checkpoint=context.checkpoint)
+    encoding = _option(context, settings, "encoding", "cp866")
+    value = decode_dbf(material.data, encoding=encoding, checkpoint=context.checkpoint)
     if getattr(context, "budget", None): context.budget.charge("cells", len(value.fields) * len(value.records))
     neutral = material
-    return {"physical": DbfEvidence(neutral, value.fields, value.records)}
+    return {"physical": DbfEvidence(neutral, value.fields, value.records,
+        decoded_identity=fingerprint((material.identity, value.fields, value.records, encoding)), encoding=encoding)}
 
 
 def archive_unpack(inputs, settings, context):
@@ -363,14 +461,17 @@ def archive_unpack(inputs, settings, context):
             context.checkpoint()
             if entry.is_dir() or selected and entry.filename not in selected:
                 continue
-            if Path(entry.filename).is_absolute() or ".." in Path(entry.filename).parts:
+            if "\\" in entry.filename or Path(entry.filename).is_absolute() or ".." in Path(entry.filename).parts:
                 raise ExecutionFailure("archive.member_path")
             data = archive.read(entry)
             total += len(data)
             if total > max_bytes:
                 raise ExecutionFailure("archive.expansion_limit")
             result.append(Material(data, source_id=material.source_id,
-                metadata={"member": entry.filename, "parent": material.identity.sha256}, lineage=(material.identity,)))
+                metadata={**dict(material.metadata), "member": entry.filename, "parent": material.identity.sha256,
+                    "container_asset_id": material.metadata.get("asset_id"), "asset_id": entry.filename,
+                    "archive_depth": int(material.metadata.get("archive_depth", 0)) + 1},
+                lineage=(*material.lineage, material.identity)))
     return {"members": tuple(result)}
 
 
@@ -394,7 +495,7 @@ def archive_pack(inputs, settings, context):
             context.checkpoint()
             material = _material(value)
             name = material.metadata.get("member", str(index))
-            if Path(name).is_absolute() or ".." in Path(name).parts:
+            if "\\" in name or Path(name).is_absolute() or ".." in Path(name).parts:
                 raise ExecutionFailure("archive.member_path")
             if name in names: raise ExecutionFailure("archive.duplicate_member")
             names.add(name)
@@ -438,10 +539,14 @@ def document_decode(inputs, settings, context):
             raise ExecutionFailure("document.pdf_limits")
         for index, page in enumerate(reader.pages):
             context.checkpoint()
-            blocks.append(DocumentBlock(index, "page", page.extract_text() or "", index + 1, locator=f"page:{index+1}"))
+            try:
+                blocks.append(DocumentBlock(index, "page", page.extract_text() or "", index + 1, locator=f"page:{index+1}"))
+            except Exception as error:
+                blocks.append(DocumentBlock(index, "error", "page_text_extraction_failed:" + type(error).__name__, index + 1, locator=f"page:{index+1}"))
         fmt, findings = "pdf", ("Text extraction only; table geometry and OCR are not established.",)
     else:
         raise ExecutionFailure("document.format_unsupported")
+    findings = (*findings, *(block.text for block in blocks if block.kind == "error"))
     assessment = Assessment("partial", findings)
     if getattr(context, "budget", None):
         context.budget.charge("cells", sum(sum(map(len, block.rows)) for block in blocks))
@@ -483,7 +588,7 @@ def observations_validate(inputs, settings, context):
     dataset = inputs["dataset"]
     keys, grain = set(), _get(settings, "grain", ("metric", "subject_namespace", "subject", "period", "unit", "scale", "perimeter", "measure_kind", "dimensions"))
     for row in _rows(dataset):
-        key = tuple(row.get(name) for name in grain)
+        key = _grain_key(row,grain)
         if key in keys:
             raise ExecutionFailure("observations.duplicate_grain")
         keys.add(key)
@@ -513,7 +618,7 @@ def observations_compare(inputs, settings, context):
     for dataset in (before, after):
         values = {}
         for row in _rows(dataset):
-            key = tuple(row.get(k) for k in grain)
+            key = _grain_key(row,grain)
             if key in values:
                 raise ExecutionFailure("comparison.duplicate_grain")
             values[key] = row
@@ -538,12 +643,13 @@ def timeseries_prepare(inputs, settings, context):
     selected = dict(_option(context, settings, "selection", {}))
     rows = [row for row in _rows(dataset) if all(row.get(k) == v for k, v in selected.items())]
     grain = _get(settings, "group_by", ("metric", "subject_namespace", "subject", "unit", "scale", "perimeter", "measure_kind", "frequency", "period_kind", "basis", "dimensions", "legal_kind", "currency"))
-    coordinates = {tuple((key, row.get(key)) for key in grain) for row in rows}
+    coordinates = {_grain_key(row,grain) for row in rows}
     if len(coordinates) != 1:
         raise ExecutionFailure("timeseries.unique_grain_required")
     rows.sort(key=lambda row: str(row["period"]))
     sample = rows[0]
-    series = TimeSeries(dict(next(iter(coordinates))), tuple(row["period"] for row in rows), tuple(row.get("value") for row in rows),
+    dataset = select_dataset(dataset,rows)
+    series = TimeSeries({key:sample.get(key) for key in grain}, tuple(row["period"] for row in rows), tuple(row.get("value") for row in rows),
         sample.get("unit", ""), sample.get("frequency", ""), sample.get("measure_kind", ""), (*dataset.lineage, dataset.identity), dataset.assessment, source_uses=dataset.source_uses)
     return {"series": series, "assessment": series.assessment}
 
@@ -553,10 +659,10 @@ def timeseries_partition(inputs, settings, context):
     group = _get(settings, "group_by", ("metric", "subject_namespace", "subject", "unit", "scale", "perimeter", "measure_kind", "frequency", "period_kind", "basis", "dimensions", "legal_kind", "currency"))
     groups = defaultdict(list)
     for row in _rows(dataset):
-        groups[tuple(row.get(k) for k in group)].append(row)
+        groups[_grain_key(row,group)].append(row)
     results = []
     for key in sorted(groups, key=str):
-        selected = SourceDataset(dataset.source_id, tuple(groups[key]), dataset.semantics, dataset.issue_id, dataset.lineage, dataset.assessment, source_uses=dataset.source_uses)
+        selected = select_dataset(dataset, groups[key])
         results.append(timeseries_prepare({"observations": selected}, settings, context)["series"])
     return {"items": tuple(results)}
 
@@ -601,16 +707,35 @@ def timeseries_validate(inputs, settings, context):
 def timeseries_adjust(inputs, settings, context):
     timeseries_validate(inputs, settings, context)
     provider = context.provider("seasonal_adjustment")
-    return {"adjustment": provider.adjust(inputs["series"], settings=settings, checkpoint=context.checkpoint)}
+    original = inputs["series"]
+    result = provider.adjust(original, settings=settings, checkpoint=context.checkpoint)
+    _validate_adjustment(result, settings)
+    if result.input_identity != fingerprint(original): raise ExecutionFailure("timeseries.adjustment_input_mismatch")
+    return {"adjustment": result}
+
+
+def _validate_adjustment(adjustment, settings):
+    if not isinstance(adjustment, TimeSeriesAdjustment) or not isinstance(adjustment.diagnostics, AdjustmentDiagnostics):
+        raise ExecutionFailure("timeseries.typed_adjustment_required")
+    original, adjusted = adjustment.original, adjustment.adjusted
+    if not adjustment.method or adjustment.input_identity != fingerprint(original) or adjustment.diagnostics.input_identity != adjustment.input_identity:
+        raise ExecutionFailure("timeseries.adjustment_input_mismatch")
+    if (original.periods != adjusted.periods or original.frequency != adjusted.frequency or original.coordinates != adjusted.coordinates
+            or original.unit != adjusted.unit or original.measure_kind != adjusted.measure_kind):
+        raise ExecutionFailure("timeseries.adjustment_semantic_mismatch")
+    if len(adjusted.values) != len(original.values) or any(value is None or not Decimal(value).is_finite() for value in adjusted.values):
+        raise ExecutionFailure("timeseries.adjustment_invalid_values")
+    required = set(_get(settings, "required_diagnostics", ("residual_seasonality", "outlier_policy")))
+    if not required or not required <= adjustment.diagnostics.checks.keys() or not all(adjustment.diagnostics.checks[key] for key in required):
+        raise ExecutionFailure("timeseries.diagnostics_not_admitted")
+    if not adjustment.assessment.complete or not adjustment.diagnostics.assessment.complete:
+        raise ExecutionFailure("timeseries.adjustment_not_admitted")
 
 
 def timeseries_diagnose(inputs, settings, context):
     adjustment = inputs["adjustment"]
-    diagnostics = getattr(adjustment, "diagnostics", None)
-    if diagnostics is None:
-        provider = context.provider("seasonal_adjustment")
-        diagnostics = provider.diagnose(adjustment, settings=settings, checkpoint=context.checkpoint)
-    return {"diagnostics": diagnostics}
+    _validate_adjustment(adjustment, settings)
+    return {"diagnostics": adjustment.diagnostics}
 
 
 def _number(row):
@@ -632,7 +757,7 @@ def calculate_change(inputs, settings, context):
         "measure_kind", "frequency", "period_kind", "basis", "value_basis", "dimensions", "legal_kind", "currency", "portfolio", "activity", "bank", "sex", "age"))
     groups, result = defaultdict(list), []
     for row in _rows(dataset):
-        groups[tuple(row.get(k) for k in grain)].append(row)
+        groups[_grain_key(row,grain)].append(row)
     before, after, mode = _option(context, settings, "before"), _option(context, settings, "after"), _get(settings, "mode", "absolute")
     if (before is None) != (after is None) or before is not None and str(before) >= str(after):
         raise ExecutionFailure("calculation.change_selection_invalid")
@@ -713,7 +838,15 @@ def calculate_flow(inputs, settings, context):
                 if end(previous)[1] + step != month:
                     raise ExecutionFailure("calculation.ytd_period_gap")
                 value = _number(row) - _number(previous)
-            result.append({**dict(row), "value": value, "value_status": "derived", "basis": "period_flow"})
+            from datetime import timedelta
+            import calendar
+            end_day = date(year, month, calendar.monthrange(year, month)[1])
+            start_day = date(year, month - step + 1, 1)
+            result.append({**dict(row), "value": value, "value_status": "derived", "basis": "period_flow",
+                "value_basis": "period_flow", "period_kind": "interval", "period": (start_day.isoformat(), end_day.isoformat()),
+                "period_start": start_day.isoformat(), "period_end": end_day.isoformat(),
+                "cumulative_evidence_ref": row.get("evidence_ref"),
+                "preceding_cumulative_evidence_ref": previous.get("evidence_ref") if previous is not None and end(previous)[0] == year else None})
             previous = row
     return {"dataset": _derived(dataset, result)}
 
@@ -726,13 +859,13 @@ def calculate_ratio(inputs, settings, context):
         raise ExecutionFailure("ratio.measure_kind_mismatch")
     right = {}
     for row in _rows(denominator):
-        key = tuple(row.get(k) for k in group)
+        key = _grain_key(row,group)
         if key in right:
             raise ExecutionFailure("ratio.ambiguous_denominator")
         right[key] = row
     result = []
     for row in _rows(numerator):
-        matching = right.get(tuple(row.get(k) for k in group))
+        matching = right.get(_grain_key(row,group))
         if matching is None or row.get("unit") != matching.get("unit") or row.get("scale", 1) != matching.get("scale", 1):
             raise ExecutionFailure("ratio.incompatible_inputs")
         if any(row.get(key) != matching.get(key) for key in ("subject_namespace", "measure_kind", "period_kind", "frequency")):
@@ -743,7 +876,9 @@ def calculate_ratio(inputs, settings, context):
             "value": value, "value_status": "derived" if value is not None else "undefined", "measure_kind": "ratio",
             "denominator_evidence_ref": matching.get("evidence_ref"), "denominator_metric": matching.get("metric"),
             "denominator_annotations": matching.get("annotations", ()), "denominator_value": matching.get("value")})
-    return {"dataset": _derived(numerator, result, sources=(denominator.identity,))}
+    from dataclasses import replace
+    result = _derived(numerator,result,sources=(denominator.identity,))
+    return {"dataset":replace(result,source_uses=tuple(dict.fromkeys((*numerator.source_uses,*denominator.source_uses))))}
 
 
 def calculate_formula(inputs, settings, context):
@@ -774,7 +909,7 @@ def calculate_formula(inputs, settings, context):
     for row in _rows(dataset):
         names = [name for name, metric in operands.items() if row.get("metric") == metric]
         for name in names:
-            bucket = groups[tuple(row.get(k) for k in group)]
+            bucket = groups[_grain_key(row,group)]
             if name in bucket: raise ExecutionFailure("formula.duplicate_operand")
             bucket[name] = row
     for rows in groups.values():
@@ -794,7 +929,7 @@ def calculate_formula(inputs, settings, context):
 def view_prepare(inputs, settings, context):
     dataset, filters = inputs["dataset"], _option(context, settings, "filters", {})
     rows = tuple(row for row in dataset.rows if all(row.get(k) in v if isinstance(v, (tuple, list, set, frozenset)) else row.get(k) == v for k, v in filters.items()))
-    return {"view": View(SourceDataset(dataset.source_id, rows, dataset.semantics, dataset.issue_id, dataset.lineage, dataset.assessment, source_uses=dataset.source_uses),
+    return {"view": View(select_dataset(dataset, rows),
                          {} if settings is None else settings, (*dataset.lineage, dataset.identity), dataset.source_uses)}
 
 
@@ -819,14 +954,37 @@ def product_render(inputs, settings, context):
 
 
 def value_encode(inputs, settings, context):
-    data = json.dumps(canonical_tree(inputs["value"]), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-    return {"representation": EncodedProduct(data, "application/json", (fingerprint(inputs["value"]),), source_uses=getattr(inputs["value"], "source_uses", ()))}
+    return {"representation": encode_value(inputs["value"],context=context,
+        max_bytes=_option(context,settings,"max_bytes",256*1024*1024))}
+
+
+def encode_value(value, *, context, admitted_types=None, max_bytes=256 * 1024 * 1024):
+    """Bounded shared serializer with an explicit trusted scientific vocabulary."""
+    limit = max_bytes
+    budget = getattr(context, "budget", None)
+    if budget and budget.remaining("output_bytes") is not None: limit = min(limit, budget.remaining("output_bytes"))
+    data = bytearray()
+    for chunk in json.JSONEncoder(ensure_ascii=False, sort_keys=True, separators=(",", ":")).iterencode(validate_portable_tree(canonical_tree(value),admitted_types=admitted_types)):
+        context.checkpoint()
+        raw = chunk.encode()
+        if len(data) + len(raw) > limit:
+            if budget and budget.remaining("output_bytes") is not None: budget.check("output_bytes", len(data) + len(raw))
+            raise ExecutionFailure("codec.output_limit")
+        data.extend(raw)
+    data = bytes(data)
+    identity = fingerprint(value)
+    return EncodedProduct(data, "application/json", (identity,),
+        descriptor={"encoding": "canonical_tree", "value_identity": identity},
+        source_uses=getattr(value, "source_uses", ()))
 
 
 def value_decode(inputs, settings, context):
     encoded = inputs["representation"]
     data = encoded if isinstance(encoded, bytes) else encoded.data
-    return {"value": restore_tree(json.loads(data))}
+    value = restore_tree(json.loads(data))
+    expected = getattr(encoded, "descriptor", {}).get("value_identity")
+    if expected is not None and fingerprint(value) != expected: raise ExecutionFailure("codec.value_identity_mismatch")
+    return {"value": value}
 
 
 def artifact_commit(inputs, settings, context):
@@ -871,7 +1029,7 @@ def artifact_reconcile(inputs, settings, context):
         except (OSError, ExecutionFailure):
             return None
         return expected if actual == expected.identity else None
-    recovered = context.service.reconcile_effect(receipt.effect_id, lookup)
+    recovered = context.service.reconcile_effect(receipt.effect_id, lookup, context=context)
     return {"assessment": Assessment("complete" if recovered.status == "confirmed" else "indeterminate",
         qualifications=frozenset({"exact_immutable_readback"}) if recovered.status == "confirmed" else frozenset())}
 
@@ -930,7 +1088,7 @@ def release_assemble(inputs, settings, context):
         if tuple(derivation) != reference.lineage:
             raise ExecutionFailure("release.caller_derivation_conflict")
         requested = set(basis.values()) if isinstance(basis, Mapping) else set(basis) if isinstance(basis, (tuple, list, set, frozenset)) else {basis} if basis is not None else set()
-        if requested and not requested <= set(reference.lineage):
+        if requested and not {fingerprint(item) for item in requested} <= {fingerprint(item) for item in reference.lineage}:
             raise ExecutionFailure("release.member_basis_mismatch")
         records.append({"reference": reference, "derivation": derivation})
     return {"manifest": {"members": tuple(records), "basis": basis, "identity": fingerprint(records)}}
@@ -971,41 +1129,88 @@ def material_maintenance_apply(inputs, settings, context):
         if scope is None or not Path(str(source)).is_relative_to(Path(str(scope))):
             raise ExecutionFailure("maintenance.explicit_scope_required")
         expected = _get(action, "expected_identity")
-        if expected is None or ByteIdentity.of(_read(store, source, _option(context, settings, "max_bytes", 128 * 1024 * 1024))) != expected:
-            raise ExecutionFailure("maintenance.state_conflict")
-        method = getattr(store, operation, None)
-        if operation not in {"move", "delete"} or method is None: raise ExecutionFailure("maintenance.operation_not_admitted")
+        if expected is None: raise ExecutionFailure("maintenance.expected_identity_required")
+        methods = ("guard_directory", "inspect_file", "rename_expected" if operation == "move" else "remove_expected")
+        if operation not in {"move", "delete"} or not all(callable(getattr(store, name, None)) for name in methods):
+            raise ExecutionFailure("maintenance.conditional_provider_required")
         destination = _get(action, "destination")
         if destination is not None and not Path(str(destination)).is_relative_to(Path(str(scope))):
             raise ExecutionFailure("maintenance.destination_outside_scope")
-        perform = (lambda method=method, source=source, destination=destination: method(source, destination)) if operation == "move" else (lambda method=method, source=source: method(source))
-        receipts.append(context.effect("storage.write", fingerprint((operation, source, destination, expected)), perform, resource=str(source)))
+        if destination is not None and Path(str(source)).parent != Path(str(destination)).parent:
+            raise ExecutionFailure("maintenance.same_directory_required")
+        def perform(source=source, destination=destination, expected=expected, operation=operation):
+            from stratbox.core.storage.filestore import MutationRejected
+            with store.guard_directory(str(Path(str(source)).parent)):
+                observed = store.inspect_file(source)
+                if observed.identity != expected:
+                    raise MutationRejected("Source changed", code="maintenance.state_conflict")
+                success = store.rename_expected(observed, destination) if operation == "move" else store.remove_expected(observed)
+                if not success: raise MutationRejected("Conditional mutation rejected", code="maintenance.state_conflict")
+                return {"source": source, "destination": destination, "identity": expected, "operation": operation}
+        receipt = context.effect("storage.write", fingerprint(("maintenance", _provider_scope(store, source), operation, source, destination, expected)), perform, resource=str(source))
+        if receipt.status != "confirmed": raise ExecutionFailure("maintenance." + receipt.status, outcome="unknown" if receipt.status == "unknown" else "failed")
+        receipts.append(receipt)
     return {"receipts": tuple(receipts)}
 
 
 def notification_prepare(inputs, settings, context):
-    facts = inputs["facts"]
+    facts = tuple(inputs["facts"])
     state = context.provider("notification_state")
     selector, route = _option(context, settings, "selector", {}), _option(context, settings, "route")
     subscription = _option(context, settings, "subscription_id", "default")
-    effect_id = fingerprint(("notification.state", subscription, selector, route, tuple((f.run_id, f.sequence) for f in facts)))
+    effect_id = fingerprint(("notification.state", _provider_scope(state, subscription), subscription, selector, route,
+        tuple((f.stream_id, f.run_id, f.sequence) for f in facts)))
+    def prepare_state():
+        # This transaction is idempotent: the cursor and deterministic intent
+        # keys are committed together. Replay can safely resolve a lost reply.
+        prepared = state.prepare(facts, subscription_id=subscription, selector=selector, route=route)
+        return {"status": "confirmed", "effect_id": effect_id, "prepared": len(prepared)}
     receipt = context.effect("notification.state", effect_id,
-        lambda: state.prepare(facts, subscription_id=subscription, selector=selector, route=route), resource=subscription)
+        prepare_state, reconcile=lambda previous: prepare_state(), resource=subscription)
     if receipt.status != "confirmed": raise ExecutionFailure("notification.state_unknown", outcome="unknown")
-    return {"intents": receipt.value}
+    # A repeated preparation confirms the input transaction, then reads the
+    # current pending page; its old effect receipt is not a current queue view.
+    return {"intents": state.pending(subscription, after_sequence=_option(context, settings, "after_sequence", 0),
+        limit=_option(context, settings, "limit", 1000))}
 
 
 def notification_deliver(inputs, settings, context):
     provider, intent = context.provider("notification"), inputs["intent"]
-    receipt = context.effect("notification.deliver", intent["id"], lambda: provider.deliver(intent),
+    subscription = intent.get("subscription_id")
+    state = context.service.providers.get("notification_state") if subscription is not None else None
+    if subscription is not None and not callable(getattr(state, "acknowledge", None)):
+        raise ExecutionFailure("notification.acknowledgement_state_required")
+    def deliver():
+        acknowledgement = provider.deliver(intent)
+        status = acknowledgement.get("status", acknowledgement.get("confirmation")) if isinstance(acknowledgement, Mapping) else getattr(acknowledgement, "status", getattr(acknowledgement, "confirmation", None))
+        if status in {"rejected", "failed"}:
+            from stratbox.core.storage.filestore import MutationRejected
+            raise MutationRejected("The channel rejected the notification", code="notification.delivery_rejected")
+        if status not in {"confirmed", "accepted", "delivered"}:
+            raise ExecutionFailure("notification.acknowledgement_missing", outcome="unknown")
+        return acknowledgement
+    receipt = context.effect("notification.deliver", intent["id"], deliver,
         reconcile=lambda previous: provider.lookup(previous.effect_id) if hasattr(provider, "lookup") else None,
         resource=str(intent.get("route")))
+    if receipt.status != "confirmed":
+        raise ExecutionFailure("notification.delivery_" + receipt.status,
+            outcome="unknown" if receipt.status == "unknown" else "failed")
+    if subscription is not None:
+        acknowledgement_id = fingerprint(("notification.acknowledge", _provider_scope(state, subscription),
+            subscription, intent["id"]))
+        def acknowledge():
+            result = state.acknowledge(subscription, intent["id"], receipt)
+            return {"status": "confirmed", "effect_id": acknowledgement_id, **result}
+        acknowledged = context.effect("notification.state", acknowledgement_id, acknowledge,
+            reconcile=lambda previous: acknowledge(), resource=subscription)
+        if acknowledged.status != "confirmed":
+            raise ExecutionFailure("notification.state_unknown", outcome="unknown")
     return {"receipt": receipt}
 
 
 def notification_reconcile(inputs, settings, context):
     provider, receipt = context.provider("notification"), inputs["receipt"]
-    return {"assessment": context.service.reconcile_effect(receipt.effect_id, provider.lookup) if hasattr(provider, "lookup") else Assessment("indeterminate")}
+    return {"assessment": context.service.reconcile_effect(receipt.effect_id, provider.lookup, context=context) if hasattr(provider, "lookup") else Assessment("indeterminate")}
 
 
 def _model_method(inputs, settings, context):

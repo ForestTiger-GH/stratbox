@@ -5,6 +5,7 @@ a notification. The standard operation owns the iteration and its admission.
 Mutable numerical helpers are private to one action and copied before use.
 """
 from __future__ import annotations
+from stratbox.domains.cbr.calculations.sors.fingerprints import implementation_fingerprint
 
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
@@ -104,10 +105,11 @@ class SorsModelInputs:
     bundle: SorsSourceBundle
     config: SorsRunConfig
     identities: tuple[str, str, str]
+    implementation: str = field(default_factory=implementation_fingerprint)
 
     @property
     def fingerprint(self):
-        return _hash(*self.identities, self.bundle.fingerprint, self.config)
+        return _hash(*self.identities, self.bundle.fingerprint, self.config, self.implementation)
 
 
 @dataclass(frozen=True)
@@ -339,6 +341,7 @@ def constraints_build(inputs, settings, context):
     bundle = inputs["bundle"]
     if not isinstance(bundle, SorsModelInputs):
         raise TypeError("sors.model_inputs_required")
+    _check_build(bundle)
     quantities = build_quantity_graph(bundle.bundle)
     admitted = replace(bundle, bundle=attach_observation_bindings(bundle.bundle, quantities))
     publication = build_publication_graph(quantities)
@@ -354,10 +357,17 @@ def constraints_build(inputs, settings, context):
     return {"graph": model, "state": state}
 
 
+def _check_build(inputs):
+    from .fingerprints import implementation_fingerprint
+    if inputs.implementation != implementation_fingerprint():
+        raise ValueError("sors.retained_model_build_mismatch")
+
+
 def _state(inputs):
     state = inputs["state"]
     if not isinstance(state, SorsInferenceState):
         raise TypeError("sors.inference_state_required")
+    _check_build(state.model.inputs)
     model = inputs.get("graph", state.model)
     if model is not state.model and model.fingerprint != state.model.fingerprint:
         raise ValueError("sors.constraint_graph_mismatch")
@@ -473,6 +483,7 @@ def model_feasibility(inputs, settings, context):
     problem = inputs["problem"]
     if not isinstance(problem, SorsCompiledProblem):
         raise TypeError("sors.compiled_problem_required")
+    _check_build(problem.state.model.inputs)
     execution = run_strict_feasibility(problem.compilation.problem, problem.state.model.inputs.config.optimization)
     return {"feasibility": SorsFeasibilityAssessment(problem.fingerprint, problem.state.fingerprint, execution, problem)}
 
@@ -489,6 +500,7 @@ def bounds_optimize(inputs, settings, context):
     if not feasibility.success:
         raise ValueError("sors.global_feasibility_required:" + feasibility.status)
     state = problem.state
+    _check_build(state.model.inputs)
     if "state" in inputs and inputs["state"].fingerprint != state.fingerprint:
         raise ValueError("sors.optimization_state_mismatch")
     closure, ledger = deepcopy(state._closure), deepcopy(state._ledger)
@@ -601,6 +613,8 @@ def values_certify(inputs, settings, context):
     state, feasibility = _state(inputs), inputs["feasibility"]
     if not isinstance(feasibility, SorsFeasibilityAssessment) or feasibility.state_basis != state.fingerprint:
         raise ValueError("sors.stale_certification_basis")
+    if not feasibility.success:
+        raise ValueError("sors.global_feasibility_required:" + feasibility.status)
     if not state.converged or not state.optimization_complete:
         raise ValueError("sors.completed_fixed_point_required")
     problem = feasibility.problem
@@ -689,7 +703,7 @@ def observations_assemble(inputs, settings, context):
         source_id="cbr.sors", rows=rows, issue_id=result.summary.as_of_date,
         semantics={"input_topology": "coupled", "measure_kind": "stock",
                    "unit": "million_rubles", "portfolio_scope": PRIMARY_PORTFOLIO_SCOPE,
-                   "rules_fingerprint": result.run_config.rules_fingerprint},
+                   "rules_fingerprint": str(result.audit_grid.set_index("key").loc["rules_fingerprint", "value"])},
         lineage=tuple(result.source_bundle.lineage),
         assessment=Assessment("complete" if result.summary.strict_status == "OPTIMAL" else "partial",
                               qualifications=frozenset({"derived", "reconstructed"})), native=result,

@@ -41,7 +41,7 @@ def test_each_commissioned_source_has_a_final_domain_record():
 
 
 def test_retired_runtime_owners_are_removed():
-    for name in ('operations', 'composition', 'domains/registry', 'core/operations', 'core/capabilities'):
+    for name in ('operations', 'composition', 'domains/registry', 'core/operations', 'core/capabilities', 'core/resources'):
         assert not (PACKAGE / name).exists(), name
     assert not list((PACKAGE / 'domains').rglob('profiles.py'))
     for domain in (PACKAGE/'domains').iterdir():

@@ -44,11 +44,19 @@ def interpret(inputs, settings, context):
         UsedInputReceipt("source_workbook", tables.material.identity, tables.material.media_type,
             "inline", settings.series_id),))
     parsed = replace(parsed, evidence=seal)
+    from stratbox.domains.cbr.methods.tables.corporate_lending.observations import cell_number
+    cells = {sheet.name: {cell.coordinate: cell for cell in sheet.cells} for sheet in workbook.sheets}
     rows = []
     for source in frame.to_dict("records"):
         context.checkpoint()
-        value = source.get("value")
-        missing = value is None or value != value
+        coordinate = str(source["source_column"]) + str(source["source_row"])
+        cell = cells[str(source["source_sheet_name"])].get(coordinate)
+        value, status = cell_number(cell)
+        token = cell.raw_token if cell is not None else None
+        if token is None and cell is not None and cell.value is not None:
+            token = str(cell.value)
+        parent = source.get("federal_district_name")
+        parent = "" if parent is None or parent != parent else str(parent)
         point = str(source["report_date"])
         if settings.kind == "industry_issuance":
             import calendar
@@ -57,14 +65,19 @@ def interpret(inputs, settings, context):
         else:
             period = point
         rows.append({"metric": str(source.get("industry_code")), "subject": str(source.get("region_code")),
+            "subject_label": str(source.get("region_name")), "subject_order": int(source.get("region_order")),
+            "subject_kind": str(source.get("region_kind")), "subject_parent": parent,
+            "metric_label": str(source.get("industry_name_ru")), "metric_order": int(source.get("industry_order")),
+            "reporting_date": point, "reference_period": str(source.get("reference_period") or point),
             "subject_namespace": "cbr.published_region", "period": period,
             "period_kind": "interval" if isinstance(period, tuple) else "as_of",
             "measure_kind": "flow" if settings.kind == "industry_issuance" else "stock",
             "unit": "RUB", "scale": Decimal(1000000), "perimeter": "CORPORATE_TOTAL",
-            "value": None if missing else Decimal(str(value)), "value_status": "blank" if missing else "reported",
-            "raw_token": None if missing else str(value),
+            "value": Decimal(str(value)) if value is not None else None,
+            "value_status": "reported" if value is not None else "blank" if status == "blank" else "dash" if status == "marker" else "missing",
+            "raw_token": token,
             "dimensions": (("measure", str(source.get("measure"))), ("currency_scope", str(source.get("currency_scope")))),
-            "evidence_ref": f"sha256:{tables.material.identity.sha256}#region={source.get('region_code')}&industry={source.get('industry_code')}"})
+            "evidence_ref": f"sha256:{tables.material.identity.sha256}#{source['source_sheet_name']}!{coordinate}"})
     diagnostics = getattr(parsed, "validation_issues", ())
     findings = tuple(sorted({str(getattr(item, "code", item)) for item in diagnostics}))
     assessment = Assessment("partial" if findings else "complete", findings)

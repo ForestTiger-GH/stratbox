@@ -50,6 +50,6 @@ def test_retained_bytes_tamper_cannot_restore_under_previous_content_identity(tm
     store = LocalFileStore(tmp_path)
     with StrategyBox(providers={'filestore':store}) as box:
         reference = checked(box.invoke('command.artifact.commit',inputs={'material':Material(b'original'),'destination':'objects'}),'reference')
-        store.write_bytes(reference.location,b'changed')
+        store.checked_file_path(reference.location).write_bytes(b'changed')
         rejected = box.invoke('command.material.read',inputs={'location':reference})
     assert rejected.outcome == 'failed' and 'material' not in rejected.outputs

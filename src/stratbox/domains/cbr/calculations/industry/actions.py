@@ -1,6 +1,6 @@
 """Published industry components form explicit same-period LPK and APK formulas."""
 from collections import defaultdict
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from stratbox.shared.data.values import Assessment, DerivedDataset, SourceDataset
 
 AGRICULTURE = "agriculture_hunting_services"
@@ -24,7 +24,8 @@ def calculate(inputs, settings, context):
             raise ValueError("cbr.apk_already_calculated")
         if metric not in REQUIRED:
             continue
-        key = (row.get("subject"), str(row.get("period")), row.get("perimeter"),
+        key = (row.get("subject_namespace"), row.get("subject"), str(row.get("period")),
+            row.get("period_kind"), row.get("measure_kind"), row.get("frequency"), row.get("perimeter"),
             row.get("unit"), row.get("scale"), row.get("dimensions", ()))
         if metric in grouped[key]:
             raise ValueError("cbr.apk_duplicate_operand")
@@ -38,14 +39,25 @@ def calculate(inputs, settings, context):
             raise ValueError("cbr.apk_required_industries_missing")
         complete = all(row.get("value") is not None for row in operands.values())
         numbers = {name: Decimal(str(row["value"])) for name, row in operands.items()} if complete else {}
-        lpk = numbers[WOOD] + numbers[FORESTRY_AGRICULTURE] - numbers[AGRICULTURE] if complete else None
-        apk = numbers[AGRICULTURE] + numbers[FOOD] + numbers[MACHINERY] + lpk if complete else None
+        if complete:
+            if not all(value.is_finite() for value in numbers.values()):
+                raise ValueError("cbr.apk_finite_operands_required")
+            span = max(value.adjusted() for value in numbers.values()) - min(value.as_tuple().exponent for value in numbers.values()) + 4
+            if span > 100000:
+                raise ValueError("cbr.apk_precision_limit")
+            with localcontext() as arithmetic:
+                arithmetic.prec = max(28, span)
+                lpk = numbers[WOOD] + numbers[FORESTRY_AGRICULTURE] - numbers[AGRICULTURE]
+                apk = numbers[AGRICULTURE] + numbers[FOOD] + numbers[MACHINERY] + lpk
+        else:
+            lpk = apk = None
         if not complete:
             findings.add("cbr.apk_missing_operand_values")
         evidence = tuple(str(operands[name]["evidence_ref"]) for name in sorted(operands))
         for metric, value in (("lpk", lpk), ("apk", apk)):
             row = dict(templates[key])
             row.update(metric=metric, value=value, value_status="derived" if value is not None else "missing",
+                metric_label="АПК" if metric == "apk" else "ЛПК", metric_order=27 if metric == "apk" else 28,
                 raw_token=None, evidence_ref="cbr.industry_formula:" + metric,
                 operands=evidence)
             output.append(row)

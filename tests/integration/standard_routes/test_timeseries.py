@@ -1,14 +1,7 @@
 """A database selection and whole-table application share the same series contract."""
-from dataclasses import dataclass
 from decimal import Decimal
 from stratbox.sdk import StrategyBox
-from stratbox.shared.data.values import SourceDataset, TimeSeries, SnapshotRef
-
-
-@dataclass(frozen=True)
-class Adjustment:
-    series: TimeSeries
-    diagnostics: tuple[str,...]=('synthetic_test_backend',)
+from stratbox.shared.data.values import SourceDataset, TimeSeries, SnapshotRef, TimeSeriesAdjustment, AdjustmentDiagnostics, fingerprint
 
 
 class Backend:
@@ -16,7 +9,8 @@ class Backend:
     def adjust(self,series,*,settings,checkpoint):
         checkpoint()
         self.called.append(series.coordinates['metric'])
-        return Adjustment(series)
+        return TimeSeriesAdjustment(fingerprint(series),series,series,'synthetic_test_backend',
+            AdjustmentDiagnostics(fingerprint(series),{'residual_seasonality':True,'outlier_policy':True}))
 
 
 class Reader:
@@ -44,11 +38,12 @@ def test_database_filter_one_series_and_same_command_over_whole_table():
         assert prepared.outcome=='succeeded',prepared.diagnostics
         single=box.invoke('operation.timeseries.adjust',inputs={'series':prepared.output('series')})
         assert single.outcome=='succeeded',single.diagnostics
-        assert len(single.output('adjustment').series.values)==6
+        assert len(single.output('adjustment').adjusted.values)==6
         batch=box.invoke('operation.calculation.apply_table',inputs={'table':dataset})
         assert batch.outcome=='succeeded',batch.diagnostics
         assert len(batch.output('results'))==2
         assert batch.output('outcomes')==((0,'succeeded'),(1,'succeeded'))
-        assert sorted(backend.called)==['credit','deposits']  # Equal scientific work is shared.
-        assert single.output('adjustment') in batch.output('results')
+        assert sorted(backend.called)==['credit','credit','deposits']
+        credit=next(item for item in batch.output('results') if item.original.coordinates['metric']=='credit')
+        assert single.output('adjustment').adjusted.values==credit.adjusted.values
         assert len(reader.calls)==1

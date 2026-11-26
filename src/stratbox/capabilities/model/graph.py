@@ -1,7 +1,7 @@
 """Authoring graphs; control structures carry no publisher implementation."""
 from dataclasses import dataclass, field
 from collections.abc import Mapping
-from .immutable import freeze
+from .immutable import freeze, freeze_bindings
 
 @dataclass(frozen=True, slots=True)
 class InputRef:
@@ -41,7 +41,8 @@ class Call:
     required: bool = True
 
     def __post_init__(self):
-        for name in ('inputs', 'parameters'): object.__setattr__(self, name, freeze(getattr(self, name)))
+        object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
+        object.__setattr__(self, 'parameters', freeze(self.parameters))
 
 @dataclass(frozen=True, slots=True)
 class MapCall:
@@ -62,7 +63,7 @@ class MapCall:
     def __post_init__(self):
         if self.max_items < 0 or self.window < 1 or self.completion not in {'all_selected', 'eligible_subset'}:
             raise ValueError('graph.invalid_map')
-        object.__setattr__(self, 'inputs', freeze(self.inputs))
+        object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
         object.__setattr__(self, 'parameters', freeze(self.parameters))
 
 @dataclass(frozen=True, slots=True)
@@ -108,7 +109,7 @@ class GraphBody:
 
     def __post_init__(self):
         object.__setattr__(self, 'steps', tuple(self.steps))
-        object.__setattr__(self, 'outputs', freeze(self.outputs))
+        object.__setattr__(self, 'outputs', freeze_bindings(self.outputs))
         names = tuple(step.step_id for step in self.steps)
         if len(names) != len(set(names)): raise ValueError('graph.duplicate_step')
         for roots in (self.required_checks, self.required_effects, self.required_completions):
@@ -127,3 +128,4 @@ class DispatchCall:
     output_port: str = 'dataset'
     required: bool = True
     condition: Condition | None = None
+    selector_kind: str = 'material_format'

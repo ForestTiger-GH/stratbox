@@ -240,3 +240,38 @@ def test_explicit_issue_context_reaches_source_uses_and_conflicting_context_is_r
     with pytest.raises(ValueError, match="issue_context_conflict"):
         budget.interpret({"tables": replace(tables, issue_id="retained-publication"),
             "issue": {"issue_id": "different-publication"}}, settings, context())
+
+
+@pytest.mark.parametrize("frequency,windows,expected", (
+    ("monthly", (("2025-01-31", 10), ("2025-02-28", 25), ("2026-01-31", 12), ("2026-02-28", 30)),
+        (("2025-01-01", "2025-01-31", 10), ("2025-02-01", "2025-02-28", 15),
+         ("2026-01-01", "2026-01-31", 12), ("2026-02-01", "2026-02-28", 18))),
+    ("quarterly", (("2025-03-31", 100), ("2025-06-30", 240), ("2026-03-31", 110), ("2026-06-30", 270)),
+        (("2025-01-01", "2025-03-31", 100), ("2025-04-01", "2025-06-30", 140),
+         ("2026-01-01", "2026-03-31", 110), ("2026-04-01", "2026-06-30", 160))),
+))
+def test_sdk_deaccumulation_returns_actual_period_intervals_resets_year_and_cannot_repeat(frequency, windows, expected):
+    from stratbox.sdk import StrategyBox
+    from stratbox.shared.data.values import SourceDataset
+    rows = tuple({"metric": "budget.revenue", "subject": "RU", "subject_namespace": "geography",
+        "perimeter": "federal_budget", "unit": "RUB", "scale": Decimal(1), "frequency": frequency,
+        "measure_kind": "flow", "value_basis": "ytd", "period_kind": "interval",
+        "period": (end[:4] + "-01-01", end), "period_start": end[:4] + "-01-01", "period_end": end,
+        "value": Decimal(amount), "value_status": "reported", "raw_token": str(amount),
+        "evidence_ref": "synthetic:ytd:" + end} for end, amount in windows)
+    original = SourceDataset("minfin.fedbud.annex3." + frequency, rows)
+    with StrategyBox() as box:
+        result = box.invoke("command.calculate.flow", target="minfin.budget.period_flows",
+            inputs={"observations": original})
+        assert result.outcome == "succeeded", result.diagnostics
+        derived = result.output("dataset")
+        assert tuple((row["period_start"], row["period_end"], row["value"]) for row in derived.rows) == expected
+        assert all(row["period"] == (row["period_start"], row["period_end"])
+            and row["value_basis"] == "period_flow" and row.get("basis", "period_flow") == "period_flow"
+            for row in derived.rows)
+        repeated = box.invoke("command.calculate.flow", target="minfin.budget.period_flows",
+            inputs={"observations": derived})
+        assert repeated.outcome == "failed" and not repeated.outputs
+        assert any("cumulative_flow_required" in str(item) for item in repeated.diagnostics)
+    assert tuple(original.rows) == rows
+    assert all(row["value_basis"] == "ytd" for row in original.rows)

@@ -75,11 +75,12 @@ def interpret(inputs, settings, context):
                 mapped_status = "reported" if number is not None else "dash" if status == "marker" else "blank" if status == "blank" else "missing"
                 spec = column.spec
                 output.append({"metric": spec.code, "subject": region.entity_name,
+                    "subject_order": region.display_order,
                     "subject_namespace": "cbr.published_territory", "period": observed, "period_kind": "as_of",
                     "unit": spec.unit, "scale": Decimal(spec.scale), "measure_kind": spec.quantity_kind,
                     "perimeter": "national" if region.row_kind == "country" else "published_territory",
                     "value": number, "value_status": mapped_status, "raw_token": token,
-                    "dimensions": (("row_kind", region.row_kind), ("display_order", str(region.display_order)),
+                    "dimensions": (("row_kind", region.row_kind),
                         ("federal_district", region.federal_district_name or ""),
                         ("source_period_basis", "cumulative_start_unspecified" if spec.quantity_kind is None else "as_of")),
                     "evidence_ref": f"sha256:{tables.material.identity.sha256}#{table.name}!row={table.header_row + region.source_row_index + 2}&column={column.source_index + 1}"})

@@ -5,3 +5,5 @@ The execution service journals accepted outputs, scope outcomes, physical work a
 `MemoryJournal` provides bounded retention with explicit exhaustion. `FileJournal` stores fsynced records in numbered segments and supports bounded cursor reads and restart. The file provider is a single-writer implementation; applications needing distributed ownership supply an appropriate journal provider.
 
 A failed optional observer does not change a business result. Missing required journal coverage remains visible and prevents claims that depend on those facts. Byte bodies and credentials do not belong in event summaries.
+
+Each journal has a stream identity. A persistent journal restores it after restart. Notification cursors bind to that identity and reject a fresh stream with overlapping sequence numbers. File reads bound both returned records and scanned records; missing or corrupt segments remain explicit failures.

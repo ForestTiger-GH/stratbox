@@ -31,7 +31,7 @@ def test_retained_debt_flake_matches_direct_sors_source_projection():
     content, parsed = _parse()
     from stratbox.domains.cbr.methods.actions.serialization import encode as value_encode, decode as value_decode
     from types import SimpleNamespace
-    context = SimpleNamespace(checkpoint=lambda: None)
+    context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
     encoded = value_encode({"value": parsed}, None, context)["representation"]
     retained = value_decode({"representation": encoded}, None, context)["value"]
     original = [receipt.identity for receipt in retained.evidence.inputs

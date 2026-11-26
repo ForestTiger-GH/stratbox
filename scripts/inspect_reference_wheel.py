@@ -25,12 +25,16 @@ def inspect_archive(archive: Path, *, source=PACKAGE):
     if archive.suffix == '.whl':
         owner = ZipFile(archive)
         names = owner.namelist()
+        regular = {member.filename for member in owner.infolist() if not member.is_dir()}
+        unsupported = set()
         reader = owner.read
         marker = 'stratbox/'
         prefix = marker
     else:
         owner = tarfile.open(archive, 'r:*')
         names = owner.getnames()
+        regular = {member.name for member in owner.getmembers() if member.isfile()}
+        unsupported = {member.name for member in owner.getmembers() if not member.isfile() and not member.isdir()}
         candidates = [name[:-len('src/stratbox/__init__.py')] for name in names if name.endswith('src/stratbox/__init__.py')]
         if len(candidates) != 1:
             owner.close()
@@ -42,16 +46,17 @@ def inspect_archive(archive: Path, *, source=PACKAGE):
                 raise ValueError('archive.member_not_file:' + name)
             return handle.read()
     try:
-        actual = {name[len(prefix):] for name in names if name.startswith(prefix)
+        actual = {name[len(prefix):] for name in regular if name.startswith(prefix)
                   and PurePosixPath(name).suffix != '.md' and not name.endswith('/')}
+        unsupported = {name for name in unsupported if name.startswith(prefix)}
         duplicates = len([name for name in names if name.startswith(prefix)]) != len({name for name in names if name.startswith(prefix)})
         expected = inventory(source)
         missing = expected.keys() - actual
         extra = actual - expected.keys()
         changed = {name for name in expected.keys() & actual if sha256(reader(prefix + name)).hexdigest() != expected[name]}
         retired = {name for name in actual if name.startswith(RETIRED) or name.endswith('/profiles.py')}
-        if missing or extra or changed or retired or duplicates:
-            raise ValueError(f'archive.mismatch missing={sorted(missing)} extra={sorted(extra)} changed={sorted(changed)} retired={sorted(retired)} duplicates={duplicates}')
+        if missing or extra or changed or retired or duplicates or unsupported:
+            raise ValueError(f'archive.mismatch missing={sorted(missing)} extra={sorted(extra)} changed={sorted(changed)} retired={sorted(retired)} duplicates={duplicates} unsupported={sorted(unsupported)}')
         return {'members':len(actual),'resources':sum(not n.endswith(('.py','.pyi')) for n in actual)}
     finally:
         owner.close()

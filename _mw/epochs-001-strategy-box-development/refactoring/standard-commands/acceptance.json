@@ -1,0 +1,29 @@
+{
+  "repository_release": "0.25.0",
+  "python": "3.12.14",
+  "implementation_identity": "stratbox:0.25.0:bd1305d99211420c115128890f8efd32e33181f73f6ce8ff2088745d6d561616",
+  "full_regression": {
+    "passed": 979,
+    "skipped": 7,
+    "warnings": 6,
+    "seconds": 676.47
+  },
+  "additional_distribution_regression": {
+    "passed": 12
+  },
+  "distribution": {
+    "result": "passed",
+    "package_members": 455,
+    "data_resources": 22,
+    "isolated_install": true,
+    "zip_import": true
+  },
+  "structural_checks": {
+    "release": true,
+    "internal_imports": true,
+    "maintained_links": true,
+    "python_3_10_syntax": true
+  },
+  "remote_workflows_invoked": false,
+  "scientific_scope": "Reviewed source methods and retained material; unavailable source layouts and unreviewed financial models remain explicitly qualified."
+}

@@ -10,6 +10,13 @@ class ReuseContract:
     mutation: str = 'immutable'
     observation_scoped: bool = False
 
+    def __post_init__(self):
+        if self.mutation not in {'immutable','isolated','exclusive'}:
+            raise ValueError('reuse.invalid_mutation')
+        if any(type(getattr(self,name)) is not bool for name in
+               ('deterministic','shareable','completed','observation_scoped')):
+            raise TypeError('reuse.boolean_policy_required')
+
     @property
     def inflight_eligible(self):
         return self.shareable and (self.deterministic or self.observation_scoped) and self.mutation != 'exclusive'

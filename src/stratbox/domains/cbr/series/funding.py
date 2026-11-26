@@ -5,19 +5,21 @@ from stratbox.capabilities.model.methods import MethodRef
 from stratbox.domains.cbr.common.contracts import Publication, Semantics, StatisticalSettings, TableVariant, FormSettings, FamilySettings, SourceRequirement, MappingRules
 from stratbox.domains.cbr.common.publications import SORS_INDEX, FORMS_INDEX, ESCROW_INDEX, OFFICES_PAGE, TERRITORIAL_INDEX
 
+FAMILY_ID = 'cbr.funding'
+
 BUDGET_ALL_PUBLICATION = Publication(
-    'cbr.funding.budget_all', 'cbr.funding', 'Budget funds',
+    'cbr.funding.budget_all', FAMILY_ID, 'Budget funds',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/banksector/borrowings/02_29_Budget_all.xlsx', None,
 )
 BUDGET_ALL_TABLE = StatisticalSettings(
-    'cbr.funding.budget_all', (
+    BUDGET_ALL_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 BUDGET_ALL = SeriesSpec(
-    id='cbr.funding.budget_all',
+    id=BUDGET_ALL_PUBLICATION.series_id,
     publication=BUDGET_ALL_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -25,56 +27,56 @@ BUDGET_ALL = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_PUBLICATION, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.budget_all', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.budget_all', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.budget_all'), Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            MappingRules(BUDGET_ALL_PUBLICATION.series_id), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            BUDGET_ALL_TABLE, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_TABLE, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            BUDGET_ALL_TABLE, Applicability(source_ids=frozenset({'cbr.funding.budget_all'})),
+            BUDGET_ALL_TABLE, Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
     }),
 )
 
 DEP_CORP_PUBLICATION = Publication(
-    'cbr.funding.dep_corp', 'cbr.funding', 'Corporate deposits excluding individual entrepreneurs',
+    'cbr.funding.dep_corp', FAMILY_ID, 'Corporate deposits excluding individual entrepreneurs',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_05_Dep_corp.xlsx', None,
 )
 DEP_CORP_TABLE = StatisticalSettings(
-    'cbr.funding.dep_corp', (
+    DEP_CORP_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 DEP_CORP = SeriesSpec(
-    id='cbr.funding.dep_corp',
+    id=DEP_CORP_PUBLICATION.series_id,
     publication=DEP_CORP_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -82,56 +84,56 @@ DEP_CORP = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_PUBLICATION, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.dep_corp', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.dep_corp', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.dep_corp'), Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            MappingRules(DEP_CORP_PUBLICATION.series_id), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            DEP_CORP_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_TABLE, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            DEP_CORP_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_corp'})),
+            DEP_CORP_TABLE, Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
     }),
 )
 
 DEP_ENTREPRENEUR_PUBLICATION = Publication(
-    'cbr.funding.dep_entrepreneur', 'cbr.funding', 'Individual entrepreneur funds',
+    'cbr.funding.dep_entrepreneur', FAMILY_ID, 'Individual entrepreneur funds',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_07_Dep_enterpreneur.xlsx', None,
 )
 DEP_ENTREPRENEUR_TABLE = StatisticalSettings(
-    'cbr.funding.dep_entrepreneur', (
+    DEP_ENTREPRENEUR_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 DEP_ENTREPRENEUR = SeriesSpec(
-    id='cbr.funding.dep_entrepreneur',
+    id=DEP_ENTREPRENEUR_PUBLICATION.series_id,
     publication=DEP_ENTREPRENEUR_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -139,56 +141,56 @@ DEP_ENTREPRENEUR = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_PUBLICATION, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.dep_entrepreneur', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.dep_entrepreneur', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.dep_entrepreneur'), Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            MappingRules(DEP_ENTREPRENEUR_PUBLICATION.series_id), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            DEP_ENTREPRENEUR_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_TABLE, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            DEP_ENTREPRENEUR_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_entrepreneur'})),
+            DEP_ENTREPRENEUR_TABLE, Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
     }),
 )
 
 DEP_IND_PUBLICATION = Publication(
-    'cbr.funding.dep_ind', 'cbr.funding', 'Household deposits and funds including escrow',
+    'cbr.funding.dep_ind', FAMILY_ID, 'Household deposits and funds including escrow',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_06_Dep_ind.xlsx', None,
 )
 DEP_IND_TABLE = StatisticalSettings(
-    'cbr.funding.dep_ind', (
+    DEP_IND_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 DEP_IND = SeriesSpec(
-    id='cbr.funding.dep_ind',
+    id=DEP_IND_PUBLICATION.series_id,
     publication=DEP_IND_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -196,56 +198,56 @@ DEP_IND = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.dep_ind', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.dep_ind', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.dep_ind'), Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            MappingRules(DEP_IND_PUBLICATION.series_id), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            DEP_IND_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_TABLE, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            DEP_IND_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_ind'})),
+            DEP_IND_TABLE, Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
     }),
 )
 
 DEP_IND_NO_ESCROW_PUBLICATION = Publication(
-    'cbr.funding.dep_ind_no_escrow', 'cbr.funding', 'Household deposits excluding escrow',
+    'cbr.funding.dep_ind_no_escrow', FAMILY_ID, 'Household deposits excluding escrow',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/banksector/borrowings/02_27_Dep_ind_excluding_escrow.xlsx', None,
 )
 DEP_IND_NO_ESCROW_TABLE = StatisticalSettings(
-    'cbr.funding.dep_ind_no_escrow', (
+    DEP_IND_NO_ESCROW_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 DEP_IND_NO_ESCROW = SeriesSpec(
-    id='cbr.funding.dep_ind_no_escrow',
+    id=DEP_IND_NO_ESCROW_PUBLICATION.series_id,
     publication=DEP_IND_NO_ESCROW_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -253,54 +255,54 @@ DEP_IND_NO_ESCROW = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_PUBLICATION, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.dep_ind_no_escrow', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.dep_ind_no_escrow', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.dep_ind_no_escrow'), Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            MappingRules(DEP_IND_NO_ESCROW_PUBLICATION.series_id), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            DEP_IND_NO_ESCROW_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_TABLE, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            DEP_IND_NO_ESCROW_TABLE, Applicability(source_ids=frozenset({'cbr.funding.dep_ind_no_escrow'})),
+            DEP_IND_NO_ESCROW_TABLE, Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
     }),
 )
 
 ESCROW_ACCOUNTS_PUBLICATION = Publication(
-    'cbr.funding.escrow_accounts', 'cbr.funding', 'Escrow account balances',
+    'cbr.funding.escrow_accounts', FAMILY_ID, 'Escrow account balances',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/banksector/borrowings/02_28_Escrow_accounts.xlsx', None,
 )
 ESCROW_ACCOUNTS_TABLE = StatisticalSettings(
-    'cbr.funding.escrow_accounts', (
+    ESCROW_ACCOUNTS_PUBLICATION.series_id, (
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 ESCROW_ACCOUNTS = SeriesSpec(
-    id='cbr.funding.escrow_accounts',
+    id=ESCROW_ACCOUNTS_PUBLICATION.series_id,
     publication=ESCROW_ACCOUNTS_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -308,56 +310,56 @@ ESCROW_ACCOUNTS = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.escrow_accounts', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.escrow_accounts', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.escrow_accounts'), Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            MappingRules(ESCROW_ACCOUNTS_PUBLICATION.series_id), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            ESCROW_ACCOUNTS_TABLE, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_TABLE, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            ESCROW_ACCOUNTS_TABLE, Applicability(source_ids=frozenset({'cbr.funding.escrow_accounts'})),
+            ESCROW_ACCOUNTS_TABLE, Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
     }),
 )
 
 FUNDS_ALL_PUBLICATION = Publication(
-    'cbr.funding.funds_all', 'cbr.funding', 'Client funds by published component',
+    'cbr.funding.funds_all', FAMILY_ID, 'Client funds by published component',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_01_Funds_all.xlsx', None,
 )
 FUNDS_ALL_TABLE = StatisticalSettings(
-    'cbr.funding.funds_all', (
+    FUNDS_ALL_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 FUNDS_ALL = SeriesSpec(
-    id='cbr.funding.funds_all',
+    id=FUNDS_ALL_PUBLICATION.series_id,
     publication=FUNDS_ALL_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -365,56 +367,56 @@ FUNDS_ALL = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.funds_all', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.funds_all', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.funds_all'), Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            MappingRules(FUNDS_ALL_PUBLICATION.series_id), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            FUNDS_ALL_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_TABLE, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            FUNDS_ALL_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_all'})),
+            FUNDS_ALL_TABLE, Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
     }),
 )
 
 FUNDS_CLIENTS_PUBLICATION = Publication(
-    'cbr.funding.funds_clients', 'cbr.funding', 'Client funds',
+    'cbr.funding.funds_clients', FAMILY_ID, 'Client funds',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_02_Funds_clients.xlsx', None,
 )
 FUNDS_CLIENTS_TABLE = StatisticalSettings(
-    'cbr.funding.funds_clients', (
+    FUNDS_CLIENTS_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 FUNDS_CLIENTS = SeriesSpec(
-    id='cbr.funding.funds_clients',
+    id=FUNDS_CLIENTS_PUBLICATION.series_id,
     publication=FUNDS_CLIENTS_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -422,56 +424,56 @@ FUNDS_CLIENTS = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.funds_clients', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.funds_clients', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.funds_clients'), Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            MappingRules(FUNDS_CLIENTS_PUBLICATION.series_id), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            FUNDS_CLIENTS_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_TABLE, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            FUNDS_CLIENTS_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_clients'})),
+            FUNDS_CLIENTS_TABLE, Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
     }),
 )
 
 FUNDS_ORG_PUBLICATION = Publication(
-    'cbr.funding.funds_org', 'cbr.funding', 'Organization funds',
+    'cbr.funding.funds_org', FAMILY_ID, 'Organization funds',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Borrowings/02_04_Funds_org.xlsx', None,
 )
 FUNDS_ORG_TABLE = StatisticalSettings(
-    'cbr.funding.funds_org', (
+    FUNDS_ORG_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', 'stock', 'as_of', ('source_geography_or_component', 'denomination_group'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Published client funds and budget balances; denominations are separate from measurement currency. Source geography and perimeter editions remain explicit.'),
     ),
 )
 FUNDS_ORG = SeriesSpec(
-    id='cbr.funding.funds_org',
+    id=FUNDS_ORG_PUBLICATION.series_id,
     publication=FUNDS_ORG_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -479,39 +481,39 @@ FUNDS_ORG = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_PUBLICATION, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.funding.funds_org', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.funding.funds_org', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.funding.funds_org'), Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            MappingRules(FUNDS_ORG_PUBLICATION.series_id), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            FUNDS_ORG_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_TABLE, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            FUNDS_ORG_TABLE, Applicability(source_ids=frozenset({'cbr.funding.funds_org'})),
+            FUNDS_ORG_TABLE, Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
     }),
 )

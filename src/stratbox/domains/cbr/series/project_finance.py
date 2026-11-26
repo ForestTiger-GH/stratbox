@@ -5,13 +5,15 @@ from stratbox.capabilities.model.methods import MethodRef
 from stratbox.domains.cbr.common.contracts import Publication, Semantics, StatisticalSettings, TableVariant, FormSettings, FamilySettings, SourceRequirement, MappingRules
 from stratbox.domains.cbr.common.publications import SORS_INDEX, FORMS_INDEX, ESCROW_INDEX, OFFICES_PAGE, TERRITORIAL_INDEX
 
+FAMILY_ID = 'cbr.project_finance'
+
 ESCROW_PUBLICATION = Publication(
-    'cbr.project_finance.escrow', 'cbr.project_finance', 'Housing project finance and escrow',
+    'cbr.project_finance.escrow', FAMILY_ID, 'Housing project finance and escrow',
     'dated', ('xlsx', 'html'), 'escrow_index', ESCROW_INDEX, None,
 )
-ESCROW_TABLE = FamilySettings('cbr.project_finance.escrow', 'escrow')
+ESCROW_TABLE = FamilySettings(ESCROW_PUBLICATION.series_id, 'escrow')
 ESCROW = SeriesSpec(
-    id='cbr.project_finance.escrow',
+    id=ESCROW_PUBLICATION.series_id,
     publication=ESCROW_PUBLICATION,
     semantics=Semantics('stock_or_metric_specific_flow', ('report_date', 'territory', 'indicator'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -19,39 +21,39 @@ ESCROW = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_PUBLICATION, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.project_finance.escrow', ('xlsx', 'html'), issue_required=True), Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.project_finance.escrow', ('xlsx', 'html'), issue_required=True), Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.project_finance.escrow'), Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            MappingRules(ESCROW_PUBLICATION.series_id), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.escrow:extract"),
-            ESCROW_TABLE, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_TABLE, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.escrow:interpret"),
-            ESCROW_TABLE, Applicability(source_ids=frozenset({'cbr.project_finance.escrow'})),
+            ESCROW_TABLE, Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
     }),
 )

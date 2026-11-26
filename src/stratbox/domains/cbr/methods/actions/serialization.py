@@ -45,14 +45,18 @@ def _validate(value):
 
 
 def encode(inputs, settings, context):
-    value = _validate(inputs["value"])
-    context.checkpoint()
-    data = json.dumps(canonical_tree(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-    return {"representation": EncodedProduct(data, "application/json", (fingerprint(value),))}
+    _validate(inputs["value"])
+    from stratbox.core.commands.standard import encode_value
+    options = {"max_bytes": context.parameters["max_bytes"]} if "max_bytes" in context.parameters else {}
+    return {"representation": encode_value(inputs["value"], context=context, admitted_types=ADMITTED_TYPES, **options)}
 
 
 def decode(inputs, settings, context):
     supplied = inputs["representation"]
     data = supplied if isinstance(supplied, bytes) else supplied.data
     context.checkpoint()
-    return {"value": _validate(restore_tree(json.loads(data), admitted_types=ADMITTED_TYPES))}
+    value = _validate(restore_tree(json.loads(data), admitted_types=ADMITTED_TYPES))
+    expected = getattr(supplied, "descriptor", {}).get("value_identity")
+    if expected is not None and fingerprint(value) != expected:
+        raise ValueError("cbr.retained_value_identity_mismatch")
+    return {"value": value}

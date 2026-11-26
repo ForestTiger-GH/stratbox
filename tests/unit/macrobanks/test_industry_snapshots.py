@@ -53,7 +53,7 @@ def test_all_stages_replay_before_final_render(family, tmp_path):
 
 def test_retained_source_rejects_truncated_and_mutated_scientific_content(publication):
     _, _, _, dataset = publication
-    context = SimpleNamespace(checkpoint=lambda: None)
+    context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
     representation = encode({'value': dataset}, None, context)['representation']
     with pytest.raises(ValueError):
         decode({'representation': representation.data[:-1]}, None, context)

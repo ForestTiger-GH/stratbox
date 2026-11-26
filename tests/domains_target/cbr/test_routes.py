@@ -139,3 +139,28 @@ def test_apk_uses_complete_same_period_components_and_never_changes_source():
     assert len(source.rows) == 5
     with pytest.raises(ValueError, match="required_industries_missing"):
         action.method.resolve()({"dataset": SourceDataset(source.source_id, rows[:-1])}, action.settings, context())
+
+
+def test_apk_keeps_namespace_and_period_meaning_in_its_operand_grain():
+    from stratbox.domains.cbr.calculations.industry.actions import REQUIRED
+    action=DOMAIN.calculations["cbr.corporate_lending.debt_apk"].commands["command.calculate.formula"]
+    rows=tuple({"metric":metric,"subject":"same-code","subject_namespace":"namespace-a" if i<3 else "namespace-b",
+        "period":"2026-07-01","period_kind":"as_of","measure_kind":"stock","unit":"RUB","scale":Decimal(1000000),
+        "perimeter":"CORPORATE_TOTAL","value":Decimal(10),"value_status":"reported","evidence_ref":metric,"dimensions":()}
+        for i,metric in enumerate(sorted(REQUIRED)))
+    with pytest.raises(ValueError,match="required_industries_missing"):
+        action.method.resolve()({"dataset":SourceDataset(action.settings.series_id,rows)},action.settings,context())
+
+
+def test_apk_exact_arithmetic_ignores_the_callers_decimal_precision():
+    from decimal import localcontext
+    from stratbox.domains.cbr.calculations.industry.actions import REQUIRED
+    action=DOMAIN.calculations["cbr.corporate_lending.debt_apk"].commands["command.calculate.formula"]
+    value=Decimal("1234567890123456789012345678901234567890.0001")
+    rows=tuple({"metric":metric,"subject":"r","subject_namespace":"cbr.published_region","period":"2026-07-01",
+        "period_kind":"as_of","measure_kind":"stock","unit":"RUB","scale":Decimal(1000000),"perimeter":"CORPORATE_TOTAL",
+        "value":value,"value_status":"reported","evidence_ref":metric,"dimensions":()} for metric in sorted(REQUIRED))
+    with localcontext() as low:
+        low.prec=3
+        output=action.method.resolve()({"dataset":SourceDataset(action.settings.series_id,rows)},action.settings,context())["dataset"]
+    assert next(row["value"] for row in output.rows if row["metric"]=="apk")==Decimal("4938271560493827156049382715604938271560.0004")

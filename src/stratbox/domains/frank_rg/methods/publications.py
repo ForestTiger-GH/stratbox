@@ -79,7 +79,7 @@ def scan(inputs, settings: DeliverySettings, context):
         if settings.source_id and rule.source_id != settings.source_id:
             continue
         assets.append(PublicationAsset(rule.source_id, period.text, "main", path, format,
-            {"filename": name, "size": size, "mtime": mtime,
+            {"filename": name, "size": size, "mtime": mtime, "delivery": "filestore",
              "canonical_filename": canonical_filename(period, rule, format),
              "publication_date": period.snapshot_date, "week_number": period.week_no,
              "economic_period": "requires_table_interpretation"}))

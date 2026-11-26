@@ -12,7 +12,7 @@ sys.path.insert(0, str(SRC))
 RETIRED = (
     'src/stratbox/operations', 'src/stratbox/composition',
     'src/stratbox/domains/registry', 'src/stratbox/core/operations',
-    'src/stratbox/core/capabilities',
+    'src/stratbox/core/capabilities', 'src/stratbox/core/resources',
 )
 REQUIRED = (
     'README.md', 'pyproject.toml', 'src/stratbox/py.typed',

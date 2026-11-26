@@ -69,11 +69,13 @@ def recipe(definition,values,parameters,record,catalog=None):
         publication=getattr(record,'publication',record)
         settings=getattr(publication,'settings',None)
         archive_mode=getattr(publication,'archive_mode',None) or (settings.get('archive_mode') if hasattr(settings,'get') else getattr(settings,'archive_mode',None))
-        if archive_mode=='workbook_collection':
+        if archive_mode in {'workbook_collection','dbf_collection'}:
+            formats=('dbf',) if archive_mode=='dbf_collection' else ('xls','xlsx','xlsb','xlsm')
+            decoder='command.dbf.decode' if archive_mode=='dbf_collection' else 'command.workbook.decode'
             return replace(definition,body=GraphBody((
                 Call('unpack','command.archive.unpack',{'material':InputRef('material')}),
-                Call('members','command.material.select',{'materials':OutputRef('unpack','members')},{'formats':('xls','xlsx','xlsb','xlsm')}),
-                MapCall('decode','command.workbook.decode',OutputRef('members','materials'),item_input='material',output_port='physical'),
+                Call('members','command.material.select',{'materials':OutputRef('unpack','members')},{'formats':formats}),
+                MapCall('decode',decoder,OutputRef('members','materials'),item_input='material',output_port='physical'),
                 Call('select','command.table.extract',{'physical':OutputRef('decode','items')}),
                 Call('interpret','command.table.interpret',{'tables':OutputRef('select','tables'),'issue':InputRef('issue')}),
                 Call('validate','command.observations.validate',{'dataset':OutputRef('interpret','dataset')}),
@@ -85,6 +87,21 @@ def recipe(definition,values,parameters,record,catalog=None):
             Call('merge','command.observations.merge',{'datasets':OutputRef('members','items')}),
         ),{'dataset':OutputRef('merge','dataset')}))
     if identifier=='operation.material.acquire':
+        from ..plan import TemplateInput, ValueRef
+        locator=values.get('locator')
+        if isinstance(locator,(TemplateInput,ValueRef)):
+            return replace(definition,body=GraphBody((DispatchCall('transport',InputRef('locator'),
+                {'http':'operation.material.acquire_http','file':'operation.material.acquire_file'},
+                inputs={'claim':InputRef('claim')},input_name='locator',output_port='material',selector_kind='acquisition_kind'),),
+                {'material':OutputRef('transport','material')}))
+        location=getattr(locator,'locator',locator)
+        metadata=getattr(locator,'metadata',{})
+        kind='file' if metadata.get('delivery') in {'file','filestore','delivered'} or isinstance(location,str) and not location.startswith(('https://','http://')) else 'http'
+        args={k:InputRef(k) for k in ('locator','claim') if k in values}
+        if kind=='http': args.update({k:InputRef(k) for k in ('query',) if k in values})
+        return replace(definition,inputs={**definition.inputs,'claim':P('claim',required=False)},
+            body=GraphBody((Call('acquire','operation.material.acquire_'+kind,args),),{'material':OutputRef('acquire','material')}))
+    if identifier=='operation.material.acquire_http':
         from stratbox.shared.data.values import PublicationAsset
         from ..plan import TemplateInput
         original=definition.body
@@ -92,6 +109,14 @@ def recipe(definition,values,parameters,record,catalog=None):
         if isinstance(values.get('locator'),(PublicationAsset,TemplateInput)): identify['asset']=InputRef('locator')
         if 'claim' in values: identify['claim']=InputRef('claim')
         return replace(definition,inputs={**definition.inputs,'claim':P('claim',required=False)},body=replace(original,steps=(*original.steps[:-1],replace(original.steps[-1],inputs=identify))))
+    if identifier=='operation.material.acquire_file':
+        from stratbox.shared.data.values import PublicationAsset
+        from ..plan import TemplateInput
+        identify={**definition.body.steps[-1].inputs,'evidence':OutputRef('read','evidence')}
+        if isinstance(values.get('locator'),(PublicationAsset,TemplateInput)):
+            identify['asset']=InputRef('locator')
+        return replace(definition,body=replace(definition.body,steps=(*definition.body.steps[:-1],
+            replace(definition.body.steps[-1],inputs=identify))))
     if identifier=='operation.series.acquire':
         if 'selection' in values:
             return replace(definition,body=GraphBody((

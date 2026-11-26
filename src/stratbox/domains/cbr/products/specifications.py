@@ -18,6 +18,7 @@ class Sheet:
 class ProductSettings:
     kind: str
     sheets: tuple[Sheet, ...] = ()
+    default_metrics: tuple[str, ...] = ()
 
 
 ESCROW_CONTENT = ProductSettings("escrow", (
@@ -42,7 +43,7 @@ FORM_WORKBOOK = ProductSpec("cbr.forms.workbook", MappingProxyType({
     "command.product.render": CommandSpec(MethodRef("stratbox.domains.cbr.products.actions:render"), ProductSettings("forms")),
 }))
 INDUSTRY_WORKBOOK = ProductSpec("cbr.industries.workbook", MappingProxyType({
-    "command.view.prepare": CommandSpec(MethodRef("stratbox.domains.cbr.products.actions:prepare"), ProductSettings("industries")),
+    "command.view.prepare": CommandSpec(MethodRef("stratbox.domains.cbr.products.actions:prepare"), ProductSettings("industries", default_metrics=("apk",))),
     "command.product.render": CommandSpec(MethodRef("stratbox.domains.cbr.products.actions:render"), ProductSettings("industries")),
 }))
 OFFICE_TABLE = ProductSpec("cbr.offices.table", MappingProxyType({

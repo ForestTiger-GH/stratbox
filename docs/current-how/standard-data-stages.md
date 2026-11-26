@@ -20,7 +20,8 @@ values permit entry at the corresponding stage.
 | Input | Action | Result |
 | --- | --- | --- |
 | Locator and issue query | `command.request.prepare` | RequestSpec. |
-| RequestSpec | `command.material.fetch` | Material and acquisition evidence. |
+| RequestSpec | `command.material.fetch` | Bounded in-memory Material and acquisition evidence. |
+| RequestSpec and destination | `command.material.receive` | Streamed immutable reference, acquisition evidence and a write receipt. |
 | File location | `command.material.list` or `material.read` | Bounded inventory or exact Material. |
 | Material | Archive/workbook/document/JSON/CSV/DBF action | Bounded physical evidence. |
 | Historical document | `command.document.convert` | Converted material with original/conversion evidence. |
@@ -29,7 +30,10 @@ values permit entry at the corresponding stage.
 Acquired bytes and source attribution are distinct. Several logical series can
 use one physical asset. Compatible decoding can therefore be shared independently
 of the selected interpretation. A conversion retains the identity of both its
-input and output.
+input and output. Streaming reception writes bounded chunks into private staging
+and commits only exact verified content. A later explicit `material.read` opens
+that reference for decoding; receiving a large original does not load its body
+into the result owner.
 
 ## 2. Source meaning and integration
 

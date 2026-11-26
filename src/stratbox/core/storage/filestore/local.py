@@ -75,6 +75,31 @@ class _LocalStage:
         return True
 
 
+class _ContentStage:
+    """One private file becomes immutable content only after its hash is known."""
+    def __init__(self, stage, store, directory):
+        self._stage, self._store, self.directory = stage, store, directory
+        self.stream = stage.stream
+
+    def location(self, identity):
+        return str(Path(self.directory) / identity.sha256)
+
+    def commit(self, identity, *, checkpoint=None):
+        digest, size = sha256(), 0
+        self.stream.flush(); self.stream.seek(0)
+        while chunk := self.stream.read(65536):
+            if checkpoint: checkpoint()
+            digest.update(chunk); size += len(chunk)
+        if ByteIdentity(digest.hexdigest(), size) != identity:
+            raise MutationRejected("Stream identity mismatch", code="storage.identity_mismatch")
+        location = self.location(identity)
+        self._stage.destination = self._store.checked_file_path(location)
+        created = self._stage.commit("immutable", None)
+        if not created and self._store.inspect_file(location).identity != identity:
+            raise MutationRejected("Immutable content conflict", code="storage.immutable_conflict")
+        return location
+
+
 class LocalFileStore(FileStore):
     """Local paths with optional confinement to a caller-owned directory."""
 
@@ -407,6 +432,12 @@ class LocalFileStore(FileStore):
         if not created and self.read_bytes(location) != data:
             raise MutationRejected("Immutable content conflict", code="storage.immutable_conflict")
         return sha256(data).hexdigest()
+
+    @contextmanager
+    def stage_content(self, directory):
+        self.makedirs(directory)
+        with self.stage_write(str(Path(directory) / ".incoming")) as stage:
+            yield _ContentStage(stage, self, directory)
 
     def compare_and_set(self, location, expected_token, data):
         from hashlib import sha256

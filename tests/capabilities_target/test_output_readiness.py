@@ -109,3 +109,52 @@ def test_required_scope_check_gates_exported_output():
     with ExecutionService() as service:
         result=service.run(plan,timeout=4)
     assert result.outcome=='failed' and not CALLS
+
+
+def test_global_predicate_waits_for_all_named_outputs_before_releasing_any():
+    definition,catalog=graph(wait=True)
+    child=catalog.get('operation.test.child')
+    from dataclasses import replace
+    child=replace(child,acceptance=AcceptanceContract(predicates=(SemanticPredicate('', 'equals', {'good':2}),)))
+    catalog=Catalog({**dict(catalog.definitions),child.id:child})
+    plan=prepare(definition.id,inputs={'value':2},catalog=catalog)
+    with ExecutionService(settings=ExecutionSettings(max_workers=2)) as service:
+        handle=service.submit(plan,timeout=4)
+        assert STARTED.wait(2)
+        assert not CONSUMED.wait(.05)
+        RELEASE.set()
+        result=handle.result(3)
+    assert result.outcome=='failed' and not CALLS
+
+
+def test_empty_passthrough_scope_respects_external_prerequisite_before_acceptance():
+    bad=command('wait','wait_bad'); consumer=command('consume','consume')
+    passthrough=OperationDefinition('operation.test.forward',inputs={'value':INT},outputs={'value':INT},
+        body=GraphBody((),{'value':InputRef('value')}))
+    root=OperationDefinition('operation.test.root',outputs={'value':INT},body=GraphBody((
+        Call('prerequisite',bad.id,{'value':0}),
+        Call('forward',passthrough.id,{'value':7},depends_on=('prerequisite',)),
+        Call('consume',consumer.id,{'value':OutputRef('forward')})),{'value':OutputRef('consume')}))
+    plan=prepare(root.id,catalog=Catalog({d.id:d for d in (bad,consumer,passthrough,root)}))
+    with ExecutionService(settings=ExecutionSettings(max_workers=2)) as service:
+        handle=service.submit(plan,timeout=4)
+        assert STARTED.wait(2)
+        assert not CONSUMED.wait(.05)
+        RELEASE.set()
+        result=handle.result(3)
+    assert result.outcome=='succeeded' and CALLS==[7]
+
+
+def test_false_condition_on_empty_passthrough_never_publishes_output():
+    from stratbox.capabilities.model import Condition
+    consumer=command('consume','consume')
+    forward=OperationDefinition('operation.test.forward',outputs={'value':INT},
+        body=GraphBody((),{'value':7}))
+    root=OperationDefinition('operation.test.root',outputs={'value':INT},body=GraphBody((
+        Call('forward',forward.id,condition=Condition(False)),
+        Call('consume',consumer.id,{'value':OutputRef('forward')})),{'value':OutputRef('consume')}))
+    with ExecutionService() as service:
+        result=service.run(prepare(root.id,catalog=Catalog({d.id:d for d in (consumer,forward,root)})),timeout=3)
+        assert result.outcome=='failed' and not CALLS
+        assert not any(fact.kind=='output.accepted' and fact.scope_id=='root/forward'
+            for fact in service.journal.read(run_id=result.run_id))

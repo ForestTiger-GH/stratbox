@@ -43,13 +43,17 @@ def prepare(inputs, settings, context):
     if not isinstance(dataset, SourceDataset):
         raise ValueError("cbr.product_dataset_required")
     subjects = frozenset(str(x) for x in context.parameters.get("subjects", ()))
-    metrics = frozenset(str(x) for x in context.parameters.get("metrics", ()))
+    metrics = frozenset(str(x) for x in context.parameters.get("metrics", settings.default_metrics))
     rows = tuple(dict(row) for row in dataset.rows if (not subjects or str(row.get("subject")) in subjects)
         and (not metrics or str(row.get("metric")) in metrics))
     if not rows:
         raise ValueError("cbr.product_selection_empty")
     if settings.kind == "forms":
         return {"view": View(_form_presentation(rows), {"kind": "forms"}, (*dataset.lineage, dataset.identity), source_uses=dataset.source_uses)}
+    if settings.kind == "industries":
+        from .industry import prepare as prepare_industry
+        return {"view": View(prepare_industry(rows), {"kind": "industries"},
+            (*dataset.lineage, dataset.identity), source_uses=dataset.source_uses)}
     if settings.kind == "escrow":
         if "selection_incomplete" in dataset.assessment.qualifications and context.parameters.get("require_complete_history", True):
             raise ValueError("cbr.product_history_incomplete")
@@ -93,6 +97,12 @@ def render(inputs, settings, context):
     if not isinstance(view, View):
         raise ValueError("cbr.prepared_view_required")
     fmt = context.parameters.get("format", "xlsx")
+    if isinstance(view.value, Mapping) and view.value.get("kind") == "prepared_industry":
+        if fmt != "xlsx":
+            raise ValueError("cbr.product_industry_format_unsupported")
+        from .industry import render as render_industry
+        data = render_industry(view.value, context.checkpoint)
+        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses)}
     if isinstance(view.value, Mapping) and view.value.get("kind") == "prepared_form":
         if fmt != "xlsx":
             raise ValueError("cbr.product_form_format_unsupported")

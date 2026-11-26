@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from collections.abc import Mapping
 from ..model import freeze
+from ..model.immutable import freeze_bindings
 
 @dataclass(frozen=True, slots=True)
 class InvocationRequest:
@@ -12,5 +13,5 @@ class InvocationRequest:
     outputs: tuple[str, ...] | None = None
 
     def __post_init__(self):
-        object.__setattr__(self, 'inputs', freeze(self.inputs))
+        object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
         object.__setattr__(self, 'parameters', freeze(self.parameters))

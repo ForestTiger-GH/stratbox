@@ -16,6 +16,7 @@ from stratbox.shared.data.tables import table_identity
 from stratbox.shared.reference.assets import qualified_reference_use
 from stratbox.domains.cbr.calculations.sors.contracts import SorsRunConfig
 from stratbox.domains.cbr.calculations.sors.inputs.contracts import SorsSourceBundle
+from .inputs.dependencies import DEPENDENCIES
 from stratbox.domains.cbr.calculations.sors.portfolio import PORTFOLIO_SCOPES
 from stratbox.domains.cbr.calculations.sors.portfolio import PRIMARY_PORTFOLIO_SCOPE
 from stratbox.domains.cbr.calculations.sors.result_grid import build_components_grid
@@ -52,11 +53,7 @@ def _hash_payload(payload: dict[str, object], length: int = 24) -> str:
     return hashlib.sha256(canonical_manifest_bytes(_manifestable(payload))).hexdigest()[:length]
 
 
-_STRICT_SOURCE_SERIES = frozenset({
-    "01_05_A", "01_02_A", "01_02_C", "01_03_C",
-    "01_11", "01_11_F", "01_11_I", "01_12_A", "01_13_F", "01_13_I",
-})
-
+_STRICT_SOURCE_SERIES = frozenset(item.source_series for item in DEPENDENCIES if item.required)
 
 def _identities(bundle: SorsSourceBundle, config: SorsRunConfig) -> tuple[str, str, str]:
     """Separate input dataset, strict mathematical model and execution settings.

@@ -1,11 +1,21 @@
+"""Offline standard escrow routes retain exact source bytes and prepared content."""
 from io import BytesIO
-
+from pathlib import Path
+from types import SimpleNamespace
+import runpy
+import pytest
 from openpyxl import Workbook, load_workbook
 
+from stratbox.capabilities.model.targets import SeriesTarget
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.domains.cbr.common.escrow import required_indicators
+from stratbox.domains.cbr.methods.actions.publications import scan
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.operations import project_finance as escrow
-from stratbox.domains.cbr.methods.tables.project_finance.profiles import required_indicators
 
+SERIES="cbr.project_finance.escrow"
+_HELPERS=runpy.run_path(str(Path(__file__).resolve().parents[1]/"cbr_escrow/test_replay.py"))
 
 def workbook_bytes():
     workbook = Workbook()
@@ -24,87 +34,57 @@ def workbook_bytes():
 
 
 def test_escrow_history_is_offline_and_renders_views_to_exact_bytes():
-    payload = SourcePayload(workbook_bytes())
-    request = escrow.ParseEscrowRequest(payload, "escrow_01062026.xlsx")
-    history = escrow.build_history(escrow.EscrowHistoryBuildRequest((request,)))
-    assert history.outcome == "succeeded", history.diagnostics
-    assert history.used_inputs[0].identity == payload.identity
-    assert tuple(item.period for item in history.value.releases) == ("2026-06-01",)
-    region = history.value.observations[
-        history.value.observations["region"].eq("Белгородская область")
-    ]
-    assert 0 in region["value"].values
-    assert (
-        region.loc[region["indicator_code"].eq("active_credit_contracts_amount_mln_rub"), "status"].iloc[0] == "blank"
-    )
-    views = escrow.build_views(escrow.BuildEscrowViewsRequest(history.value))
-    assert views.outcome == "succeeded", views.diagnostics
-    workbook = escrow.render_workbook(views.value)
-    assert workbook.outcome == "succeeded", workbook.diagnostics
-    assert workbook.value == escrow.render_workbook(views.value).value
-    verified = load_workbook(BytesIO(workbook.value.data), read_only=True)
+    content = workbook_bytes()
+    request = SimpleNamespace(payload=SourcePayload(content), source_name="escrow_01062026.xlsx")
+    physical, table, dataset = _HELPERS["source"](request)
+    assert dataset.source_uses[0].coordinate.material_identity == physical.material.identity
+    assert {row["period"] for row in dataset.rows} == {"2026-06-01"}
+    region = [row for row in dataset.rows if row["subject"] == "Белгородская область"]
+    assert any(row["value"] == 0 for row in region)
+    assert next(row for row in region if row["metric"] == "active_credit_contracts_amount_mln_rub")["value_status"] == "blank"
+    view = _HELPERS["prepared"](dataset)
+    output = _HELPERS["rendered"](view)
+    assert output == _HELPERS["rendered"](view)
+    verified = load_workbook(BytesIO(output.data), read_only=True)
     assert "КДКД" in verified.sheetnames
+    verified.close()
 
 
 def test_escrow_discovery_recognizes_actual_cbr_collection_paths():
-    """CBR's official month links live under /Collection/Collection/File/."""
-    html = b"""
-      <a href="/Collection/Collection/File/62244/01072026.xlsx">01.07.2026</a>
-      <a href="/Collection/Collection/File/62109/01062026.xlsx">01.06.2026</a>
-      <a href="/vfs/statistics/escrow_01052026.xlsx">01.05.2026</a>
-      <a href="https://other.example/Collection/Collection/File/123/01042026.xlsx">bad host</a>
-      <a href="/unrelated/01032026.xlsx">bad path</a>
-    """
-    found = escrow.discover(escrow.DiscoverEscrowRequest(
-        SourcePayload(html, "text/html", "cbr.escrow.index")
-    ))
-    assert found.outcome == "succeeded", found.diagnostics
-    assert [link.source_name for link in found.value] == [
-        "01072026.xlsx", "01062026.xlsx", "escrow_01052026.xlsx"
-    ]
-    assert [link.file_date_hint for link in found.value] == [
-        "2026-07-01", "2026-06-01", "2026-05-01"
-    ]
+    html=b'''
+<a href="/Collection/Collection/File/62244/01072026.xlsx">01.07.2026</a>
+<a href="/Collection/Collection/File/62109/01062026.xlsx">01.06.2026</a>
+<a href="/vfs/statistics/escrow_01052026.xlsx">01.05.2026</a>
+<a href="https://other.example/Collection/Collection/File/123/01042026.xlsx">bad host</a>
+<a href="/unrelated/01032026.xlsx">bad path</a>'''
+    settings=DOMAIN.series[SERIES].commands["command.publication.scan"].settings
+    result=scan({"index":Material(html,"text/html")},settings,SimpleNamespace(parameters={},checkpoint=lambda:None))["listing"]
+    assert [item.locator.rsplit("/",1)[1] for item in result.entries] == ["01072026.xlsx","01062026.xlsx","escrow_01052026.xlsx"]
+    assert [item.issue_id for item in result.entries] == ["2026-07-01","2026-06-01","2026-05-01"]
 
 
 def test_escrow_acquire_accepts_official_collection_workbook():
-    """Use an offline transport to verify actual URL admission and source bytes."""
-    from datetime import datetime, timezone
-    from stratbox.core.network import HttpResponse
-
-    source = escrow.discover(escrow.DiscoverEscrowRequest(
-        SourcePayload(
-            b'<a href="/Collection/Collection/File/62244/01072026.xlsx">file</a>',
-            "text/html",
-        )
-    ))
-    assert source.outcome == "succeeded", source.diagnostics
-    link = source.value[0]
-    content = workbook_bytes()
-
-    class StubTransport:
-        def exchange(self, request, *, cancelled=None):
-            assert request.method == "GET"
-            assert request.url == link.url
-            assert request.permits(request.url)
-            assert request.max_response_bytes >= len(content)
-            return HttpResponse(
-                200, content,
-                {"content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-                datetime.now(timezone.utc),
-                "https://www.cbr.ru",
-            )
-
-    result = escrow.acquire(link, transport=StubTransport())
-    assert result.outcome == "succeeded", result.diagnostics
-    assert result.value.payload.data == content
-    assert result.value.payload.source_id == link.source_id
+    content=workbook_bytes()
+    html=Material(b'<a href="/Collection/Collection/File/62244/01072026.xlsx">file</a>',"text/html")
+    settings=DOMAIN.series[SERIES].commands["command.publication.scan"].settings
+    asset=scan({"index":html},settings,SimpleNamespace(parameters={},checkpoint=lambda:None))["listing"].entries[0]
+    class Publisher:
+        def fetch(self,request):
+            assert request.method=="GET" and request.url==asset.locator
+            assert request.max_bytes>=len(content)
+            return Material(content,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",SERIES)
+    with StrategyBox(providers={"http":Publisher()}) as box:
+        acquired=box.invoke("operation.material.acquire",inputs={"locator":asset},target=SeriesTarget(SERIES))
+        assert acquired.outcome=="succeeded",acquired.diagnostics
+        material=acquired.output("material")
+        assert material.material.data==content
+        assert material.claim.source_id==SERIES and material.claim.issue_id=="2026-07-01"
 
 
-def test_escrow_view_rejects_mutated_geography_snapshot():
-    request = escrow.ParseEscrowRequest(SourcePayload(workbook_bytes()), "escrow_01062026.xlsx")
-    history = escrow.build_history(escrow.EscrowHistoryBuildRequest((request,)))
-    assert history.outcome == "succeeded"
-    history.value.rows.iloc[0, 1] = 1000
-    result = escrow.build_views(escrow.BuildEscrowViewsRequest(history.value))
-    assert result.diagnostics[0].code == "input.identity_mismatch"
+def test_prepared_escrow_data_freezes_source_geography_and_preserves_identity():
+    request=SimpleNamespace(payload=SourcePayload(workbook_bytes()),source_name="escrow_01062026.xlsx")
+    dataset=_HELPERS["source"](request)[2]
+    identity=dataset.identity
+    with pytest.raises(TypeError):
+        dataset.rows[0]["subject"]="forged geography"
+    assert dataset.identity==identity

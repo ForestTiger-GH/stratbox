@@ -139,7 +139,10 @@ def test_full_refresh_contains_source_assessment_acquisition_and_two_bounded_map
     assert any(isinstance(t,CommandTask) and t.command.id=='command.source.assess' for t in plan.tasks)
     maps=[t for t in plan.tasks if isinstance(t,MapTask)]
     assert len(maps)==2
-    assert any(t.command.id=='command.material.fetch' for t in maps[0].template.tasks)
+    transport=next(t for t in maps[0].template.tasks if t.kind=='dispatch')
+    assert transport.selector_kind=='acquisition_kind'
+    assert any(t.command.id=='command.material.fetch' for t in transport.alternatives['http'].tasks)
+    assert any(t.command.id=='command.material.read' for t in transport.alternatives['file'].tasks)
     assert any(t.command.id=='command.workbook.decode' for t in maps[1].template.tasks)
     assert any(isinstance(t,CommandTask) and t.command.id=='command.observations.merge' for t in plan.tasks)
 
@@ -283,3 +286,18 @@ def test_feed_and_series_targets_resolve_their_actual_record_kinds():
     assert prepare('operation.source.check',inputs={'index':Material(b'index')},target=FeedTarget('A'),domains=domains)
     with pytest.raises(ValueError,match='specification_required'):
         prepare('command.table.interpret',inputs={'tables':TableEvidenceSet(())},target=FeedTarget('A'),domains=domains)
+
+
+def test_every_standard_command_has_one_reference_route_stage():
+    from stratbox.capabilities.route.stages import STAGES
+    from stratbox.capabilities.commands.standard import COMMANDS
+    classified=tuple(command for stage in STAGES.values() for command in stage)
+    assert len(classified)==len(set(classified))
+    assert set(classified)=={command.id for command in COMMANDS}
+
+
+def test_notification_delivery_can_acknowledge_state_without_requiring_a_subscription():
+    delivery=standard_catalog().get('command.notification.deliver')
+    assert delivery.effects==frozenset({'notification.deliver','notification.state'})
+    assert delivery.required_providers==frozenset({'notification'})
+    assert delivery.optional_providers==frozenset({'notification_state'})

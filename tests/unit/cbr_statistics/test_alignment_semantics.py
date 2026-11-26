@@ -47,13 +47,13 @@ def dataset_snapshot(value):
     rows = tuple(observation_row(item) for batch in value.batches for item in batch.observations)
     dataset = SourceDataset("cbr.test", rows,
         {"diagnostics": tuple(asdict(item) for item in value.diagnostics)})
-    return value_encode({"value": dataset}, None, SimpleNamespace())["representation"]
+    return value_encode({"value": dataset}, None, SimpleNamespace(parameters={},checkpoint=lambda:None))["representation"]
 
 
 def dataset_from_snapshot(value):
     from stratbox.core.commands.standard import value_decode
     from stratbox.shared.data.observations import Observation
-    dataset = value_decode({"representation": value}, None, SimpleNamespace())["value"]
+    dataset = value_decode({"representation": value}, None, SimpleNamespace(parameters={},checkpoint=lambda:None))["value"]
     rows=[]
     for item in dataset.rows:
         period = (PeriodRef("interval", start=date.fromisoformat(item["period"][0]),

@@ -45,6 +45,14 @@ def _allowed(url):
 def prepare_request(inputs, settings, context):
     locator = inputs.get("locator")
     query = inputs.get("query") or _parameters(context)
+    selection = inputs.get("selection")
+    if selection is not None:
+        if (not isinstance(selection, AssetSelection) or not selection.assessment.complete
+                or len(selection.entries) != 1):
+            raise ValueError("cbr.request_single_qualified_asset_required")
+        if locator is not None and locator != selection.entries[0]:
+            raise ValueError("cbr.request_asset_mismatch")
+        locator = selection.entries[0]
     if "locator" in inputs and (locator is None or isinstance(locator, str) and not locator.strip()):
         raise ValueError("cbr.source_url_invalid")
     if isinstance(locator, PublicationAsset):
@@ -93,6 +101,10 @@ class _Links(HTMLParser):
 
 def scan(inputs, settings, context):
     supplied = inputs.get("index")
+    if isinstance(supplied, IdentifiedMaterial):
+        if supplied.source_id not in {settings.series_id, settings.series_id + ".index"}:
+            raise ValueError("cbr.index_source_mismatch")
+        supplied = supplied.material
     if not isinstance(supplied, Material):
         raise ValueError("cbr.supplied_index_required")
     if supplied.source_id not in {None, settings.series_id, settings.series_id + ".index"}:
@@ -176,6 +188,11 @@ def select(inputs, settings, context):
 
 def assess(inputs, settings, context):
     evidence, baseline = inputs.get("evidence"), inputs.get("baseline")
+    def coordinates(value):
+        return value.claim.source_id, value.claim.issue_id, value.claim.asset_id
+    for value in (evidence, baseline):
+        if isinstance(value, (Material, IdentifiedMaterial)) and value.source_id not in {None, settings.series_id}:
+            raise ValueError("cbr.source_assessment_source_mismatch")
     if isinstance(evidence, PublicationListing) and not evidence.assessment.complete:
         result = UpdateAssessment("unknown", "publication_listing_incomplete", evidence.assessment.findings,
             candidate=fingerprint(evidence), evidence=evidence.assessment)
@@ -195,6 +212,10 @@ def assess(inputs, settings, context):
         same = facts(evidence) == facts(baseline)
         result = UpdateAssessment("facts_changed" if not same else "unchanged" if evidence.identity == baseline.identity else "representation_changed",
             "interpreted_source_observations", predecessor=baseline.identity, candidate=evidence.identity)
+    elif isinstance(evidence, IdentifiedMaterial) and isinstance(baseline, IdentifiedMaterial) and coordinates(evidence) != coordinates(baseline):
+        result = UpdateAssessment("changed", "explicit_publication_coordinates",
+            ("cbr.same_bytes_do_not_erase_distinct_publication_coordinates",),
+            fingerprint(coordinates(baseline)), fingerprint(coordinates(evidence)))
     elif isinstance(evidence, (Material, IdentifiedMaterial)) and isinstance(baseline, type(evidence)):
         result = UpdateAssessment("unchanged" if evidence.identity == baseline.identity else "changed",
             "exact_material_bytes", predecessor=baseline.identity.sha256, candidate=evidence.identity.sha256)

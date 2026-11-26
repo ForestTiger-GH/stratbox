@@ -29,6 +29,16 @@ ACQUIRE = op('operation.material.acquire', {'locator': P('locator', required=Fal
      Call('fetch', 'command.material.fetch', {'request': OutputRef('request','request')}),
      Call('identify', 'command.material.identify', {'material': OutputRef('fetch','material')})),
     {'material': OutputRef('identify','material')})
+ACQUIRE_HTTP=replace(ACQUIRE,id='operation.material.acquire_http')
+ACQUIRE_FILE=op('operation.material.acquire_file',{'locator':P('locator'),'claim':P('claim',required=False)},
+    (Call('read','command.material.read',{'location':InputRef('locator')}),
+     Call('identify','command.material.identify',{'material':OutputRef('read','material'),'claim':InputRef('claim')})),
+    {'material':OutputRef('identify','material')})
+RECEIVE=op('operation.material.receive',{'locator':P('locator',required=False),'query':P('query',required=False),
+    'destination':P('destination')},
+    (Call('request','command.request.prepare',{'locator':InputRef('locator'),'query':InputRef('query')},{'mode':'asset'}),
+     Call('receive','command.material.receive',{'request':OutputRef('request','request'),'destination':InputRef('destination')})),
+    {'reference':OutputRef('receive','reference'),'evidence':OutputRef('receive','evidence'),'receipt':OutputRef('receive','receipt')},effects=('receive',))
 
 
 def extraction(identifier, decoder):
@@ -115,4 +125,4 @@ RATIO=op('operation.calculate.ratio',{'numerator':DATASET,'denominator':DATASET}
 FORMULA=op('operation.calculate.formula',{'dataset':DATASET},(Call('calculate','command.calculate.formula',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('calculate','dataset')})
 INDEX=op('operation.calculate.index',{'observations':DATASET},(Call('calculate','command.calculate.index',{'observations':InputRef('observations')}),),{'dataset':OutputRef('calculate','dataset')})
 FLOW=op('operation.calculate.flow',{'observations':DATASET},(Call('calculate','command.calculate.flow',{'observations':InputRef('observations')}),),{'dataset':OutputRef('calculate','dataset')})
-OPERATIONS = (SERIES_ACQUIRE,EXTRACT_ANY,EXTRACT_ARCHIVE,EXTRACT_STRUCTURED,MERGE,VALIDATE,ALIGN,RETAIN,INGEST,CHANGE,RATIO,FORMULA,INDEX,FLOW,SOURCE_CHECK,ACQUIRE,EXTRACT_WORKBOOK,EXTRACT_DOCUMENT,EXTRACT_JSON,EXTRACT_CSV,EXTRACT_DBF,ADJUST,TABLE_CALCULATION,RESTORE,PUBLISH_PRODUCT,RELEASE)
+OPERATIONS = (SERIES_ACQUIRE,EXTRACT_ANY,EXTRACT_ARCHIVE,EXTRACT_STRUCTURED,MERGE,VALIDATE,ALIGN,RETAIN,INGEST,CHANGE,RATIO,FORMULA,INDEX,FLOW,SOURCE_CHECK,ACQUIRE,ACQUIRE_HTTP,ACQUIRE_FILE,RECEIVE,EXTRACT_WORKBOOK,EXTRACT_DOCUMENT,EXTRACT_JSON,EXTRACT_CSV,EXTRACT_DBF,ADJUST,TABLE_CALCULATION,RESTORE,PUBLISH_PRODUCT,RELEASE)

@@ -13,9 +13,10 @@ class Applicability:
     date_until: date | None = None
     predicates: tuple = ()
     required_providers: frozenset[str] = frozenset()
+    optional_providers: frozenset[str] = frozenset()
 
     def __post_init__(self):
-        for name in ('formats', 'source_ids', 'required_providers'):
+        for name in ('formats', 'source_ids', 'required_providers', 'optional_providers'):
             object.__setattr__(self, name, frozenset(getattr(self, name)))
         object.__setattr__(self, 'predicates', tuple(self.predicates))
         if self.date_from and self.date_until and self.date_from > self.date_until:

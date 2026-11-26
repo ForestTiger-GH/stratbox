@@ -55,8 +55,12 @@ class SourceRequirement:
     def __post_init__(self):
         for name in ('series_ids', 'family_ids', 'source_group_ids', 'qualifications'):
             object.__setattr__(self, name, frozenset(getattr(self, name)))
+            if any(not isinstance(item,str) or not item for item in getattr(self,name)):
+                raise TypeError('source.invalid_requirement')
         if self.attribution not in {'identified', 'asserted', 'optional'}:
             raise ValueError('source.invalid_attribution')
+        if any(type(getattr(self,name)) is not bool for name in ('require_evidence','allow_additional_sources')):
+            raise TypeError('source.boolean_policy_required')
 
     def validate(self, value):
         if isinstance(value,tuple):
@@ -171,6 +175,8 @@ class PortContract:
 
     def __post_init__(self):
         if not self.type_id or not isinstance(self.value_type, (type, tuple)):
+            raise TypeError('port.invalid_type')
+        if isinstance(self.value_type,tuple) and (not self.value_type or any(not isinstance(item,type) for item in self.value_type)):
             raise TypeError('port.invalid_type')
         for name in ('outcomes', 'alternatives', 'qualifications', 'expected_coverage'):
             object.__setattr__(self, name, frozenset(getattr(self, name)))

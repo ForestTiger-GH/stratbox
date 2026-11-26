@@ -5,12 +5,14 @@ from stratbox.capabilities.model.methods import MethodRef
 from stratbox.domains.cbr.common.contracts import Publication, Semantics, StatisticalSettings, TableVariant, FormSettings, FamilySettings, SourceRequirement, MappingRules
 from stratbox.domains.cbr.common.publications import SORS_INDEX, FORMS_INDEX, ESCROW_INDEX, OFFICES_PAGE, TERRITORIAL_INDEX
 
+FAMILY_ID = 'cbr.household_lending'
+
 MORTGAGE_DEBT_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_debt', 'cbr.household_lending', 'Mortgage debt',
+    'cbr.household_lending.mortgage_debt', FAMILY_ID, 'Mortgage debt',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_14_Debt_mortgage.xlsx', None,
 )
 MORTGAGE_DEBT_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_debt', (
+    MORTGAGE_DEBT_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('table_2', 'в\\ т\\.ч\\.\\ просроч\\.', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('table_3', 'по\\ приобр\\.\\ правам\\ итого', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
@@ -26,7 +28,7 @@ MORTGAGE_DEBT_TABLE = StatisticalSettings(
     ),
 )
 MORTGAGE_DEBT = SeriesSpec(
-    id='cbr.household_lending.mortgage_debt',
+    id=MORTGAGE_DEBT_PUBLICATION.series_id,
     publication=MORTGAGE_DEBT_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -34,49 +36,49 @@ MORTGAGE_DEBT = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_debt', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_debt', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_debt'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MappingRules(MORTGAGE_DEBT_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_DEBT_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_TABLE, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_DEBT_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt'})),
+            MORTGAGE_DEBT_TABLE, Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
     }),
 )
 
 MORTGAGE_DEBT_IND_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_debt_ind', 'cbr.household_lending', 'Household loan debt',
+    'cbr.household_lending.mortgage_debt_ind', FAMILY_ID, 'Household loan debt',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_05_Debt_ind.xlsx', None,
 )
 MORTGAGE_DEBT_IND_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_debt_ind', (
+    MORTGAGE_DEBT_IND_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('table_2', 'в\\ т\\.ч\\.\\ просроч\\.', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
@@ -86,7 +88,7 @@ MORTGAGE_DEBT_IND_TABLE = StatisticalSettings(
     ),
 )
 MORTGAGE_DEBT_IND = SeriesSpec(
-    id='cbr.household_lending.mortgage_debt_ind',
+    id=MORTGAGE_DEBT_IND_PUBLICATION.series_id,
     publication=MORTGAGE_DEBT_IND_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -94,56 +96,56 @@ MORTGAGE_DEBT_IND = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_debt_ind', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_debt_ind', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_debt_ind'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MappingRules(MORTGAGE_DEBT_IND_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_DEBT_IND_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_TABLE, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_DEBT_IND_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_debt_ind'})),
+            MORTGAGE_DEBT_IND_TABLE, Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
     }),
 )
 
 MORTGAGE_FULL_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_full', 'cbr.household_lending', 'Mortgage lending history',
+    'cbr.household_lending.mortgage_full', FAMILY_ID, 'Mortgage lending history',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_02_Mortgage.xlsx', None,
 )
 MORTGAGE_FULL_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_full', (
+    MORTGAGE_FULL_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
     ),
 )
 MORTGAGE_FULL = SeriesSpec(
-    id='cbr.household_lending.mortgage_full',
+    id=MORTGAGE_FULL_PUBLICATION.series_id,
     publication=MORTGAGE_FULL_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -151,56 +153,56 @@ MORTGAGE_FULL = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_full', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_full', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_full'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MappingRules(MORTGAGE_FULL_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_FULL_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_TABLE, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_FULL_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_full'})),
+            MORTGAGE_FULL_TABLE, Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
     }),
 )
 
 MORTGAGE_IHC_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_ihc', 'cbr.household_lending', 'Mortgages for individual housing construction',
+    'cbr.household_lending.mortgage_ihc', FAMILY_ID, 'Mortgages for individual housing construction',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/banksector/mortgage/02_41_Mortgage_ihc.xlsx', None,
 )
 MORTGAGE_IHC_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_ihc', (
+    MORTGAGE_IHC_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
     ),
 )
 MORTGAGE_IHC = SeriesSpec(
-    id='cbr.household_lending.mortgage_ihc',
+    id=MORTGAGE_IHC_PUBLICATION.series_id,
     publication=MORTGAGE_IHC_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -208,49 +210,49 @@ MORTGAGE_IHC = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_ihc', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_ihc', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_ihc'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MappingRules(MORTGAGE_IHC_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_IHC_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_TABLE, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_IHC_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_ihc'})),
+            MORTGAGE_IHC_TABLE, Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
     }),
 )
 
 MORTGAGE_SCPA_DEBT_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_scpa_debt', 'cbr.household_lending', 'Mortgage debt under shared construction agreements',
+    'cbr.household_lending.mortgage_scpa_debt', FAMILY_ID, 'Mortgage debt under shared construction agreements',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_18_Debt_scpa_mortgage.xlsx', None,
 )
 MORTGAGE_SCPA_DEBT_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_scpa_debt', (
+    MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('table_2', 'в\\ т\\.ч\\.\\ просроч\\.', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('table_3', 'по\\ приобр\\.\\ правам\\ итого', 'statistics', 'stock', 'as_of', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
@@ -266,7 +268,7 @@ MORTGAGE_SCPA_DEBT_TABLE = StatisticalSettings(
     ),
 )
 MORTGAGE_SCPA_DEBT = SeriesSpec(
-    id='cbr.household_lending.mortgage_scpa_debt',
+    id=MORTGAGE_SCPA_DEBT_PUBLICATION.series_id,
     publication=MORTGAGE_SCPA_DEBT_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -274,56 +276,56 @@ MORTGAGE_SCPA_DEBT = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_scpa_debt', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_scpa_debt', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_scpa_debt'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MappingRules(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_SCPA_DEBT_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_TABLE, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_SCPA_DEBT_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_debt'})),
+            MORTGAGE_SCPA_DEBT_TABLE, Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
     }),
 )
 
 MORTGAGE_SCPA_FULL_PUBLICATION = Publication(
-    'cbr.household_lending.mortgage_scpa_full', 'cbr.household_lending', 'Mortgages under shared construction agreements',
+    'cbr.household_lending.mortgage_scpa_full', FAMILY_ID, 'Mortgages under shared construction agreements',
     'rolling', ('xlsx',), 'fixed', 'https://www.cbr.ru/vfs/statistics/BankSector/Mortgage/02_03_Scpa_mortgage.xlsx', None,
 )
 MORTGAGE_SCPA_FULL_TABLE = StatisticalSettings(
-    'cbr.household_lending.mortgage_scpa_full', (
+    MORTGAGE_SCPA_FULL_PUBLICATION.series_id, (
         TableVariant('total', 'итого', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('rub', 'в\\ рублях', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
         TableVariant('fx', 'в\\ инвалюте', 'statistics', None, 'mixed_source_periods', ('source_geography_or_measure', 'denomination_group', 'lending_perimeter'), 'Explicit row unit, otherwise unambiguous table unit; unresolved units are diagnostics.', 'Household lending, mortgages, shared-construction and individual-housing perimeters remain separate; rates and terms require weights for aggregation.'),
     ),
 )
 MORTGAGE_SCPA_FULL = SeriesSpec(
-    id='cbr.household_lending.mortgage_scpa_full',
+    id=MORTGAGE_SCPA_FULL_PUBLICATION.series_id,
     publication=MORTGAGE_SCPA_FULL_PUBLICATION,
     semantics=Semantics('publisher_defined', ('publication', 'record', 'field'), 'Source-local complete physical evidence; semantic coverage is independently qualified.'),
     commands=MappingProxyType({
@@ -331,39 +333,39 @@ MORTGAGE_SCPA_FULL = SeriesSpec(
         "command.value.decode": CommandSpec(MethodRef("stratbox.domains.cbr.methods.actions.serialization:decode")),
         "command.request.prepare": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:prepare_request"),
-            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:scan"),
-            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.issue.select": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:select"),
-            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.source.assess": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:assess"),
-            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_PUBLICATION, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement('cbr.household_lending.mortgage_scpa_full', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement('cbr.household_lending.mortgage_scpa_full', ('xlsx',)), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
-            MappingRules('cbr.household_lending.mortgage_scpa_full'), Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MappingRules(MORTGAGE_SCPA_FULL_PUBLICATION.series_id), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.table.extract": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:extract"),
-            MORTGAGE_SCPA_FULL_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_TABLE, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.table.interpret": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.statistics:interpret"),
-            MORTGAGE_SCPA_FULL_TABLE, Applicability(source_ids=frozenset({'cbr.household_lending.mortgage_scpa_full'})),
+            MORTGAGE_SCPA_FULL_TABLE, Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
     }),
 )

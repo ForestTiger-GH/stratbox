@@ -1,6 +1,7 @@
 """Conditional crosswalk actions on the standard constrained-model route."""
 from __future__ import annotations
-from dataclasses import dataclass, replace
+from stratbox.domains.cbr.calculations.sors.fingerprints import implementation_fingerprint
+from dataclasses import dataclass, field, replace
 from contextlib import nullcontext
 from copy import deepcopy
 import pandas as pd
@@ -29,10 +30,11 @@ def _compilation_fingerprint(compilation):
 class CrosswalkModel:
     strict: SorsRestorationResult
     config: SorsCrosswalkConfig
+    implementation: str = field(default_factory=implementation_fingerprint)
 
     @property
     def fingerprint(self):
-        return _hash(self.strict.fingerprint, self.config)
+        return _hash(self.strict.fingerprint, self.config, self.implementation)
 
 
 @dataclass(frozen=True)
@@ -98,6 +100,18 @@ class CrosswalkOptimization:
                      tuple((e.scenario_id, e.status, _frames(e.grid)) for e in self.executions))
 
 
+def _state(inputs):
+    state = inputs['state']
+    if not isinstance(state, CrosswalkState):
+        raise TypeError('sors.crosswalk_state_required')
+    if state.model.implementation != implementation_fingerprint():
+        raise ValueError('sors.crosswalk_retained_model_build_mismatch')
+    graph = inputs.get('graph', state.model)
+    if graph is not state.model and graph.fingerprint != state.model.fingerprint:
+        raise ValueError('sors.crosswalk_graph_mismatch')
+    return state
+
+
 def model_inputs(inputs, settings, context):
     value = inputs['datasets']
     value = getattr(value, 'native', None) or value
@@ -129,6 +143,8 @@ def constraints_build(inputs, settings, context):
     model = inputs['bundle']
     if not isinstance(model, CrosswalkModel):
         raise TypeError('sors.crosswalk_model_inputs_required')
+    if model.implementation != implementation_fingerprint():
+        raise ValueError('sors.crosswalk_retained_model_build_mismatch')
     compilations = []
     for scenario_id in model.config.scenario_ids:
         _checkpoint(context)
@@ -138,7 +154,7 @@ def constraints_build(inputs, settings, context):
 
 
 def bounds_propagate(inputs, settings, context):
-    state = inputs['state']
+    state = _state(inputs)
     compilations, derivations, conflicts = [], [], []
     for compilation in state.compilations:
         _checkpoint(context)
@@ -164,11 +180,11 @@ def bounds_propagate(inputs, settings, context):
 
 def facts_inherit(inputs, settings, context):
     # Conditional mapping equations supply no direct publication inheritance.
-    return {'candidates': CrosswalkCandidates(inputs['state'].fingerprint)}
+    return {'candidates': CrosswalkCandidates(_state(inputs).fingerprint)}
 
 
 def facts_reconcile(inputs, settings, context):
-    state = inputs['state']
+    state = _state(inputs)
     candidates, optimization = inputs.get('candidates'), inputs.get('optimization')
     if candidates is not None:
         if not isinstance(candidates, CrosswalkCandidates) or candidates.state_basis != state.fingerprint:
@@ -184,7 +200,7 @@ def facts_reconcile(inputs, settings, context):
 
 
 def model_compile(inputs, settings, context):
-    state = inputs['state']
+    state = _state(inputs)
     if not isinstance(state, CrosswalkState) or not state.converged:
         raise ValueError('sors.crosswalk_deterministic_closure_required')
     return {'problem': CrosswalkProblem(state)}
@@ -193,7 +209,8 @@ def model_compile(inputs, settings, context):
 @_solver_action
 def model_feasibility(inputs, settings, context):
     problem = inputs['problem']
-    state, config = problem.state, problem.state.model.config
+    state = _state({"state": problem.state})
+    config = state.model.config
     results, records = [], []
     for scenario_id, compilation, conflicts in zip(config.scenario_ids, state.compilations, state.conflicts, strict=True):
         _checkpoint(context)
@@ -217,7 +234,7 @@ def model_feasibility(inputs, settings, context):
 @_solver_action
 def bounds_optimize(inputs, settings, context):
     problem, feasible = inputs['problem'], inputs['feasibility']
-    state = problem.state
+    state = _state({"state": problem.state})
     if feasible.problem_basis != problem.fingerprint or feasible.state_basis != state.fingerprint:
         raise ValueError('sors.crosswalk_stale_feasibility_basis')
     if not feasible.success:
@@ -233,7 +250,7 @@ def bounds_optimize(inputs, settings, context):
 
 
 def values_certify(inputs, settings, context):
-    state, feasible = inputs['state'], inputs['feasibility']
+    state, feasible = _state(inputs), inputs['feasibility']
     if feasible.state_basis != state.fingerprint or not feasible.success:
         raise ValueError('sors.crosswalk_current_feasibility_required')
     if not state.optimization_complete or not state.converged:

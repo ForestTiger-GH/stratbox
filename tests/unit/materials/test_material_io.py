@@ -52,3 +52,15 @@ def test_unclassified_local_read_does_not_assert_a_publisher(tmp_path):
     with StrategyBox(providers={'filestore':store}) as box:
         material = good(box.invoke('command.material.read',inputs={'location':'product.xlsx'}),'material')
     assert material.source_id is None
+
+
+def test_explicit_disk_read_reobserves_disappearance_after_an_earlier_success(tmp_path):
+    store=LocalFileStore(tmp_path)
+    store.write_bytes('report',b'first observation')
+    with StrategyBox(providers={'filestore':store}) as box:
+        first=box.invoke('command.material.read',inputs={'location':'report'})
+        assert first.outcome=='succeeded',first.diagnostics
+        store.checked_file_path('report').unlink()
+        second=box.invoke('command.material.read',inputs={'location':'report'})
+        assert second.outcome=='failed'
+        assert 'material' not in second.outputs

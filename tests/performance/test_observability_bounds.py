@@ -1,60 +1,52 @@
-"""Bounded behavior depends on actual observed items, never maximum sequence."""
-from datetime import datetime, timezone
+"""Journal retention and pages remain bounded as execution history grows."""
 import pytest
-
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.core.observability import (SequenceRange, find_gaps, merge_ranges,
-                                    JournalRecord, RecordFilter, select_records,
-                                    FileJournalReader, JournalNamespace, inspect_causes)
-
-TIME = datetime(2026, 11, 15, tzinfo=timezone.utc)
+from stratbox.core.observability.journal import MemoryJournal, FileJournal
 
 
-def test_two_events_near_2_pow_53():
-    upper = 2**53 - 1
-    assert find_gaps((1, upper), expected_last=upper) == (SequenceRange(2,upper-1),)
+def test_memory_journal_backpressure_preserves_retained_truth():
+    journal=MemoryJournal(capacity=3)
+    for index in range(3):journal.append(kind='diagnostic',run_id=str(index))
+    with pytest.raises(RuntimeError,match='capacity_exhausted'):
+        journal.append(kind='diagnostic',run_id='overflow')
+    assert [fact.sequence for fact in journal.read(limit=3)]==[1,2,3]
 
 
-def test_interval_generator_budget():
-    def unbounded():
-        while True:
-            yield SequenceRange(1,1)
-    with pytest.raises(ValueError):
-        merge_ranges(unbounded())
+def test_segmented_pages_have_exact_cursor_without_allocating_history(tmp_path):
+    journal=FileJournal(tmp_path,segment_size=10)
+    for index in range(51):journal.append(kind='diagnostic',run_id=str(index))
+    assert len(list(tmp_path.glob('facts-*.jsonl')))==6
+    assert [fact.sequence for fact in journal.read(after=37,limit=3)]==[38,39,40]
+    assert [fact.sequence for fact in journal.read(after=49,limit=3)]==[50,51]
 
 
-def test_read_report_limits_infinite_paths(tmp_path):
-    reader = FileJournalReader(LocalFileStore(str(tmp_path)), namespace=JournalNamespace("logs", "writer"),
-                               max_segments=3)
-    def many():
-        for i in range(100_000_000):
-            yield f"logs/writer/{i}.jsonl"
-    report = reader.read_report(many())
-    assert any(issue.code == "journal.segment_limit" for issue in report.issues)
-    assert len(report.issues) <= 5
+def test_missing_segment_is_not_silently_treated_as_complete_history(tmp_path):
+    journal=FileJournal(tmp_path,segment_size=2)
+    for index in range(5):journal.append(kind='diagnostic',run_id=str(index))
+    sorted(tmp_path.glob('facts-*.jsonl'))[1].unlink()
+    with pytest.raises(ValueError,match='coverage_gap'):
+        journal.read(limit=100)
 
 
-def test_causal_cycle_iterative():
-    nodes = (
-        JournalRecord("nodeA", "diagnostic", "test", TIME, {}, cause_record_ids=("nodeB",)),
-        JournalRecord("nodeB", "diagnostic", "test", TIME, {}, cause_record_ids=("nodeA",)),
-    )
-    inspection = inspect_causes(nodes, "nodeA")
-    assert len(inspection.roots) == 2 and not inspection.truncated
+def test_invalid_or_unbounded_page_request_is_rejected(tmp_path):
+    journal=FileJournal(tmp_path)
+    for limit in (0,-1,10001):
+        with pytest.raises(ValueError,match='invalid_page'):journal.read(limit=limit)
 
 
-def test_long_lived_collector_metadata_stops_at_configured_budget():
-    from stratbox.core.observability import RecordMemorySink, ObserverLimits, CapturePolicy
-    observer = RecordMemorySink(CapturePolicy(max_records=1),
-                                limits=ObserverLimits(max_tracked_invocations=3,
-                                                      max_total_sequence_ranges=9,
-                                                      max_ranges_per_invocation=3))
-    for n in range(25_000):
-        item = JournalRecord(f"event{n}", "execution", "operation.started", TIME, {},
-                             invocation_id=f"inv{n}", operation_id="test", sequence=1)
-        observer.capture(item)
-    health = observer.health_snapshot()
-    assert health.tracked_invocations == 3
-    assert health.tracked_sequence_ranges <= 9
-    assert health.metadata_overflow_events >= 24_997
-    assert health.degraded
+def test_filtered_history_has_a_real_scan_budget(tmp_path):
+    journal=FileJournal(tmp_path,segment_size=2)
+    for index in range(7):journal.append(kind='diagnostic',run_id='present')
+    with pytest.raises(ValueError,match='scan_limit'):
+        journal.read(run_id='absent',limit=1,scan_limit=3)
+
+
+def test_huge_corrupt_sequence_is_rejected_before_history_expansion(tmp_path):
+    import json
+    journal=FileJournal(tmp_path,segment_size=2)
+    journal.append(kind='diagnostic',run_id='one')
+    path=next(tmp_path.glob('facts-*.jsonl'))
+    record=json.loads(path.read_bytes())
+    record['sequence']=2**53-1
+    path.write_text(json.dumps(record)+'\n')
+    with pytest.raises(ValueError,match='sequence_conflict'):
+        FileJournal(tmp_path,segment_size=2)

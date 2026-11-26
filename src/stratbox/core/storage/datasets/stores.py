@@ -4,7 +4,8 @@ from pathlib import Path
 from threading import RLock
 import json
 
-from stratbox.shared.data.values import SourceDataset, SnapshotRef, canonical_tree, restore_tree, fingerprint
+from stratbox.shared.data.values import SourceDataset, SnapshotRef, canonical_tree, restore_tree, fingerprint, select_dataset
+from stratbox.shared.identity import ByteIdentity
 
 
 def _select(dataset, query):
@@ -20,7 +21,7 @@ def _select(dataset, query):
                  and (periods is None or row.get("period") in periods))
     if limit is not None:
         rows = rows[:limit]
-    return replace(dataset, rows=rows, lineage=(*dataset.lineage, dataset.identity))
+    return select_dataset(dataset, rows)
 
 
 class MemoryDatasetStore:
@@ -39,12 +40,12 @@ class MemoryDatasetStore:
         key = str(destination).rstrip("/") + "/" + identity
         with self._lock:
             self._values.setdefault(key, retained)
-        return SnapshotRef(key, self.provider_id, identity)
+        return SnapshotRef(key, self.provider_id, identity, self.scope_id)
 
     def query(self, reference, query):
         with self._lock:
             value = self._values[reference.snapshot_id]
-        if reference.provider_id != self.provider_id or fingerprint(value) != reference.identity:
+        if reference.provider_id != self.provider_id or reference.provider_scope != self.scope_id or fingerprint(value) != reference.identity:
             raise ValueError("dataset.snapshot_conflict")
         return _select(restore_tree(canonical_tree(value)), query)
 
@@ -69,12 +70,12 @@ class FileDatasetStore:
         if fingerprint(restore_tree(json.loads(raw), admitted_types=self.admitted_types)) != identity:
             raise ValueError("dataset.replay_identity_mismatch")
         namespace = fingerprint(str(destination))
-        location = f"{namespace}/{identity}"
+        location = f"{namespace}/{ByteIdentity.of(raw).sha256}"
         self.store.create_immutable(location, raw)
-        return SnapshotRef(location, self.provider_id, identity)
+        return SnapshotRef(location, self.provider_id, identity, self.scope_id)
 
     def query(self, reference, query):
-        if reference.provider_id != self.provider_id:
+        if reference.provider_id != self.provider_id or reference.provider_scope != self.scope_id:
             raise ValueError("dataset.provider_mismatch")
         with self.store.open_read(reference.snapshot_id) as stream:
             raw = stream.read(self.max_bytes + 1)

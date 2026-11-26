@@ -128,3 +128,19 @@ def test_output_acceptance_settles_independent_outputs_and_coherent_groups():
     assert pending==frozenset({'good','bad'}) and not errors
     errors,pending=coherent.assess_outputs({'good':3,'bad':-1},names=('good','bad'),settled=('good','bad'))
     assert set(errors)=={'good','bad'} and not pending
+
+
+def test_runtime_payload_maps_keep_typed_keys_while_authored_controls_remain_finite():
+    from stratbox.sdk import StrategyBox
+    from stratbox.capabilities.model import CommandDefinition, MethodRef
+    supplied={1:'numeric key','1':'text key'}
+    with StrategyBox() as box:
+        encoded=box.invoke('command.value.encode',inputs={'value':supplied})
+        assert encoded.outcome=='succeeded',encoded.diagnostics
+        restored=box.invoke('command.value.decode',inputs={'representation':encoded.output('representation')})
+        assert restored.outcome=='succeeded',restored.diagnostics
+        assert restored.output('value')==supplied
+    metadata=CommandDefinition('command.test.control',method=MethodRef('operator:neg'),
+        parameters={'limit':float('inf')})
+    with pytest.raises(ValueError,match='nonfinite'):
+        fingerprint(metadata)

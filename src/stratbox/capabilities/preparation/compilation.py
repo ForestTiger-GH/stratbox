@@ -116,11 +116,13 @@ class Compiler:
             spec.applicability.assess({'source_id':source_id,'format':parameters.get('format')})
             method,settings=spec.method,spec.settings
             providers=definition.required_providers | spec.applicability.required_providers
+            optional_providers=definition.optional_providers | spec.applicability.optional_providers
         else:
             if definition.specification_required:
                 raise ValueError('command.specification_required:' + definition.id)
             method,settings=definition.method,getattr(record,'settings',None)
             providers=definition.required_providers
+            optional_providers=definition.optional_providers
         if method is None: raise ValueError('command.method_required:' + definition.id)
         ins,outs=dict(definition.inputs),dict(definition.outputs)
         if spec and spec.applicability.source_ids and not isinstance(record, SeriesSpec):
@@ -145,7 +147,8 @@ class Compiler:
         for name in definition.required_parameters:
             if name not in effective: raise ValueError('command.parameter_required:' + name)
         return BoundCommand(definition.id,method,settings,ins,outs,effective,definition.resources,definition.effects,
-                            providers,definition.reuse,requirements,definition.acceptance)
+                            providers,definition.reuse,requirements,definition.acceptance,
+                            optional_providers=optional_providers-providers,target=target)
 
     def validate_inputs(self, contracts, values):
         unknown=set(values)-contracts.keys()
@@ -267,6 +270,7 @@ class Compiler:
                 allowed={'operation':{'command','operation'},'scenario':{'operation','scenario'},'cascade':{'scenario'}}[definition.kind]
                 if child.kind not in allowed: raise ValueError('graph.invalid_kind:'+definition.kind+'>'+child.kind)
                 before=len(self.tasks)
+                first_scope=len(self.scopes)
                 args=resolve(step.inputs);params={**parameters,**resolve(step.parameters)}
                 child_target=resolve(step.target)
                 # Determine only the output ports actually read or explicitly promised.
@@ -288,6 +292,12 @@ class Compiler:
                 for dependency in step.depends_on:
                     extra |= set().union(*(_refs(v) for v in results.get(dependency,{}).values())) if results.get(dependency) else set()
                 condition=resolve(step.condition) if step.condition else None
+                for index in range(first_scope,len(self.scopes)):
+                    scope=self.scopes[index]
+                    inherited=tuple(c for group in (condition,scope.condition)
+                        for c in (group if isinstance(group,tuple) else (group,)) if c is not None)
+                    self.scopes[index]=replace(scope,required_checks=tuple(sorted(set(scope.required_checks)|extra)),
+                        condition=_unwrap(inherited) or None)
                 for i in range(before,len(self.tasks)):
                     t=self.tasks[i]
                     inherited=tuple(c for group in (condition,getattr(t,'condition',None)) for c in (group if isinstance(group,tuple) else (group,)) if c is not None)
@@ -326,13 +336,15 @@ class Compiler:
                     nested=Compiler(self.catalog,self.domains,self.build_identity)
                     args={**resolve(step.inputs),step.input_name:TemplateInput(step.input_name)}
                     try:
-                        out=nested.compile(capability,args,{**parameters,**resolve(step.parameters),'format':fmt,'archive_depth':int(parameters.get('archive_depth',0))+(1 if fmt in {'zip','rar'} else 0)},resolve(step.target),None,'template')
+                        branch_parameters=({'format':fmt,'archive_depth':int(parameters.get('archive_depth',0))+(1 if fmt in {'zip','rar'} else 0)}
+                            if step.selector_kind=='material_format' else {'acquisition_kind':fmt})
+                        out=nested.compile(capability,args,{**parameters,**resolve(step.parameters),**branch_parameters},resolve(step.target),None,'template')
                     except ValueError as error:
                         if str(error).startswith('applicability.'): continue
                         raise
                     alternatives[fmt]=nested.finish(capability,out,target)
                 if not alternatives: raise ValueError('recipe.no_supported_representation')
-                self.tasks.append(DispatchTask(path,_unwrap(selector),freeze(alternatives),step.input_name,step.output_port,'material_format',tuple(sorted(_refs(selector)|_refs(resolve(step.inputs)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(selector),key=lambda g:(g.scope_id,g.port)))))
+                self.tasks.append(DispatchTask(path,_unwrap(selector),freeze(alternatives),step.input_name,step.output_port,step.selector_kind,tuple(sorted(_refs(selector)|_refs(resolve(step.inputs)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(selector),key=lambda g:(g.scope_id,g.port)))))
                 results[name]={step.output_port:ValueRef(path,step.output_port)}
                 self.ports[(path,step.output_port)]=self.catalog.get(next(iter(step.alternatives.values()))).outputs[step.output_port]
             elif isinstance(step,RepeatUntil):
@@ -368,16 +380,12 @@ def prepare(capability_id, *, inputs=None, parameters=None, target=None, outputs
     from stratbox import __version__
     catalog=catalog or standard_catalog()
     if domains is None:
-        from ..catalog.domains import DOMAINS
-        selected=set()
         identifiers=[_target_id(target)]
         for item in (inputs or {}).get('members',()):
             identifiers.append(_target_id(item.get('target') if isinstance(item,Mapping) else getattr(item,'target',getattr(item,'source_id',None))))
-        for identifier in identifiers:
-            if identifier:
-                prefix=identifier.split('.',1)[0]
-                if prefix in DOMAINS: selected.add(prefix)
-        domains=load_domains(tuple(sorted(selected))) if selected else DomainCatalog({})
+        # Target identifiers are opaque; their spelling does not select a
+        # publisher or execution route. The explicit manifest owns discovery.
+        domains=load_domains() if any(identifiers) else DomainCatalog({})
     if build_identity is None:
         from pathlib import Path
         from hashlib import sha256

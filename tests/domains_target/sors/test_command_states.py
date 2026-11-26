@@ -100,3 +100,16 @@ def test_only_repository_release_is_manually_versioned():
     assert "rules_version" not in SorsRunConfig.__dataclass_fields__
     config = SorsRunConfig("2026-07-01")
     assert len(config.rules_fingerprint) == 64
+
+
+def test_certification_requires_successful_global_feasibility_even_without_optimization(state):
+    failed = stages.SorsFeasibilityAssessment("problem", state.fingerprint,
+        SimpleNamespace(status="INFEASIBLE", feasibility=SimpleNamespace(success=False)))
+    with pytest.raises(ValueError, match="global_feasibility_required:INFEASIBLE"):
+        stages.values_certify({"state": state, "feasibility": failed}, None, None)
+
+
+def test_continuation_fingerprint_covers_pending_updates_and_fuse_progress(state):
+    assert replace(state,last_bound_updates=1).fingerprint != state.fingerprint
+    assert replace(state,closure_steps=1).fingerprint != state.fingerprint
+    assert replace(state,passes=({"observational_pass_id": "another"},)).scientific_fingerprint == state.scientific_fingerprint

@@ -66,6 +66,6 @@ def test_release_requires_runtime_confirmed_retention_and_rechecks_current_bytes
         reference = retained.output('reference')
         assembled = box.invoke('command.release.assemble',inputs={'members':(reference,)})
         assert assembled.outcome == 'succeeded',assembled.diagnostics
-        store.write_bytes(reference.location,b'changed')
+        store.checked_file_path(reference.location).write_bytes(b'changed')
         tampered = box.invoke('command.release.assemble',inputs={'members':(reference,)})
         assert tampered.outcome == 'failed'

@@ -10,7 +10,7 @@ REFRESH = ScenarioDefinition('scenario.series.refresh', inputs={
         {'material':InputRef('material'),'physical':InputRef('physical'),'issue':InputRef('issue')}),),
         {'dataset':OutputRef('extract','dataset'),'assessment':OutputRef('extract','assessment')}))
 ANALYSIS = ScenarioDefinition('scenario.analysis.prepare', inputs={'dataset':DATASET}, outputs={'dataset':DATASET},
-    body=GraphBody((Call('validate','command.observations.validate',{'dataset':InputRef('dataset')}),), {'dataset':OutputRef('validate','dataset')}))
+    body=GraphBody((Call('validate','operation.observations.validate',{'dataset':InputRef('dataset')}),), {'dataset':OutputRef('validate','dataset')}))
 # This purpose owns the complete publication obligation, separate from source refresh.
 PUBLISH = ScenarioDefinition('scenario.release.publish',inputs=RELEASE.inputs,outputs=RELEASE.outputs,
     body=GraphBody((Call('release','operation.release.publish',{'members':InputRef('members'),'expected_token':InputRef('expected_token')}),),
