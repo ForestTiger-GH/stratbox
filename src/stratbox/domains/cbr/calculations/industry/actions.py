@@ -61,7 +61,9 @@ def calculate(inputs, settings, context):
                 raw_token=None, evidence_ref="cbr.industry_formula:" + metric,
                 operands=evidence)
             output.append(row)
-    assessment = Assessment("partial" if findings else "complete", tuple(sorted(findings)))
+    assessment = Assessment('partial' if findings or not dataset.assessment.complete else 'complete',
+        tuple(dict.fromkeys((*dataset.assessment.findings, *sorted(findings)))),
+        qualifications=dataset.assessment.qualifications | frozenset({'derived_coordinates'}))
     result = DerivedDataset(dataset.source_id, tuple(output), {"calculation": "industry_components"},
         dataset.issue_id, (*dataset.lineage, dataset.identity), assessment, source_uses=dataset.source_uses)
     return {"dataset": result}

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
-from stratbox.core.commands.standard import value_decode, value_encode
+from stratbox.core.commands.serialization import value_decode, value_encode
 from stratbox.core.execution.service import ExecutionFailure, ExecutionSettings
 from stratbox.core.limits import ExecutionBudget
 from stratbox.sdk import StrategyBox

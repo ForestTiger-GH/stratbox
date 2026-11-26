@@ -1,3 +1,11 @@
-# Scientific interpretation and calculation
+# Corporate-lending source tables
 
-This package owns source-aware scientific methods and typed evidence. Standard callable definitions and execution remain outside the domain. The [domain catalog](../../../domain.py) binds these methods through explicit command specifications.
+These methods interpret regional debt and issuance workbooks and industry
+tables. Source coordinates, units, periods, bank or territory identities and
+portfolio perimeters remain attached to the interpreted values.
+
+[Alignment](../../alignment/corporate_lending/) handles explicit geography and
+identifier mapping. Coupled reconstruction belongs to
+[SORS](../../../calculations/sors/), rather than the source parser.
+
+See [corporate-lending semantics](../../../../../../../docs/current-how/cbr-corporate-lending.md).

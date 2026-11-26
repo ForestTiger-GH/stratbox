@@ -83,7 +83,24 @@ def test_effect_capacity_is_reserved_before_each_distinct_mutation():
         result=client.invoke(command.id,inputs={'value':1})
         assert result.outcome=='failed' and CALLS==[0]
         assert result.effects['effect-0'].status=='confirmed'
+        assert tuple(result.effects)==('effect-0',)
         assert any('capacity' in str(item) for item in result.diagnostics)
+
+
+@pytest.mark.parametrize('kind,resource',(('notification.deliver','file-0'),('storage.write','another-file')))
+def test_rejected_foreign_unknown_effect_does_not_contaminate_this_run(tmp_path,kind,resource):
+    from stratbox.core.execution.effect_state import FileEffectState
+    from stratbox.core.execution.service import EffectReceipt
+    state=FileEffectState(tmp_path/'effects')
+    original=EffectReceipt('effect-0',kind,'unknown',resource=resource)
+    state.begin(original)
+    command=direct('effect_then_return')
+    with box(command,providers={'effect_state':state}) as client:
+        result=client.invoke(command.id,inputs={'value':1})
+        assert result.outcome=='failed' and not CALLS
+        assert not result.effects and not result.effect_ids
+        assert 'effect.identity_conflict' in result.diagnostics
+        assert state.get('effect-0')==original
 
 
 def test_output_budget_failure_preserves_confirmed_effect():
@@ -163,14 +180,23 @@ def test_unexpected_exception_text_is_not_exported_as_public_execution_evidence(
 
 
 def test_optional_observer_failure_preserves_work_and_accepted_result():
-    def broken(fact):raise OSError('sink unavailable')
+    called=Event()
+    def broken(fact):
+        called.set()
+        raise OSError('sink unavailable')
     command=direct('effect_then_return',effects=())
     # No side effect is attempted in this fixture.
     command=replace(command,parameters={'count':0})
     with box(command,observer=broken) as client:
         result=client.invoke(command.id,inputs={'value':12})
         assert result.outcome=='succeeded' and result.output()==12
-        assert any('optional_sink' in item for item in result.diagnostics)
+        assert called.wait(2)
+        from time import monotonic,sleep
+        until=monotonic()+2
+        while not client.session.observer_status().failed and monotonic()<until:sleep(.001)
+        health=client.session.observer_status()
+        assert health.failed and any('optional_sink' in item.code for item in health.diagnostics)
+        assert health.replay_after
 
 
 @pytest.mark.parametrize('settings',({'max_workers':float('nan')},{'active_runs':True},{'max_retained_bytes':float('inf')}))

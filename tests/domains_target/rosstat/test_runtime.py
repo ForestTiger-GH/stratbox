@@ -9,6 +9,7 @@ from .fixtures import synthetic_kep2_bytes
 
 
 class Delivery:
+    scope_id="fixture.rosstat.notifications"
     def __init__(self):
         self.calls = 0
         self.recovered = None
@@ -35,7 +36,10 @@ def test_source_dataset_acceptance_precedes_notification_and_unknown_delivery_ne
         facts = box.session.journal.read(run_id=result.run_id)
         accepted = tuple(fact for fact in facts if fact.kind == "output.accepted" and fact.output_name == "dataset")
         assert accepted and any(fact.kind == "scope.completed" for fact in facts)
-        notification = box.invoke("command.notification.prepare", inputs={"facts": accepted[:1]}, timeout=10)
+        notification = box.invoke("command.notification.prepare",
+            inputs={"page": box.session.journal.read_page(run_id=result.run_id)},
+            parameters={"selector": {"run_id": result.run_id, "kind": "output.accepted",
+                "output_name": "dataset", "scope_id": accepted[0].scope_id}}, timeout=10)
         intent, = notification.output("intents")
         assert intent["payload"]["run_id"] == result.run_id
         first = box.invoke("command.notification.deliver", inputs={"intent": intent}, timeout=10)

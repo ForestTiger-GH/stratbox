@@ -43,6 +43,7 @@ class Call:
     def __post_init__(self):
         object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
         object.__setattr__(self, 'parameters', freeze(self.parameters))
+        object.__setattr__(self, 'depends_on', tuple(self.depends_on))
 
 @dataclass(frozen=True, slots=True)
 class MapCall:
@@ -61,8 +62,11 @@ class MapCall:
     condition: Condition | None = None
 
     def __post_init__(self):
-        if self.max_items < 0 or self.window < 1 or self.completion not in {'all_selected', 'eligible_subset'}:
+        if (type(self.max_items) is not int or self.max_items < 0
+                or type(self.window) is not int or self.window < 1
+                or self.completion not in {'all_selected', 'eligible_subset'}):
             raise ValueError('graph.invalid_map')
+        object.__setattr__(self, 'items', freeze(self.items, _typed=True))
         object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
         object.__setattr__(self, 'parameters', freeze(self.parameters))
 
@@ -80,7 +84,10 @@ class RepeatUntil:
     condition: Condition | None = None
 
     def __post_init__(self):
-        if self.max_passes < 1: raise ValueError('graph.invalid_repeat_limit')
+        if type(self.max_passes) is not int or self.max_passes < 1:
+            raise ValueError('graph.invalid_repeat_limit')
+        object.__setattr__(self, 'initial', freeze(self.initial, _typed=True))
+        object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
 
 @dataclass(frozen=True, slots=True)
 class CollectCall:
@@ -92,7 +99,7 @@ class CollectCall:
     min_items: int = 0
 
     def __post_init__(self):
-        object.__setattr__(self, 'items', tuple(self.items))
+        object.__setattr__(self, 'items', freeze(tuple(self.items), _typed=True))
         object.__setattr__(self, 'optional_items', frozenset(self.optional_items))
         if type(self.min_items) is not int or not 0<=self.min_items<=len(self.items):
             raise ValueError('graph.invalid_collection_minimum')
@@ -110,6 +117,8 @@ class GraphBody:
     def __post_init__(self):
         object.__setattr__(self, 'steps', tuple(self.steps))
         object.__setattr__(self, 'outputs', freeze_bindings(self.outputs))
+        for name in ('required_checks', 'required_effects', 'required_completions'):
+            object.__setattr__(self, name, tuple(getattr(self, name)))
         names = tuple(step.step_id for step in self.steps)
         if len(names) != len(set(names)): raise ValueError('graph.duplicate_step')
         for roots in (self.required_checks, self.required_effects, self.required_completions):
@@ -129,3 +138,9 @@ class DispatchCall:
     required: bool = True
     condition: Condition | None = None
     selector_kind: str = 'material_format'
+
+    def __post_init__(self):
+        object.__setattr__(self, 'selector', freeze(self.selector, _typed=True))
+        object.__setattr__(self, 'alternatives', freeze(self.alternatives))
+        object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
+        object.__setattr__(self, 'parameters', freeze(self.parameters))

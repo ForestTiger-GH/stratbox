@@ -13,7 +13,7 @@ import pytest
 from openpyxl import Workbook, load_workbook
 
 from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
-from stratbox.core.commands.standard import observations_merge
+from stratbox.core.commands.observations import observations_merge
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.domains.cbr.common.escrow import required_indicators
 from stratbox.domains.cbr.methods.actions import escrow, observations, serialization

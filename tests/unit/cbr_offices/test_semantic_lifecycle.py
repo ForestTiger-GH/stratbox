@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from stratbox.core.commands.standard import product_render, view_prepare
+from stratbox.core.commands.products import product_render, view_prepare
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.shared.data.values import Material
 

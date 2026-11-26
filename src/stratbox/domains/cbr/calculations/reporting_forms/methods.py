@@ -138,7 +138,10 @@ def calculate(inputs, settings, context):
                 "subject_label": str(item["Банк"]),
                 **{name: original[name] for name in ("source_subject", "source_subject_namespace") if name in original}})
     missing = any(row["value"] is None for row in output)
-    assessment = Assessment("partial" if missing else "complete", ("cbr.form_model_missing_operands",) if missing else ())
+    assessment = Assessment('partial' if missing or not dataset.assessment.complete else 'complete',
+        tuple(dict.fromkeys((*dataset.assessment.findings,
+            *(('cbr.form_model_missing_operands',) if missing else ())))),
+        qualifications=dataset.assessment.qualifications | frozenset({'derived_coordinates'}))
     result = DerivedDataset(settings.series_id, tuple(output), {"calculation": "financial_formulas", "form": settings.code},
         dataset.issue_id, (*dataset.lineage, dataset.identity, ByteIdentity.of(formula_bytes)), assessment,
         source_uses=dataset.source_uses)

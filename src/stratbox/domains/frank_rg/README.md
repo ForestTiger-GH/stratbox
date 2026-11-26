@@ -1,17 +1,14 @@
-# Frank RG
+# Frank RG delivered reports
 
-The immutable `DOMAIN` in [domain.py](domain.py) owns fourteen continuing report
-identities and their direct specializations of standard actions.
+The [domain catalog](domain.py) binds continuing report identities to standard
+commands. [Common facts](common/) own naming rules and the delivered-file channel;
+[series specifications](series/) select the corresponding [methods](methods/).
 
-- [common](common/) owns exact name conventions and the delivered-file channel.
-- [series](series/) declares each report's action settings explicitly.
-- [methods](methods/) recognizes supplied inventories and interprets provided
-  workbook evidence under exact coordinate semantics.
+Acquisition uses caller-delivered files or supplied bytes. Numerical
+interpretation requires explicit reviewed `TableRules`; a report's filename
+date, week or Q marker establishes publication identity rather than economic meaning.
 
-The acquisition route consumes caller-delivered files or supplied material.
-Standard commands own listing, reading, decoding, calculations, retention,
-archive/maintenance effects and journal-based notifications. Publication names
-and Q/week labels do not establish numerical period, units or perimeter.
+Use the standard SDK route for listing, local reading, decoding, interpretation
+and validation. Archive and maintenance actions belong to common core.
 
-Reviewed built-in publisher cell maps remain a scientific obligation. Explicit
-typed `TableRules` bind supplied exact material to its reviewed semantic cells.
+See [the data route and layout prerequisites](../../../../docs/current-how/frank-rg-data-route.md).

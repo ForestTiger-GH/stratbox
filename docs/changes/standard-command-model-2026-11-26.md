@@ -18,4 +18,29 @@ Exact reference assets, financial model files and scientific state codecs are in
 
 Reviewed source methods and retained source excerpts provide the admitted scientific coverage. Complete financial equation models for CBR forms 134/803, actual cell mappings for the fourteen Frank RG series, three Minfin document mappings, additional Rosstat table mappings and canonical municipal crosswalks require reviewed source evidence. Generic decoding and metadata discovery do not establish those scientific interpretations.
 
+## Execution hardening in 0.25.1
+
+Optional observers receive committed facts through a bounded independent
+dispatcher. Admission bounds open and waiting runs, nested plan nodes, accounted
+plan memory and dynamic expansion before retaining work. Explicit service states
+close admission on failure and preserve accepted physical work during asynchronous
+draining. Results and effect receipts retain their actual outcomes.
+
+Notification consumption certifies contiguous scanned journal ranges, including
+filtered pages. Cursor progress, content evidence and new intents commit together.
+Subscriptions have explicit initial positions and immutable policies; channel
+delivery validates exact pending content and provider scope before handoff.
+Consumer acknowledgements gate journal pruning, while durable effect claims and
+archival preserve idempotency evidence across restarts and concurrent services.
+
+Technical handlers, graph strategies, admission, context/result ownership and
+optional observation now have separate internal modules. Strategies are declared
+by their capability definitions and enter the common compiler. Package README
+routes follow these responsibility boundaries.
+
+Numerical histories preserve their economic and demographic coordinates across
+validation, partitioning and calculations. Formula/ratio operands require
+compatible semantics; incomplete input assessments and partition-specific
+qualifications cannot be promoted into complete derived results.
+
 See [execution architecture](../architecture/capability-execution.md), [domain coverage](../current-how/independent-domain-data-routes.md), and [verification](../how/install-and-run-core.md).

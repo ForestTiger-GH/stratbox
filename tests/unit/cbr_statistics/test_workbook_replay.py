@@ -9,7 +9,9 @@ from zipfile import ZipFile
 import pytest
 from openpyxl import Workbook, load_workbook
 
-from stratbox.core.commands import standard
+from stratbox.core.commands import calculations as technical_calculations
+from stratbox.core.commands import decoding as technical_decoding
+from stratbox.core.commands import publications as technical_publications
 from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.domains.cbr.methods.actions.workbook_comparison import compare_workbooks, validate_workbook
@@ -72,7 +74,7 @@ def rewrite(data, fn):
 
 def flake(data=None,*,issue="capture-1",asset="main"):
     material=Material(data or workbook(),XLSX,SERIES,metadata={"issue_id":issue,"asset_id":asset})
-    physical=standard.workbook_decode({"material":material},None,context())["physical"]
+    physical=technical_decoding.workbook_decode({"material":material},None,context())["physical"]
     physical=replace(physical,material=material)
     return action("table.extract",{"physical":physical},issue_id=issue,asset_id=asset)["tables"]
 
@@ -85,8 +87,8 @@ def test_exact_numeric_lexeme_formulas_blank_and_merges_survive_source_replay():
     restored=replay(value)
     assert restored==value
     assert {item[0] for item in validate_workbook(restored)}=={"cbr.workbook.formula_cache_missing"}
-    physical=standard.workbook_decode({"material":value.material},None,context())["physical"]
-    readable=standard.publication_transcribe({"physical":physical},None,context())["publication"]
+    physical=technical_decoding.workbook_decode({"material":value.material},None,context())["physical"]
+    readable=technical_publications.publication_transcribe({"physical":physical},None,context())["publication"]
     assert "9007199254740993.00" in str(readable)
 
 
@@ -116,7 +118,7 @@ def selected():
 
 def test_computed_growth_has_distinct_measure_basis_and_exact_input_vector():
     dataset,items=selected()
-    result=standard.calculate_change({"observations":dataset},{"mode":"percent"},context())["dataset"]
+    result=technical_calculations.calculate_change({"observations":dataset},{"mode":"percent"},context())["dataset"]
     row,=result.rows
     assert row["value"] > Decimal(270) and row["value"] < Decimal(271)
     assert row["measure_kind"]=="rate" and row["metric"]!=items[0]["metric"]

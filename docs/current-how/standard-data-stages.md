@@ -64,6 +64,13 @@ evaluates explicitly related inputs, including different measures on one date.
 Ratios, accumulated-flow conversion and index transformations retain their
 separate semantic requirements.
 
+Default history coordinates retain currency, bank, portfolio, activity, legal
+kind, demographic axes and value basis alongside the usual metric, subject,
+unit and frequency. Accumulated flows are differenced within each compatible
+history. Ratios and formulas reject incompatible operand coordinates, including
+when the caller supplies a coarser join. A domain method owns any scientifically
+justified transformation across those semantic boundaries.
+
 Seasonal-adjustment estimation requires a compatible provider and explicit
 treatment. Independent estimates for all table rows establish unit coverage,
 not additive coherence. Indirect aggregation or reconciliation needs its own

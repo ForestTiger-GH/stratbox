@@ -109,7 +109,7 @@ def test_exact_supplied_rules_work_for_each_identity_without_builtin_layout_clai
     assert use.coordinate.issue_id == "2026-05-01"
     assert use.coordinate.material_identity == physical.material.identity
     assert use.qualification == "caller_supplied_exact_material_rules"
-    from stratbox.core.commands.standard import value_decode, value_encode
+    from stratbox.core.commands.serialization import value_decode, value_encode
     encoded = value_encode({"value": aligned}, None, context())["representation"]
     assert value_decode({"representation": encoded}, None, context())["value"] == aligned
 

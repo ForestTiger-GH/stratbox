@@ -1,11 +1,11 @@
 # OKVED2 classification
 
-`registry.read()` parses the `data` asset as CP1251, semicolon-separated CSV without a header, preserving code and section order. `read_meta()` and `read_structure()` expose separately declared source materials. All assets are checked against their manifest records before parsing.
+[Registry access](registry.py) reads verified classification, metadata and
+structure assets. `read()` preserves published code and section order;
+`read_meta()` and `read_structure()` expose their separate source contents.
 
-```python
-from stratbox.shared.reference.okved2 import registry
+Dataframe access requires pandas. The classification supplies an identifier
+vocabulary; a domain's selected industries, aggregation and economic perimeter
+remain separately declared.
 
-codes = registry.read()  # Requires pandas.
-```
-
-The classifier material alone does not establish a domain-specific industry selection, aggregation or published economic perimeter.
+See [reference loading and updates](../../../../../docs/current-how/reference-snapshots-and-update.md).

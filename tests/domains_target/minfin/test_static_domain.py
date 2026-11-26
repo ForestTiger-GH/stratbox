@@ -8,7 +8,8 @@ from types import SimpleNamespace
 import pytest
 from openpyxl import Workbook
 
-from stratbox.core.commands.standard import calculate_formula, document_decode, workbook_decode
+from stratbox.core.commands.calculations import calculate_formula
+from stratbox.core.commands.decoding import document_decode, workbook_decode
 from stratbox.domains.minfin.domain import DOMAIN
 from stratbox.domains.minfin.common.numbers import numeric_value
 from stratbox.domains.minfin.common.periods import normalize_period
@@ -183,7 +184,7 @@ def test_every_declared_workbook_series_uses_a_real_type_correct_semantic_route(
 
 
 def test_fiscal_dataset_portable_roundtrip_retains_exact_values_periods_and_provenance():
-    from stratbox.core.commands.standard import value_decode, value_encode
+    from stratbox.core.commands.serialization import value_decode, value_encode
     value, _ = budget_dataset()
     representation = value_encode({"value": value}, None, context())["representation"]
     replay = value_decode({"representation": representation}, None, context())["value"]
@@ -213,7 +214,7 @@ def test_formula_without_cache_is_unparsed_and_never_fabricated():
 
 
 def test_budget_change_compares_matching_accumulation_windows_and_rejects_different_months():
-    from stratbox.core.commands.standard import calculate_change
+    from stratbox.core.commands.calculations import calculate_change
     from stratbox.core.execution.service import ExecutionFailure
     from stratbox.domains.minfin.calculations.budget import BUDGET_CHANGES
     value, _ = budget_dataset()

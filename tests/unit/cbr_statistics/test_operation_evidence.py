@@ -16,7 +16,7 @@ def materials():
     material=Material(workbook(exact="123.00"),XLSX,SERIES,metadata={"issue_id":"capture-1","asset_id":"main"})
     tables=flake(material.data);dataset=interpret(tables);view=prepare(dataset)
     encoded=action("value.encode",{"value":dataset})["representation"]
-    from stratbox.core.commands.standard import workbook_decode
+    from stratbox.core.commands.decoding import workbook_decode
     physical=workbook_decode({"material":material},None,context())["physical"]
     physical=replace(physical,material=material)
     return {

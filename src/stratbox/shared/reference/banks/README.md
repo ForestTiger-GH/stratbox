@@ -1,30 +1,13 @@
-# Bank references
+# Bank identity and display references
 
-`registry.py` reads the packaged assets and creates the bank profile. It requires a Bank of Russia workbook plus distinct alias, default-selection and legacy-selection resources.
+[Official registry access](registry.py) resolves CBR registration identifiers from
+the packaged publisher workbook after content checks. Alias, display-selection
+and sorting policies are separate reference inputs. `read_official_registry()` returns official
+content; `read()` composes the curated display selection.
 
-`names.py` performs pure lexical bank-name normalization; its `normalize_bank_name(..., aliases=...)` variant applies a caller-supplied name policy. `registry.normalize_registered_bank(...)` loads the packaged alias policy explicitly.
+[Name normalization](names.py) supplies lexical comparison independently of
+registry loading. Use `resolve_bank_entity()` for registration identity and
+`resolve_registered_bank()` for traceable name-policy resolution.
 
-```python
-from stratbox.shared.reference.banks import registry
-from stratbox.shared.reference.banks.names import normalize_bank_spelling
-
-name = normalize_bank_spelling("ПАО Сбербанк")
-profile = registry.read()  # Requires dataframe/excel extras.
-```
-
-Update the manifest whenever resource bytes change. See the [reference update procedure](../../../../../docs/current-how/reference-snapshots-and-update.md).
-
-
-The official publisher workbook is independently available through
-`registry.read_official_registry(inputs=...)`. A curated display/selection
-profile is built separately through `registry.build_bank_profile(...)`
-or composed by `registry.read(inputs=...)`. Policy-based display returns
-a string through `normalize_registered_bank(inputs=...)`, or a traceable
-`BankNameResolution` with reference identity through
-`resolve_registered_bank(inputs=...)`.
-
-`registry.resolve_bank_entity(regn, inputs=...)` resolves the CBR registration
-identifier from the official workbook alone, without guessing entity
-identity from a display alias. It returns `matched`, `unmatched` or
-`ambiguous` with official reference snapshot identity. The four asset
-roles carry separate publisher/curator and origin-kind declarations.
+Workbook and dataframe access require the corresponding optional dependencies.
+See [reference loading and updates](../../../../../docs/current-how/reference-snapshots-and-update.md).

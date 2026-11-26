@@ -84,7 +84,7 @@ def test_kep2_semantics_preserve_all_frequencies_raw_tokens_and_row_decisions(ph
     assert use.qualification == "domain_validated"
     aligned = tables.align({"dataset": dataset}, RULES, context())["dataset"]
     assert aligned.source_uses == dataset.source_uses
-    from stratbox.core.commands.standard import value_decode, value_encode
+    from stratbox.core.commands.serialization import value_decode, value_encode
     retained = value_encode({"value": aligned}, None, context())["representation"]
     assert value_decode({"representation": retained}, None, context())["value"] == aligned
     view = products.monthly({"dataset": dataset}, None, context())["view"]

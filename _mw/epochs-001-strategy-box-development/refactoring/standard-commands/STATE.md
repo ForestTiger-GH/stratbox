@@ -1,38 +1,43 @@
-# Standard commands implementation
+# Standard command execution and storage acceptance
 
-The standard technical model and reviewed scientific routes are implemented on
-main. Callable definitions and plans belong to capabilities; technical execution,
-resources, effects, journals and dispatch state belong to core; each domain root
-links explicit source-series, calculation and product specifications.
+Release 0.25.1 implements one capability compiler and execution service with
+explicit immutable domain catalogs and source-independent command contracts.
+Admission, context/result ownership, optional observer dispatch, durable effects
+and typed journal consumption have separate internal owners.
 
-## Verified behavior
+## Verified execution and persistence
 
-The complete local regression run passed 979 tests, with seven optional historical
-or performance cases skipped. Additional distribution checks passed twelve cases,
-including source-archive directory handling and rejection of linked executables.
-Structural release admission, strict internal imports, maintained links and
-Python 3.10 syntax checks pass. Runtime tests ran under Python 3.12.
+All 1152 collected cases are covered by the final local verification:
+1145 passed, 7 optional cases skipped, zero failures and errors. Four
+disjoint groups cover the complete suite; targeted storage-admission checks cover
+unindexed effect evidence. Exact node coverage and group results are recorded in
+the acceptance report. Tests ran under Python 3.12.14; Python 3.10
+syntax, strict imports, release integrity and maintained links also pass.
 
-Wheel and source archives contain the exact 455 admitted package members,
-including 22 data resources. Isolated installation and direct ZIP imports pass
-without optional numerical engines for metadata discovery and reference checks.
-The distribution report records these separate checks.
+Wheel and source archives contain the exact 487 admitted package members,
+including 22 data resources. Isolated installation and direct ZIP imports pass.
+The distribution report records those separate checks. Package navigation has
+39 responsibility-oriented README routes.
 
-Reviewed cases cover direct and composed calls, frozen independent targets,
-source-qualified and joint-coverage acceptance, exact portable evidence, bounded
-multi-run scheduling, independent shared consumers, early value release,
-streamed original retention, unknown-effect reconciliation after restart,
-immutable release members, factual journal cursors and acknowledged notification
-intents without feedback loops. SORS retains global feasibility and independently
-callable restoration stages.
+Verified cases include bounded queued/open admission, immutable scientific
+snapshots, stuck/reentrant observers, asynchronous draining, coordinator failure
+and physical effect truth, one accepted fact per command output, contiguous
+notification consumption, exact channel scope and intent checks, crash-window
+cursor recovery, consumer-safe journal archival/pruning, and atomic effect claims
+across two services. Numerical grouping retains complete standard history axes;
+incomplete input findings survive derived calculations.
 
-## Scientific qualification
+## Operating and scientific qualification
 
-Structural implementation and verified retained material do not establish every
-publisher layout. Financial equation models for forms 134/803, actual mappings
-for the fourteen Frank RG series, three Minfin document mappings, additional
-Rosstat tables and canonical municipal crosswalks require reviewed evidence.
-Historical source variants outside the retained fixtures remain explicitly
-qualified or unsupported. Optional seasonal, document conversion and database
-providers must satisfy their declared interfaces; their presence alone does not
-establish scientific validity.
+Accounted payload limits are separate from process RSS. Backend calls which
+ignore cooperative checkpoints retain their resources until they return.
+Optional observer delivery can lose live events under pressure; durable journal
+coverage supports independent recovery. Unknown external effects remain pinned
+until reconciliation. Compact effect identities and cold receipts preserve
+idempotency; the host owns maintenance and archive storage.
+
+Reviewed scientific routes remain qualified by their admitted material. Complete
+models for forms 134/803, publisher mappings for the fourteen Frank RG series,
+three Minfin document maps, additional Rosstat tables and canonical municipal
+crosswalks require reviewed evidence. Optional provider availability alone does
+not establish scientific validity.

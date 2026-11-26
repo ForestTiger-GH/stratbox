@@ -30,7 +30,7 @@ def counted(inputs, settings, context):
 
 
 def decode_counted(inputs, settings, context):
-    from stratbox.core.commands.standard import workbook_decode
+    from stratbox.core.commands.decoding import workbook_decode
     with LOCK: COUNTS["decode"] = COUNTS.get("decode", 0) + 1
     sleep(.02)
     return workbook_decode(inputs, settings, context)
@@ -148,7 +148,7 @@ def test_effect_identity_prevents_blind_retry_after_lost_reply():
 
 
 def test_numeric_precision_and_formula_contracts():
-    from stratbox.core.commands.standard import calculate_change, calculate_formula, calculate_flow
+    from stratbox.core.commands.calculations import calculate_change, calculate_formula, calculate_flow
     class Context:
         parameters = {}
     common = dict(metric="balance", subject="RU", unit="RUB", scale=1, perimeter="all", measure_kind="stock", value_status="reported")

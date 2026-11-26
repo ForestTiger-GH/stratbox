@@ -11,7 +11,7 @@ import pytest
 
 from stratbox.capabilities.catalog.domains import DomainCatalog
 from stratbox.capabilities.model.targets import SeriesTarget
-from stratbox.core.commands.standard import value_decode
+from stratbox.core.commands.serialization import value_decode
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.sdk import StrategyBox
 from stratbox.shared.data.values import Material, SourceDataset
@@ -39,7 +39,7 @@ def test_shared_codec_replays_evidence_across_a_fresh_process(tmp_path):
     roundtrip(path, dataset)
     script = """
 import json, sys
-from stratbox.core.commands.standard import value_decode
+from stratbox.core.commands.serialization import value_decode
 dataset = value_decode({'representation': open(sys.argv[1], 'rb').read()}, None, None)['value']
 print(json.dumps({'identity': dataset.identity, 'captured': dataset.semantics['captured_on'],
     'official': dataset.semantics['official_as_of'], 'periods': sorted({row['period'] for row in dataset.rows})}))

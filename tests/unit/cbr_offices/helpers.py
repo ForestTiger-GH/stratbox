@@ -6,7 +6,8 @@ from types import SimpleNamespace
 
 from openpyxl import Workbook
 
-from stratbox.core.commands.standard import observations_compare, value_decode, value_encode
+from stratbox.core.commands.calculations import observations_compare
+from stratbox.core.commands.serialization import value_decode, value_encode
 from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.shared.data.values import Material, WorkbookEvidence

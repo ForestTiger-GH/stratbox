@@ -38,6 +38,12 @@ the same preparation and run. `box.submit(...)` returns a handle with result,
 status and cancellation controls. A caller-authored root definition can be
 prepared against a catalog containing its dependencies.
 
+`run()` and `invoke()` interpret `timeout` as an execution deadline and wait for
+physical settlement. For an independently bounded caller wait, use
+`box.submit(...).result(timeout=...)` and retain the handle. Asynchronous
+`box.close(wait=False)` starts draining; a subsequent `box.close(wait=True)`
+waits for the same service to finish.
+
 The target can identify a source series, calculation model or product. Input
 values are supplied explicitly. Unsupported layouts and source contradictions
 are diagnosed; a parser does not silently substitute other material.

@@ -66,6 +66,12 @@ Logical operation/scenario/cascade scopes survive lowering into physical work.
 Bounded maps, format dispatch and scientific iteration enter the same admission
 path as initial work. Ordinary dependency cycles remain invalid.
 
+A definition can declare a pure `recipe` method to specialize its graph from
+supplied entrances and target facts. This reference belongs to the definition;
+the compiler has no growing switch over operation identifiers. The strategy
+preserves the definition's identity and callable kind. Command parameters which
+reference earlier outputs also establish dependency edges.
+
 ## 4. Direct technical execution
 
 The execution service schedules actual commands without translating them into
@@ -76,6 +82,11 @@ independent source uses, acceptance, cancellation and outputs.
 An accepted dataset, a completed purpose and a confirmed storage/delivery effect
 are different facts. Unknown effects require reconciliation. Journals retain
 qualified facts, and notification subscriptions consume those facts independently.
+
+The coordinator owns scheduling. Admission accounting, owned-value operations,
+optional observer dispatch and durable effect persistence have separate internal
+owners. Technical command handlers are grouped by their functional boundary
+under `core/commands`; all use the same execution context and effect protocol.
 
 Only Stratbox has a release version. Rules, references and material are pinned
 by exact content/build identities and factual dates, not independent component

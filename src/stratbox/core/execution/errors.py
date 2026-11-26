@@ -27,3 +27,9 @@ class OperationFailure(RuntimeError):
         self.diagnostic = diagnostic if isinstance(diagnostic, Diagnostic) else Diagnostic(str(diagnostic))
         self.code, self.outcome = self.diagnostic.code, outcome
         super().__init__(self.code)
+
+
+class ExecutionFailure(OperationFailure):
+    def __init__(self, code, *, outcome="failed"):
+        self.code, self.outcome = str(code), outcome
+        super().__init__(self.code, outcome=outcome)

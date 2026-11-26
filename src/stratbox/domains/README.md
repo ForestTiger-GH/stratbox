@@ -1,13 +1,16 @@
-# Statistical domains
+# Publisher and scientific domains
 
-Each publisher exports one immutable `DOMAIN` from `domain.py`. Its continuing
-series, calculation and product records map standard command IDs directly to
-methods and narrow settings. Shared addresses, vocabularies and rules are authored
-once under the domain's `common` owner.
+Each domain exports one immutable `DOMAIN`. Continuing series, calculations and
+products bind standard command IDs to methods, settings and applicability.
+Shared source facts and vocabularies are authored once within that domain.
 
-The fixed domain manifest loads CBR, FNS, Minfin, Frank RG and Rosstat metadata
-without importing optional numerical or decoding backends. The standard graphs
-remain outside domains. Scientific methods consume explicit physical or numerical
-evidence and return qualified values; execution, saving and delivery belong to core.
+Choose [CBR](cbr/) for Bank of Russia statistics, [FNS](fns/) for tax-service
+publications, [Minfin](minfin/) for fiscal data, [Frank RG](frank_rg/) for delivered
+reports, or [Rosstat](rosstat/) for official statistical publications.
 
-[Independent domain routes](../../../docs/current-how/independent-domain-data-routes.md)
+The [domain catalog](../capabilities/catalog/domains.py) loads these declarations.
+[Capabilities](../capabilities/) own reusable graphs, while [core](../core/)
+executes them. Methods consume supplied physical or numerical evidence and return
+qualified values.
+
+See [domain routes and scientific coverage](../../../docs/current-how/independent-domain-data-routes.md).

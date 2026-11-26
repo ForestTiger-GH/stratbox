@@ -1,6 +1,5 @@
 """Content identities of trusted callable code and its reachable helpers."""
-from types import CodeType, FunctionType, ModuleType
-import inspect
+from types import BuiltinFunctionType, CodeType, FunctionType, ModuleType
 
 from stratbox.shared.data.values import fingerprint
 
@@ -13,6 +12,14 @@ def _code(code):
 
 def code_identity(method):
     method = method.resolve() if hasattr(method, "resolve") else method
+    # A callable object's class name does not identify its captured state.
+    # The caller disables reuse when an exact implementation identity is absent.
+    # This covers bound methods and functools.partial as well as callable objects.
+    if not isinstance(method, FunctionType):
+        if (not isinstance(method, BuiltinFunctionType)
+                or getattr(method, '__self__', None) is not None
+                and not isinstance(method.__self__, ModuleType)):
+            raise TypeError('reuse.opaque_callable_state')
     root = getattr(method, "__module__", "").split(".")[0]
     seen, records = set(), []
     def visit(function):

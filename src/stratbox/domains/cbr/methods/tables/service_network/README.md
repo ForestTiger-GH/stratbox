@@ -1,3 +1,11 @@
-# Scientific interpretation and calculation
+# Office-network source tables
 
-This package owns source-aware scientific methods and typed evidence. Standard callable definitions and execution remain outside the domain. The [domain catalog](../../../domain.py) binds these methods through explicit command specifications.
+Bank-office HTML and territorial-office workbooks have separate source geometry
+and observation rules. Capture dates, official reference dates, selected scope
+and unresolved formula or field evidence remain distinct.
+
+The [network action adapter](../../actions/network.py) consumes already decoded
+physical evidence and returns qualified source datasets. Caller-supplied mapping
+belongs to [alignment](../../alignment/); storage and replay use common commands.
+
+See [office-network semantics](../../../../../../../docs/current-how/cbr-service-network.md).

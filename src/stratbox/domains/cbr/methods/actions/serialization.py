@@ -46,7 +46,7 @@ def _validate(value):
 
 def encode(inputs, settings, context):
     _validate(inputs["value"])
-    from stratbox.core.commands.standard import encode_value
+    from stratbox.core.commands.serialization import encode_value
     options = {"max_bytes": context.parameters["max_bytes"]} if "max_bytes" in context.parameters else {}
     return {"representation": encode_value(inputs["value"], context=context, admitted_types=ADMITTED_TYPES, **options)}
 

@@ -9,24 +9,23 @@ from collections import deque, OrderedDict
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field, fields, is_dataclass, replace
 from datetime import datetime, timezone
-from threading import Condition, Event, RLock, Thread
+from threading import Condition, Event, RLock, Thread, current_thread, local
 from time import monotonic
 from types import MappingProxyType
 from typing import Mapping
 from uuid import uuid4
-import copy
-import sys
 
 from stratbox.shared.data.values import fingerprint
-from .errors import OperationFailure, error_code
+from .errors import OperationFailure, ExecutionFailure, error_code
+from .owned_values import _size, _cells, _isolate, _value_keys
+from .context import CommandContext
+from .results import RunHandle, RunResult
+from .admission import inspect_plan, snapshot_plan, replace_record, AdmissionRejected
+from .observers import ObserverDispatcher
 from stratbox.core.observability.journal.stream import JournalFact, MemoryJournal
 from stratbox.core.limits import ExecutionBudget, BudgetMeter
 
 
-class ExecutionFailure(OperationFailure):
-    def __init__(self, code, *, outcome="failed"):
-        self.code, self.outcome = str(code), outcome
-        super().__init__(self.code, outcome=outcome)
 
 
 @dataclass(frozen=True)
@@ -43,10 +42,22 @@ class ExecutionSettings:
     run_limits: ExecutionBudget = field(default_factory=ExecutionBudget)
     effect_capacity: int = 10000
     max_accepted_values: int = 10000
+    max_open_runs: int = 128
+    max_pending_runs: int = 64
+    max_plan_nodes: int = 10000
+    max_plan_bytes: int = 64 * 1024 * 1024
+    max_admitted_nodes: int = 100000
+    max_admitted_plan_bytes: int = 128 * 1024 * 1024
+    observer_queue_capacity: int = 256
+    observer_queue_bytes: int = 4 * 1024 * 1024
+    observer_diagnostic_capacity: int = 256
 
     def __post_init__(self):
         if any(type(value) is not int or value < 1 for value in (
-                self.max_workers, self.active_runs, self.max_retained_bytes, self.event_capacity, self.effect_capacity, self.max_accepted_values)):
+                self.max_workers, self.active_runs, self.max_retained_bytes, self.event_capacity, self.effect_capacity, self.max_accepted_values,
+                self.max_open_runs,self.max_pending_runs,self.max_plan_nodes,self.max_plan_bytes,
+                self.max_admitted_nodes,self.max_admitted_plan_bytes,self.observer_queue_capacity,
+                self.observer_queue_bytes,self.observer_diagnostic_capacity)):
             raise ValueError("execution.invalid_settings")
         if any(type(n) is not int or n < 1 for n in self.capacities.values()):
             raise ValueError("execution.invalid_capacity")
@@ -108,12 +119,6 @@ def _identity(value):
     return fingerprint(value)
 
 
-def _value_keys(values):
-    keys = set()
-    for value in values:
-        try: keys.add(fingerprint(value))
-        except (ValueError,TypeError): pass
-    return keys
 
 
 def _sources(value):
@@ -145,70 +150,6 @@ def _validate(port, value):
         raise ExecutionFailure("acceptance.value_type_mismatch")
 
 
-def _size(value, seen=None):
-    seen = set() if seen is None else seen
-    if id(value) in seen:
-        return 0
-    seen.add(id(value))
-    if isinstance(value, bytes):
-        return len(value)
-    data = getattr(value, "data", None)
-    if isinstance(data, bytes):
-        return _size(data, seen)
-    if isinstance(value, Mapping):
-        return sys.getsizeof(value) + sum(_size(k, seen) + _size(x, seen) for k, x in value.items())
-    if isinstance(value, (tuple, list)):
-        return sys.getsizeof(value) + sum(_size(x, seen) for x in value)
-    if hasattr(value, "memory_usage"):
-        try:
-            return int(value.memory_usage(deep=True).sum())
-        except Exception:
-            pass
-    if is_dataclass(value):
-        return sys.getsizeof(value) + sum(_size(getattr(value, item.name), seen) for item in fields(value))
-    return sys.getsizeof(value)
-
-
-def _cells(value):
-    """Count actual supplied semantic cells, without inferring Cartesian coverage."""
-    from stratbox.shared.data.values import SourceDataset, TableEvidenceSet, WorkbookEvidence
-    from stratbox.shared.data.workbook_cells import WorkbookCells, WorkbookCell
-    if isinstance(value, WorkbookCell): return 1
-    if isinstance(value, SourceDataset): return sum(len(row) for row in value.rows)
-    if isinstance(value, WorkbookEvidence): return _cells(value.workbook)
-    if isinstance(value, WorkbookCells): return sum(len(sheet.cells) for sheet in value.sheets)
-    if isinstance(value, TableEvidenceSet): return sum(_cells(item) for item in value.tables)
-    if isinstance(value, Mapping): return sum(_cells(item) for item in value.values())
-    if isinstance(value, (tuple, list)):
-        return sum(_cells(item) if isinstance(item, (Mapping, tuple, list)) or is_dataclass(item) or hasattr(item,"shape") else 1 for item in value)
-    if hasattr(value, "shape") and len(value.shape) == 2: return int(value.shape[0] * value.shape[1])
-    if is_dataclass(value): return sum(_cells(getattr(value, field.name)) for field in fields(value))
-    return 0
-
-
-def _isolate(value, memo=None):
-    """Give mutable tabular payloads a private owner without copying immutable bytes."""
-    memo = {} if memo is None else memo
-    if id(value) in memo: return memo[id(value)]
-    if hasattr(value, "memory_usage") and hasattr(value, "copy"):
-        result = value.copy(deep=True); memo[id(value)] = result; return result
-    if type(value).__module__.startswith("numpy") and type(value).__name__ == "ndarray":
-        result = value.copy(order="K"); memo[id(value)] = result; return result
-    if isinstance(value, Mapping):
-        result = {}; memo[id(value)] = result
-        result.update({key: _isolate(item, memo) for key, item in value.items()}); return result
-    if isinstance(value, tuple):
-        result = tuple(_isolate(item, memo) for item in value); memo[id(value)] = result; return result
-    if isinstance(value, list):
-        result = []; memo[id(value)] = result
-        result.extend(_isolate(item, memo) for item in value); return result
-    if is_dataclass(value):
-        updates = {item.name: _isolate(getattr(value, item.name), memo) for item in fields(value)}
-        try:
-            result = replace(value, **updates); memo[id(value)] = result; return result
-        except (TypeError, ValueError):
-            return copy.deepcopy(value)
-    return value
 
 
 @dataclass
@@ -249,6 +190,8 @@ class _Run:
     root_ids: tuple[str, ...] = ()
     journal_failed: bool = False
     started_work: bool = False
+    admission_bytes: int = 0
+    admission_nodes: int = 0
 
 
 @dataclass(frozen=True)
@@ -259,174 +202,14 @@ class _TaskSummary:
     origin: str = "data"
 
 
-class _LockedMeter:
-    """A single cumulative meter shared by parallel producers of one run."""
-    def __init__(self, meter, lock):
-        self._meter, self._lock = meter, lock
-
-    def __getattr__(self, name):
-        value = getattr(self._meter, name)
-        if not callable(value): return value
-        def locked(*args, **kwargs):
-            with self._lock:
-                return value(*args, **kwargs)
-        return locked
 
 
-class _OutputView(Mapping):
-    def __init__(self, result): self._result = result
-    def __iter__(self): return iter(self._result._outputs)
-    def __len__(self): return len(self._result._outputs)
-    def __getitem__(self, name):
-        if name not in self._result._outputs: raise KeyError(name)
-        return self._result.output(name)
 
 
-class RunResult:
-    def __init__(self, service, run, outcome, outputs, diagnostics, scopes, retention_charge):
-        self._service, self._run = service, run
-        self.run_id, self.outcome = run.run_id, outcome
-        self._outputs, self.scopes = _isolate(dict(outputs)), MappingProxyType(dict(scopes))
-        self.outputs = _OutputView(self)
-        self.diagnostics, self._closed = tuple(diagnostics), False
-        self._retention_charge = retention_charge
-        self.effects = MappingProxyType({key: service.lookup_effect(key) for key in run.effect_ids})
-        self.resources = MappingProxyType(dict(run.meter.usage()))
-        self._accepted_keys = _value_keys(outputs.values())
-
-    def output(self, name="value"):
-        if self._closed:
-            raise ExecutionFailure("value.result_closed")
-        if name not in self._outputs and name == "value" and len(self._outputs) == 1:
-            return _isolate(next(iter(self._outputs.values())))
-        return _isolate(self._outputs[name])
-
-    def close(self):
-        if not self._closed:
-            with self._service._condition:
-                self._service._retained_bytes -= self._retention_charge
-                self._outputs = {}
-                for task in self._run.tasks.values():
-                    task.outputs.clear()
-                    task.accepted_keys.clear()
-                self._closed = True
-                self._accepted_keys.clear()
-                self._service._runs.pop(self.run_id, None)
-                try: self._service._order.remove(self.run_id)
-                except ValueError: pass
-                self._service._condition.notify_all()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        self.close()
 
 
-class RunHandle:
-    def __init__(self, service, run):
-        self.service, self._run, self.run_id = service, run, run.run_id
-
-    def result(self, timeout=None):
-        return self._run.future.result(timeout=timeout)
-
-    def done(self):
-        return self._run.future.done()
-
-    def cancel(self, scope_id=None):
-        with self.service._condition:
-            if self.done():
-                return False
-            if scope_id is None:
-                self._run.cancel.set()
-            else:
-                matches = [task for task in self._run.tasks.values()
-                    if task.spec.scope_id == scope_id or task.spec.scope_id.startswith(scope_id + "/")]
-                if not matches: raise ExecutionFailure("execution.unknown_scope")
-                for task in matches:
-                    task.cancelled = True
-                    if task.state in {"pending", "expanding"}:
-                        task.state = "cancelled"
-            self.service._condition.notify_all()
-            return True
-
-    def snapshot(self):
-        with self.service._condition:
-            return {"run_id": self.run_id, "tasks": {k: t.state for k, t in self._run.tasks.items()},
-                    "scopes": dict(self._run.scopes), "done": self.done()}
 
 
-class CommandContext:
-    def __init__(self, service, run, task, inputs):
-        self.service, self.run, self.task = service, run, task
-        self.run_id, self.task_id = run.run_id, task.spec.task_id
-        self.parameters = _isolate(service._resolve(run, task.spec.command.parameters))
-        self.target = task.spec.command.target if task.spec.command.target is not None else getattr(run.plan, "target", None)
-        self.inputs = inputs
-        self.evidence = []
-        self.effect_receipts = {}
-        self._active_effects = set()
-        self.budget = _LockedMeter(run.meter, service._condition)
-
-    def spend(self, resource, amount):
-        self.budget.charge(resource, amount)
-
-    def remaining_seconds(self):
-        self.checkpoint()
-        consumers = [(run, task) for run in self.service._runs.values() for task in run.tasks.values()
-            if task is self.task or self.task.work_key is not None and task.work_key == self.task.work_key]
-        deadlines = [float("inf") if run.deadline is None else max(0.0, run.deadline-monotonic())
-            for run, task in consumers if not run.cancel.is_set() and not task.cancelled]
-        return max(deadlines, default=0.0)
-
-    def accepted_input(self, name):
-        key = fingerprint(self.inputs[name])
-        with self.service._condition:
-            record = self.service._accepted.get(key)
-            if record is not None: self.service._accepted.move_to_end(key)
-            return record
-
-    def provider(self, role):
-        declared = self.task.spec.command.required_providers | self.task.spec.command.optional_providers
-        if role not in declared: raise ExecutionFailure("provider.undeclared:" + role)
-        return self.service.resolve_provider(role)
-
-    def checkpoint(self):
-        self.budget.checkpoint()
-        if self.run.journal_failed: raise ExecutionFailure("journal.publication_failed")
-        if self.run.deadline is not None and monotonic() >= self.run.deadline and not self.service._producer_needed(self.task):
-            raise ExecutionFailure("execution.deadline", outcome="cancelled")
-        # A shared producer is cancelled only when all its consumers detach.
-        if (self.run.cancel.is_set() or self.task.cancelled) and not self.service._producer_needed(self.task):
-            raise ExecutionFailure("execution.cancelled", outcome="cancelled")
-
-    def check_cancelled(self):
-        self.checkpoint()
-
-    def use(self, evidence):
-        self.evidence.append(evidence)
-
-    def effect(self, kind, effect_id, action, *, reconcile=None, resource=None, intent=None):
-        if kind not in self.task.spec.command.effects:
-            raise ExecutionFailure("effect.undeclared:" + kind)
-        self.run.effect_ids.add(effect_id)
-        self._active_effects.add(effect_id)
-        try:
-            receipt = self.service._effect(self, kind, effect_id, action, reconcile, resource, intent)
-        finally:
-            self._active_effects.discard(effect_id)
-        self.effect_receipts[effect_id] = receipt
-        return receipt
-
-    def update_effect_intent(self, effect_id, intent):
-        """Seal newly observed exact bytes before the current effect commits them."""
-        if effect_id not in self._active_effects: raise ExecutionFailure("effect.inactive_authority")
-        with self.service._condition:
-            self.checkpoint()
-            previous = self.service.lookup_effect(effect_id)
-            if previous is None or previous.status != "unknown": raise ExecutionFailure("effect.intent_already_settled")
-            self.service._save_effect(replace(previous, intent=intent))
-            self.service._fact(self.run, "effect.intent_updated", self.task, effect_id=effect_id, effect_kind=previous.kind)
 
 
 class ExecutionService:
@@ -436,11 +219,19 @@ class ExecutionService:
         from stratbox.core.notifications import MemoryNotificationState
         self.providers.setdefault("notification_state", MemoryNotificationState())
         self.journal, self.observer = journal or MemoryJournal(self.settings.event_capacity), observer
+        if observer is not None and not callable(observer): raise TypeError("observation.callback_required")
         self._condition = Condition(RLock())
+        self._state, self._failure = "running", None
+        self._closed_event, self._worker_local = Event(), local()
+        self._admitting = self._plan_bytes = self._plan_nodes = 0
         self._pool = ThreadPoolExecutor(max_workers=self.settings.max_workers, thread_name_prefix="stratbox")
         self._runs, self._order, self._used = {}, deque(), {}
-        self._work, self._completed, self._effects, self._accepted = {}, {}, {}, OrderedDict()
-        self._retained_bytes, self._cache_bytes, self._closing, self._stopped = 0, 0, False, False
+        self._work, self._completed, self._effects, self._accepted = {}, {}, OrderedDict(), OrderedDict()
+        self._reconciling_effects = set()
+        self._retained_bytes, self._cache_bytes = 0, 0
+        self._observer_dispatcher = None if observer is None else ObserverDispatcher(observer,
+            capacity=self.settings.observer_queue_capacity,byte_capacity=self.settings.observer_queue_bytes,
+            diagnostic_capacity=self.settings.observer_diagnostic_capacity)
         self._next_ticket = 0
         self._thread = Thread(target=self._coordinate, name="stratbox-coordinator", daemon=True)
         self._thread.start()
@@ -468,20 +259,42 @@ class ExecutionService:
             run.journal_failed = True
             run.diagnostics.append("journal.publication_failed")
             return None
-        if self.observer:
-            try:
-                self.observer(fact)
-            except Exception:
-                run.diagnostics.append("observation.optional_sink_failed")
+        if self._observer_dispatcher is not None: self._observer_dispatcher.offer(fact)
         return fact
 
-    def _task_origin(self, task):
+    @property
+    def state(self):
+        with self._condition: return self._state
+
+    @property
+    def failure(self):
+        with self._condition: return self._failure
+
+    @property
+    def _closing(self): return self._state != "running"
+
+    @property
+    def _stopped(self): return self._closed_event.is_set()
+
+    def observer_status(self):
+        return None if self._observer_dispatcher is None else self._observer_dispatcher.status()
+
+    def wait_closed(self, timeout=None):
+        if current_thread() is self._thread or getattr(self._worker_local,"active",False):
+            raise ExecutionFailure("execution.reentrant_wait")
+        return self._closed_event.wait(timeout)
+
+    def _task_origin(self, task, memo=None):
+        memo = {} if memo is None else memo
+        if id(task.spec) in memo: return memo[id(task.spec)]
         command = getattr(task.spec,"command",None)
         if command is None:
             templates = (getattr(task.spec,"template",None),)
             if getattr(task.spec,"kind",None) == "dispatch": templates = tuple(task.spec.alternatives.values())
             children = [child for template in templates if template is not None for child in template.tasks]
-            if children and all(self._task_origin(_Task(child)) == "notification" for child in children): return "notification"
+            if children and all(self._task_origin(_Task(child),memo) == "notification" for child in children):
+                memo[id(task.spec)] = "notification"
+                return "notification"
             return getattr(task.spec,"origin","data")
         return "notification" if command.effects and command.effects <= {"notification.state","notification.deliver"} else "data"
 
@@ -489,40 +302,90 @@ class ExecutionService:
         tasks = [run.tasks[key] for key in scope.required_tasks if key in run.tasks]
         return "notification" if tasks and all(self._task_origin(task) == "notification" for task in tasks) else "data"
 
+    def _check_accepting(self):
+        if self._state == "failed": raise ExecutionFailure("execution.service_failed")
+        if self._state != "running": raise ExecutionFailure("execution.service_closed")
+
+    def _reserve_admission(self,nodes,size,run=None):
+        if run is not None and run.admission_nodes+nodes > self.settings.max_plan_nodes:
+            raise ExecutionFailure("admission.plan_nodes")
+        if run is not None and run.admission_bytes+size > self.settings.max_plan_bytes:
+            raise ExecutionFailure("admission.plan_bytes")
+        if self._plan_nodes+nodes > self.settings.max_admitted_nodes: raise ExecutionFailure("admission.total_nodes")
+        if self._plan_bytes+size > self.settings.max_admitted_plan_bytes: raise ExecutionFailure("admission.total_plan_bytes")
+        self._plan_nodes += nodes; self._plan_bytes += size
+        if run is not None:
+            run.admission_nodes += nodes; run.admission_bytes += size
+
+    def _release_admission(self,run):
+        self._plan_nodes -= run.admission_nodes; self._plan_bytes -= run.admission_bytes
+        run.admission_nodes = run.admission_bytes = 0
+
+    def _compact_admission(self,run):
+        nodes = min(run.admission_nodes,len(run.tasks)+len(run.scopes)+1)
+        size = min(run.admission_bytes,_size((run.tasks,run.scopes,run.diagnostics)))
+        self._plan_nodes -= run.admission_nodes-nodes; self._plan_bytes -= run.admission_bytes-size
+        run.admission_nodes,run.admission_bytes = nodes,size
+
     def submit(self, plan, *, timeout=None):
         from math import isfinite
-        if timeout is not None and (type(timeout) not in (int, float) or not isfinite(timeout) or timeout < 0):
+        if timeout is not None and (type(timeout) not in (int,float) or not isfinite(timeout) or timeout < 0):
             raise ValueError("execution.invalid_timeout")
         with self._condition:
-            if self._closing:
-                raise ExecutionFailure("execution.service_closed")
-            ids = [task.task_id for task in plan.tasks]
-            if len(ids) != len(set(ids)):
-                raise ExecutionFailure("plan.duplicate_task")
-            run = _Run(uuid4().hex, plan, {task.task_id: _Task(task) for task in plan.tasks},
-                       deadline=None if timeout is None else monotonic() + timeout)
-            run.meter = BudgetMeter(self.settings.run_limits)
-            for task in run.tasks.values():
-                if set(getattr(task.spec, "deps", ())) - run.tasks.keys():
-                    raise ExecutionFailure("plan.unknown_dependency")
-                for resource, amount in self._claims(task).items():
-                    if amount > self._capacity(resource):
-                        raise ExecutionFailure("resource.impossible_claim:" + resource)
-            from graphlib import TopologicalSorter, CycleError
-            try:
-                tuple(TopologicalSorter({key: set(getattr(task.spec, "deps", ())) for key, task in run.tasks.items()}).static_order())
-            except CycleError:
-                raise ExecutionFailure("plan.cycle") from None
-            self._fact(run, "run.admitted")
-            run.root_ids = tuple(ids)
-            run.plan = replace(plan, tasks=())
-            self._runs[run.run_id] = run
-            self._order.append(run.run_id)
-            self._condition.notify_all()
-            return RunHandle(self, run)
+            self._check_accepting()
+            if len(self._runs)+self._admitting >= self.settings.max_open_runs: raise ExecutionFailure("admission.open_runs")
+            pending = sum(not run.started and not run.future.done() for run in self._runs.values())
+            if pending+self._admitting >= self.settings.max_pending_runs: raise ExecutionFailure("admission.pending_runs")
+            self._admitting += 1
+        reservation = None
+        try:
+            footprint = inspect_plan(plan,max_nodes=self.settings.max_plan_nodes,max_bytes=self.settings.max_plan_bytes)
+            with self._condition:
+                self._check_accepting()
+                self._reserve_admission(footprint.nodes,footprint.bytes)
+                reservation = footprint
+            # No service lock is held while scientific literals are copied.
+            owned = snapshot_plan(plan)
+            actual = inspect_plan(owned,max_nodes=self.settings.max_plan_nodes,max_bytes=self.settings.max_plan_bytes)
+            with self._condition:
+                self._check_accepting()
+                if actual.nodes > footprint.nodes or actual.bytes > footprint.bytes:
+                    self._reserve_admission(max(0,actual.nodes-footprint.nodes),max(0,actual.bytes-footprint.bytes))
+                    from .admission import PlanFootprint
+                    reservation = PlanFootprint(max(actual.nodes,footprint.nodes),max(actual.bytes,footprint.bytes))
+                ids = [task.task_id for task in owned.tasks]
+                if len(ids) != len(set(ids)): raise ExecutionFailure("plan.duplicate_task")
+                run = _Run(uuid4().hex,owned,{task.task_id:_Task(task) for task in owned.tasks},
+                    deadline=None if timeout is None else monotonic()+timeout)
+                run.meter = BudgetMeter(self.settings.run_limits)
+                for task in run.tasks.values():
+                    if set(getattr(task.spec,"deps",()))-run.tasks.keys(): raise ExecutionFailure("plan.unknown_dependency")
+                    for resource,amount in self._claims(task).items():
+                        if amount > self._capacity(resource): raise ExecutionFailure("resource.impossible_claim:"+resource)
+                from graphlib import TopologicalSorter,CycleError
+                try:
+                    tuple(TopologicalSorter({key:set(getattr(task.spec,"deps",())) for key,task in run.tasks.items()}).static_order())
+                except CycleError: raise ExecutionFailure("plan.cycle") from None
+                self._fact(run,"run.admitted")
+                run.root_ids = tuple(ids)
+                run.plan = replace_record(owned,tasks=())
+                run.admission_nodes,run.admission_bytes = reservation.nodes,reservation.bytes
+                self._runs[run.run_id] = run
+                self._order.append(run.run_id)
+                reservation = None
+                self._condition.notify_all()
+                return RunHandle(self,run)
+        except AdmissionRejected as error:
+            raise ExecutionFailure(error.code) from None
+        finally:
+            with self._condition:
+                self._admitting -= 1
+                if reservation is not None:
+                    self._plan_nodes -= reservation.nodes; self._plan_bytes -= reservation.bytes
+                self._condition.notify_all()
 
     def run(self, plan, *, timeout=None):
-        return self.submit(plan, timeout=timeout).result(timeout=timeout)
+        return self.submit(plan, timeout=timeout).result()
 
     def status(self, run_id):
         return RunHandle(self, self._runs[run_id]).snapshot()
@@ -551,33 +414,66 @@ class ExecutionService:
                 return self.providers[role]
             raise ExecutionFailure("provider.missing:" + role)
 
-    def lookup_effect(self, effect_id):
+    def _effect_cache_slot(self,effect_id,*,required):
+        if effect_id in self._effects or len(self._effects) < self.settings.effect_capacity: return True
+        if "effect_state" in self.providers:
+            pinned = set(self._reconciling_effects)
+            for run in self._runs.values(): pinned.update(run.effect_ids)
+            victim = next((key for key,receipt in self._effects.items()
+                if receipt.status in {"confirmed","rejected","failed"} and key not in pinned),None)
+            if victim is not None:
+                self._effects.pop(victim)
+                return True
+        if required: raise ExecutionFailure("effect.state_capacity_exhausted")
+        return False
+
+    def lookup_effect(self,effect_id):
         with self._condition:
             current = self._effects.get(effect_id)
-            if current is None and "effect_state" in self.providers:
+            if current is not None:
+                self._effects.move_to_end(effect_id)
+                return current
+            if "effect_state" in self.providers:
                 current = self.providers["effect_state"].get(effect_id)
-                if current is not None: self._effects[effect_id] = current
+                if current is not None and self._effect_cache_slot(effect_id,required=False):
+                    self._effects[effect_id] = current
             return current
 
-    def _save_effect(self, receipt):
-        if "effect_state" in self.providers:
-            self.providers["effect_state"].put(receipt)
+    def _save_effect(self,receipt):
+        self._effect_cache_slot(receipt.effect_id,required=True)
+        if "effect_state" in self.providers: self.providers["effect_state"].put(receipt)
         self._effects[receipt.effect_id] = receipt
+        self._effects.move_to_end(receipt.effect_id)
 
-    def reconcile_effect(self, effect_id, lookup, *, context=None):
+    def _reconcile_observation(self,previous,callback,context):
+        key = previous.effect_id
+        with self._condition:
+            if key in self._reconciling_effects: return previous
+            self._reconciling_effects.add(key)
+        try:
+            # Lookup may block or reenter the service. It owns no coordinator lock.
+            found = callback()
+            with self._condition:
+                current = self.lookup_effect(key)
+                if current is not None and current.status == "confirmed": return current
+                if not _reconciled_confirmation(found,key,previous.kind): return previous
+                recovered = EffectReceipt(key,previous.kind,"confirmed",found,previous.resource,intent=previous.intent)
+                self._save_effect(recovered)
+                if context is not None:
+                    self._fact(context.run,"effect.settled",context.task,effect_id=key,
+                        effect_kind=previous.kind,outcome="confirmed",reconciled=True)
+                return recovered
+        finally:
+            with self._condition:
+                self._reconciling_effects.discard(key)
+                self._condition.notify_all()
+
+    def reconcile_effect(self,effect_id,lookup,*,context=None):
         with self._condition:
             previous = self.lookup_effect(effect_id)
             if previous is None: raise ExecutionFailure("effect.not_found")
             if previous.status == "confirmed": return previous
-        found = lookup(effect_id)
-        if not _reconciled_confirmation(found, effect_id, previous.kind): return previous
-        recovered = EffectReceipt(effect_id, previous.kind, "confirmed", found, previous.resource, intent=previous.intent)
-        with self._condition:
-            self._save_effect(recovered)
-            if context is not None:
-                self._fact(context.run, "effect.settled", context.task, effect_id=effect_id,
-                    effect_kind=previous.kind, outcome="confirmed", reconciled=True)
-        return recovered
+        return self._reconcile_observation(previous,lambda:lookup(effect_id),context)
 
     def _capacity(self, resource):
         return self.settings.max_workers if resource == "worker" else self.settings.capacities.get(resource, 1)
@@ -663,7 +559,7 @@ class ExecutionService:
                          request.max_bytes, request.timeout, request.read_only, request.freshness,
                          request.observation_id or run.run_id, request.metadata.get("access_scope"))
                 parameters = {key:value for key,value in command.parameters.items() if key not in logical}
-                if getattr(command.method, "locator", "") == "stratbox.core.commands.standard:material_fetch": settings = None
+                if getattr(command.method, "locator", "") == "stratbox.core.commands.materials:material_fetch": settings = None
             elif command.id.endswith(("workbook.decode", "json.decode", "document.decode", "dbf.decode")):
                 basis = {name: (getattr(getattr(item, "material", item), "data", item),
                     getattr(getattr(item, "material", item), "charset", None)) for name, item in inputs.items()}
@@ -678,13 +574,19 @@ class ExecutionService:
         except Exception:
             return None
 
-    def _producer_needed(self, task):
-        if not task.work_key:
-            return False
-        return any(t.work_key == task.work_key and t.state in {"running", "waiting_shared"} and not r.cancel.is_set() and not t.cancelled
-                   for r in self._runs.values() for t in r.tasks.values())
+    def _producer_needed(self,task):
+        with self._condition:
+            if not task.work_key: return False
+            return any(other.work_key == task.work_key and other.state in {"running","waiting_shared"}
+                and not run.cancel.is_set() and not other.cancelled
+                for run in self._runs.values() for other in run.tasks.values())
 
-    def _execute(self, run, task, inputs):
+    def _execute(self,run,task,inputs):
+        self._worker_local.active = True
+        try: return self._execute_command(run,task,inputs)
+        finally: self._worker_local.active = False
+
+    def _execute_command(self, run, task, inputs):
         context = CommandContext(self, run, task, inputs)
         context.checkpoint()
         cells_before = context.budget.used("cells")
@@ -748,8 +650,7 @@ class ExecutionService:
                     continue
                 producer = task.state == "running"
                 if producer:
-                    for resource, amount in task.claims.items():
-                        self._used[resource] -= amount
+                    self._release_claims(task)
                     if task.work_key is not None:
                         self._work.pop(task.work_key, None)
                 try:
@@ -764,7 +665,8 @@ class ExecutionService:
                         self._reserve_accepted(task,task.outputs)
                         for name in task.outputs:
                             self._register_value(run, task, name, task.outputs[name])
-                            self._fact(run, "output.accepted", task, output_name=name)
+                            fact=self._fact(run, "output.accepted", task, output_name=name)
+                            if fact is not None: run.accepted_scopes.add((task.spec.scope_id,name))
                     reuse = getattr(task.spec.command, "reuse", None)
                     if producer and task.work_key and outcome == "succeeded" and getattr(reuse, "completed_eligible", True):
                         amount = _size(outputs)
@@ -844,7 +746,7 @@ class ExecutionService:
             return dict(outputs)
         from stratbox.shared.data.values import Material, IdentifiedMaterial, WorkbookEvidence, JsonEvidence, DocumentEvidence, DbfEvidence
         original = self._resolve(run, task.spec.inputs).get("material")
-        from stratbox.core.commands.standard import _material
+        from stratbox.core.commands._values import _material
         original = _material(original) if isinstance(original, IdentifiedMaterial) else original
         if not isinstance(original, Material): return dict(outputs)
         return {name: replace(value, material=original) if isinstance(value, (WorkbookEvidence, JsonEvidence, DocumentEvidence, DbfEvidence)) else value
@@ -974,35 +876,51 @@ class ExecutionService:
             if type(value).__name__ == "Condition":
                 return replace(value, value=substitute(value.value))
             return value
-        children = []
+        children,scopes = [],[]
+        local_scopes = {scope.scope_id for scope in template.scopes}
         for original in template.tasks:
-            updates = {"task_id": prefix + original.task_id,
-                       "deps": tuple(prefix + key if key in local else key for key in original.deps),
-                       "scope_id": prefix + original.scope_id}
-            for name in ("inputs", "items", "initial", "selector", "condition"):
-                if hasattr(original, name): updates[name] = substitute(getattr(original, name))
-            if hasattr(original, "command"):
-                updates["command"] = replace(original.command, parameters=substitute(original.command.parameters))
-            local_scopes = {scope.scope_id for scope in template.scopes}
-            updates["guards"] = tuple(replace(guard, scope_id=prefix + guard.scope_id) if guard.scope_id in local_scopes else guard
-                                      for guard in getattr(original, "guards", ()))
-            updates["input_guards"] = tuple(replace(guard, value=substitute(guard.value)) for guard in getattr(original, "input_guards", ()))
-            if hasattr(original, "item_guards"):
-                updates["item_guards"] = {index: tuple(replace(guard, scope_id=prefix + guard.scope_id) if guard.scope_id in local_scopes else guard for guard in guards)
-                    for index, guards in original.item_guards.items()}
-            child = _Task(replace(original, **updates))
-            for resource, amount in self._claims(child).items():
-                if amount > self._capacity(resource): raise ExecutionFailure("resource.impossible_claim:" + resource)
-            run.tasks[child.spec.task_id] = child
-            children.append(child.spec.task_id)
+            updates = {"task_id":prefix+original.task_id,
+                "deps":tuple(prefix+key if key in local else key for key in original.deps),
+                "scope_id":prefix+original.scope_id}
+            for name in ("inputs","items","initial","selector","condition"):
+                if hasattr(original,name): updates[name] = substitute(getattr(original,name))
+            if hasattr(original,"command"):
+                updates["command"] = replace_record(original.command,parameters=substitute(original.command.parameters))
+            updates["guards"] = tuple(replace(guard,scope_id=prefix+guard.scope_id) if guard.scope_id in local_scopes else guard
+                for guard in original.guards)
+            updates["input_guards"] = tuple(replace(guard,value=substitute(guard.value)) for guard in original.input_guards)
+            if hasattr(original,"item_guards"):
+                updates["item_guards"] = {index:tuple(replace(guard,scope_id=prefix+guard.scope_id) if guard.scope_id in local_scopes else guard
+                    for guard in guards) for index,guards in original.item_guards.items()}
+            child = replace_record(original,**updates)
+            for resource,amount in self._claims(_Task(child)).items():
+                if amount > self._capacity(resource): raise ExecutionFailure("resource.impossible_claim:"+resource)
+            children.append(child)
         for scope in template.scopes:
-            run.extra_scopes.append(replace(scope, scope_id=prefix + scope.scope_id,
-                parent_id=prefix + scope.parent_id if scope.parent_id else prefix.rstrip("/"),
-                outputs=substitute(scope.outputs), required_tasks=tuple(prefix + key for key in scope.required_tasks),
-                required_scopes=tuple(prefix + key for key in scope.required_scopes),
-                required_checks=tuple(prefix + key for key in scope.required_checks),
-                required_effects=tuple(prefix + key for key in scope.required_effects), condition=substitute(scope.condition)))
-        return tuple(children), substitute(template.outputs)
+            scopes.append(replace_record(scope,scope_id=prefix+scope.scope_id,
+                parent_id=prefix+scope.parent_id if scope.parent_id else prefix.rstrip("/"),
+                outputs=substitute(scope.outputs),
+                required_tasks=tuple(prefix+key if key in local else key for key in scope.required_tasks),
+                required_scopes=tuple(prefix+key if key in local_scopes else key for key in scope.required_scopes),
+                required_checks=tuple(prefix+key if key in local else key for key in scope.required_checks),
+                required_effects=tuple(prefix+key if key in local else key for key in scope.required_effects),
+                condition=substitute(scope.condition)))
+        candidate = replace_record(template,tasks=tuple(children),scopes=tuple(scopes),outputs=substitute(template.outputs))
+        try:
+            inspect_plan(candidate,max_nodes=self.settings.max_plan_nodes-run.admission_nodes,
+                max_bytes=self.settings.max_plan_bytes-run.admission_bytes)
+            owned = snapshot_plan(candidate)
+            footprint = inspect_plan(owned,max_nodes=self.settings.max_plan_nodes-run.admission_nodes,
+                max_bytes=self.settings.max_plan_bytes-run.admission_bytes)
+        except AdmissionRejected as error: raise ExecutionFailure(error.code) from None
+        ids = {child.task_id for child in owned.tasks}
+        if len(ids) != len(owned.tasks) or ids & run.tasks.keys(): raise ExecutionFailure("plan.duplicate_task")
+        if any(set(child.deps)-(run.tasks.keys()|ids) for child in owned.tasks): raise ExecutionFailure("plan.unknown_dependency")
+        self._reserve_admission(footprint.nodes,footprint.bytes,run)
+        # Publish the complete validated slice atomically under the coordinator.
+        run.tasks.update({child.task_id:_Task(child) for child in owned.tasks})
+        run.extra_scopes.extend(owned.scopes)
+        return tuple(child.task_id for child in owned.tasks),owned.outputs
 
     def _structural(self, run, task):
         spec, kind = task.spec, getattr(task.spec, "kind", "command")
@@ -1188,7 +1106,6 @@ class ExecutionService:
             self._retained_bytes -= amount
             outputs, amount = {}, 0
             if outcome != "unknown": outcome = "failed"
-        run.future.set_result(RunResult(self, run, outcome, outputs, run.diagnostics, run.scopes, amount))
         # A completed run keeps its result owner and diagnostics, not every
         # intermediate or worker Future that happened to produce that result.
         for task in run.tasks.values():
@@ -1199,6 +1116,8 @@ class ExecutionService:
             task.accepted_keys.clear()
             task.input_keys.clear()
         run.plan = None
+        self._compact_admission(run)
+        run.future.set_result(RunResult(self, run, outcome, outputs, run.diagnostics, run.scopes, amount))
 
     def _coordinate(self):
         try:
@@ -1208,8 +1127,6 @@ class ExecutionService:
                     self._release_unused()
                     remaining = [run for run in self._runs.values() if not run.future.done()]
                     if self._closing and not remaining:
-                        self._stopped = True
-                        self._condition.notify_all()
                         return
                     for _ in range(len(self._order)):
                         run = self._runs[self._order.popleft()]
@@ -1289,7 +1206,8 @@ class ExecutionService:
                                     self._reserve_accepted(task,task.outputs)
                                     for name, value in task.outputs.items():
                                         self._register_value(run, task, name, value)
-                                        self._fact(run, "output.accepted", task, output_name=name)
+                                        fact=self._fact(run, "output.accepted", task, output_name=name)
+                                        if fact is not None: run.accepted_scopes.add((task.spec.scope_id,name))
                                     self._fact(run, "work.reused", task)
                                 except (ValueError, TypeError, ExecutionFailure) as error:
                                     task.state, task.findings = "failed", (error_code(error),)
@@ -1331,40 +1249,109 @@ class ExecutionService:
                             self._finish(run)
                     self._condition.wait(0.01)
         except BaseException as error:
+            self._begin_failure(error)
+            self._drain_failure()
+        finally:
+            # Only the coordinator owns pool shutdown. No accepted dependency
+            # chain loses its executor when close(wait=False) begins draining.
+            self._pool.shutdown(wait=True)
+            if self._observer_dispatcher is not None: self._observer_dispatcher.close()
             with self._condition:
-                for run in self._runs.values():
-                    if not run.future.done():
-                        run.future.set_exception(error)
-                self._stopped = True
+                self._completed.clear(); self._accepted.clear()
+                self._cache_bytes = 0
+                if self._state != "failed": self._state = "closed"
+                self._closed_event.set()
                 self._condition.notify_all()
+
+    def _release_claims(self,task):
+        claims,task.claims = task.claims,{}
+        for resource,amount in claims.items(): self._used[resource] -= amount
+
+    def _begin_failure(self,error):
+        with self._condition:
+            self._state,self._failure = "failed",error_code(error)
+            for run in self._runs.values():
+                if run.future.done(): continue
+                run.diagnostics.append("execution.coordinator_failed")
+                for task in run.tasks.values():
+                    if task.state in {"pending","expanding"}: task.state = "blocked"
+            self._condition.notify_all()
+
+    def _drain_failure(self):
+        """Observe every already-dispatched physical future before ending its run."""
+        while True:
+            with self._condition:
+                remaining = []
+                for run in self._runs.values():
+                    if run.future.done(): continue
+                    live = False
+                    for task in run.tasks.values():
+                        if task.state not in {"running","waiting_shared"}: continue
+                        future = task.future
+                        if future is not None and not future.done(): live = True; continue
+                        if task.state == "running": self._release_claims(task)
+                        if future is not None:
+                            try: future.result()
+                            except BaseException as error: run.diagnostics.append(error_code(error))
+                        task.state,task.outputs,task.future,task.owned_inputs = "failed",{},None,None
+                        task.input_keys.clear(); task.accepted_keys.clear()
+                    if live: remaining.append(run)
+                    else: self._finish_failed(run)
+                if not remaining:
+                    self._work.clear()
+                    return
+                self._condition.wait(0.01)
+
+    def _finish_failed(self,run):
+        uncertain = any(key not in self._effects or self._effects[key].status == "unknown" for key in run.effect_ids)
+        for task in run.tasks.values():
+            task.outputs,task.future,task.owned_inputs,task.expansion = {},None,None,None
+            task.spec = _TaskSummary(task.spec.task_id,task.spec.scope_id,task.spec.required,self._task_origin(task))
+            task.accepted_keys.clear(); task.input_keys.clear()
+        run.plan = None
+        self._compact_admission(run)
+        run.future.set_result(RunResult(self,run,"unknown" if uncertain else "failed",{},
+            run.diagnostics,run.scopes,0))
 
     def _wake(self):
         with self._condition:
             self._condition.notify_all()
 
-    def _effect(self, context, kind, effect_id, action, reconcile, resource, intent):
+    def _effect(self,context,kind,effect_id,action,reconcile,resource,intent):
+        previous_unknown = None
         with self._condition:
             context.checkpoint()
             previous = self.lookup_effect(effect_id)
             if previous:
-                if previous.kind != kind or previous.resource != resource:
-                    raise ExecutionFailure("effect.identity_conflict")
+                if previous.kind != kind or previous.resource != resource: raise ExecutionFailure("effect.identity_conflict")
                 if previous.status == "confirmed":
+                    context.run.effect_ids.add(effect_id)
                     return previous
                 if previous.status == "unknown":
-                    if reconcile is None:
-                        return previous
-                    recovered = reconcile(previous)
-                    if _reconciled_confirmation(recovered, effect_id, kind):
-                        receipt = EffectReceipt(effect_id, kind, "confirmed", recovered, resource, intent=previous.intent)
-                        self._save_effect(receipt)
-                        self._fact(context.run, "effect.settled", context.task, effect_id=effect_id,
-                            effect_kind=kind, outcome="confirmed", reconciled=True)
-                        return receipt
-                    return previous
-            if len(self._effects) >= self.settings.effect_capacity:
-                raise ExecutionFailure("effect.state_capacity_exhausted")
-            self._save_effect(EffectReceipt(effect_id, kind, "unknown", resource=resource, intent=intent))
+                    context.run.effect_ids.add(effect_id)
+                    if reconcile is None: return previous
+                    previous_unknown = previous
+            if previous_unknown is None:
+                self._effect_cache_slot(effect_id,required=True)
+                proposed = EffectReceipt(effect_id,kind,"unknown",resource=resource,intent=intent)
+                state = self.providers.get("effect_state")
+                begin = getattr(state,"begin",None)
+                if callable(begin):
+                    authoritative,claimed = begin(proposed)
+                    if authoritative.kind != kind or authoritative.resource != resource:
+                        raise ExecutionFailure("effect.identity_conflict")
+                    self._effects[effect_id] = authoritative
+                    self._effects.move_to_end(effect_id)
+                    context.run.effect_ids.add(effect_id)
+                    if not claimed:
+                        if authoritative.status == "confirmed" or reconcile is None: return authoritative
+                        previous_unknown = authoritative
+                else:
+                    self._save_effect(proposed)
+                    context.run.effect_ids.add(effect_id)
+                if previous_unknown is None: context._active_effects.add(effect_id)
+        if previous_unknown is not None:
+            return self._reconcile_observation(previous_unknown,lambda:reconcile(previous_unknown),context)
         try:
             value = action()
             receipt = EffectReceipt(effect_id, kind, "confirmed", value, resource, intent=intent)
@@ -1388,16 +1375,13 @@ class ExecutionService:
 
     def close(self, *, wait=True, cancel=False):
         with self._condition:
-            self._closing = True
+            if self._state == "running": self._state = "draining"
             if cancel:
                 for run in self._runs.values():
-                    run.cancel.set()
+                    if not run.future.done(): run.cancel.set()
             self._condition.notify_all()
-        if wait:
-            self._thread.join()
-        self._pool.shutdown(wait=wait)
-        self._completed.clear()
-        self._cache_bytes = 0
+        if wait and current_thread() is not self._thread and not getattr(self._worker_local,"active",False):
+            self._closed_event.wait()
 
     def __enter__(self):
         return self

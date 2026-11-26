@@ -146,8 +146,6 @@ class StrategyBox:
 
     def close(self, *, wait=True, cancel=False):
         with self._lock:
-            if self._closed:
-                return
             self._closed = True
             service = self._session
         if service is not None:

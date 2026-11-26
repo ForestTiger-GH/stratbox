@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from stratbox.core.commands import standard
+from stratbox.core.commands import archives as technical_archives
 from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.shared.data.values import Material
 from .support import DAY, calculate, character_dbf, command, context, dataset, physical, series, view
@@ -14,7 +14,7 @@ def test_historical_form802_keeps_absent_adjustment_distinct_from_empty_and_prov
     data=character_dbf(("REGN_GKO","STR","KORR_P","KORR_M","VSEGO"),(("1000","14","","","0"),))
     unrelated=character_dbf(("FSORT","FRAZD"),(("1","2"),))
     material=Material(zip_bytes({"PK8022512.dbf":data,"F802META.dbf":unrelated}),source_id=series("802").id)
-    members=standard.archive_unpack({"material":material},None,context())["members"]
+    members=technical_archives.archive_unpack({"material":material},None,context())["members"]
     assert members[0].metadata["member"]=="PK8022512.dbf"
     assert members[0].metadata["parent"]==material.identity.sha256
     decoded=tuple(physical("802",member.data,**member.metadata) for member in members)

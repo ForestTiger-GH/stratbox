@@ -1,19 +1,63 @@
 {
-  "repository_release": "0.25.0",
+  "repository_release": "0.25.1",
   "python": "3.12.14",
-  "implementation_identity": "stratbox:0.25.0:bd1305d99211420c115128890f8efd32e33181f73f6ce8ff2088745d6d561616",
+  "implementation_identity": "stratbox:0.25.1:0f7af9c4b4c4d9d12a789ecdf45eb97ac295c6b688122d05436be232d57217a8",
   "full_regression": {
-    "passed": 979,
+    "passed": 1145,
     "skipped": 7,
-    "warnings": 6,
-    "seconds": 676.47
+    "failed": 0,
+    "errors": 0,
+    "unique_cases": 1152,
+    "all_collected_cases_covered": true,
+    "mode": "four disjoint test groups and targeted effect-storage admission checks",
+    "verification_wall_seconds": 427.622,
+    "node_ids_sha256": "3bc30417bcdfaaf13a9684c18ada28361543e1edb17f0d2aff3bc9c40c0be9ef"
   },
-  "additional_distribution_regression": {
-    "passed": 12
-  },
+  "verification_groups": [
+    {
+      "tests": 97,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 7,
+      "name": "models",
+      "seconds": 66.891
+    },
+    {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "industry_snapshots",
+      "seconds": 427.463
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "industry_sources",
+      "seconds": 239.437
+    },
+    {
+      "tests": 1043,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "remaining",
+      "seconds": 299.571
+    },
+    {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "effect-admission",
+      "seconds": 0.246
+    }
+  ],
   "distribution": {
     "result": "passed",
-    "package_members": 455,
+    "package_members": 487,
     "data_resources": 22,
     "isolated_install": true,
     "zip_import": true
@@ -23,6 +67,11 @@
     "internal_imports": true,
     "maintained_links": true,
     "python_3_10_syntax": true
+  },
+  "package_readmes": {
+    "refreshed": 24,
+    "added": 15,
+    "total": 39
   },
   "remote_workflows_invoked": false,
   "scientific_scope": "Reviewed source methods and retained material; unavailable source layouts and unreviewed financial models remain explicitly qualified."

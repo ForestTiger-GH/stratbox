@@ -18,6 +18,7 @@ class OfflineHTTP:
 
 
 class Inbox:
+    scope_id="example.rosstat.offline-inbox"
     def __init__(self):
         self.receipts = {}
 
@@ -58,11 +59,11 @@ def main():
         committed = box.invoke("command.artifact.commit",
             inputs={"material": identified.material, "destination": "originals"})
         reference = required(committed, "reference")
-        facts = tuple(fact for fact in box.session.journal.read(run_id=committed.run_id)
-            if fact.kind == "output.accepted" and fact.output_name == "reference"
-            and fact.command_id == "command.artifact.commit")
-        intents = required(box.invoke("command.notification.prepare", inputs={"facts": facts},
-            parameters={"subscription_id": "offline-originals", "route": "offline-inbox"}), "intents")
+        notification_page = box.session.journal.read_page(run_id=committed.run_id)
+        intents = required(box.invoke("command.notification.prepare", inputs={"page": notification_page},
+            parameters={"subscription_id": "offline-originals", "route": "offline-inbox",
+                "selector": {"run_id": committed.run_id, "kind": "output.accepted",
+                    "output_name": "reference", "command_id": "command.artifact.commit"}}), "intents")
         for intent in intents:
             required(box.invoke("command.notification.deliver", inputs={"intent": intent}), "receipt")
         print({"assessment": assessment.status, "inventory": listing.assessment.status,

@@ -1,23 +1,12 @@
-# Territorial labels and reviewed identity rules
+# Territorial naming rules
 
-`normalize_region_label()` creates a stable Unicode comparison key while preserving qualifiers and distinctions. `RegionNameResolver` then checks exact reviewed name rules with optional source family, date, subject kind, explicitly namespaced source code and statistical perimeter context.
+`normalize_region_label()` builds a comparison key. `RegionNameResolver` applies
+reviewed rules with source, date, subject-kind, source-code and perimeter context.
+A naming match preserves those qualifications; it does not establish an
+unreviewed territorial or aggregation crosswalk.
 
-```python
-from stratbox.shared.reference.geography import RegionNameResolver
+[Rule loading](registry.py) verifies packaged inputs.
+[Resolution](resolver.py) handles exact, alias, unmatched, ambiguous and
+out-of-scope outcomes. Domain parsers retain their own source row identities.
 
-match = RegionNameResolver().resolve("город Москва")
-assert match.subject.id == "RU-MOW"
-```
-
-Status may be `exact`, `alias`, `unmatched`, `ambiguous` or `out_of_scope`. The starter reference is deliberately incomplete; it contains no inferred equivalence between a region and an inclusive/exclusive statistical aggregate. Source-specific geographic row numbers remain the property of their respective domain parsers.
-
-[Full interpretation contract](../../../../../docs/current-how/geography-name-resolution.md)
-
-
-A packaged result carries a verified reference snapshot and a content
-fingerprint of the full rule set. Programmatically supplied rules carry
-their own fingerprint and provenance kind; they cannot use the ID of a
-packaged reference. Source/perimeter/date-restricted rules fail closed when
-the corresponding context is absent. One validation routine applies to
-both CSV and supplied rules, and indexed matching remains independent of
-pandas.
+See [the geography interpretation contract](../../../../../docs/current-how/geography-name-resolution.md).

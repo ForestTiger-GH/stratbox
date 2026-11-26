@@ -1,5 +1,12 @@
-# Packaged reference data
+# Reviewed reference inputs
 
-Each family declares its exact assets and provenance in one flat manifest. `load_reference(package)` verifies required roles, SHA256 and byte counts before parsing. Input receipts bind the actual asset to the complete manifest content identity.
+Packaged reference families declare their assets and provenance in a manifest.
+`load_reference(package)` verifies required roles, exact bytes and content
+identities before a consumer parses them.
 
-Bank identity, industry classification and territory naming remain distinct from the statistical perimeter declared by a source. See the [reference update procedure](../../../../docs/current-how/reference-snapshots-and-update.md).
+Choose [bank references](banks/) for official registration and explicit display
+policies, [OKVED2](okved2/) for industry classification, or [geography](geography/)
+for reviewed territorial naming rules. Source-specific statistical perimeters
+and mappings remain the responsibility of the consuming domain.
+
+See [reference loading and updates](../../../../docs/current-how/reference-snapshots-and-update.md).

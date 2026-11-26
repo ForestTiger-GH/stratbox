@@ -18,9 +18,12 @@ class CapabilityDefinition:
     acceptance: AcceptanceContract = field(default_factory=AcceptanceContract)
     summary: str = ''
     entrances: Mapping[str, object] = field(default_factory=dict)
+    recipe: MethodRef | None = field(default=None, kw_only=True)
 
     def __post_init__(self):
         if not self.id: raise ValueError('definition.id_required')
+        if self.recipe is not None and not isinstance(self.recipe, MethodRef):
+            raise TypeError('definition.invalid_recipe')
         for name in ('inputs', 'outputs', 'parameters', 'entrances'): object.__setattr__(self, name, freeze(getattr(self, name)))
         if any(not isinstance(p, PortContract) for p in (*self.inputs.values(), *self.outputs.values())):
             raise TypeError('definition.invalid_ports')

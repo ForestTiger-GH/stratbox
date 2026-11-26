@@ -1,11 +1,14 @@
 # Stratbox package
 
-`capabilities` owns the standard action language and its preparation. `core`
-executes admitted commands and manages resources, values, effects and journals.
-`domains` provides direct method/settings records. `shared` owns scientific values
-and reference contents. `sdk.StrategyBox` joins discovery, preparation and one
-execution service.
+Start with the [SDK](sdk/) to discover, prepare and invoke statistical workflows.
+The package separates five responsibilities:
 
-[Definitions and execution](../../docs/architecture/capability-execution.md)
+- [Capabilities](capabilities/) define the standard action language and prepare executable graphs.
+- [Core](core/) executes those graphs and owns technical providers, resources, retention and effects.
+- [Domains](domains/) supply publisher knowledge and scientific methods through static command specifications.
+- [Shared values](shared/) carry data, identity, evidence and reference contents across those boundaries.
+- [SDK](sdk/) provides one caller-facing lifecycle for discovery, prepared plans, asynchronous calls and results.
 
-[Typed data stages](../../docs/current-how/standard-data-stages.md)
+See [the processing stages](../../docs/current-how/standard-data-stages.md)
+for data flow and [execution ownership](../../docs/architecture/capability-execution.md)
+for the boundary between declarations and runtime behavior.

@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-11-26T14:51:55.858521+00:00",
+  "started_at": "2026-11-26T17:42:19.919203+00:00",
   "steps": [
     {
       "name": "check_release_integrity",
@@ -18,11 +18,11 @@
       "exit_code": 0
     },
     {
-      "name": "archive:stratbox-0.25.0-py3-none-any.whl",
+      "name": "archive:stratbox-0.25.1-py3-none-any.whl",
       "exit_code": 0
     },
     {
-      "name": "archive:stratbox-0.25.0.tar.gz",
+      "name": "archive:stratbox-0.25.1.tar.gz",
       "exit_code": 0
     },
     {
@@ -39,5 +39,5 @@
     }
   ],
   "result": "passed",
-  "finished_at": "2026-11-26T14:52:01.836880+00:00"
+  "finished_at": "2026-11-26T17:42:25.619866+00:00"
 }

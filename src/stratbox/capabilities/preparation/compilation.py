@@ -66,6 +66,24 @@ def _author_refs(value):
     return set()
 
 
+def _step_values(step):
+    """Every expression-bearing field participates in dependency closure."""
+    return tuple(getattr(step, name, None) for name in
+                 ('inputs', 'parameters', 'condition', 'items', 'initial', 'selector'))
+
+
+def _step_dependencies(step):
+    return set(getattr(step, 'depends_on', ())).union(
+        *(_author_refs(value) for value in _step_values(step)))
+
+
+def _bounded_integer(parameters, name, ceiling, minimum, code):
+    supplied = parameters.get(name, ceiling)
+    if type(supplied) is not int or supplied < minimum:
+        raise ValueError(code)
+    return min(ceiling, supplied)
+
+
 class Compiler:
     def __init__(self, catalog, domains, build_identity):
         self.catalog, self.domains, self.build_identity = catalog, domains, build_identity
@@ -167,9 +185,9 @@ class Compiler:
     def compile(self, identifier, values, parameters, target, selected, prefix, parent=None, required=True):
         if identifier in self.stack: raise ValueError('graph.definition_cycle:' + identifier)
         definition=self.catalog.get(identifier)
-        from .recipes import recipe
+        from .recipes import resolve_recipe
         record=_record(self.domains,target)
-        definition=recipe(definition,_unwrap(values),_unwrap(parameters),record,self.catalog)
+        definition=resolve_recipe(definition,_unwrap(values),_unwrap(parameters),record,self.catalog)
         parameters={**definition.parameters,**parameters}
         if selected is None: selected=tuple(definition.outputs)
         if not set(selected)<=definition.outputs.keys(): raise ValueError('invocation.unknown_output')
@@ -238,11 +256,7 @@ class Compiler:
             if name not in steps: raise ValueError('graph.unknown_step:'+name)
             active.add(name)
             step=steps[name]
-            dependencies=_author_refs(getattr(step,'inputs',{})) | set(getattr(step,'depends_on',())) | _author_refs(getattr(step,'condition',None))
-            if isinstance(step,MapCall): dependencies |= _author_refs(step.items)
-            if isinstance(step,RepeatUntil): dependencies |= _author_refs(step.initial)
-            if isinstance(step,DispatchCall): dependencies |= _author_refs(step.selector)
-            if isinstance(step,CollectCall): dependencies |= _author_refs(step.items)
+            dependencies=_step_dependencies(step)
             for dep in dependencies: visit(dep)
             active.remove(name);needed.add(name)
         for name in roots: visit(name)
@@ -253,11 +267,7 @@ class Compiler:
             for step in body.steps:
                 name=step.step_id
                 if name not in remaining: continue
-                dependencies=_author_refs(getattr(step,'inputs',{}))|set(getattr(step,'depends_on',()))|_author_refs(getattr(step,'condition',None))
-                if isinstance(step,MapCall): dependencies|=_author_refs(step.items)
-                if isinstance(step,RepeatUntil): dependencies|=_author_refs(step.initial)
-                if isinstance(step,DispatchCall): dependencies|=_author_refs(step.selector)
-                if isinstance(step,CollectCall): dependencies|=_author_refs(step.items)
+                dependencies=_step_dependencies(step)
                 if dependencies <= set(ordered)|set(cut): ordered.append(name);remaining.remove(name);progress=True
             if not progress: raise ValueError('graph.cycle')
         results.update(cut)
@@ -281,11 +291,12 @@ class Compiler:
                     if candidate.step_id not in needed: continue
                     def scan(v):
                         if isinstance(v,OutputRef) and v.step==name: used.add(v.port)
+                        elif isinstance(v,Condition): scan(v.value)
                         elif isinstance(v,Mapping):
                             for x in v.values(): scan(x)
                         elif isinstance(v,(tuple,list)):
                             for x in v: scan(x)
-                    for attribute in ('inputs','items','initial','condition'): scan(getattr(candidate,attribute,None))
+                    for expression in _step_values(candidate): scan(expression)
                 if not used: used=set(child.outputs)
                 results[name]=self.compile(step.capability_id,args,params,child_target,tuple(used),path,prefix,required and step.required)
                 extra=_refs(resolve(step.condition)) if step.condition else set()
@@ -322,8 +333,8 @@ class Compiler:
                 out=nested.compile(step.capability_id,args,{**parameters,**resolve(step.parameters)},resolve(step.target),None,'template')
                 template=nested.finish(step.capability_id,out,target)
                 if step.output_port not in template.outputs: raise ValueError('graph.map_output_required:'+step.output_port)
-                window=min(step.window,int(parameters.get('window',step.window)))
-                max_items=min(step.max_items,int(parameters.get('max_items',step.max_items)))
+                window=_bounded_integer(parameters,'window',step.window,1,'graph.invalid_map_limits')
+                max_items=_bounded_integer(parameters,'max_items',step.max_items,0,'graph.invalid_map_limits')
                 completion=parameters.get('completion',step.completion)
                 if window<1 or max_items<0 or completion not in {'all_selected','eligible_subset'}:
                     raise ValueError('graph.invalid_map_limits')
@@ -355,7 +366,7 @@ class Compiler:
                 out=nested.graph(temporary,environment,parameters,target,(step.state_output,),'template',None,True)
                 template=nested.finish(temporary.id,out,target)
                 deps=_refs(initial)|_refs(resolve(step.inputs))
-                limit=min(step.max_passes,int(parameters.get('max_passes',step.max_passes)))
+                limit=_bounded_integer(parameters,'max_passes',step.max_passes,1,'graph.invalid_repeat_limit')
                 if limit<1: raise ValueError('graph.invalid_repeat_limit')
                 self.tasks.append(RepeatTask(path,template,_unwrap(initial),step.state_input,step.state_output,step.stop,limit,tuple(sorted(deps|_refs(resolve(step.condition)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(initial),key=lambda g:(g.scope_id,g.port)))))
                 results[name]={step.state_output:ValueRef(path,'state')};self.ports[(path,'state')]=PortContract('inference_state')
@@ -377,7 +388,6 @@ class Compiler:
 
 
 def prepare(capability_id, *, inputs=None, parameters=None, target=None, outputs=None, catalog=None, domains=None, build_identity=None):
-    from stratbox import __version__
     catalog=catalog or standard_catalog()
     if domains is None:
         identifiers=[_target_id(target)]
@@ -387,13 +397,8 @@ def prepare(capability_id, *, inputs=None, parameters=None, target=None, outputs
         # publisher or execution route. The explicit manifest owns discovery.
         domains=load_domains() if any(identifiers) else DomainCatalog({})
     if build_identity is None:
-        from pathlib import Path
-        from hashlib import sha256
-        package=Path(__file__).parents[2]
-        digest=sha256()
-        for file in sorted(package.rglob('*.py')):
-            digest.update(str(file.relative_to(package)).encode());digest.update(file.read_bytes())
-        build_identity='stratbox:'+__version__+':'+digest.hexdigest()
+        from stratbox.shared.build import implementation_identity
+        build_identity=implementation_identity()
     compiler=Compiler(catalog,domains,build_identity)
     result=compiler.compile(capability_id,dict(inputs or {}),dict(parameters or {}),target,outputs,'root')
     return compiler.finish(capability_id,result,target)

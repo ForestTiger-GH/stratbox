@@ -372,8 +372,9 @@ def test_full_journal_fails_boundedly_and_does_not_leak_a_worker_reservation():
     journal = MemoryJournal(capacity=2)
     with ExecutionService(settings=ExecutionSettings(max_workers=1), journal=journal) as service:
         handle = service.submit(one("never_started", method="echo"))
-        with pytest.raises(RuntimeError, match="journal.capacity_exhausted"):
-            handle.result(2)
+        result=handle.result(2)
+        assert result.outcome=='failed' and not result.outputs
+        assert 'execution.coordinator_failed' in result.diagnostics
         assert [fact.kind for fact in journal.read(limit=2)] == ["run.admitted", "run.started"]
         assert ORDER == []
         assert all(amount == 0 for amount in service._used.values())
@@ -402,7 +403,7 @@ class ControlledHTTP:
 
 
 def http_plan(request):
-    work = BoundCommand("command.material.fetch", MethodRef("stratbox.core.commands.standard:material_fetch"), None,
+    work = BoundCommand("command.material.fetch", MethodRef("stratbox.core.commands.materials:material_fetch"), None,
         {"request": PortContract("request", RequestSpec)}, {"material": PortContract("material", Material),
         "evidence": PortContract("evidence")}, resources={"network": 1}, effects=frozenset({"network.read"}),
         required_providers=frozenset({"http"}),

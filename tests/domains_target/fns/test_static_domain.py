@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from stratbox.core.commands.standard import json_decode, workbook_decode
+from stratbox.core.commands.decoding import json_decode, workbook_decode
 from stratbox.domains.fns.domain import DOMAIN
 from stratbox.domains.fns.common.publications import LEGAL_PUBLICATION, SME_PUBLICATION
 from stratbox.domains.fns.common.semantics import LEGAL_RULES, SME_RULES
@@ -164,7 +164,7 @@ def test_reviewed_sparse_2019_release_retains_geography_and_excluded_kind_eviden
 
 
 def test_source_dataset_roundtrip_preserves_native_fields_exact_values_and_evidence():
-    from stratbox.core.commands.standard import value_decode, value_encode
+    from stratbox.core.commands.serialization import value_decode, value_encode
     value = sme_value()
     encoded_value = value_encode({"value": value}, None, context())["representation"]
     replay = value_decode({"representation": encoded_value}, None, context())["value"]
@@ -179,7 +179,7 @@ def test_source_dataset_roundtrip_preserves_native_fields_exact_values_and_evide
 
 
 def test_stock_change_never_promotes_unknown_event_accumulation_to_stock():
-    from stratbox.core.commands.standard import calculate_change
+    from stratbox.core.commands.calculations import calculate_change
     from stratbox.core.execution.service import ExecutionFailure
     from stratbox.domains.fns.calculations.rules import STOCK_CHANGE
     from stratbox.shared.data.values import SourceDataset

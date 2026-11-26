@@ -43,7 +43,7 @@ def align_statistics(values, *, row_bindings=(), period_bindings=(), strict=Fals
 
 
 def dataset_snapshot(value):
-    from stratbox.core.commands.standard import value_encode
+    from stratbox.core.commands.serialization import value_encode
     rows = tuple(observation_row(item) for batch in value.batches for item in batch.observations)
     dataset = SourceDataset("cbr.test", rows,
         {"diagnostics": tuple(asdict(item) for item in value.diagnostics)})
@@ -51,7 +51,7 @@ def dataset_snapshot(value):
 
 
 def dataset_from_snapshot(value):
-    from stratbox.core.commands.standard import value_decode
+    from stratbox.core.commands.serialization import value_decode
     from stratbox.shared.data.observations import Observation
     dataset = value_decode({"representation": value}, None, SimpleNamespace(parameters={},checkpoint=lambda:None))["value"]
     rows=[]

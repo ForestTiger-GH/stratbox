@@ -91,9 +91,9 @@ def _codec_types():
     known = {cls.__module__ + ":" + cls.__qualname__: cls for cls in globals().values()
              if isinstance(cls, type) and is_dataclass(cls) and cls.__module__ == __name__}
     known[ByteIdentity.__module__ + ":" + ByteIdentity.__qualname__] = ByteIdentity
-    from stratbox.shared.data import workbook_cells, source_context, assessment, coverage
+    from stratbox.shared.data import workbook_cells, source_context, assessment, coverage, journal
     from stratbox.shared import evidence
-    for module in (workbook_cells, source_context, assessment, coverage, evidence):
+    for module in (workbook_cells, source_context, assessment, coverage, journal, evidence):
         for cls in vars(module).values():
             if isinstance(cls, type) and is_dataclass(cls) and cls.__module__ == module.__name__:
                 known[cls.__module__ + ":" + cls.__qualname__] = cls

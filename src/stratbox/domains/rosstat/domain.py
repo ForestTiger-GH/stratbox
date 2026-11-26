@@ -24,7 +24,7 @@ DOMAIN = DomainSpec(
     calculations={"rosstat.index_growth": CalculationSpec(
         id="rosstat.index_growth",
         commands={"command.calculate.index": CommandSpec(
-            MethodRef("stratbox.core.commands.standard:calculate_index"),
+            MethodRef("stratbox.core.commands.calculations:calculate_index"),
             {"mode": "growth"}, Applicability())},
         inputs={"observations": "Published percent indices with explicit comparison bases"},
         semantics={"unit": "percent", "measure_kind": "index"},

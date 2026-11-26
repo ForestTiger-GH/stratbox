@@ -4,7 +4,7 @@ from dataclasses import replace
 from ..commands.standard import BY_ID, P, DATASET, MATERIAL, PHYSICAL
 
 
-def op(identifier, inputs, steps, outputs, *, parameters=None, checks=(), effects=(), entrances=None, contracts=None):
+def op(identifier, inputs, steps, outputs, *, parameters=None, checks=(), effects=(), entrances=None, contracts=None, recipe=None):
     ports = {}
     for name, ref in outputs.items():
         step = next(s for s in steps if s.step_id == ref.step)
@@ -13,7 +13,7 @@ def op(identifier, inputs, steps, outputs, *, parameters=None, checks=(), effect
         else:
             ports[name] = (contracts or {}).get(name, P('typed_value'))
     return OperationDefinition(identifier, inputs=inputs, outputs=ports, parameters=parameters or {},
-        entrances=entrances or {}, body=GraphBody(tuple(steps), outputs, checks, effects))
+        recipe=recipe, entrances=entrances or {}, body=GraphBody(tuple(steps), outputs, checks, effects))
 
 SOURCE_CHECK = op('operation.source.check',
     {'locator': P('locator', required=False), 'query': P('query', required=False), 'baseline': P('baseline', required=False)},
@@ -22,18 +22,18 @@ SOURCE_CHECK = op('operation.source.check',
      Call('scan', 'command.publication.scan', {'index': OutputRef('fetch','material')}),
      Call('select', 'command.issue.select', {'listing': OutputRef('scan','listing'), 'query': InputRef('query')}),
      Call('assess', 'command.source.assess', {'evidence': OutputRef('scan','listing'), 'baseline': InputRef('baseline')})),
-    {'assessment': OutputRef('assess','assessment'), 'evidence': OutputRef('fetch','material'), 'selection': OutputRef('select','selection')})
+    {'assessment': OutputRef('assess','assessment'), 'evidence': OutputRef('fetch','material'), 'selection': OutputRef('select','selection')}, recipe=MethodRef('stratbox.capabilities.preparation.recipes.source_check:source'))
 
 ACQUIRE = op('operation.material.acquire', {'locator': P('locator', required=False), 'query': P('query', required=False)},
     (Call('request', 'command.request.prepare', {'locator': InputRef('locator'), 'query': InputRef('query')}, {'mode': 'asset'}),
      Call('fetch', 'command.material.fetch', {'request': OutputRef('request','request')}),
      Call('identify', 'command.material.identify', {'material': OutputRef('fetch','material')})),
-    {'material': OutputRef('identify','material')})
-ACQUIRE_HTTP=replace(ACQUIRE,id='operation.material.acquire_http')
+    {'material': OutputRef('identify','material')}, recipe=MethodRef('stratbox.capabilities.preparation.recipes.acquisition:material'))
+ACQUIRE_HTTP=replace(ACQUIRE,id='operation.material.acquire_http', recipe=MethodRef('stratbox.capabilities.preparation.recipes.acquisition:http'))
 ACQUIRE_FILE=op('operation.material.acquire_file',{'locator':P('locator'),'claim':P('claim',required=False)},
     (Call('read','command.material.read',{'location':InputRef('locator')}),
      Call('identify','command.material.identify',{'material':OutputRef('read','material'),'claim':InputRef('claim')})),
-    {'material':OutputRef('identify','material')})
+    {'material':OutputRef('identify','material')}, recipe=MethodRef('stratbox.capabilities.preparation.recipes.acquisition:file'))
 RECEIVE=op('operation.material.receive',{'locator':P('locator',required=False),'query':P('query',required=False),
     'destination':P('destination')},
     (Call('request','command.request.prepare',{'locator':InputRef('locator'),'query':InputRef('query')},{'mode':'asset'}),
@@ -41,7 +41,7 @@ RECEIVE=op('operation.material.receive',{'locator':P('locator',required=False),'
     {'reference':OutputRef('receive','reference'),'evidence':OutputRef('receive','evidence'),'receipt':OutputRef('receive','receipt')},effects=('receive',))
 
 
-def extraction(identifier, decoder):
+def extraction(identifier, decoder, *, recipe=None):
     steps = (Call('decode', decoder, {'material': InputRef('material')}),
              Call('select','command.table.extract',{'physical': OutputRef('decode','physical')}),
              Call('interpret','command.table.interpret',{'tables':OutputRef('select','tables'),'issue':InputRef('issue')}),
@@ -49,11 +49,11 @@ def extraction(identifier, decoder):
     return op(identifier, {'material': PortContract('material', MATERIAL.value_type, required=False),
         'physical': PortContract('physical', BY_ID[decoder].outputs['physical'].value_type, required=False),
         'tables': PortContract('tables', required=False), 'issue': P('issue', required=False)}, steps,
-        {'dataset': OutputRef('validate','dataset'), 'assessment': OutputRef('validate','assessment')}, checks=('validate',),
+        {'dataset': OutputRef('validate','dataset'), 'assessment': OutputRef('validate','assessment')}, checks=('validate',), recipe=recipe,
         entrances={'physical':OutputRef('decode','physical'),'tables':OutputRef('select','tables')})
 
 EXTRACT_WORKBOOK = extraction('operation.series.extract_workbook','command.workbook.decode')
-EXTRACT_DOCUMENT = extraction('operation.series.extract_document','command.document.decode')
+EXTRACT_DOCUMENT = extraction('operation.series.extract_document','command.document.decode', recipe=MethodRef('stratbox.capabilities.preparation.recipes.extraction:document'))
 EXTRACT_JSON = extraction('operation.series.extract_structured.json','command.json.decode')
 EXTRACT_CSV = extraction('operation.series.extract_structured.csv','command.csv.decode')
 EXTRACT_DBF = extraction('operation.series.extract_structured.dbf','command.dbf.decode')
@@ -106,10 +106,10 @@ SERIES_ACQUIRE=OperationDefinition('operation.series.acquire',inputs={
     'selection':PortContract('selection',BY_ID['command.issue.select'].outputs['selection'].value_type, required=False,
         predicates=(SemanticPredicate('entries','nonempty',code='source.selection_empty'),
                     SemanticPredicate('assessment.complete','equals',True,'source.selection_incomplete'))),
-    'locator':P('locator',required=False),'query':P('query',required=False)},outputs={'materials':P('materials',tuple)})
-EXTRACT_ANY=OperationDefinition('operation.series.extract_any',inputs={'material':PortContract('material',MATERIAL.value_type,required=False),'physical':PortContract('physical',PHYSICAL.value_type,required=False),'tables':P('tables',required=False),'issue':P('issue',required=False)},outputs={'dataset':DATASET})
-EXTRACT_ARCHIVE=replace(EXTRACT_ANY,id='operation.series.extract_archive')
-EXTRACT_STRUCTURED=replace(EXTRACT_ANY,id='operation.series.extract_structured')
+    'locator':P('locator',required=False),'query':P('query',required=False)},outputs={'materials':P('materials',tuple)}, recipe=MethodRef('stratbox.capabilities.preparation.recipes.acquisition:series'))
+EXTRACT_ANY=OperationDefinition('operation.series.extract_any',inputs={'material':PortContract('material',MATERIAL.value_type,required=False),'physical':PortContract('physical',PHYSICAL.value_type,required=False),'tables':P('tables',required=False),'issue':P('issue',required=False)},outputs={'dataset':DATASET}, recipe=MethodRef('stratbox.capabilities.preparation.recipes.extraction:any_representation'))
+EXTRACT_ARCHIVE=replace(EXTRACT_ANY,id='operation.series.extract_archive', recipe=MethodRef('stratbox.capabilities.preparation.recipes.extraction:archive'))
+EXTRACT_STRUCTURED=replace(EXTRACT_ANY,id='operation.series.extract_structured', recipe=MethodRef('stratbox.capabilities.preparation.recipes.extraction:structured'))
 MERGE=op('operation.observations.merge',{'datasets':BY_ID['command.observations.merge'].inputs['datasets']},(Call('merge','command.observations.merge',{'datasets':InputRef('datasets')}),),{'dataset':OutputRef('merge','dataset')})
 VALIDATE=op('operation.observations.validate',{'dataset':DATASET},(Call('validate','command.observations.validate',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('validate','dataset')},checks=('validate',))
 ALIGN=op('operation.observations.align',{'dataset':DATASET},(Call('align','command.observations.align',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('align','dataset')})

@@ -4,7 +4,8 @@ from pathlib import Path
 from struct import pack
 from types import SimpleNamespace
 
-from stratbox.core.commands import standard
+from stratbox.core.commands import decoding as technical_decoding
+from stratbox.core.commands import serialization as technical_serialization
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.shared.data.values import Material
 
@@ -46,7 +47,7 @@ def character_dbf(fields, rows):
 
 def physical(code, data, **metadata):
     material = Material(data, source_id=series(code).id, metadata=metadata)
-    evidence = standard.dbf_decode({"material": material}, None, context())["physical"]
+    evidence = technical_decoding.dbf_decode({"material": material}, None, context())["physical"]
     # Binding material to this use is distinct from source-neutral physical decoding.
     return replace(evidence, material=material)
 
@@ -77,10 +78,10 @@ def render(prepared, **parameters):
 
 def reopen(tmp_path, value):
     """Restore using only final shared encoding and newly opened bytes."""
-    encoded = standard.value_encode({"value": value}, None, context())["representation"]
+    encoded = technical_serialization.value_encode({"value": value}, None, context())["representation"]
     path = Path(tmp_path) / encoded.identity.sha256
     path.write_bytes(encoded.data)
-    return standard.value_decode({"representation": path.read_bytes()}, None, context())["value"]
+    return technical_serialization.value_decode({"representation": path.read_bytes()}, None, context())["value"]
 
 
 def change_row(source, **changes):

@@ -1,3 +1,9 @@
-# Scientific products and presentation
+# Reporting-form presentations
 
-This package owns source-aware scientific methods and typed evidence. Standard callable definitions and execution remain outside the domain. The [domain catalog](../../domain.py) binds these methods through explicit command specifications.
+This package owns form-specific prepared views, wide tables and workbook layout.
+It consumes accepted observations or reviewed calculation results and preserves
+their measurement and missing-value qualifications.
+
+Use the [domain product specifications](../../domain.py) through standard view
+and render commands. [Form calculations](../../calculations/reporting_forms/)
+own numerical meaning; common core commands own storage and publication.

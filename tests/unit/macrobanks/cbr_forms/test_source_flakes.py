@@ -6,7 +6,9 @@ from struct import pack
 import pytest
 from openpyxl import load_workbook
 
-from stratbox.core.commands import standard
+from stratbox.core.commands import archives as technical_archives
+from stratbox.core.commands import decoding as technical_decoding
+from stratbox.core.commands import serialization as technical_serialization
 from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.core.formats.dbf_lossless import DBFDecodeError, decode_dbf
 from stratbox.shared.data.values import Material
@@ -80,7 +82,7 @@ def test_full_members_history_calculation_and_views_replay_after_file_read(tmp_p
     dictionary = dbf((("FIELD","C",8,0),),((b" ",(b"0012",)),))
     original = Material(zip_bytes({"PK802.dbf":data,"metadata.dbf":dictionary,"readme.txt":b"companion"}),
         source_id=series("802").id)
-    members = standard.archive_unpack({"material":original},None,context())["members"]
+    members = technical_archives.archive_unpack({"material":original},None,context())["members"]
     retained = reopen(tmp_path,members)
     assert retained == members and retained[2].data == b"companion"
     decoded = tuple(physical("802",member.data,**member.metadata) for member in retained[:2])
@@ -105,11 +107,11 @@ def test_unsupported_member_remains_retained_and_cannot_be_decoded_as_supported(
     valid=dbf((("CODE","C",4,0),),((b" ",(b"0012",)),))
     unsupported=bytes((0x30,))+valid[1:]
     original=Material(zip_bytes({"valid.dbf":valid,"unsupported.dbf":unsupported}))
-    members=standard.archive_unpack({"material":original},None,context())["members"]
+    members=technical_archives.archive_unpack({"material":original},None,context())["members"]
     replayed=reopen(tmp_path,members)
     assert replayed[1].data==unsupported
     with pytest.raises(DBFDecodeError,match="dialect_unsupported"):
-        standard.dbf_decode({"material":replayed[1]},None,context())
+        technical_decoding.dbf_decode({"material":replayed[1]},None,context())
 
 
 def test_lossless_dbf_replay_keeps_schema_lexemes_deleted_flag_without_reparse(tmp_path,monkeypatch):
@@ -129,9 +131,9 @@ def test_unknown_or_truncated_value_envelope_is_rejected(tmp_path):
     from stratbox.shared.data.values import canonical_tree
     import json
     evidence=physical("803",dbf((("CODE","C",4,0),),((b" ",(b"0012",)),)))
-    encoded=standard.value_encode({"value":evidence},None,context())["representation"]
+    encoded=technical_serialization.value_encode({"value":evidence},None,context())["representation"]
     with pytest.raises((ValueError,TypeError)):
-        standard.value_decode({"representation":encoded.data[:-1]},None,context())
+        technical_serialization.value_decode({"representation":encoded.data[:-1]},None,context())
     forged=canonical_tree(evidence);forged["type"]="caller.supplied:Arbitrary"
     with pytest.raises(ValueError,match="type_not_admitted"):
-        standard.value_decode({"representation":json.dumps(forged).encode()},None,context())
+        technical_serialization.value_decode({"representation":json.dumps(forged).encode()},None,context())

@@ -124,7 +124,7 @@ def batch(value):
 
 
 def test_calculation_exactness_duplicate_detection_and_semantic_perimeter_barriers():
-    from stratbox.core.commands.standard import observations_compare
+    from stratbox.core.commands.calculations import observations_compare
     from types import SimpleNamespace
     with localcontext() as precision:
         precision.prec=3

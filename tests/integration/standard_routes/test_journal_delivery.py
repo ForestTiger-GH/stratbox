@@ -53,6 +53,7 @@ import pytest
 @pytest.mark.parametrize('acknowledgement',(None,False,{}, {'status':'rejected'},{'status':'unknown'}))
 def test_notification_without_positive_acknowledgement_cannot_confirm_delivery(acknowledgement):
     class Provider:
+        scope_id="fixture.notifications.provider"
         def deliver(self,intent): return acknowledgement
     intent={'id':'one-effect','route':'one-channel','payload':{'text':'test'}}
     with StrategyBox(providers={'notification':Provider()}) as box:
@@ -66,6 +67,7 @@ def test_notification_without_positive_acknowledgement_cannot_confirm_delivery(a
     {'status':'confirmed','effect_kind':'storage.write'}))
 def test_negative_lookup_cannot_reconcile_unknown_delivery(lookup):
     class Provider:
+        scope_id="fixture.notifications.provider"
         calls=0
         def deliver(self,intent):
             self.calls+=1
@@ -83,6 +85,7 @@ def test_negative_lookup_cannot_reconcile_unknown_delivery(lookup):
 def test_acknowledgement_evidence_is_a_snapshot_of_the_actual_handoff():
     acknowledgement={'status':'confirmed','message_id':'original'}
     class Provider:
+        scope_id="fixture.notifications.provider"
         def deliver(self,intent):return acknowledgement
     intent={'id':'immutable-ack','route':'one-channel','payload':{}}
     with StrategyBox(providers={'notification':Provider()}) as box:
@@ -99,6 +102,7 @@ def test_confirmed_handoff_closes_pending_intent_and_frees_capacity(tmp_path,dur
     journal=FileJournal(tmp_path/'source')
     for index in range(2):journal.append(kind='output.accepted',run_id='source-'+str(index))
     class Channel:
+        scope_id="fixture.notifications.channel"
         calls=0
         def deliver(self,intent):
             self.calls+=1
@@ -125,6 +129,7 @@ def test_prepare_resumes_an_unknown_pending_handoff_without_new_facts(tmp_path):
     state=MemoryNotificationState();journal=FileJournal(tmp_path/'source')
     journal.append(kind='output.accepted',run_id='source')
     class Channel:
+        scope_id="fixture.notifications.channel"
         calls=0
         def deliver(self,intent):self.calls+=1;raise OSError('ack lost')
         def lookup(self,identity):return None
@@ -155,11 +160,12 @@ def test_default_subscription_excludes_notification_wrapper_feedback(tmp_path):
     from stratbox.capabilities.model import CommandDefinition, OperationDefinition, PortContract, MethodRef, Call, GraphBody, InputRef, OutputRef
     from stratbox.core.notifications import MemoryNotificationState
     command=CommandDefinition('command.custom.handoff',inputs={'intent':PortContract('intent')},
-        outputs={'receipt':PortContract('receipt')},method=MethodRef('stratbox.core.commands.standard:notification_deliver'),
+        outputs={'receipt':PortContract('receipt')},method=MethodRef('stratbox.core.commands.notifications:notification_deliver'),
         effects=frozenset({'notification.deliver'}),required_providers=frozenset({'notification'}))
     operation=OperationDefinition('operation.custom.handoff',inputs=command.inputs,outputs=command.outputs,
         body=GraphBody((Call('send',command.id,{'intent':InputRef('intent')}),),{'receipt':OutputRef('send','receipt')}))
     class Channel:
+        scope_id="fixture.notifications.channel"
         def deliver(self,intent):return {'status':'confirmed'}
     state=MemoryNotificationState()
     with StrategyBox(catalog=standard_catalog().with_definitions(command,operation),providers={'notification':Channel()}) as box:
