@@ -32,7 +32,8 @@ def test_optional_member_failure_is_excluded_and_recorded_without_blocking_requi
         result=service.run(plan,timeout=3)
         assert result.outcome=='succeeded',result.diagnostics
         assert result.output('results')==(2,)
-        assert result.output('outcomes')==((0,'succeeded'),(1,'failed'))
+        assert tuple((item.ordinal,item.outcome) for item in result.output('outcomes'))==((0,'succeeded'),(1,'failed'))
+        assert len({item.member_key for item in result.output('outcomes')}) == 2
 
 
 def test_all_optional_failures_do_not_produce_an_empty_success_by_default():

@@ -114,10 +114,12 @@ def test_alternative_urls_and_format_variants_are_preserved_without_silent_prefe
        <a href="https://[broken]/101-20261001.rar">broken</a>'''.encode()
     listing = scan(FORM, html)
     assert len(listing.entries) == 3
-    selection = call(FORM, "command.issue.select",
-        {"listing": listing, "query": {"issue_id": "2026-10-01"}})["selection"]
-    assert selection.assessment.status == "conflicted"
-    assert len(selection.entries) == 3
+    with pytest.raises(ValueError, match="ambiguous_asset"):
+        call(FORM, "command.issue.select", {"listing": listing, "query": {"issue_id": "2026-10-01"}})
+    result = call(FORM, "command.issue.select",
+        {"listing": listing, "query": {"issue_id": "2026-10-01", "ambiguity": "report"}})
+    assert not result["selection"].assessment.complete and result["selection"].entries == ()
+    assert result["report"].ambiguous
     chosen = call(FORM, "command.issue.select",
         {"listing": listing, "query": {"issue_id": "2026-10-01", "locator": "https://www.cbr.ru" + alternate}})["selection"]
     assert len(chosen.entries) == 1 and chosen.entries[0].locator.endswith(alternate)

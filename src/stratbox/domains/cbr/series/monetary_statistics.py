@@ -43,11 +43,11 @@ ANNEX_SURVEY_DC = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(ANNEX_SURVEY_DC_PUBLICATION.series_id, ANNEX_SURVEY_DC_PUBLICATION.formats, issue_required=ANNEX_SURVEY_DC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ANNEX_SURVEY_DC_PUBLICATION.series_id})),
+            SourceRequirement(ANNEX_SURVEY_DC_PUBLICATION.series_id, ANNEX_SURVEY_DC_PUBLICATION.formats, issue_required=ANNEX_SURVEY_DC_PUBLICATION.issue_model == 'dated', locator=ANNEX_SURVEY_DC_PUBLICATION.locator, filename_pattern=ANNEX_SURVEY_DC_PUBLICATION.filename_pattern, publication_kind=ANNEX_SURVEY_DC_PUBLICATION.kind), Applicability(source_ids=frozenset({ANNEX_SURVEY_DC_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(ANNEX_SURVEY_DC_PUBLICATION.series_id, ANNEX_SURVEY_DC_PUBLICATION.formats, issue_required=ANNEX_SURVEY_DC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ANNEX_SURVEY_DC_PUBLICATION.series_id})),
+            SourceRequirement(ANNEX_SURVEY_DC_PUBLICATION.series_id, ANNEX_SURVEY_DC_PUBLICATION.formats, issue_required=ANNEX_SURVEY_DC_PUBLICATION.issue_model == 'dated', locator=ANNEX_SURVEY_DC_PUBLICATION.locator, filename_pattern=ANNEX_SURVEY_DC_PUBLICATION.filename_pattern, publication_kind=ANNEX_SURVEY_DC_PUBLICATION.kind), Applicability(source_ids=frozenset({ANNEX_SURVEY_DC_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -101,11 +101,11 @@ BALANCE_ODC = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(BALANCE_ODC_PUBLICATION.series_id, BALANCE_ODC_PUBLICATION.formats, issue_required=BALANCE_ODC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BALANCE_ODC_PUBLICATION.series_id})),
+            SourceRequirement(BALANCE_ODC_PUBLICATION.series_id, BALANCE_ODC_PUBLICATION.formats, issue_required=BALANCE_ODC_PUBLICATION.issue_model == 'dated', locator=BALANCE_ODC_PUBLICATION.locator, filename_pattern=BALANCE_ODC_PUBLICATION.filename_pattern, publication_kind=BALANCE_ODC_PUBLICATION.kind), Applicability(source_ids=frozenset({BALANCE_ODC_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(BALANCE_ODC_PUBLICATION.series_id, BALANCE_ODC_PUBLICATION.formats, issue_required=BALANCE_ODC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BALANCE_ODC_PUBLICATION.series_id})),
+            SourceRequirement(BALANCE_ODC_PUBLICATION.series_id, BALANCE_ODC_PUBLICATION.formats, issue_required=BALANCE_ODC_PUBLICATION.issue_model == 'dated', locator=BALANCE_ODC_PUBLICATION.locator, filename_pattern=BALANCE_ODC_PUBLICATION.filename_pattern, publication_kind=BALANCE_ODC_PUBLICATION.kind), Applicability(source_ids=frozenset({BALANCE_ODC_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -160,11 +160,11 @@ MONETARY_AGG = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MONETARY_AGG_PUBLICATION.series_id, MONETARY_AGG_PUBLICATION.formats, issue_required=MONETARY_AGG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MONETARY_AGG_PUBLICATION.series_id})),
+            SourceRequirement(MONETARY_AGG_PUBLICATION.series_id, MONETARY_AGG_PUBLICATION.formats, issue_required=MONETARY_AGG_PUBLICATION.issue_model == 'dated', locator=MONETARY_AGG_PUBLICATION.locator, filename_pattern=MONETARY_AGG_PUBLICATION.filename_pattern, publication_kind=MONETARY_AGG_PUBLICATION.kind), Applicability(source_ids=frozenset({MONETARY_AGG_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MONETARY_AGG_PUBLICATION.series_id, MONETARY_AGG_PUBLICATION.formats, issue_required=MONETARY_AGG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MONETARY_AGG_PUBLICATION.series_id})),
+            SourceRequirement(MONETARY_AGG_PUBLICATION.series_id, MONETARY_AGG_PUBLICATION.formats, issue_required=MONETARY_AGG_PUBLICATION.issue_model == 'dated', locator=MONETARY_AGG_PUBLICATION.locator, filename_pattern=MONETARY_AGG_PUBLICATION.filename_pattern, publication_kind=MONETARY_AGG_PUBLICATION.kind), Applicability(source_ids=frozenset({MONETARY_AGG_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -219,11 +219,11 @@ SURVEY_CB = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(SURVEY_CB_PUBLICATION.series_id, SURVEY_CB_PUBLICATION.formats, issue_required=SURVEY_CB_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_CB_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_CB_PUBLICATION.series_id, SURVEY_CB_PUBLICATION.formats, issue_required=SURVEY_CB_PUBLICATION.issue_model == 'dated', locator=SURVEY_CB_PUBLICATION.locator, filename_pattern=SURVEY_CB_PUBLICATION.filename_pattern, publication_kind=SURVEY_CB_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_CB_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(SURVEY_CB_PUBLICATION.series_id, SURVEY_CB_PUBLICATION.formats, issue_required=SURVEY_CB_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_CB_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_CB_PUBLICATION.series_id, SURVEY_CB_PUBLICATION.formats, issue_required=SURVEY_CB_PUBLICATION.issue_model == 'dated', locator=SURVEY_CB_PUBLICATION.locator, filename_pattern=SURVEY_CB_PUBLICATION.filename_pattern, publication_kind=SURVEY_CB_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_CB_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -278,11 +278,11 @@ SURVEY_DC_NEW = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(SURVEY_DC_NEW_PUBLICATION.series_id, SURVEY_DC_NEW_PUBLICATION.formats, issue_required=SURVEY_DC_NEW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_DC_NEW_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_DC_NEW_PUBLICATION.series_id, SURVEY_DC_NEW_PUBLICATION.formats, issue_required=SURVEY_DC_NEW_PUBLICATION.issue_model == 'dated', locator=SURVEY_DC_NEW_PUBLICATION.locator, filename_pattern=SURVEY_DC_NEW_PUBLICATION.filename_pattern, publication_kind=SURVEY_DC_NEW_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_DC_NEW_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(SURVEY_DC_NEW_PUBLICATION.series_id, SURVEY_DC_NEW_PUBLICATION.formats, issue_required=SURVEY_DC_NEW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_DC_NEW_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_DC_NEW_PUBLICATION.series_id, SURVEY_DC_NEW_PUBLICATION.formats, issue_required=SURVEY_DC_NEW_PUBLICATION.issue_model == 'dated', locator=SURVEY_DC_NEW_PUBLICATION.locator, filename_pattern=SURVEY_DC_NEW_PUBLICATION.filename_pattern, publication_kind=SURVEY_DC_NEW_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_DC_NEW_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -337,11 +337,11 @@ SURVEY_ODC = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(SURVEY_ODC_PUBLICATION.series_id, SURVEY_ODC_PUBLICATION.formats, issue_required=SURVEY_ODC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_ODC_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_ODC_PUBLICATION.series_id, SURVEY_ODC_PUBLICATION.formats, issue_required=SURVEY_ODC_PUBLICATION.issue_model == 'dated', locator=SURVEY_ODC_PUBLICATION.locator, filename_pattern=SURVEY_ODC_PUBLICATION.filename_pattern, publication_kind=SURVEY_ODC_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_ODC_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(SURVEY_ODC_PUBLICATION.series_id, SURVEY_ODC_PUBLICATION.formats, issue_required=SURVEY_ODC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({SURVEY_ODC_PUBLICATION.series_id})),
+            SourceRequirement(SURVEY_ODC_PUBLICATION.series_id, SURVEY_ODC_PUBLICATION.formats, issue_required=SURVEY_ODC_PUBLICATION.issue_model == 'dated', locator=SURVEY_ODC_PUBLICATION.locator, filename_pattern=SURVEY_ODC_PUBLICATION.filename_pattern, publication_kind=SURVEY_ODC_PUBLICATION.kind), Applicability(source_ids=frozenset({SURVEY_ODC_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

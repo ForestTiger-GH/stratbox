@@ -24,6 +24,7 @@ _RESPONSE_HEADERS = {
     "content-encoding",
     "etag",
     "last-modified",
+    "vary",
     "retry-after",
 }
 

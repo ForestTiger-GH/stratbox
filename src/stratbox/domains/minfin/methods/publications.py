@@ -23,6 +23,11 @@ def prepare_request(inputs, settings, context):
     parameters = _parameters(inputs, context)
     selection = inputs.get("selection")
     locator = inputs.get("locator")
+    role = parameters.get("role")
+    if role is not None and role not in {"index", "asset"}:
+        raise ValueError("minfin.request.role_invalid")
+    if role == "index" and (isinstance(locator, PublicationAsset) or selection is not None):
+        raise ValueError("minfin.request.index_asset_conflict")
     if isinstance(locator, PublicationAsset):
         if locator.source_id != settings.source_id:
             raise ValueError("minfin.request.source_mismatch")
@@ -37,7 +42,7 @@ def prepare_request(inputs, settings, context):
         is_asset = True
     else:
         url = parameters.get("url", settings.index_url)
-        is_asset = parameters.get("role") == "asset" or url != settings.index_url
+        is_asset = role == "asset" or role != "index" and url != settings.index_url
         metadata = {key: parameters[key] for key in ("issue_id", "asset_id") if key in parameters}
     if not allowed_url(url, asset=is_asset):
         raise ValueError("minfin.request.url_forbidden")
@@ -97,6 +102,7 @@ def scan(inputs, settings, context):
         metadata = {"filename": filename, "document_id": rule.document_id,
                     "modified_on": card.modified_on.isoformat() if card and card.modified_on else None,
                     "published_on": card.published_on.isoformat() if card and card.published_on else None,
+                    "publication_date": card.published_on.isoformat() if card and card.published_on else None,
                     "label": card.document_title if card else label,
                     "index_identity": material.identity.sha256}
         entries[url] = PublicationAsset(rule.source_id, issue_id, rule.asset_id, url, fmt, metadata)
@@ -112,23 +118,67 @@ def scan(inputs, settings, context):
 
 def select(inputs, settings, context):
     listing = inputs["listing"]
-    query = _parameters(inputs, context)
-    entries = tuple(item for item in listing.entries if item.source_id == settings.source_id)
-    if query.get("issue_id"):
-        entries = tuple(item for item in entries if item.issue_id == query["issue_id"])
-    if query.get("url"):
-        entries = tuple(item for item in entries if item.locator == query["url"])
-    if len(entries) > 1:
-        raise ValueError("minfin.asset.selection_ambiguous")
-    assessment = Assessment("complete" if entries else "partial",
-        () if entries else ("minfin.asset.unavailable",),
-        expected=(settings.source_id,), observed=tuple(item.source_id for item in entries))
-    return {"selection": AssetSelection(entries, assessment)}
+    if not isinstance(listing, PublicationListing) or listing.domain_id != "minfin":
+        raise ValueError("minfin.publication_listing_required")
+    from stratbox.shared.data.selection import IssueQuery, select_publication_assets
+    keys = set(IssueQuery.__dataclass_fields__) | {"source_id", "asset_id", "issue_id", "issue", "as_of", "periods", "format", "locator", "url"}
+    query = inputs.get("query", {key: value for key, value in _parameters(inputs, context).items() if key in keys})
+    selection, report = select_publication_assets(listing, query, source_ids=(settings.source_id,))
+    return {"selection": selection, "report": report}
 
 
 def assess(inputs, settings, context):
+    from stratbox.shared.data.materials import StagedMaterialRef
+    from stratbox.shared.data.values import IdentifiedMaterial, ImmutableMaterialRef
+    materials = (Material, IdentifiedMaterial, ImmutableMaterialRef, StagedMaterialRef)
     evidence = inputs["evidence"]
     baseline = inputs.get("baseline")
+    for value in (evidence, baseline):
+        source = getattr(value, "source_id", None)
+        if source is not None and source not in {settings.source_id, settings.source_id + ".index", settings.family_id + ".index"}:
+            raise ValueError("minfin.source_comparison_conflict")
+    from stratbox.core.commands.publications import retained_validation_assessment
+    retained = retained_validation_assessment(inputs, context)
+    if retained is not None:
+        return retained
+    if isinstance(evidence, PublicationListing):
+        if evidence.domain_id != "minfin" or isinstance(baseline, PublicationListing) and baseline.domain_id != "minfin":
+            raise ValueError("minfin.publication_listing_required")
+        scope = context.parameters.get("comparison_scope", "selected")
+        if scope not in {"selected", "feed"}:
+            raise ValueError("minfin.comparison_scope_invalid")
+        def members(value):
+            entries = value.entries
+            assessment = value.assessment
+            if scope == "selected":
+                from stratbox.shared.data.selection import select_publication_assets
+                selected, report = select_publication_assets(value, inputs.get("query"), source_ids=(settings.source_id,))
+                entries = selected.entries
+                assessment = report.assessment
+            return tuple(sorted((item.source_id, item.issue_id, item.asset_id, item.locator, item.format) for item in entries)), assessment
+        selected, coverage = members(evidence)
+        previous, previous_coverage = members(baseline) if isinstance(baseline, PublicationListing) else (None, None)
+        candidate = fingerprint((scope, selected))
+        prior = fingerprint((scope, previous)) if previous is not None else None
+        status = "first_seen" if prior is None else "unknown" if prior == candidate else "changed"
+        if not coverage.complete or previous_coverage is not None and not previous_coverage.complete:
+            status = "unknown"
+        return {"assessment": UpdateAssessment(status, "observed_publication_listing",
+            ("minfin.index_does_not_establish_asset_bytes",), predecessor=prior, candidate=candidate,
+            evidence={"scope": scope, "source_id": settings.source_id, "source_coverage": evidence.assessment,
+                "selected_coverage": coverage, "previous_selected_coverage": previous_coverage})}
+    if isinstance(evidence, materials):
+        def coordinates(value):
+            if isinstance(value, IdentifiedMaterial):
+                return value.claim.source_id, value.claim.issue_id, value.claim.asset_id
+            return value.source_id or settings.source_id, str(value.metadata.get("issue_id", "")), str(value.metadata.get("asset_id", "main"))
+        candidate = evidence.identity.sha256
+        previous = baseline.identity.sha256 if isinstance(baseline, materials) else None
+        if isinstance(baseline, materials) and coordinates(evidence) != coordinates(baseline):
+            return {"assessment": UpdateAssessment("changed", "explicit_publication_coordinates",
+                predecessor=fingerprint(coordinates(baseline)), candidate=fingerprint(coordinates(evidence)))}
+        status = "first_seen" if baseline is None else "unknown" if previous is None else "unchanged" if previous == candidate else "changed"
+        return {"assessment": UpdateAssessment(status, "exact_material_bytes", predecessor=previous, candidate=candidate)}
     candidate = fingerprint(evidence)
     prior = baseline.candidate if isinstance(baseline, UpdateAssessment) else fingerprint(baseline) if baseline is not None else None
     status = "new_issue" if prior is None else "unchanged" if prior == candidate else "changed"

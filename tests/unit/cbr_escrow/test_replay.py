@@ -94,7 +94,7 @@ def test_source_table_and_observations_replay_preserve_precision_and_unknown_cel
 
 
 def test_prepared_product_renders_in_fresh_process_without_source_parser(tmp_path):
-    dataset = history(publication(), publication(period="01072026", region="New region"))
+    dataset = history(publication(extra=False), publication(period="01072026", region="New region", extra=False))
     assert "Example region" in {row["subject"] for row in dataset.rows}
     view = prepared(dataset)
     assert "Example region" not in view.settings["region_order"]
@@ -122,7 +122,7 @@ Path(sys.argv[2]).write_bytes(product.data)
 
 
 def test_prepared_view_replay_keeps_tokens_and_actual_source_coordinates():
-    dataset = history(publication(), publication(period="01072026"))
+    dataset = history(publication(extra=False), publication(period="01072026", extra=False))
     view = prepared(dataset)
     restored = decoded(encoded(view))
     assert rendered(restored) == rendered(view)

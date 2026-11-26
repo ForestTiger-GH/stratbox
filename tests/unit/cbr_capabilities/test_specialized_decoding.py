@@ -33,11 +33,11 @@ def checked(result, port):
 def test_specialized_interpretation_and_retention_share_one_decoder(family, monkeypatch):
     from stratbox.core.formats.spreadsheets import cells
     source, data, filename = fixture(family)
-    calls, decoder = [], cells.read_workbook_cells
+    calls, decoder = [], cells.read_workbook_cells_stream
     def count(*args, **kwargs):
         calls.append(1)
         return decoder(*args, **kwargs)
-    monkeypatch.setattr(cells, "read_workbook_cells", count)
+    monkeypatch.setattr(cells, "read_workbook_cells_stream", count)
     def forbidden(*args, **kwargs):
         raise AssertionError("An interpreter must consume retained physical cells")
     if family == "escrow":
@@ -64,7 +64,7 @@ def test_other_known_source_is_rejected_before_physical_decode(monkeypatch):
     source, data, filename = fixture("escrow")
     def forbidden(*args, **kwargs):
         raise AssertionError("Wrong logical source must fail before decoding")
-    monkeypatch.setattr(cells, "read_workbook_cells", forbidden)
+    monkeypatch.setattr(cells, "read_workbook_cells_stream", forbidden)
     with StrategyBox() as box:
         with pytest.raises(ValueError, match="source"):
             box.prepare("operation.series.extract_workbook", inputs={"material": Material(data, source_id="cbr.funding.funds_all")}, target=SeriesTarget(source))

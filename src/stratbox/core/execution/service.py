@@ -17,13 +17,16 @@ from uuid import uuid4
 
 from stratbox.shared.data.values import fingerprint
 from .errors import OperationFailure, ExecutionFailure, error_code
-from .owned_values import _size, _cells, _isolate, _value_keys
+from .owned_values import _size, _isolate, _value_keys
+from .boundary_accounting import account_inputs, account_outputs
 from .context import CommandContext
 from .results import RunHandle, RunResult
 from .admission import inspect_plan, snapshot_plan, replace_record, AdmissionRejected
 from .observers import ObserverDispatcher
 from stratbox.core.observability.journal.stream import JournalFact, MemoryJournal
-from stratbox.core.limits import ExecutionBudget, BudgetMeter
+from stratbox.core.limits import ExecutionBudget, BudgetMeter, BudgetError
+from stratbox.shared.data.materials import staged_references
+from stratbox.core.storage.staged_values import StagedValueStore
 
 
 
@@ -51,13 +54,18 @@ class ExecutionSettings:
     observer_queue_capacity: int = 256
     observer_queue_bytes: int = 4 * 1024 * 1024
     observer_diagnostic_capacity: int = 256
+    max_staged_bytes: int = 16 * 1024**3
+    max_staged_objects: int = 10000
+    max_staged_readers: int = 64
+    staging_directory: str | None = None
 
     def __post_init__(self):
         if any(type(value) is not int or value < 1 for value in (
                 self.max_workers, self.active_runs, self.max_retained_bytes, self.event_capacity, self.effect_capacity, self.max_accepted_values,
                 self.max_open_runs,self.max_pending_runs,self.max_plan_nodes,self.max_plan_bytes,
                 self.max_admitted_nodes,self.max_admitted_plan_bytes,self.observer_queue_capacity,
-                self.observer_queue_bytes,self.observer_diagnostic_capacity)):
+                self.observer_queue_bytes,self.observer_diagnostic_capacity,
+                self.max_staged_bytes,self.max_staged_objects,self.max_staged_readers)):
             raise ValueError("execution.invalid_settings")
         if any(type(n) is not int or n < 1 for n in self.capacities.values()):
             raise ValueError("execution.invalid_capacity")
@@ -168,6 +176,7 @@ class _Task:
     wait_ticket: int | None = None
     accepted_keys: set = field(default_factory=set)
     input_keys: set = field(default_factory=set)
+    effect_ids: set = field(default_factory=set)
 
 
 @dataclass
@@ -221,6 +230,10 @@ class ExecutionService:
         self.journal, self.observer = journal or MemoryJournal(self.settings.event_capacity), observer
         if observer is not None and not callable(observer): raise TypeError("observation.callback_required")
         self._condition = Condition(RLock())
+        self.staging = StagedValueStore(directory=self.settings.staging_directory,
+            max_bytes=self.settings.max_staged_bytes,
+            max_objects=self.settings.max_staged_objects,
+            max_readers=self.settings.max_staged_readers)
         self._state, self._failure = "running", None
         self._closed_event, self._worker_local = Event(), local()
         self._admitting = self._plan_bytes = self._plan_nodes = 0
@@ -236,7 +249,7 @@ class ExecutionService:
         self._thread = Thread(target=self._coordinate, name="stratbox-coordinator", daemon=True)
         self._thread.start()
 
-    def _fact(self, run, kind, task=None, output_name=None, scope_id=None, **data):
+    def _fact(self, run, kind, task=None, output_name=None, scope_id=None, accepted_value=None, **data):
         if run.journal_failed: return None
         if task is not None:
             command = getattr(task.spec, "command", None)
@@ -244,6 +257,18 @@ class ExecutionService:
             data.setdefault("capability_kind", "command" if command else getattr(task.spec, "kind", "command"))
             data.setdefault("dependencies", tuple(getattr(task.spec, "deps", ())))
             data.setdefault("origin", self._task_origin(task))
+            if kind == "output.accepted" and output_name in task.outputs:
+                from .accepted_values import accepted_fact
+                value = task.outputs[output_name]
+                record = accepted_value
+                if record is None:
+                    try:
+                        record = self._accepted.get(fingerprint(value))
+                    except (ValueError, TypeError):
+                        record = None
+                if record is not None:
+                    inputs = task.owned_inputs if task.owned_inputs is not None else self._resolve(run, task.spec.inputs)
+                    data.update(accepted_fact(record, value, inputs=inputs, outputs=task.outputs))
         if "origin" not in data:
             tasks = [run.tasks[key] for key in run.root_ids] if run.root_ids else list(run.tasks.values())
             data["origin"] = "notification" if tasks and all(self._task_origin(item) == "notification" for item in tasks) else "data"
@@ -338,6 +363,7 @@ class ExecutionService:
             if pending+self._admitting >= self.settings.max_pending_runs: raise ExecutionFailure("admission.pending_runs")
             self._admitting += 1
         reservation = None
+        stage_owner = None
         try:
             footprint = inspect_plan(plan,max_nodes=self.settings.max_plan_nodes,max_bytes=self.settings.max_plan_bytes)
             with self._condition:
@@ -366,6 +392,8 @@ class ExecutionService:
                 try:
                     tuple(TopologicalSorter({key:set(getattr(task.spec,"deps",())) for key,task in run.tasks.items()}).static_order())
                 except CycleError: raise ExecutionFailure("plan.cycle") from None
+                stage_owner = "admission:" + run.run_id
+                self.staging.pin(owned, stage_owner)
                 self._fact(run,"run.admitted")
                 run.root_ids = tuple(ids)
                 run.plan = replace_record(owned,tasks=())
@@ -373,6 +401,7 @@ class ExecutionService:
                 self._runs[run.run_id] = run
                 self._order.append(run.run_id)
                 reservation = None
+                stage_owner = None
                 self._condition.notify_all()
                 return RunHandle(self,run)
         except AdmissionRejected as error:
@@ -382,6 +411,8 @@ class ExecutionService:
                 self._admitting -= 1
                 if reservation is not None:
                     self._plan_nodes -= reservation.nodes; self._plan_bytes -= reservation.bytes
+                if stage_owner is not None:
+                    self.staging.release(stage_owner)
                 self._condition.notify_all()
 
     def run(self, plan, *, timeout=None):
@@ -514,11 +545,19 @@ class ExecutionService:
             for task in run.tasks.values():
                 if task.state in {"pending", "expanding"}:
                     needed.update(refs(task.expansion))
-                    for name in ("inputs", "items", "initial", "selector"):
+                    if getattr(task.spec, 'kind', 'command') == 'collect':
+                        from .members import dependency_members
+                        for item in task.spec.items:
+                            needed.update(child.spec.task_id for child in dependency_members(run, item))
+                    if getattr(task.spec, 'kind', 'command') == 'map' and task.expansion:
+                        for keys, _ in task.expansion['active'].values():
+                            needed.update(keys)
+                    for name in ("inputs", "items", "initial", "selector", "forwarded"):
                         needed.update(refs(getattr(task.spec, name, ())))
                     if hasattr(task.spec, "command"): needed.update(refs(task.spec.command.parameters))
             for key, task in run.tasks.items():
                 if key not in needed and task.state not in {"pending", "expanding", "running", "waiting_shared"}:
+                    self.staging.release("output:" + run.run_id + ":" + key)
                     task.outputs.clear()
                     task.accepted_keys.clear()
                     task.spec = _TaskSummary(task.spec.task_id, task.spec.scope_id, task.spec.required, self._task_origin(task))
@@ -542,7 +581,7 @@ class ExecutionService:
 
     def _key(self, run, task, inputs):
         command = task.spec.command
-        if command.id in {"command.material.read", "command.material.list", "command.release.assemble"}: return None
+        if command.id in {"command.material.read", "command.material.list", "command.release.assemble", "command.source.state.read"}: return None
         reuse = getattr(command, "reuse", None)
         if reuse is not None and not getattr(reuse, "inflight_eligible", getattr(reuse, "shareable", True)):
             return None
@@ -557,7 +596,12 @@ class ExecutionService:
                 if request.freshness == "fresh": return None
                 basis = (request.method, request.url, request.headers, request.body, request.form,
                          request.max_bytes, request.timeout, request.read_only, request.freshness,
-                         request.observation_id or run.run_id, request.metadata.get("access_scope"))
+                         request.observation_id or run.run_id, request.metadata.get("access_scope"),
+                         inputs.get("retained"))
+                placement = command.parameters.get('placement',settings.get('placement','buffered')
+                    if isinstance(settings,Mapping) else getattr(settings,'placement','buffered'))
+                if placement == "staged" or "retained" in inputs:
+                    basis = (*basis, request.source_id, request.metadata)
                 parameters = {key:value for key,value in command.parameters.items() if key not in logical}
                 if getattr(command.method, "locator", "") == "stratbox.core.commands.materials:material_fetch": settings = None
             elif command.id.endswith(("workbook.decode", "json.decode", "document.decode", "dbf.decode")):
@@ -589,9 +633,7 @@ class ExecutionService:
     def _execute_command(self, run, task, inputs):
         context = CommandContext(self, run, task, inputs)
         context.checkpoint()
-        cells_before = context.budget.used("cells")
-        context.budget.charge("input_bytes", _size(inputs))
-        context.budget.charge("cells", _cells(inputs))
+        cells_before = account_inputs(context.budget, inputs)
         method = task.spec.command.method
         method = method.resolve() if hasattr(method, "resolve") else method
         for provider in getattr(task.spec.command, "required_providers", ()):
@@ -614,22 +656,17 @@ class ExecutionService:
             outputs, outcome, findings = {next(iter(task.spec.command.outputs)): answer}, "succeeded", ()
         else:
             raise ExecutionFailure("output.mapping_required")
-        output_cells = _cells(outputs)
-        charged = context.budget.used("cells") - cells_before
-        if output_cells > charged: context.budget.charge("cells", output_cells - charged)
         if outcome not in {"succeeded", "partial", "failed", "unknown", "cancelled"}:
             raise ExecutionFailure("completion.invalid_outcome")
         if any(receipt.status == "unknown" for receipt in context.effect_receipts.values()):
             outcome = "unknown"
         # Even a rejected/unknown result consumes its real boundary byte budget.
-        context.budget.charge("output_bytes", _size(outputs), completed=True)
-        if outcome not in {"succeeded", "partial"}:
-            return {}, outcome, tuple(findings)
+        account_outputs(context.budget, outputs, cells_before=cells_before,
+                        output_owner=(run.run_id, task.spec.task_id))
         return outputs, outcome, tuple(findings)
 
     def _accept_outputs(self, task, outputs, outcome):
         command = task.spec.command
-        if outcome not in {"succeeded", "partial"}: return {}
         if outcome == "partial" and not command.acceptance.partial_allowed:
             raise ExecutionFailure("completion.partial_not_allowed")
         if set(outputs) - command.outputs.keys(): raise ExecutionFailure("output.unknown")
@@ -640,48 +677,63 @@ class ExecutionService:
                 _validate(port, outputs[name]); selected[name] = outputs[name]
             elif port.required:
                 raise ExecutionFailure("output.required:" + name)
+        if not selected and outcome not in {"succeeded", "partial"}:
+            return selected
         command.acceptance.validate(selected)
         return selected
 
     def _settle(self):
+        completed_producers = set()
         for run in self._runs.values():
             for task in tuple(run.tasks.values()):
                 if task.state not in {"running", "waiting_shared"} or not task.future.done():
                     continue
                 producer = task.state == "running"
                 if producer:
+                    completed_producers.add(task.physical_id)
                     self._release_claims(task)
                     if task.work_key is not None:
                         self._work.pop(task.work_key, None)
+                effective_outcome = None
                 try:
                     outputs, outcome, findings = task.future.result()
                     logical = self._logical_outputs(run, task, outputs)
-                    task.outputs, task.state, task.findings = self._accept_outputs(task, logical, outcome), outcome, findings
+                    cancelled = run.cancel.is_set() or task.cancelled
+                    effective_outcome = "cancelled" if cancelled and outcome != "unknown" else outcome
+                    selected = self._accept_outputs(task, logical, effective_outcome)
+                    if not producer and not run.journal_failed and (not cancelled or selected):
+                        cells_before = account_inputs(run.meter, task.owned_inputs)
+                        account_outputs(run.meter, selected if cancelled else logical, cells_before=cells_before,
+                                        output_owner=(run.run_id, task.spec.task_id))
+                    task.outputs, task.state, task.findings = selected, effective_outcome, findings
+                    if effective_outcome != "succeeded":
+                        run.diagnostics.extend(findings)
                     if run.journal_failed:
                         task.outputs, task.state = {}, "failed"
-                    elif run.cancel.is_set() or task.cancelled:
-                        task.outputs, task.state = {}, "cancelled"
                     else:
-                        self._reserve_accepted(task,task.outputs)
-                        for name in task.outputs:
-                            self._register_value(run, task, name, task.outputs[name])
-                            fact=self._fact(run, "output.accepted", task, output_name=name)
-                            if fact is not None: run.accepted_scopes.add((task.spec.scope_id,name))
+                        self.staging.pin(task.outputs, "output:" + run.run_id + ":" + task.spec.task_id)
+                        self._register_outputs(run, task)
                     reuse = getattr(task.spec.command, "reuse", None)
-                    if producer and task.work_key and outcome == "succeeded" and getattr(reuse, "completed_eligible", True):
+                    if producer and task.work_key and outcome == "succeeded" and not staged_references(outputs) and getattr(reuse, "completed_eligible", True):
                         amount = _size(outputs)
                         if self._cache_bytes + self._retained_bytes + amount <= self.settings.max_retained_bytes:
                             self._completed[task.work_key] = (outputs, outcome, findings)
                             self._cache_bytes += amount
                 except Exception as error:
-                    task.state = getattr(error, "outcome", "failed")
+                    self.staging.release("output:" + run.run_id + ":" + task.spec.task_id)
+                    task.state = "unknown" if effective_outcome == "unknown" else getattr(error, "outcome", "failed")
                     task.outputs = {}
                     task.findings = (error_code(error),)
                     run.diagnostics.extend(task.findings)
                 self._fact(run, "work.finished" if producer else "work.consumer_finished", task, outcome=task.state, findings=task.findings)
                 task.owned_inputs = None
+                self.staging.release("input:" + run.run_id + ":" + task.spec.task_id)
                 task.input_keys.clear()
                 task.future = None
+        # A cancelled producer may still serve another logical consumer. Settle
+        # every completed consumer before dropping the physical provisional pin.
+        for physical_id in completed_producers:
+            self.staging.release("producer:" + physical_id)
 
     def _reserve_accepted(self,task,outputs):
         incoming = _value_keys(outputs.values())
@@ -696,26 +748,29 @@ class ExecutionService:
             for key in victims[:needed]: self._accepted.pop(key)
         task.accepted_keys.update(incoming)
 
-    def _register_value(self, run, task, name, value):
-        from stratbox.shared.data.values import IdentifiedMaterial
-        from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
+    def _register_outputs(self, run, task):
+        """Reuse identities only within acceptance of these private outputs."""
+        if task.state not in {"succeeded", "partial"}:
+            # A checked diagnostic value reports an unsuccessful command; it
+            # grants neither successful-stage nor source/certificate authority.
+            for name in task.outputs:
+                fact = self._fact(run, "output.reported", task, output_name=name, outcome=task.state)
+                if fact is not None:
+                    run.accepted_scopes.add((task.spec.scope_id, name))
+            return
+        self._reserve_accepted(task, task.outputs)
         inputs = task.owned_inputs if task.owned_inputs is not None else self._resolve(run, task.spec.inputs)
-        basis, uses = [], list(getattr(value, "source_uses", ()))
-        for item in inputs.values():
-            try:
-                key = fingerprint(item)
-            except (ValueError, TypeError):
-                continue
-            previous = self._accepted.get(key)
-            if previous:
-                basis.extend(previous["basis"]); uses.extend(previous["source_uses"])
-            basis.append(key)
-            identity = getattr(item, "identity", None)
-            if hasattr(identity, "sha256"): basis.append(identity.sha256)
-            uses.extend(getattr(item, "source_uses", ()))
-        if isinstance(value, IdentifiedMaterial):
-            uses.append(SourceUse(SourceCoordinate(value.claim.source_id, issue_id=value.claim.issue_id or None,
-                asset_id=value.claim.asset_id, material_identity=value.identity), "material", value.claim.attribution))
+        basis = None
+        for name, value in task.outputs.items():
+            record = self._register_value(run, task, name, value, inputs=inputs, basis=basis)
+            if record is not None:
+                basis = record['basis']
+            fact = self._fact(run, "output.accepted", task, output_name=name, accepted_value=record)
+            if fact is not None:
+                run.accepted_scopes.add((task.spec.scope_id, name))
+
+    def _register_value(self, run, task, name, value, *, inputs, basis):
+        from .accepted_values import accepted_record
         try:
             key = fingerprint(value)
         except (ValueError, TypeError):
@@ -728,10 +783,17 @@ class ExecutionService:
             victim = next((candidate for candidate in self._accepted if candidate not in pinned),None)
             if victim is None: raise ExecutionFailure("value.acceptance_metadata_capacity_exhausted")
             self._accepted.pop(victim)
-        self._accepted[key] = MappingProxyType({"id": fingerprint((run.run_id, task.spec.task_id, name, key)),
-            "basis": tuple(dict.fromkeys(basis)), "source_uses": tuple(dict.fromkeys(uses))})
+        if basis is None:
+            from stratbox.shared.data.processing import processing_basis
+            command = task.spec.command
+            basis = processing_basis(inputs, capability_id=command.id, method=command.method,
+                settings=command.settings, parameters=command.parameters, build_identity=run.plan.build_identity)
+        record = MappingProxyType(accepted_record(self, run, task, name, value, inputs,
+            value_identity=key, basis=basis))
+        self._accepted[key] = record
         self._accepted.move_to_end(key)
         task.accepted_keys.add(key)
+        return record
 
     def _logical_outputs(self, run, task, outputs):
         """Attach each consumer's source use to a shared neutral decoder payload."""
@@ -739,34 +801,35 @@ class ExecutionService:
             request = self._resolve(run, task.spec.inputs)["request"]
             material = outputs.get("material")
             if material is not None:
+                from stratbox.shared.data.materials import StagedMaterialRef
+                from stratbox.shared.data.values import ImmutableMaterialRef
+                if isinstance(material, (StagedMaterialRef, ImmutableMaterialRef)):
+                    return dict(outputs)
                 return {**outputs, "material": replace(material, source_id=request.source_id,
-                    metadata={**dict(material.metadata), **dict(request.metadata)})}
+                    metadata={**dict(material.metadata), **dict(request.metadata)}),
+                    **({'request':replace(outputs['request'],source_id=request.source_id,
+                        metadata=request.metadata,observation_id=request.observation_id)} if 'request' in outputs else {})}
             return dict(outputs)
         if not task.spec.command.id.endswith(("workbook.decode", "json.decode", "document.decode", "dbf.decode")):
             return dict(outputs)
         from stratbox.shared.data.values import Material, IdentifiedMaterial, WorkbookEvidence, JsonEvidence, DocumentEvidence, DbfEvidence
         original = self._resolve(run, task.spec.inputs).get("material")
         from stratbox.core.commands._values import _material
-        original = _material(original) if isinstance(original, IdentifiedMaterial) else original
-        if not isinstance(original, Material): return dict(outputs)
+        if isinstance(original, IdentifiedMaterial) and isinstance(original.material, Material):
+            original = _material(original)
+        if original is None: return dict(outputs)
         return {name: replace(value, material=original) if isinstance(value, (WorkbookEvidence, JsonEvidence, DocumentEvidence, DbfEvidence)) else value
                 for name, value in outputs.items()}
 
     def _ready(self, run, task):
         deps = [run.tasks[key] for key in getattr(task.spec, "deps", ())]
-        optional_deps = set()
-        if getattr(task.spec, "kind", "command") == "collect":
-            def refs(value):
-                if hasattr(value, "task_id") and hasattr(value, "port"): return {value.task_id}
-                parts = value.values() if isinstance(value, Mapping) else value if isinstance(value, (tuple, list)) else ()
-                return set().union(*(refs(part) for part in parts)) if parts else set()
-            mandatory = set()
-            for index, item in enumerate(task.spec.items):
-                (optional_deps if index in task.spec.optional_items else mandatory).update(refs(item))
-            optional_deps -= mandatory
-        if any(dep.state in {"failed", "cancelled", "blocked", "unknown"} and dep.spec.task_id not in optional_deps for dep in deps):
+        collection = getattr(task.spec, "kind", "command") == "collect"
+        cancelled_structure = (run.cancel.is_set() or task.cancelled) and getattr(task.spec, 'kind', 'command') in {'collect', 'map'}
+        if not collection and not cancelled_structure and any(dep.state in {"failed", "cancelled", "blocked", "unknown"} for dep in deps):
             task.state = "blocked"; return False
         if any(dep.state in {"pending", "expanding", "running", "waiting_shared"} for dep in deps): return False
+        if cancelled_structure:
+            return True
         try:
             if not self._condition_matches(run, getattr(task.spec, "condition", None)):
                 task.state = "skipped"; return False
@@ -814,6 +877,15 @@ class ExecutionService:
                 errors.append("acceptance.required_obligation_failed:" + name)
         return pending, tuple(errors)
 
+    def _reported_outcome(self, run, reference):
+        """Find unsuccessful command origins without changing structural reports."""
+        if hasattr(reference, "task_id") and hasattr(reference, "port"):
+            task = run.tasks[reference.task_id]
+            return task.state if hasattr(task.spec, "command") and task.state in {"failed", "unknown", "cancelled"} else None
+        values = reference.values() if isinstance(reference, Mapping) else reference if isinstance(reference, (tuple, list)) else ()
+        outcomes = {self._reported_outcome(run, value) for value in values}
+        return next((outcome for outcome in ("unknown", "cancelled", "failed") if outcome in outcomes), None)
+
     def _scope_assessment(self, run, scope):
         values, settled, invalid = {}, set(), {}
         try:
@@ -823,6 +895,9 @@ class ExecutionService:
             return {}, {}, frozenset(scope.outputs)
         for name, reference in scope.outputs.items():
             try:
+                reported = self._reported_outcome(run, reference)
+                if reported is not None and reported not in scope.output_contracts[name].outcomes:
+                    raise ExecutionFailure("acceptance.output_outcome_not_admitted:" + reported)
                 value = self._resolve(run, reference)
                 _validate(scope.output_contracts[name], value)
                 values[name] = value
@@ -848,9 +923,21 @@ class ExecutionService:
     def _publish_scope_output(self, run, scope, name):
         key = scope.scope_id, name
         if key not in run.accepted_scopes:
-            self._fact(run, "output.accepted", output_name=name, scope_id=scope.scope_id,
+            reported = self._reported_outcome(run, scope.outputs[name])
+            if reported is not None:
+                kind, metadata = "output.reported", {"outcome": reported}
+            else:
+                from .accepted_values import accepted_fact
+                value = self._resolve(run, scope.outputs[name])
+                try:
+                    record = self._accepted.get(fingerprint(value))
+                except (ValueError, TypeError):
+                    record = None
+                kind = "output.accepted"
+                metadata = accepted_fact(record,value,inputs={},outputs={name:value}) if record is not None else {}
+            self._fact(run, kind, output_name=name, scope_id=scope.scope_id,
                 capability_id=scope.capability_id, capability_kind=scope.kind, parent_scope_id=scope.parent_id,
-                origin=self._scope_origin(run,scope))
+                origin=self._scope_origin(run,scope), **metadata)
             if not run.journal_failed: run.accepted_scopes.add(key)
 
     def _template_values(self, run, outputs, prefix):
@@ -882,7 +969,7 @@ class ExecutionService:
             updates = {"task_id":prefix+original.task_id,
                 "deps":tuple(prefix+key if key in local else key for key in original.deps),
                 "scope_id":prefix+original.scope_id}
-            for name in ("inputs","items","initial","selector","condition"):
+            for name in ("inputs","items","initial","selector","forwarded","condition"):
                 if hasattr(original,name): updates[name] = substitute(getattr(original,name))
             if hasattr(original,"command"):
                 updates["command"] = replace_record(original.command,parameters=substitute(original.command.parameters))
@@ -922,12 +1009,25 @@ class ExecutionService:
         run.extra_scopes.extend(owned.scopes)
         return tuple(child.task_id for child in owned.tasks),owned.outputs
 
+    def _member_effect_state(self, children):
+        keys = {key for child in children for key in child.effect_ids}
+        receipts = [self.lookup_effect(key) for key in keys]
+        if any(receipt is None or receipt.status == 'unknown' for receipt in receipts):
+            return 'unknown'
+        if any(receipt.status == 'rejected' for receipt in receipts):
+            return 'rejected'
+        return 'confirmed' if receipts else None
+
     def _structural(self, run, task):
+        from .members import outcome as member_outcome, dependency_members
         spec, kind = task.spec, getattr(task.spec, "kind", "command")
         if kind == "collect":
-            values, outcomes = [], []
+            values, outcomes, required_failures = [], [], []
             scopes = {scope.scope_id: scope for scope in (*run.plan.scopes, *run.extra_scopes)}
             for index, item in enumerate(spec.items):
+                children = dependency_members(run, item)
+                effect_state = self._member_effect_state(children)
+                status, value = 'succeeded', None
                 try:
                     value = self._resolve(run, item)
                     accepted = True
@@ -935,21 +1035,44 @@ class ExecutionService:
                         _, errors, pending = self._scope_assessment(run, scopes[guard.scope_id])
                         if guard.port in pending: return
                         accepted &= guard.port not in errors
-                    if not accepted: raise ValueError("collection.optional_output_rejected")
-                    values.append(value); outcomes.append((index, "succeeded"))
-                except (KeyError, ValueError):
-                    outcomes.append((index, "failed"))
+                    if not accepted: raise ValueError("collection.member_output_rejected")
+                    if any(child.state == 'partial' for child in children):
+                        status = 'partial'
+                    values.append(value)
+                except (KeyError, ValueError, TypeError, ExecutionFailure):
+                    value = None
+                    status = ('unknown' if effect_state == 'unknown' or any(child.state == 'unknown' for child in children)
+                              else 'cancelled' if any(child.state == 'cancelled' for child in children)
+                              else 'failed')
                     if index not in spec.optional_items:
-                        task.state = "failed"; return
+                        required_failures.append(status)
+                outcomes.append(member_outcome(item, index, status, children, value, effect_state=effect_state))
             task.outputs = {"items": tuple(values), "outcomes": tuple(outcomes)}
-            task.state = "succeeded" if len(values) >= spec.min_items else "failed"
-            if task.state == "failed": run.diagnostics.append("collection.minimum_members_not_met")
+            if 'unknown' in required_failures:
+                task.state = 'unknown'
+            elif run.cancel.is_set() or task.cancelled or 'cancelled' in required_failures:
+                task.state = 'cancelled'
+            elif required_failures or len(values) < spec.min_items:
+                task.state = 'failed'
+            else:
+                task.state = 'partial' if any(value.outcome == 'partial' for value in outcomes) else 'succeeded'
+            task.findings = tuple(f'collection.member:{item.ordinal}:{item.outcome}' for item in outcomes if item.outcome != 'succeeded')
+            if len(values) < spec.min_items:
+                run.diagnostics.append("collection.minimum_members_not_met")
+            self._fact(run, 'collection.completed', units=len(spec.items), statuses={item.ordinal: item.outcome for item in outcomes})
             return
         if task.expansion is None:
             if kind == "map":
-                items = tuple(self._resolve(run, spec.items))
+                try:
+                    items = tuple(self._resolve(run, spec.items))
+                except KeyError:
+                    if not (run.cancel.is_set() or task.cancelled):
+                        raise
+                    task.outputs, task.state = {'items': (), 'outcomes': ()}, 'cancelled'
+                    task.findings = ('map.membership_unavailable',)
+                    return
                 if len(items) > spec.max_items: raise ExecutionFailure("map.item_limit")
-                task.expansion = {"items": items, "next": 0, "active": {}, "results": {}, "statuses": {}}
+                task.expansion = {"items": items, "next": 0, "active": {}, "results": {}, "statuses": {}, "outcomes": {}}
             elif kind == "repeat":
                 task.expansion = {"state": self._resolve(run, spec.initial), "pass": 0, "active": None}
             elif kind == "dispatch":
@@ -969,29 +1092,18 @@ class ExecutionService:
                     task.expansion = {"active": self._instantiate(run, template, {spec.input_name: selected}, prefix), "prefix":prefix}
                     task.state = "expanding"
                     return
-                material = getattr(selected, "material", selected)
-                data = getattr(material, "data", b"")
-                name = str(getattr(material, "metadata", {}).get("member", getattr(material, "metadata", {}).get("filename", "")))
-                suffix = name.rsplit(".", 1)[-1].lower()
-                if data.startswith(b"PK"):
-                    from io import BytesIO
-                    from zipfile import ZipFile
-                    with ZipFile(BytesIO(data)) as archive:
-                        names = set(archive.namelist())
-                    fmt = "xlsx" if "xl/workbook.xml" in names else "xlsb" if "xl/workbook.bin" in names else "docx" if "word/document.xml" in names else "archive"
-                elif data.startswith(b"%PDF-"): fmt = "pdf"
-                elif data.startswith(b"\xd0\xcf\x11\xe0"):
-                    fmt = "doc" if suffix == "doc" or "msword" in getattr(material, "media_type", "") else "xls"
-                elif data.lstrip().startswith((b"{", b"[")): fmt = "json"
-                elif data.startswith((b"Rar!", b"7z\xbc\xaf\x27\x1c")): fmt = "archive"
-                elif suffix in {"csv", "dbf", "html", "htm", "xls", "doc"}: fmt = "html" if suffix == "htm" else suffix
-                elif "html" in getattr(material, "media_type", ""): fmt = "html"
-                elif "csv" in getattr(material, "media_type", ""): fmt = "csv"
-                else: raise ExecutionFailure("format.unrecognized")
+                from stratbox.shared.data.materials import MaterialInspection
+                from stratbox.core.storage.readable import carrier
+                forwarded = self._resolve(run, spec.forwarded)
+                if not isinstance(selected, MaterialInspection):
+                    raise ExecutionFailure("format.inspection_required")
+                if selected.material_identity != getattr(carrier(forwarded), "identity", None):
+                    raise ExecutionFailure("format.inspection_identity_mismatch")
+                fmt = selected.format
                 template = spec.alternatives.get(fmt)
                 if template is None: raise ExecutionFailure("format.unsupported:" + fmt)
                 prefix = f"{spec.task_id}/{fmt}/"
-                task.expansion = {"active": self._instantiate(run, template, {spec.input_name: selected}, prefix), "prefix":prefix}
+                task.expansion = {"active": self._instantiate(run, template, {spec.input_name: forwarded}, prefix), "prefix":prefix}
             else:
                 raise ExecutionFailure("plan.unknown_structural_kind")
             task.state = "expanding"
@@ -1006,25 +1118,48 @@ class ExecutionService:
             task.state = "succeeded"
             return
         if kind == "map":
+            if run.cancel.is_set() or task.cancelled:
+                for keys, _ in state['active'].values():
+                    for key in keys:
+                        child = run.tasks[key]
+                        child.cancelled = True
+                        if child.state in {'pending', 'expanding'} and getattr(child.spec, 'kind', 'command') not in {'map', 'collect'}:
+                            child.state = 'cancelled'
             for index, (keys, outputs) in tuple(state["active"].items()):
                 children = [run.tasks[key] for key in keys]
                 if all(child.state in {"succeeded", "partial", "failed", "cancelled", "blocked", "unknown", "skipped"} for child in children):
-                    status = "succeeded" if all(child.state == "succeeded" for child in children if child.spec.required) else "failed"
+                    required_states = {child.state for child in children if child.spec.required}
+                    status = ('partial' if 'partial' in required_states else 'succeeded') if required_states <= {'succeeded', 'partial'} else 'failed'
+                    effect_state = self._member_effect_state(children)
                     state["statuses"][index] = status
-                    if status == "succeeded":
+                    if status in {'succeeded', 'partial'}:
                         try: state["results"][index] = self._template_values(run, outputs, f"{spec.task_id}/item{index}/")[spec.item_output]
-                        except ExecutionFailure:
+                        except (ExecutionFailure, KeyError, ValueError, TypeError):
                             status = "failed"; state["statuses"][index] = status
+                    if status == "failed":
+                        if effect_state == 'unknown' or any(child.state == "unknown" for child in children): status = "unknown"
+                        elif any(child.state == "cancelled" for child in children): status = "cancelled"
+                        state["statuses"][index] = status
+                    state["outcomes"][index] = member_outcome(state["items"][index],index,status,
+                        children,state["results"].get(index), effect_state=effect_state)
                     del state["active"][index]
+            if run.cancel.is_set() or task.cancelled:
+                for index in range(state['next'], len(state['items'])):
+                    state['statuses'][index] = 'cancelled'
+                    state['outcomes'][index] = member_outcome(state['items'][index], index, 'cancelled')
+                state['next'] = len(state['items'])
             while len(state["active"]) < spec.window and state["next"] < len(state["items"]):
                 index = state["next"]
                 state["active"][index] = self._instantiate(run, spec.template, {spec.item_input: state["items"][index]}, f"{spec.task_id}/item{index}/")
                 state["next"] += 1
             if not state["active"] and state["next"] == len(state["items"]):
                 task.outputs = {"items": tuple(state["results"][index] for index in sorted(state["results"])),
-                                "outcomes": tuple((index, state["statuses"][index]) for index in sorted(state["statuses"]))}
+                                "outcomes": tuple(state["outcomes"][index] for index in sorted(state["outcomes"]))}
                 subset = spec.completion == "eligible_subset" and (bool(state["results"]) or not state["items"])
-                task.state = "succeeded" if subset or all(s == "succeeded" for s in state["statuses"].values()) else "failed"
+                accepted = subset or all(s in {'succeeded', 'partial'} for s in state['statuses'].values())
+                task.state = ('unknown' if 'unknown' in state['statuses'].values()
+                              else 'cancelled' if run.cancel.is_set() or task.cancelled
+                              else ('partial' if 'partial' in state['statuses'].values() else 'succeeded') if accepted else 'failed')
                 task.findings = tuple(f"map.unit:{index}:{status}" for index, status in state["statuses"].items())
                 self._fact(run, "map.completed", units=len(state["items"]), statuses=state["statuses"])
         else:
@@ -1108,7 +1243,10 @@ class ExecutionService:
             if outcome != "unknown": outcome = "failed"
         # A completed run keeps its result owner and diagnostics, not every
         # intermediate or worker Future that happened to produce that result.
+        result = RunResult(self, run, outcome, outputs, run.diagnostics, run.scopes, amount)
         for task in run.tasks.values():
+            self.staging.release("output:" + run.run_id + ":" + task.spec.task_id)
+            self.staging.release("input:" + run.run_id + ":" + task.spec.task_id)
             task.outputs = {}
             task.future = None
             task.spec = _TaskSummary(task.spec.task_id, task.spec.scope_id, task.spec.required, self._task_origin(task))
@@ -1117,7 +1255,8 @@ class ExecutionService:
             task.input_keys.clear()
         run.plan = None
         self._compact_admission(run)
-        run.future.set_result(RunResult(self, run, outcome, outputs, run.diagnostics, run.scopes, amount))
+        self.staging.release("admission:" + run.run_id)
+        run.future.set_result(result)
 
     def _coordinate(self):
         try:
@@ -1147,6 +1286,7 @@ class ExecutionService:
                                     task.state = "blocked"; continue
                                 try:
                                     self._structural(run, task)
+                                    self.staging.pin((task.outputs, task.expansion), "output:" + run.run_id + ":" + task.spec.task_id)
                                 except Exception as error:
                                     task.state, task.findings = "failed", (error_code(error),)
                                     run.diagnostics.append(error_code(error))
@@ -1155,7 +1295,7 @@ class ExecutionService:
                                 continue
                             if run.journal_failed:
                                 task.state = "blocked"; continue
-                            if run.cancel.is_set():
+                            if (run.cancel.is_set() or task.cancelled) and getattr(task.spec, 'kind', 'command') not in {'map', 'collect'}:
                                 task.state = "cancelled"
                                 continue
                             if not self._ready(run, task):
@@ -1163,6 +1303,7 @@ class ExecutionService:
                             if getattr(task.spec, "kind", "command") != "command":
                                 try:
                                     self._structural(run, task)
+                                    self.staging.pin((task.outputs, task.expansion), "output:" + run.run_id + ":" + task.spec.task_id)
                                 except Exception as error:
                                     task.state, task.findings = "failed", (error_code(error),)
                                     run.diagnostics.append(error_code(error))
@@ -1201,19 +1342,21 @@ class ExecutionService:
                             if key in self._completed and task.spec.command.reuse.completed_eligible:
                                 outputs, outcome, task.findings = self._completed[key]
                                 try:
-                                    task.outputs = self._accept_outputs(task, self._logical_outputs(run, task, outputs), outcome)
+                                    logical = self._logical_outputs(run, task, outputs)
+                                    cells_before = account_inputs(run.meter, inputs)
+                                    account_outputs(run.meter, logical, cells_before=cells_before,
+                                                    output_owner=(run.run_id, task.spec.task_id))
+                                    task.outputs = self._accept_outputs(task, logical, outcome)
                                     task.state = outcome
-                                    self._reserve_accepted(task,task.outputs)
-                                    for name, value in task.outputs.items():
-                                        self._register_value(run, task, name, value)
-                                        fact=self._fact(run, "output.accepted", task, output_name=name)
-                                        if fact is not None: run.accepted_scopes.add((task.spec.scope_id,name))
+                                    self._register_outputs(run, task)
                                     self._fact(run, "work.reused", task)
-                                except (ValueError, TypeError, ExecutionFailure) as error:
+                                except (ValueError, TypeError, ExecutionFailure, BudgetError) as error:
+                                    task.outputs = {}
                                     task.state, task.findings = "failed", (error_code(error),)
                                     run.diagnostics.extend(task.findings)
                                 continue
                             if key is not None and key in self._work:
+                                self.staging.pin(inputs, "input:" + run.run_id + ":" + task.spec.task_id)
                                 task.future, task.physical_id = self._work[key]
                                 task.state, task.work_key = "waiting_shared", key
                                 task.owned_inputs = inputs
@@ -1233,6 +1376,7 @@ class ExecutionService:
                             if run.journal_failed:
                                 task.state = "blocked"; continue
                             owned_inputs = _isolate(inputs)
+                            self.staging.pin(owned_inputs, "input:" + run.run_id + ":" + task.spec.task_id)
                             for r, n in claims.items(): self._used[r] = self._used.get(r, 0) + n
                             task.state, task.claims, task.work_key = "running", claims, key
                             run.started_work = True
@@ -1262,6 +1406,7 @@ class ExecutionService:
                 if self._state != "failed": self._state = "closed"
                 self._closed_event.set()
                 self._condition.notify_all()
+                self.staging.close()
 
     def _release_claims(self,task):
         claims,task.claims = task.claims,{}
@@ -1293,6 +1438,9 @@ class ExecutionService:
                         if future is not None:
                             try: future.result()
                             except BaseException as error: run.diagnostics.append(error_code(error))
+                        self.staging.release("input:" + run.run_id + ":" + task.spec.task_id)
+                        if task.physical_id:
+                            self.staging.release("producer:" + task.physical_id)
                         task.state,task.outputs,task.future,task.owned_inputs = "failed",{},None,None
                         task.input_keys.clear(); task.accepted_keys.clear()
                     if live: remaining.append(run)
@@ -1305,11 +1453,14 @@ class ExecutionService:
     def _finish_failed(self,run):
         uncertain = any(key not in self._effects or self._effects[key].status == "unknown" for key in run.effect_ids)
         for task in run.tasks.values():
+            self.staging.release("output:" + run.run_id + ":" + task.spec.task_id)
+            self.staging.release("input:" + run.run_id + ":" + task.spec.task_id)
             task.outputs,task.future,task.owned_inputs,task.expansion = {},None,None,None
             task.spec = _TaskSummary(task.spec.task_id,task.spec.scope_id,task.spec.required,self._task_origin(task))
             task.accepted_keys.clear(); task.input_keys.clear()
         run.plan = None
         self._compact_admission(run)
+        self.staging.release("admission:" + run.run_id)
         run.future.set_result(RunResult(self,run,"unknown" if uncertain else "failed",{},
             run.diagnostics,run.scopes,0))
 
@@ -1326,9 +1477,11 @@ class ExecutionService:
                 if previous.kind != kind or previous.resource != resource: raise ExecutionFailure("effect.identity_conflict")
                 if previous.status == "confirmed":
                     context.run.effect_ids.add(effect_id)
+                    context.task.effect_ids.add(effect_id)
                     return previous
                 if previous.status == "unknown":
                     context.run.effect_ids.add(effect_id)
+                    context.task.effect_ids.add(effect_id)
                     if reconcile is None: return previous
                     previous_unknown = previous
             if previous_unknown is None:
@@ -1343,12 +1496,14 @@ class ExecutionService:
                     self._effects[effect_id] = authoritative
                     self._effects.move_to_end(effect_id)
                     context.run.effect_ids.add(effect_id)
+                    context.task.effect_ids.add(effect_id)
                     if not claimed:
                         if authoritative.status == "confirmed" or reconcile is None: return authoritative
                         previous_unknown = authoritative
                 else:
                     self._save_effect(proposed)
                     context.run.effect_ids.add(effect_id)
+                    context.task.effect_ids.add(effect_id)
                 if previous_unknown is None: context._active_effects.add(effect_id)
         if previous_unknown is not None:
             return self._reconcile_observation(previous_unknown,lambda:reconcile(previous_unknown),context)

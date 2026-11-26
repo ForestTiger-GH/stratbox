@@ -5,12 +5,12 @@ from __future__ import annotations
 import re
 import warnings
 from datetime import date, datetime
-from hashlib import sha256
 
 import pandas as pd
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
+from stratbox.shared.identity import ByteIdentity
 from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
 from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustryValidationIssue as Cbr0105ADebtCorpValidationIssue
 from stratbox.domains.cbr.methods.tables.corporate_lending.debt.contracts import ParsedCbr0105ADebtCorpFile
@@ -153,7 +153,7 @@ def _build_validation_issues(
 
 
 def parse_cbr_0105a_debt_corp_excel_bytes(
-    file_bytes: bytes,
+    file_bytes: bytes | ByteIdentity,
     *,
     source_name: str,
     source_id: str | None = None,
@@ -163,14 +163,17 @@ def parse_cbr_0105a_debt_corp_excel_bytes(
     selection: IndustrySelection = IndustrySelection(),
     decoded=None,
 ) -> ParsedCbr0105ADebtCorpFile:
-    """Разбирает одну исходную книгу в полный нормализованный поток."""
+    """Interpret one buffered or decoded original with its exact byte identity."""
     selected_codes = resolve_industry_codes(selection)
     selected_set = set(selected_codes) if selected_codes is not None else None
     filename_date = report_date_from_cbr_0105a_filename(source_name)
     source_identifier = source_id or (
         f"{CBR_0105A_DEBT_CORP_SERIES_CODE}_{filename_date.replace('-', '')}"
     )
-    digest = sha256(file_bytes).hexdigest()
+    if isinstance(file_bytes, ByteIdentity) and decoded is None:
+        raise ValueError("cbr.industry_decoded_workbook_required")
+    identity = file_bytes if isinstance(file_bytes, ByteIdentity) else ByteIdentity.of(file_bytes)
+    digest = identity.sha256
     if source_sha256 is not None and source_sha256 != digest:
         raise ValueError("Source workbook digest mismatch")
 

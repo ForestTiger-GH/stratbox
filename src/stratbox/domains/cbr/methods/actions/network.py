@@ -8,17 +8,26 @@ from stratbox.shared.data.values import Assessment, DocumentEvidence, Material, 
 
 
 def decode_document(inputs, settings, context):
-    from stratbox.domains.cbr.methods.tables.service_network.bank_offices.parser import SourceScanner
-    material = inputs["material"]
-    if hasattr(material, "material"):
-        material = material.material
-    if not isinstance(material, Material) or material.source_id not in {None, settings.series_id}:
+    from stratbox.core.commands._physical import bounded_material_bytes, physical_material
+    from stratbox.domains.cbr.methods.tables.service_network.bank_offices.parser import MAX_HTML, SourceScanner
+    from stratbox.shared.data.values import IdentifiedMaterial, ImmutableMaterialRef
+    from stratbox.shared.data.materials import StagedMaterialRef
+    original = inputs["material"]
+    carrier = physical_material(original)
+    material = original if isinstance(original, IdentifiedMaterial) else carrier
+    if not isinstance(carrier, (Material, ImmutableMaterialRef, StagedMaterialRef)) or material.source_id not in {None, settings.series_id}:
         raise ValueError("cbr.office_material_required")
+    limit = context.parameters.get("max_materialized_bytes", 32 * 1024 * 1024)
+    if type(limit) is not int or limit < 1:
+        raise ValueError("cbr.office_html_limit")
+    if material.identity.size > MAX_HTML:
+        raise ValueError("cbr.office_html_limit")
+    data = bounded_material_bytes(original, context, max_bytes=min(limit, MAX_HTML))
     scanner = SourceScanner()
-    scanner.feed(material.data.decode(material.charset or "utf-8"))
+    scanner.feed(data.decode(material.charset or "utf-8"))
     scanner.close()
     context.checkpoint()
-    return {"physical": DocumentEvidence(material, scanner)}
+    return {"physical": DocumentEvidence(material, scanner.snapshot())}
 
 
 def _territorial_sheets(workbook, context):
@@ -65,7 +74,7 @@ def extract(inputs, settings, context):
         if observed is None:
             raise ValueError("cbr.office_as_of_required")
         decoded = _territorial_sheets(physical.workbook, context)
-        csv, formula_lineage = convert_xlsx(physical.material.data, return_formula_lineage=True, expected_date=date.fromisoformat(str(observed)),
+        csv, formula_lineage = convert_xlsx(None, return_formula_lineage=True, expected_date=date.fromisoformat(str(observed)),
             sheet_name=context.parameters.get("sheet"), national_row=context.parameters.get("national_row"),
             last_row=context.parameters.get("last_row"), evidence=metadata, decoded_sheets=decoded,
             checkpoint=context.checkpoint)

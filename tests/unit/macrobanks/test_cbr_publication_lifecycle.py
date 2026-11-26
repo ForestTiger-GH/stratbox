@@ -10,7 +10,8 @@ from stratbox.capabilities.model.targets import SeriesTarget
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.sdk import StrategyBox
-from stratbox.shared.data.values import FetchEvidence, Material, SourceClaim
+from stratbox.shared.data.materials import representation_identity
+from stratbox.shared.data.values import FetchEvidence, Material, SourceClaim, request_identity
 
 
 SERIES = "cbr.funding.funds_all"
@@ -49,16 +50,34 @@ def test_selected_fixed_asset_acquisition_retains_exact_request_and_content_evid
         selection = required(box.invoke("command.issue.select", inputs={"listing": listing}, target=target), "selection")
         asset, = selection.entries
         acquired = box.invoke("operation.material.acquire", inputs={"locator": asset,
-            "claim": SourceClaim(SERIES, "2026-11-01")}, target=target)
+            "claim": SourceClaim(SERIES)}, target=target)
         identified = required(acquired, "material")
         assert len(provider.calls) == 1
         assert identified.material.data == provider.data
-        assert identified.claim.issue_id == "2026-11-01"
+        assert identified.claim.issue_id == ""
         assert identified.identity == identified.material.identity
         assert provider.calls[0].url == asset.locator
         evidence, = (item for item in identified.material.lineage if isinstance(item, FetchEvidence))
         assert evidence.material_identity == identified.identity and evidence.status_code == 200
-        assert evidence.request_identity and evidence.observation_id
+        assert evidence.request_identity == request_identity(provider.calls[0])
+        assert evidence.representation_identity == representation_identity(provider.calls[0])
+        assert evidence.observed_at.tzinfo is not None
+        assert evidence.observation_id == ""
+        marked_request = replace(provider.calls[0], observation_id="caller-check-001")
+        marked = required(box.invoke("command.material.fetch", inputs={"request": marked_request}), "evidence")
+        assert marked.observation_id == "caller-check-001"
+
+
+def test_undated_fixed_asset_cannot_gain_an_arbitrary_publisher_issue():
+    provider = HTTP(workbook())
+    with StrategyBox(providers={"http": provider}) as box:
+        target = SeriesTarget(SERIES)
+        listing = required(box.invoke("command.publication.scan",
+            inputs={"index": Material(b"index", "text/html", SERIES + ".index")}, target=target), "listing")
+        acquired = box.invoke("operation.material.acquire", inputs={"locator": listing.entries[0],
+            "claim": SourceClaim(SERIES, "2026-11-01")}, target=target)
+        assert acquired.outcome == "failed"
+        assert "cbr.material_asset_mismatch" in acquired.diagnostics
 
 
 def test_selected_asset_context_cannot_be_replaced_by_another_series():

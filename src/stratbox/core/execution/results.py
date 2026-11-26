@@ -39,6 +39,7 @@ class RunResult:
         self.diagnostics=tuple(dict.fromkeys((*diagnostics,*run.diagnostics)))
         self.resources = MappingProxyType(dict(run.meter.usage()))
         self._accepted_keys = _value_keys(outputs.values())
+        service.staging.pin(self._outputs, "result:" + self.run_id)
 
     def output(self, name="value"):
         if self._closed:
@@ -53,6 +54,7 @@ class RunResult:
                 if self._closed: return
                 self._service._retained_bytes -= self._retention_charge
                 self._outputs = {}
+                self._service.staging.release("result:" + self.run_id)
                 for task in self._run.tasks.values():
                     task.outputs.clear()
                     task.accepted_keys.clear()
@@ -93,7 +95,7 @@ class RunHandle:
                 if not matches: raise ExecutionFailure("execution.unknown_scope")
                 for task in matches:
                     task.cancelled = True
-                    if task.state in {"pending", "expanding"}:
+                    if task.state in {"pending", "expanding"} and getattr(task.spec, 'kind', 'command') not in {'map', 'collect'}:
                         task.state = "cancelled"
             self.service._condition.notify_all()
             return True

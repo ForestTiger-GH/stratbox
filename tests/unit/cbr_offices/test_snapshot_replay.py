@@ -39,8 +39,10 @@ def test_shared_codec_replays_evidence_across_a_fresh_process(tmp_path):
     roundtrip(path, dataset)
     script = """
 import json, sys
+from types import SimpleNamespace
 from stratbox.core.commands.serialization import value_decode
-dataset = value_decode({'representation': open(sys.argv[1], 'rb').read()}, None, None)['value']
+context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
+dataset = value_decode({'representation': open(sys.argv[1], 'rb').read()}, None, context)['value']
 print(json.dumps({'identity': dataset.identity, 'captured': dataset.semantics['captured_on'],
     'official': dataset.semantics['official_as_of'], 'periods': sorted({row['period'] for row in dataset.rows})}))
 """

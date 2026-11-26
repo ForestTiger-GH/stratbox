@@ -32,7 +32,7 @@ def test_receive_retains_stream_without_a_buffered_body_then_reads_exact_bytes(t
     request = RequestSpec("https://example.test/original.csv", max_bytes=len(data)+1,
         source_id="fixture.source", observation_id="capture", metadata={"issue_id":"2026-11"})
     settings = ExecutionSettings(max_retained_bytes=32768,
-        run_limits=ExecutionBudget(requests=1, wire_bytes=len(data), temporary_bytes=len(data)))
+        run_limits=ExecutionBudget(requests=1, wire_bytes=len(data), temporary_bytes=2*len(data)))
     with StrategyBox(providers={"http":transport,"filestore":store},settings=settings) as box:
         received = box.invoke("command.material.receive",inputs={"request":request,"destination":"originals"})
         assert received.outcome == "succeeded", received.diagnostics
@@ -40,7 +40,9 @@ def test_receive_retains_stream_without_a_buffered_body_then_reads_exact_bytes(t
         assert reference.identity == ByteIdentity.of(data)
         assert (tmp_path/reference.location).read_bytes() == data
         assert received.resources["requests"] == 1 and received.resources["wire_bytes"] == len(data)
-        assert received.resources["temporary_bytes"] == len(data)
+        # Acquisition seals one private carrier; immutable retention copies it
+        # into the receiving provider's independent conditional commit stage.
+        assert received.resources["temporary_bytes"] == 2*len(data)
         assert received.output("evidence").material_identity == reference.identity
     with StrategyBox(providers={"filestore":store}) as box:
         read = box.invoke("command.material.read",inputs={"location":reference})
@@ -49,6 +51,23 @@ def test_receive_retains_stream_without_a_buffered_body_then_reads_exact_bytes(t
         assert read.output("material").metadata["issue_id"] == "2026-11"
         assert read.output("material").metadata["filename"] == "original.csv"
     assert transport.calls == 1
+
+
+def test_receive_temporary_limit_rejects_private_copy_before_immutable_mutation(tmp_path):
+    data = b"bounded original" * 1000
+    transport, store = StreamingTransport(data), LocalFileStore(tmp_path)
+    with StrategyBox(providers={"http": transport, "filestore": store},
+            settings=ExecutionSettings(run_limits=ExecutionBudget(temporary_bytes=len(data)))) as box:
+        result = box.invoke("command.material.receive", inputs={
+            "request": RequestSpec("https://example.test/original.csv", max_bytes=len(data)),
+            "destination": "originals"})
+        assert result.outcome == "failed" and not result.outputs
+        receipt, = result.effects.values()
+        assert receipt.status == "rejected" and receipt.finding == "budget.temporary_bytes"
+        assert result.resources["temporary_bytes"] == len(data)
+        result.close()
+        assert box.session.staging.status()["objects"] == 0
+    assert not [path for path in tmp_path.rglob("*") if path.is_file()]
 
 
 def test_stream_response_limit_rejects_before_immutable_commit(tmp_path):
@@ -83,8 +102,8 @@ def test_lost_staged_commit_ack_reconciles_after_restart_without_redownload(tmp_
         receipt, = first.effects.values()
         assert receipt.intent.identity == ByteIdentity.of(transport.data)
     with StrategyBox(providers=providers()) as box:
-        again = box.invoke("command.material.receive",inputs={"request":request,"destination":"originals"})
-        assert again.outcome == "unknown" and transport.calls == 1
+        # Recovery uses the persisted obligation. Re-invoking acquisition is a
+        # new observation of a potentially mutable remote representation.
         recovered = box.invoke("command.artifact.reconcile",inputs={"effect":receipt})
         assert recovered.outcome == "succeeded", recovered.diagnostics
         assert box.session.lookup_effect(receipt.effect_id).status == "confirmed"

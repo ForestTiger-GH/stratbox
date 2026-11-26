@@ -17,11 +17,12 @@ FileStore — универсальный интерфейс транспорта
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import BinaryIO, ContextManager, Iterator, Literal, Protocol, Tuple
+from typing import BinaryIO, Callable, ContextManager, Iterator, Literal, Protocol, Tuple
 
 from stratbox.core.storage.filestore.paths import child_path
 from stratbox.core.storage.filestore.types import FileStat, FileVersion
 from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.materials import NamedEffectIntent, NamedMaterialReceipt
 
 
 class FileStore(Protocol):
@@ -276,3 +277,22 @@ class GuardedDirectoryStore(Protocol):
     def inspect_file(self, path: str) -> FileVersion: ...
     def remove_expected(self, expected: FileVersion) -> bool: ...
     def rename_expected(self, expected: FileVersion, target: str) -> bool: ...
+
+
+class NamedMutationStore(GuardedDirectoryStore, Protocol):
+    """Optional provider evidence for a conditional move or deletion.
+
+    Core persists the typed intent through its effect authority first. The
+    provider applies that exact intent and returns qualified transition evidence.
+    A restart lookup must establish that transition, not merely path absence.
+    Implementations may leave a crash window unresolved when no proof survives.
+    """
+
+    def apply_named_mutation(
+        self, effect_id: str, intent: NamedEffectIntent, *,
+        checkpoint: Callable[[], None],
+    ) -> NamedMaterialReceipt: ...
+
+    def inspect_named_transition(
+        self, effect_id: str, intent: NamedEffectIntent,
+    ) -> NamedMaterialReceipt | None: ...

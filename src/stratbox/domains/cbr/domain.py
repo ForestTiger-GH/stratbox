@@ -15,13 +15,13 @@ from stratbox.domains.cbr.series.household_finance import HOUSEHOLDS_BM, HOUSEHO
 from stratbox.domains.cbr.series.household_lending import MORTGAGE_DEBT, MORTGAGE_DEBT_IND, MORTGAGE_FULL, MORTGAGE_IHC, MORTGAGE_SCPA_DEBT, MORTGAGE_SCPA_FULL
 from stratbox.domains.cbr.series.monetary_statistics import ANNEX_SURVEY_DC, BALANCE_ODC, MONETARY_AGG, SURVEY_CB, SURVEY_DC_NEW, SURVEY_ODC
 from stratbox.domains.cbr.series.project_finance import ESCROW
-from stratbox.domains.cbr.series.reporting_forms import F101, F102, F123, F134, F135, F802, F803, F805
+from stratbox.domains.cbr.series.reporting_forms import PUBLICATIONS, F101, F102, F123, F134, F135, F802, F803, F805
 from stratbox.domains.cbr.series.securities import DEBT_SECURITIES
 from stratbox.domains.cbr.series.service_network import BANK_OFFICES, TERRITORIAL_OFFICES
 
 DOMAIN = DomainSpec(
     id="cbr",
-    common=MappingProxyType({"access": CBR_ACCESS}),
+    common=MappingProxyType({"access": CBR_ACCESS, "publications": {PUBLICATIONS.id: PUBLICATIONS}}),
     series=MappingProxyType({
         OBS_TABLE_20S.id: OBS_TABLE_20S,
         CORP_DEBT_A.id: CORP_DEBT_A,

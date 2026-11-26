@@ -8,7 +8,8 @@ DELIVERED_REPORTS = PublicationSpec(
     id="frank_rg.delivered_reports",
     title="Delivered Frank RG workbooks",
     formats=frozenset({"xlsx", "xlsm", "xls", "xlsb"}),
-    issue_model="delivered_publication", settings=DELIVERY,
+    issue_model="dated", publisher_id="frank_rg", delivery_mode="delivered_inventory",
+    artifact_category="workbook", family_ids=("frank_rg.delivered_reports",), settings=DELIVERY,
     commands={
         "command.publication.scan": CommandSpec(
             MethodRef("stratbox.domains.frank_rg.methods.publications:scan"), DELIVERY, Applicability()),

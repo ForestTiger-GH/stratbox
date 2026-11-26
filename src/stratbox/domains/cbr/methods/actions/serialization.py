@@ -1,9 +1,7 @@
 """A fixed scientific type vocabulary for versionless CBR value retention."""
-from dataclasses import is_dataclass
-import json
 from types import MappingProxyType
 
-from stratbox.shared.data.values import EncodedProduct, SourceDataset, canonical_tree, fingerprint, restore_tree
+from stratbox.shared.data.values import SourceDataset
 from stratbox.domains.cbr.common.contracts import SourceContentEvidence
 from stratbox.shared.data.coverage import SnapshotCoverage
 from stratbox.domains.cbr.methods.tables.corporate_lending.observations import CorporateSourceDataset, validate_source_dataset
@@ -14,12 +12,14 @@ from stratbox.domains.cbr.methods.publications.corporate_lending.contracts impor
 from stratbox.domains.cbr.methods.actions.statistics import SourceWorkbook
 from stratbox.domains.cbr.methods.actions.escrow import EscrowTable
 from stratbox.domains.cbr.methods.actions.workbook_comparison import CellChange, SheetLayout, SheetChange, WorkbookComparison
+from stratbox.domains.cbr.methods.tables.service_network.bank_offices.parser import ScannedCell, ScannedTable, ScannedSource
 
 _TYPES = (SnapshotCoverage, SourceContentEvidence, SourceWorkbook, EscrowTable, CorporateSourceDataset,
     ParsedCbr0105ADebtCorpFile, Cbr0105ADebtCorpSheetSpec, Cbr0105ADebtCorpSourceFailure,
     ParsedIssuanceFile, IssuanceSheetSpec, IssuanceSourceFailure, IndustrySelection,
     IndustrySpec, IndustryRegionSpec, IndustryValidationIssue, Cbr0105ADebtCorpSourceLink,
-    IssuanceSourceLink, CellChange, SheetLayout, SheetChange, WorkbookComparison)
+    IssuanceSourceLink, CellChange, SheetLayout, SheetChange, WorkbookComparison,
+    ScannedCell, ScannedTable, ScannedSource)
 ADMITTED_TYPES = MappingProxyType({item.__module__ + ":" + item.__qualname__: item for item in _TYPES})
 
 
@@ -52,11 +52,8 @@ def encode(inputs, settings, context):
 
 
 def decode(inputs, settings, context):
-    supplied = inputs["representation"]
-    data = supplied if isinstance(supplied, bytes) else supplied.data
-    context.checkpoint()
-    value = _validate(restore_tree(json.loads(data), admitted_types=ADMITTED_TYPES))
-    expected = getattr(supplied, "descriptor", {}).get("value_identity")
-    if expected is not None and fingerprint(value) != expected:
-        raise ValueError("cbr.retained_value_identity_mismatch")
+    from stratbox.core.commands.serialization import decode_value
+    options = {"max_materialized_bytes": context.parameters["max_materialized_bytes"]} if "max_materialized_bytes" in context.parameters else {}
+    value = _validate(decode_value(inputs["representation"], context=context,
+        admitted_types=ADMITTED_TYPES, **options))
     return {"value": value}

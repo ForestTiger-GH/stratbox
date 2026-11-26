@@ -51,6 +51,7 @@ class SourceRequirement:
     evidence_ref: str | None = None
     require_evidence: bool = True
     allow_additional_sources: bool = True
+    declared_relations: tuple[tuple[str, str, str], ...] = ()
 
     def __post_init__(self):
         for name in ('series_ids', 'family_ids', 'source_group_ids', 'qualifications'):
@@ -61,6 +62,10 @@ class SourceRequirement:
             raise ValueError('source.invalid_attribution')
         if any(type(getattr(self,name)) is not bool for name in ('require_evidence','allow_additional_sources')):
             raise TypeError('source.boolean_policy_required')
+        relations = tuple(tuple(item) for item in self.declared_relations)
+        if any(len(item) != 3 or any(not isinstance(x, str) or not x for x in item) for item in relations):
+            raise ValueError('source.invalid_declared_relation')
+        object.__setattr__(self, 'declared_relations', relations)
 
     def validate(self, value):
         if isinstance(value,tuple):
@@ -73,30 +78,39 @@ class SourceRequirement:
         issue = getattr(value, 'issue_id', None)
         claim = getattr(value, 'claim', None)
         material = getattr(value, 'material', None)
+        physical = material or value
+        physical_source = getattr(physical, 'source_id', None)
+        metadata = getattr(physical, 'metadata', {})
+        asset = metadata.get('container_asset_id') or getattr(claim, 'asset_id', None) or metadata.get('asset_id')
+        related = any(physical_source == feed and asset == member and series in self.series_ids
+                      for feed, member, series in self.declared_relations)
         if source is None and hasattr(nested,'source_id'):
             source=getattr(nested,'source_id');issue=getattr(nested,'issue_id',issue)
         if claim is not None:
             source, issue = claim.source_id, claim.issue_id
         if material is not None:
             material_source = getattr(material, 'source_id', None)
-            if self.series_ids and material_source is not None and material_source not in self.series_ids:
+            if self.series_ids and material_source is not None and material_source not in self.series_ids and not related:
                 raise ValueError('source.context_conflict')
             if claim is not None and material_source is not None and material_source != claim.source_id:
                 raise ValueError('source.context_conflict')
             if source is None: source = getattr(material, 'source_id', None)
             if not issue: issue = getattr(material,'metadata',{}).get('issue_id')
         if not issue: issue = getattr(value,'metadata',{}).get('issue_id')
-        if self.series_ids and source is not None and source not in self.series_ids:
+        if self.series_ids and source is not None and source not in self.series_ids and not related:
             raise ValueError('source.context_conflict')
-        if self.series_ids and source is None and self.attribution == 'identified' and not hasattr(value, 'source_uses'):
+        if self.series_ids and source is None and self.attribution == 'identified' and not getattr(value, 'source_uses', ()):
             raise ValueError('source.attribution_required')
-        if self.issue_id and issue != self.issue_id and (issue or not hasattr(value, 'source_uses')):
+        if self.issue_id and issue != self.issue_id and (issue or not getattr(value, 'source_uses', ())):
             raise ValueError('source.issue_conflict')
         # Semantic values retain actual relational uses. A convenient source
         # label or a lineage string cannot establish their qualified origin.
-        if hasattr(value, 'source_uses'):
+        from stratbox.shared.data.values import Material, IdentifiedMaterial, ImmutableMaterialRef
+        from stratbox.shared.data.materials import StagedMaterialRef
+        readable = isinstance(value, (Material, IdentifiedMaterial, ImmutableMaterialRef, StagedMaterialRef))
+        uses = tuple(getattr(value, 'source_uses', ()))
+        if hasattr(value, 'source_uses') and (uses or not readable):
             from stratbox.shared.data.source_context import SourceUse
-            uses = tuple(value.source_uses)
             if any(not isinstance(use, SourceUse) for use in uses):
                 raise TypeError('source.typed_uses_required')
             if not uses and self.attribution == 'optional':
@@ -110,9 +124,8 @@ class SourceRequirement:
         if claim is not None and self.attribution == 'identified' and getattr(claim, 'attribution', None) not in {'recognized', 'verified', 'identified'}:
             raise ValueError('source.identified_attribution_required')
         if self.require_evidence:
-            from stratbox.shared.data.values import Material, IdentifiedMaterial
             physical = value.material if isinstance(value, IdentifiedMaterial) else material or value
-            if not isinstance(physical, Material):
+            if not isinstance(physical, (Material, StagedMaterialRef, ImmutableMaterialRef)):
                 raise ValueError('source.evidence_required')
         # Physical evidence is admitted provisionally for domain recognition;
         # any explicitly requested relational constraints still need uses.
@@ -127,7 +140,11 @@ class SourceRequirement:
         for names, actual in ((self.series_ids, coordinate.source_id),
                               (self.family_ids, coordinate.family_id),
                               (self.source_group_ids, coordinate.source_group_id)):
-            if names and actual not in names: return False
+            if names and actual not in names:
+                related = names is self.series_ids and any(
+                    coordinate.source_id == feed and coordinate.asset_id == asset and series in names
+                    for feed,asset,series in self.declared_relations)
+                if not related: return False
         for name in ('issue_id', 'asset_id', 'material_identity', 'layout_identity', 'semantic_identity'):
             required = getattr(self, name)
             if required is not None and getattr(coordinate, name) != required: return False
@@ -144,6 +161,8 @@ class SourceRequirement:
 
     def accepts_declaration(self, supplied):
         if supplied is None: return False
+        if self.declared_relations and not set(supplied.declared_relations) <= set(self.declared_relations):
+            return False
         for name in ('series_ids', 'family_ids', 'source_group_ids'):
             required, actual = getattr(self, name), getattr(supplied, name)
             if required and (not actual or not actual <= required): return False
@@ -180,7 +199,7 @@ class PortContract:
             raise TypeError('port.invalid_type')
         for name in ('outcomes', 'alternatives', 'qualifications', 'expected_coverage'):
             object.__setattr__(self, name, frozenset(getattr(self, name)))
-        if not self.outcomes or not self.outcomes <= {'succeeded', 'partial'}:
+        if not self.outcomes or not self.outcomes <= {'succeeded', 'partial', 'failed', 'unknown', 'cancelled'}:
             raise ValueError('port.invalid_outcomes')
         object.__setattr__(self, 'predicates', tuple(self.predicates))
         object.__setattr__(self, 'element_types', tuple(self.element_types))

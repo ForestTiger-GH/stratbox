@@ -16,6 +16,13 @@ def _query(inputs, context):
     query = inputs.get("query", inputs.get("locator", {}))
     if isinstance(query, dict) or hasattr(query, "items"):
         parameters.update(query)
+    elif query is not None:
+        from stratbox.shared.data.selection import IssueQuery
+        if isinstance(query, IssueQuery):
+            if len(query.issues) == 1:
+                parameters["issue_id"] = query.issues[0]
+            elif query.issues:
+                raise ValueError("fns.request.single_issue_required")
     return parameters
 
 
@@ -50,9 +57,15 @@ def prepare_request(inputs, settings, context):
         query.update(url=asset.locator, issue_id=asset.issue_id)
     reference = query.get("as_of", query.get("issue_id", query.get("date")))
     role = query.get("role", "asset" if reference is not None or selection or isinstance(locator, PublicationAsset) else "index")
+    if role not in {"index", "asset"}:
+        raise ValueError("fns.request.role_invalid")
     if role == "index":
+        if isinstance(locator, PublicationAsset) or selection is not None:
+            raise ValueError("fns.request.index_asset_conflict")
         url = query.get("url", settings.index_url)
-        if urlsplit(url).hostname not in ACCESS.hosts:
+        parts = urlsplit(url)
+        if (parts.scheme != "https" or parts.hostname not in ACCESS.hosts
+                or parts.username or parts.password or parts.fragment or parts.port not in {None, 443}):
             raise ValueError("fns.request.host_invalid")
         return {"request": RequestSpec(url, max_bytes=ACCESS.max_index_bytes,
             source_id=settings.source_id + ".index")}
@@ -60,7 +73,11 @@ def prepare_request(inputs, settings, context):
     if day < settings.earliest or day > date(2099, 12, 31) or settings.first_day and day.day != 1:
         raise ValueError("fns.request.date_invalid")
     url = settings.data_url or query.get("url")
-    if not isinstance(url, str) or urlsplit(url).scheme != "https" or urlsplit(url).hostname not in ACCESS.hosts:
+    if not isinstance(url, str):
+        raise ValueError("fns.request.asset_url_required")
+    parts = urlsplit(url)
+    if (parts.scheme != "https" or parts.hostname not in ACCESS.hosts
+            or parts.username or parts.password or parts.fragment or parts.port not in {None, 443}):
         raise ValueError("fns.request.asset_url_required")
     form = {"statDate": day.strftime("%d.%m.%Y")} if settings.method == "POST" else None
     return {"request": RequestSpec(url, settings.method,
@@ -115,7 +132,8 @@ def scan_sme(inputs, settings, context):
     parser = _Dates()
     parser.feed(material.data.decode(material.charset or "utf-8-sig"))
     entries = tuple(PublicationAsset(settings.source_id, day.isoformat(), "statistics",
-        settings.data_url, "json", {"as_of": day.isoformat()}) for day in sorted(parser.days)
+        settings.data_url, "json", {"as_of": day.isoformat(), "reporting_date": day.isoformat(),
+            "measurement_date": day.isoformat()}) for day in sorted(parser.days)
         if day >= settings.earliest)
     if not entries:
         raise ValueError("fns.sme.publication_dates_unavailable")
@@ -159,7 +177,7 @@ def scan_legal(inputs, settings, context):
             raise ValueError("fns.1yur.duplicate_issue")
         found[day] = url
     entries = tuple(PublicationAsset(settings.source_id, day.isoformat(), "main", url,
-        urlsplit(url).path.rsplit(".", 1)[-1].casefold(), {"as_of": day.isoformat()})
+        urlsplit(url).path.rsplit(".", 1)[-1].casefold(), {"as_of": day.isoformat(), "reporting_date": day.isoformat()})
         for day, url in sorted(found.items()))
     findings = tuple("fns.1yur.asset_missing:" + value for value in sorted(set(missing)))
     if not entries:
@@ -173,25 +191,67 @@ def scan_legal(inputs, settings, context):
 
 def select_issue(inputs, settings, context):
     listing = inputs["listing"]
-    query = _query(inputs, context)
-    requested = query.get("issues", query.get("periods"))
-    if requested is None and query.get("as_of", query.get("issue_id")) is not None:
-        requested = (query.get("as_of", query.get("issue_id")),)
-    wanted = None if requested is None else {parse_day(day).isoformat() for day in requested}
-    entries = tuple(item for item in listing.entries if item.source_id == settings.source_id
-                    and (wanted is None or item.issue_id in wanted))
-    if wanted is None and entries:
-        newest = max(item.issue_id for item in entries)
-        entries = tuple(item for item in entries if item.issue_id == newest)
-    observed = tuple(item.issue_id for item in entries)
-    assessment = Assessment("complete" if wanted is None or wanted <= set(observed) else "partial",
-        expected=tuple(sorted(wanted or observed)), observed=observed)
-    return {"selection": AssetSelection(entries, assessment)}
+    if not isinstance(listing, PublicationListing) or listing.domain_id != "fns":
+        raise ValueError("fns.publication_listing_required")
+    from stratbox.shared.data.selection import IssueQuery, select_publication_assets
+    keys = set(IssueQuery.__dataclass_fields__) | {"source_id", "asset_id", "issue_id", "issue", "as_of", "periods", "format", "locator", "url"}
+    query = inputs.get("query", {key: value for key, value in _query(inputs, context).items() if key in keys})
+    selection, report = select_publication_assets(listing, query, source_ids=(settings.source_id,))
+    return {"selection": selection, "report": report}
 
 
 def assess(inputs, settings, context):
+    from stratbox.shared.data.materials import StagedMaterialRef
+    from stratbox.shared.data.values import IdentifiedMaterial, ImmutableMaterialRef
+    materials = (Material, IdentifiedMaterial, ImmutableMaterialRef, StagedMaterialRef)
     evidence = inputs["evidence"]
     baseline = inputs.get("baseline")
+    for value in (evidence, baseline):
+        source = getattr(value, "source_id", None)
+        if source is not None and source not in {settings.source_id, settings.source_id + ".index"}:
+            raise ValueError("fns.source_comparison_conflict")
+    from stratbox.core.commands.publications import retained_validation_assessment
+    retained = retained_validation_assessment(inputs, context)
+    if retained is not None:
+        return retained
+    if isinstance(evidence, PublicationListing):
+        if evidence.domain_id != "fns" or isinstance(baseline, PublicationListing) and baseline.domain_id != "fns":
+            raise ValueError("fns.publication_listing_required")
+        scope = context.parameters.get("comparison_scope", "selected")
+        if scope not in {"selected", "feed"}:
+            raise ValueError("fns.comparison_scope_invalid")
+        def members(value):
+            entries = value.entries
+            assessment = value.assessment
+            if scope == "selected":
+                from stratbox.shared.data.selection import select_publication_assets
+                selected, report = select_publication_assets(value, inputs.get("query"), source_ids=(settings.source_id,))
+                entries = selected.entries
+                assessment = report.assessment
+            return tuple(sorted((item.source_id, item.issue_id, item.asset_id, item.locator, item.format) for item in entries)), assessment
+        selected, coverage = members(evidence)
+        previous, previous_coverage = members(baseline) if isinstance(baseline, PublicationListing) else (None, None)
+        candidate = fingerprint((scope, selected))
+        prior = fingerprint((scope, previous)) if previous is not None else None
+        status = "first_seen" if prior is None else "unknown" if prior == candidate else "changed"
+        if not coverage.complete or previous_coverage is not None and not previous_coverage.complete:
+            status = "unknown"
+        return {"assessment": UpdateAssessment(status, "observed_publication_listing",
+            ("fns.index_does_not_establish_asset_bytes",), predecessor=prior, candidate=candidate,
+            evidence={"scope": scope, "source_id": settings.source_id, "source_coverage": evidence.assessment,
+                "selected_coverage": coverage, "previous_selected_coverage": previous_coverage})}
+    if isinstance(evidence, materials):
+        def coordinates(value):
+            if isinstance(value, IdentifiedMaterial):
+                return value.claim.source_id, value.claim.issue_id, value.claim.asset_id
+            return value.source_id or settings.source_id, str(value.metadata.get("issue_id", "")), str(value.metadata.get("asset_id", "main"))
+        candidate = evidence.identity.sha256
+        previous = baseline.identity.sha256 if isinstance(baseline, materials) else None
+        if isinstance(baseline, materials) and coordinates(evidence) != coordinates(baseline):
+            return {"assessment": UpdateAssessment("changed", "explicit_publication_coordinates",
+                predecessor=fingerprint(coordinates(baseline)), candidate=fingerprint(coordinates(evidence)))}
+        status = "first_seen" if baseline is None else "unknown" if previous is None else "unchanged" if previous == candidate else "changed"
+        return {"assessment": UpdateAssessment(status, "exact_material_bytes", predecessor=previous, candidate=candidate)}
     candidate = fingerprint(evidence)
     if baseline is None:
         status, predecessor = "new_issue", None

@@ -38,8 +38,8 @@ def test_empty_observed_scope_never_proves_removed_publication():
     html = b'<a href="https://other.example/data.xlsx">Other</a>'
     listing = publications.scan({"index": Material(html, "text/html")}, rules("minfin.fedbud"), context())["listing"]
     assert listing.entries == () and not listing.assessment.complete
-    result = publications.assess({"evidence": listing}, None, context())["assessment"]
-    assert result.status == "indeterminate"
+    result = publications.assess({"evidence": listing}, rules("minfin.fedbud"), context())["assessment"]
+    assert result.status == "unknown" and not result.evidence["selected_coverage"].complete
 
 
 def test_saved_index_errors_never_trigger_network_fallback():

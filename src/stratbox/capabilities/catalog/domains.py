@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from collections.abc import Mapping
 from importlib import import_module
-from ..model import DomainSpec, freeze
+from ..model import DomainSpec, PublicationSpec, freeze
 
 DOMAINS = freeze({
     'cbr': 'stratbox.domains.cbr.domain:DOMAIN',
@@ -22,7 +22,11 @@ class DomainCatalog:
             raise ValueError('catalog.domain_identity')
         seen = set()
         for domain in self.domains.values():
-            for group in (domain.series, domain.calculations, domain.products):
+            publications = domain.common.get('publications', {})
+            if (not isinstance(publications, Mapping) or any(not isinstance(value, PublicationSpec) or key != value.id
+                    for key, value in publications.items())):
+                raise ValueError('catalog.feed_identity')
+            for group in (domain.series, domain.calculations, domain.products, publications):
                 for key in group:
                     if key in seen: raise ValueError('catalog.duplicate_target:' + key)
                     seen.add(key)
@@ -35,7 +39,7 @@ class DomainCatalog:
                 if kind is not None and kind != name: continue
                 if identifier in group: matches.append(group[identifier])
             publications = domain.common.get('publications', {})
-            if isinstance(publications, Mapping) and identifier in publications and (kind=='feed' or kind is None and not matches):
+            if isinstance(publications, Mapping) and identifier in publications and kind in {None, 'feed'}:
                 matches.append(publications[identifier])
         if len(matches) != 1: raise ValueError('catalog.target_' + ('unknown' if not matches else 'ambiguous') + ':' + identifier)
         return matches[0]

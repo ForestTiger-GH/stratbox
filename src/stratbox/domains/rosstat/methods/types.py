@@ -180,8 +180,9 @@ def bind_workbook(tables, rules: TableRules, parameters=None):
         raise ValueError("rosstat.issue_required")
     lineage = tuple(item for item in material.lineage if isinstance(item, UsedInputReceipt))
     if not any(item.identity == material.identity for item in lineage):
-        lineage += (UsedInputReceipt("publisher_material", material.identity, material.media_type, "inline", rules.publication_id),)
-    return BoundWorkbook(rules.publication_id, issue, str(material.metadata.get("asset_id", "main")),
+        lineage += (UsedInputReceipt("publisher_material", material.identity, material.media_type,
+            "inline" if hasattr(material, "data") else "reference_only", rules.publication_id),)
+    return BoundWorkbook(rules.source_id, issue, str(material.metadata.get("asset_id", "main")),
         material.identity, workbook.identity, workbook.sheets, lineage,
         SnapshotCoverage(tables.assessment.status, "Exactly the supplied physical workbook evidence."),
         str(material.metadata.get("format", "xlsx")))

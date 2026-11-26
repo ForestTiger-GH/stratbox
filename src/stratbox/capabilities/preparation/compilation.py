@@ -69,7 +69,7 @@ def _author_refs(value):
 def _step_values(step):
     """Every expression-bearing field participates in dependency closure."""
     return tuple(getattr(step, name, None) for name in
-                 ('inputs', 'parameters', 'condition', 'items', 'initial', 'selector'))
+                 ('inputs', 'parameters', 'condition', 'items', 'initial', 'selector', 'forwarded'))
 
 
 def _step_dependencies(step):
@@ -154,7 +154,10 @@ class Compiler:
             for key in ('id','series_id'):
                 v=getattr(publication,key,None)
                 if v: permitted.add(v)
-            req=SourceRequirement(frozenset(permitted),parameters.get('issue_id'), 'identified')
+            relation = ((publication.feed_id, publication.feed_asset_id, record.id),) if (
+                getattr(publication, 'feed_id', None) and getattr(publication, 'feed_asset_id', None)) else ()
+            req=SourceRequirement(frozenset(permitted),parameters.get('issue_id'), 'identified',
+                                  declared_relations=relation)
             # Physical evidence retains its material source; semantic outputs additionally establish table membership.
             ins={name:replace(port,source=replace(req,attribution='asserted') if name in {'physical','tables'} else req)
                  if name in {'physical','tables','dataset','view'} else port for name,port in ins.items()}
@@ -162,6 +165,11 @@ class Compiler:
             requirements=(req,)
         effective={**definition.parameters,**parameters}
         if target is not None: effective.setdefault('source_id',_target_id(target))
+        if definition.id in {'command.material.fetch','command.material.read'}:
+            placement = effective.get('placement', settings.get('placement','buffered') if isinstance(settings,Mapping) else getattr(settings,'placement','buffered'))
+            if placement == 'buffered' and 'retained' not in (values or {}):
+                from stratbox.shared.data.values import Material, IdentifiedMaterial
+                outs['material'] = replace(outs['material'],value_type=(Material,IdentifiedMaterial))
         for name in definition.required_parameters:
             if name not in effective: raise ValueError('command.parameter_required:' + name)
         return BoundCommand(definition.id,method,settings,ins,outs,effective,definition.resources,definition.effects,
@@ -218,7 +226,9 @@ class Compiler:
                 if identity: permitted.add(identity)
             for name in {'material','physical','tables','dataset','view'} & contracts.keys():
                 contracts[name]=replace(contracts[name],source=SourceRequirement(frozenset(permitted),
-                    parameters.get('issue_id'),'identified' if name in {'dataset','view'} else 'asserted'))
+                    parameters.get('issue_id'),'identified' if name in {'dataset','view'} else 'asserted',
+                    declared_relations=((record.publication.feed_id, record.publication.feed_asset_id, record.id),)
+                    if getattr(record.publication, 'feed_id', None) and getattr(record.publication, 'feed_asset_id', None) else ()))
         self.validate_inputs(contracts,_unwrap(supplied))
         input_guards=tuple(InputGuard(_unwrap(value),contracts[name]) for name,value in supplied.items())
         first_task=len(self.tasks)
@@ -316,11 +326,10 @@ class Compiler:
                         guards=tuple(sorted(set(t.guards)|_guards(condition),key=lambda g:(g.scope_id,g.port))))
             elif isinstance(step,CollectCall):
                 items=resolve(step.items)
-                mandatory=tuple(value for index,value in enumerate(items) if index not in step.optional_items)
-                optional_guards={index:tuple(sorted(_guards(items[index]),key=lambda g:(g.scope_id,g.port))) for index in step.optional_items}
+                item_guards={index:tuple(sorted(_guards(item),key=lambda g:(g.scope_id,g.port))) for index,item in enumerate(items)}
                 self.tasks.append(CollectTask(path,_unwrap(items),tuple(sorted(_refs(items)|_refs(resolve(step.condition)))),prefix,required and step.required,
-                    _unwrap(resolve(step.condition)),tuple(sorted(_guards(mandatory),key=lambda g:(g.scope_id,g.port))),
-                    optional_items=step.optional_items,min_items=step.min_items,item_guards=optional_guards))
+                    _unwrap(resolve(step.condition)),tuple(sorted(_guards(resolve(step.condition)),key=lambda g:(g.scope_id,g.port))),
+                    optional_items=step.optional_items,min_items=step.min_items,item_guards=item_guards))
                 results[name]={'items':ValueRef(path,'items'),'outcomes':ValueRef(path,'outcomes')}
                 self.ports[(path,'items')]=PortContract('result_collection',tuple)
                 self.ports[(path,'outcomes')]=PortContract('unit_outcomes',tuple)
@@ -342,10 +351,14 @@ class Compiler:
                 results[name]={'items':ValueRef(path,'items'),'outcomes':ValueRef(path,'outcomes')};self.ports[(path,'items')]=PortContract('result_collection',tuple);self.ports[(path,'outcomes')]=PortContract('unit_outcomes',tuple)
             elif isinstance(step,DispatchCall):
                 selector=resolve(step.selector)
+                forwarded=resolve(step.forwarded)
                 alternatives={}
                 for fmt,capability in step.alternatives.items():
                     nested=Compiler(self.catalog,self.domains,self.build_identity)
                     args={**resolve(step.inputs),step.input_name:TemplateInput(step.input_name)}
+                    if step.selector_kind == 'acquisition_kind' and fmt == 'file':
+                        args.pop('retained',None)
+                        args.pop('query',None)
                     try:
                         branch_parameters=({'format':fmt,'archive_depth':int(parameters.get('archive_depth',0))+(1 if fmt in {'zip','rar'} else 0)}
                             if step.selector_kind=='material_format' else {'acquisition_kind':fmt})
@@ -355,7 +368,7 @@ class Compiler:
                         raise
                     alternatives[fmt]=nested.finish(capability,out,target)
                 if not alternatives: raise ValueError('recipe.no_supported_representation')
-                self.tasks.append(DispatchTask(path,_unwrap(selector),freeze(alternatives),step.input_name,step.output_port,step.selector_kind,tuple(sorted(_refs(selector)|_refs(resolve(step.inputs)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(selector),key=lambda g:(g.scope_id,g.port)))))
+                self.tasks.append(DispatchTask(path,_unwrap(selector),freeze(alternatives),step.input_name,step.output_port,step.selector_kind,tuple(sorted(_refs(selector)|_refs(forwarded)|_refs(resolve(step.inputs)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(selector)|_guards(forwarded),key=lambda g:(g.scope_id,g.port))),forwarded=_unwrap(forwarded)))
                 results[name]={step.output_port:ValueRef(path,step.output_port)}
                 self.ports[(path,step.output_port)]=self.catalog.get(next(iter(step.alternatives.values()))).outputs[step.output_port]
             elif isinstance(step,RepeatUntil):

@@ -6,12 +6,12 @@ import re
 import warnings
 from dataclasses import replace
 from datetime import date
-from hashlib import sha256
 
 import pandas as pd
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_input import open_ooxml_workbook
+from stratbox.shared.identity import ByteIdentity
 from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustryValidationIssue
 from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
 from stratbox.domains.cbr.methods.tables.corporate_lending.issuance.selection import resolve_industry_codes
@@ -117,14 +117,18 @@ def _validate_stream(stream: pd.DataFrame, report_date: str) -> tuple[IndustryVa
     return tuple(issues)
 
 
-def parse_workbook(content: bytes, *, source_name: str, source_url: str | None = None,
+def parse_workbook(content: bytes | ByteIdentity, *, source_name: str, source_url: str | None = None,
                    source_sha256: str | None = None, checkpoint=None,
                    selection: IndustrySelection = IndustrySelection(), decoded=None) -> ParsedIssuanceFile:
+    """Identity-only entrances require complete previously decoded cells."""
     selected_codes = resolve_industry_codes(selection)
     selected_set = set(selected_codes) if selected_codes is not None else None
     report_date = report_date_from_filename(source_name)
     period = reference_period(report_date)
-    digest = sha256(content).hexdigest()
+    if isinstance(content, ByteIdentity) and decoded is None:
+        raise ValueError("cbr.industry_decoded_workbook_required")
+    identity = content if isinstance(content, ByteIdentity) else ByteIdentity.of(content)
+    digest = identity.sha256
     if source_sha256 is not None and source_sha256 != digest:
         raise ValueError("Source content digest mismatch")
     source_id = f"{SERIES_CODE}_{report_date.replace('-', '')}"

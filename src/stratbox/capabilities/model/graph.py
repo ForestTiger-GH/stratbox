@@ -138,9 +138,11 @@ class DispatchCall:
     required: bool = True
     condition: Condition | None = None
     selector_kind: str = 'material_format'
+    forwarded: object = None
 
     def __post_init__(self):
         object.__setattr__(self, 'selector', freeze(self.selector, _typed=True))
         object.__setattr__(self, 'alternatives', freeze(self.alternatives))
         object.__setattr__(self, 'inputs', freeze_bindings(self.inputs))
         object.__setattr__(self, 'parameters', freeze(self.parameters))
+        object.__setattr__(self, 'forwarded', freeze(self.forwarded, _typed=True))

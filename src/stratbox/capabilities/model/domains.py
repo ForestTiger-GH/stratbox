@@ -1,5 +1,5 @@
 """Static domain records with direct immutable command settings."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from collections.abc import Mapping
 from .immutable import freeze
@@ -46,6 +46,37 @@ class CommandSpec:
         object.__setattr__(self, 'settings', freeze(self.settings))
 
 @dataclass(frozen=True, slots=True)
+class PublicationDescriptor:
+    """Intrinsic catalog facts; caller selection is a separate value."""
+    source_id: str
+    publisher_id: str
+    title: str = ''
+    issue_model: str = 'publisher'
+    delivery_mode: str = 'index'
+    artifact_category: str = 'publication'
+    formats: frozenset[str] = frozenset()
+    family_ids: tuple[str, ...] = ()
+    stage_support: tuple[str, ...] = ()
+    calendar_rule_ref: str | None = None
+    revision_rule_ref: str | None = None
+    target_kind: str = 'series'
+
+    def __post_init__(self):
+        if (not self.source_id or not self.publisher_id
+                or self.issue_model not in {'rolling', 'dated', 'publisher', 'capture'}
+                or self.delivery_mode not in {'fixed_url', 'index', 'api', 'delivered_inventory'}
+                or self.artifact_category not in {'workbook', 'archive', 'page', 'publication', 'structured_data', 'document'}
+                or self.target_kind not in {'series', 'feed'}):
+            raise ValueError('domain.invalid_publication_descriptor')
+        object.__setattr__(self, 'formats', frozenset(self.formats))
+        for name in ('family_ids', 'stage_support'):
+            values = tuple(getattr(self, name))
+            if len(values) != len(set(values)) or any(not isinstance(v, str) or not v for v in values):
+                raise ValueError('domain.invalid_publication_facets')
+            object.__setattr__(self, name, values)
+
+
+@dataclass(frozen=True, slots=True)
 class PublicationSpec:
     id: str
     title: str = ''
@@ -55,11 +86,29 @@ class PublicationSpec:
     issue_model: str = 'publisher'
     settings: object = None
     commands: Mapping[str, CommandSpec] = field(default_factory=dict)
+    publisher_id: str = ''
+    delivery_mode: str = 'index'
+    artifact_category: str = 'publication'
+    family_ids: tuple[str, ...] = ()
+    calendar_rule_ref: str | None = None
+    revision_rule_ref: str | None = None
 
     def __post_init__(self):
         _commands(self)
         object.__setattr__(self, 'formats', frozenset(self.formats))
         object.__setattr__(self, 'settings', freeze(self.settings))
+        object.__setattr__(self, 'family_ids', tuple(self.family_ids))
+
+    @property
+    def descriptor(self):
+        intrinsic = getattr(self.settings, 'descriptor', None)
+        if isinstance(intrinsic, PublicationDescriptor):
+            return replace(intrinsic, source_id=self.id, title=self.title or intrinsic.title,
+                formats=self.formats or intrinsic.formats,
+                stage_support=tuple(sorted(set(intrinsic.stage_support) | set(self.commands))))
+        return PublicationDescriptor(self.id, self.publisher_id or self.id.partition('.')[0], self.title,
+            self.issue_model, self.delivery_mode, self.artifact_category, self.formats,
+            self.family_ids, tuple(sorted(self.commands)), self.calendar_rule_ref, self.revision_rule_ref)
 
 @dataclass(frozen=True, slots=True)
 class ObservationSemantics:

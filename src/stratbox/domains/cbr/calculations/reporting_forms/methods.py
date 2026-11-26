@@ -6,7 +6,7 @@ from decimal import Decimal
 from importlib import import_module
 from importlib.resources import files
 
-from stratbox.shared.data.values import Assessment, DerivedDataset, SourceDataset
+from stratbox.shared.data.values import Assessment, DerivedDataset, SourceDataset, fingerprint
 from stratbox.shared.identity import ByteIdentity
 
 SUPPORTED_FORMS = frozenset({"101", "102", "123", "135", "802", "805"})
@@ -82,16 +82,23 @@ def calculate(inputs, settings, context):
         raise ValueError("cbr.form_financial_model_requires_publisher_evidence")
     spec = import_module("stratbox.domains.cbr.methods.tables.reporting_forms.layouts.form" + settings.code).DEFAULT_SPEC
     channels = {**spec.measure_fields, **spec.optional_measure_fields} if isinstance(spec, DirectDatasetSpec) else {"VALUE": ()}
-    accepted, axes = {}, {}
+    from stratbox.domains.cbr.common.subjects import subject_choices, select_subject_rows
+    # Validate the supplied source scope before selecting independent subjects.
     for row in dataset.rows:
+        _admit(row, settings, spec, channels)
+    choices = subject_choices(dataset.rows, context.parameters)
+    selected_rows, missing_subjects = select_subject_rows(dataset.rows, choices)
+    accepted, axes = {}, {}
+    for row in selected_rows:
         context.checkpoint()
         day, subject, code, measure, extras = _admit(row, settings, spec, channels)
-        key = day, subject, code, extras.get("PLAN"), extras.get("A_P")
+        namespace = row.get("source_subject_namespace", row["subject_namespace"])
+        key = day, namespace, subject, code, extras.get("PLAN"), extras.get("A_P")
         values = accepted.setdefault(key, {})
         if measure in values:
             raise ValueError("cbr.form_model_duplicate_variable")
         values[measure] = row.get("value")
-        axis_key = day, subject
+        axis_key = day, namespace, subject
         previous = axes.setdefault(axis_key, row)
         axis_fields = ("subject", "subject_namespace", "source_subject", "source_subject_namespace", "period", "period_kind", "perimeter")
         if any(previous.get(name) != row.get(name) for name in axis_fields):
@@ -101,18 +108,19 @@ def calculate(inputs, settings, context):
     formula_bytes = files("stratbox.domains.cbr.calculations.reporting_forms.models").joinpath("form" + settings.code + ".csv").read_bytes()
     model = parse_form_model(formula_bytes, settings.code)
     output = []
-    for day in sorted({key[0] for key in accepted}):
+    for day, namespace in sorted({key[:2] for key in accepted}):
         source = []
-        for (observed, subject, code, plan, side), values in accepted.items():
-            if observed != day:
+        for (observed, source_namespace, subject, code, plan, side), values in accepted.items():
+            if (observed, source_namespace) != (day, namespace):
                 continue
             mandatory = set(spec.measure_fields) if isinstance(spec, DirectDatasetSpec) else {"VALUE"}
             if not mandatory <= values.keys():
                 raise ValueError("cbr.form_model_channels_incomplete")
             source.append({"REGN": subject, "CODE": code, **values,
                 **({"PLAN": plan} if plan is not None else {}), **({"SIDE": side} if side is not None else {})})
-        subjects = sorted(subject for observed, subject in axes if observed == day)
-        banks = pd.DataFrame([(str(axes[(day, value)].get("subject_label", value)), value, ordinal)
+        subjects = sorted((subject for observed, source_namespace, subject in axes if (observed, source_namespace) == (day, namespace)),
+            key=lambda subject: (axes[(day, namespace, subject)].get("subject_order", 0), subject))
+        banks = pd.DataFrame([(str(axes[(day, namespace, value)].get("subject_label", value)), value, ordinal)
             for ordinal, value in enumerate(subjects, 1)], columns=["bank", "regn", "sort"])
         snapshots = [(date.fromisoformat(day).strftime("%d.%m.%Y"), pd.DataFrame(source, dtype=object))]
         if isinstance(spec, DirectDatasetSpec):
@@ -120,7 +128,7 @@ def calculate(inputs, settings, context):
         else:
             long, order = build_formula_long(snapshots, banks, model, spec)
         for item in long.to_dict("records"):
-            original = axes[(day, str(item["REGN"]))]
+            original = axes[(day, namespace, str(item["REGN"]))]
             value = item["Значение"]
             missing = value is None or value == "" or value != value
             unit = item["Единица"]
@@ -135,14 +143,19 @@ def calculate(inputs, settings, context):
                 "name": str(item["Показатель"]), "form": settings.code, "order": order.get(str(item["IndicatorId"])),
                 "reporting_date": day, "source_code": str(item["Код"]), "source_dataset": spec.dataset,
                 "measure": str(item["Measure"]), "section": str(item["Раздел"]), "model_unit": unit,
-                "subject_label": str(item["Банк"]),
+                "subject_label": str(item["Банк"]), "subject_order": original.get("subject_order", 0),
+                **({"subject_reference": original["subject_reference"]} if original.get("subject_reference") else {}),
                 **{name: original[name] for name in ("source_subject", "source_subject_namespace") if name in original}})
+    if choices is not None:
+        output.sort(key=lambda row: (row["subject_order"], row["reporting_date"],
+            row.get("order") is None, row.get("order") or 0, row["metric"]))
     missing = any(row["value"] is None for row in output)
-    assessment = Assessment('partial' if missing or not dataset.assessment.complete else 'complete',
+    assessment = Assessment('partial' if missing or missing_subjects or not dataset.assessment.complete else 'complete',
         tuple(dict.fromkeys((*dataset.assessment.findings,
-            *(('cbr.form_model_missing_operands',) if missing else ())))),
+            *(('cbr.form_model_missing_operands',) if missing else ()),
+            *(('cbr.selected_subject_not_observed:' + namespace + ':' + subject) for namespace, subject in missing_subjects)))),
         qualifications=dataset.assessment.qualifications | frozenset({'derived_coordinates'}))
     result = DerivedDataset(settings.series_id, tuple(output), {"calculation": "financial_formulas", "form": settings.code},
-        dataset.issue_id, (*dataset.lineage, dataset.identity, ByteIdentity.of(formula_bytes)), assessment,
+        dataset.issue_id, (*dataset.lineage, dataset.identity, ByteIdentity.of(formula_bytes), fingerprint(choices)), assessment,
         source_uses=dataset.source_uses)
     return {"dataset": result}

@@ -24,7 +24,7 @@ def extract(inputs, settings, context):
         from stratbox.domains.cbr.methods.tables.decoded_workbooks import decoded_sheets
         material = physical.material
         candidates = tuple((name, tuple(rows)) for name, rows in decoded_sheets(
-            physical.workbook, material.data, formulas=True, checkpoint=context.checkpoint))
+            physical.workbook, material.identity, formulas=True, checkpoint=context.checkpoint))
     elif isinstance(physical, DocumentEvidence):
         material = physical.material
         blocks = getattr(physical.document, "blocks", ())

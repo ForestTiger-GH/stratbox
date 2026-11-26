@@ -48,11 +48,44 @@ class CommandContext:
         return max(deadlines, default=0.0)
 
     def accepted_input(self, name):
+        if name not in self.inputs:
+            return None
         key = fingerprint(self.inputs[name])
         with self.service._condition:
             record = self.service._accepted.get(key)
             if record is not None: self.service._accepted.move_to_end(key)
             return record
+
+    @property
+    def method_identity(self):
+        method = self.task.spec.command.method
+        return fingerprint(getattr(method, "locator", str(method)))
+
+    @property
+    def build_identity(self):
+        return self.run.plan.build_identity
+
+    def verify_source_use(self, use):
+        """Verify authority recorded by acquisition/identification, not a label."""
+        key = fingerprint(use)
+        with self.service._condition:
+            if any(key in record.get("trusted_source_use_ids", ())
+                   for record in self.service._accepted.values()):
+                return True
+            state = self.service.providers.get("source_state")
+        checker = getattr(state, "has_source_use", None)
+        return bool(checker and checker(key))
+
+    def verify_acquisition_evidence(self, evidence):
+        key = fingerprint(evidence)
+        with self.service._condition:
+            record = self.service._accepted.get(key)
+            if record and record.get('produced_by') in {
+                    'command.material.fetch','command.material.receive','command.material.read'}:
+                return True
+            state = self.service.providers.get('source_state')
+        checker = getattr(state,'has_acquisition_evidence',None)
+        return bool(checker and checker(key))
 
     def provider(self, role):
         declared = self.task.spec.command.required_providers | self.task.spec.command.optional_providers
@@ -74,6 +107,34 @@ class CommandContext:
 
     def use(self, evidence):
         self.evidence.append(evidence)
+
+    def stage(self, **properties):
+        """Create complete temporary bytes under this physical producer."""
+        return self.service.staging.builder("producer:" + self.task.physical_id,
+            budget=self.budget, checkpoint=self.checkpoint, **properties)
+
+    def open_material(self, value):
+        from stratbox.core.storage.readable import open_material
+        return open_material(value, self)
+
+    def verify_material_inspection(self, inspection, material):
+        from stratbox.core.storage.readable import carrier
+        if getattr(inspection, "material_identity", None) != getattr(carrier(material), "identity", None):
+            return False
+        with self.service._condition:
+            record = self.service._accepted.get(fingerprint(inspection))
+            return bool(record and record.get("produced_by") == "command.material.inspect")
+
+    def verify_validation_certificate(self, certificate):
+        key = fingerprint(certificate)
+        with self.service._condition:
+            if any(key in record.get("validation_certificates", ())
+                   and record.get("produced_by") == "command.observations.validate"
+                   for record in self.service._accepted.values()):
+                return True
+            state = self.service.providers.get("source_state")
+        checker = getattr(state, "has_validation_certificate", None)
+        return bool(checker and checker(key))
 
     def effect(self, kind, effect_id, action, *, reconcile=None, resource=None, intent=None):
         if kind not in self.task.spec.command.effects:

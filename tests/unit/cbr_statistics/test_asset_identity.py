@@ -25,7 +25,10 @@ def test_same_bytes_under_two_assets_have_distinct_source_evidence_and_exact_inp
         assert replay(dataset)==dataset
         assert dataset.source_uses[0].coordinate.asset_id==source.metadata["asset_id"]
         assert dataset.source_uses[0].coordinate.material_identity==source.material.identity
-        assert replay(prepare(dataset)).lineage[-1]==dataset.identity
+        retained_view = replay(prepare(dataset))
+        assert retained_view.lineage[-2] == dataset.identity
+        assert retained_view.lineage[-1] != dataset.identity
+        assert retained_view.assessment.coverage.parent_identity == dataset.identity
     assert {dict(row["dimensions"])["source_asset_id"] for dataset in datasets for row in dataset.rows}=={"main","appendix"}
     assert len({row["subject"] for dataset in datasets for row in dataset.rows if dict(row["dimensions"])["source_hierarchy"]=="M2"})==2
     assert len({row["metric"] for dataset in datasets for row in dataset.rows if dict(row["dimensions"])["source_hierarchy"]=="M2"})==2

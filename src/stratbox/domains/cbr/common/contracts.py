@@ -17,6 +17,19 @@ class Publication:
     locator: str
     filename_pattern: str | None = None
     archive_mode: str | None = None
+    feed_id: str | None = None
+    feed_asset_id: str | None = None
+    memberships: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def descriptor(self):
+        from stratbox.capabilities.model.domains import PublicationDescriptor
+        category = ("archive" if self.archive_mode else "page" if self.kind == "page"
+                    else "workbook" if set(self.formats) <= {"xls", "xlsx", "xlsm", "xlsb"}
+                    else "publication")
+        return PublicationDescriptor(self.series_id, "cbr", self.title, self.issue_model,
+            "fixed_url" if self.kind in {"fixed", "page"} else "index", category,
+            frozenset(self.formats), (self.family_id,))
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +95,11 @@ class SourceRequirement:
     series_id: str
     formats: tuple[str, ...]
     issue_required: bool = False
+    feed_id: str | None = None
+    feed_asset_id: str | None = None
+    locator: str | None = None
+    filename_pattern: str | None = None
+    publication_kind: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -278,14 +278,14 @@ def test_map_parameter_limits_cannot_deadlock_or_remove_bounds():
 
 def test_feed_and_series_targets_resolve_their_actual_record_kinds():
     from stratbox.capabilities.model.targets import FeedTarget, SeriesTarget
-    publication=PublicationSpec('A',commands={'command.publication.scan':CommandSpec(M)})
+    publication=PublicationSpec('A.publications',commands={'command.publication.scan':CommandSpec(M)})
     series=SeriesSpec('A',publication,ObservationSemantics(),{'command.table.interpret':CommandSpec(M)})
-    domains=DomainCatalog({'demo':DomainSpec('demo',{'publications':{'A':publication}}, {'A':series})})
-    assert domains.get('A',kind='feed') is domains.domains['demo'].common['publications']['A']
+    domains=DomainCatalog({'demo':DomainSpec('demo',{'publications':{'A.publications':publication}}, {'A':series})})
+    assert domains.get('A.publications',kind='feed') is domains.domains['demo'].common['publications']['A.publications']
     assert domains.get('A',kind='series') is domains.domains['demo'].series['A']
-    assert prepare('operation.source.check',inputs={'index':Material(b'index')},target=FeedTarget('A'),domains=domains)
+    assert prepare('operation.source.check',inputs={'index':Material(b'index')},target=FeedTarget('A.publications'),domains=domains)
     with pytest.raises(ValueError,match='specification_required'):
-        prepare('command.table.interpret',inputs={'tables':TableEvidenceSet(())},target=FeedTarget('A'),domains=domains)
+        prepare('command.table.interpret',inputs={'tables':TableEvidenceSet(())},target=FeedTarget('A.publications'),domains=domains)
 
 
 def test_every_standard_command_has_one_reference_route_stage():

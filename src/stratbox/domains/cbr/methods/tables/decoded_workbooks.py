@@ -10,7 +10,8 @@ def decoded_sheets(workbook, original, *, formulas=False, checkpoint=None):
     source formula text with its equals sign; the WorkbookCells input retains
     caches, lexical tokens and formula attributes independently of that view.
     """
-    if (not isinstance(workbook, WorkbookCells) or workbook.identity != ByteIdentity.of(original)
+    identity = original if isinstance(original, ByteIdentity) else ByteIdentity.of(original)
+    if (not isinstance(workbook, WorkbookCells) or workbook.identity != identity
             or not workbook.sheets or tuple(sheet.index for sheet in workbook.sheets) != tuple(range(len(workbook.sheets)))
             or len({sheet.name for sheet in workbook.sheets}) != len(workbook.sheets)):
         raise ValueError('cbr.workbook.decoded_identity_mismatch')

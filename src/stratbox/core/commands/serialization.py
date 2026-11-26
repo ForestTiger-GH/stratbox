@@ -28,13 +28,19 @@ def encode_value(value, *, context, admitted_types=None, max_bytes=256 * 1024 * 
     identity = fingerprint(value)
     return EncodedProduct(data, "application/json", (identity,),
         descriptor={"encoding": "canonical_tree", "value_identity": identity},
-        source_uses=getattr(value, "source_uses", ()))
+        source_uses=getattr(value, "source_uses", ()), assessment=getattr(value, "assessment", None))
 
 
 def value_decode(inputs, settings, context):
-    encoded = inputs["representation"]
-    data = encoded if isinstance(encoded, bytes) else encoded.data
-    value = restore_tree(json.loads(data))
+    return {'value':decode_value(inputs['representation'],context=context,
+        max_materialized_bytes=_option(context,settings,'max_materialized_bytes',32*1024*1024))}
+
+
+def decode_value(encoded, *, context, admitted_types=None, max_materialized_bytes=32*1024*1024):
+    """Restore explicitly admitted types through a bounded readable entrance."""
+    from ._physical import bounded_material_bytes
+    data = bounded_material_bytes(encoded,context,max_bytes=max_materialized_bytes)
+    value = restore_tree(json.loads(data),admitted_types=admitted_types)
     expected = getattr(encoded, "descriptor", {}).get("value_identity")
     if expected is not None and fingerprint(value) != expected: raise ExecutionFailure("codec.value_identity_mismatch")
-    return {"value": value}
+    return value

@@ -15,29 +15,52 @@ class CatalogPage:
 
 
 class SourceAPI:
-    """Read-only access to the explicit continuing-series declarations."""
+    """Bounded discovery and caller-owned selection of declared publications."""
     def __init__(self, box):
         self._box = box
 
     def source(self, series_id):
-        matches = [domain.series[series_id] for domain in self._box.domains.domains.values()
-                   if series_id in domain.series]
-        if len(matches) != 1:
-            raise KeyError('source.unknown_or_ambiguous:' + str(series_id))
-        return matches[0]
+        from stratbox.capabilities.catalog.selection import source_records
+        try:
+            return source_records(self._box.domains)[series_id][1]
+        except KeyError:
+            raise KeyError('source.unknown_or_ambiguous:' + str(series_id)) from None
 
-    def list(self, *, domain_id=None, query=None):
-        values = []
-        for key, domain in self._box.domains.domains.items():
-            if domain_id is not None and key != domain_id:
-                continue
-            values.extend(series for series in domain.series.values()
-                          if query is None or query.casefold() in series.id.casefold())
-        return tuple(sorted(values, key=lambda value: value.id))
+    def list(self, *, domain_id=None, query=None, offset=0, limit=200, include_feeds=False):
+        return self.page(domain_id=domain_id, query=query, offset=offset, limit=limit,
+                         include_feeds=include_feeds).entries
+
+    def page(self, *, domain_id=None, query=None, offset=0, limit=100, include_feeds=False):
+        from stratbox.capabilities.catalog.selection import source_records
+        from stratbox.shared.data.selection import SourceQuery
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 200:
+            raise ValueError('sdk.page_invalid')
+        records = source_records(self._box.domains, domain_id=domain_id, include_feeds=include_feeds)
+        if isinstance(query, (SourceQuery, Mapping)):
+            selected = self.select(query).source_ids
+            values = [records[key][1] for key in selected if key in records]
+        elif query is None or isinstance(query, str):
+            values = [record for key, (_, record) in sorted(records.items())
+                      if query is None or query.casefold() in key.casefold()]
+        else:
+            raise TypeError('sdk.query_invalid')
+        stop = min(offset + limit, len(values))
+        return CatalogPage(tuple(values[offset:stop]), offset, len(values), stop if stop < len(values) else None)
+
+    def select(self, query):
+        from stratbox.capabilities.catalog.selection import resolve_sources
+        return resolve_sources(self._box.domains, query)
+
+    def descriptor(self, source_id):
+        from stratbox.capabilities.catalog.selection import source_records, publication_descriptor
+        kind, record = source_records(self._box.domains)[source_id]
+        return publication_descriptor(record, kind=kind)
 
     def describe(self, series_id):
         from .machine import project
-        return project(self.source(series_id), max_items=200)
+        result = project(self.source(series_id), max_items=200)
+        result['descriptor'] = project(self.descriptor(series_id), max_items=200)
+        return result
 
 
 class StrategyBox:
@@ -104,6 +127,24 @@ class StrategyBox:
         plan = self.prepare(capability, inputs=inputs, parameters=parameters, target=target, outputs=outputs)
         return self.session.run(plan, timeout=timeout)
 
+    def processing_basis(self, capability, *, inputs=None, parameters=None, target=None):
+        """Compare a direct command's desired work without executing it.
+
+        Pass ``fingerprint(result)`` as a ProcessingRequirement basis identity.
+        Operation inputs contain unresolved intermediate values, so they need
+        the basis of their actual finite command stage instead.
+        """
+        from stratbox.capabilities.plan.models import CommandTask
+        from stratbox.shared.data.processing import processing_basis
+        plan = self.prepare(capability, inputs=inputs, parameters=parameters, target=target)
+        if (not plan.scopes or plan.scopes[0].kind != 'command' or len(plan.tasks) != 1
+                or not isinstance(plan.tasks[0], CommandTask)):
+            raise ValueError('processing.direct_command_required')
+        task = plan.tasks[0]
+        command = task.command
+        return processing_basis(task.inputs, capability_id=command.id, method=command.method,
+            settings=command.settings, parameters=command.parameters, build_identity=plan.build_identity)
+
     def run(self, plan, *, timeout=None):
         self._check_open()
         return self.session.run(plan, timeout=timeout)
@@ -117,6 +158,14 @@ class StrategyBox:
         else:
             plan = self.prepare(capability_or_plan, inputs=inputs, parameters=parameters, target=target, outputs=outputs)
         return self.session.submit(plan, timeout=timeout)
+
+    def advance_source_state(self, *, max_pages=10, page_limit=1000, consumer_id='source-state'):
+        """Replay a bounded journal slice before requesting a fresh state view."""
+        from stratbox.core.observability.projections import SourceStateIndex
+        session = self.session
+        store = session.resolve_provider('source_state')
+        return SourceStateIndex(store,consumer_id=consumer_id).advance(
+            session.journal,max_pages=max_pages,page_limit=page_limit)
 
     def describe(self, capability_id):
         self._check_open()

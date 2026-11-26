@@ -405,7 +405,7 @@ class ControlledHTTP:
 def http_plan(request):
     work = BoundCommand("command.material.fetch", MethodRef("stratbox.core.commands.materials:material_fetch"), None,
         {"request": PortContract("request", RequestSpec)}, {"material": PortContract("material", Material),
-        "evidence": PortContract("evidence")}, resources={"network": 1}, effects=frozenset({"network.read"}),
+        "evidence": PortContract("evidence"),"request":PortContract("request",RequestSpec)}, resources={"network": 1}, effects=frozenset({"network.read"}),
         required_providers=frozenset({"http"}),
         reuse=ReuseContract(deterministic=False, completed=False, observation_scoped=True))
     return plan((CommandTask("fetch", work, {"request": request}),), {"material": ValueRef("fetch", "material")})

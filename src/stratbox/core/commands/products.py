@@ -3,14 +3,15 @@ from __future__ import annotations
 from io import StringIO
 import csv
 import json
-from stratbox.shared.data.values import EncodedProduct, SourceDataset, View, select_dataset
+from stratbox.shared.data.values import EncodedProduct, SourceDataset, View
+from stratbox.shared.data.selection import ObservationQuery, select_observations
 from ._settings import _get, _option
 
 
 def view_prepare(inputs, settings, context):
     dataset, filters = inputs["dataset"], _option(context, settings, "filters", {})
-    rows = tuple(row for row in dataset.rows if all(row.get(k) in v if isinstance(v, (tuple, list, set, frozenset)) else row.get(k) == v for k, v in filters.items()))
-    return {"view": View(select_dataset(dataset, rows),
+    selected = select_observations(dataset, ObservationQuery(filters=filters)) if filters else dataset
+    return {"view": View(selected,
                          {} if settings is None else settings, (*dataset.lineage, dataset.identity), dataset.source_uses)}
 
 
@@ -31,4 +32,5 @@ def product_render(inputs, settings, context):
     else:
         renderer = context.provider("renderer")
         data, media = renderer.render(view, format=fmt, checkpoint=context.checkpoint)
-    return {"product": EncodedProduct(data, media, view.lineage, source_uses=view.source_uses)}
+    return {"product": EncodedProduct(data, media, view.lineage, source_uses=view.source_uses,
+        assessment=view.assessment)}

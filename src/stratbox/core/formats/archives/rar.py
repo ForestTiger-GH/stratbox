@@ -1,4 +1,5 @@
 """RAR format commands using an explicitly selected archive reader."""
+from io import BytesIO
 
 from stratbox.core.storage.filestore import FileStore
 from stratbox.core.runtime.providers import default_filestore
@@ -12,7 +13,7 @@ def list_files(path: str, store: FileStore | None = None, *,
                reader: ArchiveReader, limits: ArchiveLimits = ArchiveLimits(),
                budget: BudgetMeter | None = None) -> list[str]:
     data = _read(path, store, limits, budget)
-    with reader.open(data) as contents:
+    with reader.open(BytesIO(data), limits=limits) as contents:
         members = contents.members()
         validate_members(members, limits)
         if budget is not None:

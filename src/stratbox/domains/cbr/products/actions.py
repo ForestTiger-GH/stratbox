@@ -9,7 +9,7 @@ from decimal import Decimal
 from stratbox.shared.data.values import EncodedProduct, SourceDataset, View
 
 
-def _form_presentation(rows):
+def _form_presentation(rows, choices=None):
     import pandas as pd
     from importlib.resources import files
     from stratbox.domains.cbr.calculations.reporting_forms.model import parse_form_model
@@ -22,12 +22,27 @@ def _form_presentation(rows):
     required = {"reporting_date", "source_code", "name", "measure", "section", "model_unit", "subject_label"}
     if any(not required <= row.keys() or row.get("value_status") not in {"derived", "missing"} for row in rows):
         raise ValueError("cbr.product_form_model_required")
+    labels = {}
+    for row in rows:
+        key = row["subject_namespace"], row["subject"]
+        if key in labels and labels[key] != row["subject_label"]:
+            raise ValueError("cbr.product_subject_label_conflict")
+        labels[key] = row["subject_label"]
+    if choices is not None:
+        for choice in choices:
+            labels[(choice.namespace, choice.subject_id)] = choice.label or labels.get(
+                (choice.namespace, choice.subject_id), choice.subject_id)
+    if len(set(labels.values())) != len(labels):
+        raise ValueError("cbr.product_distinct_subject_labels_required")
     long = pd.DataFrame([{"Дата": str(row["reporting_date"])[8:10] + "." + str(row["reporting_date"])[5:7] + "." + str(row["reporting_date"])[:4],
-        "Банк": row["subject_label"], "REGN": row.get("source_subject", row["subject"]), "Форма": row["form"],
+        "Банк": labels[(row["subject_namespace"], row["subject"])], "REGN": row.get("source_subject", row["subject"]), "Форма": row["form"],
         "IndicatorId": row["metric"], "Код": row["source_code"], "Показатель": row["name"],
         "Значение": row["value"], "Measure": row["measure"], "Раздел": row["section"],
         "Единица": row["model_unit"]} for row in rows], dtype=object)
     banks = long[["Банк", "REGN"]].drop_duplicates().rename(columns={"Банк": "bank", "REGN": "regn"})
+    if choices is not None:
+        banks = pd.DataFrame([(labels[(choice.namespace, choice.subject_id)], choice.subject_id)
+            for choice in choices], columns=("bank", "regn"))
     banks["sort"] = range(1, len(banks) + 1)
     model = parse_form_model(files("stratbox.domains.cbr.calculations.reporting_forms.models").joinpath("form" + form + ".csv").read_bytes(), form)
     order = {row["metric"]: row["order"] for row in rows if row.get("order") is not None}
@@ -42,32 +57,55 @@ def prepare(inputs, settings, context):
     dataset = inputs["dataset"]
     if not isinstance(dataset, SourceDataset):
         raise ValueError("cbr.product_dataset_required")
-    subjects = frozenset(str(x) for x in context.parameters.get("subjects", ()))
-    metrics = frozenset(str(x) for x in context.parameters.get("metrics", settings.default_metrics))
-    rows = tuple(dict(row) for row in dataset.rows if (not subjects or str(row.get("subject")) in subjects)
-        and (not metrics or str(row.get("metric")) in metrics))
+    from stratbox.domains.cbr.common.subjects import subject_choices, select_subject_rows
+    from stratbox.shared.data.selection import ObservationQuery, observation_query, select_observations
+    choices = subject_choices(dataset.rows, context.parameters)
+    metrics = context.parameters.get("metrics")
+    query = observation_query(context.parameters.get("observation_query", {}))
+    from dataclasses import replace
+    if choices is not None:
+        query = replace(query, subjects=choices)
+    if metrics is not None:
+        query = replace(query, metrics=tuple(str(value) for value in metrics))
+    selected_dataset = select_observations(dataset, query)
+    rows, _ = select_subject_rows(selected_dataset.rows, choices)
     if not rows:
         raise ValueError("cbr.product_selection_empty")
     if settings.kind == "forms":
-        return {"view": View(_form_presentation(rows), {"kind": "forms"}, (*dataset.lineage, dataset.identity), source_uses=dataset.source_uses)}
+        return {"view": View(_form_presentation(rows, choices), {"kind": "forms", "coverage": selected_dataset.assessment},
+            (*dataset.lineage, dataset.identity, selected_dataset.identity), source_uses=dataset.source_uses,
+            assessment=selected_dataset.assessment)}
     if settings.kind == "industries":
         from .industry import prepare as prepare_industry
-        return {"view": View(prepare_industry(rows), {"kind": "industries"},
-            (*dataset.lineage, dataset.identity), source_uses=dataset.source_uses)}
+        return {"view": View(prepare_industry(rows, context.parameters),
+            {"kind": "industries", "coverage": selected_dataset.assessment},
+            (*dataset.lineage, dataset.identity, selected_dataset.identity), source_uses=dataset.source_uses,
+            assessment=selected_dataset.assessment)}
     if settings.kind == "escrow":
-        if "selection_incomplete" in dataset.assessment.qualifications and context.parameters.get("require_complete_history", True):
-            raise ValueError("cbr.product_history_incomplete")
+        require_complete = context.parameters.get("require_complete_history", True)
+        if type(require_complete) is not bool:
+            raise ValueError("cbr.product_history_requirement_boolean_required")
+        if require_complete:
+            membership = getattr(dataset, "history_membership", None)
+            if not selected_dataset.assessment.complete or (len({str(row["period"]) for row in rows}) > 1
+                    and (membership is None or not membership.complete)):
+                raise ValueError("cbr.product_history_incomplete")
         latest = max(str(row["period"]) for row in rows)
         regions = tuple(dict.fromkeys(row["subject"] for row in rows if str(row["period"]) == latest))
         selected = tuple(context.parameters.get("regions", regions))
         if not selected or len(set(selected)) != len(selected) or not set(selected) <= {row["subject"] for row in rows}:
             raise ValueError("cbr.product_region_selection_invalid")
         rows = tuple(row for row in rows if row["subject"] in selected)
+    missing_display = context.parameters.get("missing_display", "source_token")
+    if missing_display not in {"source_token", "blank"}:
+        raise ValueError("cbr.product_missing_display_invalid")
     # Source and calculation content is sealed independently of product styling.
     return {"view": View(rows, {"kind": settings.kind, "sheets": tuple(
         {"metric": sheet.metric, "title": sheet.title, "name": sheet.name, "number_format": sheet.number_format}
         for sheet in settings.sheets), "region_order": selected if settings.kind == "escrow" else (),
-        "missing_display": context.parameters.get("missing_display", "source_token")}, (*dataset.lineage, dataset.identity), source_uses=dataset.source_uses)}
+        "missing_display": missing_display,
+        "coverage": selected_dataset.assessment}, (*dataset.lineage, dataset.identity, selected_dataset.identity),
+        source_uses=dataset.source_uses, assessment=selected_dataset.assessment)}
 
 
 def _csv(rows):
@@ -102,7 +140,7 @@ def render(inputs, settings, context):
             raise ValueError("cbr.product_industry_format_unsupported")
         from .industry import render as render_industry
         data = render_industry(view.value, context.checkpoint)
-        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses)}
+        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}
     if isinstance(view.value, Mapping) and view.value.get("kind") == "prepared_form":
         if fmt != "xlsx":
             raise ValueError("cbr.product_form_format_unsupported")
@@ -111,14 +149,14 @@ def render(inputs, settings, context):
         sheets = {name: pd.DataFrame(rows, columns=columns, dtype=object)
             for name, columns, rows in view.value["sheets"]}
         data = render_form_workbook(sheets, profile=view.value["layout"])
-        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses)}
+        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}
     rows = tuple(dict(row) for row in view.value)
     if fmt == "csv":
-        return {"product": EncodedProduct(_csv(rows), "text/csv", view.lineage, source_uses=view.source_uses)}
+        return {"product": EncodedProduct(_csv(rows), "text/csv", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}
     if fmt in {"json", "jsonl"}:
         data = ("\n".join(json.dumps(row, ensure_ascii=False, default=str) for row in rows) if fmt == "jsonl"
             else json.dumps(rows, ensure_ascii=False, default=str)).encode()
-        return {"product": EncodedProduct(data, "application/x-ndjson" if fmt == "jsonl" else "application/json", view.lineage, source_uses=view.source_uses)}
+        return {"product": EncodedProduct(data, "application/x-ndjson" if fmt == "jsonl" else "application/json", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}
     if fmt != "xlsx":
         raise ValueError("cbr.product_format_unsupported")
     if view.settings.get("kind") == "escrow":
@@ -145,7 +183,7 @@ def render(inputs, settings, context):
             data = openpyxl_bytes(workbook, literal_text=True)
         finally:
             workbook.close()
-        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses)}
+        return {"product": EncodedProduct(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     workbook = Workbook()
@@ -205,4 +243,4 @@ def render(inputs, settings, context):
     finally:
         workbook.close()
     return {"product": EncodedProduct(data,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses)}
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", view.lineage, source_uses=view.source_uses, assessment=view.assessment)}

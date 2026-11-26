@@ -60,7 +60,8 @@ def test_source_comparison_accepts_raw_material_without_a_financial_model():
     changed=command("803","source.assess",{"evidence":after,"baseline":before})["assessment"]
     assert changed.status=="changed" and changed.basis=="exact_material_bytes"
     initial=command("803","source.assess",{"evidence":before})["assessment"]
-    assert initial.status=="first_seen" and initial.basis=="no_baseline"
+    assert initial.status=="first_seen" and initial.basis=="exact_material_bytes"
+    assert initial.candidate == before.identity.sha256
 
 
 def test_unknown_form_links_cannot_be_silently_admitted_to_a_known_series():

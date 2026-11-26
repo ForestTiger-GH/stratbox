@@ -79,11 +79,18 @@ def test_listing_selection_keeps_competing_same_period_materials_and_week_order(
              "FRG. Экспресс-мониторинг рынка. Выдачи. Май 2026 1 неделя.xlsx")
     inventory = tuple({"path": "/delivery/" + name, "filename": name, "size": 10, "mtime": 1} for name in names)
     listing = publications.scan({"index": inventory}, weekly, context())["listing"]
-    selected = publications.select({"listing": listing}, weekly, context())["selection"]
+    selected = publications.select({"listing": listing, "query": {"mode": "latest"}}, weekly, context())["selection"]
     assert selected.entries[0].issue_id == "2026-05 week 1"
+    assert all("publication_date" not in entry.metadata and entry.metadata["filename_date"] is None
+        for entry in listing.entries)
+    with pytest.raises(ValueError, match="date_axis_unavailable"):
+        publications.select({"listing": listing, "query": {"mode": "range", "date_axis": "publication_date",
+            "date_from": "2026-04-01", "date_to": "2026-05-31"}}, weekly, context())
     duplicate = replace(listing.entries[0], locator="/another.xlsx")
-    ambiguous = publications.select({"listing": replace(listing, entries=(listing.entries[0], duplicate))}, weekly, context())["selection"]
-    assert ambiguous.assessment.status == "unknown" and len(ambiguous.entries) == 2
+    ambiguous = publications.select({"listing": replace(listing, entries=(listing.entries[0], duplicate)),
+        "query": {"ambiguity": "report"}}, weekly, context())
+    assert not ambiguous["selection"].assessment.complete and not ambiguous["selection"].entries
+    assert ambiguous["report"].ambiguous
     metadata = publications.assess({"evidence": listing, "baseline": listing}, weekly, context())["assessment"]
     assert metadata.status == "indeterminate" and metadata.basis == "delivered_metadata_only"
 
@@ -148,7 +155,7 @@ def test_supplied_rule_geometry_anchor_period_and_precision_checks():
 
 
 def test_identification_and_exact_changes_do_not_overwrite_known_provenance():
-    material = Material(b"one", source_id="frg.express.issuance")
+    material = workbook(source_id="frg.express.issuance").material
     settings = DeliverySettings("frg.express.issuance")
     result = publications.identify({"material": material, "claim": SourceClaim(settings.source_id, "2026-05-01")}, settings, context())
     assert result["material"].material is material

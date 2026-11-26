@@ -1,7 +1,7 @@
 """Publication identification from explicit supplied index evidence."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 from urllib.parse import urlsplit
 
@@ -22,8 +22,26 @@ class PublicationRules:
 
 def request(inputs, settings: PublicationRules, context):
     locator = inputs.get("locator")
+    selection = inputs.get("selection")
+    if selection is not None:
+        if not isinstance(selection, AssetSelection) or not selection.assessment.complete or len(selection.entries) != 1:
+            raise ValueError("rosstat.request_single_qualified_asset_required")
+        if locator is not None and locator != selection.entries[0]:
+            raise ValueError("rosstat.asset_identity_conflict")
+        locator = selection.entries[0]
+    query = inputs.get("query")
+    parameters = dict(context.parameters)
+    if isinstance(query, dict) or hasattr(query, "items"):
+        parameters.update(query)
+    role = parameters.get("role", "asset" if isinstance(locator, PublicationAsset) else "index")
+    if role not in {"index", "asset"}:
+        raise ValueError("rosstat.request_role_invalid")
+    if role == "index" and isinstance(locator, PublicationAsset):
+        raise ValueError("rosstat.index_asset_conflict")
+    if role == "asset" and not isinstance(locator, PublicationAsset):
+        raise ValueError("rosstat.request_asset_required")
     if isinstance(locator, PublicationAsset):
-        if locator.source_id != settings.source_id:
+        if locator.source_id != settings.source_id or locator.format not in settings.formats:
             raise ValueError("rosstat.asset_source_conflict")
         name = PurePosixPath(urlsplit(locator.locator).path).name
         parsed_issue, _, conflicts = parse_issue(settings.issue_rule, name, str(locator.metadata.get("label", "")))
@@ -34,12 +52,13 @@ def request(inputs, settings: PublicationRules, context):
         format = locator.format
     else:
         url = locator if isinstance(locator, str) else settings.landing_url
-        issue, asset = str(context.parameters.get("issue_id", "")), "index"
+        issue, asset = "", "index"
         format = "html"
     if not _official(url) or (asset != "index" and not _file_url(url)):
         raise ValueError("rosstat.official_url_required")
     return {"request": RequestSpec(url, max_bytes=int(context.parameters.get("max_bytes", 100 * 1024 * 1024)),
-        source_id=settings.source_id, metadata={"issue_id": issue, "asset_id": asset, "format": format})}
+        source_id=settings.source_id if role == "asset" else settings.source_id + ".index",
+        metadata={"issue_id": issue, "asset_id": asset, "format": format, "role": role})}
 
 
 def _official(url):
@@ -83,6 +102,7 @@ def scan(inputs, settings: PublicationRules, context):
         entries.append(PublicationAsset(settings.source_id, issue, asset, link.url, extension,
             {"label": link.label_literal, "raw_href": link.raw_href, "position": link.position,
              "issue_evidence": evidence, "asset_role": role, "asset_evidence": asset_evidence,
+             "issue_order": tuple(int(part) for part in issue.split("-")),
              "index_identity": material.identity.sha256}))
     keys = {(entry.source_id, entry.issue_id, entry.asset_id, entry.locator) for entry in entries}
     if len(keys) != len(entries):
@@ -98,40 +118,61 @@ def select(inputs, settings: PublicationRules, context):
     listing = inputs["listing"]
     if not isinstance(listing, PublicationListing) or listing.domain_id != "rosstat":
         raise TypeError("rosstat.publication_listing_required")
-    query = inputs.get("query", context.parameters)
-    query = query if hasattr(query, "get") else {}
-    issue = query.get("issue_id", query.get("issue"))
-    candidates = tuple(entry for entry in listing.entries if entry.source_id == settings.source_id)
-    if issue is None and candidates:
-        issue = max(entry.issue_id for entry in candidates)
-    candidates = tuple(entry for entry in candidates if entry.issue_id == issue)
-    requested_asset = query.get("asset_id", settings.primary_asset)
-    matches = tuple(entry for entry in candidates if entry.asset_id == requested_asset)
-    if len({entry.locator for entry in matches}) > 1:
-        raise ValueError("rosstat.asset_selection_ambiguous")
-    assessment = Assessment("complete" if len(matches) == 1 else "unknown",
-        () if matches else ("requested_asset_not_observed",),
-        expected=(str(issue) + ":" + requested_asset,),
-        observed=tuple(e.issue_id + ":" + e.asset_id for e in matches),
-        qualifications=frozenset({"latest_observed_only"}) if not query.get("issue_id", query.get("issue")) else frozenset())
-    return {"selection": AssetSelection(matches, assessment)}
+    from stratbox.shared.data.selection import IssueQuery, issue_query, select_publication_assets
+    keys = set(IssueQuery.__dataclass_fields__) | {"source_id", "asset_id", "issue_id", "issue", "as_of", "periods", "format", "locator", "url"}
+    query = issue_query(inputs.get("query", {key: value for key, value in context.parameters.items() if key in keys}))
+    if query.mode == "latest" and query.date_axis == "issue_id":
+        query = replace(query, date_axis="issue_order")
+    selection, report = select_publication_assets(listing, query, source_ids=(settings.source_id,))
+    return {"selection": selection, "report": report}
 
 
 def assess(inputs, settings, context):
+    from stratbox.shared.data.materials import StagedMaterialRef
+    from stratbox.shared.data.values import ImmutableMaterialRef
+    materials = (Material, IdentifiedMaterial, ImmutableMaterialRef, StagedMaterialRef)
     evidence, baseline = inputs["evidence"], inputs.get("baseline")
+    for value in (evidence, baseline):
+        if isinstance(value, materials) and value.source_id not in {None, settings.source_id}:
+            raise ValueError("rosstat.source_comparison_conflict")
+    from stratbox.core.commands.publications import retained_validation_assessment
+    retained = retained_validation_assessment(inputs, context)
+    if retained is not None:
+        return retained
+    if isinstance(evidence, materials) and isinstance(baseline, materials):
+        def coordinates(value):
+            if isinstance(value, IdentifiedMaterial):
+                return value.claim.source_id, value.claim.issue_id, value.claim.asset_id
+            return value.source_id or settings.source_id, str(value.metadata.get("issue_id", "")), str(value.metadata.get("asset_id", "main"))
+        before, after = coordinates(baseline), coordinates(evidence)
+        if before != after:
+            return {"assessment": UpdateAssessment("changed", "explicit_publication_coordinates",
+                predecessor=fingerprint(before), candidate=fingerprint(after))}
     if isinstance(evidence, IdentifiedMaterial):
         evidence = evidence.material
     if isinstance(baseline, IdentifiedMaterial):
         baseline = baseline.material
-    if isinstance(evidence, Material):
+    if isinstance(evidence, materials):
         candidate = evidence.identity.sha256
-        previous = baseline.identity.sha256 if isinstance(baseline, Material) else baseline
-        state = "first_seen" if previous is None else "unchanged" if previous == candidate else "changed"
+        previous = baseline.identity.sha256 if isinstance(baseline, materials) else None
+        state = "first_seen" if baseline is None else "unknown" if previous is None else "unchanged" if previous == candidate else "changed"
         return {"assessment": UpdateAssessment(state, "exact_material_bytes", predecessor=previous, candidate=candidate)}
     if not isinstance(evidence, PublicationListing):
         raise TypeError("rosstat.source_evidence_required")
-    candidate = fingerprint(tuple(sorted((e.issue_id, e.asset_id, e.locator) for e in evidence.entries)))
-    previous = fingerprint(tuple(sorted((e.issue_id, e.asset_id, e.locator) for e in baseline.entries))) if isinstance(baseline, PublicationListing) else None
+    if evidence.domain_id != "rosstat" or isinstance(baseline, PublicationListing) and baseline.domain_id != "rosstat":
+        raise ValueError("rosstat.publication_listing_required")
+    scope = context.parameters.get("comparison_scope", "selected")
+    if scope not in {"selected", "feed"}:
+        raise ValueError("rosstat.comparison_scope_invalid")
+    def members(value):
+        entries = value.entries
+        if scope == "selected":
+            from stratbox.shared.data.selection import select_publication_assets
+            selected, _ = select_publication_assets(value, inputs.get("query"), source_ids=(settings.source_id,))
+            entries = selected.entries
+        return tuple(sorted((item.source_id, item.issue_id, item.asset_id, item.locator, item.format) for item in entries))
+    candidate = fingerprint((scope, members(evidence)))
+    previous = fingerprint((scope, members(baseline))) if isinstance(baseline, PublicationListing) else None
     # A partial index cannot establish disappearance or unchanged file bytes.
     # Reordering or relocation is evidence about the index, not a revision proof.
     status = "indeterminate"

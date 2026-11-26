@@ -4,24 +4,18 @@ from pathlib import Path
 from threading import RLock
 import json
 
-from stratbox.shared.data.values import SourceDataset, SnapshotRef, canonical_tree, restore_tree, fingerprint, select_dataset
+from stratbox.shared.data.values import SourceDataset, SnapshotRef, canonical_tree, restore_tree, fingerprint
+from stratbox.shared.data.selection import ObservationQuery, observation_query, select_observations
 from stratbox.shared.identity import ByteIdentity
 
 
 def _select(dataset, query):
-    if not isinstance(query, dict) and not hasattr(query, "items"):
-        raise ValueError("dataset.query_mapping_required")
-    unknown = set(query) - {"filters", "periods", "limit"}
-    if unknown:
-        raise ValueError("dataset.query_unknown_field")
-    filters, periods, limit = query.get("filters", {}), query.get("periods"), query.get("limit")
-    if limit is not None and (type(limit) is not int or limit < 0):
-        raise ValueError("dataset.query_invalid_limit")
-    rows = tuple(row for row in dataset.rows if all(row.get(key) == value for key, value in filters.items())
-                 and (periods is None or row.get("period") in periods))
-    if limit is not None:
-        rows = rows[:limit]
-    return select_dataset(dataset, rows)
+    if query is None:
+        return dataset
+    query = observation_query(query)
+    # Reading an immutable snapshot without a projection preserves its exact
+    # identity, including its original coverage and lineage.
+    return dataset if query == ObservationQuery() else select_observations(dataset, query)
 
 
 class MemoryDatasetStore:

@@ -52,15 +52,43 @@ def extract(inputs, settings, context):
     values = (physical,) if isinstance(physical, DbfEvidence) else tuple(physical) if isinstance(physical, (tuple, list)) else ()
     if not values or any(not isinstance(item, DbfEvidence) for item in values):
         raise ValueError("cbr.form_dbf_evidence_required")
+    issue_ids, retained_uses = set(), []
     for item in values:
-        if item.material.source_id not in {None, settings.series_id}:
+        material = item.material
+        issue = str(material.metadata.get("issue_id") or context.parameters.get("issue_id", ""))
+        if issue:
+            issue_ids.add(issue)
+        if material.source_id == "cbr.reporting_forms.publications":
+            from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
+            expected_asset = "form-0409" + settings.code
+            container = material.metadata.get("container_asset_id", material.metadata.get("asset_id"))
+            parent = material.metadata.get("parent")
+            expected_identity = (next((identity for identity in material.lineage
+                if getattr(identity, "sha256", None) == parent), None) if parent else material.identity)
+            verify = getattr(context, "verify_source_use", None)
+            uses = tuple(getattr(material, "source_uses", ()))
+            matched = tuple(use for use in uses if use.coordinate.source_id == material.source_id
+                and use.coordinate.issue_id == issue and use.coordinate.asset_id == expected_asset
+                and use.coordinate.material_identity == expected_identity)
+            if (container != expected_asset or not issue or expected_identity is None or not matched
+                    or verify is None or not all(verify(use) for use in matched)):
+                raise ValueError("cbr.form_feed_relation_unqualified")
+            retained_uses.extend(matched)
+            retained_uses.append(SourceUse(SourceCoordinate(source_id=settings.series_id,
+                family_id=material.source_id, issue_id=issue,
+                asset_id=str(material.metadata.get("member", expected_asset)), material_identity=material.identity),
+                "source_dbf", "domain_validated", "sha256:" + material.identity.sha256))
+        elif material.source_id not in {None, settings.series_id}:
             raise ValueError("cbr.form_source_mismatch")
+    if len(issue_ids) > 1 or issue_ids and context.parameters.get("issue_id") not in {None, "", next(iter(issue_ids))}:
+        raise ValueError("cbr.form_issue_conflict")
     admitted = tuple(item for item in values if _shape(item, settings) is not None)
     if not admitted:
         raise ValueError("cbr.form_fields_unsupported")
-    metadata = {"form": settings.code, "all_members": tuple(item.material.identity for item in values)}
+    metadata = {"form": settings.code, "all_members": tuple(item.material.identity for item in values),
+        "source_uses": tuple(dict.fromkeys(retained_uses))}
     tables = TableEvidenceSet(admitted, admitted[0].material, settings.series_id,
-        str(context.parameters.get("issue_id", "")), Assessment(), metadata)
+        next(iter(issue_ids), str(context.parameters.get("issue_id", ""))), Assessment(), metadata)
     return {"tables": tables, "coverage": tables.assessment}
 
 
@@ -107,6 +135,10 @@ def interpret(inputs, settings, context):
     parameters = issue_parameters(inputs, context, tables.issue_id)
     issue = str(parameters.get("issue_id") or tables.issue_id)
     period, period_kind = _period(settings, parameters, issue)
+    if settings.code == "102" and (period_kind != "interval" or period[1] >= issue):
+        raise ValueError("cbr.form_flow_period_invalid")
+    if settings.code in {"101", "123", "135", "802", "805"} and (period_kind != "as_of" or str(period) != issue):
+        raise ValueError("cbr.form_stock_date_mismatch")
     if settings.require_measurement and ("unit" not in parameters or "scale" not in parameters):
         raise ValueError("cbr.form_published_measurement_required")
     unit, scale = parameters.get("unit", settings.unit), Decimal(str(parameters.get("scale", settings.scale)))
@@ -163,5 +195,8 @@ def interpret(inputs, settings, context):
         raise ValueError("cbr.form_no_observations")
     assessment = Assessment("partial" if findings else "complete", tuple(sorted(findings)),
         qualifications=frozenset({"published_fields_only"}) if settings.code in {"134", "803"} else frozenset())
-    dataset = SourceDataset(settings.series_id, tuple(rows), {"form": settings.code}, issue, tuple(lineage), assessment, source_uses=tuple(source_use(settings.series_id, issue, identity, role="source_dbf") for identity in lineage))
+    uses = (*tuple(tables.metadata.get("source_uses", ())),
+        *(source_use(settings.series_id, issue, identity, role="source_dbf") for identity in lineage))
+    dataset = SourceDataset(settings.series_id, tuple(rows), {"form": settings.code}, issue,
+        tuple(lineage), assessment, source_uses=tuple(dict.fromkeys(uses)))
     return {"dataset": dataset, "assessment": assessment}

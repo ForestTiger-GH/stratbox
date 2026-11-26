@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Callable, Mapping
+from io import BytesIO
+from contextlib import contextmanager
+from typing import BinaryIO, Callable, Mapping
 from unicodedata import normalize
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
@@ -13,7 +15,7 @@ from stratbox.core.limits import BudgetMeter
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import StoredBytesReceipt
 
-from stratbox.core.formats.archives.members import ArchiveError, safe_member_name
+from stratbox.core.formats.archives.members import ArchiveError, safe_member_name, ArchiveLimits, open_zip_stream
 from stratbox.core.storage.staging import BoundedStage, WRITE_GUARANTEES, commit_staged, stream_identity
 
 _CHUNK = 1024 * 1024
@@ -49,7 +51,7 @@ def validate_output_names(names: tuple[str, ...], *, nested_paths: bool = True) 
 
 @dataclass(frozen=True, slots=True)
 class ArchiveEntry:
-    source: str
+    source: object
     name: str
     identity: ByteIdentity
 
@@ -63,13 +65,20 @@ class PathArchiveReceipt:
     effect_id: str
 
 
-def _copy_member(archive, entry, source_store, method, budget, checkpoint):
+@dataclass(frozen=True, slots=True)
+class ArchiveEncodingEvidence:
+    identity: ByteIdentity
+    members: tuple[tuple[str, ByteIdentity], ...]
+    compression: str
+
+
+def _copy_member(archive, entry, open_member, method, checkpoint, budget=None):
     info = ZipInfo(entry.name)
     info.compress_type = method
     info.external_attr = 0o100644 << 16
     digest = sha256()
     size = 0
-    with source_store.open_read(entry.source) as source, archive.open(
+    with open_member(entry.source) as source, archive.open(
         info, "w", force_zip64=True
     ) as member:
         while True:
@@ -78,13 +87,90 @@ def _copy_member(archive, entry, source_store, method, budget, checkpoint):
             if not chunk:
                 break
             size += len(chunk)
-            budget.charge("input_bytes", len(chunk))
+            if budget is not None:
+                budget.checkpoint()
             if size > entry.identity.size:
                 raise ArchiveError("archive.source_changed")
             digest.update(chunk)
             member.write(chunk)
     if ByteIdentity(digest.hexdigest(), size) != entry.identity:
         raise ArchiveError("archive.source_changed")
+
+
+class _BoundedZipSink:
+    def __init__(self, stream, limit):
+        self.stream, self.limit = stream, limit
+
+    def write(self, data):
+        if self.stream.tell() + len(data) > self.limit:
+            raise ArchiveError("archive.output_limit")
+        if self.stream.write(data) != len(data):
+            raise ArchiveError("archive.short_write")
+        return len(data)
+
+    def __getattr__(self, name):
+        return getattr(self.stream, name)
+
+
+def encode_zip(
+    entries: tuple[ArchiveEntry, ...], sink: BinaryIO, *, open_member,
+    compression: str = "deflated", limits: ArchiveWriteLimits = ArchiveWriteLimits(),
+    max_output_bytes: int = 64 * 1024**3, checkpoint=lambda: None, budget=None,
+    deterministic: bool = True,
+) -> ArchiveEncodingEvidence:
+    """Encode and verify complete bytes without creating any persistent effect.
+
+    The caller owns the sink and its lifetime. Both buffered and staged command
+    placements use this kernel. Entry order is caller order; fixed ZIP metadata
+    makes identical ordered inputs reproducible in the same codec environment.
+    """
+    entries = tuple(entries)
+    if (compression not in {"stored", "deflated"} or type(deterministic) is not bool):
+        raise ArchiveError("archive.compression_invalid")
+    if (not isinstance(limits, ArchiveWriteLimits) or type(max_output_bytes) is not int
+            or max_output_bytes < 1 or len(entries) > limits.members
+            or any(not isinstance(entry, ArchiveEntry) or not isinstance(entry.identity, ByteIdentity)
+                   for entry in entries)):
+        raise ArchiveError("archive.selection_invalid")
+    validate_output_names(tuple(entry.name for entry in entries), nested_paths=limits.nested_paths)
+    if sum(entry.identity.size for entry in entries) > limits.input_bytes:
+        raise ArchiveError("archive.size_limit")
+    if sink.tell() != 0:
+        raise ArchiveError("archive.empty_sink_required")
+    sink.seek(0, 2)
+    if sink.tell():
+        raise ArchiveError("archive.empty_sink_required")
+    sink.seek(0)
+    if budget is not None:
+        budget.charge("objects", len(entries))
+    method = ZIP_STORED if compression == "stored" else ZIP_DEFLATED
+    with ZipFile(_BoundedZipSink(sink, max_output_bytes), "w", compression=method, allowZip64=True) as archive:
+        for entry in entries:
+            checkpoint()
+            _copy_member(archive, entry, open_member, method, checkpoint, budget)
+    sink.flush()
+    size = sink.seek(0, 2)
+    read_limits = ArchiveLimits(max(1, limits.members), max(1, limits.input_bytes),
+        max(1, max((entry.identity.size for entry in entries), default=0)), max_output_bytes)
+    with open_zip_stream(sink, size, read_limits) as archive:
+        if tuple(archive.namelist()) != tuple(entry.name for entry in entries):
+            raise ArchiveError("archive.verification_failed")
+        for entry in entries:
+            with archive.open(entry.name) as member:
+                digest, length = sha256(), 0
+                while True:
+                    checkpoint()
+                    chunk = member.read(min(_CHUNK, entry.identity.size - length + 1))
+                    if not chunk:
+                        break
+                    length += len(chunk)
+                    if length > entry.identity.size:
+                        raise ArchiveError("archive.verification_failed")
+                    digest.update(chunk)
+                if ByteIdentity(digest.hexdigest(), length) != entry.identity:
+                    raise ArchiveError("archive.verification_failed")
+    identity = stream_identity(sink, checkpoint)
+    return ArchiveEncodingEvidence(identity, tuple((entry.name, entry.identity) for entry in entries), compression)
 
 
 def zip_to_store(
@@ -139,18 +225,23 @@ def zip_to_store(
     result = None
     try:
         with output_store.stage_write(destination) as stage:
-            method = ZIP_STORED if compression == "stored" else ZIP_DEFLATED
-            with ZipFile(BoundedStage(stage.stream, budget), "w", compression=method) as archive:
-                for entry in entries:
-                    _copy_member(archive, entry, source_store, method, budget, checkpoint)
-                for name, data in additional.items():
-                    checkpoint()
-                    info = ZipInfo(name)
-                    info.compress_type = ZIP_DEFLATED
-                    info.external_attr = 0o100644 << 16
-                    archive.writestr(info, data)
+            @contextmanager
+            def open_member(value):
+                if isinstance(value, bytes):
+                    with BytesIO(value) as stream:
+                        yield stream
+                else:
+                    with source_store.open_read(value) as stream:
+                        yield stream
+            all_entries = (*entries, *(ArchiveEntry(data, name, ByteIdentity.of(data))
+                                      for name, data in additional.items()))
+            budget.charge("input_bytes", sum(item.identity.size for item in entries))
+            encoded = encode_zip(all_entries, BoundedStage(stage.stream, budget),
+                open_member=open_member, compression=compression, limits=ArchiveWriteLimits(
+                    limits.members, limits.input_bytes + limits.extra_bytes,
+                    limits.extra_bytes, limits.nested_paths), checkpoint=checkpoint)
             stage.stream.flush()
-            identity = stream_identity(stage.stream, checkpoint)
+            identity = encoded.identity
             storage = commit_staged(
                 stage, destination, identity, store=output_store, budget=budget, checkpoint=checkpoint,
                 mode=mode, expected_revision=expected_revision, plan_identity=plan_identity,

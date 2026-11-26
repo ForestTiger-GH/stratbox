@@ -12,7 +12,37 @@ _ORDER = (("debt", "rubles", "в рублях"), ("overdue_debt", "rubles", "в 
     ("new_loans", "total", "итого"))
 
 
-def prepare(rows):
+def prepare(rows, parameters=None):
+    parameters = parameters or {}
+    policy = parameters.get("geography_policy", "strict")
+    if policy not in {"strict", "latest", "as_of"}:
+        raise ValueError("cbr.product_geography_policy_invalid")
+    edition = parameters.get("geography_date")
+    if policy == "as_of":
+        from datetime import date
+        edition = date.fromisoformat(str(edition)).isoformat()
+    include_metadata = parameters.get("include_metadata", False)
+    if type(include_metadata) is not bool:
+        raise ValueError("cbr.product_include_metadata_boolean_required")
+    geography = {}
+    for row in rows:
+        key = row["subject"], row["reporting_date"]
+        descriptor = (row["subject_label"], row["subject_kind"], row["subject_parent"], row["subject_order"])
+        if key in geography and geography[key] != descriptor:
+            raise ValueError("cbr.product_industry_geography_conflict")
+        geography[key] = descriptor
+    display = {}
+    by_subject = defaultdict(list)
+    for (subject, day), descriptor in geography.items():
+        by_subject[subject].append((day, descriptor))
+    for subject, descriptors in by_subject.items():
+        observed = sorted(descriptors)
+        if policy == "strict" and len({descriptor for _, descriptor in observed}) != 1:
+            raise ValueError("cbr.product_industry_geography_conflict")
+        eligible = [(day, descriptor) for day, descriptor in observed if policy != "as_of" or day <= edition]
+        if not eligible:
+            raise ValueError("cbr.product_geography_edition_unavailable")
+        display[subject] = eligible[-1][1]
     metrics = {row["metric"] for row in rows}
     if len(metrics) != 1:
         raise ValueError("cbr.product_single_industry_required")
@@ -41,10 +71,7 @@ def prepare(rows):
         values = {}
         for row in selected:
             subject = row["subject"]
-            descriptor = (row["subject_label"], row["subject_kind"], row["subject_parent"], row["subject_order"])
-            if subject in subjects and subjects[subject] != descriptor:
-                raise ValueError("cbr.product_industry_geography_conflict")
-            subjects[subject] = descriptor
+            subjects[subject] = display[subject]
             key = subject, row["reporting_date"]
             if key in values:
                 raise ValueError("cbr.product_industry_duplicate")
@@ -53,7 +80,10 @@ def prepare(rows):
         matrix = tuple((subject, *subjects[subject][:3], *(values.get((subject, day)) for day in dates)) for subject in ordered)
         sheets.append((sheet_name, measure, currency, matrix))
     return {"kind": "prepared_industry", "metric": metric, "name": name, "dates": dates,
-        "flow": flow, "sheets": tuple(sheets), "periods": tuple(sorted({row["reference_period"] for row in rows}))}
+        "flow": flow, "sheets": tuple(sheets), "periods": tuple(sorted({row["reference_period"] for row in rows})),
+        "geography_policy": policy, "geography_date": edition,
+        "geography_history": tuple((subject, day, *descriptor) for (subject, day), descriptor in sorted(geography.items())),
+        "include_metadata": include_metadata}
 
 
 def render(value, checkpoint):
@@ -76,6 +106,15 @@ def render(value, checkpoint):
             if value["flow"]:
                 for ordinal, period in enumerate(value["periods"], 2):
                     book[sheet].cell(3, ordinal, period[5:7] + "." + period[:4])
+        if value.get("include_metadata"):
+            metadata = book.create_sheet("Metadata")
+            metadata.append(("geography_policy", value["geography_policy"]))
+            metadata.append(("geography_date", value.get("geography_date")))
+            metadata.append(("subject", "reporting_date", "label", "kind", "parent", "order"))
+            for row in value["geography_history"]:
+                checkpoint()
+                metadata.append(row)
+            metadata.freeze_panes = "C4"
         return openpyxl_bytes(book, literal_text=True)
     finally:
         book.close()

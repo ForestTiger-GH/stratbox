@@ -26,6 +26,7 @@ with StrategyBox() as box:
 - [Standard definitions and execution ownership](docs/architecture/capability-execution.md)
 - [Direct calls, prepared plans and result lifetime](docs/current-how/capability-session.md)
 - [Independent typed processing stages](docs/current-how/standard-data-stages.md)
+- [Selective processing, retained state and a finite collector](docs/current-how/selective-processing-and-restart.md)
 - [Static domain catalogs and scientific coverage](docs/current-how/independent-domain-data-routes.md)
 - [Installation and local verification](docs/how/install-and-run-core.md)
 - [Maintained analytical knowledge](docs/README.md)

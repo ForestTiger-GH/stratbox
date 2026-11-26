@@ -10,8 +10,8 @@ Each publication directly specializes `command.request.prepare`,
 | --- | --- | --- |
 | `rosstat.socioeconomic_russia` | https://rosstat.gov.ru/compendium/document/50801 | PDF |
 | `rosstat.socioeconomic_regions` | https://rosstat.gov.ru/folder/11109/document/13259 | ZIP/RAR |
-| `rosstat.short_term_indicators` | https://rosstat.gov.ru/compendium/document/50802 | XLSX |
-| `rosstat.population_municipalities` | https://rosstat.gov.ru/compendium/document/13282 | XLSX |
+| `rosstat.short_term_indicators.publications` | https://rosstat.gov.ru/compendium/document/50802 | XLSX |
+| `rosstat.population_municipalities.publications` | https://rosstat.gov.ru/compendium/document/13282 | XLSX |
 
 These are landing pages. The immutable source fact is the publication identity;
 a concrete attachment additionally has a factual issue ID and asset ID.
@@ -25,9 +25,9 @@ from stratbox.capabilities.model.targets import FeedTarget
 from stratbox.sdk import StrategyBox
 from stratbox.shared.data.values import Material
 
-target = FeedTarget("rosstat.short_term_indicators")
+target = FeedTarget("rosstat.short_term_indicators.publications")
 page = Material(html_bytes, "text/html",
-                source_id="rosstat.short_term_indicators.index")
+                source_id="rosstat.short_term_indicators.publications.index")
 with StrategyBox() as box:
     scan = box.invoke("command.publication.scan",
                       inputs={"index": page}, target=target)
@@ -41,8 +41,8 @@ with StrategyBox() as box:
 
 Scanning recognizes only bounded filename/label patterns. Its assessment says
 that publisher inventory is uncertified. A requested issue can be selected
-from observed evidence. Omitted issue selection means latest observed, carrying
-that qualification; it establishes no globally newest publisher release.
+from observed evidence. Explicit `IssueQuery(mode="latest")` selects the latest
+observed issue and carries that qualification; it establishes no globally newest publisher release.
 Multiple locators for the same requested asset remain ambiguous.
 
 The request method checks official HTTPS hosts and replays asset identity from

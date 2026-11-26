@@ -75,9 +75,13 @@ def _xls(data, budget, checkpoint):
     return tuple(sheets)
 
 def _xlsb(data, budget, checkpoint):
+    return _xlsb_stream(BytesIO(data), budget, checkpoint)
+
+
+def _xlsb_stream(stream, budget, checkpoint):
     pyxlsb = require_extra("pyxlsb", "excel-binary")
     sheets = []
-    with pyxlsb.open_workbook(BytesIO(data)) as book:
+    with pyxlsb.open_workbook(stream) as book:
         for index, name in enumerate(book.sheets):
             cells = []
             with book.get_sheet(index + 1) as sheet:

@@ -14,17 +14,34 @@ OBSERVATION_GRAIN = (
 )
 
 
+def _carrier(value):
+    """Unwrap a readable original without relabeling acquisition provenance."""
+    if isinstance(value, (IdentifiedMaterial, ConvertedMaterial)):
+        return value.material
+    if isinstance(value, bytes):
+        return Material(value)
+    from stratbox.shared.data.materials import StagedMaterialRef
+    from stratbox.shared.data.values import ImmutableMaterialRef, EncodedProduct
+    if not isinstance(value, (Material, StagedMaterialRef, ImmutableMaterialRef, EncodedProduct)):
+        raise ExecutionFailure("material.required")
+    return value
+
+
 def _material(value):
+    """An explicit buffered-only entrance for decoders that require inline bytes."""
     if isinstance(value, IdentifiedMaterial):
         original, claim = value.material, value.claim
+        if not isinstance(original, Material):
+            raise ExecutionFailure("material.buffered_required")
         for key, expected in (("issue_id", claim.issue_id), ("asset_id", claim.asset_id)):
             if expected and original.metadata.get(key) not in {None, "", expected}:
                 raise ExecutionFailure("source.context_conflict")
         if original.source_id not in {None, claim.source_id}:
             raise ExecutionFailure("source.context_conflict")
         from dataclasses import replace
-        return replace(original, source_id=claim.source_id,
-            metadata={**dict(original.metadata), "issue_id": claim.issue_id, "asset_id": claim.asset_id})
+        return replace(original, source_id=original.source_id or claim.source_id,
+            metadata={**dict(original.metadata), "issue_id": claim.issue_id, "asset_id": claim.asset_id},
+            source_uses=tuple(dict.fromkeys((*original.source_uses, *value.source_uses))))
     if isinstance(value, ConvertedMaterial):
         return value.material
     if isinstance(value, bytes):

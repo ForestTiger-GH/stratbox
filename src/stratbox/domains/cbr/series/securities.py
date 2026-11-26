@@ -44,11 +44,11 @@ DEBT_SECURITIES = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(DEBT_SECURITIES_PUBLICATION.series_id, DEBT_SECURITIES_PUBLICATION.formats, issue_required=DEBT_SECURITIES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEBT_SECURITIES_PUBLICATION.series_id})),
+            SourceRequirement(DEBT_SECURITIES_PUBLICATION.series_id, DEBT_SECURITIES_PUBLICATION.formats, issue_required=DEBT_SECURITIES_PUBLICATION.issue_model == 'dated', locator=DEBT_SECURITIES_PUBLICATION.locator, filename_pattern=DEBT_SECURITIES_PUBLICATION.filename_pattern, publication_kind=DEBT_SECURITIES_PUBLICATION.kind), Applicability(source_ids=frozenset({DEBT_SECURITIES_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(DEBT_SECURITIES_PUBLICATION.series_id, DEBT_SECURITIES_PUBLICATION.formats, issue_required=DEBT_SECURITIES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEBT_SECURITIES_PUBLICATION.series_id})),
+            SourceRequirement(DEBT_SECURITIES_PUBLICATION.series_id, DEBT_SECURITIES_PUBLICATION.formats, issue_required=DEBT_SECURITIES_PUBLICATION.issue_model == 'dated', locator=DEBT_SECURITIES_PUBLICATION.locator, filename_pattern=DEBT_SECURITIES_PUBLICATION.filename_pattern, publication_kind=DEBT_SECURITIES_PUBLICATION.kind), Applicability(source_ids=frozenset({DEBT_SECURITIES_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

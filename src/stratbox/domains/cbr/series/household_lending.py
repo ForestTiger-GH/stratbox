@@ -52,11 +52,11 @@ MORTGAGE_DEBT = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_DEBT_PUBLICATION.locator, filename_pattern=MORTGAGE_DEBT_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_DEBT_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_DEBT_PUBLICATION.series_id, MORTGAGE_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_DEBT_PUBLICATION.locator, filename_pattern=MORTGAGE_DEBT_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_DEBT_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -112,11 +112,11 @@ MORTGAGE_DEBT_IND = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_DEBT_IND_PUBLICATION.locator, filename_pattern=MORTGAGE_DEBT_IND_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_DEBT_IND_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_DEBT_IND_PUBLICATION.series_id, MORTGAGE_DEBT_IND_PUBLICATION.formats, issue_required=MORTGAGE_DEBT_IND_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_DEBT_IND_PUBLICATION.locator, filename_pattern=MORTGAGE_DEBT_IND_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_DEBT_IND_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_DEBT_IND_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -169,11 +169,11 @@ MORTGAGE_FULL = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_FULL_PUBLICATION.locator, filename_pattern=MORTGAGE_FULL_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_FULL_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_FULL_PUBLICATION.series_id, MORTGAGE_FULL_PUBLICATION.formats, issue_required=MORTGAGE_FULL_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_FULL_PUBLICATION.locator, filename_pattern=MORTGAGE_FULL_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_FULL_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -226,11 +226,11 @@ MORTGAGE_IHC = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_IHC_PUBLICATION.locator, filename_pattern=MORTGAGE_IHC_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_IHC_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_IHC_PUBLICATION.series_id, MORTGAGE_IHC_PUBLICATION.formats, issue_required=MORTGAGE_IHC_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_IHC_PUBLICATION.locator, filename_pattern=MORTGAGE_IHC_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_IHC_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_IHC_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -292,11 +292,11 @@ MORTGAGE_SCPA_DEBT = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_SCPA_DEBT_PUBLICATION.locator, filename_pattern=MORTGAGE_SCPA_DEBT_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_SCPA_DEBT_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_SCPA_DEBT_PUBLICATION.series_id, MORTGAGE_SCPA_DEBT_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_DEBT_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_SCPA_DEBT_PUBLICATION.locator, filename_pattern=MORTGAGE_SCPA_DEBT_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_SCPA_DEBT_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_SCPA_DEBT_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -349,11 +349,11 @@ MORTGAGE_SCPA_FULL = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_SCPA_FULL_PUBLICATION.locator, filename_pattern=MORTGAGE_SCPA_FULL_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_SCPA_FULL_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
+            SourceRequirement(MORTGAGE_SCPA_FULL_PUBLICATION.series_id, MORTGAGE_SCPA_FULL_PUBLICATION.formats, issue_required=MORTGAGE_SCPA_FULL_PUBLICATION.issue_model == 'dated', locator=MORTGAGE_SCPA_FULL_PUBLICATION.locator, filename_pattern=MORTGAGE_SCPA_FULL_PUBLICATION.filename_pattern, publication_kind=MORTGAGE_SCPA_FULL_PUBLICATION.kind), Applicability(source_ids=frozenset({MORTGAGE_SCPA_FULL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

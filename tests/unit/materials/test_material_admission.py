@@ -1,4 +1,5 @@
 from dataclasses import replace
+from contextlib import contextmanager
 import json
 
 import pytest
@@ -42,9 +43,17 @@ def test_encoded_data_cannot_select_an_arbitrary_python_import():
 
 def test_lost_write_ack_stays_unknown_and_has_no_accepted_reference(tmp_path):
     class LostAck(LocalFileStore):
-        def create_immutable(self,location,data):
-            super().create_immutable(location,data)
-            raise ConnectionError('synthetic lost acknowledgement')
+        @contextmanager
+        def stage_content(self, directory):
+            with super().stage_content(directory) as stage:
+                class Lost:
+                    stream = stage.stream
+                    def location(self, identity):
+                        return stage.location(identity)
+                    def commit(self, identity, **kwargs):
+                        stage.commit(identity, **kwargs)
+                        raise ConnectionError('synthetic lost acknowledgement')
+                yield Lost()
     store = LostAck(tmp_path)
     with StrategyBox(providers={'filestore':store}) as box:
         result = box.invoke('command.artifact.commit',inputs={'material':Material(b'exact'),'destination':'objects'})

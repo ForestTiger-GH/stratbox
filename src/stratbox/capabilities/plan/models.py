@@ -211,6 +211,7 @@ class DispatchTask:
     condition: object = None
     guards: tuple[OutputGuard, ...] = ()
     input_guards: tuple[InputGuard, ...] = ()
+    forwarded: object = None
     kind = 'dispatch'
 
     def __post_init__(self):
@@ -218,6 +219,7 @@ class DispatchTask:
         # Prepared alternatives are immutable plans and remain shared templates.
         object.__setattr__(self, 'alternatives', MappingProxyType(dict(self.alternatives)))
         object.__setattr__(self, 'selector', freeze(self.selector, _typed=True))
+        object.__setattr__(self, 'forwarded', freeze(self.forwarded, _typed=True))
         _freeze_controls(self)
     @property
     def dependencies(self): return self.deps

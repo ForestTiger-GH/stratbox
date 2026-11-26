@@ -38,12 +38,22 @@ def test_missing_explicit_disk_location_never_falls_back_to_another_provider(tmp
 def test_changed_expected_content_is_rejected_before_handoff(tmp_path):
     store = LocalFileStore(tmp_path)
     store.write_bytes('report',b'changed')
-    reference = ImmutableMaterialRef('report',ByteIdentity.of(b'expected'))
+    location = {'path': 'report', 'identity': ByteIdentity.of(b'expected')}
     with StrategyBox(providers={'filestore':store}) as box:
-        result = box.invoke('command.material.read',inputs={'location':reference})
+        result = box.invoke('command.material.read',inputs={'location':location})
         assert result.outcome == 'failed'
         assert any('identity_mismatch' in item for item in result.diagnostics)
         assert 'material' not in result.outputs
+
+
+def test_unqualified_retained_reference_does_not_bypass_provider_scope(tmp_path):
+    store = LocalFileStore(tmp_path)
+    store.write_bytes('report', b'exact bytes')
+    reference = ImmutableMaterialRef('report', ByteIdentity.of(b'exact bytes'))
+    with StrategyBox(providers={'filestore': store}) as box:
+        result = box.invoke('command.material.read', inputs={'location': reference})
+        assert result.outcome == 'failed' and 'storage.provider_scope_conflict' in result.diagnostics
+        assert not result.outputs
 
 
 def test_unclassified_local_read_does_not_assert_a_publisher(tmp_path):

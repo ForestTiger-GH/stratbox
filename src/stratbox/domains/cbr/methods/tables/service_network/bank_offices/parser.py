@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html.parser import HTMLParser
 import re
 
@@ -78,6 +79,59 @@ class Table:
         self.cell: Cell | None = None
         self.in_header = False
         self.header_rows: set[int] = set()
+
+
+@dataclass(frozen=True, slots=True)
+class ScannedCell:
+    """Immutable physical HTML cell, before table selection or interpretation."""
+    tag: str
+    attrs: tuple[tuple[str, str], ...]
+    fragments: tuple[str, ...]
+    colspan: int
+    rowspan: int
+
+    def __post_init__(self):
+        if (self.tag not in {"td", "th"} or type(self.colspan) is not int
+                or type(self.rowspan) is not int or not 1 <= self.colspan <= 40 or not 1 <= self.rowspan <= 40):
+            fail("SOURCE_SPAN_INVALID")
+        object.__setattr__(self, "attrs", tuple(tuple(pair) for pair in self.attrs))
+        object.__setattr__(self, "fragments", tuple(self.fragments))
+        if any(len(pair) != 2 or not all(isinstance(value, str) for value in pair) for pair in self.attrs):
+            fail("SOURCE_CELL_STRUCTURE")
+        if any(not isinstance(value, str) for value in self.fragments):
+            fail("SOURCE_CELL_STRUCTURE")
+
+    @property
+    def text(self):
+        return clean_text("".join(self.fragments))
+
+
+@dataclass(frozen=True, slots=True)
+class ScannedTable:
+    rows: tuple[tuple[ScannedCell, ...], ...]
+    header_rows: frozenset[int]
+
+    def __post_init__(self):
+        object.__setattr__(self, "rows", tuple(tuple(row) for row in self.rows))
+        object.__setattr__(self, "header_rows", frozenset(self.header_rows))
+        if len(self.rows) > MAX_ROWS or any(not isinstance(cell, ScannedCell) for row in self.rows for cell in row):
+            fail("SOURCE_ROW_LIMIT")
+        if any(type(row) is not int or not 1 <= row <= len(self.rows) for row in self.header_rows):
+            fail("SOURCE_HEADER_LAYOUT_CHANGED")
+
+
+@dataclass(frozen=True, slots=True)
+class ScannedSource:
+    tables: tuple[ScannedTable, ...]
+    outside_text: tuple[str, ...]
+
+    def __post_init__(self):
+        object.__setattr__(self, "tables", tuple(self.tables))
+        object.__setattr__(self, "outside_text", tuple(self.outside_text))
+        if (any(not isinstance(table, ScannedTable) for table in self.tables)
+                or any(not isinstance(value, str) for value in self.outside_text)
+                or sum(len(row) for table in self.tables for row in table.rows) > MAX_CELLS):
+            fail("SOURCE_DOM_LIMIT")
 
 
 class SourceScanner(HTMLParser):
@@ -164,6 +218,13 @@ class SourceScanner(HTMLParser):
         if self.table is not None:
             fail("SOURCE_TABLE_UNCLOSED")
 
+    def snapshot(self):
+        if self.table is not None:
+            fail("SOURCE_TABLE_UNCLOSED")
+        return ScannedSource(tuple(ScannedTable(tuple(tuple(ScannedCell(cell.tag, tuple(cell.attrs.items()),
+            tuple(cell.fragments), cell.colspan, cell.rowspan) for cell in row) for row in table.rows),
+            frozenset(table.header_rows)) for table in self.tables), tuple(self.outside_text))
+
 
 def expanded_grid(rows: list[list[Cell]], width: int | None = None) -> list[list[Cell]]:
     pending: dict[int, tuple[Cell, int]] = {}
@@ -241,7 +302,7 @@ def extract_records(html: str = "", *, scanned=None) -> tuple[list[tuple[str, ..
             parser.close()
         except (ValueError, RecursionError):
             fail("SOURCE_DOM_INVALID")
-    elif not isinstance(parser, SourceScanner):
+    elif not isinstance(parser, (SourceScanner, ScannedSource)):
         fail("SOURCE_DOM_INVALID")
     note = clean_text(" ".join(parser.outside_text))
     if KNOWN_CONTEXT not in note:

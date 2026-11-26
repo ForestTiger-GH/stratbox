@@ -39,8 +39,11 @@ def any_representation(definition, values, parameters, record, catalog=None):
     limit=int(parameters.get('max_archive_depth',1))
     if not 0<=depth<=limit or not 0<=limit<=8: raise ValueError('recipe.archive_depth_limit')
     alternatives={key:value for key,value in _FORMATS.items() if key not in {'zip','rar'} or depth<limit}
-    return replace(definition,body=GraphBody((DispatchCall('format',InputRef('material'),alternatives,
-        inputs={'issue':InputRef('issue')}),),{'dataset':OutputRef('format','dataset')}))
+    return replace(definition,body=GraphBody((
+        Call('inspect','command.material.inspect',{'material':InputRef('material')}),
+        DispatchCall('format',OutputRef('inspect','inspection'),alternatives,
+            inputs={'issue':InputRef('issue')},forwarded=InputRef('material')),
+        ),{'dataset':OutputRef('format','dataset')}))
 
 def archive(definition, values, parameters, record, catalog=None):
     publication=getattr(record,'publication',record)

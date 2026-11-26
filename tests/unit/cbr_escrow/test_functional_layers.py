@@ -15,7 +15,7 @@ from .test_replay import SERIES, context, decoded, encoded, history, prepared, p
 
 
 def test_product_style_changes_neither_extracted_nor_interpreted_identity():
-    _, table, dataset = source(publication())
+    _, table, dataset = source(publication(extra=False))
     table_identity, dataset_identity = encoded(table).identity, dataset.identity
     before = prepared(dataset)
     customized = replace(ESCROW_CONTENT, sheets=tuple(replace(item, name=f"Table_{i}",
@@ -39,7 +39,7 @@ def test_history_uses_the_same_rows_as_independent_source_commands():
 
 
 def test_prepared_product_replays_custom_style_without_source_or_calculation(monkeypatch):
-    dataset = history(publication(), publication(period="01072026"))
+    dataset = history(publication(extra=False), publication(period="01072026", extra=False))
     settings = replace(ESCROW_CONTENT, sheets=tuple(replace(item, name=f"View_{i}")
         for i, item in enumerate(ESCROW_CONTENT.sheets, 1)))
     view = prepared(dataset, settings)

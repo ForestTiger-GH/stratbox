@@ -133,7 +133,7 @@ def extract_population(workbook, *, selected_rows=(), checkpoint=None):
 
 def extract_regional_industrial_indices(workbook, *, selected_rows=(), selected_years=(), checkpoint=None):
     """Interpret the reviewed three-sheet regional industrial index workbook."""
-    if workbook.series_id != "rosstat.socioeconomic_regions":
+    if workbook.series_id not in {"rosstat.socioeconomic_regions", "rosstat.socioeconomic_regions.industrial_production"}:
         raise ValueError("rosstat.regional_series_mismatch")
     if not re.fullmatch(r"2026-(06|08)", workbook.issue_id):
         raise ValueError("rosstat.regional_index_edition_unsupported")

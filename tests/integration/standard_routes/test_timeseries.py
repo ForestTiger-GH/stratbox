@@ -42,7 +42,7 @@ def test_database_filter_one_series_and_same_command_over_whole_table():
         batch=box.invoke('operation.calculation.apply_table',inputs={'table':dataset})
         assert batch.outcome=='succeeded',batch.diagnostics
         assert len(batch.output('results'))==2
-        assert batch.output('outcomes')==((0,'succeeded'),(1,'succeeded'))
+        assert tuple((item.ordinal,item.outcome) for item in batch.output('outcomes'))==((0,'succeeded'),(1,'succeeded'))
         assert sorted(backend.called)==['credit','credit','deposits']
         credit=next(item for item in batch.output('results') if item.original.coordinates['metric']=='credit')
         assert single.output('adjustment').adjusted.values==credit.adjusted.values

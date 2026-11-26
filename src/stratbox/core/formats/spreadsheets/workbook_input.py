@@ -15,7 +15,7 @@ from xml.etree import ElementTree as ET
 from stratbox.core.runtime.capabilities import BindingError, CapabilityRequirement, ProviderBinding, select_provider
 from stratbox.core.storage.filestore import FileStore
 from stratbox.core.runtime.providers import default_filestore
-from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, open_zip
+from stratbox.core.formats.archives.members import ArchiveError, ArchiveLimits, open_zip, open_zip_stream
 from stratbox.core.storage.bytes import read_bounded_bytes
 from stratbox.core.formats.xml import XmlError, inspect_xml, parse_xml
 from stratbox.core.limits import BudgetMeter
@@ -216,6 +216,29 @@ def workbook_profile(
             budget.check("archive_depth", depth)
         return _legacy_profile(data, budget=budget, cancelled=cancelled)
 
+    return workbook_profile_stream(BytesIO(data), len(data), budget=budget, depth=depth,
+        cancelled=cancelled, archive_limits=archive_limits)
+
+
+def workbook_profile_stream(
+    stream, size: int, *, budget: BudgetMeter | None = None,
+    depth: int = 1, cancelled: Callable[[], bool] | None = None,
+    archive_limits: ArchiveLimits = _LIMITS,
+) -> WorkbookProfile:
+    """Admit a seekable workbook package without buffering its compressed bytes.
+
+    Classic XLS needs its separate bounded legacy reader. OOXML and XLSB keep
+    the same XML/binary framing, resource and relationship checks as bytes input.
+    """
+    if type(size) is not int or not 0 < size <= min(_MAX_PACKED, archive_limits.packed_bytes):
+        raise WorkbookError("workbook.size_limit")
+    if stream.seek(0, 2) != size:
+        raise WorkbookError("workbook.size_mismatch")
+    stream.seek(0)
+    signature = stream.read(8)
+    stream.seek(0)
+    if signature.startswith((_OLE, *_BIFF)):
+        raise WorkbookError("workbook.buffered_legacy_required")
     cells = 0
     external = False
     row_limit = column_limit = 0
@@ -281,7 +304,7 @@ def workbook_profile(
                 budget.charge("cells", 1)
 
     try:
-        with open_zip(data, archive_limits, budget=budget, depth=depth) as package:
+        with open_zip_stream(stream, size, archive_limits, budget=budget, depth=depth) as package:
             names = set(package.namelist())
             if "[Content_Types].xml" not in names:
                 raise WorkbookError("workbook.not_spreadsheet")

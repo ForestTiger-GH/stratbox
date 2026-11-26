@@ -275,12 +275,14 @@ def is_column_number_guide(cells):
 
 
 def convert_xlsx(
-    blob, *, return_formula_lineage=False, expected_date: date | None = None,
+    blob: bytes | None, *, return_formula_lineage=False, expected_date: date | None = None,
     sheet_name: str | None = None, national_row: int | None = None,
     last_row: int | None = None,
     budget=None, checkpoint=None, evidence=None, decoded_sheets=None,
 ):
     """Keep only the published table and attach source-derived district context."""
+    if blob is None and decoded_sheets is None:
+        raise ValueError("cbr.office_decoded_workbook_required")
     sheets = xlsx_rows(blob, budget=budget, checkpoint=checkpoint) if decoded_sheets is None else decoded_sheets
     starts = [
         (sheet, rows, formulas, tree, i, k)

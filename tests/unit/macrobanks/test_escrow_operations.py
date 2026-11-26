@@ -1,5 +1,8 @@
 """Offline standard escrow routes retain exact source bytes and prepared content."""
 from io import BytesIO
+from dataclasses import replace
+from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
 import runpy
@@ -7,6 +10,7 @@ import pytest
 from openpyxl import Workbook, load_workbook
 
 from stratbox.capabilities.model.targets import SeriesTarget
+from stratbox.core.network.contracts import HttpResponse
 from stratbox.domains.cbr.domain import DOMAIN
 from stratbox.domains.cbr.common.escrow import required_indicators
 from stratbox.domains.cbr.methods.actions.publications import scan
@@ -72,13 +76,23 @@ def test_escrow_acquire_accepts_official_collection_workbook():
         def fetch(self,request):
             assert request.method=="GET" and request.url==asset.locator
             assert request.max_bytes>=len(content)
-            return Material(content,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",SERIES)
+            return HttpResponse(200, content,
+                {"Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                datetime.now(timezone.utc), "https://www.cbr.ru/",
+                target_sha256=sha256(request.url.encode()).hexdigest(), wire_size=len(content))
     with StrategyBox(providers={"http":Publisher()}) as box:
         acquired=box.invoke("operation.material.acquire",inputs={"locator":asset},target=SeriesTarget(SERIES))
         assert acquired.outcome=="succeeded",acquired.diagnostics
         material=acquired.output("material")
         assert material.material.data==content
         assert material.claim.source_id==SERIES and material.claim.issue_id=="2026-07-01"
+        assert material.claim.attribution == "recognized"
+        assert "explicit_selected_asset" in material.assessment.qualifications
+        assert "verified_source" not in material.assessment.qualifications
+        mismatch = box.invoke("operation.material.acquire",
+            inputs={"locator": replace(asset, issue_id="2026-08-01")}, target=SeriesTarget(SERIES))
+        assert mismatch.outcome == "failed"
+        assert "cbr.material_issue_mismatch" in mismatch.diagnostics
 
 
 def test_prepared_escrow_data_freezes_source_geography_and_preserves_identity():

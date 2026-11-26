@@ -1,6 +1,33 @@
 """Explicit semantic coverage independent of material format or storage."""
 from dataclasses import dataclass
 
+
+@dataclass(frozen=True, slots=True)
+class SelectedScopeCoverage:
+    """A closed requested subset with the parent qualification kept separately."""
+    parent_identity: str
+    selector_identity: str
+    requested: tuple[str, ...]
+    selected: tuple[str, ...]
+    missing: tuple[str, ...]
+    parent_assessment: object
+    membership_closed: bool = True
+
+    def __post_init__(self):
+        if not self.parent_identity or not self.selector_identity or type(self.membership_closed) is not bool:
+            raise ValueError("coverage.selected_scope_invalid")
+        for name in ("requested", "selected", "missing"):
+            values = tuple(getattr(self, name))
+            if len(values) > 1000000 or len(values) != len(set(values)) or any(not isinstance(v, str) or not v for v in values):
+                raise ValueError("coverage.selected_members_invalid")
+            object.__setattr__(self, name, values)
+        if set(self.selected) & set(self.missing) or not set(self.missing) <= set(self.requested):
+            raise ValueError("coverage.selected_scope_conflict")
+
+    @property
+    def status(self):
+        return "complete" if self.membership_closed and not self.missing and set(self.requested) <= set(self.selected) else "partial"
+
 @dataclass(frozen=True, slots=True)
 class CoverageDimension:
     """Explicit members of one scope axis; empty sets make no completeness claim."""

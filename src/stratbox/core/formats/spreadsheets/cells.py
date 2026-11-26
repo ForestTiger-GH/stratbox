@@ -16,7 +16,7 @@ from zipfile import ZipFile
 from stratbox.core.formats.xml import parse_xml
 from stratbox.core.runtime.dependencies import require_extra
 from stratbox.shared.identity import ByteIdentity
-from .workbook_input import WorkbookError, workbook_profile
+from .workbook_input import WorkbookError, workbook_profile_stream
 
 _NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 _REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
@@ -42,13 +42,19 @@ def _text(element):
 
 
 def read_workbook_cells(data: bytes, *, budget=None, checkpoint=None, _profile=None) -> WorkbookCells:
-    """Read every worksheet of an admitted XLSX without float coercion.
+    """Read admitted physical cells through the shared seekable reader."""
+    return read_workbook_cells_stream(BytesIO(data), ByteIdentity.of(data), budget=budget,
+                                     checkpoint=checkpoint, _profile=_profile)
 
-    Date serials use the workbook epoch and number format; their exact serial
-    remains in ``raw_token``. Absent caches remain unknown; an explicit empty
-    cached string remains an empty string.
+
+def read_workbook_cells_stream(stream, identity: ByteIdentity, *, budget=None,
+                               checkpoint=None, _profile=None) -> WorkbookCells:
+    """Preserve exact numeric lexemes and cached formulas from a seekable package.
+
+    Cell materialization remains bounded independently of the original carrier.
+    Formula expressions are retained as evidence and are never executed.
     """
-    profile = _profile if _profile is not None else workbook_profile(data, budget=budget)
+    profile = _profile if _profile is not None else workbook_profile_stream(stream, identity.size, budget=budget)
     if profile.kind not in {"xlsx", "xlsm"}:
         raise WorkbookError("workbook.cells.ooxml_required")
     require_extra("openpyxl", "excel")
@@ -56,7 +62,8 @@ def read_workbook_cells(data: bytes, *, budget=None, checkpoint=None, _profile=N
     from openpyxl.utils.cell import coordinate_to_tuple
     from openpyxl.utils.datetime import CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900, from_excel
 
-    with ZipFile(BytesIO(data)) as package:
+    stream.seek(0)
+    with ZipFile(stream) as package:
         def xml(name):
             return parse_xml(package.read(name))
 
@@ -173,4 +180,4 @@ def read_workbook_cells(data: bytes, *, budget=None, checkpoint=None, _profile=N
             sheets.append(value)
     if not sheets or len({sheet.name for sheet in sheets}) != len(sheets):
         raise WorkbookError("workbook.cells.sheets_invalid")
-    return WorkbookCells(tuple(sheets), ByteIdentity.of(data))
+    return WorkbookCells(tuple(sheets), identity)

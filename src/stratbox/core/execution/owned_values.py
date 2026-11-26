@@ -140,9 +140,27 @@ def _isolate(value, memo=None):
 
 
 
+def input_values(values, *, max_nodes=100000):
+    """Visit only graph containers, keeping scientific payloads as one value."""
+    seen, pending = set(), list(values)
+    visited = 0
+    while pending:
+        value = pending.pop()
+        if id(value) in seen:
+            continue
+        seen.add(id(value)); visited += 1
+        if visited > max_nodes:
+            raise ValueError('value.input_metadata_limit')
+        yield value
+        if isinstance(value, Mapping):
+            pending.extend(value.values())
+        elif isinstance(value,(tuple,list)):
+            pending.extend(value)
+
+
 def _value_keys(values):
     keys = set()
-    for value in values:
+    for value in input_values(values):
         try: keys.add(fingerprint(value))
         except (ValueError,TypeError): pass
     return keys

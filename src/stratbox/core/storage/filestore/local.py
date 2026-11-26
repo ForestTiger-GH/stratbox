@@ -109,8 +109,13 @@ class LocalFileStore(FileStore):
         self._root = Path(root).expanduser().resolve() if root is not None else None
 
     def _mutable(self, path):
+        if Path(path).name == DIRECTORY_GUARD_NAME or ".stratbox-transitions" in Path(path).parts:
+            raise MutationRejected("Provider transition evidence is protected", code="storage.provider_state_protected")
         if re.fullmatch(r"[a-f0-9]{64}", Path(path).name):
             raise MutationRejected("Retained content member is protected", code="storage.immutable_member")
+
+    def validate_named_destination(self, path):
+        self._mutable(self.checked_file_path(path))
 
     def _abs(self, path: str) -> Path:
         value = str(path).replace("\\", "/")
@@ -404,6 +409,94 @@ class LocalFileStore(FileStore):
         ):
             raise OSError("Move could not be confirmed")
         return True
+
+    def _named_transition_path(self, effect_id, intent):
+        if not isinstance(effect_id, str) or re.fullmatch(r"[a-f0-9]{64}", effect_id) is None:
+            raise MutationRejected("Qualified effect identity is required", code="storage.transition_identity_invalid")
+        source = self.checked_file_path(intent.source)
+        return source.parent / ".stratbox-transitions" / effect_id[:2] / effect_id[2:4] / (effect_id + ".json")
+
+    def _named_intent_scope(self, intent):
+        from stratbox.shared.data.values import fingerprint
+        scope = lambda path: fingerprint((str(self.provider_id), str(self.storage_scope(path))))
+        return (intent.provider_scope == scope(intent.destination)
+                and intent.source_provider_scope == scope(intent.source))
+
+    def apply_named_mutation(self, effect_id, intent, *, checkpoint=lambda: None):
+        """Conditionally move/delete and retain a bounded provider observation.
+
+        The directory guard covers participating writers. A crash after the
+        mutation but before the observation is durable remains unresolved; path
+        absence alone is deliberately insufficient for later confirmation.
+        """
+        import json
+        from stratbox.shared.data.materials import NamedEffectIntent, NamedMaterialReceipt
+        from stratbox.shared.data.values import canonical_tree
+        if (not isinstance(intent, NamedEffectIntent) or intent.operation not in {"move", "delete"}
+                or not intent.expected_source_revision or intent.policy != "create_only"
+                or not self._named_intent_scope(intent)):
+            raise MutationRejected("Exact transition intent is required", code="storage.transition_intent_invalid")
+        source, destination = self.checked_file_path(intent.source), self.checked_file_path(intent.destination)
+        if (intent.operation == "move" and (source == destination or source.parent != destination.parent)
+                or intent.operation == "delete" and source != destination):
+            raise MutationRejected("Transition paths conflict", code="storage.transition_path_invalid")
+        if (intent.operation == "move" and intent.identity != intent.expected_source
+                or intent.operation == "delete" and intent.identity is not None):
+            raise MutationRejected("Transition identity conflicts", code="storage.transition_intent_invalid")
+        proof_path = self._named_transition_path(effect_id, intent)
+        result = NamedMaterialReceipt(intent.destination, intent.identity, intent.provider_scope,
+            operation=intent.operation, guarantee="guarded_conditional_transition")
+        raw = json.dumps({"effect_id": effect_id, "intent": canonical_tree(intent),
+            "receipt": canonical_tree(result)}, sort_keys=True, separators=(",", ":")).encode()
+        if len(raw) > 1024 * 1024:
+            raise MutationRejected("Transition evidence exceeds limit", code="storage.transition_metadata_limit")
+        with self.guard_directory(str(source.parent)):
+            checkpoint()
+            observed = self.inspect_file_budgeted(intent.source, budget=None, checkpoint=checkpoint)
+            if observed.identity != intent.expected_source or observed.revision != intent.expected_source_revision:
+                raise MutationRejected("Source changed", code="maintenance.state_conflict")
+            success = self.rename_expected(observed, intent.destination) if intent.operation == "move" else self.remove_expected(observed)
+            if not success:
+                raise MutationRejected("Conditional mutation rejected", code="maintenance.state_conflict")
+            try:
+                checkpoint()
+                proof_path.parent.mkdir(parents=True, exist_ok=True)
+                self.create_if_absent(str(proof_path), raw)
+                with proof_path.open("rb") as proof:
+                    if proof.read(1024 * 1024 + 1) != raw:
+                        raise OSError("Provider transition observation conflicts")
+            except Exception as error:
+                # Mutation already happened. Even a rejected proof write cannot
+                # turn an uncertain acknowledgement into a known non-mutation.
+                raise OSError("Transition acknowledgement is unavailable") from error
+        return result
+
+    def inspect_named_transition(self, effect_id, intent):
+        """Read bounded provider evidence; the command verifies current paths."""
+        import json
+        from stratbox.shared.data.materials import NamedMaterialReceipt
+        from stratbox.shared.data.values import restore_tree
+        if not self._named_intent_scope(intent):
+            return None
+        path = self._named_transition_path(effect_id, intent)
+        try:
+            with self.checked_file_path(str(path)).open("rb") as stream:
+                raw = stream.read(1024 * 1024 + 1)
+        except FileNotFoundError:
+            return None
+        if len(raw) > 1024 * 1024:
+            raise ValueError("storage.transition_metadata_limit")
+        data = json.loads(raw)
+        if (set(data) != {"effect_id", "intent", "receipt"} or data["effect_id"] != effect_id
+                or restore_tree(data["intent"]) != intent):
+            raise ValueError("storage.transition_evidence_conflict")
+        receipt = restore_tree(data["receipt"])
+        if (not isinstance(receipt, NamedMaterialReceipt) or receipt.operation != intent.operation
+                or receipt.destination != intent.destination or receipt.identity != intent.identity
+                or receipt.provider_scope != intent.provider_scope or receipt.status != "confirmed"
+                or receipt.guarantee != "guarded_conditional_transition"):
+            raise ValueError("storage.transition_evidence_conflict")
+        return receipt
 
 
     provider_id = "local.files"

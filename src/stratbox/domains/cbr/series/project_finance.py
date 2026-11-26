@@ -37,11 +37,11 @@ ESCROW = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
+            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated', locator=ESCROW_PUBLICATION.locator, filename_pattern=ESCROW_PUBLICATION.filename_pattern, publication_kind=ESCROW_PUBLICATION.kind), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
+            SourceRequirement(ESCROW_PUBLICATION.series_id, ESCROW_PUBLICATION.formats, issue_required=ESCROW_PUBLICATION.issue_model == 'dated', locator=ESCROW_PUBLICATION.locator, filename_pattern=ESCROW_PUBLICATION.filename_pattern, publication_kind=ESCROW_PUBLICATION.kind), Applicability(source_ids=frozenset({ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

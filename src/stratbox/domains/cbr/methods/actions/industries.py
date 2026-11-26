@@ -25,24 +25,27 @@ def interpret(inputs, settings, context):
         raise ValueError("cbr.industry_table_evidence_required")
     workbook = tables.tables[0]
     parameters = issue_parameters(inputs, context, tables.issue_id)
-    source_name = str(parameters.get("source_name") or tables.material.metadata.get("name") or "")
+    source_name = str(parameters.get("source_name") or tables.material.metadata.get("filename")
+        or tables.material.metadata.get("name") or "")
     if not source_name:
         raise ValueError("cbr.industry_source_name_required")
     if settings.kind == "industry_debt":
         from stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser import parse_cbr_0105a_debt_corp_excel_bytes
-        parsed = parse_cbr_0105a_debt_corp_excel_bytes(tables.material.data, source_name=source_name,
+        parsed = parse_cbr_0105a_debt_corp_excel_bytes(tables.material.identity, source_name=source_name,
             decoded=workbook, checkpoint=context.checkpoint)
     else:
         from stratbox.domains.cbr.methods.tables.corporate_lending.issuance.parser import parse_workbook
-        parsed = parse_workbook(tables.material.data, source_name=source_name,
+        parsed = parse_workbook(tables.material.identity, source_name=source_name,
             decoded=workbook, checkpoint=context.checkpoint)
+    if parameters.get("issue_id") not in {None, "", parsed.report_date}:
+        raise ValueError("cbr.industry_issue_date_mismatch")
     frame = parsed.df_stream
     from stratbox.domains.cbr.common.contracts import SourceContentEvidence
     from stratbox.shared.data.tables import table_identity
     from stratbox.shared.evidence import UsedInputReceipt
     seal = SourceContentEvidence(table_identity((("stream", frame),)), (
         UsedInputReceipt("source_workbook", tables.material.identity, tables.material.media_type,
-            "inline", settings.series_id),))
+            "inline" if hasattr(tables.material, "data") else "reference_only", settings.series_id),))
     parsed = replace(parsed, evidence=seal)
     from stratbox.domains.cbr.methods.tables.corporate_lending.observations import cell_number
     cells = {sheet.name: {cell.coordinate: cell for cell in sheet.cells} for sheet in workbook.sheets}
@@ -87,10 +90,38 @@ def interpret(inputs, settings, context):
 
 
 def validate(inputs, settings, context):
+    from collections.abc import Mapping
+    from stratbox import __version__
+    from stratbox.shared.data.history import make_validation_certificate, verify_history_certificates
+    from stratbox.shared.data.values import fingerprint
     from stratbox.domains.cbr.methods.actions.observations import validate as validate_observations
     result = validate_observations(inputs, settings, context)
-    native = result["dataset"].native
+    dataset = result["dataset"]
+    native = dataset.native
+    method = getattr(context, "method_identity", fingerprint((__name__ + ":validate", settings)))
+    build = getattr(context, "build_identity", __version__)
+    rule = "cbr.industry.source"
+    if native is None or dataset.validation_certificates:
+        verifier = getattr(context, "verify_validation_certificate", None)
+        def competent(certificate):
+            return (certificate.rule_id == rule and certificate.method_identity == method
+                and certificate.build_identity == build and certificate.source_id == settings.series_id
+                and verifier is not None and verifier(certificate))
+        if not verify_history_certificates(dataset, competent):
+            raise ValueError("cbr.industry_source_validation_evidence_required")
+        return {"dataset": replace(dataset, native=None), "assessment": dataset.assessment}
     issues = getattr(native, "validation_issues", ())
-    if native is None or any(issue.severity == "error" for issue in issues):
+    if any(issue.severity == "error" for issue in issues):
         raise ValueError("cbr.industry_source_validation_failed")
-    return result
+    accepted = getattr(context, "accepted_input", None)
+    if accepted is not None:
+        evidence = accepted("dataset")
+        producer = evidence.get("produced_by") if isinstance(evidence, Mapping) else getattr(evidence, "produced_by", None)
+        if producer != "command.table.interpret":
+            raise ValueError("cbr.industry_source_validation_evidence_required")
+    identities = tuple(dict.fromkeys(use.coordinate.material_identity for use in dataset.source_uses
+        if use.coordinate.material_identity is not None))
+    certificate = make_validation_certificate(dataset, rule_id=rule,
+        method_identity=method, build_identity=build, material_identities=identities)
+    qualified = replace(dataset, validation_certificates=(certificate,))
+    return {"dataset": qualified, "assessment": qualified.assessment}

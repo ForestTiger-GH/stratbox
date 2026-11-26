@@ -21,8 +21,8 @@ def assessed(box,evidence,baseline=None):
 def test_first_seen_has_no_invented_prior_absence_or_release_transition():
     with StrategyBox() as box:
         result=assessed(box,Material(b"A",source_id=SOURCE))
-        assert result.status=="first_seen" and result.basis=="no_baseline"
-        assert result.predecessor is None and result.candidate
+        assert result.status=="first_seen" and result.basis=="exact_material_bytes"
+        assert result.predecessor is None and result.candidate==ByteIdentity.of(b"A").sha256
         assert not hasattr(result,"profile_version")
 
 
@@ -51,8 +51,10 @@ def test_observed_listing_changes_do_not_prove_asset_bytes_or_authoritative_abse
         same=assessed(box,listing,listing)
         assert same.status=="unknown" and "does_not_certify_asset_bytes" in same.findings[0]
         unavailable=assessed(box,missing,listing)
-        assert unavailable.status=="unknown" and unavailable.basis=="publication_listing_incomplete"
-        assert unavailable.evidence.status=="partial"
+        assert unavailable.status=="unknown" and unavailable.basis=="observed_publication_listing"
+        assert unavailable.evidence['scope']=="selected"
+        assert unavailable.evidence['source_coverage'].status=="partial"
+        assert not unavailable.evidence['selected_coverage'].complete
 
 
 def test_same_material_has_distinct_explicit_issue_and_asset_claims():

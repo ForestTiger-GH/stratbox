@@ -43,11 +43,11 @@ EXCHANGE_RATE = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(EXCHANGE_RATE_PUBLICATION.series_id, EXCHANGE_RATE_PUBLICATION.formats, issue_required=EXCHANGE_RATE_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({EXCHANGE_RATE_PUBLICATION.series_id})),
+            SourceRequirement(EXCHANGE_RATE_PUBLICATION.series_id, EXCHANGE_RATE_PUBLICATION.formats, issue_required=EXCHANGE_RATE_PUBLICATION.issue_model == 'dated', locator=EXCHANGE_RATE_PUBLICATION.locator, filename_pattern=EXCHANGE_RATE_PUBLICATION.filename_pattern, publication_kind=EXCHANGE_RATE_PUBLICATION.kind), Applicability(source_ids=frozenset({EXCHANGE_RATE_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(EXCHANGE_RATE_PUBLICATION.series_id, EXCHANGE_RATE_PUBLICATION.formats, issue_required=EXCHANGE_RATE_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({EXCHANGE_RATE_PUBLICATION.series_id})),
+            SourceRequirement(EXCHANGE_RATE_PUBLICATION.series_id, EXCHANGE_RATE_PUBLICATION.formats, issue_required=EXCHANGE_RATE_PUBLICATION.issue_model == 'dated', locator=EXCHANGE_RATE_PUBLICATION.locator, filename_pattern=EXCHANGE_RATE_PUBLICATION.filename_pattern, publication_kind=EXCHANGE_RATE_PUBLICATION.kind), Applicability(source_ids=frozenset({EXCHANGE_RATE_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

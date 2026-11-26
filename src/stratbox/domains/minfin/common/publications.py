@@ -23,6 +23,13 @@ class SourceRules:
     basis: str
     kind: str = "table"
 
+    @property
+    def descriptor(self):
+        from stratbox.capabilities.model.domains import PublicationDescriptor
+        return PublicationDescriptor(self.source_id, "minfin", self.source_id, "rolling", "index",
+            "workbook" if self.asset.format in {"xls", "xlsx"} else "document",
+            frozenset({self.asset.format}), (self.family_id,))
+
 
 FEDERAL_ASSETS = (
     AssetRule("minfin.fedbud.annex3.monthly", "annex3_monthly", "id_57:80042", "Prilozhenie_3_dannye_109-111_", "_mes.xlsx", "xlsx"),

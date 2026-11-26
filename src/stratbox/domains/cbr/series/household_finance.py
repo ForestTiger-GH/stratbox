@@ -44,11 +44,11 @@ HOUSEHOLDS_BM = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(HOUSEHOLDS_BM_PUBLICATION.series_id, HOUSEHOLDS_BM_PUBLICATION.formats, issue_required=HOUSEHOLDS_BM_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({HOUSEHOLDS_BM_PUBLICATION.series_id})),
+            SourceRequirement(HOUSEHOLDS_BM_PUBLICATION.series_id, HOUSEHOLDS_BM_PUBLICATION.formats, issue_required=HOUSEHOLDS_BM_PUBLICATION.issue_model == 'dated', locator=HOUSEHOLDS_BM_PUBLICATION.locator, filename_pattern=HOUSEHOLDS_BM_PUBLICATION.filename_pattern, publication_kind=HOUSEHOLDS_BM_PUBLICATION.kind), Applicability(source_ids=frozenset({HOUSEHOLDS_BM_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(HOUSEHOLDS_BM_PUBLICATION.series_id, HOUSEHOLDS_BM_PUBLICATION.formats, issue_required=HOUSEHOLDS_BM_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({HOUSEHOLDS_BM_PUBLICATION.series_id})),
+            SourceRequirement(HOUSEHOLDS_BM_PUBLICATION.series_id, HOUSEHOLDS_BM_PUBLICATION.formats, issue_required=HOUSEHOLDS_BM_PUBLICATION.issue_model == 'dated', locator=HOUSEHOLDS_BM_PUBLICATION.locator, filename_pattern=HOUSEHOLDS_BM_PUBLICATION.filename_pattern, publication_kind=HOUSEHOLDS_BM_PUBLICATION.kind), Applicability(source_ids=frozenset({HOUSEHOLDS_BM_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -102,11 +102,11 @@ HOUSEHOLDS_OM = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(HOUSEHOLDS_OM_PUBLICATION.series_id, HOUSEHOLDS_OM_PUBLICATION.formats, issue_required=HOUSEHOLDS_OM_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({HOUSEHOLDS_OM_PUBLICATION.series_id})),
+            SourceRequirement(HOUSEHOLDS_OM_PUBLICATION.series_id, HOUSEHOLDS_OM_PUBLICATION.formats, issue_required=HOUSEHOLDS_OM_PUBLICATION.issue_model == 'dated', locator=HOUSEHOLDS_OM_PUBLICATION.locator, filename_pattern=HOUSEHOLDS_OM_PUBLICATION.filename_pattern, publication_kind=HOUSEHOLDS_OM_PUBLICATION.kind), Applicability(source_ids=frozenset({HOUSEHOLDS_OM_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(HOUSEHOLDS_OM_PUBLICATION.series_id, HOUSEHOLDS_OM_PUBLICATION.formats, issue_required=HOUSEHOLDS_OM_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({HOUSEHOLDS_OM_PUBLICATION.series_id})),
+            SourceRequirement(HOUSEHOLDS_OM_PUBLICATION.series_id, HOUSEHOLDS_OM_PUBLICATION.formats, issue_required=HOUSEHOLDS_OM_PUBLICATION.issue_model == 'dated', locator=HOUSEHOLDS_OM_PUBLICATION.locator, filename_pattern=HOUSEHOLDS_OM_PUBLICATION.filename_pattern, publication_kind=HOUSEHOLDS_OM_PUBLICATION.kind), Applicability(source_ids=frozenset({HOUSEHOLDS_OM_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

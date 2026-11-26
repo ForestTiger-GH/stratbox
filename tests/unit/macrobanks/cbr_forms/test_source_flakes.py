@@ -39,7 +39,7 @@ def test_source_lexemes_deleted_records_and_schema_remain_explicit():
     (lambda b: b[:65] + b"?" + b[66:], "dbf.deletion_flag_invalid"),
     (lambda b: b[:-3], "dbf.records_truncated"),
     (lambda b: b + b"extra", "dbf.trailing_data"),
-    (lambda b: b[:43] + b"M" + b[44:], "dbf.companion_or_binary_profile_required"),
+    (lambda b: b[:43] + b"M" + b[44:], "dbf.memo_companion_required"),
     (lambda b: b[:10] + pack("<H", 8) + b[12:], "dbf.records_truncated"),
 ))
 def test_strict_decoder_rejects_unverified_geometry_and_dialects(mutate, code):

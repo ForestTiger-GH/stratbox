@@ -41,6 +41,9 @@ class BoundedStage:
     def tell(self):
         return self.stream.tell()
 
+    def read(self, size=-1):
+        return self.stream.read(size)
+
     def truncate(self, size=None):
         return self.stream.truncate(size)
 

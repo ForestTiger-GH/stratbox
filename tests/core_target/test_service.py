@@ -122,7 +122,7 @@ def test_map_window_and_every_selected_unit_outcome():
         result = service.run(plan([mapped], {"items": ValueRef("map", "items"), "outcomes": ValueRef("map", "outcomes")}), timeout=3)
         assert result.outcome == "succeeded", result.diagnostics
         assert result.output("items") == (2, 6)
-        assert result.output("outcomes") == ((0, "succeeded"), (1, "failed"), (2, "succeeded"))
+        assert tuple((item.ordinal,item.outcome) for item in result.output("outcomes")) == ((0, "succeeded"), (1, "failed"), (2, "succeeded"))
 
 
 def test_iteration_converges_and_limit_never_claims_completion():

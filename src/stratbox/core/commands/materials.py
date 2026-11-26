@@ -6,7 +6,7 @@ from typing import Mapping
 from stratbox.core.execution.service import ExecutionFailure
 from stratbox.shared.data.values import Assessment, FetchEvidence, IdentifiedMaterial, ImmutableMaterialRef, Material, PublicationAsset, ReadEvidence, RequestSpec, SourceClaim, fingerprint, request_identity
 from ._settings import _get, _option
-from ._values import _material
+from ._values import _material, _carrier
 from ._storage import _provider_scope, _read
 
 
@@ -24,149 +24,51 @@ def request_prepare(inputs, settings, context):
         source_id=_get(settings, "source_id"), observation_id=context.run_id)}
 
 
-def material_fetch(inputs, settings, context):
-    request = inputs["request"]
-    if request.method not in {"GET", "POST"} or request.method == "POST" and not request.read_only:
-        raise ExecutionFailure("http.read_only_request_required")
-    provider = context.provider("http")
-    context.checkpoint()
-    budget = getattr(context, "budget", None)
-    before = dict(budget.usage()) if budget else {}
-    metered = bool(getattr(provider, "accounts_http_budget", False))
-    if budget and not metered: budget.charge("requests", 1)
-    if hasattr(provider, "fetch"):
-        response = provider.fetch(request)
-    elif callable(provider):
-        response = provider(request)
-    else:
-        # Adapt a neutral provider's HTTP contract; no publisher dispatch occurs.
-        from stratbox.core.network.contracts import HttpRequest, HttpsEndpoint
-        from urllib.parse import urlsplit
-        parts = urlsplit(request.url)
-        exchange = HttpRequest(request.method, request.url,
-            (HttpsEndpoint(parts.hostname, parts.path or "/", allow_query=True),), headers=request.headers,
-            body=request.body, form_fields=request.form, deadline_seconds=request.timeout,
-            max_response_bytes=request.max_bytes, read_only_post=request.method == "POST" and request.read_only,
-            budget=budget)
-        send = getattr(provider, "exchange", None) or getattr(provider, "request", None) or getattr(provider, "send", None)
-        if send is None:
-            raise ExecutionFailure("http.provider_protocol")
-        response = send(exchange)
-    if isinstance(response, Material):
-        material, status, headers = response, 200, {}
-    else:
-        body = response if isinstance(response, bytes) else getattr(response, "body", getattr(response, "content", None))
-        status, headers = getattr(response, "status_code", 200), getattr(response, "headers", {})
-        if status == 304:
-            retained = _option(context, settings, "retained_material")
-            if retained is None:
-                raise ExecutionFailure("http.retained_body_required")
-            material = _material(retained)
-        elif not 200 <= status < 300 or not isinstance(body, bytes):
-            raise ExecutionFailure("http.response_failed:" + str(status))
-        else:
-            material = Material(body, headers.get("content-type", "application/octet-stream").split(";")[0],
-                request.source_id, metadata={"url": request.url, **dict(request.metadata)})
-    if len(material.data) > request.max_bytes:
-        raise ExecutionFailure("http.response_limit")
-    if budget:
-        for resource, amount in (("wire_bytes", getattr(response, "wire_size", None) or len(material.data)),
-                                  ("decoded_bytes", len(material.data))):
-            already = budget.used(resource) - before.get(resource, 0)
-            if amount > already: budget.charge(resource, amount - already)
-    evidence = FetchEvidence(_request_identity(request), getattr(response, "observed_at_utc", datetime.now(timezone.utc)), status,
-        material.identity, headers, request.observation_id or context.run_id,
-        getattr(response, "effective_locator_safe", request.url), getattr(response, "origin_assurance", "provider_reported"),
-        getattr(response, "transport_assurance", None), getattr(response, "route_id", None),
-        getattr(response, "target_sha256", None), getattr(response, "logical_target_sha256", None))
-    from dataclasses import replace
-    material = replace(material, lineage=(*material.lineage, evidence))
-    return {"material": material, "evidence": evidence}
+from .acquisition_http import material_fetch, material_receive
 
 
 def _request_identity(request):
     return request_identity(request)
 
 
-def material_receive(inputs, settings, context):
-    """Receive an original into bounded staging without materializing its body."""
-    from stratbox.core.network.contracts import HttpRequest, HttpsEndpoint, HttpStreamResponse
-    from urllib.parse import urlsplit
-    request, destination = inputs["request"], inputs["destination"]
-    if request.method not in {"GET", "POST"} or request.method == "POST" and not request.read_only:
-        raise ExecutionFailure("http.read_only_request_required")
-    if not isinstance(destination, str) or not destination: raise ExecutionFailure("storage.destination_required")
-    transport, store = context.provider("http"), context.provider("filestore")
-    if not callable(getattr(transport, "exchange_into", None)) or not callable(getattr(store, "stage_content", None)) or not getattr(store, "immutable_content", False):
-        raise ExecutionFailure("streaming.provider_capability_required")
-    parts = urlsplit(request.url)
-    exchange = HttpRequest(request.method, request.url,
-        (HttpsEndpoint(parts.hostname, parts.path or "/", allow_query=True),), headers=request.headers,
-        form_fields=request.form, body=request.body, deadline_seconds=min(request.timeout, context.remaining_seconds()),
-        max_response_bytes=request.max_bytes, read_only_post=request.method == "POST", budget=context.budget)
-    scope = _provider_scope(store, destination)
-    effect_id = fingerprint(("material.receive", scope, destination, request_identity(request), request.observation_id or context.run_id))
-    accepted = context.accepted_input("request")
-    def action():
-        before = dict(context.budget.usage())
-        if not getattr(transport, "accounts_http_budget", False): context.budget.charge("requests", 1)
-        with store.stage_content(destination) as stage:
-            class BoundedSink:
-                def __init__(self): self.size = 0
-                def write(self, data):
-                    context.checkpoint()
-                    if self.size + len(data) > request.max_bytes: raise ExecutionFailure("http.response_limit")
-                    context.budget.charge("temporary_bytes", len(data))
-                    result = stage.stream.write(data); self.size += len(data); return result
-                def seek(self, *args): return stage.stream.seek(*args)
-                def tell(self): return stage.stream.tell()
-                def truncate(self, *args): return stage.stream.truncate(*args)
-                def flush(self): return stage.stream.flush()
-            response = transport.exchange_into(exchange, BoundedSink(), cancelled=lambda: bool(context.run.cancel.is_set() and not context.service._producer_needed(context.task)))
-            if not isinstance(response, HttpStreamResponse) or not 200 <= response.response.status_code < 300:
-                from stratbox.core.storage.filestore import MutationRejected
-                raise MutationRejected("No accepted streamed response", code="http.streaming_response_failed")
-            identity, observed = response.identity, response.response
-            for resource, amount in (("wire_bytes", observed.wire_size or identity.size), ("decoded_bytes", identity.size)):
-                spent = context.budget.used(resource) - before.get(resource, 0)
-                if amount > spent: context.budget.charge(resource, amount - spent)
-            evidence = FetchEvidence(request_identity(request), observed.observed_at_utc, observed.status_code, identity,
-                observed.headers, request.observation_id or context.run_id, observed.effective_locator_safe,
-                observed.origin_assurance, observed.transport_assurance, observed.route_id, observed.target_sha256, observed.logical_target_sha256)
-            context.budget.account_output(effect_id, identity)
-            if not callable(getattr(stage, "location", None)):
-                raise ExecutionFailure("streaming.exact_stage_location_required")
-            location = stage.location(identity)
-            uses = ()
-            if request.source_id:
-                from stratbox.shared.data.source_context import SourceCoordinate, SourceUse
-                uses = (SourceUse(SourceCoordinate(request.source_id, issue_id=request.metadata.get("issue_id"),
-                    asset_id=request.metadata.get("asset_id"), material_identity=identity), "material", "identified"),)
-            reference = ImmutableMaterialRef(location, identity, str(getattr(store, "provider_id", "filestore")),
-                (*(accepted["basis"] if accepted else ()), request_identity(request), evidence),
-                accepted_value_id=accepted["id"] if accepted else None, effect_id=effect_id,
-                provider_scope=_provider_scope(store, location), source_uses=uses,
-                metadata={**dict(request.metadata), "url":request.url, "filename":Path(parts.path).name,
-                    "media_type":observed.headers.get("content-type","application/octet-stream").split(";")[0], "source_id":request.source_id})
-            context.update_effect_intent(effect_id, reference)
-            if stage.commit(identity, checkpoint=context.checkpoint) != location:
-                raise ExecutionFailure("streaming.retained_location_conflict")
-            return reference
-    receipt = context.effect("storage.write", effect_id, action, resource=str(destination),
-        intent={"request_identity":request_identity(request),"provider_scope":scope,"destination":destination})
-    if receipt.status != "confirmed": raise ExecutionFailure("streaming."+receipt.status, outcome="unknown" if receipt.status == "unknown" else "failed")
-    evidence = next(item for item in reversed(receipt.value.lineage) if isinstance(item, FetchEvidence))
-    return {"reference": receipt.value, "evidence": evidence, "receipt": receipt}
-
-
 def material_read(inputs, settings, context):
     location = inputs["location"]
     expected = getattr(location, "identity", None)
-    path = getattr(location, "location", getattr(location, "locator", location))
+    path = getattr(location, "location", getattr(location, "locator", getattr(location, "path", location)))
+    if isinstance(location, Mapping):
+        path = location.get("location", location.get("path", location.get("locator")))
+        expected = location.get("identity")
+    metadata = {**dict(getattr(location, "metadata", {})), "location": str(path)}
+    expected = expected or metadata.get("identity") or _option(context, settings, "expected_identity")
+    placement = _option(context, settings, "placement", "buffered")
+    if placement not in {"buffered", "staged"}:
+        raise ExecutionFailure("material.placement_invalid")
+    store = context.provider("filestore")
+    if isinstance(location, ImmutableMaterialRef) and location.provider_scope != _provider_scope(store, path):
+        raise ExecutionFailure("storage.provider_scope_conflict")
+    if expected is None and placement == "staged" and callable(getattr(store, "inspect_file", None)):
+        expected = store.inspect_file(str(path)).identity
+    if placement == "staged":
+        from stratbox.core.storage.readable import open_provider, copy_stream
+        limit = _option(context, settings, "max_bytes", 16 * 1024**3)
+        metadata.setdefault("filename", Path(str(path)).name)
+        source_id = getattr(location, "source_id", None) or _get(settings, "source_id", metadata.get("source_id"))
+        if isinstance(location, PublicationAsset):
+            metadata.update(dict(location.metadata), issue_id=location.issue_id, asset_id=location.asset_id, format=location.format)
+        with context.stage(source_id=source_id, metadata=metadata,
+                media_type=_get(settings, "media_type", metadata.get("media_type", "application/octet-stream")),
+                lineage=tuple(getattr(location, "lineage", ())),
+                source_uses=tuple(getattr(location, "source_uses", ()))) as stage:
+            with open_provider(store, path) as stream:
+                identity = copy_stream(stream, stage.stream, limit=limit, expected=expected,
+                    checkpoint=context.checkpoint, budget=context.budget, resource="input_bytes")
+            evidence = ReadEvidence(str(path), identity, datetime.now(timezone.utc), _provider_scope(store, path),
+                                    "identity_checked" if expected is not None else "observed_copy")
+            material = stage.seal(lineage=(*tuple(getattr(location, "lineage", ())), evidence))
+        return {"material": material, "evidence": evidence}
     data = _read(context.provider("filestore"), path, _option(context, settings, "max_bytes", 128 * 1024 * 1024))
     if getattr(context, "budget", None): context.budget.charge("input_bytes", len(data))
     source_id = getattr(location, "source_id", _get(settings, "source_id", getattr(location, "metadata", {}).get("source_id")))
-    metadata = {**dict(getattr(location, "metadata", {})), "location": str(path)}
     metadata.setdefault("filename", Path(str(path)).name)
     if isinstance(location, PublicationAsset):
         metadata.update(dict(location.metadata), issue_id=location.issue_id, asset_id=location.asset_id, format=location.format)
@@ -174,7 +76,8 @@ def material_read(inputs, settings, context):
         lineage=tuple(getattr(location, "lineage", ())))
     if expected is not None and expected != value.identity:
         raise ExecutionFailure("storage.identity_mismatch")
-    evidence = ReadEvidence(str(path), value.identity, datetime.now(timezone.utc), _provider_scope(context.provider("filestore"), path))
+    evidence = ReadEvidence(str(path), value.identity, datetime.now(timezone.utc), _provider_scope(store, path),
+                            "identity_checked" if expected is not None else "observed_copy")
     from dataclasses import replace
     return {"material": replace(value, lineage=(*value.lineage, evidence)), "evidence": evidence}
 
@@ -210,7 +113,7 @@ def material_identify(inputs, settings, context):
         if claim and original.claim.source_id != claim.source_id:
             raise ExecutionFailure("source.context_conflict")
         return {"material": original, "assessment": original.assessment}
-    original = _material(original)
+    original = _carrier(original)
     if claim is None and inputs.get("request") is not None:
         request, evidence, asset = inputs["request"], inputs.get("evidence"), inputs.get("asset")
         if (not isinstance(request, RequestSpec) or not isinstance(evidence, FetchEvidence)
@@ -234,7 +137,8 @@ def material_identify(inputs, settings, context):
     assessment = Assessment(qualifications=frozenset({"source." + claim.attribution}))
     if inputs.get("evidence") is not None:
         from dataclasses import replace
-        original = replace(original, lineage=(*original.lineage, inputs["evidence"]))
+        if isinstance(original, Material):
+            original = replace(original, lineage=(*original.lineage, inputs["evidence"]))
     return {"material": IdentifiedMaterial(original, claim, assessment), "assessment": assessment}
 
 
@@ -243,7 +147,7 @@ def material_select(inputs, settings, context):
     names = frozenset(_option(context, settings, "names", ()))
     accepted, findings, observed, expected = [], [], [], []
     for index, value in enumerate(inputs["materials"]):
-        material = _material(value)
+        material = _carrier(value)
         name = str(material.metadata.get("member", material.metadata.get("filename", index)))
         expected.append(name)
         suffix = name.rsplit(".", 1)[-1].lower()
@@ -251,5 +155,64 @@ def material_select(inputs, settings, context):
             findings.append("material.excluded:" + name)
         else:
             accepted.append(value); observed.append(name)
-    return {"materials": tuple(accepted), "assessment": Assessment("complete" if len(accepted) == len(expected) else "partial",
-        tuple(findings), tuple(expected), tuple(observed))}
+    return {"materials": tuple(accepted), "assessment": Assessment("complete",
+        tuple(findings), tuple(observed), tuple(observed),
+        qualifications=frozenset({"selected_scope", "parent_membership_recorded"}))}
+
+
+def material_inspect(inputs, settings, context):
+    """Recognize a physical envelope without materializing a complete file."""
+    from stratbox.shared.data.materials import MaterialInspection
+    from zipfile import ZipFile
+    import struct
+    original = _carrier(inputs["material"])
+    identity = original.identity
+    metadata_limit = _option(context, settings, "max_inspection_bytes", 16 * 1024 * 1024)
+    max_entries = _option(context, settings, "max_entries", 100000)
+    name = str(original.metadata.get("member", original.metadata.get("filename", "")))
+    suffix = name.rsplit(".", 1)[-1].lower()
+    details, qualifications = {}, {"complete_identity", "signature"}
+    with context.open_material(original) as stream:
+        head = stream.read(4096)
+        if head.startswith(b"PK"):
+            from stratbox.core.formats.archives.members import ArchiveLimits, admit_zip_directory
+            limits = ArchiveLimits(members=max_entries, packed_bytes=max(identity.size, 1),
+                metadata_bytes=metadata_limit)
+            admit_zip_directory(stream, identity.size, limits)
+            with ZipFile(stream) as archive:
+                names = {item.filename for item in archive.infolist()}
+                fmt = "xlsx" if "xl/workbook.xml" in names else "xlsb" if "xl/workbook.bin" in names else "docx" if "word/document.xml" in names else "zip"
+                if fmt == "xlsx" and "[Content_Types].xml" in names:
+                    part = archive.getinfo("[Content_Types].xml")
+                    if part.file_size > min(metadata_limit, 1024 * 1024):
+                        raise ExecutionFailure("inspection.content_types_limit")
+                    with archive.open(part) as content:
+                        types = content.read(min(metadata_limit, 1024 * 1024) + 1)
+                    if len(types) != part.file_size:
+                        raise ExecutionFailure("inspection.content_types_size_mismatch")
+                    if getattr(context, "budget", None):
+                        context.budget.charge("decoded_bytes",len(types))
+                    if b"macroEnabled" in types:
+                        fmt = "xlsm"
+                details = {"entries": len(names)}
+                qualifications.add("envelope")
+        elif head.startswith(b"Rar!\x1a\x07"):
+            fmt = "rar"
+        elif head.startswith(b"%PDF-"):
+            fmt = "pdf"
+        elif head.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            fmt = "doc" if suffix == "doc" else "xls"
+        elif head.lstrip().lower().startswith((b"<!doctype html", b"<html", b"<head", b"<body")):
+            fmt = "html"
+        elif len(head) >= 32 and head[0] in {0x03, 0x83, 0x30, 0x31, 0x32, 0x43, 0x63, 0x8B, 0xCB, 0xF5}:
+            header_length, record_length = struct.unpack_from("<HH", head, 8)
+            fmt = "dbf" if 32 <= header_length <= identity.size and record_length > 0 else "unknown"
+        elif head.lstrip().startswith((b"{", b"[")):
+            fmt = "json"
+        elif suffix in {"csv", "tsv", "txt"}:
+            fmt = suffix
+        else:
+            fmt = "unknown"
+    return {"inspection": MaterialInspection(identity, fmt, original.media_type,
+        getattr(original, "provider_scope", None), frozenset(qualifications),
+        () if fmt != "unknown" else ("inspection.format_unknown",), details)}

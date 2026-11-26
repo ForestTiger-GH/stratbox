@@ -29,7 +29,8 @@ def test_all_stages_replay_before_final_render(family, tmp_path):
     path = tmp_path / 'source.json'
     path.write_bytes(encoded.data)
     with StrategyBox() as second:
-        retained = checked(second.invoke('command.value.decode', inputs={'representation': path.read_bytes()}, target=SeriesTarget(source)), 'value')
+        retained = checked(second.invoke('command.value.decode', inputs={'representation': path.read_bytes()},
+            parameters={'max_materialized_bytes': encoded.identity.size}, target=SeriesTarget(source)), 'value')
         pd.testing.assert_frame_equal(retained.native.df_stream, dataset.native.df_stream)
         assert retained.native.source_sha256 == dataset.native.source_sha256
         assert retained.native.geography_reference == dataset.native.geography_reference
@@ -55,6 +56,7 @@ def test_retained_source_rejects_truncated_and_mutated_scientific_content(public
     _, _, _, dataset = publication
     context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
     representation = encode({'value': dataset}, None, context)['representation']
+    context.parameters['max_materialized_bytes'] = representation.identity.size
     with pytest.raises(ValueError):
         decode({'representation': representation.data[:-1]}, None, context)
     changed = replace(dataset.native, df_stream=dataset.native.df_stream.copy(deep=True))

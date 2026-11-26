@@ -1,4 +1,5 @@
 """An uncertain immutable write survives service restart without a second mutation."""
+from contextlib import contextmanager
 from stratbox.core.execution.effect_state import FileEffectState
 from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.sdk import StrategyBox
@@ -7,11 +8,21 @@ from stratbox.shared.data.values import Material
 
 class LostAcknowledgement(LocalFileStore):
     calls=0
-    def create_immutable(self,location,data):
-        type(self).calls+=1
-        result=super().create_immutable(location,data)
-        if type(self).calls==1: raise OSError('write committed; response lost')
-        return result
+    @contextmanager
+    def stage_content(self, directory):
+        owner = type(self)
+        with super().stage_content(directory) as stage:
+            class Lost:
+                stream = stage.stream
+                def location(self, identity):
+                    return stage.location(identity)
+                def commit(self, identity, **kwargs):
+                    owner.calls += 1
+                    result = stage.commit(identity, **kwargs)
+                    if owner.calls == 1:
+                        raise OSError('write committed; response lost')
+                    return result
+            yield Lost()
 
 
 def test_lost_save_acknowledgement_reconciles_after_restart_without_resend(tmp_path):

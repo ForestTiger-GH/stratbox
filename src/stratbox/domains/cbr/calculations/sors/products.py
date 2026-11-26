@@ -30,7 +30,8 @@ def view_prepare(inputs, settings, context):
         raise TypeError("sors.product_request_invalid")
     pack = build_sors_views(result, request, checkpoint=lambda: _checkpoint(context),
                             budget=getattr(context, "budget", None))
-    return {"view": View(pack, lineage=lineage, source_uses=tuple(pack.source_uses))}
+    return {"view": View(pack, lineage=lineage, source_uses=tuple(pack.source_uses),
+        assessment=getattr(value, "assessment", None))}
 
 
 def product_render(inputs, settings, context):
@@ -41,4 +42,5 @@ def product_render(inputs, settings, context):
     rendered = render_sors_views(value.value, checkpoint=lambda: _checkpoint(context),
                                  budget=getattr(context, "budget", None))
     return {"product": replace(rendered.representation, lineage=value.lineage, source_uses=value.source_uses,
-        descriptor={"scientific_view": value.value.fingerprint, "sheets": rendered.sheet_names})}
+        descriptor={"scientific_view": value.value.fingerprint, "sheets": rendered.sheet_names},
+        assessment=value.assessment)}

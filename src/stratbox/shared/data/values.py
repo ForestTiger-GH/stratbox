@@ -97,6 +97,26 @@ def _codec_types():
         for cls in vars(module).values():
             if isinstance(cls, type) and is_dataclass(cls) and cls.__module__ == module.__name__:
                 known[cls.__module__ + ":" + cls.__qualname__] = cls
+    from .materials import PORTABLE_TYPES
+    from .archives import ArchiveMemberSelection, ArchiveInventoryMember, ArchiveInventory
+    from .dbf import DBFHeaderEvidence, DBFEncodingOverride, DBFPreservationPolicy
+    from .selection import (SourceQuery, SourceSelection, IssueQuery, SelectionReport,
+                            SubjectChoice, ObservationQuery, MemberOutcome)
+    from .history import (ValidationCertificate, HistoryMember, RevisionDecision,
+                          HistoryMembership, RevisionPolicy)
+    from .processing import (SourceStateKey, SourceObservation, RetainedOutput,
+        StateProjectionCheckpoint, SourceStateSnapshot, ProcessingRequirement,
+        ProcessingGoal, ProcessingBasis, ReferenceAvailability, ProcessingPolicy,
+        ProcessingDecision, ProcessingAssessment)
+    for cls in (*PORTABLE_TYPES, ArchiveMemberSelection, ArchiveInventoryMember,
+                ArchiveInventory, DBFHeaderEvidence, DBFEncodingOverride, DBFPreservationPolicy,
+                SourceQuery, SourceSelection, IssueQuery, SelectionReport, SubjectChoice,
+                ObservationQuery, MemberOutcome, ValidationCertificate, HistoryMember,
+                RevisionDecision, HistoryMembership, RevisionPolicy,
+                SourceStateKey, SourceObservation, RetainedOutput, StateProjectionCheckpoint,
+                SourceStateSnapshot, ProcessingRequirement, ProcessingGoal, ProcessingBasis,
+                ReferenceAvailability, ProcessingPolicy, ProcessingDecision, ProcessingAssessment):
+        known[cls.__module__ + ":" + cls.__qualname__] = cls
     return known
 
 
@@ -104,11 +124,15 @@ def validate_portable_tree(tree, *, admitted_types=None):
     """Reject non-replayable carrier classes before a representation is retained."""
     known = _codec_types()
     for locator, cls in dict(admitted_types or {}).items():
+        if locator == "stratbox.shared.data.materials:StagedMaterialRef":
+            raise ValueError("codec.session_local_value")
         if not isinstance(cls, type) or not is_dataclass(cls) or locator != cls.__module__ + ":" + cls.__qualname__:
             raise ValueError("codec.invalid_admitted_type")
         known[locator] = cls
     def visit(value):
         if isinstance(value, dict):
+            if value.get("type") == "stratbox.shared.data.materials:StagedMaterialRef":
+                raise ValueError("codec.session_local_value")
             if "competent_identity" in value:
                 raise ValueError("codec.explicit_scientific_codec_required")
             if set(value) == {"type", "fields"} and value["type"] not in known:
@@ -128,6 +152,8 @@ def restore_tree(value, *, admitted_types=None):
     """
     known = _codec_types()
     for locator, cls in dict(admitted_types or {}).items():
+        if locator == "stratbox.shared.data.materials:StagedMaterialRef":
+            raise ValueError("codec.session_local_value")
         if not isinstance(cls, type) or not is_dataclass(cls) or locator != cls.__module__ + ":" + cls.__qualname__:
             raise ValueError("codec.invalid_admitted_type")
         known[locator] = cls
@@ -181,6 +207,8 @@ def restore_tree(value, *, admitted_types=None):
             if canonical_tree(result) != item: raise ValueError("codec.ndarray_noncanonical")
             return result
         if set(item) == {"type", "fields"}:
+            if item["type"] == "stratbox.shared.data.materials:StagedMaterialRef":
+                raise ValueError("codec.session_local_value")
             cls = known.get(item["type"])
             if cls is None: raise ValueError("codec.type_not_admitted:" + str(item["type"]))
             return cls(**{key: decode(part) for key, part in item["fields"].items()})
@@ -231,11 +259,14 @@ class Material:
     charset: str | None = None
     metadata: Mapping[str, object] = field(default_factory=dict)
     lineage: tuple[object, ...] = ()
+    source_uses: tuple[object, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.data, bytes):
             raise TypeError("material.bytes_required")
         object.__setattr__(self, "metadata", immutable(self.metadata))
+        object.__setattr__(self, "lineage", immutable(self.lineage))
+        object.__setattr__(self, "source_uses", immutable(self.source_uses))
 
     @property
     def identity(self):
@@ -283,6 +314,9 @@ class FetchEvidence:
     route_id: str | None = None
     actual_target_identity: str | None = None
     logical_target_identity: str | None = None
+    validation_kind: str = "body"
+    representation_identity: str | None = None
+    retained_effect_id: str | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "headers", immutable(self.headers))
@@ -300,6 +334,7 @@ class ReadEvidence:
     material_identity: ByteIdentity
     observed_at: datetime
     provider_scope: str
+    assurance: str = "observed_copy"
 
 
 @dataclass(frozen=True)
@@ -312,9 +347,17 @@ class SourceClaim:
 
 @dataclass(frozen=True)
 class IdentifiedMaterial:
-    material: Material
+    material: object
     claim: SourceClaim
     assessment: Assessment = Assessment()
+    source_uses: tuple[object, ...] = ()
+
+    def __post_init__(self):
+        object.__setattr__(self, "source_uses", tuple(self.source_uses))
+        metadata = getattr(self.material, "metadata", {})
+        for name, expected in (("issue_id",self.claim.issue_id),("asset_id",self.claim.asset_id)):
+            if expected and metadata.get(name) not in {None,"",expected}:
+                raise ValueError("source.context_conflict")
 
     @property
     def source_id(self):
@@ -323,6 +366,26 @@ class IdentifiedMaterial:
     @property
     def identity(self):
         return self.material.identity
+
+    @property
+    def metadata(self):
+        values = dict(getattr(self.material,"metadata",{}))
+        if self.claim.issue_id:
+            values["issue_id"] = self.claim.issue_id
+        values["asset_id"] = self.claim.asset_id
+        return immutable(values)
+
+    @property
+    def media_type(self):
+        return getattr(self.material,"media_type","application/octet-stream")
+
+    @property
+    def charset(self):
+        return getattr(self.material,"charset",None)
+
+    @property
+    def lineage(self):
+        return getattr(self.material,"lineage",())
 
 
 @dataclass(frozen=True)
@@ -389,6 +452,7 @@ class DbfEvidence:
     assessment: Assessment = Assessment()
     decoded_identity: str | None = None
     encoding: str = "cp866"
+    header: object | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "fields", tuple(self.fields))
@@ -396,7 +460,19 @@ class DbfEvidence:
         self.validate_integrity()
 
     def validate_integrity(self):
-        if self.decoded_identity is not None and self.decoded_identity != fingerprint((self.material.identity, self.fields, self.records, self.encoding)):
+        basis = (self.material.identity, self.fields, self.records, self.encoding)
+        if self.header is not None:
+            from .dbf import DBFHeaderEvidence
+            import codecs
+            if (not isinstance(self.header, DBFHeaderEvidence)
+                    or self.header.source_identity != self.material.identity
+                    or self.header.record_count != len(self.records)
+                    or self.header.header_length != 33 + 32 * len(self.fields)
+                    or self.header.record_length != 1 + sum(field.length for field in self.fields)
+                    or codecs.lookup(self.header.encoding).name != codecs.lookup(self.encoding).name):
+                raise ValueError("dbf.header_evidence_mismatch")
+            basis = (*basis, self.header)
+        if self.decoded_identity is not None and self.decoded_identity != fingerprint(basis):
             raise ValueError("dbf.decoded_content_mismatch")
 
 
@@ -446,6 +522,8 @@ class SourceDataset:
     assessment: Assessment = Assessment()
     native: object = None
     source_uses: tuple[object, ...] = ()
+    validation_certificates: tuple[object, ...] = ()
+    history_membership: object | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "rows", tuple(immutable(row) for row in self.rows))
@@ -454,6 +532,7 @@ class SourceDataset:
         if any(not isinstance(item, SourceUse) for item in self.source_uses):
             raise TypeError("source.typed_uses_required")
         object.__setattr__(self, "source_uses", tuple(self.source_uses))
+        object.__setattr__(self, "validation_certificates", tuple(self.validation_certificates))
 
     @property
     def identity(self):
@@ -551,9 +630,14 @@ class View:
     settings: Mapping[str, object] = field(default_factory=dict)
     lineage: tuple[object, ...] = ()
     source_uses: tuple[object, ...] = ()
+    assessment: Assessment | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "settings", immutable(self.settings))
+        assessment = self.assessment if self.assessment is not None else getattr(self.value, "assessment", None)
+        if assessment is not None and not isinstance(assessment, Assessment):
+            raise TypeError("view.assessment_required")
+        object.__setattr__(self, "assessment", assessment)
 
 
 @dataclass(frozen=True)
@@ -563,9 +647,12 @@ class EncodedProduct:
     lineage: tuple[object, ...] = ()
     descriptor: Mapping[str, object] = field(default_factory=dict)
     source_uses: tuple[object, ...] = ()
+    assessment: Assessment | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "descriptor", immutable(self.descriptor))
+        if self.assessment is not None and not isinstance(self.assessment, Assessment):
+            raise TypeError("product.assessment_required")
 
     @property
     def identity(self):
@@ -584,9 +671,26 @@ class ImmutableMaterialRef:
     provider_scope: str | None = None
     source_uses: tuple[object, ...] = ()
     metadata: Mapping[str, object] = field(default_factory=dict)
+    assessment: Assessment | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "metadata", immutable(self.metadata))
+        object.__setattr__(self, "lineage", immutable(self.lineage))
+        object.__setattr__(self, "source_uses", immutable(self.source_uses))
+        if self.assessment is not None and not isinstance(self.assessment, Assessment):
+            raise TypeError("material.assessment_required")
+
+    @property
+    def source_id(self):
+        return self.metadata.get("source_id")
+
+    @property
+    def media_type(self):
+        return self.metadata.get("media_type", "application/octet-stream")
+
+    @property
+    def charset(self):
+        return self.metadata.get("charset")
 
 
 @dataclass(frozen=True)

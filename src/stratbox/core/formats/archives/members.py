@@ -1,4 +1,4 @@
-"""Bounded, in-memory archive inspection, extraction and creation."""
+"""Bounded archive inventory and selected member streams."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import PurePosixPath, PureWindowsPath
 from stat import S_IFDIR, S_IFMT, S_IFREG
+from struct import unpack_from
 from typing import BinaryIO, Callable, ContextManager, Iterator, Mapping, Protocol
 from unicodedata import normalize
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
@@ -26,11 +27,13 @@ class ArchiveLimits:
     unpacked_bytes: int = 100_000_000
     member_bytes: int = 32_000_000
     packed_bytes: int = 32_000_000
+    metadata_bytes: int = 16 * 1024 * 1024
 
     def __post_init__(self) -> None:
         if (
-            min(self.members, self.unpacked_bytes, self.member_bytes, self.packed_bytes)
-            < 1
+            any(type(value) is not int or value < 1 for value in (
+                self.members, self.unpacked_bytes, self.member_bytes, self.packed_bytes,
+                self.metadata_bytes))
         ):
             raise ValueError("Archive limits must be positive")
 
@@ -42,6 +45,8 @@ class ArchiveMember:
     directory: bool = False
     regular: bool = True
     encrypted: bool = False
+    compressed_size: int | None = None
+    compression: str | None = None
 
 
 class ArchiveContents(Protocol):
@@ -50,13 +55,14 @@ class ArchiveContents(Protocol):
 
 
 class ArchiveReader(Protocol):
-    def open(self, data: bytes) -> ContextManager[ArchiveContents]: ...
+    def open(self, stream: BinaryIO, *, limits: ArchiveLimits) -> ContextManager[ArchiveContents]: ...
 
 
 def safe_member_name(name: str) -> bool:
     path = name.replace("\\", "/").rstrip("/")
     return (
         0 < len(path) <= 512
+        and "\\" not in name
         and not path.startswith("/")
         and ":" not in path
         and not PureWindowsPath(path).drive
@@ -66,11 +72,12 @@ def safe_member_name(name: str) -> bool:
     )
 
 
-def validate_members(members: tuple[ArchiveMember, ...], limits: ArchiveLimits) -> None:
+def validate_members(members: tuple[ArchiveMember, ...], limits: ArchiveLimits, *, selected_only: bool = False) -> None:
     if (
-        not 0 < len(members) <= limits.members
-        or sum(member.size for member in members) > limits.unpacked_bytes
-        or any(not 0 <= member.size <= limits.member_bytes for member in members)
+        len(members) > limits.members
+        or any(type(member.size) is not int or member.size < 0 for member in members)
+        or not selected_only and (sum(member.size for member in members) > limits.unpacked_bytes
+            or any(member.size > limits.member_bytes for member in members))
     ):
         raise ArchiveError("archive.size_limit")
     names = [
@@ -96,24 +103,79 @@ def zip_members(archive: ZipFile) -> tuple[ArchiveMember, ...]:
             info.is_dir(),
             S_IFMT(info.external_attr >> 16) in {0, S_IFREG, S_IFDIR},
             bool(info.flag_bits & 1),
+            info.compress_size,
+            str(info.compress_type),
         )
         for info in archive.infolist()
     )
 
 
+def _read_at(stream, offset, size):
+    stream.seek(offset)
+    chunks, remaining = [], size
+    while remaining:
+        chunk = stream.read(min(65536, remaining))
+        if not chunk:
+            raise ArchiveError("archive.invalid_zip")
+        if len(chunk) > remaining:
+            raise ArchiveError("archive.reader_contract_invalid")
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
+def admit_zip_directory(stream: BinaryIO, size: int, limits: ArchiveLimits) -> None:
+    """Reject oversized metadata before ZipFile allocates its central directory."""
+    if not 0 < size <= limits.packed_bytes:
+        raise ArchiveError("archive.size_limit")
+    tail_size = min(size, 65535 + 22)
+    tail = _read_at(stream, size - tail_size, tail_size)
+    position = tail.rfind(b"PK\x05\x06")
+    if position < 0 or position + 22 > len(tail):
+        raise ArchiveError("archive.invalid_zip")
+    _, disk, directory_disk, disk_entries, entries, directory_size, directory_offset, comment_size = unpack_from("<4s4H2LH", tail, position)
+    if position + 22 + comment_size != len(tail) or disk or directory_disk:
+        raise ArchiveError("archive.multivolume_or_invalid_zip")
+    absolute_end = size - tail_size + position
+    locator = _read_at(stream, absolute_end - 20, 20) if absolute_end >= 20 else b""
+    needs_zip64 = max(disk_entries, entries) == 0xFFFF or max(directory_size, directory_offset) == 0xFFFFFFFF
+    if needs_zip64 or locator.startswith(b"PK\x06\x07"):
+        if absolute_end < 20:
+            raise ArchiveError("archive.invalid_zip64")
+        signature, disk_number, record_offset, disks = unpack_from("<4sLQL", locator)
+        if signature != b"PK\x06\x07" or disk_number or disks != 1 or record_offset + 56 > absolute_end - 20:
+            raise ArchiveError("archive.invalid_zip64")
+        record = _read_at(stream, record_offset, 56)
+        if record[:4] != b"PK\x06\x06":
+            raise ArchiveError("archive.invalid_zip64")
+        record_size = unpack_from("<Q", record, 4)[0]
+        disk, directory_disk, disk_entries, entries, directory_size, directory_offset = unpack_from("<2L4Q", record, 16)
+        if disk or directory_disk or record_size < 44 or record_size + 12 > limits.metadata_bytes:
+            raise ArchiveError("archive.multivolume_or_invalid_zip")
+        if record_offset + record_size + 12 != absolute_end - 20:
+            raise ArchiveError("archive.invalid_zip64")
+        absolute_end = record_offset
+    if disk_entries != entries or entries > limits.members or directory_size > limits.metadata_bytes:
+        raise ArchiveError("archive.inventory_limit")
+    if directory_offset + directory_size != absolute_end:
+        raise ArchiveError("archive.directory_geometry_invalid")
+    stream.seek(0)
+
+
 @contextmanager
 def open_zip(
     data: bytes, limits: ArchiveLimits = ArchiveLimits(), *,
-    budget: BudgetMeter | None = None, depth: int = 1,
+    budget: BudgetMeter | None = None, depth: int = 1, selected_only: bool = False,
 ) -> Iterator[ZipFile]:
-    with open_zip_stream(BytesIO(data), len(data), limits, budget=budget, depth=depth) as archive:
+    with open_zip_stream(BytesIO(data), len(data), limits, budget=budget, depth=depth,
+                         selected_only=selected_only) as archive:
         yield archive
 
 
 @contextmanager
 def open_zip_stream(
     stream: BinaryIO, size: int, limits: ArchiveLimits = ArchiveLimits(), *,
-    budget: BudgetMeter | None = None, depth: int = 1,
+    budget: BudgetMeter | None = None, depth: int = 1, selected_only: bool = False,
 ) -> Iterator[ZipFile]:
     if not 1 <= depth <= 4:
         raise ArchiveError("archive.depth_limit")
@@ -122,9 +184,10 @@ def open_zip_stream(
     if not 0 < size <= limits.packed_bytes:
         raise ArchiveError("archive.size_limit")
     try:
+        admit_zip_directory(stream, size, limits)
         with ZipFile(stream) as archive:
             members = zip_members(archive)
-            validate_members(members, limits)
+            validate_members(members, limits, selected_only=selected_only)
             if budget is not None:
                 budget.charge("objects", len(members))
             yield archive
@@ -148,6 +211,8 @@ class _RarContents:
                 and not info.is_symlink()
                 and getattr(info, "file_redir", None) is None,
                 info.needs_password(),
+                getattr(info, "compress_size", None),
+                str(getattr(info, "compress_type", "unknown")),
             )
             for info in self.archive.infolist()
         )
@@ -160,12 +225,20 @@ class RarArchiveReader:
     """Optional rarfile adapter. Compressed members require a supported system extractor."""
 
     @contextmanager
-    def open(self, data: bytes):
+    def open(self, stream: BinaryIO, *, limits: ArchiveLimits = ArchiveLimits()):
         from stratbox.core.runtime.dependencies import require_extra
 
         rarfile = require_extra("rarfile", "rar")
+        count, metadata_size = 0, 0
+        def inspect(info):
+            nonlocal count, metadata_size
+            count += int(info.is_file() or info.is_dir())
+            metadata_size += getattr(info, "header_size", 0)
+            if count > limits.members or metadata_size > limits.metadata_bytes:
+                raise ArchiveError("archive.inventory_limit")
         try:
-            with rarfile.RarFile(BytesIO(data)) as archive:
+            stream.seek(0)
+            with rarfile.RarFile(stream, info_callback=inspect, errors="strict") as archive:
                 yield _RarContents(archive)
         except rarfile.RarCannotExec as error:
             raise ArchiveError("archive.rar_extractor_unavailable") from error
@@ -229,7 +302,7 @@ def extract_members(
     if data.startswith(b"Rar!"):
         if rar_reader is None:
             raise ArchiveError("archive.rar_provider_missing")
-        with rar_reader.open(data) as contents:
+        with rar_reader.open(BytesIO(data), limits=limits) as contents:
             members = contents.members()
             validate_members(members, limits)
             if budget is not None:

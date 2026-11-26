@@ -50,11 +50,11 @@ OBS_TABLE_20S = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(OBS_TABLE_20S_PUBLICATION.series_id, OBS_TABLE_20S_PUBLICATION.formats, issue_required=OBS_TABLE_20S_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({OBS_TABLE_20S_PUBLICATION.series_id})),
+            SourceRequirement(OBS_TABLE_20S_PUBLICATION.series_id, OBS_TABLE_20S_PUBLICATION.formats, issue_required=OBS_TABLE_20S_PUBLICATION.issue_model == 'dated', locator=OBS_TABLE_20S_PUBLICATION.locator, filename_pattern=OBS_TABLE_20S_PUBLICATION.filename_pattern, publication_kind=OBS_TABLE_20S_PUBLICATION.kind), Applicability(source_ids=frozenset({OBS_TABLE_20S_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(OBS_TABLE_20S_PUBLICATION.series_id, OBS_TABLE_20S_PUBLICATION.formats, issue_required=OBS_TABLE_20S_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({OBS_TABLE_20S_PUBLICATION.series_id})),
+            SourceRequirement(OBS_TABLE_20S_PUBLICATION.series_id, OBS_TABLE_20S_PUBLICATION.formats, issue_required=OBS_TABLE_20S_PUBLICATION.issue_model == 'dated', locator=OBS_TABLE_20S_PUBLICATION.locator, filename_pattern=OBS_TABLE_20S_PUBLICATION.filename_pattern, publication_kind=OBS_TABLE_20S_PUBLICATION.kind), Applicability(source_ids=frozenset({OBS_TABLE_20S_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

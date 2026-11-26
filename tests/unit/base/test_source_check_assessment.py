@@ -13,7 +13,9 @@ def test_missing_offline_index_returns_unknown_without_network_fallback():
         result=box.invoke("operation.source.check",inputs={"index":Material(b"<html>empty</html>","text/html",SOURCE+".index")},target=SeriesTarget(SOURCE))
         assert result.outcome=="succeeded",result.diagnostics
         assessment=result.output("assessment")
-        assert assessment.status=="unknown" and assessment.basis=="publication_listing_incomplete"
+        assert assessment.status=="unknown" and assessment.basis=="observed_publication_listing"
+        assert not assessment.evidence['source_coverage'].complete
+        assert not assessment.evidence['selected_coverage'].complete
         assert result.output("selection").assessment.status=="partial"
 
 

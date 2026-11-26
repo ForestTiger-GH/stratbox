@@ -43,11 +43,11 @@ BUDGET_ALL = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
+            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated', locator=BUDGET_ALL_PUBLICATION.locator, filename_pattern=BUDGET_ALL_PUBLICATION.filename_pattern, publication_kind=BUDGET_ALL_PUBLICATION.kind), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
+            SourceRequirement(BUDGET_ALL_PUBLICATION.series_id, BUDGET_ALL_PUBLICATION.formats, issue_required=BUDGET_ALL_PUBLICATION.issue_model == 'dated', locator=BUDGET_ALL_PUBLICATION.locator, filename_pattern=BUDGET_ALL_PUBLICATION.filename_pattern, publication_kind=BUDGET_ALL_PUBLICATION.kind), Applicability(source_ids=frozenset({BUDGET_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -100,11 +100,11 @@ DEP_CORP = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
+            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated', locator=DEP_CORP_PUBLICATION.locator, filename_pattern=DEP_CORP_PUBLICATION.filename_pattern, publication_kind=DEP_CORP_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
+            SourceRequirement(DEP_CORP_PUBLICATION.series_id, DEP_CORP_PUBLICATION.formats, issue_required=DEP_CORP_PUBLICATION.issue_model == 'dated', locator=DEP_CORP_PUBLICATION.locator, filename_pattern=DEP_CORP_PUBLICATION.filename_pattern, publication_kind=DEP_CORP_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_CORP_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -157,11 +157,11 @@ DEP_ENTREPRENEUR = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
+            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated', locator=DEP_ENTREPRENEUR_PUBLICATION.locator, filename_pattern=DEP_ENTREPRENEUR_PUBLICATION.filename_pattern, publication_kind=DEP_ENTREPRENEUR_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
+            SourceRequirement(DEP_ENTREPRENEUR_PUBLICATION.series_id, DEP_ENTREPRENEUR_PUBLICATION.formats, issue_required=DEP_ENTREPRENEUR_PUBLICATION.issue_model == 'dated', locator=DEP_ENTREPRENEUR_PUBLICATION.locator, filename_pattern=DEP_ENTREPRENEUR_PUBLICATION.filename_pattern, publication_kind=DEP_ENTREPRENEUR_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_ENTREPRENEUR_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -214,11 +214,11 @@ DEP_IND = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
+            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated', locator=DEP_IND_PUBLICATION.locator, filename_pattern=DEP_IND_PUBLICATION.filename_pattern, publication_kind=DEP_IND_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
+            SourceRequirement(DEP_IND_PUBLICATION.series_id, DEP_IND_PUBLICATION.formats, issue_required=DEP_IND_PUBLICATION.issue_model == 'dated', locator=DEP_IND_PUBLICATION.locator, filename_pattern=DEP_IND_PUBLICATION.filename_pattern, publication_kind=DEP_IND_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_IND_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -271,11 +271,11 @@ DEP_IND_NO_ESCROW = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
+            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated', locator=DEP_IND_NO_ESCROW_PUBLICATION.locator, filename_pattern=DEP_IND_NO_ESCROW_PUBLICATION.filename_pattern, publication_kind=DEP_IND_NO_ESCROW_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
+            SourceRequirement(DEP_IND_NO_ESCROW_PUBLICATION.series_id, DEP_IND_NO_ESCROW_PUBLICATION.formats, issue_required=DEP_IND_NO_ESCROW_PUBLICATION.issue_model == 'dated', locator=DEP_IND_NO_ESCROW_PUBLICATION.locator, filename_pattern=DEP_IND_NO_ESCROW_PUBLICATION.filename_pattern, publication_kind=DEP_IND_NO_ESCROW_PUBLICATION.kind), Applicability(source_ids=frozenset({DEP_IND_NO_ESCROW_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -326,11 +326,11 @@ ESCROW_ACCOUNTS = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
+            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated', locator=ESCROW_ACCOUNTS_PUBLICATION.locator, filename_pattern=ESCROW_ACCOUNTS_PUBLICATION.filename_pattern, publication_kind=ESCROW_ACCOUNTS_PUBLICATION.kind), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
+            SourceRequirement(ESCROW_ACCOUNTS_PUBLICATION.series_id, ESCROW_ACCOUNTS_PUBLICATION.formats, issue_required=ESCROW_ACCOUNTS_PUBLICATION.issue_model == 'dated', locator=ESCROW_ACCOUNTS_PUBLICATION.locator, filename_pattern=ESCROW_ACCOUNTS_PUBLICATION.filename_pattern, publication_kind=ESCROW_ACCOUNTS_PUBLICATION.kind), Applicability(source_ids=frozenset({ESCROW_ACCOUNTS_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -383,11 +383,11 @@ FUNDS_ALL = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated', locator=FUNDS_ALL_PUBLICATION.locator, filename_pattern=FUNDS_ALL_PUBLICATION.filename_pattern, publication_kind=FUNDS_ALL_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_ALL_PUBLICATION.series_id, FUNDS_ALL_PUBLICATION.formats, issue_required=FUNDS_ALL_PUBLICATION.issue_model == 'dated', locator=FUNDS_ALL_PUBLICATION.locator, filename_pattern=FUNDS_ALL_PUBLICATION.filename_pattern, publication_kind=FUNDS_ALL_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_ALL_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -440,11 +440,11 @@ FUNDS_CLIENTS = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated', locator=FUNDS_CLIENTS_PUBLICATION.locator, filename_pattern=FUNDS_CLIENTS_PUBLICATION.filename_pattern, publication_kind=FUNDS_CLIENTS_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_CLIENTS_PUBLICATION.series_id, FUNDS_CLIENTS_PUBLICATION.formats, issue_required=FUNDS_CLIENTS_PUBLICATION.issue_model == 'dated', locator=FUNDS_CLIENTS_PUBLICATION.locator, filename_pattern=FUNDS_CLIENTS_PUBLICATION.filename_pattern, publication_kind=FUNDS_CLIENTS_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_CLIENTS_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -497,11 +497,11 @@ FUNDS_ORG = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated', locator=FUNDS_ORG_PUBLICATION.locator, filename_pattern=FUNDS_ORG_PUBLICATION.filename_pattern, publication_kind=FUNDS_ORG_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
+            SourceRequirement(FUNDS_ORG_PUBLICATION.series_id, FUNDS_ORG_PUBLICATION.formats, issue_required=FUNDS_ORG_PUBLICATION.issue_model == 'dated', locator=FUNDS_ORG_PUBLICATION.locator, filename_pattern=FUNDS_ORG_PUBLICATION.filename_pattern, publication_kind=FUNDS_ORG_PUBLICATION.kind), Applicability(source_ids=frozenset({FUNDS_ORG_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

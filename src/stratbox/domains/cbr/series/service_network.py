@@ -41,11 +41,11 @@ BANK_OFFICES = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(BANK_OFFICES_PUBLICATION.series_id, BANK_OFFICES_PUBLICATION.formats, issue_required=BANK_OFFICES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BANK_OFFICES_PUBLICATION.series_id})),
+            SourceRequirement(BANK_OFFICES_PUBLICATION.series_id, BANK_OFFICES_PUBLICATION.formats, issue_required=BANK_OFFICES_PUBLICATION.issue_model == 'dated', locator=BANK_OFFICES_PUBLICATION.locator, filename_pattern=BANK_OFFICES_PUBLICATION.filename_pattern, publication_kind=BANK_OFFICES_PUBLICATION.kind), Applicability(source_ids=frozenset({BANK_OFFICES_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(BANK_OFFICES_PUBLICATION.series_id, BANK_OFFICES_PUBLICATION.formats, issue_required=BANK_OFFICES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({BANK_OFFICES_PUBLICATION.series_id})),
+            SourceRequirement(BANK_OFFICES_PUBLICATION.series_id, BANK_OFFICES_PUBLICATION.formats, issue_required=BANK_OFFICES_PUBLICATION.issue_model == 'dated', locator=BANK_OFFICES_PUBLICATION.locator, filename_pattern=BANK_OFFICES_PUBLICATION.filename_pattern, publication_kind=BANK_OFFICES_PUBLICATION.kind), Applicability(source_ids=frozenset({BANK_OFFICES_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),
@@ -92,11 +92,11 @@ TERRITORIAL_OFFICES = SeriesSpec(
         ),
         "command.material.identify": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.publications:identify"),
-            SourceRequirement(TERRITORIAL_OFFICES_PUBLICATION.series_id, TERRITORIAL_OFFICES_PUBLICATION.formats, issue_required=TERRITORIAL_OFFICES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({TERRITORIAL_OFFICES_PUBLICATION.series_id})),
+            SourceRequirement(TERRITORIAL_OFFICES_PUBLICATION.series_id, TERRITORIAL_OFFICES_PUBLICATION.formats, issue_required=TERRITORIAL_OFFICES_PUBLICATION.issue_model == 'dated', locator=TERRITORIAL_OFFICES_PUBLICATION.locator, filename_pattern=TERRITORIAL_OFFICES_PUBLICATION.filename_pattern, publication_kind=TERRITORIAL_OFFICES_PUBLICATION.kind), Applicability(source_ids=frozenset({TERRITORIAL_OFFICES_PUBLICATION.series_id})),
         ),
         "command.observations.validate": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:validate"),
-            SourceRequirement(TERRITORIAL_OFFICES_PUBLICATION.series_id, TERRITORIAL_OFFICES_PUBLICATION.formats, issue_required=TERRITORIAL_OFFICES_PUBLICATION.issue_model == 'dated'), Applicability(source_ids=frozenset({TERRITORIAL_OFFICES_PUBLICATION.series_id})),
+            SourceRequirement(TERRITORIAL_OFFICES_PUBLICATION.series_id, TERRITORIAL_OFFICES_PUBLICATION.formats, issue_required=TERRITORIAL_OFFICES_PUBLICATION.issue_model == 'dated', locator=TERRITORIAL_OFFICES_PUBLICATION.locator, filename_pattern=TERRITORIAL_OFFICES_PUBLICATION.filename_pattern, publication_kind=TERRITORIAL_OFFICES_PUBLICATION.kind), Applicability(source_ids=frozenset({TERRITORIAL_OFFICES_PUBLICATION.series_id})),
         ),
         "command.observations.align": CommandSpec(
             MethodRef("stratbox.domains.cbr.methods.actions.observations:align"),

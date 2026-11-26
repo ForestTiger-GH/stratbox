@@ -242,11 +242,13 @@ def value_encode(inputs, settings, context):
     if not uses and isinstance(value, (SorsRestorationResult, SorsCrosswalkResult)):
         from stratbox.domains.cbr.calculations.sors.identity import source_uses
         uses = source_uses(value)
-    return {"representation": EncodedProduct(data, "application/vnd.stratbox.sors+json", lineage, source_uses=uses)}
+    return {"representation": EncodedProduct(data, "application/vnd.stratbox.sors+json", lineage, source_uses=uses,
+        assessment=getattr(value, "assessment", None))}
 
 
 def value_decode(inputs, settings, context):
-    representation = inputs["representation"]
-    data = representation if type(representation) is bytes else representation.data
+    from stratbox.core.commands._physical import bounded_material_bytes
+    data = bounded_material_bytes(inputs["representation"], context,
+        max_bytes=_option(settings, context, "max_materialized_bytes", 32 * 1024 * 1024))
     return {"value": decode(data, max_bytes=_option(settings, context, "max_bytes", 256 * 1024 * 1024),
                              max_cells=_option(settings, context, "max_cells", 80_000_000), context=context)}
